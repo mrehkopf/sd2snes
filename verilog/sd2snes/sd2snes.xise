@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<project xmlns="http://www.xilinx.com/XMLSchema" xmlns:xil_pn="http://www.xilinx.com/XMLSchema">
+
+  <header>
+    <!-- ISE source project file created by Project Navigator.             -->
+    <!--                                                                   -->
+    <!-- This file contains project source information including a list of -->
+    <!-- project source files, project and process properties.  This file, -->
+    <!-- along with the project source files, is sufficient to open and    -->
+    <!-- implement in ISE Project Navigator.                               -->
+    <!--                                                                   -->
+    <!-- Copyright (c) 1995-2009 Xilinx, Inc.  All rights reserved. -->
+  </header>
+
+  <version xil_pn:ise_version="11.1" xil_pn:schema_version="2"/>
+
+  <files>
+    <file xil_pn:name="address.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="Implementation"/>
+    </file>
+    <file xil_pn:name="data.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="Implementation"/>
+    </file>
+    <file xil_pn:name="main.ucf" xil_pn:type="FILE_UCF">
+      <association xil_pn:name="Implementation"/>
+    </file>
+    <file xil_pn:name="main.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="Implementation"/>
+    </file>
+    <file xil_pn:name="tf_main.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="PostRouteSimulation"/>
+      <association xil_pn:name="PostMapSimulation"/>
+      <association xil_pn:name="PostTranslateSimulation"/>
+    </file>
+    <file xil_pn:name="dcm.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="Implementation"/>
+    </file>
+  </files>
+
+  <properties>
+    <property xil_pn:name="Constraints Entry" xil_pn:value="Constraints Editor"/>
+    <property xil_pn:name="Device" xil_pn:value="xc3s200"/>
+    <property xil_pn:name="Device Family" xil_pn:value="Spartan3"/>
+    <property xil_pn:name="Extra Effort (Highest PAR level only)" xil_pn:value="Normal"/>
+    <property xil_pn:name="Fitter Report Format" xil_pn:value="HTML"/>
+    <property xil_pn:name="Implementation Top" xil_pn:value="Module|main"/>
+    <property xil_pn:name="Implementation Top Instance Path" xil_pn:value="/main"/>
+    <property xil_pn:name="PROP_BehavioralSimTop" xil_pn:value="Module|tf_main"/>
+    <property xil_pn:name="PROP_DesignName" xil_pn:value="sd2snes"/>
+    <property xil_pn:name="PROP_PostParSimTop" xil_pn:value="Module|tf_main"/>
+    <property xil_pn:name="Package" xil_pn:value="tq144"/>
+    <property xil_pn:name="Place &amp; Route Effort Level (Overall)" xil_pn:value="High"/>
+    <property xil_pn:name="Placer Effort Level (Overrides Overall Level)" xil_pn:value="High"/>
+    <property xil_pn:name="Preferred Language" xil_pn:value="Verilog"/>
+    <property xil_pn:name="Project Description" xil_pn:value="sd2snes"/>
+    <property xil_pn:name="Router Effort Level (Overrides Overall Level)" xil_pn:value="High"/>
+    <property xil_pn:name="Selected Simulation Root Source Node Behavioral" xil_pn:value="Module|tf_main"/>
+    <property xil_pn:name="Selected Simulation Root Source Node Post-Route" xil_pn:value="Module|tf_main"/>
+    <property xil_pn:name="Selected Simulation Source Node" xil_pn:value="uut"/>
+    <property xil_pn:name="Simulator" xil_pn:value="ISim (VHDL/Verilog)"/>
+    <property xil_pn:name="Speed Grade" xil_pn:value="-4"/>
+    <property xil_pn:name="Synthesis Tool" xil_pn:value="XST (VHDL/Verilog)"/>
+    <property xil_pn:name="Top-Level Source Type" xil_pn:value="HDL"/>
+    <property xil_pn:name="Verbose Property Persistence" xil_pn:value="false"/>
+  </properties>
+
+  <bindings/>
+
+  <libraries/>
+
+  <partitions>
+    <partition xil_pn:name="/main"/>
+  </partitions>
+
+</project>
