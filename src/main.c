@@ -44,6 +44,7 @@
 #include "snes.h"
 #include "fileops.h"
 #include "memory.h"
+#include "fpga_spi.h"
 
 char stringbuf[100];
 
@@ -152,36 +153,35 @@ int main(void) {
     uart_putc('W');
     fpga_init();
     fpga_pgm("/sd2snes/main.bit");
+	fpga_spi_init();
     uart_putc('!');
 	_delay_ms(100);
-    set_avr_bank(0);
+//set_avr_bank(0);
     set_avr_ena(0);
-    set_avr_read(1);
-    set_avr_write(1);
-    AVR_ADDR_RESET();
-    set_avr_addr_en(0);
+//    set_avr_read(1);
+//    set_avr_write(1);
+//    AVR_ADDR_RESET();
+//    set_avr_addr_en(0);
 	snes_reset(1);
 
 	uart_putc('(');
 	load_rom("/test.smc");
 	uart_putc(')');
 
-	uart_putc('[');
+/*XXX	uart_putc('[');
 	load_sram("/test.srm");
-	uart_putc(']');
+	uart_putc(']');*/
 
-	AVR_ADDR_RESET();
-	set_avr_mapper(0); 
+	set_avr_mapper(1); 
 	set_avr_ena(1);
-	set_avr_read(0);
-	set_avr_bank(0);
 	_delay_ms(100);
 	uart_puts_P(PSTR("SNES GO!"));
 	snes_reset(0);
-	DDRC = 0x00;
 
+	_delay_ms(6553.6);
+	
 	while(1) {
-		snes_main_loop();
+//		snes_main_loop();
 	}
 	while(1) {
 	    uint8_t data=PINC;

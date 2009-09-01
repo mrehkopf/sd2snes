@@ -6,7 +6,8 @@
 
    FPGA pin mapping
    ================
-
+ PSM:
+ ====
    FPGA			AVR		dir
    ------------------------
    PROG_B		PD3		OUT
@@ -14,6 +15,7 @@
    CS_B			PD7		OUT
    INIT_B		PB2		IN
    RDWR_B		PB3		OUT
+
    D7			PC0		OUT
    D6			PC1		OUT
    D5			PC2		OUT
@@ -23,6 +25,12 @@
    D1			PC6		OUT
    D0			PC7		OUT
 
+ SSM:
+ ====
+   PROG_B		PD3		OUT
+   CCLK			PD4		OUT
+   INIT_B		PD7		IN
+   DIN			PC7		OUT
  */
 
 #include <avr/pgmspace.h>
@@ -33,6 +41,9 @@
 #include "diskio.h"
 #include "ff.h"
 #include "fileops.h"
+#include "fpga_spi.h"
+#include "spi.h"
+#include "avrcompat.h"
 
 DWORD get_fattime(void) {
 	return 0L;
@@ -71,12 +82,12 @@ void set_cclk(uint8_t val) {
 
 void fpga_init() {
 	DDRB |= _BV(PB3);	// PB3 is output
-    DDRB &= ~_BV(PB2);  // PB2 is input
 
-    DDRC = 0xff;	// for FPGA config, all PORTC pins are outputs
+    DDRD &= ~_BV(PD7);  // PD7 is input
 
-	DDRD |= _BV(PD3) | _BV(PD4) | _BV(PD7); // PD3, PD4, PD7 are outputs
+    DDRC = _BV(PC7);	// for FPGA config, PC7 is output
 
+	DDRD |= _BV(PD3) | _BV(PD4); // PD3, PD4 are outputs
 	set_cclk(0);    // initial clk=0
 }
 
@@ -87,23 +98,26 @@ int fpga_get_done(void) {
 void fpga_postinit() {
 	DDRA |= _BV(PA0) | _BV(PA1) | _BV(PA2) | _BV(PA4) | _BV(PA5) | _BV(PA6); // MAPPER+NEXTADDR output
 	DDRB |= _BV(PB2) | _BV(PB1) | _BV(PB0);	// turn PB2 into output, enable AVR_BANK
+    DDRD |= _BV(PD7);	// turn PD7 into output
 }
 
 void fpga_pgm(char* filename) {
 	set_prog_b(0);
 	uart_putc('P');
 	set_prog_b(1);
-	loop_until_bit_is_set(PINB, PB2);
+	loop_until_bit_is_set(PIND, PD7);
 	uart_putc('p');
 	
-	FIL in;
-	FRESULT res;
+//	FIL in;
+//	FRESULT res;
 	UINT bytes_read;
 
 	// open configware file
-	res=f_open(&in, filename, FA_READ);
-	if(res) {
+//	res=f_open(&in, filename, FA_READ);
+	file_open(filename, FA_READ);
+	if(file_res) {
 		uart_putc('?');
+		uart_putc(0x30+file_res);
 		return;
 	}
 	// file open successful
@@ -111,14 +125,16 @@ void fpga_pgm(char* filename) {
 	set_rdwr_b(0);
 
     for (;;) {
-        res = f_read(&in, file_buf, sizeof(file_buf), &bytes_read);
-        if (res || bytes_read == 0) break;   // error or eof
+//        res = f_read(&in, file_buf, sizeof(file_buf), &bytes_read);
+		bytes_read = file_read();
+        if (file_res || bytes_read == 0) break;   // error or eof
 		for(int i=0; i<bytes_read; i++) {
-			FPGA_SEND_BYTE(file_buf[i]);
+			//FPGA_SEND_BYTE(file_buf[i]);
+			FPGA_SEND_BYTE_SERIAL(file_buf[i]);
 		}
     }
 
-	f_close(&in);
+	file_close();
 	fpga_postinit();
 }
 
@@ -176,8 +192,11 @@ void set_avr_addr_en(uint8_t val) {
 }
 
 void set_avr_mapper(uint8_t val) {
-	PORTA &= 0xF0;
-	PORTA |= val&0x07;
+	SPI_SS_HIGH();
+	FPGA_SS_LOW();
+	spiTransferByte(0x30 | (val & 0x0f));
+	FPGA_SS_HIGH();
+	SPI_SS_LOW();
 }
 
 void set_avr_bank(uint8_t val) {

@@ -536,6 +536,7 @@ DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
         res = sendCommand(drv, READ_SINGLE_BLOCK, (sector+sec) << 9, 0);
 
       if (res != 0) {
+		uart_putc('?');
         SPI_SS_HIGH(drv);
         disk_state = DISK_ERROR;
         return RES_ERROR;
@@ -543,6 +544,7 @@ DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
 
       // Wait for data token
       if (!sdResponse(0xFE)) {
+		uart_putc('-');
         SPI_SS_HIGH(drv);
         disk_state = DISK_ERROR;
         return RES_ERROR;

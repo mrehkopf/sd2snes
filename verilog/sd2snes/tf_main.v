@@ -31,13 +31,7 @@ module tf_main;
 	reg SNES_READ;
 	reg SNES_WRITE;
 	reg SNES_CS;
-	reg AVR_ADDR_RESET;
-	reg AVR_WRITE;
-	reg AVR_READ;
-	reg AVR_NEXTADDR;
 	reg AVR_ENA;
-	reg [1:0] AVR_BANK;
-   reg AVR_ADDR_EN;
 
 	// Outputs
 	wire [20:0] SRAM_ADDR;
@@ -56,6 +50,79 @@ module tf_main;
    reg [7:0] SRAM_DATA_BUF;
    reg [7:0] SNES_DATA_BUF;
    
+   		SCK = 0;
+		MOSI = 0;
+		SSEL = 1;
+		input_data = 0;
+
+		// Wait 100 ns for global reset to finish
+		#100;
+        
+		// Add stimulus here
+      SSEL = 0;
+      MOSI=1;
+      #100 SCK=1;
+      #100 SCK=0;
+      MOSI=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      MOSI=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      MOSI=1;
+      #100 SCK=1;
+      #100 SCK=0;
+      MOSI=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #200;
+         #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #200;
+         #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SCK=1;
+      #100 SCK=0;
+      #100 SSEL=1;
+      
+      
+	end
+   always begin
+      #19 clk = ~clk;
+   end
+   
 // Instantiate the Unit Under Test (UUT)
 	main uut (
 		.CLKIN(CLK), 
@@ -66,18 +133,11 @@ module tf_main;
 		.SNES_CS(SNES_CS), 
 		.SNES_DATA(SNES_DATA), 
 		.SRAM_DATA(SRAM_DATA), 
-		.AVR_DATA(AVR_DATA), 
 		.SRAM_ADDR(SRAM_ADDR), 
 		.ROM_SEL(ROM_SEL), 
 		.SRAM_OE(SRAM_OE), 
 		.SRAM_WE(SRAM_WE), 
-		.AVR_ADDR_RESET(AVR_ADDR_RESET), 
-		.AVR_WRITE(AVR_WRITE), 
-		.AVR_NEXTADDR(AVR_NEXTADDR), 
 		.AVR_ENA(AVR_ENA), 
-		.AVR_BANK(AVR_BANK),
-      .AVR_READ(AVR_READ),
-      .AVR_ADDR_EN(AVR_ADDR_EN),
       .SNES_DATABUS_OE(SNES_DATABUS_OE),
       .SNES_DATABUS_DIR(SNES_DATABUS_DIR),
       .MODE(MODE)
@@ -92,24 +152,10 @@ module tf_main;
 		SNES_READ = 1;
 		SNES_WRITE = 1;
 		SNES_CS = 0;
-		AVR_ADDR_RESET = 1;
-		AVR_WRITE = 1;
-      AVR_READ = 0;
-		AVR_NEXTADDR = 0;
 		AVR_ENA = 1;
-		AVR_BANK = 0;
-      AVR_ADDR_EN = 0;
       SRAM_DATA_BUF = 8'hff;
 		// Wait for global reset to finish
 		#276;
-      #276 AVR_NEXTADDR <= ~AVR_NEXTADDR;
-      #276 AVR_NEXTADDR <= ~AVR_NEXTADDR;
-      #276 AVR_NEXTADDR <= ~AVR_NEXTADDR;
-      #276 AVR_NEXTADDR <= ~AVR_NEXTADDR;
-      #276 AVR_NEXTADDR <= ~AVR_NEXTADDR;
-      #276 AVR_NEXTADDR <= ~AVR_NEXTADDR;
-      #276 AVR_NEXTADDR <= ~AVR_NEXTADDR;
-      #276 AVR_NEXTADDR <= ~AVR_NEXTADDR;      
       SNES_ADDR <= 24'h123456;
       SNES_READ <= 0;
       #176;
@@ -119,7 +165,6 @@ module tf_main;
       #176;
       SNES_WRITE <= 1;
       #100;
-      AVR_WRITE <= 0;
       SNES_READ <= 0;
       #276;
 //      AVR_READ <= 1;
@@ -129,7 +174,6 @@ module tf_main;
    always
       #23 CLK <= ~CLK;
 //   always begin
-//      #234 AVR_NEXTADDR <= ~AVR_NEXTADDR;
 //   end
       
 endmodule

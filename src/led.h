@@ -39,6 +39,7 @@ extern volatile uint8_t led_state;
 
 /* Update the LEDs to match the buffer state */
 void update_leds(void);
+void toggle_busy_led(void);
 
 /* Wrapped in do..while to avoid "ambigious else" warnings */
 #ifdef SINGLE_LED

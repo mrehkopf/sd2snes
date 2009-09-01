@@ -30,19 +30,41 @@
       <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="Implementation"/>
     </file>
-    <file xil_pn:name="tf_main.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="dcm.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="Implementation"/>
+    </file>
+    <file xil_pn:name="spi.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="Implementation"/>
+    </file>
+    <file xil_pn:name="tf_spi.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="PostRouteSimulation"/>
       <association xil_pn:name="PostMapSimulation"/>
       <association xil_pn:name="PostTranslateSimulation"/>
     </file>
-    <file xil_pn:name="dcm.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="main_tf2.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="PostRouteSimulation"/>
+      <association xil_pn:name="PostMapSimulation"/>
+      <association xil_pn:name="PostTranslateSimulation"/>
+    </file>
+    <file xil_pn:name="avr_cmd.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="Implementation"/>
+    </file>
+    <file xil_pn:name="tf_main.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="PostRouteSimulation"/>
+      <association xil_pn:name="PostMapSimulation"/>
+      <association xil_pn:name="PostTranslateSimulation"/>
+      <library xil_pn:name="verilog"/>
     </file>
   </files>
 
   <properties>
+    <property xil_pn:name="Auto Implementation Top" xil_pn:value="false"/>
     <property xil_pn:name="Constraints Entry" xil_pn:value="Constraints Editor"/>
     <property xil_pn:name="Device" xil_pn:value="xc3s200"/>
     <property xil_pn:name="Device Family" xil_pn:value="Spartan3"/>
@@ -50,17 +72,17 @@
     <property xil_pn:name="Fitter Report Format" xil_pn:value="HTML"/>
     <property xil_pn:name="Implementation Top" xil_pn:value="Module|main"/>
     <property xil_pn:name="Implementation Top Instance Path" xil_pn:value="/main"/>
-    <property xil_pn:name="PROP_BehavioralSimTop" xil_pn:value="Module|tf_main"/>
+    <property xil_pn:name="PROP_BehavioralSimTop" xil_pn:value="Module|main_tf2"/>
     <property xil_pn:name="PROP_DesignName" xil_pn:value="sd2snes"/>
-    <property xil_pn:name="PROP_PostParSimTop" xil_pn:value="Module|tf_main"/>
+    <property xil_pn:name="PROP_PostParSimTop" xil_pn:value="Module|main_tf2"/>
     <property xil_pn:name="Package" xil_pn:value="tq144"/>
     <property xil_pn:name="Place &amp; Route Effort Level (Overall)" xil_pn:value="High"/>
     <property xil_pn:name="Placer Effort Level (Overrides Overall Level)" xil_pn:value="High"/>
     <property xil_pn:name="Preferred Language" xil_pn:value="Verilog"/>
     <property xil_pn:name="Project Description" xil_pn:value="sd2snes"/>
     <property xil_pn:name="Router Effort Level (Overrides Overall Level)" xil_pn:value="High"/>
-    <property xil_pn:name="Selected Simulation Root Source Node Behavioral" xil_pn:value="Module|tf_main"/>
-    <property xil_pn:name="Selected Simulation Root Source Node Post-Route" xil_pn:value="Module|tf_main"/>
+    <property xil_pn:name="Selected Simulation Root Source Node Behavioral" xil_pn:value="Module|main"/>
+    <property xil_pn:name="Selected Simulation Root Source Node Post-Route" xil_pn:value="Module|main_tf2"/>
     <property xil_pn:name="Selected Simulation Source Node" xil_pn:value="uut"/>
     <property xil_pn:name="Simulator" xil_pn:value="ISim (VHDL/Verilog)"/>
     <property xil_pn:name="Speed Grade" xil_pn:value="-4"/>
@@ -69,7 +91,9 @@
     <property xil_pn:name="Verbose Property Persistence" xil_pn:value="false"/>
   </properties>
 
-  <bindings/>
+  <bindings>
+    <binding xil_pn:location="/main" xil_pn:name="main.ucf"/>
+  </bindings>
 
   <libraries/>
 

@@ -17,7 +17,8 @@ uint32_t sram_crc, sram_crc_old;
 uint32_t sram_size = 8192; // sane default
 
 void snes_init() {
-	DDRD |= _BV(PD5); 	// PD5 = OUTPUT
+	DDRD |= _BV(PD5);	// PD5 = RESET_DIR
+	DDRD |= _BV(PD6); 	// PD6 = RESET
 	snes_reset(1); 
 }
 
@@ -28,9 +29,13 @@ void snes_init() {
  */
 void snes_reset(int state) {
 	if(state) {
-		PORTD &= ~ _BV(PD5);
+		DDRD |= _BV(PD6);	// /RESET pin -> out
+		PORTD &= ~_BV(PD6); // /RESET = 0
+		PORTD |= _BV(PD5);  // RESET_DIR = 1;
 	} else {
-		PORTD |= _BV(PD5);
+		PORTD &= ~_BV(PD5); // RESET_DIR = 0;
+		DDRD &= ~_BV(PD6);  // /RESET pin -> in
+		PORTD |= _BV(PD6);  // /RESET = 1
 	}
 }
 

@@ -21,6 +21,11 @@ void set_avr_bank(uint8_t val);
 
 // some macros for bulk transfers (faster)
 #define FPGA_SEND_BYTE(data)	do {SET_AVR_DATA(data); CCLK();} while (0)
+#define FPGA_SEND_BYTE_SERIAL(data)	do {SET_AVR_DATA(data); CCLK();\
+SET_AVR_DATA(data<<1); CCLK(); SET_AVR_DATA(data<<2); CCLK();\
+SET_AVR_DATA(data<<3); CCLK(); SET_AVR_DATA(data<<4); CCLK();\
+SET_AVR_DATA(data<<5); CCLK(); SET_AVR_DATA(data<<6); CCLK();\
+SET_AVR_DATA(data<<7); CCLK();} while (0)
 #define SET_CCLK()				do {PORTD |= _BV(PD4);} while (0)
 #define CLR_CCLK()				do {PORTD &= ~_BV(PD4);} while (0)
 #define CCLK()					do {SET_CCLK(); CLR_CCLK();} while (0)

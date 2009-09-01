@@ -25,9 +25,9 @@
 # This file is included in the main sd2iec Makefile and also parsed
 # into autoconf.h.
 
-CONFIG_MCU=atmega644p
+CONFIG_MCU=atmega644
 CONFIG_LINKER_RELAX=n
-CONFIG_MCU_FREQ=14318180
+CONFIG_MCU_FREQ=13500000
 CONFIG_BOOTLOADER=y
 CONFIG_BOOT_DEVID=0x4e534453
 CONFIG_UART_DEBUG=y

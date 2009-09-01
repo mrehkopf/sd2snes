@@ -21,7 +21,9 @@
 module my_dcm (
          input CLKIN,
          input CLKFB,
-         output CLK2X
+         output CLK2X,
+         output CLKFX,
+         output CLK0
     );
 
    // DCM: Digital Clock Manager Circuit
@@ -33,11 +35,11 @@ module my_dcm (
       .CLKDV_DIVIDE(2.0), // Divide by: 1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5
                           //   7.0,7.5,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0 or 16.0
       .CLKFX_DIVIDE(1),   // Can be any integer from 1 to 32
-      .CLKFX_MULTIPLY(16), // Can be any integer from 2 to 32
+      .CLKFX_MULTIPLY(4), // Can be any integer from 2 to 32
       .CLKIN_DIVIDE_BY_2("FALSE"), // TRUE/FALSE to enable CLKIN divide by two feature
-      .CLKIN_PERIOD(0.0),  // Specify period of input clock
+      .CLKIN_PERIOD(46000.0),  // Specify period of input clock
       .CLKOUT_PHASE_SHIFT("NONE"), // Specify phase shift of NONE, FIXED or VARIABLE
-      .CLK_FEEDBACK("2X"),  // Specify clock feedback of NONE, 1X or 2X
+      .CLK_FEEDBACK("1X"),  // Specify clock feedback of NONE, 1X or 2X
       .DESKEW_ADJUST("SYSTEM_SYNCHRONOUS"), // SOURCE_SYNCHRONOUS, SYSTEM_SYNCHRONOUS or
                                             //   an integer from 0 to 15
       .DFS_FREQUENCY_MODE("LOW"),  // HIGH or LOW frequency mode for frequency synthesis

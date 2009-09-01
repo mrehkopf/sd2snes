@@ -41,3 +41,8 @@ volatile uint8_t led_state;
  */
 void update_leds(void) {
 }
+
+void toggle_busy_led(void) {
+	PORTB &= ~_BV(PB1);
+	DDRB ^= _BV(PB1);
+}

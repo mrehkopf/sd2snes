@@ -67,7 +67,7 @@ void spiInit(void)
   //   leading edge rising, sample on leading edge, clock = f/4
   SPCR = 0b01010000;
 
-  // Enable SPI double speed mode -> clock = f/8
+  // Enable SPI double speed mode -> clock = f/2
   SPSR = _BV(SPI2X);
 
   // clear status
