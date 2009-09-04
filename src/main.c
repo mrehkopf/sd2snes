@@ -45,6 +45,8 @@
 #include "fileops.h"
 #include "memory.h"
 #include "fpga_spi.h"
+#include "spi.h"
+#include "avrcompat.h"
 
 char stringbuf[100];
 
@@ -168,33 +170,49 @@ int main(void) {
 	load_rom("/test.smc");
 	uart_putc(')');
 
-/*XXX	uart_putc('[');
+	uart_putc('[');
 	load_sram("/test.srm");
-	uart_putc(']');*/
-
-	set_avr_mapper(1); 
+	uart_putc(']');
+	set_busy_led(0);
+	set_avr_mapper(0); 
 	set_avr_ena(1);
 	_delay_ms(100);
 	uart_puts_P(PSTR("SNES GO!"));
 	snes_reset(0);
-
-	_delay_ms(6553.6);
 	
 	while(1) {
-//		snes_main_loop();
+		snes_main_loop();
 	}
-	while(1) {
-	    uint8_t data=PINC;
+
+
+ /* HERE BE LIONS */
+while(1)  {	
+	SPI_SS_HIGH();
+	FPGA_SS_LOW();
+	spiTransferByte(0x00);
+	spiTransferByte(0x00);
+	spiTransferByte(0x7f);
+	spiTransferByte(0xc0);
+	FPGA_SS_HIGH();
+	FPGA_SS_LOW();
+	spiTransferByte(0x81); // read w/ increment... hopefully
+	spiTransferByte(0x00); // 1 dummy read
+	uart_putcrlf();
+	for(uint8_t cnt=0; cnt<16; cnt++) {
+	    uint8_t data=spiTransferByte(0x00);
 		_delay_ms(2);
 	    if(data>=0x20 && data <= 0x7a) {
 			uart_putc(data);
 	    } else {
-			uart_putc('.');
+//			uart_putc('.');
+			uart_putc("0123456789ABCDEF"[data>>4]);
+			uart_putc("0123456789ABCDEF"[data&15]);
+			uart_putc(' ');
 	    }
-			SET_AVR_NEXTADDR();
-			CLR_AVR_NEXTADDR();
 //		set_avr_bank(3);
 	} 
+	FPGA_SS_HIGH();
+}
 	while(1);
 }
 

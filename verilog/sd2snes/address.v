@@ -31,8 +31,6 @@ module address(
     output IS_ROM,            // address mapped as ROM?
     input [23:0] AVR_ADDR,    // allow address to be set externally
     input ADDR_WRITE,
-    output SRAM_BHE,
-    output SRAM_BLE,
     output SRAM_ADDR0
     );
 
@@ -40,7 +38,7 @@ reg [22:0] SRAM_ADDR_BUF;
 reg [3:0] ROM_SEL_BUF;
 reg [3:0] AVR_ROM_SEL_BUF;
 reg [3:0] CS_ARRAY[3:0];
-reg [1:0] AVR_BANK;
+wire [1:0] SRAM_BANK;
 
 wire [3:0] CURRENT_ROM_SEL;
 wire [22:0] SRAM_ADDR_FULL;
@@ -50,7 +48,6 @@ initial begin
    CS_ARRAY[1] = 4'b0010;
    CS_ARRAY[2] = 4'b0100;
    CS_ARRAY[3] = 4'b1000;
-   AVR_BANK = 2'b0;
 end 
 
 /* currently supported mappers:
@@ -84,7 +81,7 @@ assign IS_ROM = ( (MAPPER == 3'b000) ? ( (!SNES_ADDR[22]
 assign SRAM_ADDR_FULL = (MODE) ? AVR_ADDR
                           : ((MAPPER == 3'b000) ?
                               (IS_SAVERAM ? SNES_ADDR[14:0] - 15'h6000
-                                          : SNES_ADDR[22:0])
+                                          : (SNES_ADDR[22:0] & 23'b00111111111111111111111))
                             :(MAPPER == 3'b001) ? 
                               (IS_SAVERAM ? SNES_ADDR[14:0]
                                           : {1'b0, SNES_ADDR[22:16], SNES_ADDR[14:0]})
@@ -93,11 +90,9 @@ assign SRAM_ADDR_FULL = (MODE) ? AVR_ADDR
 assign SRAM_BANK = SRAM_ADDR_FULL[22:21];
 assign SRAM_ADDR = SRAM_ADDR_FULL[20:1];
 
-// XXX assign ROM_SEL = (MODE) ? CS_ARRAY[AVR_BANK] : IS_SAVERAM ? 4'b1000 : CS_ARRAY[SRAM_BANK];
-assign ROM_SEL = 4'b0001;
+assign ROM_SEL = (MODE) ? CS_ARRAY[SRAM_BANK] : IS_SAVERAM ? 4'b1000 : CS_ARRAY[SRAM_BANK];
+// assign ROM_SEL = 4'b0001;
 
-assign SRAM_BHE = !AVR_ENA ? SRAM_ADDR_FULL[0] : 1'b0;
-assign SRAM_BLE = !AVR_ENA ? !SRAM_ADDR_FULL[0] : 1'b0;
 assign SRAM_ADDR0 = SRAM_ADDR_FULL[0];
 
 endmodule

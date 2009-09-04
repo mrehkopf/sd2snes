@@ -40,16 +40,7 @@ extern volatile uint8_t led_state;
 /* Update the LEDs to match the buffer state */
 void update_leds(void);
 void toggle_busy_led(void);
+void set_busy_led(uint8_t);
 
-/* Wrapped in do..while to avoid "ambigious else" warnings */
-#ifdef SINGLE_LED
-#  define set_dirty_led(x) do{if (x) { led_state |= LED_DIRTY; } else { led_state &= (uint8_t)~LED_DIRTY; }}while(0)
-#  define set_busy_led(x)  do{if (x) { led_state |= LED_BUSY ; } else { led_state &= (uint8_t)~LED_BUSY ; }}while(0)
-#  define set_error_led(x) do{if (x) { led_state |= LED_ERROR; } else { led_state &= (uint8_t)~LED_ERROR; }}while(0)
-#else
-#  define set_dirty_led(x) do{if (x) { DIRTY_LED_ON(); } else { DIRTY_LED_OFF(); }}while(0)
-#  define set_busy_led(x)  do{if (x) { BUSY_LED_ON();  } else { BUSY_LED_OFF();  }}while(0)
-#  define set_error_led(x) do{if (x) { led_state |= LED_ERROR; } else { led_state &= (uint8_t)~LED_ERROR; update_leds(); }}while(0)
-#endif
 
 #endif

@@ -46,3 +46,12 @@ void toggle_busy_led(void) {
 	PORTB &= ~_BV(PB1);
 	DDRB ^= _BV(PB1);
 }
+
+void set_busy_led(uint8_t state) {
+	PORTB &= ~_BV(PB1);
+	if(state) {
+		DDRB |= _BV(PB1);
+	} else {
+		DDRB &= ~_BV(PB1);
+	}
+}

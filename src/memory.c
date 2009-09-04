@@ -39,10 +39,10 @@ uint32_t load_rom(char* filename) {
 		SPI_SS_HIGH();
 		if (file_res || !bytes_read) break;
 		FPGA_SS_LOW();
-		_delay_us(1);
 		spiTransferByte(0x91); // write w/ increment
 		if(!(count++ % 16)) {
 			toggle_busy_led();
+			uart_putc('.');
 		}
 		for(int j=0; j<bytes_read; j++) {
 			spiTransferByte(file_buf[j]);
@@ -51,7 +51,6 @@ uint32_t load_rom(char* filename) {
 //			_delay_ms(2);
 		}
 		spiTransferByte(0x00); // dummy tx for increment+write pulse
-		_delay_us(10);
 		FPGA_SS_HIGH();
 	}
 	file_close();
@@ -60,47 +59,49 @@ uint32_t load_rom(char* filename) {
 
 uint32_t load_sram(char* filename) {
 	set_avr_bank(3);
-	AVR_ADDR_RESET();
-	SET_AVR_READ();
 	UINT bytes_read;
 	DWORD filesize;
 	file_open(filename, FA_READ);
 	filesize = file_handle.fsize;
 	if(file_res) return 0;
 	for(;;) {
+		FPGA_SS_HIGH();
+		SPI_SS_LOW();
 		bytes_read = file_read();
+		SPI_SS_HIGH();
 		if (file_res || !bytes_read) break;
+		FPGA_SS_LOW();
+		spiTransferByte(0x91);
 		for(int j=0; j<bytes_read; j++) {
-			SET_AVR_DATA(file_buf[j]);
-			AVR_WRITE();
-			AVR_NEXTADDR();
+			spiTransferByte(file_buf[j]);
 		}
+		spiTransferByte(0x00); // dummy tx
+		FPGA_SS_HIGH();
 	}
 	file_close();
 	return (uint32_t)filesize;
 }
 
 
-void save_sram(char* filename, uint32_t sram_size) {
+void save_sram(char* filename, uint32_t sram_size, uint32_t base_addr) {
     uint32_t count = 0;
 	uint32_t num = 0;
-    set_avr_bank(3);
-    _delay_us(100);
-    AVR_ADDR_RESET();
-    CLR_AVR_READ();
-    SET_AVR_WRITE();
+
+	spi_sd();
     file_open(filename, FA_CREATE_ALWAYS | FA_WRITE);
+	if(file_res) {
+		uart_putc(0x30+file_res);
+	}
     while(count<sram_size) {
+		set_avr_addr(base_addr+count);
+		spi_fpga();
+		spiTransferByte(0x81); // read
+		spiTransferByte(0); // dummy
         for(int j=0; j<sizeof(file_buf); j++) {
-            _delay_us(5);
-            file_buf[j] = AVR_DATA;
-            CLR_AVR_ADDR_EN();
-            SET_AVR_NEXTADDR();
-            _delay_us(5);
-            CLR_AVR_NEXTADDR();
-            SET_AVR_ADDR_EN();
+            file_buf[j] = spiTransferByte(0x00);
             count++;
         }
+		spi_sd();
         num = file_write();
     }
     file_close();
@@ -109,25 +110,24 @@ void save_sram(char* filename, uint32_t sram_size) {
 
 uint32_t calc_sram_crc(uint32_t size) {
 	uint8_t data;
-	set_avr_bank(3);
-	_delay_us(100);
-	AVR_ADDR_RESET();
-	SET_AVR_WRITE();
-	CLR_AVR_READ();
 	uint32_t count;
 	uint16_t crc;
 	crc=0;
+	set_avr_bank(3);
+	SPI_SS_HIGH();
+	FPGA_SS_HIGH();
+	FPGA_SS_LOW();
+	spiTransferByte(0x81);
+	spiTransferByte(0x00);
 	for(count=0; count<size; count++) {
-		_delay_us(5);
-		data = AVR_DATA;
+		data = spiTransferByte(0);
+/*		uart_putc(hex[(data>>4)]);
+		uart_putc(hex[data&0xf]);
+		uart_putc(' ');
+		_delay_ms(2);*/
 		crc += crc16_update(crc, &data, 1);
-		CLR_AVR_ADDR_EN();
-		SET_AVR_NEXTADDR();
-		_delay_us(5);
-		CLR_AVR_NEXTADDR();
-		SET_AVR_ADDR_EN();
 	}
-
+	FPGA_SS_HIGH();
 /*	uart_putc(hex[(crc>>28)&0xf]);
 	uart_putc(hex[(crc>>24)&0xf]);
 	uart_putc(hex[(crc>>20)&0xf]);

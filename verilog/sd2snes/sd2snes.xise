@@ -81,7 +81,7 @@
     <property xil_pn:name="Preferred Language" xil_pn:value="Verilog"/>
     <property xil_pn:name="Project Description" xil_pn:value="sd2snes"/>
     <property xil_pn:name="Router Effort Level (Overrides Overall Level)" xil_pn:value="High"/>
-    <property xil_pn:name="Selected Simulation Root Source Node Behavioral" xil_pn:value="Module|main"/>
+    <property xil_pn:name="Selected Simulation Root Source Node Behavioral" xil_pn:value="Module|main_tf2"/>
     <property xil_pn:name="Selected Simulation Root Source Node Post-Route" xil_pn:value="Module|main_tf2"/>
     <property xil_pn:name="Selected Simulation Source Node" xil_pn:value="uut"/>
     <property xil_pn:name="Simulator" xil_pn:value="ISim (VHDL/Verilog)"/>

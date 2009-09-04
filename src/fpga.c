@@ -200,6 +200,12 @@ void set_avr_mapper(uint8_t val) {
 }
 
 void set_avr_bank(uint8_t val) {
-	PORTB &= 0xFC;
-	PORTB |= val&0x03;
+	SPI_SS_HIGH();
+	FPGA_SS_LOW();
+	spiTransferByte(0x00); // SET ADDRESS
+	spiTransferByte(val * 0x20); // select chip
+	spiTransferByte(0x00); // select chip
+	spiTransferByte(0x00); // select chip
+	FPGA_SS_HIGH();
+	SPI_SS_LOW();
 }
