@@ -15,4 +15,6 @@ void file_open(char* filename, BYTE flags);
 void file_close(void);
 UINT file_read(void);
 UINT file_write(void);
+UINT file_readblock(void* buf, uint32_t addr, uint16_t size);
+UINT file_writeblock(void* buf, uint32_t addr, uint16_t size);
 #endif

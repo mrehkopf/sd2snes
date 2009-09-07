@@ -1,5 +1,5 @@
-// insert cool lenghty disclaimer here
-// memory.c: ROM+RAM operations
+// insert cool lengthy disclaimer here
+// memory.c: SRAM operations
 
 #include <stdint.h>
 #include <avr/pgmspace.h>
@@ -14,24 +14,53 @@
 #include "fpga_spi.h"
 #include "avrcompat.h"
 #include "led.h"
+#include "filetypes.h"
+#include "fpga_spi.h"
 
 char* hex = "0123456789ABCDEF";
 
+void sram_readblock(void* buf, uint32_t addr, uint16_t size) {
+	uint16_t count=size;
+	void* tgt = buf;
+	set_avr_addr(addr);
+	spi_fpga();
+	spiTransferByte(0x81);	// READ
+	spiTransferByte(0x00);	// dummy
+	while(count--) {
+		*((uint8_t*)tgt++) = spiTransferByte(0x00);
+	}
+	spi_sd();
+}
+
+void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
+	uint16_t count=size;
+	void* src = buf;
+	set_avr_addr(addr);
+	spi_fpga();
+	spiTransferByte(0x91);	// WRITE 
+	while(count--) {
+		spiTransferByte(*((uint8_t*)src++));
+	}
+	spiTransferByte(0x00);	// dummy
+	spi_sd();
+}
+
 uint32_t load_rom(char* filename) {
 // TODO Mapper, Mirroring, Bankselect
-//	snes_rom_properties_t romprops;
+	snes_romprops_t romprops;
 //	set_avr_bank(0);
 	UINT bytes_read;
 	DWORD filesize;
 	UINT count=0;
 	file_open(filename, FA_READ);
 	filesize = file_handle.fsize;
+	smc_id(&romprops);
 	if(file_res) {
 		uart_putc('?');
 		uart_putc(0x30+file_res);
 		return 0;
 	}
-//	snes_rom_id(&romprops, &file_handle);
+	f_lseek(&file_handle, romprops.offset);
 	for(;;) {
 		FPGA_SS_HIGH();
 		SPI_SS_LOW();
@@ -46,14 +75,35 @@ uint32_t load_rom(char* filename) {
 		}
 		for(int j=0; j<bytes_read; j++) {
 			spiTransferByte(file_buf[j]);
-//			uart_putc((file_buf[j] > 0x20)
-//						&& (file_buf[j] < ('z'+1)) ? file_buf[j]:'.');
-//			_delay_ms(2);
 		}
 		spiTransferByte(0x00); // dummy tx for increment+write pulse
 		FPGA_SS_HIGH();
 	}
 	file_close();
+	set_avr_mapper(romprops.mapper_id);
+	uart_puthex(romprops.header.map);
+	uart_putc(0x30+romprops.mapper_id);
+
+	uint32_t rammask;
+	uint32_t rommask;
+	if(romprops.header.ramsize == 0) {
+		rammask = 0;
+	} else {
+		rammask = ((uint32_t)1024 << (romprops.header.ramsize)) - 1;
+	}
+	rommask = ((uint32_t)1024 << (romprops.header.romsize)) - 1;
+
+	uart_putc(' ');
+	uart_puthex(romprops.header.ramsize);
+	uart_putc('-');
+	uart_puthexlong(rammask);
+	uart_putc(' ');
+	uart_puthex(romprops.header.romsize);
+	uart_putc('-');
+	uart_puthexlong(rommask);
+	set_saveram_mask(rammask);
+	set_rom_mask(rommask);
+
 	return (uint32_t)filesize;
 }
 

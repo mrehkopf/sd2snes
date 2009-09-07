@@ -174,7 +174,6 @@ int main(void) {
 	load_sram("/test.srm");
 	uart_putc(']');
 	set_busy_led(0);
-	set_avr_mapper(0); 
 	set_avr_ena(1);
 	_delay_ms(100);
 	uart_puts_P(PSTR("SNES GO!"));

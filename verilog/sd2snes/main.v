@@ -65,6 +65,8 @@ wire [7:0] avr_data_out;
 wire [7:0] AVR_IN_DATA;
 wire [7:0] AVR_OUT_DATA;
 wire [3:0] MAPPER;
+wire [23:0] SAVERAM_MASK;
+wire [23:0] ROM_MASK;
 
 spi snes_spi(.clk(CLK2),
              .MOSI(SPI_MOSI),
@@ -100,7 +102,9 @@ avr_cmd snes_avr_cmd(
     .spi_data_out(spi_input_data),
     .addr_out(AVR_ADDR),
     .endmessage(spi_endmessage),
-    .startmessage(spi_startmessage)
+    .startmessage(spi_startmessage),
+    .saveram_mask_out(SAVERAM_MASK),
+    .rom_mask_out(ROM_MASK)
 );
 
 my_dcm snes_dcm(.CLKIN(CLKIN),
@@ -145,7 +149,9 @@ address snes_addr(
     .IS_SAVERAM(IS_SAVERAM),
     .IS_ROM(IS_ROM),
     .AVR_ADDR(AVR_ADDR),
-    .SRAM_ADDR0(SRAM_ADDR0)
+    .SRAM_ADDR0(SRAM_ADDR0),
+    .SAVERAM_MASK(SAVERAM_MASK),
+    .ROM_MASK(ROM_MASK)
     );
     
 data snes_data(.CLK(CLK2),

@@ -31,7 +31,9 @@ module address(
     output IS_ROM,            // address mapped as ROM?
     input [23:0] AVR_ADDR,    // allow address to be set externally
     input ADDR_WRITE,
-    output SRAM_ADDR0
+    output SRAM_ADDR0,
+    input [23:0] SAVERAM_MASK,
+    input [23:0] ROM_MASK
     );
 
 reg [22:0] SRAM_ADDR_BUF;
@@ -80,11 +82,11 @@ assign IS_ROM = ( (MAPPER == 3'b000) ? ( (!SNES_ADDR[22]
                                          
 assign SRAM_ADDR_FULL = (MODE) ? AVR_ADDR
                           : ((MAPPER == 3'b000) ?
-                              (IS_SAVERAM ? SNES_ADDR[14:0] - 15'h6000
-                                          : (SNES_ADDR[22:0] & 23'b00111111111111111111111))
+                              (IS_SAVERAM ? (SNES_ADDR[14:0] - 15'h6000) & SAVERAM_MASK
+                                          : (SNES_ADDR[22:0] & ROM_MASK))
                             :(MAPPER == 3'b001) ? 
-                              (IS_SAVERAM ? SNES_ADDR[14:0]
-                                          : {1'b0, SNES_ADDR[22:16], SNES_ADDR[14:0]})
+                              (IS_SAVERAM ? SNES_ADDR[14:0] & SAVERAM_MASK
+                                          : {1'b0, SNES_ADDR[22:16], SNES_ADDR[14:0]} & ROM_MASK)
                             : 21'b0);
 
 assign SRAM_BANK = SRAM_ADDR_FULL[22:21];

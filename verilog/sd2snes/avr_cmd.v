@@ -36,7 +36,9 @@ module avr_cmd(
     output [23:0] addr_out,
     output [3:0] mapper,
     input endmessage,
-    input startmessage
+    input startmessage,
+    output [23:0] saveram_mask_out,
+    output [23:0] rom_mask_out
     );
 
 reg [3:0] MAPPER_BUF;
@@ -49,6 +51,10 @@ reg [7:0] AVR_DATA_IN_BUF;
 reg [1:0] avr_nextaddr_buf;
 wire avr_nextaddr;
 
+reg [1:0] SRAM_MASK_IDX;
+reg [23:0] SAVERAM_MASK;
+reg [23:0] ROM_MASK;
+
 assign spi_data_out = AVR_DATA_IN_BUF;
 
 initial begin
@@ -58,8 +64,6 @@ end
 always @(posedge clk) begin
    if (cmd_ready) begin
       case (cmd_data[7:4])
-         4'h2:
-            SRAM_SIZE_BUF <= cmd_data[3:0];
          4'h3:
             MAPPER_BUF <= cmd_data[3:0];
          4'h8:
@@ -77,6 +81,24 @@ always @(posedge clk) begin
                   ADDR_OUT_BUF[15:8] <= param_data;
                32'h4:
                   ADDR_OUT_BUF[7:0] <= param_data;
+            endcase
+         4'h1:
+            case (spi_byte_cnt)
+               32'h2:
+                  ROM_MASK[23:16] <= param_data;
+               32'h3:
+                  ROM_MASK[15:8] <= param_data;                  
+               32'h4:
+                  ROM_MASK[7:0] <= param_data;
+            endcase
+         4'h2:
+            case (spi_byte_cnt)
+               32'h2:
+                  SAVERAM_MASK[23:16] <= param_data;
+               32'h3:
+                  SAVERAM_MASK[15:8] <= param_data;                  
+               32'h4:
+                  SAVERAM_MASK[7:0] <= param_data;
             endcase
          4'h8:
             AVR_DATA_IN_BUF <= avr_data_in;
@@ -114,5 +136,7 @@ assign addr_out = ADDR_OUT_BUF;
 assign avr_data_out = AVR_DATA_OUT_BUF;
 assign avr_mapper = MAPPER_BUF;
 assign avr_sram_size = SRAM_SIZE_BUF;
+assign rom_mask_out = ROM_MASK;
+assign saveram_mask_out = SAVERAM_MASK;
 
 endmodule
