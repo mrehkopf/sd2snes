@@ -60,7 +60,7 @@ end
 
 /*                               HiROM:   SRAM @ Bank 0x20-0x3f, 0xa0-0xbf
                                           Offset 6000-7fff */
-assign IS_SAVERAM = ((MAPPER == 3'b000) ? (!SNES_ADDR[22]
+assign IS_SAVERAM = ((MAPPER == 3'b000 || MAPPER == 3'b010) ? (!SNES_ADDR[22]
                                            & SNES_ADDR[21] 
                                            & &SNES_ADDR[14:13]
                                            & !SNES_ADDR[15]
@@ -78,6 +78,9 @@ assign IS_ROM = ( (MAPPER == 3'b000) ? ( (!SNES_ADDR[22]
                                        |(SNES_ADDR[22]))
                 : (MAPPER == 3'b001) ? ( (SNES_ADDR[15] & !SNES_ADDR[22])
                                         |(SNES_ADDR[22]) )
+                : (MAPPER == 3'b010) ? ( (!SNES_ADDR[22]
+                                         & SNES_ADDR[15])
+                                       |(SNES_ADDR[22]))
                 : 1'b0);
                                          
 assign SRAM_ADDR_FULL = (MODE) ? AVR_ADDR
@@ -87,7 +90,10 @@ assign SRAM_ADDR_FULL = (MODE) ? AVR_ADDR
                             :(MAPPER == 3'b001) ? 
                               (IS_SAVERAM ? SNES_ADDR[14:0] & SAVERAM_MASK
                                           : {1'b0, SNES_ADDR[22:16], SNES_ADDR[14:0]} & ROM_MASK)
-                            : 21'b0);
+                            :(MAPPER == 3'b010) ?
+                              (IS_SAVERAM ? (SNES_ADDR[14:0] - 15'h6000) & SAVERAM_MASK
+                                          : ({!SNES_ADDR[23], SNES_ADDR[21:0]} & ROM_MASK))
+                            : 23'b0);
 
 assign SRAM_BANK = SRAM_ADDR_FULL[22:21];
 assign SRAM_ADDR = SRAM_ADDR_FULL[20:1];

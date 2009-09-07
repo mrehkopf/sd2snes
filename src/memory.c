@@ -86,12 +86,17 @@ uint32_t load_rom(char* filename) {
 
 	uint32_t rammask;
 	uint32_t rommask;
+
+	if(filesize > (romprops.romsize_bytes + romprops.offset)) {
+		romprops.romsize_bytes <<= 1;
+	}
+
 	if(romprops.header.ramsize == 0) {
 		rammask = 0;
 	} else {
-		rammask = ((uint32_t)1024 << (romprops.header.ramsize)) - 1;
+		rammask = romprops.ramsize_bytes - 1;
 	}
-	rommask = ((uint32_t)1024 << (romprops.header.romsize)) - 1;
+	rommask = romprops.romsize_bytes - 1;
 
 	uart_putc(' ');
 	uart_puthex(romprops.header.ramsize);
