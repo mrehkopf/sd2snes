@@ -1,6 +1,7 @@
 // insert cool lenghty disclaimer here
 
 // fpga.c: FPGA (re)programming
+// XXX TODO move SPI functions to fpga_spi.c!
 
 /*
 
