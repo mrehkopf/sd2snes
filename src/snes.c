@@ -53,11 +53,11 @@ void snes_main_loop() {
 	sram_crc = calc_sram_crc(sram_size);
 	if(sram_crc != sram_crc_old) {
 		uart_putc('U');
+		uart_puthexlong(sram_crc);
 		uart_putcrlf();
 		set_busy_led(1);
 		save_sram("/test.srm", sram_size, sram_base_addr);
 		set_busy_led(0);
 	}
 	sram_crc_old = sram_crc;
-	uart_putc('.');
 }

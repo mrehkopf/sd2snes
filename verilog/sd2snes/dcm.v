@@ -23,7 +23,9 @@ module my_dcm (
          input CLKFB,
          output CLK2X,
          output CLKFX,
-         output CLK0
+         output CLK0,
+         output LOCKED,
+         input RST
     );
 
    // DCM: Digital Clock Manager Circuit
@@ -37,15 +39,16 @@ module my_dcm (
       .CLKFX_DIVIDE(1),   // Can be any integer from 1 to 32
       .CLKFX_MULTIPLY(4), // Can be any integer from 2 to 32
       .CLKIN_DIVIDE_BY_2("FALSE"), // TRUE/FALSE to enable CLKIN divide by two feature
-      .CLKIN_PERIOD(46000.0),  // Specify period of input clock
+      .CLKIN_PERIOD(46.561),  // Specify period of input clock
       .CLKOUT_PHASE_SHIFT("NONE"), // Specify phase shift of NONE, FIXED or VARIABLE
-      .CLK_FEEDBACK("1X"),  // Specify clock feedback of NONE, 1X or 2X
+      .CLK_FEEDBACK("NONE"),  // Specify clock feedback of NONE, 1X or 2X
       .DESKEW_ADJUST("SYSTEM_SYNCHRONOUS"), // SOURCE_SYNCHRONOUS, SYSTEM_SYNCHRONOUS or
                                             //   an integer from 0 to 15
       .DFS_FREQUENCY_MODE("LOW"),  // HIGH or LOW frequency mode for frequency synthesis
       .DLL_FREQUENCY_MODE("LOW"),  // HIGH or LOW frequency mode for DLL
       .DUTY_CYCLE_CORRECTION("TRUE"), // Duty cycle correction, TRUE or FALSE
       .FACTORY_JF(16'hC080),   // FACTORY JF values
+//      .LOC("DCM_X0Y0"),
       .PHASE_SHIFT(0),     // Amount of fixed phase shift from -255 to 255
       .STARTUP_WAIT("FALSE")   // Delay configuration DONE until DCM LOCK, TRUE/FALSE
    ) DCM_inst (
@@ -68,5 +71,4 @@ module my_dcm (
       .PSINCDEC(PSINCDEC), // Dynamic phase adjust increment/decrement
       .RST(RST)        // DCM asynchronous reset input
    );
-    assign RST=0;
 endmodule

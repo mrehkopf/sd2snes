@@ -187,10 +187,5 @@ uint32_t calc_sram_crc(uint32_t size) {
 	uart_putc(hex[(crc>>24)&0xf]);
 	uart_putc(hex[(crc>>20)&0xf]);
 	uart_putc(hex[(crc>>16)&0xf]); */
-	uart_putc(hex[(crc>>12)&0xf]);
-	uart_putc(hex[(crc>>8)&0xf]);
-	uart_putc(hex[(crc>>4)&0xf]);
-	uart_putc(hex[(crc)&0xf]);
-	uart_putcrlf();
 	return crc;
 }

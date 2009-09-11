@@ -61,6 +61,10 @@
       <association xil_pn:name="PostTranslateSimulation"/>
       <library xil_pn:name="verilog"/>
     </file>
+    <file xil_pn:name="dcm2.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="Implementation"/>
+      <association xil_pn:name="BehavioralSimulation"/>
+    </file>
   </files>
 
   <properties>

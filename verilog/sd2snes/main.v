@@ -111,28 +111,64 @@ my_dcm snes_dcm(.CLKIN(CLKIN),
                   .CLK2X(CLK),
                   .CLKFB(CLKFB),
                   .CLKFX(CLK2),
-                  .CLK0(CLK0)
+                  .CLK0(CLK0),
+                  .LOCKED(DCM_LOCKED),
+                  .RST(DCM_RST)
                 );
+                
+my_dcm2 snes_dcm2(.CLKIN(CLK2),
+                 .CLKFB(CLKFB2),
+                 .CLKFX(FASTCLK),
+                 .CLK0(CLK0_2));
 
+assign CLKFB2 = CLK0_2;
+/*
+reg DCM_RESET_ACK;
+reg DCM_RST_BUF;
+reg [1:0] DCM_LOCKEDr;
+assign DCM_RST = DCM_RST_BUF;
+assign DCM_FAIL = (DCM_LOCKEDr == 2'b10);
+
+always @(posedge CLKIN) begin
+   DCM_LOCKEDr <= {DCM_LOCKEDr[0], DCM_LOCKED};
+end
+
+always @(posedge CLKIN) begin
+   if (DCM_FAIL) begin
+       DCM_RST_BUF <= 1;
+   end else begin
+       DCM_RST_BUF <= 0;
+   end
+end*/
 /*my_dcm snes_dcm2(.CLKIN(CLK),
                   .CLK2X(CLK2),
                   .CLKFB(CLKFB2),
                   .CLKFX(CLKFX2)
                 );*/
-assign CLKFB = CLK0;
+//assign CLKFB = CLK0;
 //assign CLKFB2 = CLK2;
 
 wire SNES_RW;
-reg SNES_READs;
-reg SNES_WRITEs;
-reg SNES_CSs;
+reg [1:0] SNES_READr;
+reg [1:0] SNES_WRITEr;
+reg [1:0] SNES_CSr;
+reg [1:0] SNES_CPU_CLKr;
+reg [3:0] SNES_RWr;
 
-assign SNES_RW = (SNES_READs & SNES_WRITEs);
+wire SNES_READs = (SNES_READr == 2'b11);
+wire SNES_WRITEs = (SNES_WRITEr == 2'b11);
+wire SNES_CSs = (SNES_CSr == 2'b11);
+wire SNES_CPU_CLKs = SNES_CPU_CLK; // (SNES_CPU_CLKr == 2'b11);
+wire SNES_RW_start = (SNES_RWr == 4'b1110); // falling edge marks beginning of cycle
+
+assign SNES_RW = (SNES_READ & SNES_WRITE);
 
 always @(posedge CLK2) begin
-   SNES_READs <= SNES_READ;
-   SNES_WRITEs <= SNES_WRITE;
-   SNES_CSs <= SNES_CS;
+   SNES_READr <= {SNES_READr[0], SNES_READ};
+   SNES_WRITEr <= {SNES_WRITEr[0], SNES_WRITE};
+   SNES_CSr <= {SNES_CSr[0], SNES_CS};
+   SNES_CPU_CLKr <= {SNES_CPU_CLKr[0], SNES_CPU_CLK};
+   SNES_RWr <= {SNES_RWr[2:0], SNES_RW};
 end
 reg ADDR_WRITE;
 
@@ -186,7 +222,7 @@ parameter STATE_7 = 10'b0010000000;
 parameter STATE_8 = 10'b0100000000;
 parameter STATE_9 = 10'b1000000000;
 
-reg [9:0] STATE;
+reg [10:0] STATE;
 reg [3:0] STATEIDX;
 
 reg STATE_RESET, CYCLE_RESET, CYCLE_RESET_ACK;
@@ -264,18 +300,25 @@ end
 // the minimum of 6 cycles to get everything done.
 
 always @(posedge CLK2) begin
-   if (!SNES_RW /* || !AVR_ENA */) begin
-      if (!CYCLE_RESET_ACK) 
+   if (SNES_RW_start /* || !AVR_ENA */) //begin
+//      if (!CYCLE_RESET_ACK) 
          CYCLE_RESET <= 1;
       else
          CYCLE_RESET <= 0;
-   end
+//   end
 end
 
 always @(posedge CLK2) begin
-       if (CYCLE_RESET && !CYCLE_RESET_ACK) begin
-          CYCLE_RESET_ACK <= 1;
+       if (SNES_RW_start/* && !CYCLE_RESET_ACK*/) begin
+//          CYCLE_RESET_ACK <= 1;
           STATE <= STATE_0;
+         SNES_READ_CYCLE <= SNES_READ;
+         SNES_WRITE_CYCLE <= SNES_WRITE;
+         AVR_READ_CYCLE <= AVR_READ;
+         AVR_WRITE_CYCLE <= AVR_WRITE;
+
+//       end else if (!DCM_LOCKED) begin
+//          CYCLE_RESET_ACK <= 0;  // ready for new cycle
        end else begin
            case (STATE)
               STATE_0:
@@ -311,10 +354,6 @@ always @(posedge CLK2) begin
 
    case (STATE)   
       STATE_9: begin
-         SNES_READ_CYCLE <= SNES_READs;
-         SNES_WRITE_CYCLE <= SNES_WRITEs;
-         AVR_READ_CYCLE <= AVR_READ;
-         AVR_WRITE_CYCLE <= AVR_WRITE;
          STATEIDX <= 9;
       end
       
@@ -353,6 +392,8 @@ always @(posedge CLK2) begin
       STATE_8: begin
          STATEIDX <= 0;
       end
+      default:
+         STATEIDX <= 9;
    endcase      
 end
 
