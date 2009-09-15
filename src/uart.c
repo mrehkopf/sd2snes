@@ -79,6 +79,12 @@ void uart_puthexlong(uint32_t num) {
 	uart_puthex(num&0xff);
 }
 
+void uart_puthexshort(uint16_t num) {
+	uart_puthex((num>>8)&0xff);
+	uart_puthex(num&0xff);
+}
+
+
 void uart_trace(void *ptr, uint16_t start, uint16_t len) {
   uint16_t i;
   uint8_t j;

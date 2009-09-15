@@ -36,6 +36,7 @@ unsigned char uart_getc(void);
 void uart_putc(char c);
 void uart_puthex(uint8_t num);
 void uart_puthexlong(uint32_t num);
+void uart_puthexshort(uint16_t num);
 void uart_trace(void *ptr, uint16_t start, uint16_t len);
 void uart_flush(void);
 void uart_puts_P(prog_char *text);

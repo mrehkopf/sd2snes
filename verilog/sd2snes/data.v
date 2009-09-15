@@ -51,7 +51,6 @@ assign FROM_SRAM_BYTE = (SRAM_ADDR0 ? SRAM_DATA[7:0] : SRAM_DATA[15:8]);
 assign AVR_OUT_DATA = !AVR_ENA ? (FROM_SRAM_BYTE)
                   : (AVR_OUT_MEM);
 
-// XXX assign SRAM_DATA = (SRAM_BHE ? {8'bZ, TO_SRAM_BYTE} : {TO_SRAM_BYTE, 8'bZ});
 assign SRAM_DATA[7:0] = SRAM_ADDR0 ? (!AVR_ENA ? (!AVR_WRITE ? AVR_IN_DATA : 8'bZ)
                                                 : (MODE ? (!AVR_WRITE ? AVR_IN_MEM : 8'bZ)                   
                                                         : (!SNES_WRITE ? SNES_IN_MEM : 8'bZ)))
@@ -70,22 +69,4 @@ always @(posedge CLK) begin
       AVR_OUT_MEM <= FROM_SRAM_BYTE;
 end
 
-
-/*
-always @(posedge SNES_DATA_TO_MEM) begin
-   SNES_IN_MEM <= SNES_DATA;
-end
-
-always @(posedge AVR_DATA_TO_MEM) begin
-   AVR_IN_MEM <= AVR_DATA;
-end
-
-always @(posedge SRAM_DATA_TO_SNES_MEM) begin
-   SNES_OUT_MEM <= SRAM_DATA;
-end
-
-always @(posedge SRAM_DATA_TO_AVR_MEM) begin
-   AVR_OUT_MEM <= SRAM_DATA;
-end
-*/
 endmodule

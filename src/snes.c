@@ -14,9 +14,9 @@
 
 
 uint8_t initloop=1;
-uint32_t sram_crc, sram_crc_old;
-uint32_t sram_size = 8192; // sane default
-uint32_t sram_base_addr = 0x600000; // chip 3
+uint32_t saveram_crc, saveram_crc_old;
+uint32_t saveram_size = 8192; // sane default
+uint32_t saveram_base_addr = 0x600000; // chip 3
 void snes_init() {
 	DDRD |= _BV(PD5);	// PD5 = RESET_DIR
 	DDRD |= _BV(PD6); 	// PD6 = RESET
@@ -46,18 +46,18 @@ void snes_reset(int state) {
  */
 void snes_main_loop() {
 	if(initloop) {
-		sram_crc_old = calc_sram_crc(sram_size);
-		save_sram("/test.srm", sram_size, sram_base_addr);
+		saveram_crc_old = calc_sram_crc(saveram_base_addr, saveram_size);
+		save_sram("/test.srm", saveram_size, saveram_base_addr);
 		initloop=0;
 	}
-	sram_crc = calc_sram_crc(sram_size);
-	if(sram_crc != sram_crc_old) {
+	saveram_crc = calc_sram_crc(saveram_base_addr, saveram_size);
+	if(saveram_crc != saveram_crc_old) {
 		uart_putc('U');
-		uart_puthexlong(sram_crc);
+		uart_puthexshort(saveram_crc);
 		uart_putcrlf();
 		set_busy_led(1);
-		save_sram("/test.srm", sram_size, sram_base_addr);
+		save_sram("/test.srm", saveram_size, saveram_base_addr);
 		set_busy_led(0);
 	}
-	sram_crc_old = sram_crc;
+	saveram_crc_old = saveram_crc;
 }

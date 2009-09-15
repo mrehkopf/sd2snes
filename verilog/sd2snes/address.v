@@ -26,7 +26,7 @@ module address(
     output [19:0] SRAM_ADDR,  // Address to request from SRAM
     output [3:0] ROM_SEL,     // which SRAM unit to access (active low)
     input AVR_ENA,            // enable AVR master mode (active low)
-	 input MODE,               // AVR(1) or SNES(0) ("bus phase")
+    input MODE,               // AVR(1) or SNES(0) ("bus phase")
     output IS_SAVERAM,        // address/CS mapped as SRAM?
     output IS_ROM,            // address mapped as ROM?
     input [23:0] AVR_ADDR,    // allow address to be set externally
@@ -56,6 +56,7 @@ end
    Index     Mapper     
       000      HiROM
       001      LoROM
+      010      ExHiROM
 */
 
 /*                               HiROM:   SRAM @ Bank 0x20-0x3f, 0xa0-0xbf
@@ -65,8 +66,9 @@ assign IS_SAVERAM = ((MAPPER == 3'b000 || MAPPER == 3'b010) ? (!SNES_ADDR[22]
                                            & &SNES_ADDR[14:13]
                                            & !SNES_ADDR[15]
                                            )
-/*                               LoROM:   SRAM @ Bank 0x70-0x7f, 0xf0-0xff
-                                          Offset 0000-7fff */
+/*                               LoROM:   SRAM @ Bank 0x70-0x7d, 0xf0-0xfd
+                                          Offset 0000-7fff TODO: 0000-ffff for
+                                          small ROMs */
                     :(MAPPER == 3'b001) ? (&SNES_ADDR[22:20]
                                            & (SNES_ADDR[19:16] < 4'b1110)
                                            & !SNES_ADDR[15]
@@ -77,9 +79,8 @@ assign IS_ROM = ( (MAPPER == 3'b000) ? ( (!SNES_ADDR[22]
                                          & SNES_ADDR[15])
                                        |(SNES_ADDR[22]))
                 : (MAPPER == 3'b001) ? ( (SNES_ADDR[15] & !SNES_ADDR[22])
-                                        |(SNES_ADDR[22]) )
-                : (MAPPER == 3'b010) ? ( (!SNES_ADDR[22]
-                                         & SNES_ADDR[15])
+                                        |(SNES_ADDR[22]))                                         
+                : (MAPPER == 3'b010) ? ((!SNES_ADDR[22] & SNES_ADDR[15])
                                        |(SNES_ADDR[22]))
                 : 1'b0);
                                          
@@ -89,7 +90,7 @@ assign SRAM_ADDR_FULL = (MODE) ? AVR_ADDR
                                           : (SNES_ADDR[22:0] & ROM_MASK))
                             :(MAPPER == 3'b001) ? 
                               (IS_SAVERAM ? SNES_ADDR[14:0] & SAVERAM_MASK
-                                          : {1'b0, SNES_ADDR[22:16], SNES_ADDR[14:0]} & ROM_MASK)
+                                          : ({1'b0, SNES_ADDR[22:16], SNES_ADDR[14:0]} & ROM_MASK))
                             :(MAPPER == 3'b010) ?
                               (IS_SAVERAM ? (SNES_ADDR[14:0] - 15'h6000) & SAVERAM_MASK
                                           : ({!SNES_ADDR[23], SNES_ADDR[21:0]} & ROM_MASK))
@@ -99,7 +100,6 @@ assign SRAM_BANK = SRAM_ADDR_FULL[22:21];
 assign SRAM_ADDR = SRAM_ADDR_FULL[20:1];
 
 assign ROM_SEL = (MODE) ? CS_ARRAY[SRAM_BANK] : IS_SAVERAM ? 4'b1000 : CS_ARRAY[SRAM_BANK];
-// assign ROM_SEL = 4'b0001;
 
 assign SRAM_ADDR0 = SRAM_ADDR_FULL[0];
 
