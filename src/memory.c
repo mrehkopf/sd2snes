@@ -46,9 +46,8 @@ void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
 }
 
 uint32_t load_rom(char* filename) {
-// TODO Mapper, Mirroring, Bankselect
 	snes_romprops_t romprops;
-//	set_avr_bank(0);
+	set_avr_bank(0);
 	UINT bytes_read;
 	DWORD filesize;
 	UINT count=0;
@@ -163,12 +162,12 @@ void save_sram(char* filename, uint32_t sram_size, uint32_t base_addr) {
 }
 
 
-uint32_t calc_sram_crc(uint32_t size) {
+uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
 	uint8_t data;
 	uint32_t count;
 	uint16_t crc;
 	crc=0;
-	set_avr_bank(3);
+	set_avr_addr(base_addr);
 	SPI_SS_HIGH();
 	FPGA_SS_HIGH();
 	FPGA_SS_LOW();
@@ -176,16 +175,8 @@ uint32_t calc_sram_crc(uint32_t size) {
 	spiTransferByte(0x00);
 	for(count=0; count<size; count++) {
 		data = spiTransferByte(0);
-/*		uart_putc(hex[(data>>4)]);
-		uart_putc(hex[data&0xf]);
-		uart_putc(' ');
-		_delay_ms(2);*/
 		crc += crc16_update(crc, &data, 1);
 	}
 	FPGA_SS_HIGH();
-/*	uart_putc(hex[(crc>>28)&0xf]);
-	uart_putc(hex[(crc>>24)&0xf]);
-	uart_putc(hex[(crc>>20)&0xf]);
-	uart_putc(hex[(crc>>16)&0xf]); */
 	return crc;
 }

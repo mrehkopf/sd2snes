@@ -129,17 +129,9 @@ int main(void) {
     clock_prescale_set(CLOCK_PRESCALE);
 #endif
 
-/*  BUSY_LED_SETDDR();
-  DIRTY_LED_SETDDR();
-  AUX_LED_SETDDR();
-
-  AUX_LED_OFF();
-  set_busy_led(1);
-  set_dirty_led(0);
-*/
     snes_reset(1);
     uart_init();
-    sei();
+//    sei();   // interrupts are bad for now, resets the poor AVR when inserting SD card
     _delay_ms(100);
     disk_init();
     snes_init();
@@ -151,19 +143,14 @@ int main(void) {
 
     FATFS fatfs;
     f_mount(0,&fatfs);
-    set_busy_led(0);
+    set_busy_led(1);
     uart_putc('W');
     fpga_init();
     fpga_pgm("/sd2snes/main.bit");
 	fpga_spi_init();
     uart_putc('!');
 	_delay_ms(100);
-//set_avr_bank(0);
     set_avr_ena(0);
-//    set_avr_read(1);
-//    set_avr_write(1);
-//    AVR_ADDR_RESET();
-//    set_avr_addr_en(0);
 	snes_reset(1);
 
 	uart_putc('(');
@@ -184,7 +171,7 @@ int main(void) {
 	}
 
 
- /* HERE BE LIONS */
+/* HERE BE LIONS */
 while(1)  {	
 	SPI_SS_HIGH();
 	FPGA_SS_LOW();
@@ -197,8 +184,13 @@ while(1)  {
 	spiTransferByte(0x81); // read w/ increment... hopefully
 	spiTransferByte(0x00); // 1 dummy read
 	uart_putcrlf();
-	for(uint8_t cnt=0; cnt<16; cnt++) {
+	uint8_t buff[21];
+	for(uint8_t cnt=0; cnt<21; cnt++) {
 	    uint8_t data=spiTransferByte(0x00);
+		buff[cnt]=data;
+	}
+	for(uint8_t cnt=0; cnt<21; cnt++) {
+		uint8_t data = buff[cnt];
 		_delay_ms(2);
 	    if(data>=0x20 && data <= 0x7a) {
 			uart_putc(data);
