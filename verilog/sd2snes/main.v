@@ -193,7 +193,7 @@ parameter STATE_9 = 10'b1000000000;
 reg [9:0] STATE;
 reg [3:0] STATEIDX;
 
-reg STATE_RESET, CYCLE_RESET, CYCLE_RESET_ACK;
+reg [1:0] CYCLE_RESET;
 reg SRAM_WE_MASK;
 reg SRAM_OE_MASK;
 
@@ -225,8 +225,7 @@ reg SNES_DATABUS_DIR_BUF;
 assign MODE = !AVR_ENA ? MODE_AVR : MODE_ARRAY[STATEIDX];
 
 initial begin
-   CYCLE_RESET = 0;
-   CYCLE_RESET_ACK = 0;
+   CYCLE_RESET = 2'b0;
    
    STATE = STATE_9;
    STATEIDX = 9;
@@ -249,10 +248,10 @@ initial begin
    SRAM_OE_ARRAY[2'b10] = 10'b0000011111;
    SRAM_OE_ARRAY[2'b11] = 10'b0000000000;
    
-   SNES_DATA_TO_MEM_ARRAY[1'b0] = 10'b1000000000;
+   SNES_DATA_TO_MEM_ARRAY[1'b0] = 10'b0010000000;
    SNES_DATA_TO_MEM_ARRAY[1'b1] = 10'b0000000000;
    
-   AVR_DATA_TO_MEM_ARRAY[1'b0] = 10'b0000010000;
+   AVR_DATA_TO_MEM_ARRAY[1'b0] = 10'b0000100000;
    AVR_DATA_TO_MEM_ARRAY[1'b1] = 10'b0000000000;
    
    SRAM_DATA_TO_SNES_MEM_ARRAY[1'b0] = 10'b0000000000;
@@ -268,14 +267,12 @@ end
 // the minimum of 6 SNES cycles to get everything done.
 // we have 24 internal cycles to work with. (CLKIN * 4)
 
-reg [1:0] CYCLE_RESET;
-
 always @(posedge CLK2) begin
 	CYCLE_RESET <= {CYCLE_RESET[0], SNES_RW_start};
 end
 
 always @(posedge CLK2) begin
-       if (CYCLE_RESET[1]) begin
+       if (SNES_RW_start) begin
            STATE <= STATE_0;
            SNES_READ_CYCLE <= SNES_READ;
            SNES_WRITE_CYCLE <= SNES_WRITE;

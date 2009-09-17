@@ -131,7 +131,7 @@ int main(void) {
 
     snes_reset(1);
     uart_init();
-//    sei();   // interrupts are bad for now, resets the poor AVR when inserting SD card
+    sei();   // suspected to reset the AVR when inserting an SD card
     _delay_ms(100);
     disk_init();
     snes_init();
