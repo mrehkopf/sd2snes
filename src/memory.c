@@ -14,32 +14,32 @@
 #include "fpga_spi.h"
 #include "avrcompat.h"
 #include "led.h"
-#include "filetypes.h"
+#include "smc.h"
 #include "fpga_spi.h"
 
 char* hex = "0123456789ABCDEF";
 
 void sram_readblock(void* buf, uint32_t addr, uint16_t size) {
 	uint16_t count=size;
-	void* tgt = buf;
+	uint8_t* tgt = buf;
 	set_avr_addr(addr);
 	spi_fpga();
 	spiTransferByte(0x81);	// READ
 	spiTransferByte(0x00);	// dummy
 	while(count--) {
-		*((uint8_t*)tgt++) = spiTransferByte(0x00);
+		*(tgt++) = spiTransferByte(0x00);
 	}
 	spi_sd();
 }
 
 void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
 	uint16_t count=size;
-	void* src = buf;
+	uint8_t* src = buf;
 	set_avr_addr(addr);
 	spi_fpga();
 	spiTransferByte(0x91);	// WRITE 
 	while(count--) {
-		spiTransferByte(*((uint8_t*)src++));
+		spiTransferByte(*src++);
 	}
 	spiTransferByte(0x00);	// dummy
 	spi_sd();
@@ -157,6 +157,9 @@ void save_sram(char* filename, uint32_t sram_size, uint32_t base_addr) {
         }
 		spi_sd();
         num = file_write();
+		if(file_res) {
+			uart_putc(0x30+file_res);
+		}
     }
     file_close();
 }

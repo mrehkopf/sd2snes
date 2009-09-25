@@ -47,7 +47,7 @@ void snes_reset(int state) {
 void snes_main_loop() {
 	if(initloop) {
 		saveram_crc_old = calc_sram_crc(saveram_base_addr, saveram_size);
-		save_sram("/test.srm", saveram_size, saveram_base_addr);
+		save_sram("/quite a long test filename.srm", saveram_size, saveram_base_addr);
 		initloop=0;
 	}
 	saveram_crc = calc_sram_crc(saveram_base_addr, saveram_size);
@@ -56,7 +56,7 @@ void snes_main_loop() {
 		uart_puthexshort(saveram_crc);
 		uart_putcrlf();
 		set_busy_led(1);
-		save_sram("/test.srm", saveram_size, saveram_base_addr);
+		save_sram("/quite a long test filename.srm", saveram_size, saveram_base_addr);
 		set_busy_led(0);
 	}
 	saveram_crc_old = saveram_crc;

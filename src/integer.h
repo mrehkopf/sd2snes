@@ -17,6 +17,7 @@ typedef uint8_t BYTE;
 typedef int16_t  SHORT;
 typedef uint16_t USHORT;
 typedef uint16_t WORD;
+typedef uint16_t WCHAR;
 
 /* These types are assumed as 32-bit integer */
 typedef int32_t  LONG;

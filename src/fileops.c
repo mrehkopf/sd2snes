@@ -6,12 +6,16 @@
 #include "ff.h"
 #include "fileops.h"
 
+WCHAR ff_convert(WCHAR w, UINT dir) {
+	return w;	
+}
+
 void file_init() {
 	f_mount(0, &fatfs);
 }
 
 void file_open(char* filename, BYTE flags) {
-	file_res = f_open(&file_handle, filename, flags);
+	file_res = f_open(&file_handle, (unsigned char*)filename, flags);
 }
 
 void file_close() {

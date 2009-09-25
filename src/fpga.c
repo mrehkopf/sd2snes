@@ -40,15 +40,16 @@
 #include "uart.h"
 #include "sdcard.h"
 #include "diskio.h"
+#include "integer.h"
 #include "ff.h"
 #include "fileops.h"
 #include "fpga_spi.h"
 #include "spi.h"
 #include "avrcompat.h"
 
-DWORD get_fattime(void) {
+/*DWORD get_fattime(void) {
 	return 0L;
-}
+}*/
 void set_prog_b(uint8_t val) {
 	if(val) {
 		PORTD |= _BV(PD3);

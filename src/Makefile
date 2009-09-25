@@ -100,7 +100,7 @@ FORMAT = ihex
 TARGET = $(OBJDIR)/sd2snes
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c ff.c utils.c timer.c led.c diskio.c sdcard.c spi.c crc7.c snes.c fpga.c memory.c crc16.c fileops.c fpga_spi.c filetypes.c
+SRC = main.c ff.c utils.c timer.c led.c diskio.c sdcard.c spi.c crc7.c snes.c fpga.c memory.c crc16.c fileops.c fpga_spi.c smc.c filetypes.c
 
 ifeq ($(CONFIG_UART_DEBUG),y)
   SRC += uart.c
@@ -119,8 +119,8 @@ ASRC =
 #     0 = turn off optimization. s = optimize for size.
 #     (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
 # Use s -mcall-prologues when you really need size...
-#OPT = 2
-OPT = 3 -finline-functions
+OPT = s
+#OPT = 3 -finline-functions
 
 # Debugging format.
 #     Native formats for AVR-GCC's -g are dwarf-2 [default] or stabs.
