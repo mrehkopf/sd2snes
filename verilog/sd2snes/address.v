@@ -56,15 +56,16 @@ end
    Index     Mapper     
       000      HiROM
       001      LoROM
-      010      ExHiROM
+      010      ExHiROM (48-64Mbit)
 */
 
-/*                               HiROM:   SRAM @ Bank 0x20-0x3f, 0xa0-0xbf
+/*                               HiROM:   SRAM @ Bank 0x30-0x3f, 0xb0-0xbf
                                           Offset 6000-7fff */
 assign IS_SAVERAM = ((MAPPER == 3'b000 || MAPPER == 3'b010) ? (!SNES_ADDR[22]
-                                           & SNES_ADDR[21] 
+                                           & SNES_ADDR[21:20]                                           
                                            & &SNES_ADDR[14:13]
                                            & !SNES_ADDR[15]
+                                           & SNES_CS
                                            )
 /*                               LoROM:   SRAM @ Bank 0x70-0x7d, 0xf0-0xfd
                                           Offset 0000-7fff TODO: 0000-ffff for

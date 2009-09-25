@@ -69,21 +69,30 @@
 
   <properties>
     <property xil_pn:name="Auto Implementation Top" xil_pn:value="false"/>
+    <property xil_pn:name="Combinatorial Logic Optimization" xil_pn:value="true"/>
     <property xil_pn:name="Constraints Entry" xil_pn:value="Constraints Editor"/>
     <property xil_pn:name="Device" xil_pn:value="xc3s200"/>
     <property xil_pn:name="Device Family" xil_pn:value="Spartan3"/>
+    <property xil_pn:name="Extra Effort" xil_pn:value="Normal"/>
     <property xil_pn:name="Extra Effort (Highest PAR level only)" xil_pn:value="Normal"/>
     <property xil_pn:name="Fitter Report Format" xil_pn:value="HTML"/>
+    <property xil_pn:name="Generate Asynchronous Delay Report" xil_pn:value="true"/>
+    <property xil_pn:name="Generate Detailed MAP Report" xil_pn:value="true"/>
     <property xil_pn:name="Implementation Top" xil_pn:value="Module|main"/>
     <property xil_pn:name="Implementation Top Instance Path" xil_pn:value="/main"/>
+    <property xil_pn:name="Map Effort Level" xil_pn:value="High"/>
+    <property xil_pn:name="Map Slice Logic into Unused Block RAMs" xil_pn:value="true"/>
+    <property xil_pn:name="Optimization Strategy (Cover Mode)" xil_pn:value="Speed"/>
     <property xil_pn:name="PROP_BehavioralSimTop" xil_pn:value="Module|main_tf2"/>
     <property xil_pn:name="PROP_DesignName" xil_pn:value="sd2snes"/>
     <property xil_pn:name="PROP_PostParSimTop" xil_pn:value="Module|main_tf2"/>
     <property xil_pn:name="Package" xil_pn:value="tq144"/>
+    <property xil_pn:name="Perform Timing-Driven Packing" xil_pn:value="true"/>
     <property xil_pn:name="Place &amp; Route Effort Level (Overall)" xil_pn:value="High"/>
     <property xil_pn:name="Placer Effort Level (Overrides Overall Level)" xil_pn:value="High"/>
     <property xil_pn:name="Preferred Language" xil_pn:value="Verilog"/>
     <property xil_pn:name="Project Description" xil_pn:value="sd2snes"/>
+    <property xil_pn:name="Register Duplication" xil_pn:value="On"/>
     <property xil_pn:name="Router Effort Level (Overrides Overall Level)" xil_pn:value="High"/>
     <property xil_pn:name="Selected Simulation Root Source Node Behavioral" xil_pn:value="Module|main_tf2"/>
     <property xil_pn:name="Selected Simulation Root Source Node Post-Route" xil_pn:value="Module|main_tf2"/>

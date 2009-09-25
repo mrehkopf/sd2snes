@@ -47,8 +47,7 @@
 #include "fpga_spi.h"
 #include "spi.h"
 #include "avrcompat.h"
-
-char stringbuf[100];
+#include "filetypes.h"
 
 /* Make sure the watchdog is disabled as soon as possible    */
 /* Copy this code to your bootloader if you use one and your */
@@ -140,7 +139,6 @@ int main(void) {
     uart_putcrlf();
 
 	file_init();
-
     FATFS fatfs;
     f_mount(0,&fatfs);
     set_busy_led(1);
@@ -160,12 +158,29 @@ int main(void) {
 	uart_putc('[');
 	load_sram("/test.srm");
 	uart_putc(']');
+	*fs_path=0;
+	uint16_t curr_dir_id = scan_dir(fs_path, 0); // generate files footprint
+	dprintf("curr dir id = %x\n", curr_dir_id);
+	uint16_t saved_dir_id;
+	if((get_db_id(&saved_dir_id) != FR_OK)	// no database?
+       || saved_dir_id != curr_dir_id) {	// files changed?
+		dprintf("saved dir id = %x\n", saved_dir_id);
+		_delay_ms(50);
+		dprintf("rebuilding database...");
+		_delay_ms(50);
+		curr_dir_id = scan_dir(fs_path, 1);	// then rebuild database
+		sram_writeblock(&curr_dir_id, 0x600000, 2);
+		save_sram("/sd2snes/sd2snes.db", 0x10000, 0x600000);
+		dprintf("done\n"); 
+	}
+
 	set_busy_led(0);
 	set_avr_ena(1);
 	_delay_ms(100);
-	uart_puts_P(PSTR("SNES GO!"));
+	uart_puts_P(PSTR("SNES GO!\n"));
 	snes_reset(0);
-	
+
+
 	while(1) {
 		snes_main_loop();
 	}
@@ -173,14 +188,8 @@ int main(void) {
 
 /* HERE BE LIONS */
 while(1)  {	
-	SPI_SS_HIGH();
-	FPGA_SS_LOW();
-	spiTransferByte(0x00);
-	spiTransferByte(0x00);
-	spiTransferByte(0x7f);
-	spiTransferByte(0xc0);
-	FPGA_SS_HIGH();
-	FPGA_SS_LOW();
+	set_avr_addr(0x600000);
+	spi_fpga();
 	spiTransferByte(0x81); // read w/ increment... hopefully
 	spiTransferByte(0x00); // 1 dummy read
 	uart_putcrlf();
@@ -202,7 +211,7 @@ while(1)  {
 	    }
 //		set_avr_bank(3);
 	} 
-	FPGA_SS_HIGH();
+	spi_sd();
 }
 	while(1);
 }
