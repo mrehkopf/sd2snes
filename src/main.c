@@ -170,7 +170,10 @@ int main(void) {
 		_delay_ms(50);
 		curr_dir_id = scan_dir(fs_path, 1);	// then rebuild database
 		sram_writeblock(&curr_dir_id, 0x600000, 2);
-		save_sram("/sd2snes/sd2snes.db", 0x10000, 0x600000);
+		uint32_t endaddr;
+		sram_readblock(&endaddr, 0x600004, 4);
+		dprintf("%lx\n", endaddr);
+		save_sram("/sd2snes/sd2snes.db", endaddr-0x600000, 0x600000);
 		dprintf("done\n"); 
 	}
 
@@ -211,7 +214,7 @@ while(1)  {
 	    }
 //		set_avr_bank(3);
 	} 
-	spi_sd();
+	spi_none();
 }
 	while(1);
 }

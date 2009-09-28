@@ -1,6 +1,7 @@
 // insert cool lengthy disclaimer here
 // fileops.c: convenience
 
+#include <util/delay.h>
 #include "config.h"
 #include "uart.h"
 #include "ff.h"
@@ -14,6 +15,9 @@ void file_init() {
 	f_mount(0, &fatfs);
 }
 
+void file_open_by_filinfo(FILINFO* fno) {
+	file_res = l_openfilebycluster(&fatfs, &file_handle, (UCHAR*)"", fno->clust, fno->fsize);
+}
 void file_open(char* filename, BYTE flags) {
 	file_res = f_open(&file_handle, (unsigned char*)filename, flags);
 }
@@ -37,8 +41,9 @@ UINT file_write() {
 UINT file_readblock(void* buf, uint32_t addr, uint16_t size) {
 	UINT bytes_read;
 	file_res = f_lseek(&file_handle, addr);
-	if(file_res) return 0;
+	if(file_res) { dprintf("no lseek %d\n", file_res); _delay_ms(30); return 0;}
 	file_res = f_read(&file_handle, buf, size, &bytes_read);
+	if(file_res) { dprintf("no read %d\n", file_res); _delay_ms(30); }
 	return bytes_read;
 }
 

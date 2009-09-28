@@ -37,6 +37,11 @@ void spi_sd(void) {
 	SPI_SS_LOW();
 }
 
+void spi_none(void) {
+	FPGA_SS_HIGH();
+	SPI_SS_HIGH();
+}
+
 void fpga_spi_init(void) {
 	DDRC = _BV(PC7);
 	FPGA_SS_HIGH();
@@ -48,7 +53,7 @@ void set_avr_addr(uint32_t address) {
 	spiTransferByte((address>>16)&0xff);
 	spiTransferByte((address>>8)&0xff);
 	spiTransferByte((address)&0xff);
-	spi_sd();
+	spi_none();
 }
 
 void set_saveram_mask(uint32_t mask) {
@@ -57,7 +62,7 @@ void set_saveram_mask(uint32_t mask) {
 	spiTransferByte((mask>>16)&0xff);
 	spiTransferByte((mask>>8)&0xff);
 	spiTransferByte((mask)&0xff);
-	spi_sd();
+	spi_none();
 }
 
 void set_rom_mask(uint32_t mask) {
@@ -66,5 +71,5 @@ void set_rom_mask(uint32_t mask) {
 	spiTransferByte((mask>>16)&0xff);
 	spiTransferByte((mask>>8)&0xff);
 	spiTransferByte((mask)&0xff);
-	spi_sd();
+	spi_none();
 }

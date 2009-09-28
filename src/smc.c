@@ -60,6 +60,8 @@ void smc_id(snes_romprops_t* props) {
 	for(uint8_t num = 0; num < 6; num++) {
 		file_readblock(header, hdr_addr[num], sizeof(snes_header_t));
 		if(file_res) {
+			dprintf("uh oh... %d\n", file_res);
+			_delay_ms(30);
 			score = 0;
 		} else {
 			score = smc_headerscore(header);

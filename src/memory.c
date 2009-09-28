@@ -29,20 +29,22 @@ void sram_readblock(void* buf, uint32_t addr, uint16_t size) {
 	while(count--) {
 		*(tgt++) = spiTransferByte(0x00);
 	}
-	spi_sd();
+	spi_none();
 }
 
 void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
-	uint16_t count=size;
-	uint8_t* src = buf;
+	uint16_t count=size>>1;
+	uint16_t* src = buf;
 	set_avr_addr(addr);
 	spi_fpga();
 	spiTransferByte(0x91);	// WRITE 
 	while(count--) {
-		spiTransferByte(*src++);
+		spiTransferByte((*src)>>8);
+		spiTransferByte((*src)&0xff);
+		src++;
 	}
 	spiTransferByte(0x00);	// dummy
-	spi_sd();
+	spi_none();
 }
 
 uint32_t load_rom(char* filename) {
@@ -79,13 +81,14 @@ uint32_t load_rom(char* filename) {
 		FPGA_SS_HIGH();
 	}
 	file_close();
+	spi_none();
 	set_avr_mapper(romprops.mapper_id);
 	uart_puthex(romprops.header.map);
 	uart_putc(0x30+romprops.mapper_id);
 
 	uint32_t rammask;
 	uint32_t rommask;
-
+	
 	if(filesize > (romprops.romsize_bytes + romprops.offset)) {
 		romprops.romsize_bytes <<= 1;
 	}
@@ -141,7 +144,7 @@ void save_sram(char* filename, uint32_t sram_size, uint32_t base_addr) {
     uint32_t count = 0;
 	uint32_t num = 0;
 
-	spi_sd();
+	spi_none();
     file_open(filename, FA_CREATE_ALWAYS | FA_WRITE);
 	if(file_res) {
 		uart_putc(0x30+file_res);
@@ -155,7 +158,7 @@ void save_sram(char* filename, uint32_t sram_size, uint32_t base_addr) {
             file_buf[j] = spiTransferByte(0x00);
             count++;
         }
-		spi_sd();
+		spi_none();
         num = file_write();
 		if(file_res) {
 			uart_putc(0x30+file_res);
@@ -171,15 +174,13 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
 	uint16_t crc;
 	crc=0;
 	set_avr_addr(base_addr);
-	SPI_SS_HIGH();
-	FPGA_SS_HIGH();
-	FPGA_SS_LOW();
+	spi_fpga();
 	spiTransferByte(0x81);
 	spiTransferByte(0x00);
 	for(count=0; count<size; count++) {
 		data = spiTransferByte(0);
 		crc += crc16_update(crc, &data, 1);
 	}
-	FPGA_SS_HIGH();
+	spi_none();
 	return crc;
 }
