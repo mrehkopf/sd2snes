@@ -49,10 +49,12 @@ module main(
     output SPI_MISO,
     input SPI_SS,
     input SPI_SCK,
-    input AVR_ENA
+    input AVR_ENA,
     
    /* debug */
-
+   output DCM_IN_STOPPED,
+   output DCM_FX_STOPPED
+   //input DCM_RST
     );
 wire [7:0] spi_cmd_data;
 wire [7:0] spi_param_data;
@@ -107,15 +109,49 @@ avr_cmd snes_avr_cmd(
     .rom_mask_out(ROM_MASK)
 );
 
+wire [7:0] DCM_STATUS;
+assign DCM_FX_STOPPED = DCM_STATUS[2];
+assign DCM_IN_STOPPED = DCM_STATUS[1];
 my_dcm snes_dcm(.CLKIN(CLKIN),
-                  .CLK2X(CLK),
-                  .CLKFB(CLKFB),
                   .CLKFX(CLK2),
-                  .CLK0(CLK0),
                   .LOCKED(DCM_LOCKED),
-                  .RST(DCM_RST)
+                  .RST(DCM_RST),
+                  .STATUS(DCM_STATUS)
                 );
+assign DCM_RST = 1'b0;
+                
+/*always @(posedge CLKIN) begin
+   if(DCM_FX_STOPPED)
+      DCM_RST <= 1'b1;
+   else
+      DCM_RST <= 1'b0;
+end
+*/
+/*reg DO_DCM_RESET, DCM_RESETTING;
+reg DCM_RSTr;
+assign DCM_RST = DCM_RSTr;
+reg [2:0] DCM_RESET_CNT;
+initial DO_DCM_RESET = 1'b0;
+initial DCM_RESETTING = 1'b0;
 
+always @(posedge CLKIN) begin
+   if(!DCM_LOCKED && !DCM_RESETTING) begin
+      DCM_RSTr <= 1'b1;
+      DO_DCM_RESET <= 1'b1;
+      DCM_RESET_CNT <= 3'b0;
+   end else if (DO_DCM_RESET) begin
+      DCM_RSTr <= 1'b0;
+      DCM_RESET_CNT <= DCM_RESET_CNT + 1;
+   end
+end
+
+always @(posedge CLKIN) begin
+   if (DO_DCM_RESET)
+      DCM_RESETTING <= 1'b1;
+   else if (DCM_RESET_CNT == 3'b110)
+      DCM_RESETTING <= 1'b0;
+end
+*/
 wire SNES_RW;
 reg [1:0] SNES_READr;
 reg [1:0] SNES_WRITEr;

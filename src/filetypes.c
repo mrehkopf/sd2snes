@@ -118,7 +118,7 @@ FRESULT get_db_id(uint16_t* id) {
 	file_open("/sd2snes/sd2snes.db", FA_READ);
 	if(file_res == FR_OK) {
 		file_readblock(id, 0, 2);
-/* XXX */ *id=0xdead;
+/* XXX */// *id=0xdead;
 		file_close();
 	} else {
 		*id=0xdead;

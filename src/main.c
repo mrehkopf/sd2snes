@@ -127,7 +127,7 @@ int main(void) {
 #ifdef CLOCK_PRESCALE
     clock_prescale_set(CLOCK_PRESCALE);
 #endif
-
+	spi_none();
     snes_reset(1);
     uart_init();
     sei();   // suspected to reset the AVR when inserting an SD card
@@ -145,6 +145,7 @@ int main(void) {
     uart_putc('W');
     fpga_init();
     fpga_pgm("/sd2snes/main.bit");
+	_delay_ms(100);
 	fpga_spi_init();
     uart_putc('!');
 	_delay_ms(100);
