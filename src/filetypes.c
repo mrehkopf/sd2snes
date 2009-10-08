@@ -25,7 +25,7 @@ uint16_t scan_dir(char* path, char mkdb) {
 	static uint32_t db_tgt;
 	if(depth==0) {
 		crc = 0;
-		db_tgt = 0x600010;
+		db_tgt = SRAM_WORK_ADDR+0x10;
 	}
 //	dprintf("path=%s depth=%d ptr=%lx\n", path, depth, db_tgt);
 //	_delay_ms(50);
@@ -93,7 +93,7 @@ uint16_t scan_dir(char* path, char mkdb) {
     } else uart_putc(0x30+res);
 //	dprintf("%x\n", crc);
 //	_delay_ms(50);
-	sram_writeblock(&db_tgt, 0x600004, sizeof(db_tgt));
+	sram_writeblock(&db_tgt, SRAM_WORK_ADDR+4, sizeof(db_tgt));
 	return crc;
 }
 

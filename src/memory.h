@@ -3,6 +3,9 @@
 
 #ifndef MEMORY_H
 #define MEMORY_H
+
+#define SRAM_WORK_ADDR	(0x100000L)
+
 	uint32_t load_rom(char* filename);
 	uint32_t load_sram(char* filename);
 	void sram_readblock(void* buf, uint32_t addr, uint16_t size);

@@ -58,14 +58,16 @@ void smc_id(snes_romprops_t* props) {
 	snes_header_t* header = &(props->header);
 	
 	for(uint8_t num = 0; num < 6; num++) {
-		file_readblock(header, hdr_addr[num], sizeof(snes_header_t));
-		if(file_res) {
-			dprintf("uh oh... %d\n", file_res);
-			_delay_ms(30);
+		if(!file_readblock(header, hdr_addr[num], sizeof(snes_header_t)) 
+		|| file_res) {
+//			dprintf("uh oh... %d\n", file_res);
+//			_delay_ms(30);
 			score = 0;
 		} else {
 			score = smc_headerscore(header);
 		}
+//		dprintf("%d: offset = %lX; score = %d\n", num, hdr_addr[num], score);
+//		_delay_ms(100);
 		if(score>=maxscore) {
 			score_idx=num;
 			maxscore=score;
@@ -79,6 +81,8 @@ void smc_id(snes_romprops_t* props) {
 	}
 	
 	// restore the chosen one
+//	dprintf("winner is %d\n", score_idx);
+//	_delay_ms(30);
 	file_readblock(header, hdr_addr[score_idx], sizeof(snes_header_t));
 	switch(header->map & 0xef) {
 		case 0x20:
