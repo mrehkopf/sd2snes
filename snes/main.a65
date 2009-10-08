@@ -1,13 +1,35 @@
 
 GAME_MAIN:
 	jsr snes_init
-
+	jsr tests
 	- wai
 	bra -
 
-
+tests:
+	sep #$30 : .as : .xs	;8-bit accumulator and index
+	lda #$0f
+	sta $2100		;screen on, full brightness
+	lda #$4f
+	sta $2132
+	stz $2121
+	lda #$0
+	ldx #$0
+	ldy #$0
+-
+	inx
+	bne +
+	iny
++
+	stz $2121
+	stx $2122
+	sty $2122
+bra -
+	rts
+	
 snes_init:
 	sep #$20 : .as	;8-bit accumulator
+	lda #$01
+	sta $420d		; FAAAAAST
 	lda #$8f
 	sta $2100		;INIDISP: force blank
 	stz $2101		;
