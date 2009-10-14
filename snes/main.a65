@@ -1,0 +1,249 @@
+
+GAME_MAIN:
+	jsr snes_init
+	jsr font_dma
+	jsr tests
+	- wai
+	bra -
+
+font_dma:
+	sep #$20 : .as
+	rep #$10 : .xl
+	stz $420b
+	stz $420c
+	lda #$01		;A to B; (direct); non-fixed, inc, two reg
+	sta $4300		;to DMA ch.0 ctrl
+	lda #^font		;font source bank
+	ldy #!font		;font source address
+	sty $4302		;address -> 4302,4303
+	sta $4304		;bank -> 4304
+	ldx #$1000		;transfer size
+	stx $4305		;to reg
+	stz $2116		;VRAM address 0
+	stz $2117		;
+	lda #$18		;VRAM data port
+	sta $4301		;to channel 0 tgt address
+	lda #$01		;ch 0 enable
+	sta $420b		;GPDMA GO!
+	lda #$09		;A to B; fixed, two reg
+	sta $4300
+	lda #^zero
+	ldy #!zero
+	sty $4302
+	sta $4304
+	ldx #$1000
+	stx $4305		;zero 4096b of VRAM
+	ldx #$3000
+	stx $2116		;from 0x6000-0x6fff
+	lda #$18		;VRAM data port
+	sta $4301		;to channel 0 tgt address
+	lda #$01
+	sta $420b
+
+; copy logo
+	lda #$01		;A to B; (direct); non-fixed, inc, two reg
+	sta $4300		;to DMA ch.0 ctrl
+	lda #^logo		;font source bank
+	ldy #!logo		;font source address
+	sty $4302		;address -> 4302,4303
+	sta $4304		;bank -> 4304
+	ldx #$4b00		;transfer size
+	stx $4305		;to reg
+	ldx #$800		;after font
+	stx $2116		;VRAM address 0x1000
+	lda #$18		;VRAM data port
+	sta $4301		;to channel 0 tgt address
+	lda #$01		;ch 0 enable
+	sta $420b		;GPDMA GO!
+
+; copy logo tilemap
+	lda #$01		;A to B; (direct); non-fixed, inc, two reg
+	sta $4300		;to DMA ch.0 ctrl
+	lda #^logomap	;font source bank
+	ldy #!logomap	;font source address
+	sty $4302		;address -> 4302,4303
+	sta $4304		;bank -> 4304
+	ldx #$300		;transfer size
+	stx $4305		;to reg
+	ldx #$3400		;BG1 tilemap
+	stx $2116		;VRAM address 0x6800
+	lda #$18		;VRAM data port
+	sta $4301		;to channel 0 tgt address
+	lda #$01		;ch 0 enable
+	sta $420b		;GPDMA GO!
+
+;copy test text
+	lda #$00		;A->B, inc, 1 reg
+	sta $4300
+	lda #^hello
+	ldy #!hello
+	sty $4302
+	sta $4304
+	ldx #$c			;24 bytes
+	stx $4305
+	ldx #$3020
+	stx $2116
+	lda #$18
+	sta $4301
+	stz $2115		;increment after LOW byte (write to 2118)
+	lda #$01
+	sta $420b
+
+	lda #$08		;A->B, fixed, 1 reg
+	sta $4300
+	lda #^bg2tile
+	ldy #!bg2tile
+	sty $4302
+	sta $4304
+	ldx #$c			;24 bytes
+	stx $4305
+	ldx #$3020
+	stx $2116
+	lda #$19
+	sta $4301
+	lda #$80
+	sta $2115		;increment after HIGH byte (write to 2119)
+	lda #$01
+	sta $420b
+
+
+	stz $2121		;palette index 0
+	lda #$00
+	sta $4300
+	lda #^palette
+	ldy #!palette
+	sty $4302
+	sta $4304
+	ldx #$200
+	stx $4305
+	lda #$22		;CG RAM port
+	sta $4301
+	lda #$01
+	sta $420b
+	rts
+
+tests:
+	sep #$30 : .as : .xs	;8-bit accumulator and index
+	lda #$0f
+	sta $2100		;screen on, full brightness
+	lda #$04		;mode 4, mode 5 is a bitch :(
+	sta $2105
+	lda #$34		;Tilemap addr 0x6800
+	sta $2107		;for BG1
+	lda #$30		;Tilemap addr 0x6000
+	sta $2108		;for BG2
+	lda #$03		;enable BG1+BG2 
+	sta $212c		;BG Main
+	sta $212d		;BG Sub
+	lda #$00		;224
+	sta $2133		;
+	lda #$00
+	sta $2130
+	stz $2121
+	lda #$0
+	ldx #$0
+	ldy #$0
+	- bra -
+-
+	inx
+	bne +
+	iny
++
+	stz $2121
+	stx $2122
+	sty $2122
+bra -
+	rts
+	
+snes_init:
+	sep #$20 : .as	;8-bit accumulator
+	lda #$01
+	sta $420d		; FAAAAAST
+	lda #$8f
+	sta $2100		;INIDISP: force blank
+	stz $2101		;
+	stz $2102		;
+	stz $2103		;
+	stz $2104		; (OAM Data?!)
+	stz $2104		; (OAM Data?!)
+	stz $2105		;
+	stz $2106		;
+	stz $2107		;
+	stz $2108		;
+	stz	$2109		;
+	stz $210a		;
+	stz $210b		;
+	stz $210c		;
+	stz $210d		;
+	stz $210d		;
+	stz $210e		;
+	stz $210e		;
+	stz $210f		;
+	stz $210f		;
+	lda #$00
+	sta $2110		;
+	stz $2110		;
+	stz $2111		;
+	stz $2111		;
+	stz $2112		;
+	stz $2112		;
+	stz $2113		;
+	stz $2113		;
+	stz $2114		;
+	stz $2114		;
+	lda #$80		
+	sta $2115		;
+	stz $2116		;
+	stz $2117		;
+	stz $2118		;(VRAM Data?!)
+	stz $2119		;(VRAM Data?!)
+	stz $211a		;
+	stz $211b		;
+	lda #$01
+	sta $211b		;
+	stz $211c		;
+	stz	$211c		;
+	stz $211d		;
+	stz $211d		;
+	stz $211e		;
+	sta $211e		;
+	stz $211f		;
+	stz $211f		;
+	stz $2120		;
+	stz $2120		;
+	stz $2121		;
+	stz $2122		; (CG Data?!)
+	stz $2123		;
+	stz $2124		;
+	stz $2125		;
+	stz $2126		;
+	stz $2127		;
+	stz $2128		;
+	stz $2129		;
+	stz $212a		;
+	stz $212b		;
+	stz $212c		;
+	stz $212d		;
+	stz $212e		;
+	lda #$30
+	sta $2130		;
+	stz $2131		;
+	lda #$e0
+	sta $2132		;
+	stz $2133		;
+	stz $4200		;
+	lda #$ff
+	sta $4201		;
+	stz $4202		;
+	stz $4203		;
+	stz $4204		;
+	stz $4205		;
+	stz $4206		;
+	stz $4207		;
+	stz $4208		;
+	stz $4209		;
+	stz $420a		;
+	stz $420b		;
+	stz $420c		;
+	rts
+

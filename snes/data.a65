@@ -1,0 +1,3 @@
+.data
+testvar	.byt 0
+testvar2	.word 0

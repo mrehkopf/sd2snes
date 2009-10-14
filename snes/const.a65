@@ -1,0 +1,3 @@
+zero	.word	0
+hello	.byt "Hello World!"
+bg2tile	.byt $20

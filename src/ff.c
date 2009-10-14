@@ -1488,7 +1488,6 @@ FRESULT f_open (
       dir[DIR_Attr] = 0;                  /* Reset attribute */
       ps = get_fattime();
       ST_DWORD(&dir[DIR_CrtTime], ps);    /* Created time */
-      sync(fs); /* not sure if this is needed in all cases, but kept */
       mode |= FA__WRITTEN;        /* Set file changed flag */
     }
   }
@@ -1504,6 +1503,8 @@ FRESULT f_open (
   }
 
   fp->dir_sect = FSBUF.sect;          /* Pointer to the directory entry */
+  /* Moved sync from mode & FA_CREATE_ALWAYS because it can reset FSBUF.sect */
+  sync(fs); /* not sure if this is needed in all cases, but kept */
   fp->dir_ptr = dir;
 #endif
   fp->flag = mode;                    /* File access mode */
@@ -1532,6 +1533,26 @@ FRESULT l_opencluster (
 
   return FR_OK;
 }
+
+FRESULT l_openfilebycluster (
+  FATFS *fs,           /* Pointer to file system object */
+  FIL *fp,             /* Pointer to the blank file object */
+  const UCHAR *path,         
+  DWORD clust,         /* Cluster number to be opened */
+  DWORD fsize          /* File size to be assumed */
+)
+{
+  auto_mount(&path, &fs, 0);
+  fp->flag = FA_READ;
+  fp->org_clust = clust;
+  fp->fsize = fsize;
+  fp->fptr = 0;
+  fp->csect = 1;
+  fp->fs = fs;
+
+  return FR_OK;
+}
+
 
 
 

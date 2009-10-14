@@ -29,6 +29,7 @@ typedef struct _snes_header {
 typedef struct _snes_romprops {
 	uint16_t offset;			// start of actual ROM image
 	uint8_t mapper_id;			// FPGA mapper
+	uint8_t pad1;				// for alignment
 	uint32_t expramsize_bytes;	// ExpRAM size in bytes
 	uint32_t ramsize_bytes;		// CartRAM size in bytes
 	uint32_t romsize_bytes;		// ROM size in bytes (rounded up)

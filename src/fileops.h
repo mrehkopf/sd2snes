@@ -12,6 +12,7 @@ FRESULT file_res;
 
 void file_init(void);
 void file_open(char* filename, BYTE flags);
+void file_open_by_filinfo(FILINFO* fno);
 void file_close(void);
 UINT file_read(void);
 UINT file_write(void);

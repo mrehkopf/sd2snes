@@ -127,7 +127,7 @@ int main(void) {
 #ifdef CLOCK_PRESCALE
     clock_prescale_set(CLOCK_PRESCALE);
 #endif
-
+	spi_none();
     snes_reset(1);
     uart_init();
     sei();   // suspected to reset the AVR when inserting an SD card
@@ -145,20 +145,14 @@ int main(void) {
     uart_putc('W');
     fpga_init();
     fpga_pgm("/sd2snes/main.bit");
+	_delay_ms(100);
 	fpga_spi_init();
     uart_putc('!');
 	_delay_ms(100);
     set_avr_ena(0);
 	snes_reset(1);
 
-	uart_putc('(');
-	load_rom("/test.smc");
-	uart_putc(')');
-
-	uart_putc('[');
-	load_sram("/test.srm");
-	uart_putc(']');
-	*fs_path=0;
+    *fs_path=0;
 	uint16_t curr_dir_id = scan_dir(fs_path, 0); // generate files footprint
 	dprintf("curr dir id = %x\n", curr_dir_id);
 	uint16_t saved_dir_id;
@@ -169,10 +163,21 @@ int main(void) {
 		dprintf("rebuilding database...");
 		_delay_ms(50);
 		curr_dir_id = scan_dir(fs_path, 1);	// then rebuild database
-		sram_writeblock(&curr_dir_id, 0x600000, 2);
-		save_sram("/sd2snes/sd2snes.db", 0x10000, 0x600000);
+		sram_writeblock(&curr_dir_id, SRAM_WORK_ADDR, 2);
+		uint32_t endaddr;
+		sram_readblock(&endaddr, SRAM_WORK_ADDR+4, 4);
+		dprintf("%lx\n", endaddr);
+		save_sram("/sd2snes/sd2snes.db", endaddr-SRAM_WORK_ADDR, SRAM_WORK_ADDR);
 		dprintf("done\n"); 
 	}
+	uart_putc('[');
+	load_sram("/test.srm");
+	uart_putc(']');
+
+	uart_putc('(');
+	load_rom("/test.smc");
+	uart_putc(')');
+
 
 	set_busy_led(0);
 	set_avr_ena(1);
@@ -211,7 +216,7 @@ while(1)  {
 	    }
 //		set_avr_bank(3);
 	} 
-	spi_sd();
+	spi_none();
 }
 	while(1);
 }
