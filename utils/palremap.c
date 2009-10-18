@@ -18,8 +18,8 @@ int main(int argc, char **argv) {
 	while(1) {
 		uint8_t c=fgetc(in);
 		if(feof(in))break;
-		if(c>=1 && c<=43) {
-			c+=212;
+		if(c>=1 && c<=48) {
+			c+=207;
 		}
 		fputc(c, out);
 	}
