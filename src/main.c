@@ -125,39 +125,39 @@ int main(void) {
 #endif
 
 #ifdef CLOCK_PRESCALE
-    clock_prescale_set(CLOCK_PRESCALE);
+	clock_prescale_set(CLOCK_PRESCALE);
 #endif
 	spi_none();
-    snes_reset(1);
-    uart_init();
-    sei();   // suspected to reset the AVR when inserting an SD card
-    _delay_ms(100);
-    disk_init();
-    snes_init();
-    timer_init();
-    uart_puts_P(PSTR("\nsd2snes " VERSION));
-    uart_putcrlf();
+	snes_reset(1);
+	uart_init();
+	sei();   // suspected to reset the AVR when inserting an SD card
+	_delay_ms(100);
+	disk_init();
+	snes_init();
+	timer_init();
+	uart_puts_P(PSTR("\nsd2snes " VERSION));
+	uart_putcrlf();
 
 	file_init();
-    FATFS fatfs;
-    f_mount(0,&fatfs);
-    set_busy_led(1);
-    uart_putc('W');
-    fpga_init();
-    fpga_pgm("/sd2snes/main.bit");
+	FATFS fatfs;
+	f_mount(0,&fatfs);
+	set_busy_led(1);
+	uart_putc('W');
+	fpga_init();
+	fpga_pgm("/sd2snes/main.bit");
 	_delay_ms(100);
 	fpga_spi_init();
-    uart_putc('!');
+	uart_putc('!');
 	_delay_ms(100);
-    set_avr_ena(0);
+	set_avr_ena(0);
 	snes_reset(1);
 
-    *fs_path=0;
+	*fs_path=0;
 	uint16_t curr_dir_id = scan_dir(fs_path, 0); // generate files footprint
 	dprintf("curr dir id = %x\n", curr_dir_id);
 	uint16_t saved_dir_id;
 	if((get_db_id(&saved_dir_id) != FR_OK)	// no database?
-       || saved_dir_id != curr_dir_id) {	// files changed?
+	|| saved_dir_id != curr_dir_id) {	// files changed?
 		dprintf("saved dir id = %x\n", saved_dir_id);
 		_delay_ms(50);
 		dprintf("rebuilding database...");
@@ -200,22 +200,22 @@ while(1)  {
 	uart_putcrlf();
 	uint8_t buff[21];
 	for(uint8_t cnt=0; cnt<21; cnt++) {
-	    uint8_t data=spiTransferByte(0x00);
+		uint8_t data=spiTransferByte(0x00);
 		buff[cnt]=data;
 	}
 	for(uint8_t cnt=0; cnt<21; cnt++) {
 		uint8_t data = buff[cnt];
 		_delay_ms(2);
-	    if(data>=0x20 && data <= 0x7a) {
+		if(data>=0x20 && data <= 0x7a) {
 			uart_putc(data);
-	    } else {
+		} else {
 //			uart_putc('.');
 			uart_putc("0123456789ABCDEF"[data>>4]);
 			uart_putc("0123456789ABCDEF"[data&15]);
 			uart_putc(' ');
-	    }
+		}
 //		set_avr_bank(3);
-	} 
+	}
 	spi_none();
 }
 	while(1);
