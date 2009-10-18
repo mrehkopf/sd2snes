@@ -1,3 +1,28 @@
 .data
-testvar	.byt 0
-testvar2	.word 0
+;don't anger the stack!
+;padding is necessary because snescom wouldn't heed *=$7E0200.
+stack	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+;----------parameters for text output----------
+print_x	.byt 0		;x coordinate
+	.byt 0
+print_y	.byt 0		;y coordinate
+	.byt 0
+print_src	.word 0	;source data address
+print_bank	.byt 0	;source data bank
+print_pal	.byt 0	;palette number for text output

@@ -1,3 +1,76 @@
-zero	.word	0
-hello	.byt "Hello World!"
-bg2tile	.byt $20
+zero		.word	0
+bg2tile		.byt $20
+hdma_pal	.byt 44
+		.byt $60, $2d
+		.byt 24
+		.byt $00, $00
+		.byt 2
+		.byt $60, $2d
+		.byt 10
+		.byt $00, $00
+		.byt 10
+		.byt $20, $04
+		.byt 10
+		.byt $40, $08
+		.byt 10
+		.byt $60, $0c
+		.byt 10
+		.byt $80, $10
+		.byt 10
+		.byt $a0, $14
+		.byt 10
+		.byt $c0, $18
+		.byt 10
+		.byt $e0, $1c
+		.byt 10
+		.byt $00, $21
+		.byt 10
+		.byt $20, $25
+		.byt 10
+		.byt $40, $29
+		.byt 32
+		.byt $60, $2d
+		.byt 2
+		.byt $20, $04
+		.byt 1
+		.byt $60, $2d
+		.byt $00
+hdma_cg_addr	.byt $f0
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $f0
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00, $00, $00, $00, $00, $00, $00, $00
+		.byt $00
+hdma_mode	.byt 74, $03, $01, $05, $00
+hdma_scroll	.byt 74
+		.byt $00, $00, $ff, $00
+		.byt $01
+		.byt $fc, $00, $05, $00
+		.byt $00
+
+hello		.byt "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam ultrices pharetra libero et ultricies. Proin massa arcu, mattis eu gravida in, tempor sed magna. Mauris molestie purus urna, ut venenatis lorem. Nam nunc lorem, lacinia vel porta quis, sodales eleifend turpis. Aliquam nunc elit, consequat in malesuada vel, elementum eget ipsum. Duis eu lectus nec ipsum imperdiet adipiscing a ac nulla. Mauris risus nisi, posuere nec mollis ac, blandit quis lacus. Donec a sapien felis, ut tempus quam. Nunc semper erat et ipsum accumsan in condimentum enim adipiscing. Sed lobortis accumsan venenatis. Donec euismod mauris gravida risus convallis commodo. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Duis vehicula sem sit amet arcu luctus rhoncus. Etiam sed vulputate ligula. Etiam mauris lectus, eleifend nec fermentum id, bibendum sit amet purus. Pellentesque sollicitudin turpis in leo pharetra vulputate. Sed consequat mattis tortor vitae consectetur. Nullam quis ante in nisl venenatis dignissim. Duis mattis lacus euismod leo volutpat. ", 0

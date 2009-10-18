@@ -1,4 +1,4 @@
-OBJS = header.ips reset.o65 main.o65 font.o65 palette.o65 data.o65 const.o65 logo.o65 # gfx.o65 # vars.o65
+OBJS = header.ips reset.o65 main.o65 font.o65 palette.o65 data.o65 const.o65 logo.o65 text.o65 # gfx.o65 # vars.o65
 
 all: menu.bin
 

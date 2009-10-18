@@ -24,6 +24,7 @@ IRQ_16bit:
          rep #$30
          pha: phx: phy: phd: phb
          jsl @IRQ_ROUTINE
+	 rep #$30
          bra int_exit
 
 ;error vectors
