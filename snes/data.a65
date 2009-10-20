@@ -26,3 +26,54 @@ print_y	.byt 0		;y coordinate
 print_src	.word 0	;source data address
 print_bank	.byt 0	;source data bank
 print_pal	.byt 0	;palette number for text output
+
+;----------parameters for dma----------
+dma_a_bank	.byt 0
+dma_a_addr	.word 0
+dma_b_reg	.byt 0
+dma_len		.word 0
+dma_mode	.byt 0
+
+;----------state information----------
+bar_pos		.byt 0 ; y position of select bar
+
+;----------hdma values in RAM
+hdma_pal	.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0
+hdma_cg_addr	.byt 0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0
+hdma_mode	.byt 0,0,0,0,0
+hdma_scroll	.byt 0
+		.byt 0,0,0,0
+		.byt 0
+		.byt 0,0,0,0
+		.byt 0
+hdma_math	.byt 0
+		.byt 0,0
+		.byt 0
+		.byt 0,0
+		.byt 0
+		.byt 0,0
+		.byt 0
+		.byt 0,0
+		.byt 0
+		.byt 0,0
+		.byt 0
+infloop		.byt 0,0  ; to be filled w/ 80 FE

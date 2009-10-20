@@ -1,6 +1,6 @@
 .text
 #include "memmap.i65"
-print:
+hiprint:
 	rep #$30 : .xl : .al
 	lda !print_x
 	and #$00ff
@@ -12,7 +12,7 @@ print:
 	phx
 	bra print_bg_cont
 print_bg1
-	ldx #!BG2_TILE_BUF+1 ; for 2nd loop
+	ldx #!BG2_TILE_BUF+2 ; for 2nd loop
 	phx
 	ldx #!BG1_TILE_BUF ; for 1st loop da whoop
 	phx
@@ -39,7 +39,7 @@ print_bg_cont
 ; because VRAM can only be accessed during VBLANK and forced blanking.
 	sta $2181
 	sep #$20 : .as
-	lda #$7f ;we really only need the lsb. full bank for clarity
+	lda #$7f ;we really only need bit 0. full bank given for clarity
 	sta $2183
 print_loop
 	ldx !print_src
@@ -94,6 +94,51 @@ print_loop2_inner
 	beq print_end
 	bra print_loop2_inner
 print_end
+	lda #$00
+	pha
+	plb
+	rts
+
+
+loprint:
+	rep #$30 : .xl : .al
+	lda !print_x
+	and #$00ff
+	asl ;double the offset for WRAM addressing
+	clc
+	adc #!BG2_TILE_BUF
+	sta !print_x
+	lda !print_y
+	and #$00ff
+	asl
+	asl
+	asl
+	asl
+	asl
+	asl ;double the offset for WRAM addressing
+	clc
+	adc !print_x
+; we need to transfer to WRAM and from there to VRAM via DMA during VBLANK
+; because VRAM can only be accessed during VBLANK and forced blanking.
+	sta $2181
+	sep #$20 : .as
+	lda #$7f ;we really only need bit 0. full bank given for clarity
+	sta $2183
+	ldx !print_src
+	lda !print_bank
+	pha 
+	plb
+loprint_loop_inner
+	lda !0,x
+	beq loprint_end
+	sta @$2180
+	lda #$00
+	adc #$00
+	ora #$20
+	sta @$2180
+	inx
+	bra loprint_loop_inner
+loprint_end
 	lda #$00
 	pha
 	plb

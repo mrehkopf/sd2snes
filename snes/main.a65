@@ -1,58 +1,18 @@
 #include "memmap.i65"
+#include "dma.i65"
 
 GAME_MAIN:
 	jsr snes_init
 	jsr setup_gfx
-	jsr tests
 	jsr setup_hdma
-	- bra -
+	jsr tests
+	jsr colortest
+	jmp @infloop	;infinite loop in WRAM
 
-setup_hdma:
+colortest:
 	sep #$20 : .as
 	rep #$10 : .xl
-	stz $420b
-	stz $420c
-
-	lda #$02		;A to B; direct; 2x single reg
-	sta $4320		;we use ch. 2 for color data
-	lda #$22		;2122 = CG RAM
-	sta $4321		;dest: CG RAM
-	lda #^hdma_pal
-	ldy #!hdma_pal
-	sty $4322
-	sta $4324
-
-	lda #$00		;A to B; direct; 1x single reg
-	sta $4310		;ch. 1 for color address
-	lda #$21		;2121 = CG addr
-	sta $4311		;dest: CG Address
-	lda #^hdma_cg_addr
-	ldy #!hdma_cg_addr
-	sty $4312
-	sta $4314
-
-	lda #$00		;A to B; direct; 1x single reg
-	sta $4330		;ch. 3 for mode switch
-	lda #$05		;2105 = BG mode
-	sta $4331
-	lda #^hdma_mode
-	ldy #!hdma_mode
-	sty $4332
-	sta $4334
-
-	lda #$03		;A to B; direct; 2x 2x single reg
-	sta $4340		;ch. 4 for scroll
-	lda #$0d		;210e = BG1VOFS
-	sta $4341
-	lda #^hdma_scroll
-	ldy #!hdma_scroll
-	sty $4342
-	sta $4344
-
-;	lda #$06
-;	sta $420c		;enable HDMA ch. 1+2
-	lda #$80
-	sta $4200		;enable V-BLANK NMI
+	stz $2130
 	rts
 
 setup_gfx:
@@ -61,119 +21,93 @@ setup_gfx:
 	stz $420b
 	stz $420c
 ;clear tilemap buffers
-	lda #$08		;A to B; fixed, one reg
-	sta $4300
-	lda #^zero
-	ldy #!zero
-	sty $4302
-	sta $4304
-	ldx #$0			;65536
-	stx $4305
 	ldx #$0000
 	stx $2181
 	lda #$01
 	sta $2183
+	DMA0(#$08, #0, #^zero, #!zero, #$80)
+
+;copy 2bpp font (can be used as 4-bit lores font!)
+	ldx #$4000
+	stx $2116
+	DMA0(#$01, #$2000, #^font2, #!font2, #$18)
+
+;copy 4bpp font
+	ldx #$0000
+	stx $2116
+	DMA0(#$01, #$4000, #^font4, #!font4, #$18)
+
+;clear BG1 tilemap
+	ldx #BG1_TILE_BASE
+	stx $2116
+	DMA0(#$09, #$800, #^zero, #!zero, #$18)
+
+;clear BG2 tilemap
+	ldx #BG2_TILE_BASE
+	stx $2116
+	DMA0(#$09, #$800, #^zero, #!zero, #$18)
+
+;copy logo tiles
+	ldx #$2000
+	stx $2116
+	DMA0(#$01, #$3480, #^logo, #!logo, #$18)
+
+;copy logo tilemap
+	ldx #BG1_TILE_BASE
+	stx $2116
+	DMA0(#$01, #$280, #^logomap, #!logomap, #$18)
+
+;set palette
+	stz $2121
+	DMA0(#$00, #$200, #^palette, #!palette, #$22)
+
+;copy hdma tables so we can work "without" the cartridge
+;palette
+	lda #^hdma_pal
+	ldx #!hdma_pal
+	stx $2181
+	sta $2183
+	DMA0(#$00, #52, #^hdma_pal_src, #!hdma_pal_src, #$80)
+
+;CG addr for palette
+	lda #^hdma_cg_addr
+	ldx #!hdma_cg_addr
+	stx $2181
+	sta $2183
+	DMA0(#$00, #227, #^hdma_cg_addr_src, #!hdma_cg_addr_src, #$80)
+
+;screen mode
+	lda #^hdma_mode
+	ldx #!hdma_mode
+	stx $2181
+	sta $2183
+	DMA0(#$00, #5, #^hdma_mode_src, #!hdma_mode_src, #$80)
+
+;bg scroll
+	lda #^hdma_scroll
+	ldx #!hdma_scroll
+	stx $2181
+	sta $2183
+	DMA0(#$00, #11, #^hdma_scroll_src, #!hdma_scroll_src, #$80);
+
+;color math
+	lda #^hdma_math
+	ldx #!hdma_math
+	stx $2181
+	sta $2183
+	DMA0(#$00, #19, #^hdma_math_src, #!hdma_math_src, #$80);
+
+;copy infinite loop to WRAM
 	lda #$80
-	sta $4301
-	lda #$01
-	sta $420b
+	sta infloop
+	lda #$fe
+	sta infloop+1
 
-	lda #$01		;A to B; (direct); non-fixed, inc, two reg
-	sta $4300		;to DMA ch.0 ctrl
-	lda #^font2		;font source bank
-	ldy #!font2		;font source address
-	sty $4302		;address -> 4302,4303
-	sta $4304		;bank -> 4304
-	ldx #$2000		;transfer size
-	stx $4305		;to reg
-	ldx #$4000		;BG2 chr
-	stx $2116		;VRAM address 0x8000
-	lda #$18		;VRAM data port
-	sta $4301		;to channel 0 tgt address
-	lda #$01		;ch 0 enable
-	sta $420b		;GPDMA GO!
-
-	lda #$01		;A to B; (direct); non-fixed, inc, two reg
-	sta $4300		;to DMA ch.0 ctrl
-	lda #^font4		;font source bank
-	ldy #!font4		;font source address
-	sty $4302		;address -> 4302,4303
-	sta $4304		;bank -> 4304
-	ldx #$4000		;transfer size
-	stx $4305		;to reg
-	ldx #$0000		;BG1 chr
-	stx $2116		;VRAM address 0x0000
-	lda #$18		;VRAM data port
-	sta $4301		;to channel 0 tgt address
-	lda #$01		;ch 0 enable
-	sta $420b		;GPDMA GO!
-
-	lda #$09		;A to B; fixed, two reg
-	sta $4300
-	lda #^zero
-	ldy #!zero
-	sty $4302
-	sta $4304
-	ldx #$1000
-	stx $4305		;zero 4096b of VRAM
-	ldx #$5000
-	stx $2116		;from 0xa000-0xafff
-	lda #$18		;VRAM data port
-	sta $4301		;to channel 0 tgt address
-	lda #$01
-	sta $420b
-
-; copy logo
-	lda #$01		;A to B; (direct); non-fixed, inc, two reg
-	sta $4300		;to DMA ch.0 ctrl
-	lda #^logo		;font source bank
-	ldy #!logo		;font source address
-	sty $4302		;address -> 4302,4303
-	sta $4304		;bank -> 4304
-	ldx #$3480		;transfer size
-	stx $4305		;to reg
-	ldx #$2000		;after font
-	stx $2116		;VRAM address 0x4000
-	lda #$18		;VRAM data port
-	sta $4301		;to channel 0 tgt address
-	lda #$01		;ch 0 enable
-	sta $420b		;GPDMA GO!
-
-; copy logo tilemap
-	lda #$01		;A to B; (direct); non-fixed, inc, two reg
-	sta $4300		;to DMA ch.0 ctrl
-	lda #^logomap		;font source bank
-	ldy #!logomap		;font source address
-	sty $4302		;address -> 4302,4303
-	sta $4304		;bank -> 4304
-	ldx #$280		;transfer size
-	stx $4305		;to reg
-	ldx #$5400		;BG1 tilemap
-	stx $2116		;VRAM address 0x6800
-	lda #$18		;VRAM data port
-	sta $4301		;to channel 0 tgt address
-	lda #$01		;ch 0 enable
-	sta $420b		;GPDMA GO!
-	stz $2121		;palette index 0
-	lda #$00
-	sta $4300
-	lda #^palette
-	ldy #!palette
-	sty $4302
-	sta $4304
-	ldx #$200
-	stx $4305
-	lda #$22		;CG RAM port
-	sta $4301
-	lda #$01
-	sta $420b
 	rts
 
 tests:
 	sep #$20 : .as		;8-bit accumulator
 	rep #$10 : .xl		;16-bit index
-	lda #$0f
-	sta $2100		;screen on, full brightness
 	lda #$03		;mode 3, mode 5 via HDMA :D
 	sta $2105
 	lda #$54		;Tilemap addr 0xA800
@@ -190,11 +124,8 @@ tests:
 	lda #$00
 	sta $2130
 	stz $2121
-	lda #$0
-	ldx #$0
-	ldy #$0
-	lda #$44
-	sta @AVR_CMD
+	lda #$0f
+	sta $2100		;screen on, full brightness
 	lda #0
 	sta print_x
 	lda #10
@@ -203,7 +134,15 @@ tests:
 	ldx #!hello
 	sta print_bank
 	stx print_src
-	jsr print
+	jsr hiprint
+	lda #^version
+	ldx #!version
+	sta print_bank
+	stx print_src
+	stz print_x
+	lda #8
+	sta print_y
+	jsr loprint
 	rts
 	
 snes_init:
@@ -298,73 +237,3 @@ snes_init:
 	stz $420c		;
 	rts
 
-texttest:
-	rep #$10 : .xl
-	sep #$20 : .as
-;copy test text
-	lda #$00		;A->B, inc, 1 reg
-	sta $4300
-	lda #^hello
-	ldy #!hello
-	sty $4302
-	sta $4304
-	ldx #31			;26 bytes
-	stx $4305
-	ldx #$5140
-	stx $2116
-	lda #$18
-	sta $4301
-	stz $2115		;increment after LOW byte (write to 2118)
-	lda #$01
-	sta $420b
-
-	lda #$08		;A->B, fixed, 1 reg
-	sta $4300
-	lda #^bg2tile
-	ldy #!bg2tile
-	sty $4302
-	sta $4304
-	ldx #31			;26 bytes
-	stx $4305
-	ldx #$5140
-	stx $2116
-	lda #$19
-	sta $4301
-	lda #$80
-	sta $2115		;increment after HIGH byte (write to 2119)
-	lda #$01
-	sta $420b
-
-	lda #$00		;A->B, inc, 1 reg
-	sta $4300
-	lda #^hello
-	ldy #!hello+4
-	sty $4302
-	sta $4304
-	ldx #$c			;24 bytes
-	stx $4305
-	ldx #$5540
-	stx $2116
-	lda #$18
-	sta $4301
-	stz $2115		;increment after LOW byte (write to 2118)
-	lda #$01
-	sta $420b
-
-	lda #$08		;A->B, fixed, 1 reg
-	sta $4300
-	lda #^bg2tile
-	ldy #!bg2tile
-	sty $4302
-	sta $4304
-	ldx #$c			;24 bytes
-	stx $4305
-	ldx #$5540
-	stx $2116
-	lda #$19
-	sta $4301
-	lda #$80
-	sta $2115		;increment after HIGH byte (write to 2119)
-	lda #$01
-	sta $420b
-	rts

@@ -2,49 +2,57 @@
 ; See http://bisqwit.iki.fi/source/snescom.html for details.
 
 #include "memmap.i65"
-
+#include "dma.i65"
 
 #define TILE_ADDR_REG_VAL(addr, scsize) \
           (((addr & $FC00) >> 8) + scsize)
 #define BMAP_ADDR_REG_VAL(addr, addr2) \
           (((addr & $F000) >> 12) | (((addr2 & $F000) >> 12) << 4))
 
-; NMI - called once per screen refresh (or something like that)
+; NMI - called on VBlank
 NMI_ROUTINE:
         sep #$20 : .as
-        lda @$4210
+	lda #$00
+	pha
+	plb
+        lda $4210
 
-	lda #$01
-	sta $4300
-	lda #^BG1_TILE_BUF
-	ldx #!BG1_TILE_BUF+64*10
-	stx $4302
-	sta $4304
-	ldx #$380*2-64*10
-	stx $4305
 	ldx #BG1_TILE_BASE+32*10
 	stx $2116
-	lda #$18
-	sta $4301
-	lda #$01
-	sta $420b
+	DMA0(#$01, #$380*2-64*10, #^BG1_TILE_BUF, #!BG1_TILE_BUF+64*10, #$18)
 
-	lda #$01
-	sta $4300
-	lda #^BG2_TILE_BUF
-	ldx #!BG2_TILE_BUF+64*10
-	stx $4302
-	sta $4304
-	ldx #$380*2-64*10
-	stx $4305
 	ldx #BG2_TILE_BASE+32*10
 	stx $2116
-	lda #$18
-	sta $4301
+	DMA0(#$01, #$380*2-64*10, #^BG2_TILE_BUF, #!BG2_TILE_BUF+64*10, #$18);
+
+	ldx #BG2_TILE_BASE
+	stx $2116
+	DMA0(#$01, #64*10, #^BG2_TILE_BUF, #!BG2_TILE_BUF, #$18);
+
+	lda bar_pos
+	inc
+	bne +
+	inc
++
+	cmp #224
+	bne +
+	lda #1
++
+	sta bar_pos
+	cmp #113
+	bcs lower_half
+	sta hdma_math
 	lda #$01
-	sta $420b
-	
-	lda #$1e	; ch. 1-4
+	sta hdma_math+3
+	bra math_cont
+lower_half
+	clc
+	sbc #111
+	sta hdma_math+3
+	lda #112
+	sta hdma_math
+math_cont
+	lda #$3e	; ch. 1-5
 	sta @$420c	; trigger HDMA
         rtl
 
