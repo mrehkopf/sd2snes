@@ -43,15 +43,24 @@ void update_leds(void) {
 }
 
 void toggle_busy_led(void) {
-	PORTB &= ~_BV(PB1);
-	DDRB ^= _BV(PB1);
+	PORTB &= ~_BV(PB3);
+	DDRB ^= _BV(PB3);
 }
 
 void set_busy_led(uint8_t state) {
-	PORTB &= ~_BV(PB1);
+	PORTB &= ~_BV(PB3);
 	if(state) {
-		DDRB |= _BV(PB1);
+		DDRB |= _BV(PB3);
 	} else {
-		DDRB &= ~_BV(PB1);
+		DDRB &= ~_BV(PB3);
+	}
+}
+
+void set_pwr_led(uint8_t state) {
+	PORTB &= ~_BV(PB0);
+	if(state) {
+		DDRB |= _BV(PB0);
+	} else {
+		DDRB &= ~_BV(PB0);
 	}
 }

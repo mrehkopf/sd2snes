@@ -31,9 +31,11 @@
    CCLK			PD4		OUT
    INIT_B		PD7		IN
    DIN			PC7		OUT
+   DONE			PA3		IN
  */
 
 #include <avr/pgmspace.h>
+#include <util/delay.h>
 #include "fpga.h"
 #include "config.h"
 #include "uart.h"
@@ -89,11 +91,13 @@ void fpga_init() {
 	DDRC = _BV(PC7);	// for FPGA config, PC7 is output
 
 	DDRD |= _BV(PD3) | _BV(PD4); // PD3, PD4 are outputs
+	
+	DDRA = ~_BV(PA3); // PA3 is input <- DONE
 	set_cclk(0);    // initial clk=0
 }
 
 int fpga_get_done(void) {
-	return 0;
+	return PINA & _BV(PA3);
 }
 
 void fpga_postinit() {
@@ -103,42 +107,44 @@ void fpga_postinit() {
 }
 
 void fpga_pgm(char* filename) {
-	set_prog_b(0);
-	uart_putc('P');
-	set_prog_b(1);
-	loop_until_bit_is_set(PIND, PD7);
-	uart_putc('p');
-	
-//	FIL in;
-//	FRESULT res;
-	UINT bytes_read;
+	int MAXRETRIES = 10;
+//	int retries = MAXRETRIES;
+	do {
+		set_prog_b(0);
+		uart_putc('P');
+		set_prog_b(1);
+		loop_until_bit_is_set(PIND, PD7);
+		uart_putc('p');
+		
+		UINT bytes_read;
 
-	// open configware file
-//	res=f_open(&in, filename, FA_READ);
-	file_open(filename, FA_READ);
-	if(file_res) {
-		uart_putc('?');
-		uart_putc(0x30+file_res);
-		return;
-	}
-	// file open successful
-	set_cs_b(0);
-	set_rdwr_b(0);
-
-    for (;;) {
-//        res = f_read(&in, file_buf, sizeof(file_buf), &bytes_read);
-		bytes_read = file_read();
-		if (file_res || bytes_read == 0) break;   // error or eof
-		for(int i=0; i<bytes_read; i++) {
-			//FPGA_SEND_BYTE(file_buf[i]);
-			FPGA_SEND_BYTE_SERIAL(file_buf[i]);
+		// open configware file
+		file_open(filename, FA_READ);
+		if(file_res) {
+			uart_putc('?');
+			uart_putc(0x30+file_res);
+			return;
 		}
-    }
-
-	file_close();
+		// file open successful
+		set_cs_b(0);
+		set_rdwr_b(0);
+	
+		for (;;) {
+			bytes_read = file_read();
+			if (file_res || bytes_read == 0) break;   // error or eof
+			for(int i=0; i<bytes_read; i++) {
+				FPGA_SEND_BYTE_SERIAL(file_buf[i]);
+			}
+		}
+		file_close();
+		_delay_ms(10);
+	} while (0); //(!fpga_get_done() && retries--);
+	if(!fpga_get_done()) {
+		dprintf("FPGA failed to configure after %d tries.\n", MAXRETRIES);
+		_delay_ms(50);
+	}
 	fpga_postinit();
 }
-
 
 void set_avr_read(uint8_t val) {
 	if(val) {
@@ -210,3 +216,4 @@ void set_avr_bank(uint8_t val) {
 	FPGA_SS_HIGH();
 	SPI_SS_LOW();
 }
+

@@ -131,6 +131,7 @@ int main(void) {
 	snes_reset(1);
 	uart_init();
 	sei();   // suspected to reset the AVR when inserting an SD card
+	set_busy_led(0);
 	_delay_ms(100);
 	disk_init();
 	snes_init();
@@ -141,11 +142,11 @@ int main(void) {
 	file_init();
 	FATFS fatfs;
 	f_mount(0,&fatfs);
-	set_busy_led(1);
 	uart_putc('W');
 	fpga_init();
 	fpga_pgm("/sd2snes/main.bit");
 	_delay_ms(100);
+	set_pwr_led(1);
 	fpga_spi_init();
 	uart_putc('!');
 	_delay_ms(100);
