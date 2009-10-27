@@ -35,9 +35,24 @@ dma_len		.word 0
 dma_mode	.byt 0
 
 ;----------state information----------
-bar_pos		.byt 0 ; y position of select bar
+bar_xl		.byt 0	; logical x position of select bar
+bar_yl		.byt 0	; logical y position of select bar
+bar_x		.byt 0	; pixel x position of select bar
+bar_y		.byt 0	; pixel y position of select bar
+bar_w		.byt 0	; bar width
+fd_addr		.word 0	; address of current "file descriptor"
+fd_bank		.byt 0	; bank of current "file descriptor"
+file_path		; assembled current path
+		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
-;----------hdma values in RAM
+;----------hdma tables in WRAM (must be stable when cartridge is cut off)
 hdma_pal	.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

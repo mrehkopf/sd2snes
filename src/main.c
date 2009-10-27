@@ -127,11 +127,12 @@ int main(void) {
 #ifdef CLOCK_PRESCALE
 	clock_prescale_set(CLOCK_PRESCALE);
 #endif
+	set_pwr_led(0);
+	set_busy_led(1);
 	spi_none();
 	snes_reset(1);
 	uart_init();
 	sei();   // suspected to reset the AVR when inserting an SD card
-	set_busy_led(0);
 	_delay_ms(100);
 	disk_init();
 	snes_init();
@@ -158,7 +159,7 @@ int main(void) {
 	dprintf("curr dir id = %x\n", curr_dir_id);
 	uint16_t saved_dir_id;
 	if((get_db_id(&saved_dir_id) != FR_OK)	// no database?
-	|| saved_dir_id != curr_dir_id) {	// files changed?
+	|| 1 /*saved_dir_id != curr_dir_id*/) {	// files changed? // XXX
 		dprintf("saved dir id = %x\n", saved_dir_id);
 		_delay_ms(50);
 		dprintf("rebuilding database...");

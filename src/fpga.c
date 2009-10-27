@@ -6,27 +6,6 @@
 
    FPGA pin mapping
    ================
- PSM:
- ====
-   FPGA			AVR		dir
-   ------------------------
-   PROG_B		PD3		OUT
-   CCLK			PD4		OUT
-   CS_B			PD7		OUT
-   INIT_B		PB2		IN
-   RDWR_B		PB3		OUT
-
-   D7			PC0		OUT
-   D6			PC1		OUT
-   D5			PC2		OUT
-   D4			PC3		OUT
-   D3			PC4		OUT
-   D2			PC5		OUT
-   D1			PC6		OUT
-   D0			PC7		OUT
-
- SSM:
- ====
    PROG_B		PD3		OUT
    CCLK			PD4		OUT
    INIT_B		PD7		IN
@@ -59,22 +38,6 @@ void set_prog_b(uint8_t val) {
 	}
 }
 
-void set_cs_b(uint8_t val) {
-	if(val) {
-		PORTD |= _BV(PD7);
-	} else {
-		PORTD &= ~_BV(PD7);
-	}
-}
-
-void set_rdwr_b(uint8_t val) {
-	if(val) {
-		PORTB |= _BV(PB3);
-	} else {
-		PORTB &= ~_BV(PB3);
-	}
-}
-
 void set_cclk(uint8_t val) {
 	if(val) {
 		PORTD |= _BV(PD4);
@@ -84,8 +47,6 @@ void set_cclk(uint8_t val) {
 }
 
 void fpga_init() {
-	DDRB |= _BV(PB3);	// PB3 is output
-
 	DDRD &= ~_BV(PD7);  // PD7 is input
 
 	DDRC = _BV(PC7);	// for FPGA config, PC7 is output
@@ -108,7 +69,7 @@ void fpga_postinit() {
 
 void fpga_pgm(char* filename) {
 	int MAXRETRIES = 10;
-//	int retries = MAXRETRIES;
+	int retries = MAXRETRIES;
 	do {
 		set_prog_b(0);
 		uart_putc('P');
@@ -125,9 +86,6 @@ void fpga_pgm(char* filename) {
 			uart_putc(0x30+file_res);
 			return;
 		}
-		// file open successful
-		set_cs_b(0);
-		set_rdwr_b(0);
 	
 		for (;;) {
 			bytes_read = file_read();
@@ -138,7 +96,7 @@ void fpga_pgm(char* filename) {
 		}
 		file_close();
 		_delay_ms(10);
-	} while (0); //(!fpga_get_done() && retries--);
+	} while (!fpga_get_done() && retries--);
 	if(!fpga_get_done()) {
 		dprintf("FPGA failed to configure after %d tries.\n", MAXRETRIES);
 		_delay_ms(50);
@@ -146,55 +104,11 @@ void fpga_pgm(char* filename) {
 	fpga_postinit();
 }
 
-void set_avr_read(uint8_t val) {
-	if(val) {
-		PORTB |= _BV(PB3);
-	} else {
-		PORTB &= ~_BV(PB3);
-	}
-}
-
-void set_avr_write(uint8_t val) {
-	if(val) {
-		PORTB |= _BV(PB2);
-	} else {
-		PORTB &= ~_BV(PB2);
-	}
-}
-
 void set_avr_ena(uint8_t val) {
 	if(val) {
 		PORTD |= _BV(PD7);
 	} else {
 		PORTD &= ~_BV(PD7);
-	}
-}
-
-void set_avr_nextaddr(uint8_t val) {
-	if(val) {
-		PORTA |= _BV(PA4);
-	} else {
-		PORTA &= ~_BV(PA4);
-	}
-}
-
-void set_avr_addr_reset(uint8_t val) {
-	if(val) {
-		PORTA |= _BV(PA5);
-	} else {
-		PORTA &= ~_BV(PA5);
-	}
-}
-
-void set_avr_data(uint8_t data) {
-	PORTC = data;
-}
-
-void set_avr_addr_en(uint8_t val) {
-	if(val) {
-		PORTA |= _BV(PA6);
-	} else {
-		PORTA &= ~_BV(PA6);
 	}
 }
 

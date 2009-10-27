@@ -79,12 +79,8 @@ hdma_math_src	.byt 1
 		.byt $00, $e0
 		.byt 1
 		.byt $00, $e0
-		.byt 1
-		.byt $60, $bf
-		.byt 8
-		.byt $60, $b0
-		.byt 1
-		.byt $60, $bf
+		.byt 10
+		.byt $20, $f0
 		.byt 1
 		.byt $00, $e0
 		.byt 0
