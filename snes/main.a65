@@ -2,11 +2,21 @@
 #include "dma.i65"
 
 GAME_MAIN:
+	sep #$20 : .as
 	jsr snes_init
 	jsr setup_gfx
 	jsr setup_hdma
 	jsr tests
 	jsr colortest
+	lda #$01
+	sta @$306000
+	inc
+	sta @$306001
+	inc
+	sta @$306002
+	inc
+	sta @$306003
+	
 	jmp @infloop	;infinite loop in WRAM
 
 colortest:
@@ -142,6 +152,14 @@ tests:
 	stz print_x
 	lda #8
 	sta print_y
+	jsr loprint
+	lda #3
+	sta print_y
+	stz print_x
+	lda #$C0
+	ldx #$B000
+	sta print_bank
+	stx print_src
 	jsr loprint
 	rts
 	

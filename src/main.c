@@ -166,10 +166,12 @@ int main(void) {
 		_delay_ms(50);
 		curr_dir_id = scan_dir(fs_path, 1);	// then rebuild database
 		sram_writeblock(&curr_dir_id, SRAM_WORK_ADDR, 2);
-		uint32_t endaddr;
+		uint32_t endaddr, direndaddr;
 		sram_readblock(&endaddr, SRAM_WORK_ADDR+4, 4);
-		dprintf("%lx\n", endaddr);
+		sram_readblock(&direndaddr, SRAM_WORK_ADDR+8, 4);
+		dprintf("%lx %lx\n", endaddr, direndaddr);
 		save_sram("/sd2snes/sd2snes.db", endaddr-SRAM_WORK_ADDR, SRAM_WORK_ADDR);
+		save_sram("/sd2snes/sd2snes.dir", direndaddr-(SRAM_WORK_ADDR+0x100000), SRAM_WORK_ADDR+0x100000);
 		dprintf("done\n"); 
 	}
 	uart_putc('[');
@@ -180,9 +182,9 @@ int main(void) {
 	load_rom("/test.smc");
 	uart_putc(')');
 
-
 	set_busy_led(0);
 	set_avr_ena(1);
+
 	_delay_ms(100);
 	uart_puts_P(PSTR("SNES GO!\n"));
 	snes_reset(0);

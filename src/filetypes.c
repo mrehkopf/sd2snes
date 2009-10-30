@@ -41,6 +41,8 @@ uint16_t scan_dir(char* path, char mkdb) {
 	static uint16_t crc;
 	static uint32_t db_tgt;
 	static uint32_t dir_tgt;
+	static uint32_t dir_end = 0;
+	static uint8_t was_empty = 0;
 	uint32_t dir_tgt_save, dir_tgt_next;
 	uint16_t numentries;
 	uint32_t dirsize;
@@ -55,19 +57,33 @@ uint16_t scan_dir(char* path, char mkdb) {
 	
 	fno.lfn = lfn;
 	numentries=0;
+	dir_tgt_next=0;
 	for(pass = 0; pass < 2; pass++) {
 		if(pass) {
-			dprintf("path=%s depth=%d ptr=%lx entries=%d next subdir @%lx\n", path, depth, db_tgt, numentries, numentries*4+dir_tgt);
-			_delay_ms(50);	
+			dirsize = 4*(numentries);
+			dir_tgt_next = dir_tgt + dirsize + 4; // number of entries + end marker
+			if(dir_tgt_next > dir_end) {
+				dir_end = dir_tgt_next;
+			}
+			dprintf("path=%s depth=%d ptr=%lx entries=%d next subdir @%lx\n", path, depth, db_tgt, numentries, dir_tgt_next);
+			_delay_ms(50);
+			if(mkdb) {
+				dprintf("d=%d Saving %lX to Address %lX  [end]\n", depth, 0L, dir_tgt_next - 4);
+				_delay_ms(50);	
+				sram_writelong(0L, dir_tgt_next - 4);
+			}
 		}
-		dirsize = 4*(numentries+1);
-		dir_tgt_next = dir_tgt + dirsize;
 		res = f_opendir(&dir, (unsigned char*)path);
 		if (res == FR_OK) {
 			len = strlen((char*)path);
 			for (;;) {
 				res = f_readdir(&dir, &fno);
-				if (res != FR_OK || fno.fname[0] == 0) break;
+				if (res != FR_OK || fno.fname[0] == 0) {
+					if(pass) {
+						if(!numentries) was_empty=1;
+					}
+					break;
+				}
 				fn = *fno.lfn ? fno.lfn : fno.fname;
 	//			dprintf("%s\n", fn);
 	//			_delay_ms(100);
@@ -84,18 +100,23 @@ uint16_t scan_dir(char* path, char mkdb) {
 							// write element pointer to current dir structure
 							dprintf("d=%d Saving %lX to Address %lX  [dir]\n", depth, db_tgt, dir_tgt_save);
 							_delay_ms(50);
-							sram_writeblock((uint8_t*)&db_tgt, dir_tgt_save, sizeof(dir_tgt_save));
+							sram_writelong(db_tgt, dir_tgt_save);
+//							sram_writeblock((uint8_t*)&db_tgt, dir_tgt_save, sizeof(dir_tgt_save));
 
 							// save element:
 							//  - path name
 							//  - pointer to sub dir structure
+							dprintf("    Saving dir descriptor to %lX, tgt=%lX, path=%s\n", db_tgt, dir_tgt, path);
+							_delay_ms(100);
 							sram_writeblock(path, db_tgt, 256);
-							sram_writeblock((uint8_t*)&dir_tgt, db_tgt+256, sizeof(dir_tgt));
+							sram_writelong(dir_tgt|((uint32_t)0x80<<24), db_tgt+256);
+//							sram_writeblock((uint8_t*)&dir_tgt, db_tgt+256, sizeof(dir_tgt));
 							db_tgt += 0x200;
 						}
 						scan_dir(path, mkdb);
-						dir_tgt = dir_tgt_save;
-						dir_tgt += 4;
+						dir_tgt = dir_tgt_save + 4;
+						if(was_empty)dir_tgt_next += 4;
+						was_empty = 0;
 						depth--;
 						path[len]=0;
 					}
@@ -121,7 +142,8 @@ uint16_t scan_dir(char* path, char mkdb) {
 										// write element pointer to current dir structure
 										dprintf("d=%d Saving %lX to Address %lX  [file]\n", depth, db_tgt, dir_tgt);
 										_delay_ms(50);
-										sram_writeblock((uint8_t*)&db_tgt, dir_tgt, sizeof(db_tgt));
+										sram_writelong(db_tgt, dir_tgt);
+//										sram_writeblock((uint8_t*)&db_tgt, dir_tgt, sizeof(db_tgt));
 										dir_tgt += 4;
 										// save element:
 										//  - SNES header information
@@ -154,6 +176,7 @@ uint16_t scan_dir(char* path, char mkdb) {
 //	dprintf("%x\n", crc);
 //	_delay_ms(50);
 	sram_writeblock(&db_tgt, SRAM_WORK_ADDR+4, sizeof(db_tgt));
+	sram_writeblock(&dir_end, SRAM_WORK_ADDR+8, sizeof(dir_end));
 	return crc;
 }
 

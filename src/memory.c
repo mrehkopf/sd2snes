@@ -19,6 +19,32 @@
 
 char* hex = "0123456789ABCDEF";
 
+void sram_writelong(uint32_t val, uint32_t addr) {
+	set_avr_addr(addr);
+	spi_fpga();
+	spiTransferByte(0x91); // WRITE
+	spiTransferByte(val&0xff);		// 7-0
+	spiTransferByte((val>>8)&0xff);		// 15-8
+	spiTransferByte((val>>16)&0xff);	// 23-15
+	spiTransferByte((val>>24)&0xff);	// 31-24
+	spiTransferByte(0x00); // dummy
+	spi_none();
+}
+
+uint32_t sram_readlong(uint32_t addr) {
+	set_avr_addr(addr);
+	spi_fpga();
+	spiTransferByte(0x81);
+	spiTransferByte(0x00);
+
+	uint32_t val = spiTransferByte(0x00);
+	val |= ((uint32_t)spiTransferByte(0x00)<<8);
+	val |= ((uint32_t)spiTransferByte(0x00)<<16);
+	val |= ((uint32_t)spiTransferByte(0x00)<<24);
+	
+	return val;
+}
+
 void sram_readblock(void* buf, uint32_t addr, uint16_t size) {
 	uint16_t count=size;
 	uint8_t* tgt = buf;
@@ -33,15 +59,13 @@ void sram_readblock(void* buf, uint32_t addr, uint16_t size) {
 }
 
 void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
-	uint16_t count=size>>1;
-	uint16_t* src = buf;
+	uint16_t count=size;
+	uint8_t* src = buf;
 	set_avr_addr(addr);
 	spi_fpga();
 	spiTransferByte(0x91);	// WRITE 
 	while(count--) {
-		spiTransferByte((*src)>>8);
-		spiTransferByte((*src)&0xff);
-		src++;
+		spiTransferByte(*src++);
 	}
 	spiTransferByte(0x00);	// dummy
 	spi_none();

@@ -49,11 +49,11 @@ module main(
     output SPI_MISO,
     input SPI_SS,
     input SPI_SCK,
-    input AVR_ENA,
+    input AVR_ENA
     
    /* debug */
-   output DCM_IN_STOPPED,
-   output DCM_FX_STOPPED
+   //output DCM_IN_STOPPED,
+   //output DCM_FX_STOPPED
    //input DCM_RST
     );
 wire [7:0] spi_cmd_data;

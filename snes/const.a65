@@ -84,6 +84,22 @@ hdma_math_src	.byt 1
 		.byt 1
 		.byt $00, $e0
 		.byt 0
-hello		.byt "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam ultrices pharetra libero et ultricies. Proin massa arcu, mattis eu gravida in, tempor sed magna. Mauris molestie purus urna, ut venenatis lorem. Nam nunc lorem, lacinia vel porta quis, sodales eleifend turpis. Aliquam nunc elit, consequat in malesuada vel, elementum eget ipsum. Duis eu lectus nec ipsum imperdiet adipiscing a ac nulla. Mauris risus nisi, posuere nec mollis ac, blandit quis lacus. Donec a sapien felis, ut tempus quam. Nunc semper erat et ipsum accumsan in condimentum enim adipiscing. Sed lobortis accumsan venenatis. Donec euismod mauris gravida risus convallis commodo. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Duis vehicula sem sit amet arcu luctus rhoncus. Etiam sed vulputate ligula. Etiam mauris lectus, eleifend nec fermentum id, bibendum sit amet purus. Pellentesque sollicitudin turpis in leo pharetra vulputate. Sed consequat mattis tortor vitae consectetur. Nullam quis ante in nisl venenatis dignissim. Duis mattis lacus euismod leo volutpat. ", 0
+hello
+.byt "                  _                                             "
+.byt "                 \\`*-.                                          "
+.byt "                  )  _`-.                                       "
+.byt "                 .  : `. .                                      "
+.byt "                 : _   '  \\                                     "
+.byt "                 ",$3b," *` _.   `*-._                                "
+.byt "                 `-.-'          `-.                             "
+.byt "                   ",$3b,"       `       `.                           "
+.byt "                   :.       .        \\                          "
+.byt "                   . \\  .   :   .-'   .                         "
+.byt "                   '  `+.",$3b,"  ",$3b,"  '      :                         "
+.byt "                   :  '  |    ",$3b,"       ",$3b,"-.                       "
+.byt "                   ",$3b," '   : :`-:     _.`* ",$3b,"                      "
+.byt "          [bug] .*' /  .*' ",$3b," .*`- +'  `*'                       "
+.byt "                `*-*   `*-*  `*-*'                              ", 0
+ 
 lohello		.byt "Miau", 0
 

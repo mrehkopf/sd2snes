@@ -29,7 +29,7 @@ NMI_ROUTINE:
 	stx $2116
 	DMA0(#$01, #64*10, #^BG2_TILE_BUF, #!BG2_TILE_BUF, #$18);
 
-	lda bar_pos
+	lda bar_y
 	inc
 	bne +
 	inc
@@ -38,7 +38,7 @@ NMI_ROUTINE:
 	bne +
 	lda #1
 +
-	sta bar_pos
+	sta bar_y
 	cmp #113
 	bcs lower_half
 	sta hdma_math
