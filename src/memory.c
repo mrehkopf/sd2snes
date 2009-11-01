@@ -16,8 +16,37 @@
 #include "led.h"
 #include "smc.h"
 #include "fpga_spi.h"
+#include "memory.h"
 
 char* hex = "0123456789ABCDEF";
+
+void sram_hexdump(uint32_t addr, uint32_t len) {
+	static uint8_t buf[16];
+	uint32_t ptr;
+	for(ptr=0; ptr < len; ptr += 16) {
+		sram_readblock((void*)buf, ptr+addr, 16);
+		uart_trace(buf, 0, 16);
+	}
+}
+
+void sram_writebyte(uint8_t val, uint32_t addr) {
+	set_avr_addr(addr);
+	spi_fpga();
+	spiTransferByte(0x91); // WRITE
+	spiTransferByte(val);
+	spiTransferByte(0x00); // dummy
+	spi_none();
+}
+
+uint8_t sram_readbyte(uint32_t addr) {
+	set_avr_addr(addr);
+	spi_fpga();
+	spiTransferByte(0x81); // READ
+	spiTransferByte(0x00); // dummy
+	uint8_t val = spiTransferByte(0x00);
+	spi_none();
+	return val;
+}
 
 void sram_writelong(uint32_t val, uint32_t addr) {
 	set_avr_addr(addr);
@@ -41,7 +70,7 @@ uint32_t sram_readlong(uint32_t addr) {
 	val |= ((uint32_t)spiTransferByte(0x00)<<8);
 	val |= ((uint32_t)spiTransferByte(0x00)<<16);
 	val |= ((uint32_t)spiTransferByte(0x00)<<24);
-	
+	spi_none();
 	return val;
 }
 
@@ -71,7 +100,7 @@ void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
 	spi_none();
 }
 
-uint32_t load_rom(char* filename) {
+uint32_t load_rom(uint8_t* filename) {
 	snes_romprops_t romprops;
 	set_avr_bank(0);
 	UINT bytes_read;
@@ -138,8 +167,8 @@ uint32_t load_rom(char* filename) {
 	return (uint32_t)filesize;
 }
 
-uint32_t load_sram(char* filename) {
-	set_avr_bank(3);
+uint32_t load_sram(uint8_t* filename, uint32_t base_addr) {
+	set_avr_addr(base_addr);
 	UINT bytes_read;
 	DWORD filesize;
 	file_open(filename, FA_READ);
@@ -164,7 +193,7 @@ uint32_t load_sram(char* filename) {
 }
 
 
-void save_sram(char* filename, uint32_t sram_size, uint32_t base_addr) {
+void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
     uint32_t count = 0;
 	uint32_t num = 0;
 
@@ -207,4 +236,17 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
 	}
 	spi_none();
 	return crc;
+}
+
+uint8_t sram_reliable() {
+	uint16_t score=0;
+	uint32_t val = sram_readlong(SRAM_SCRATCHPAD);
+	while(score<SRAM_RELIABILITY_SCORE) {
+		if(sram_readlong(SRAM_SCRATCHPAD)==val) {
+			score++;
+		} else {
+			score=0;
+		}
+	}
+	return 1;
 }

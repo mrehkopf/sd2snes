@@ -18,7 +18,7 @@ void file_init() {
 void file_open_by_filinfo(FILINFO* fno) {
 	file_res = l_openfilebycluster(&fatfs, &file_handle, (UCHAR*)"", fno->clust, fno->fsize);
 }
-void file_open(char* filename, BYTE flags) {
+void file_open(uint8_t* filename, BYTE flags) {
 	file_res = f_open(&file_handle, (unsigned char*)filename, flags);
 }
 

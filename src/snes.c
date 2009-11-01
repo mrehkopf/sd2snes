@@ -42,12 +42,11 @@ void snes_reset(int state) {
 
 /*
  * SD2SNES main loop.
- * monitors SRAM changes, menu selections and other things
+ * monitors SRAM changes and other things
  */
 void snes_main_loop() {
 	if(initloop) {
 		saveram_crc_old = calc_sram_crc(saveram_base_addr, saveram_size);
-		save_sram("/test.srm", saveram_size, saveram_base_addr);
 		initloop=0;
 	}
 	saveram_crc = calc_sram_crc(saveram_base_addr, saveram_size);
@@ -56,8 +55,27 @@ void snes_main_loop() {
 		uart_puthexshort(saveram_crc);
 		uart_putcrlf();
 		set_busy_led(1);
-		save_sram("/test.srm", saveram_size, saveram_base_addr);
+		save_sram((uint8_t*)"/test.srm", saveram_size, saveram_base_addr);
 		set_busy_led(0);
 	}
 	saveram_crc_old = saveram_crc;
+}
+
+/*
+ * SD2SNES menu loop.
+ * monitors menu selection. return when selection was made.
+ */
+uint8_t menu_main_loop() {
+	uint8_t cmd = 0;
+	sram_writebyte(0, SRAM_CMD_ADDR);
+	while(!cmd) {
+		cmd = sram_readbyte(SRAM_CMD_ADDR);
+	}
+	return cmd;
+}
+
+void get_selected_name(uint8_t* fn) {
+	uint32_t addr = sram_readlong(SRAM_FD_ADDR);
+	dprintf("fd addr=%lX\n", addr);
+	sram_readblock(fn, addr+0x41, 256);
 }

@@ -145,7 +145,7 @@ int main(void) {
 	f_mount(0,&fatfs);
 	uart_putc('W');
 	fpga_init();
-	fpga_pgm("/sd2snes/main.bit");
+	fpga_pgm((uint8_t*)"/sd2snes/main.bit");
 	_delay_ms(100);
 	set_pwr_led(1);
 	fpga_spi_init();
@@ -154,33 +154,42 @@ int main(void) {
 	set_avr_ena(0);
 	snes_reset(1);
 
+	sram_writelong(0x12345678, SRAM_SCRATCHPAD);
 	*fs_path=0;
 	uint16_t curr_dir_id = scan_dir(fs_path, 0); // generate files footprint
 	dprintf("curr dir id = %x\n", curr_dir_id);
 	uint16_t saved_dir_id;
 	if((get_db_id(&saved_dir_id) != FR_OK)	// no database?
-	|| 1 /*saved_dir_id != curr_dir_id*/) {	// files changed? // XXX
+	|| 1 || saved_dir_id != curr_dir_id) {	// files changed? // XXX
 		dprintf("saved dir id = %x\n", saved_dir_id);
 		_delay_ms(50);
 		dprintf("rebuilding database...");
 		_delay_ms(50);
 		curr_dir_id = scan_dir(fs_path, 1);	// then rebuild database
-		sram_writeblock(&curr_dir_id, SRAM_WORK_ADDR, 2);
+		sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 2);
 		uint32_t endaddr, direndaddr;
-		sram_readblock(&endaddr, SRAM_WORK_ADDR+4, 4);
-		sram_readblock(&direndaddr, SRAM_WORK_ADDR+8, 4);
+		sram_readblock(&endaddr, SRAM_DB_ADDR+4, 4);
+		sram_readblock(&direndaddr, SRAM_DB_ADDR+8, 4);
 		dprintf("%lx %lx\n", endaddr, direndaddr);
-		save_sram("/sd2snes/sd2snes.db", endaddr-SRAM_WORK_ADDR, SRAM_WORK_ADDR);
-		save_sram("/sd2snes/sd2snes.dir", direndaddr-(SRAM_WORK_ADDR+0x100000), SRAM_WORK_ADDR+0x100000);
+		save_sram((uint8_t*)"/sd2snes/sd2snes.db", endaddr-SRAM_DB_ADDR, SRAM_DB_ADDR);
+		save_sram((uint8_t*)"/sd2snes/sd2snes.dir", direndaddr-(SRAM_DIR_ADDR), SRAM_DIR_ADDR);
 		dprintf("done\n"); 
+		sram_hexdump(SRAM_DB_ADDR, 0x400);
+	} else {
+		dprintf("loading db...\n");
+		load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
+		load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
 	}
+	
 	uart_putc('[');
-	load_sram("/test.srm");
+	load_sram((uint8_t*)"/test.srm", SRAM_SAVE_ADDR);
 	uart_putc(']');
 
 	uart_putc('(');
-	load_rom("/test.smc");
+	load_rom((uint8_t*)"/test.smc");
 	uart_putc(')');
+
+	sram_writebyte(0, SRAM_CMD_ADDR);
 
 	set_busy_led(0);
 	set_avr_ena(1);
@@ -189,7 +198,32 @@ int main(void) {
 	uart_puts_P(PSTR("SNES GO!\n"));
 	snes_reset(0);
 
+	uint8_t cmd = 0;
 
+	while(!sram_reliable());
+
+	while(!cmd) {
+		cmd=menu_main_loop();
+		switch(cmd) {
+			case 0x01: // SNES_CMD_LOADROM:
+				get_selected_name(file_lfn);
+				_delay_ms(100);
+//				snes_reset(1);
+				set_avr_ena(0);
+				dprintf("%s\n", file_lfn);
+				load_rom(file_lfn);
+				set_avr_ena(1);
+				snes_reset(1);
+				_delay_ms(100);
+				snes_reset(0);
+				break;
+			default:
+			break;
+		}
+		
+	}
+	dprintf("cmd was %x, going to snes main loop\n", cmd);
+	cmd=0;
 	while(1) {
 		snes_main_loop();
 	}

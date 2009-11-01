@@ -7,7 +7,7 @@
 
 void fpga_init(void);
 void fpga_postinit(void);
-void fpga_pgm(char* filename);
+void fpga_pgm(uint8_t* filename);
 
 void set_avr_read(uint8_t val);
 void set_avr_write(uint8_t val);

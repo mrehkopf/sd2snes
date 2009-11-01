@@ -67,7 +67,7 @@ void fpga_postinit() {
 	DDRD |= _BV(PD7);	// turn PD7 into output
 }
 
-void fpga_pgm(char* filename) {
+void fpga_pgm(uint8_t* filename) {
 	int MAXRETRIES = 10;
 	int retries = MAXRETRIES;
 	do {

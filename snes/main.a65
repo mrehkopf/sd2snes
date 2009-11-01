@@ -8,15 +8,17 @@ GAME_MAIN:
 	jsr setup_hdma
 	jsr tests
 	jsr colortest
-	lda #$01
+	lda #$00
 	sta @$306000
-	inc
+	lda #$50
 	sta @$306001
-	inc
+	lda #$11
 	sta @$306002
-	inc
+	lda #$00
 	sta @$306003
-	
+	lda #$01
+	sta @$306004
+	cli
 	jmp @infloop	;infinite loop in WRAM
 
 colortest:

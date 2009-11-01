@@ -343,7 +343,7 @@ endif
 # Uncomment the following if you want avrdude's erase cycle counter.
 # Note that this counter needs to be initialized first using -Yn,
 # see avrdude manual.
-#AVRDUDE_ERASE_COUNTER = -y
+AVRDUDE_ERASE_COUNTER = -y
 
 # Uncomment the following if you do /not/ wish a verification to be
 # performed after programming the device.
