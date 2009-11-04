@@ -181,8 +181,8 @@ static uint8_t sdResponse(uint8_t expected)
 
 static uint8_t sdWaitWriteFinish(void)
 {
-  unsigned short count = 0xFFFF; // wait for quite some time
-
+  uint32_t count = 0x1FFFF; // wait for quite some time
+  
   while ((spiTransferByte(0xFF) == 0) && count )
     count--;
 
@@ -640,6 +640,7 @@ DRESULT sd_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
         res = sendCommand(drv, WRITE_BLOCK, (sector+sec)<<9, 0);
 
       if (res != 0) {
+	uart_putc('C');
         SPI_SS_HIGH(drv);
         disk_state = DISK_ERROR;
         return RES_ERROR;
@@ -678,6 +679,7 @@ DRESULT sd_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
 
       // Wait for write finish
       if (!sdWaitWriteFinish()) {
+	uart_putc('W');
         SPI_SS_HIGH(drv);
         disk_state = DISK_ERROR;
         return RES_ERROR;

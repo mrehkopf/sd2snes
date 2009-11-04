@@ -8,17 +8,16 @@ GAME_MAIN:
 	jsr setup_hdma
 	jsr tests
 	jsr colortest
+	sep #$20 : .as
 	lda #$00
-	sta @$306000
-	lda #$50
-	sta @$306001
-	lda #$11
-	sta @$306002
-	lda #$00
-	sta @$306003
-	lda #$01
-	sta @$306004
+	sta @$AVR_CMD
+	sta @$AVR_BANK
+	rep #$20 : .al
+	sta @$AVR_ADDR
+	sep #$20 : .as
+	jsr menuloop
 	cli
+	stz $4200
 	jmp @infloop	;infinite loop in WRAM
 
 colortest:
@@ -163,6 +162,8 @@ tests:
 	sta print_bank
 	stx print_src
 	jsr loprint
+	lda #10
+	sta bar_yl
 	rts
 	
 snes_init:

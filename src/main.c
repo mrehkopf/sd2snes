@@ -159,8 +159,11 @@ int main(void) {
 	uint16_t curr_dir_id = scan_dir(fs_path, 0); // generate files footprint
 	dprintf("curr dir id = %x\n", curr_dir_id);
 	uint16_t saved_dir_id;
+
+	led_pwm();
+
 	if((get_db_id(&saved_dir_id) != FR_OK)	// no database?
-	|| 1 || saved_dir_id != curr_dir_id) {	// files changed? // XXX
+	|| saved_dir_id != curr_dir_id) {	// files changed? // XXX
 		dprintf("saved dir id = %x\n", saved_dir_id);
 		_delay_ms(50);
 		dprintf("rebuilding database...");
@@ -181,12 +184,12 @@ int main(void) {
 		load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
 	}
 	
-	uart_putc('[');
-	load_sram((uint8_t*)"/test.srm", SRAM_SAVE_ADDR);
-	uart_putc(']');
+//	uart_putc('[');
+//	load_sram((uint8_t*)"/test.srm", SRAM_SAVE_ADDR);
+//	uart_putc(']');
 
 	uart_putc('(');
-	load_rom((uint8_t*)"/test.smc");
+	load_rom((uint8_t*)"/sd2snes/menu.bin");
 	uart_putc(')');
 
 	sram_writebyte(0, SRAM_CMD_ADDR);
@@ -210,7 +213,7 @@ int main(void) {
 				_delay_ms(100);
 //				snes_reset(1);
 				set_avr_ena(0);
-				dprintf("%s\n", file_lfn);
+				dprintf("Selected name: %s\n", file_lfn);
 				load_rom(file_lfn);
 				set_avr_ena(1);
 				snes_reset(1);

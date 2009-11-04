@@ -123,8 +123,9 @@ uint32_t load_rom(uint8_t* filename) {
 		if (file_res || !bytes_read) break;
 		FPGA_SS_LOW();
 		spiTransferByte(0x91); // write w/ increment
-		if(!(count++ % 16)) {
-			toggle_busy_led();
+		if(!(count++ % 8)) {
+//			toggle_busy_led();
+			bounce_busy_led();
 			uart_putc('.');
 		}
 		for(int j=0; j<bytes_read; j++) {

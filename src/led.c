@@ -20,7 +20,7 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
-   led.c: Overdesigned LED handling
+   led.c: LED handling
 
 */
 
@@ -28,19 +28,11 @@
 #include "config.h"
 #include "led.h"
 
-volatile uint8_t led_state;
+static uint8_t led_bright[16]={255,253,252,251,249,247,244,239,232,223,210,191,165,127,74,0};
+static uint8_t curr_bright = 0;
+static uint8_t led_bounce_dir = 0;
 
-/**
- * update_leds - set LEDs to correspond to the buffer status
- *
- * This function sets the busy/dirty LEDs to correspond to the current state
- * of the buffers, i.e. busy on of at least one non-system buffer is
- * allocated and dirty on if at least one buffer is allocated for writing.
- * Call if you have manually changed the LEDs and you want to restore the
- * "default" state.
- */
-void update_leds(void) {
-}
+volatile uint8_t led_state;
 
 void toggle_busy_led(void) {
 	PORTB &= ~_BV(PB3);
@@ -63,4 +55,34 @@ void set_pwr_led(uint8_t state) {
 	} else {
 		DDRB &= ~_BV(PB0);
 	}
+}
+
+void set_busy_pwm(uint8_t brightness) {
+	OCR0A = led_bright[brightness];
+	set_busy_led(1);
+}
+
+void bounce_busy_led() {
+	set_busy_pwm(curr_bright);
+	if(led_bounce_dir) {
+		curr_bright--;
+		if(curr_bright==0) {
+			led_bounce_dir = 0;
+		}
+	} else {
+		curr_bright++;
+		if(curr_bright==15) {
+			led_bounce_dir = 1;
+		}
+	}
+}
+
+void led_pwm() {
+        set_busy_led(1);
+        TCCR0A = 0x83;
+        TCCR0B = 0x01;
+}
+
+void led_std() {
+	TCCR0A = 0;
 }

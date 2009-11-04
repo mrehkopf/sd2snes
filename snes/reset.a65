@@ -23,17 +23,19 @@ NMI_ROUTINE:
 
 	ldx #BG2_TILE_BASE+32*10
 	stx $2116
-	DMA0(#$01, #$380*2-64*10, #^BG2_TILE_BUF, #!BG2_TILE_BUF+64*10, #$18);
+	DMA0(#$01, #$380*2-64*10, #^BG2_TILE_BUF, #!BG2_TILE_BUF+64*10, #$18)
 
 	ldx #BG2_TILE_BASE
 	stx $2116
-	DMA0(#$01, #64*10, #^BG2_TILE_BUF, #!BG2_TILE_BUF, #$18);
+	DMA0(#$01, #64*10, #^BG2_TILE_BUF, #!BG2_TILE_BUF, #$18)
+
+	lda bar_yl
+	asl
+	asl
+	asl
+	sta bar_y
 
 	lda bar_y
-	inc
-	bne +
-	inc
-+
 	cmp #224
 	bne +
 	lda #1
@@ -47,16 +49,18 @@ NMI_ROUTINE:
 	bra math_cont
 lower_half
 	clc
-	sbc #111
+	sbc #110
 	sta hdma_math+3
 	lda #112
 	sta hdma_math
 math_cont
 	lda #$3e	; ch. 1-5
 	sta @$420c	; trigger HDMA
+	lda #$01
+	sta isr_done
         rtl
 
-; IRQ - called when triggered (which is..?)
+; IRQ - called when triggered
 IRQ_ROUTINE:
         sep #$20 : .as
         lda $4211  ;Acknowledge irq
