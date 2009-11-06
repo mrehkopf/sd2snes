@@ -2,131 +2,67 @@
 ; See http://bisqwit.iki.fi/source/snescom.html for details.
 
 #include "memmap.i65"
-
+#include "dma.i65"
 
 #define TILE_ADDR_REG_VAL(addr, scsize) \
           (((addr & $FC00) >> 8) + scsize)
 #define BMAP_ADDR_REG_VAL(addr, addr2) \
           (((addr & $F000) >> 12) | (((addr2 & $F000) >> 12) << 4))
 
-; NMI - called once per screen refresh (or something like that)
+; NMI - called on VBlank
 NMI_ROUTINE:
         sep #$20 : .as
+	lda #$00
+	pha
+	plb
         lda $4210
+
+	ldx #BG1_TILE_BASE+32*10
+	stx $2116
+	DMA0(#$01, #$380*2-64*10, #^BG1_TILE_BUF, #!BG1_TILE_BUF+64*10, #$18)
+
+	ldx #BG2_TILE_BASE+32*10
+	stx $2116
+	DMA0(#$01, #$380*2-64*10, #^BG2_TILE_BUF, #!BG2_TILE_BUF+64*10, #$18)
+
+	ldx #BG2_TILE_BASE
+	stx $2116
+	DMA0(#$01, #64*10, #^BG2_TILE_BUF, #!BG2_TILE_BUF, #$18)
+
+	lda bar_yl
+	asl
+	asl
+	asl
+	sta bar_y
+
+	lda bar_y
+	cmp #224
+	bne +
+	lda #1
++
+	sta bar_y
+	cmp #113
+	bcs lower_half
+	sta hdma_math
+	lda #$01
+	sta hdma_math+3
+	bra math_cont
+lower_half
+	clc
+	sbc #110
+	sta hdma_math+3
+	lda #112
+	sta hdma_math
+math_cont
+	lda #$3e	; ch. 1-5
+	sta @$420c	; trigger HDMA
+	lda #$01
+	sta isr_done
         rtl
 
-; IRQ - called when triggered (which is..?)
+; IRQ - called when triggered
 IRQ_ROUTINE:
         sep #$20 : .as
         lda $4211  ;Acknowledge irq
         rtl
 
-; To be called regularly - updated screen contents
-; Sends the palette structure to PPU
-PaletteDMA:
-        .xl : .as
-        lda #$00 : sta $4300  ;dma type
-        lda #$22 : sta $4301  ;address $2122
-        
-        lda #^(PALETTE_ADDRESS) : sta $4304
-        ldx #!(PALETTE_ADDRESS) : stx $4302
-        
-        ldx #512 : stx $4305 ; size: 16*2*16 bytes.
-        
-        lda #$00 : sta $2121  ;Write CGRAM address (0)
-        
-        lda #$01 : sta $420B  ;Activate dma 0
-        rts
-
-; Sends the video buffer contents to PPU
-VRAMdma:
-        sty $2116  ;Write VRAM address
-        
-        sty $4302 : sta $4304 ;Write DMA address
-        stx $4305             ;Write size
-        
-        lda #$80 : sta $2115  ;PPU programming
-        
-        lda #$01 : sta $4300  ;dma type
-        lda #$18 : sta $4301  ;address $2118
-        
-        lda #$01 : sta $420B  ;Activate DMA 0
-        rts
-
-; Jumped to from snesheader.a65 - when the game is reseted.
-RESET_GAME:
-        rep #$30 : .al : .xl
-        
-        lda #$0400 : tcd
-        ldx #$03FE : txs
-        
-        sep #$20 : .as
-        
-        pha
-        plb
-        
-        lda #$01
-        sta $420D ; set "fast" mode
-        
-        ; Next initialize screen
-        
-        jsr InitializeScreen
-        jsr InitializeIRQ
-        
-        sep #$20 : .as
-        
-        ;lda #$17
-        lda #$03
-        sta $212C ; put screens on
-        sta $212D ; put screens on
-        
-        lda #$00: sta $2121
-        lda #$E0: sta $2122
-        lda #$7C: sta $2122
-        
-        jmp @GAME_MAIN
-
-InitializeIRQ:
-        sep #$20 : .as
-        
-        lda #$B1 : sta $4200
-        ldx #0   : stx $4207
-        ldx #211 : stx $4209
-        
-        sei
-
-        lda $4211
-        - lda $4210 ;: bpl -
-        
-        rts
-        
-InitializeScreen:
-        rep #$10 : .xl
-        sep #$20 : .as
-        
-        lda #$00 : sta $2101
-        
-        ldx #$0000 : stx $2102
-        
-        lda #$09 : sta $2105 ; select screen mode 1.
-
-        lda #$00 : sta $2106
-        
-        lda #TILE_ADDR_REG_VAL(BG1_TILE_ADDR, 0) : sta $2107
-        lda #TILE_ADDR_REG_VAL(BG2_TILE_ADDR, 0) : sta $2108
-        lda #TILE_ADDR_REG_VAL(BG3_TILE_ADDR, 0) : sta $2109
-        lda #TILE_ADDR_REG_VAL(BG4_TILE_ADDR, 0) : sta $210A
-        
-        lda #BMAP_ADDR_REG_VAL(BG1_BMAP_ADDR, BG2_BMAP_ADDR) : sta $210B
-        lda #BMAP_ADDR_REG_VAL(BG3_BMAP_ADDR, BG4_BMAP_ADDR) : sta $210C
-        
-        ; Set scrolling to 0,0 to all bgs
-        lda #$00 : sta $210D : sta $210D
-        lda #$00 : sta $210E : sta $210E
-        lda #$00 : sta $210F : sta $210F
-        lda #$00 : sta $2110 : sta $2110
-        lda #$00 : sta $2111 : sta $2111
-        lda #$00 : sta $2112 : sta $2112
-        lda #$00 : sta $2113 : sta $2113
-        lda #$00 : sta $2114 : sta $2114
-        rts

@@ -59,7 +59,7 @@
 #include "config.h"
 #include "ff.h"         /* FatFs declarations */
 #include "diskio.h"     /* Include file for user provided disk functions */
-
+#include "uart.h"
 
 /*--------------------------------------------------------------------------
 
@@ -1651,7 +1651,7 @@ FRESULT f_write (
   *bw = 0;
   res = validate(fs /*, fp->id*/);                     /* Check validity of the object */
   if (res != FR_OK) return res;
-  if (fp->flag & FA__ERROR) return FR_RW_ERROR;   /* Check error flag */
+  if (fp->flag & FA__ERROR) {dprintf("fp->flag & FA__ERROR \n"); return FR_RW_ERROR;}   /* Check error flag */
   if (!(fp->flag & FA_WRITE)) return FR_DENIED;   /* Check access mode */
   if (fp->fsize + btw < fp->fsize) return FR_OK;  /* File size cannot reach 4GB */
 
@@ -1669,18 +1669,18 @@ FRESULT f_write (
           clust = create_chain(fs, fp->curr_clust);         /* Trace or streach cluster chain */
         }
         if (clust == 0) break;                    /* Disk full */
-        if (clust == 1 || clust >= fs->max_clust) goto fw_error;
+        if (clust == 1 || clust >= fs->max_clust) { dprintf("cluster alloc error\n"); goto fw_error; }
         fp->curr_clust = clust;                   /* Current cluster */
         sect = clust2sect(fs, clust);             /* Get current sector */
         fp->csect = fs->csize;                    /* Re-initialize the left sector counter */
       }
-      if(!move_fp_window(fp,0)) goto fw_error;
+      if(!move_fp_window(fp,0)) {dprintf("move_fp_window error\n"); goto fw_error;}
       fp->curr_sect = sect;                       /* Update current sector */
       cc = btw / SS(fs);                          /* When left bytes >= SS(fs), */
       if (cc) {                                   /* Write maximum contiguous sectors directly */
         if (cc > fp->csect) cc = fp->csect;
         if (disk_write(fs->drive, wbuff, sect, (BYTE)cc) != RES_OK)
-          goto fw_error;
+{ dprintf("disk_write error\n");          goto fw_error;}
         fp->csect -= (BYTE)(cc - 1);
         fp->curr_sect += cc - 1;
         wcnt = cc * SS(fs);
@@ -1695,7 +1695,7 @@ FRESULT f_write (
       fp->fptr < fp->fsize &&       /* Fill sector buffer with file data if needed */
 #endif
       !move_fp_window(fp,fp->curr_sect))
-    goto fw_error;
+{    dprintf("fract write error\n "); goto fw_error; }
       memcpy(&FPBUF.data[fp->fptr & (SS(fs) - 1)], wbuff, wcnt);
       FPBUF.dirty=TRUE;
     }

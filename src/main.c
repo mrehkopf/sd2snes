@@ -125,67 +125,108 @@ int main(void) {
 #endif
 
 #ifdef CLOCK_PRESCALE
-    clock_prescale_set(CLOCK_PRESCALE);
+	clock_prescale_set(CLOCK_PRESCALE);
 #endif
+	set_pwr_led(0);
+	set_busy_led(1);
 	spi_none();
-    snes_reset(1);
-    uart_init();
-    sei();   // suspected to reset the AVR when inserting an SD card
-    _delay_ms(100);
-    disk_init();
-    snes_init();
-    timer_init();
-    uart_puts_P(PSTR("\nsd2snes " VERSION));
-    uart_putcrlf();
+	snes_reset(1);
+	uart_init();
+	sei();   // suspected to reset the AVR when inserting an SD card
+	_delay_ms(100);
+	disk_init();
+	snes_init();
+	timer_init();
+	uart_puts_P(PSTR("\nsd2snes " VERSION));
+	uart_putcrlf();
 
 	file_init();
-    FATFS fatfs;
-    f_mount(0,&fatfs);
-    set_busy_led(1);
-    uart_putc('W');
-    fpga_init();
-    fpga_pgm("/sd2snes/main.bit");
+	FATFS fatfs;
+	f_mount(0,&fatfs);
+	uart_putc('W');
+	fpga_init();
+	fpga_pgm((uint8_t*)"/sd2snes/main.bit");
 	_delay_ms(100);
+	set_pwr_led(1);
 	fpga_spi_init();
-    uart_putc('!');
+	uart_putc('!');
 	_delay_ms(100);
-    set_avr_ena(0);
+	set_avr_ena(0);
 	snes_reset(1);
 
-    *fs_path=0;
+	sram_writelong(0x12345678, SRAM_SCRATCHPAD);
+	*fs_path=0;
 	uint16_t curr_dir_id = scan_dir(fs_path, 0); // generate files footprint
 	dprintf("curr dir id = %x\n", curr_dir_id);
 	uint16_t saved_dir_id;
+
+	led_pwm();
+
 	if((get_db_id(&saved_dir_id) != FR_OK)	// no database?
-       || saved_dir_id != curr_dir_id) {	// files changed?
+	|| saved_dir_id != curr_dir_id) {	// files changed? // XXX
 		dprintf("saved dir id = %x\n", saved_dir_id);
 		_delay_ms(50);
 		dprintf("rebuilding database...");
 		_delay_ms(50);
 		curr_dir_id = scan_dir(fs_path, 1);	// then rebuild database
-		sram_writeblock(&curr_dir_id, SRAM_WORK_ADDR, 2);
-		uint32_t endaddr;
-		sram_readblock(&endaddr, SRAM_WORK_ADDR+4, 4);
-		dprintf("%lx\n", endaddr);
-		save_sram("/sd2snes/sd2snes.db", endaddr-SRAM_WORK_ADDR, SRAM_WORK_ADDR);
+		sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 2);
+		uint32_t endaddr, direndaddr;
+		sram_readblock(&endaddr, SRAM_DB_ADDR+4, 4);
+		sram_readblock(&direndaddr, SRAM_DB_ADDR+8, 4);
+		dprintf("%lx %lx\n", endaddr, direndaddr);
+		save_sram((uint8_t*)"/sd2snes/sd2snes.db", endaddr-SRAM_DB_ADDR, SRAM_DB_ADDR);
+		save_sram((uint8_t*)"/sd2snes/sd2snes.dir", direndaddr-(SRAM_DIR_ADDR), SRAM_DIR_ADDR);
 		dprintf("done\n"); 
+		sram_hexdump(SRAM_DB_ADDR, 0x400);
+	} else {
+		dprintf("loading db...\n");
+		load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
+		load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
 	}
-	uart_putc('[');
-	load_sram("/test.srm");
-	uart_putc(']');
+//	save_sram((uint8_t*)"/debug.smc", 0x400000, 0);	
+//	uart_putc('[');
+//	load_sram((uint8_t*)"/test.srm", SRAM_SAVE_ADDR);
+//	uart_putc(']');
 
 	uart_putc('(');
-	load_rom("/test.smc");
+	load_rom((uint8_t*)"/sd2snes/menu.bin");
 	uart_putc(')');
 
+	sram_writebyte(0, SRAM_CMD_ADDR);
 
 	set_busy_led(0);
 	set_avr_ena(1);
+
 	_delay_ms(100);
 	uart_puts_P(PSTR("SNES GO!\n"));
 	snes_reset(0);
 
+	uint8_t cmd = 0;
 
+	while(!sram_reliable());
+
+	while(!cmd) {
+		cmd=menu_main_loop();
+		switch(cmd) {
+			case 0x01: // SNES_CMD_LOADROM:
+				get_selected_name(file_lfn);
+				_delay_ms(100);
+//				snes_reset(1);
+				set_avr_ena(0);
+				dprintf("Selected name: %s\n", file_lfn);
+				load_rom(file_lfn);
+				set_avr_ena(1);
+				snes_reset(1);
+				_delay_ms(100);
+				snes_reset(0);
+				break;
+			default:
+			break;
+		}
+		
+	}
+	dprintf("cmd was %x, going to snes main loop\n", cmd);
+	cmd=0;
 	while(1) {
 		snes_main_loop();
 	}
@@ -200,22 +241,22 @@ while(1)  {
 	uart_putcrlf();
 	uint8_t buff[21];
 	for(uint8_t cnt=0; cnt<21; cnt++) {
-	    uint8_t data=spiTransferByte(0x00);
+		uint8_t data=spiTransferByte(0x00);
 		buff[cnt]=data;
 	}
 	for(uint8_t cnt=0; cnt<21; cnt++) {
 		uint8_t data = buff[cnt];
 		_delay_ms(2);
-	    if(data>=0x20 && data <= 0x7a) {
+		if(data>=0x20 && data <= 0x7a) {
 			uart_putc(data);
-	    } else {
+		} else {
 //			uart_putc('.');
 			uart_putc("0123456789ABCDEF"[data>>4]);
 			uart_putc("0123456789ABCDEF"[data&15]);
 			uart_putc(' ');
-	    }
+		}
 //		set_avr_bank(3);
-	} 
+	}
 	spi_none();
 }
 	while(1);

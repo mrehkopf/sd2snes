@@ -73,6 +73,7 @@
     <property xil_pn:name="Constraints Entry" xil_pn:value="Constraints Editor"/>
     <property xil_pn:name="Device" xil_pn:value="xc3s200"/>
     <property xil_pn:name="Device Family" xil_pn:value="Spartan3"/>
+    <property xil_pn:name="Enable BitStream Compression" xil_pn:value="true"/>
     <property xil_pn:name="Extra Effort" xil_pn:value="Normal"/>
     <property xil_pn:name="Extra Effort (Highest PAR level only)" xil_pn:value="Normal"/>
     <property xil_pn:name="Fitter Report Format" xil_pn:value="HTML"/>

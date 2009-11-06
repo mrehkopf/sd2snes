@@ -9,9 +9,10 @@ BYTE file_buf[512];
 FATFS fatfs;
 FIL file_handle;
 FRESULT file_res;
+uint8_t file_lfn[256];
 
 void file_init(void);
-void file_open(char* filename, BYTE flags);
+void file_open(uint8_t* filename, BYTE flags);
 void file_open_by_filinfo(FILINFO* fno);
 void file_close(void);
 UINT file_read(void);

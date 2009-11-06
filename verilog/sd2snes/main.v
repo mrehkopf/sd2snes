@@ -49,11 +49,11 @@ module main(
     output SPI_MISO,
     input SPI_SS,
     input SPI_SCK,
-    input AVR_ENA,
+    input AVR_ENA
     
    /* debug */
-   output DCM_IN_STOPPED,
-   output DCM_FX_STOPPED
+   //output DCM_IN_STOPPED,
+   //output DCM_FX_STOPPED
    //input DCM_RST
     );
 wire [7:0] spi_cmd_data;
@@ -110,8 +110,6 @@ avr_cmd snes_avr_cmd(
 );
 
 wire [7:0] DCM_STATUS;
-assign DCM_FX_STOPPED = DCM_STATUS[2];
-assign DCM_IN_STOPPED = DCM_STATUS[1];
 my_dcm snes_dcm(.CLKIN(CLKIN),
                   .CLKFX(CLK2),
                   .LOCKED(DCM_LOCKED),
