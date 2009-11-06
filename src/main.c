@@ -190,6 +190,7 @@ int main(void) {
 
 	uart_putc('(');
 	load_rom((uint8_t*)"/sd2snes/menu.bin");
+	set_rom_mask(0x3fffff); // force mirroring off
 	uart_putc(')');
 
 	sram_writebyte(0, SRAM_CMD_ADDR);
