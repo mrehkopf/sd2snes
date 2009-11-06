@@ -183,7 +183,7 @@ int main(void) {
 		load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
 		load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
 	}
-	
+//	save_sram((uint8_t*)"/debug.smc", 0x400000, 0);	
 //	uart_putc('[');
 //	load_sram((uint8_t*)"/test.srm", SRAM_SAVE_ADDR);
 //	uart_putc(']');

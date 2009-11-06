@@ -10,10 +10,11 @@ GAME_MAIN:
 	jsr colortest
 	sep #$20 : .as
 	lda #$00
-	sta @$AVR_CMD
-	sta @$AVR_BANK
+	sta @AVR_CMD
+	sta @AVR_PARAM
 	rep #$20 : .al
-	sta @$AVR_ADDR
+	sta @AVR_PARAM+1
+	jsr menu_init
 	sep #$20 : .as
 	jsr menuloop
 	cli
@@ -137,37 +138,13 @@ tests:
 	stz $2121
 	lda #$0f
 	sta $2100		;screen on, full brightness
-	lda #0
-	sta print_x
-	lda #10
-	sta print_y
-	lda #^hello
-	ldx #!hello
-	sta print_bank
-	stx print_src
-	jsr hiprint
-	lda #^version
-	ldx #!version
-	sta print_bank
-	stx print_src
-	stz print_x
-	lda #8
-	sta print_y
-	jsr loprint
-	lda #3
-	sta print_y
-	stz print_x
-	lda #$C0
-	ldx #$B000
-	sta print_bank
-	stx print_src
-	jsr loprint
-	lda #10
+	lda #9
 	sta bar_yl
 	rts
 	
 snes_init:
 	sep #$20 : .as		;8-bit accumulator
+	rep #$10 : .xl		;16-bit index
 	lda #$01
 	sta $420d		; FAAAAAST
 	lda #$8f
@@ -256,5 +233,17 @@ snes_init:
 	stz $420a		;
 	stz $420b		;
 	stz $420c		;
+;clear WRAM lower page
+;        ldx #$0200
+;        stx $2181
+;        lda #$00
+;        sta $2183
+;        DMA0(#$08, #$FF00, #^zero, #!zero, #$80)
+;        ldx #$0000
+;        stx $2181
+;	lda #$00
+;	sta $2183
+;        DMA0(#$08, #$1e0, #^zero, #!zero, #$80)
+
 	rts
 
