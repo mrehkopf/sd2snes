@@ -1,0 +1,32 @@
+read_pad:
+	php
+	rep #$30 : .xl : .al
+read_pad1
+	ldx pad1mem 	;byetUDLRaxlriiii
+	lda $4218
+	sta pad1mem
+	and #$0f00
+	bne read_pad1_count
+	stz pad1delay
+read_pad1_cont1
+	txa
+	eor pad1mem
+	and pad1mem
+	sta pad1trig
+	lda #$0010
+	cmp pad1delay
+	bne read_pad1_cont2
+	stz pad1mem
+	lda #$000d
+	sta pad1delay
+read_pad1_cont2
+;lda $4218
+;sta pad1trig
+	plp
+	rts
+
+read_pad1_count
+	lda pad1delay
+	inc
+	sta pad1delay
+	bra read_pad1_cont1
