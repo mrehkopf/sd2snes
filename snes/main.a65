@@ -131,7 +131,7 @@ tests:
 	lda #$03		;enable BG1+BG2 
 	sta $212c		;BG Main
 	sta $212d		;BG Sub
-	lda #$00		;224
+	lda #$00		;224 (01=448)
 	sta $2133		;
 	lda #$00
 	sta $2130

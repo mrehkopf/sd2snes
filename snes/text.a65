@@ -1,8 +1,12 @@
 .text
 #include "memmap.i65"
 hiprint:
+	sep #$20 : .as
+	lda print_count
+	sta print_count_tmp
+	stz print_done
 	rep #$30 : .xl : .al
-	lda !print_x
+	lda print_x
 	and #$00ff
 	lsr
 	bcs print_bg1
@@ -18,7 +22,7 @@ print_bg1
 	phx
 	bra print_bg_cont
 print_bg_cont
-	sta !print_x
+	sta !print_temp
 	lda !print_y
 	and #$00ff
 	asl
@@ -27,14 +31,14 @@ print_bg_cont
 	asl
 	asl
 	clc
-	adc !print_x
+	adc !print_temp
 	asl ; double the offset for WRAM addressing
 	tay	; zonday
 	plx
 	phy	; offset from tilemap start	
-	stx !print_x
+	stx !print_temp
 	clc
-	adc !print_x
+	adc !print_temp
 ; we need to transfer to WRAM and from there to VRAM via DMA during VBLANK
 ; because VRAM can only be accessed during VBLANK and forced blanking.
 	sta $2181
@@ -51,17 +55,31 @@ print_loop_inner
 	lda !0,x
 	asl
 	sta @$2180
-	lda #$00
+	lda @print_pal
+	asl
+	asl
 	adc #$00
 	sta @$2180
+	lda @print_done
+	inc
+	sta @print_done
+	inx
+	lda !0,x
+	beq print_loop2	
 	inx
 	lda !0,x
 	beq print_loop2
-	inx
-	lda !0,x
+	lda @print_count_tmp
+	dec
+	dec
+	sta @print_count_tmp
 	beq print_loop2
+	bmi print_loop2
 	bra print_loop_inner
 print_loop2
+	lda @print_count
+	dec
+	sta @print_count_tmp
 	lda #$00
 	pha
 	plb	
@@ -70,9 +88,9 @@ print_loop2
 	iny
 	pla	; offset from tilemap start
 	plx	; other tilemap addr
-	stx !print_x
+	stx !print_temp
 	clc
-	adc print_x ; tilemap+offset
+	adc !print_temp ; tilemap+offset
 	sta $2181
 	tyx
 	sep #$20 : .as
@@ -83,15 +101,26 @@ print_loop2_inner
 	lda !0,x
 	asl
 	sta @$2180
-	lda #$00
+	lda @print_pal
+	asl
+	asl
 	adc #$00
 	sta @$2180
+	lda @print_done
+	inc
+	sta @print_done
 	inx
 	lda !0,x
 	beq print_end
 	inx
 	lda !0,x
 	beq print_end
+	lda @print_count_tmp
+	dec
+	dec
+	sta @print_count_tmp
+	beq print_end
+	bmi print_end
 	bra print_loop2_inner
 print_end
 	lda #$00
@@ -107,7 +136,7 @@ loprint:
 	asl ;double the offset for WRAM addressing
 	clc
 	adc #!BG2_TILE_BUF
-	sta !print_x
+	sta !print_temp
 	lda !print_y
 	and #$00ff
 	asl
@@ -117,7 +146,7 @@ loprint:
 	asl
 	asl ;double the offset for WRAM addressing
 	clc
-	adc !print_x
+	adc !print_temp
 ; we need to transfer to WRAM and from there to VRAM via DMA during VBLANK
 ; because VRAM can only be accessed during VBLANK and forced blanking.
 	sta $2181

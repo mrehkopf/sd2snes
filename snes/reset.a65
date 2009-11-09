@@ -12,6 +12,7 @@
 ; NMI - called on VBlank
 NMI_ROUTINE:
         sep #$20 : .as
+	rep #$10 : .xl
 	lda #$00
 	pha
 	plb

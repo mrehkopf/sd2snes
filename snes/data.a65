@@ -2,14 +2,20 @@
 ;don't anger the stack!
 dirptr_addr	.word	0
 dirptr_bank	.byt	0
+dirstart_addr	.word	0
+dirstart_bank	.byt	0
+dirend_addr	.word 	0
+dirend_bank	.byt	0
+dirend_idx	.word	0
 dirptr_idx	.word	0
-dirptr_table	.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+dirptr_table	.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 dirent_addr	.word 0
 dirent_bank	.byt 0
 dirent_type	.byt 0
-.byt 0
-dirlog  .word	0,0,0,0,0,0,0,0,0,0,0,0
+dirend_onscreen	.byt 0
+dirlog_idx	.byt 0
+dirlog  .word	0,0,0,0,0,0,0,0,0
 	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -31,8 +37,11 @@ print_y	.byt 0		;y coordinate
 	.byt 0
 print_src	.word 0	;source data address
 print_bank	.byt 0	;source data bank
-print_pal	.byt 0	;palette number for text output
-
+print_pal	.word 0	;palette number for text output
+print_temp	.word 0 ;work variable
+print_count	.byt 0	;how many characters may be printed?
+print_count_tmp .byt 0	;work variable
+print_done	.byt 0  ;how many characters were printed?
 ;----------parameters for dma----------
 dma_a_bank	.byt 0
 dma_a_addr	.word 0
@@ -49,23 +58,15 @@ bar_y		.byt 0	; pixel y position of select bar
 bar_w		.byt 0	; bar width
 menu_state	.byt 0	; menu state (0=file select)
 menu_dirty	.byt 0	; menu dirty (e.g. after state change or when redraw is needed)
+menu_sel	.word 0 ; selected item #
 cursor_x	.byt 0	; current cursor position (x)
 cursor_y	.byt 0  ; current cursor position (y)
 fd_addr		.word 0	; address of current "file descriptor"
 fd_bank		.byt 0	; bank of current "file descriptor"
 fd_fnoff	.word 0  ; offset of filename in file descriptor
-fd_data			; contents of a "file descriptor"
-		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0
+pad1mem		.word 0
+pad1trig	.word 0
+pad1delay	.word 0
 ;----------hdma tables in WRAM (must be stable when cartridge is cut off)
 hdma_pal	.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
