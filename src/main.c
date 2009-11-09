@@ -156,19 +156,19 @@ int main(void) {
 
 	sram_writelong(0x12345678, SRAM_SCRATCHPAD);
 	*fs_path=0;
-	uint16_t curr_dir_id = scan_dir(fs_path, 0); // generate files footprint
+	uint16_t curr_dir_id = scan_dir(fs_path, 0, 0); // generate files footprint
 	dprintf("curr dir id = %x\n", curr_dir_id);
 	uint16_t saved_dir_id;
 
 	led_pwm();
 
 	if((get_db_id(&saved_dir_id) != FR_OK)	// no database?
-	|| saved_dir_id != curr_dir_id) {	// files changed? // XXX
+	|| 1 || saved_dir_id != curr_dir_id) {	// files changed? // XXX
 		dprintf("saved dir id = %x\n", saved_dir_id);
 		_delay_ms(50);
 		dprintf("rebuilding database...");
 		_delay_ms(50);
-		curr_dir_id = scan_dir(fs_path, 1);	// then rebuild database
+		curr_dir_id = scan_dir(fs_path, 1, 0);	// then rebuild database
 		sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 2);
 		uint32_t endaddr, direndaddr;
 		sram_readblock(&endaddr, SRAM_DB_ADDR+4, 4);

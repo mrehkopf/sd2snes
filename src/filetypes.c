@@ -31,7 +31,7 @@ uint16_t scan_flat(const char* path) {
 	return numentries;
 }
 
-uint16_t scan_dir(char* path, char mkdb) {
+uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 	DIR dir;
 	FILINFO fno;
 	FRESULT res;
@@ -40,37 +40,39 @@ uint16_t scan_dir(char* path, char mkdb) {
 	static unsigned char depth = 0;
 	static uint16_t crc;
 	static uint32_t db_tgt;
-	static uint32_t dir_tgt;
+	static uint32_t next_subdir_tgt;
 	static uint32_t dir_end = 0;
 	static uint8_t was_empty = 0;
-	uint32_t dir_tgt_save, dir_tgt_next;
+	uint32_t dir_tgt;
 	uint16_t numentries;
 	uint32_t dirsize;
 	uint8_t pass = 0;
 
+	dir_tgt = this_dir_tgt;
 	if(depth==0) {
 		crc = 0;
 		db_tgt = SRAM_DB_ADDR+0x10;
 		dir_tgt = SRAM_DIR_ADDR;
+		next_subdir_tgt = SRAM_DIR_ADDR;
 		dprintf("root dir @%lx\n", dir_tgt);
 	}	
 	
 	fno.lfn = file_lfn;
 	numentries=0;
-	dir_tgt_next=0;
 	for(pass = 0; pass < 2; pass++) {
 		if(pass) {
 			dirsize = 4*(numentries);
-			dir_tgt_next = dir_tgt + dirsize + 4; // number of entries + end marker
-			if(dir_tgt_next > dir_end) {
-				dir_end = dir_tgt_next;
+//			dir_tgt_next = dir_tgt + dirsize + 4; // number of entries + end marker
+			next_subdir_tgt += dirsize + 4;
+			if(next_subdir_tgt > dir_end) {
+				dir_end = next_subdir_tgt;
 			}
-//			dprintf("path=%s depth=%d ptr=%lx entries=%d next subdir @%lx\n", path, depth, db_tgt, numentries, dir_tgt_next);
+			dprintf("path=%s depth=%d ptr=%lx entries=%d next subdir @%lx\n", path, depth, db_tgt, numentries, next_subdir_tgt /*dir_tgt_next*/);
 //			_delay_ms(50);
 			if(mkdb) {
-//				dprintf("d=%d Saving %lX to Address %lX  [end]\n", depth, 0L, dir_tgt_next - 4);
+				dprintf("d=%d Saving %lX to Address %lX  [end]\n", depth, 0L, next_subdir_tgt - 4);
 //				_delay_ms(50);	
-				sram_writelong(0L, dir_tgt_next - 4);
+				sram_writelong(0L, next_subdir_tgt - 4);
 			}
 		}
 		res = f_opendir(&dir, (unsigned char*)path);
@@ -95,30 +97,28 @@ uint16_t scan_dir(char* path, char mkdb) {
 						path[len]='/';
 						strncpy(path+len+1, (char*)fn, sizeof(fs_path)-len);
 						depth++;
-						dir_tgt_save = dir_tgt;
-						dir_tgt = dir_tgt_next;
 						if(mkdb) {
 							uint16_t pathlen = strlen(path);
 							// write element pointer to current dir structure
-//							dprintf("d=%d Saving %lX to Address %lX  [dir]\n", depth, db_tgt, dir_tgt_save);
+							dprintf("d=%d Saving %lX to Address %lX  [dir]\n", depth, db_tgt, dir_tgt);
 //							_delay_ms(50);
-							sram_writelong(db_tgt|((uint32_t)0x80<<24), dir_tgt_save);
+							sram_writelong(db_tgt|((uint32_t)0x80<<24), dir_tgt);
 //							sram_writeblock((uint8_t*)&db_tgt, dir_tgt_save, sizeof(dir_tgt_save));
 
 							// save element:
 							//  - path name
 							//  - pointer to sub dir structure
-//							dprintf("    Saving dir descriptor to %lX, tgt=%lX, path=%s\n", db_tgt, dir_tgt, path);
+							dprintf("    Saving dir descriptor to %lX, tgt=%lX, path=%s\n", db_tgt, next_subdir_tgt, path);
 //							_delay_ms(100);
-							sram_writelong(dir_tgt, db_tgt);
-							sram_writebyte(len+1, db_tgt+sizeof(dir_tgt));
-							sram_writeblock(path, db_tgt+sizeof(dir_tgt)+sizeof(len), pathlen + 1);
+							sram_writelong(next_subdir_tgt, db_tgt);
+							sram_writebyte(len+1, db_tgt+sizeof(next_subdir_tgt));
+							sram_writeblock(path, db_tgt+sizeof(next_subdir_tgt)+sizeof(len), pathlen + 1);
 //							sram_writeblock((uint8_t*)&dir_tgt, db_tgt+256, sizeof(dir_tgt));
-							db_tgt += sizeof(dir_tgt) + sizeof(len) + pathlen + 1;
+							db_tgt += sizeof(next_subdir_tgt) + sizeof(len) + pathlen + 1;
 						}
-						scan_dir(path, mkdb);
-						dir_tgt = dir_tgt_save + 4;
-						if(was_empty)dir_tgt_next += 4;
+						scan_dir(path, mkdb, next_subdir_tgt);
+						dir_tgt += 4;
+//						if(was_empty)dir_tgt_next += 4;
 						was_empty = 0;
 						depth--;
 						path[len]=0;

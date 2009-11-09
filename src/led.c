@@ -29,8 +29,8 @@
 #include "led.h"
 
 static uint8_t led_bright[16]={255,253,252,251,249,247,244,239,232,223,210,191,165,127,74,0};
-static uint8_t curr_bright = 0;
-static uint8_t led_bounce_dir = 0;
+static uint8_t curr_bright = 15;
+static uint8_t led_bounce_dir = 1;
 
 volatile uint8_t led_state;
 
