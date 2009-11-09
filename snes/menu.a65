@@ -384,6 +384,18 @@ sel_is_dir
 
 select_file:
 	; have avr load the rom
+	sta @$fffffe
+	dey
+	lda (dirptr_addr), y
+	sta @AVR_PARAM+2
+	rep #$20 : .al
+	dey
+	dey
+	lda (dirptr_addr), y
+	sta @AVR_PARAM
+	sep #$20 : .as
+	lda #$01
+	sta @AVR_CMD
 	rts
 
 select_dir: ; y = direntry ptr
@@ -413,6 +425,8 @@ select_dir: ; y = direntry ptr
 	lda !0, x ; load linked dir start address
 	sta @dirptr_addr
 	sta @dirstart_addr
+	lda #$0000
+	sta @menu_sel
 	sep #$20 : .as
 	lda #$01
 	sta @menu_dirty

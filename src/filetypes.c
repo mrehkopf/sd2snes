@@ -41,6 +41,7 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 	static uint16_t crc;
 	static uint32_t db_tgt;
 	static uint32_t next_subdir_tgt;
+	static uint32_t parent_tgt;
 	static uint32_t dir_end = 0;
 	static uint8_t was_empty = 0;
 	uint32_t dir_tgt;
@@ -54,6 +55,8 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 		db_tgt = SRAM_DB_ADDR+0x10;
 		dir_tgt = SRAM_DIR_ADDR;
 		next_subdir_tgt = SRAM_DIR_ADDR;
+		this_dir_tgt = SRAM_DIR_ADDR;
+		parent_tgt = 0;
 		dprintf("root dir @%lx\n", dir_tgt);
 	}	
 	
@@ -64,10 +67,11 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 			dirsize = 4*(numentries);
 //			dir_tgt_next = dir_tgt + dirsize + 4; // number of entries + end marker
 			next_subdir_tgt += dirsize + 4;
+			if(parent_tgt) next_subdir_tgt += 4;
 			if(next_subdir_tgt > dir_end) {
 				dir_end = next_subdir_tgt;
 			}
-			dprintf("path=%s depth=%d ptr=%lx entries=%d next subdir @%lx\n", path, depth, db_tgt, numentries, next_subdir_tgt /*dir_tgt_next*/);
+			dprintf("path=%s depth=%d ptr=%lx entries=%d parent=%lx next subdir @%lx\n", path, depth, db_tgt, numentries, parent_tgt, next_subdir_tgt /*dir_tgt_next*/);
 //			_delay_ms(50);
 			if(mkdb) {
 				dprintf("d=%d Saving %lX to Address %lX  [end]\n", depth, 0L, next_subdir_tgt - 4);
@@ -77,6 +81,15 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 		}
 		res = f_opendir(&dir, (unsigned char*)path);
 		if (res == FR_OK) {
+			if(pass && parent_tgt) {
+				// write backlink to parent dir
+				sram_writelong(parent_tgt, db_tgt);
+				sram_writebyte(0, db_tgt+sizeof(next_subdir_tgt));
+				sram_writeblock("../\0", db_tgt+sizeof(next_subdir_tgt)+sizeof(len), 4);
+				sram_writelong(db_tgt|((uint32_t)0x80<<24), dir_tgt);
+				db_tgt += sizeof(next_subdir_tgt)+sizeof(len)+4;
+				dir_tgt += 4;
+			}
 			len = strlen((char*)path);
 			for (;;) {
 				toggle_busy_led();
@@ -112,10 +125,12 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 //							_delay_ms(100);
 							sram_writelong(next_subdir_tgt, db_tgt);
 							sram_writebyte(len+1, db_tgt+sizeof(next_subdir_tgt));
-							sram_writeblock(path, db_tgt+sizeof(next_subdir_tgt)+sizeof(len), pathlen + 1);
+							sram_writeblock(path, db_tgt+sizeof(next_subdir_tgt)+sizeof(len), pathlen);
+							sram_writeblock("/\0", db_tgt + sizeof(next_subdir_tgt) + sizeof(len) + pathlen, 2);
 //							sram_writeblock((uint8_t*)&dir_tgt, db_tgt+256, sizeof(dir_tgt));
-							db_tgt += sizeof(next_subdir_tgt) + sizeof(len) + pathlen + 1;
+							db_tgt += sizeof(next_subdir_tgt) + sizeof(len) + pathlen + 2;
 						}
+						parent_tgt = this_dir_tgt;
 						scan_dir(path, mkdb, next_subdir_tgt);
 						dir_tgt += 4;
 //						if(was_empty)dir_tgt_next += 4;

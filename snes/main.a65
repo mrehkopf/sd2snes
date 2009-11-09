@@ -11,9 +11,10 @@ GAME_MAIN:
 	sep #$20 : .as
 	lda #$00
 	sta @AVR_CMD
-	sta @AVR_PARAM
 	rep #$20 : .al
-	sta @AVR_PARAM+1
+	lda #$0000
+	sta @AVR_PARAM
+	sta @AVR_PARAM+2
 	jsr menu_init
 	sep #$20 : .as
 	jsr menuloop

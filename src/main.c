@@ -163,7 +163,7 @@ int main(void) {
 	led_pwm();
 
 	if((get_db_id(&saved_dir_id) != FR_OK)	// no database?
-	|| 1 || saved_dir_id != curr_dir_id) {	// files changed? // XXX
+	|| saved_dir_id != curr_dir_id) {	// files changed? // XXX
 		dprintf("saved dir id = %x\n", saved_dir_id);
 		_delay_ms(50);
 		dprintf("rebuilding database...");
@@ -214,7 +214,7 @@ int main(void) {
 				_delay_ms(100);
 //				snes_reset(1);
 				set_avr_ena(0);
-				dprintf("Selected name: %s\n", file_lfn);
+//				dprintf("Selected name: %s\n", file_lfn);
 				load_rom(file_lfn);
 				set_avr_ena(1);
 				snes_reset(1);
