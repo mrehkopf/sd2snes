@@ -17,6 +17,7 @@
 #include "smc.h"
 #include "fpga_spi.h"
 #include "memory.h"
+#include "snes.h"
 
 char* hex = "0123456789ABCDEF";
 
@@ -48,6 +49,16 @@ uint8_t sram_readbyte(uint32_t addr) {
 	return val;
 }
 
+void sram_writeshort(uint16_t val, uint32_t addr) {
+	set_avr_addr(addr);
+	spi_fpga();
+	spiTransferByte(0x91); // WRITE
+	spiTransferByte(val&0xff);		// 7-0
+	spiTransferByte((val>>8)&0xff);		// 15-8
+	spiTransferByte(0x00); // dummy
+	spi_none();
+}
+
 void sram_writelong(uint32_t val, uint32_t addr) {
 	set_avr_addr(addr);
 	spi_fpga();
@@ -58,6 +69,18 @@ void sram_writelong(uint32_t val, uint32_t addr) {
 	spiTransferByte((val>>24)&0xff);	// 31-24
 	spiTransferByte(0x00); // dummy
 	spi_none();
+}
+
+uint16_t sram_readshort(uint32_t addr) {
+	set_avr_addr(addr);
+	spi_fpga();
+	spiTransferByte(0x81);
+	spiTransferByte(0x00);
+
+	uint32_t val = spiTransferByte(0x00);
+	val |= ((uint32_t)spiTransferByte(0x00)<<8);
+	spi_none();
+	return val;
 }
 
 uint32_t sram_readlong(uint32_t addr) {
@@ -227,12 +250,17 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
 	uint32_t count;
 	uint16_t crc;
 	crc=0;
+	crc_valid=1;
 	set_avr_addr(base_addr);
 	spi_fpga();
 	spiTransferByte(0x81);
 	spiTransferByte(0x00);
 	for(count=0; count<size; count++) {
 		data = spiTransferByte(0);
+		if(get_snes_reset()) {
+			crc_valid = 0;
+			break;
+		}
 		crc += crc16_update(crc, &data, 1);
 	}
 	spi_none();

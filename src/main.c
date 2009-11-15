@@ -154,40 +154,53 @@ int main(void) {
 	set_avr_ena(0);
 	snes_reset(1);
 
-	sram_writelong(0x12345678, SRAM_SCRATCHPAD);
 	*fs_path=0;
-	uint16_t curr_dir_id = scan_dir(fs_path, 0, 0); // generate files footprint
-	dprintf("curr dir id = %x\n", curr_dir_id);
 	uint16_t saved_dir_id;
+	get_db_id(&saved_dir_id);
 
+	uint16_t mem_dir_id = sram_readshort(SRAM_DIRID);
+	uint32_t mem_magic = sram_readlong(SRAM_SCRATCHPAD);
 	led_pwm();
 
-	if((get_db_id(&saved_dir_id) != FR_OK)	// no database?
-	|| saved_dir_id != curr_dir_id) {	// files changed? // XXX
-		dprintf("saved dir id = %x\n", saved_dir_id);
-		_delay_ms(50);
-		dprintf("rebuilding database...");
-		_delay_ms(50);
-		curr_dir_id = scan_dir(fs_path, 1, 0);	// then rebuild database
-		sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 2);
-		uint32_t endaddr, direndaddr;
-		sram_readblock(&endaddr, SRAM_DB_ADDR+4, 4);
-		sram_readblock(&direndaddr, SRAM_DB_ADDR+8, 4);
-		dprintf("%lx %lx\n", endaddr, direndaddr);
-		save_sram((uint8_t*)"/sd2snes/sd2snes.db", endaddr-SRAM_DB_ADDR, SRAM_DB_ADDR);
-		save_sram((uint8_t*)"/sd2snes/sd2snes.dir", direndaddr-(SRAM_DIR_ADDR), SRAM_DIR_ADDR);
-		dprintf("done\n"); 
-		sram_hexdump(SRAM_DB_ADDR, 0x400);
-	} else {
-		dprintf("loading db...\n");
-		load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
-		load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
-	}
+	if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id)) {
+		uint16_t curr_dir_id = scan_dir(fs_path, 0, 0); // generate files footprint
+		dprintf("curr dir id = %x\n", curr_dir_id);
+
+		led_pwm();
+	
+		if((get_db_id(&saved_dir_id) != FR_OK)	// no database?
+		|| saved_dir_id != curr_dir_id) {	// files changed? // XXX
+			dprintf("saved dir id = %x\n", saved_dir_id);
+			_delay_ms(50);
+			dprintf("rebuilding database...");
+			_delay_ms(50);
+			curr_dir_id = scan_dir(fs_path, 1, 0);	// then rebuild database
+			sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 2);
+			uint32_t endaddr, direndaddr;
+			sram_readblock(&endaddr, SRAM_DB_ADDR+4, 4);
+			sram_readblock(&direndaddr, SRAM_DB_ADDR+8, 4);
+			dprintf("%lx %lx\n", endaddr, direndaddr);
+			save_sram((uint8_t*)"/sd2snes/sd2snes.db", endaddr-SRAM_DB_ADDR, SRAM_DB_ADDR);
+			save_sram((uint8_t*)"/sd2snes/sd2snes.dir", direndaddr-(SRAM_DIR_ADDR), SRAM_DIR_ADDR);
+			dprintf("done\n"); 
+			sram_hexdump(SRAM_DB_ADDR, 0x400);
+		} else {
+			dprintf("different card, consistent db, loading db...\n");
+			load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
+			load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
+		}
 //	save_sram((uint8_t*)"/debug.smc", 0x400000, 0);	
 //	uart_putc('[');
 //	load_sram((uint8_t*)"/test.srm", SRAM_SAVE_ADDR);
 //	uart_putc(']');
 
+		sram_writeshort(curr_dir_id, SRAM_DIRID);
+		sram_writelong(0x12345678, SRAM_SCRATCHPAD);
+	} else {
+		dprintf("same card, loading db...\n");
+		load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
+		load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
+	}
 	uart_putc('(');
 	load_rom((uint8_t*)"/sd2snes/menu.bin");
 	set_rom_mask(0x3fffff); // force mirroring off
@@ -229,6 +242,9 @@ int main(void) {
 	dprintf("cmd was %x, going to snes main loop\n", cmd);
 	cmd=0;
 	while(1) {
+		if(get_snes_reset()) {
+			dprintf("RESET\n");
+		}
 		snes_main_loop();
 	}
 
