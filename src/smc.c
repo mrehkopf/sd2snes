@@ -53,7 +53,7 @@ uint8_t checkChksum(uint16_t cchk, uint16_t chk) {
 }
 
 void smc_id(snes_romprops_t* props) {
-	uint8_t score, maxscore=1, score_idx=0;
+	uint8_t score, maxscore=1, score_idx=2; // assume LoROM
 
 	snes_header_t* header = &(props->header);
 	
@@ -64,9 +64,9 @@ void smc_id(snes_romprops_t* props) {
 //			_delay_ms(30);
 			score = 0;
 		} else {
-			score = smc_headerscore(header);
+			score = smc_headerscore(header)/(1+(num&1));
 		}
-//		dprintf("%d: offset = %lX; score = %d\n", num, hdr_addr[num], score);
+		dprintf("%d: offset = %lX; score = %d\n", num, hdr_addr[num], score);
 //		_delay_ms(100);
 		if(score>=maxscore) {
 			score_idx=num;
@@ -81,7 +81,7 @@ void smc_id(snes_romprops_t* props) {
 	}
 	
 	// restore the chosen one
-//	dprintf("winner is %d\n", score_idx);
+	dprintf("winner is %d\n", score_idx);
 //	_delay_ms(30);
 	file_readblock(header, hdr_addr[score_idx], sizeof(snes_header_t));
 	switch(header->map & 0xef) {
@@ -94,10 +94,27 @@ void smc_id(snes_romprops_t* props) {
 		case 0x25:
 			props->mapper_id = 2;
 			break;
-		default:
-			props->mapper_id = 0; // whatever
+		default: // invalid/unsupported mapper, use header location
+			switch(score_idx) {
+				case 0:
+				case 1:
+					props->mapper_id = 0;
+					break;
+				case 2:
+				case 3:
+					props->mapper_id = 1;
+					break;
+				case 4:
+				case 5:
+					props->mapper_id = 2;
+					break;
+				default:
+					props->mapper_id = 1; // whatever
+			}
 	}
-
+	if(header->romsize == 0 || header->romsize > 13) {
+		header->romsize = 13;
+	}
 	props->ramsize_bytes = (uint32_t)1024 << header->ramsize;
 	props->romsize_bytes = (uint32_t)1024 << header->romsize;
 	props->expramsize_bytes = (uint32_t)1024 << header->expramsize;

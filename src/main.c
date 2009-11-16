@@ -212,7 +212,7 @@ int main(void) {
 	set_avr_ena(1);
 
 	_delay_ms(100);
-	uart_puts_P(PSTR("SNES GO!\n"));
+	uart_puts_P(PSTR("SNES GO!\r\n"));
 	snes_reset(0);
 
 	uint8_t cmd = 0;
@@ -227,14 +227,19 @@ int main(void) {
 				_delay_ms(100);
 //				snes_reset(1);
 				set_avr_ena(0);
-//				dprintf("Selected name: %s\n", file_lfn);
+				dprintf("Selected name: %s\n", file_lfn);
 				load_rom(file_lfn);
+				strcpy(strrchr((char*)file_lfn, (int)'.'), ".srm");
+				dprintf("SRM file: %s\n", file_lfn);
+				load_sram(file_lfn, SRAM_SAVE_ADDR);
 				set_avr_ena(1);
 				snes_reset(1);
 				_delay_ms(100);
 				snes_reset(0);
 				break;
 			default:
+				dprintf("unknown cmd: %d\n", cmd);
+				cmd=0; // unknown cmd: stay in loop
 			break;
 		}
 		

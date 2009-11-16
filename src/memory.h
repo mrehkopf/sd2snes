@@ -4,7 +4,6 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#define SRAM_WORK_ADDR	(0x100000L)
 #define SRAM_DB_ADDR (0x080000L)
 #define SRAM_DIR_ADDR (0x300000L)
 #define SRAM_CMD_ADDR (0x601004L)

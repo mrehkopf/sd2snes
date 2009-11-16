@@ -79,7 +79,7 @@ void snes_main_loop() {
 			uart_puthexshort(saveram_crc);
 			uart_putcrlf();
 			set_busy_led(1);
-			save_sram((uint8_t*)"/test.srm", saveram_size, saveram_base_addr);
+			save_sram(file_lfn, saveram_size, saveram_base_addr);
 			set_busy_led(0);
 		}
 		saveram_crc_old = saveram_crc;
