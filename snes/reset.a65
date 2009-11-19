@@ -20,11 +20,11 @@ NMI_ROUTINE:
 
 	ldx #BG1_TILE_BASE+32*10
 	stx $2116
-	DMA0(#$01, #$380*2-64*10, #^BG1_TILE_BUF, #!BG1_TILE_BUF+64*10, #$18)
+	DMA0(#$01, #34*64, #^BG1_TILE_BUF, #!BG1_TILE_BUF+64*10, #$18)
 
 	ldx #BG2_TILE_BASE+32*10
 	stx $2116
-	DMA0(#$01, #$380*2-64*10, #^BG2_TILE_BUF, #!BG2_TILE_BUF+64*10, #$18)
+	DMA0(#$01, #34*64, #^BG2_TILE_BUF, #!BG2_TILE_BUF+64*10, #$18)
 
 	ldx #BG2_TILE_BASE
 	stx $2116
@@ -33,7 +33,18 @@ NMI_ROUTINE:
 	lda bar_yl
 	asl
 	asl
+	tax
+	lda barstep
+	php
+	txa
+	plp
+	bne small_bar
 	asl
+	bra normal_bar
+small_bar
+	clc
+	adc #36
+normal_bar
 	sta bar_y
 
 	lda bar_y

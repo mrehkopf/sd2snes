@@ -53,12 +53,12 @@ setup_gfx:
 ;clear BG1 tilemap
 	ldx #BG1_TILE_BASE
 	stx $2116
-	DMA0(#$09, #$800, #^zero, #!zero, #$18)
+	DMA0(#$09, #$1000, #^zero, #!zero, #$18)
 
 ;clear BG2 tilemap
 	ldx #BG2_TILE_BASE
 	stx $2116
-	DMA0(#$09, #$800, #^zero, #!zero, #$18)
+	DMA0(#$09, #$1000, #^zero, #!zero, #$18)
 
 ;copy logo tiles
 	ldx #$2000
@@ -123,17 +123,18 @@ tests:
 	rep #$10 : .xl		;16-bit index
 	lda #$03		;mode 3, mode 5 via HDMA :D
 	sta $2105
-	lda #$54		;Tilemap addr 0xA800
+	lda #$58		;Tilemap addr 0xB000
+	ora #$02		;SC size 32x64
 	sta $2107		;for BG1
 	lda #$50		;Tilemap addr 0xA000
+	ora #$02		;SC size 32x64
 	sta $2108		;for BG2
 	lda #$40		;chr base addr:
 	sta $210b		;BG1=0x0000, BG2=0x8000
 	lda #$03		;enable BG1+BG2 
 	sta $212c		;BG Main
 	sta $212d		;BG Sub
-	lda #$00		;224 (01=448)
-	sta $2133		;
+	jsr setup_224
 	lda #$00
 	sta $2130
 	stz $2121
@@ -201,6 +202,7 @@ snes_init:
 	stz $2120		;
 	stz $2120		;
 	stz $2121		;
+	stz $2122		; (CG Data?!)
 	stz $2122		; (CG Data?!)
 	stz $2123		;
 	stz $2124		;

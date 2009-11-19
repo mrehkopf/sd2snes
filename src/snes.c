@@ -56,13 +56,15 @@ uint8_t get_snes_reset() {
  * monitors SRAM changes and other things
  */
 uint32_t diffcount = 0, samecount = 0;
+uint8_t sram_valid = 0;
 void snes_main_loop() {
 	if(initloop) {
 		saveram_crc_old = calc_sram_crc(saveram_base_addr, saveram_size);
 		initloop=0;
 	}
 	saveram_crc = calc_sram_crc(saveram_base_addr, saveram_size);
-	if(crc_valid) {
+	sram_valid = sram_reliable();
+	if(crc_valid && sram_valid) {
 		if(saveram_crc != saveram_crc_old) {
 			if(samecount) {
 				diffcount=1;
@@ -84,7 +86,7 @@ void snes_main_loop() {
 		}
 		saveram_crc_old = saveram_crc;
 	}
-	dprintf("valid=%d diffcount=%ld samecount=%ld\n", crc_valid, diffcount, samecount);
+	dprintf("crc_valid=%d sram_valid=%d diffcount=%ld samecount=%ld\n", crc_valid, sram_valid, diffcount, samecount);
 }
 
 /*
@@ -96,6 +98,7 @@ uint8_t menu_main_loop() {
 	sram_writebyte(0, SRAM_CMD_ADDR);
 	while(!cmd) {
 		if(!get_snes_reset()) {
+			while(!sram_reliable());
 			cmd = sram_readbyte(SRAM_CMD_ADDR);
 		}
 		if(get_snes_reset()) {

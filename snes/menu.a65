@@ -53,7 +53,7 @@ menu_cleanup:
 	lsr
 	pha
 menu_cleanup_loop
-	cmp #17
+	cmp listdisp
 	beq +
 	pha
 	clc
@@ -108,6 +108,9 @@ menu_updates:
 	lda #$80
 	and pad1trig+1
 	bne key_b
+	lda #$20
+	and pad1trig+1
+	bne key_select
 	bra menuupd_out
 key_down
 	jsr menu_key_down
@@ -124,6 +127,10 @@ key_left
 key_b
 	jsr menu_key_b
 	bra menuupd_out
+key_select
+	jsr menu_key_select
+	bra menuupd_out
+
 menuupd_out
 	lda #$0A
 	sta cursor_y
@@ -146,7 +153,9 @@ redraw_filelist
 redraw_filelist_loop
 	ldy dirptr_idx
 	tya
-	cmp #17*4
+	lsr
+	lsr
+	cmp listdisp
 	beq redraw_filelist_last
 	lda dirptr_bank
 	phb
@@ -272,8 +281,9 @@ dirent_type_cont
 	rts
 	
 menu_key_down:
-	lda menu_sel
-	cmp #$10
+	lda listdisp
+	dec
+	cmp menu_sel
 	bne +
 	lda #$01
 	sta menu_dirty
@@ -286,7 +296,8 @@ menu_key_down:
 	sta dirptr_addr
 	sep #$20 : .as
 	rts
-+	inc
++	lda menu_sel
+	inc
 	sta menu_sel
 down_out
 	rts 
@@ -317,9 +328,16 @@ menu_key_left:
 	lda dirptr_addr
 	beq +
 	sec
-	sbc #17*4
+	sbc listdisp
+	sec
+	sbc listdisp
+	sec
+	sbc listdisp
+	sec
+	sbc listdisp
 	cmp dirstart_addr
 	bcc +
+	bmi +
 -	sta dirptr_addr
 	sep #$20 : .as
 	rts
@@ -336,9 +354,11 @@ menu_key_right:
 	lda #$01
 	sta menu_dirty
 	rep #$20 : .al
-	lda dirptr_addr
+	lda listdisp
+	asl
+	asl
 	clc
-	adc #17*4
+	adc dirptr_addr
 	sta dirptr_addr
 	sep #$20 : .as
 	rts
@@ -351,6 +371,16 @@ menuupd_lastcursor
 
 menu_key_b:
 	jsr select_item
+	rts
+
+menu_key_select:
+	lda barstep
+	beq do_setup448
+do_setup224
+	jsr setup_224
+	rts
+do_setup448
+	jsr setup_448
 	rts
 
 select_item:
@@ -384,7 +414,6 @@ sel_is_dir
 
 select_file:
 	; have avr load the rom
-	sta @$fffffe
 	dey
 	lda (dirptr_addr), y
 	sta @AVR_PARAM+2
@@ -399,7 +428,6 @@ select_file:
 	rts
 
 select_dir: ; y = direntry ptr
-	sta @$ffffff	;for great breakpoint
 	dey
 	lda (dirptr_addr), y
 	clc
@@ -432,3 +460,77 @@ select_dir: ; y = direntry ptr
 	sta @menu_dirty
 	plb
 	rts
+
+
+setup_224:
+	php
+	rep #$30 : .xl : .al
+	lda #17
+	sta listdisp
+	dec
+	cmp menu_sel
+	bmi setup_228_adjsel
+	bra +
+setup_228_adjsel
+	sta menu_sel
++
+	lda #18*64
+	sta textdmasize
+	lda #$0005
+	sta hdma_scroll+8
+	sep #$20 : .as
+	lda #$05
+	sta $2110
+	lda #$00
+	sta $2110
+	lda #$00
+	sta barstep
+	sta $2133
+	lda #$0a
+	sta hdma_math+6
+	lda #$01
+	sta menu_dirty
+	lda #^space64
+	ldx #!space64
+	sta print_bank
+	stx print_src
+	stz print_pal
+	lda #64
+	sta print_count
+	lda #27
+	sta print_y
+	stz print_x
+	jsr hiprint
+	lda #28
+	sta print_y
+	jsr hiprint
+	jsr hiprint
+	
+	plp
+	rts
+
+setup_448:
+	php
+	rep #$30 : .xl : .al
+	lda #34
+	sta listdisp
+	lda #36*64
+	sta textdmasize
+	lda #$ffba
+	sta hdma_scroll+8
+	sep #$20 : .as
+	lda #$ba
+	sta $2110
+	lda #$ff
+	sta $2110
+	lda #$01
+	sta barstep
+	sta $2133
+	lda #$06
+	sta hdma_math+6
+	lda #$01
+	sta menu_dirty
+	plp
+	rts
+
+

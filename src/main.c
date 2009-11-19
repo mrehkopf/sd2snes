@@ -245,11 +245,13 @@ int main(void) {
 		
 	}
 	dprintf("cmd was %x, going to snes main loop\n", cmd);
+	led_std();
 	cmd=0;
 	while(1) {
 		if(get_snes_reset()) {
 			dprintf("RESET\n");
 		}
+		sram_reliable();
 		snes_main_loop();
 	}
 

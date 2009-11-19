@@ -67,6 +67,11 @@ fd_fnoff	.word 0  ; offset of filename in file descriptor
 pad1mem		.word 0
 pad1trig	.word 0
 pad1delay	.word 0
+;----------menu layout/system constants (224/448)
+listdisp	.word 0 ; number of displayable list entries
+textdmasize	.word 0 ; number of bytes to copy each frame
+barstep		.byt 0  ; step size for bar
+
 ;----------hdma tables in WRAM (must be stable when cartridge is cut off)
 hdma_pal	.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

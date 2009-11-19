@@ -218,30 +218,30 @@ uint32_t load_sram(uint8_t* filename, uint32_t base_addr) {
 
 
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
-    uint32_t count = 0;
+	uint32_t count = 0;
 	uint32_t num = 0;
 
 	spi_none();
-    file_open(filename, FA_CREATE_ALWAYS | FA_WRITE);
+	file_open(filename, FA_CREATE_ALWAYS | FA_WRITE);
 	if(file_res) {
 		uart_putc(0x30+file_res);
 	}
-    while(count<sram_size) {
+	while(count<sram_size) {
 		set_avr_addr(base_addr+count);
 		spi_fpga();
 		spiTransferByte(0x81); // read
 		spiTransferByte(0); // dummy
-        for(int j=0; j<sizeof(file_buf); j++) {
-            file_buf[j] = spiTransferByte(0x00);
-            count++;
-        }
+		for(int j=0; j<sizeof(file_buf); j++) {
+			file_buf[j] = spiTransferByte(0x00);
+			count++;
+		}
 		spi_none();
-        num = file_write();
+		num = file_write();
 		if(file_res) {
 			uart_putc(0x30+file_res);
 		}
-    }
-    file_close();
+	}
+	file_close();
 }
 
 
@@ -269,13 +269,27 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
 
 uint8_t sram_reliable() {
 	uint16_t score=0;
-	uint32_t val = sram_readlong(SRAM_SCRATCHPAD);
-	while(score<SRAM_RELIABILITY_SCORE) {
+//	uint32_t val = sram_readlong(SRAM_SCRATCHPAD);
+	uint8_t result = 0;
+/*	while(score<SRAM_RELIABILITY_SCORE) {
 		if(sram_readlong(SRAM_SCRATCHPAD)==val) {
 			score++;
 		} else {
+			set_pwr_led(0);
 			score=0;
 		}
+	}*/
+	for(uint16_t i = 0; i < SRAM_RELIABILITY_SCORE; i++) {
+		if(sram_readlong(SRAM_SCRATCHPAD)==0x12345678) {
+			score++;
+		}
 	}
-	return 1;
+	if(score<SRAM_RELIABILITY_SCORE) {
+		result = 0;
+		dprintf("score=%d\n", score);
+	} else {
+		result = 1;
+	}
+	set_pwr_led(result);
+	return result;
 }
