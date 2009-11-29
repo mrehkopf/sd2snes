@@ -151,6 +151,8 @@ int main(void) {
 	fpga_spi_init();
 	uart_putc('!');
 	_delay_ms(100);
+
+restart:
 	set_avr_ena(0);
 	snes_reset(1);
 
@@ -160,14 +162,11 @@ int main(void) {
 
 	uint16_t mem_dir_id = sram_readshort(SRAM_DIRID);
 	uint32_t mem_magic = sram_readlong(SRAM_SCRATCHPAD);
-	led_pwm();
 
 	if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id)) {
 		uint16_t curr_dir_id = scan_dir(fs_path, 0, 0); // generate files footprint
 		dprintf("curr dir id = %x\n", curr_dir_id);
 
-		led_pwm();
-	
 		if((get_db_id(&saved_dir_id) != FR_OK)	// no database?
 		|| saved_dir_id != curr_dir_id) {	// files changed? // XXX
 			dprintf("saved dir id = %x\n", saved_dir_id);
@@ -201,6 +200,9 @@ int main(void) {
 		load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
 		load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
 	}
+
+	led_pwm();
+
 	uart_putc('(');
 	load_rom((uint8_t*)"/sd2snes/menu.bin");
 	set_rom_mask(0x3fffff); // force mirroring off
@@ -229,9 +231,13 @@ int main(void) {
 				set_avr_ena(0);
 				dprintf("Selected name: %s\n", file_lfn);
 				load_rom(file_lfn);
-				strcpy(strrchr((char*)file_lfn, (int)'.'), ".srm");
-				dprintf("SRM file: %s\n", file_lfn);
-				load_sram(file_lfn, SRAM_SAVE_ADDR);
+				if(romprops.ramsize_bytes) {
+					strcpy(strrchr((char*)file_lfn, (int)'.'), ".srm");
+					dprintf("SRM file: %s\n", file_lfn);
+					load_sram(file_lfn, SRAM_SAVE_ADDR);
+				} else {
+					dprintf("No SRAM\n");
+				}
 				set_avr_ena(1);
 				snes_reset(1);
 				_delay_ms(100);
@@ -247,12 +253,45 @@ int main(void) {
 	dprintf("cmd was %x, going to snes main loop\n", cmd);
 	led_std();
 	cmd=0;
+	uint8_t snes_reset_prev=0, snes_reset_now=0, snes_reset_state=0;
+	uint16_t reset_count=0;
 	while(1) {
-		if(get_snes_reset()) {
-			dprintf("RESET\n");
+		snes_reset_now=get_snes_reset();
+		if(snes_reset_now) {
+			if(!snes_reset_prev) {
+				dprintf("RESET BUTTON DOWN\n");
+				snes_reset_state=1;
+				// reset reset counter
+				reset_count=0;
+			}
+		} else {
+			if(snes_reset_prev) {
+				dprintf("RESET BUTTON UP\n");
+				snes_reset_state=0;
+			}
 		}
-		sram_reliable();
-		snes_main_loop();
+		if(snes_reset_state) {
+			_delay_ms(10);
+			reset_count++;
+		} else {
+			sram_reliable();
+			snes_main_loop();
+		}
+		if(reset_count>100) {
+			reset_count=0;
+			led_std();
+			set_avr_ena(0);
+			snes_reset(1);
+			if(romprops.ramsize_bytes) {
+				set_busy_led(1);
+				save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+				set_busy_led(0);
+			}
+			_delay_ms(1000);
+			set_busy_led(1);
+			goto restart;
+		}
+		snes_reset_prev = snes_reset_now;
 	}
 
 

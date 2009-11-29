@@ -27,4 +27,7 @@
 	void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
 	uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size);
 	uint8_t sram_reliable(void);
+
+#include "smc.h"
+	snes_romprops_t romprops;
 #endif

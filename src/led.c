@@ -84,5 +84,7 @@ void led_pwm() {
 }
 
 void led_std() {
+	set_busy_led(0);
 	TCCR0A = 0;
+	TCCR0B = 0;
 }

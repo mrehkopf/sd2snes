@@ -83,6 +83,13 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 		if (res == FR_OK) {
 			if(pass && parent_tgt) {
 				// write backlink to parent dir
+				// switch to next bank if record does not fit in current bank
+				if((db_tgt&0xffff) > ((0x10000-(sizeof(next_subdir_tgt)+sizeof(len)+4))&0xffff)) {
+					dprintf("switch! old=%lx ", db_tgt);
+					db_tgt &= 0xffff0000;
+					db_tgt += 0x00010000;
+					dprintf("new=%lx\n", db_tgt);
+				}
 				sram_writelong(parent_tgt, db_tgt);
 				sram_writebyte(0, db_tgt+sizeof(next_subdir_tgt));
 				sram_writeblock("../\0", db_tgt+sizeof(next_subdir_tgt)+sizeof(len), 4);
@@ -121,6 +128,12 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 							// save element:
 							//  - path name
 							//  - pointer to sub dir structure
+							if((db_tgt&0xffff) > ((0x10000-(sizeof(next_subdir_tgt) + sizeof(len) + pathlen + 2))&0xffff)) {
+								dprintf("switch! old=%lx ", db_tgt);
+								db_tgt &= 0xffff0000;
+								db_tgt += 0x00010000;
+								dprintf("new=%lx\n", db_tgt);
+							}
 							dprintf("    Saving dir descriptor to %lX, tgt=%lX, path=%s\n", db_tgt, next_subdir_tgt, path);
 //							_delay_ms(100);
 							sram_writelong(next_subdir_tgt, db_tgt);
@@ -161,6 +174,12 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 										// write element pointer to current dir structure
 //										dprintf("d=%d Saving %lX to Address %lX  [file]\n", depth, db_tgt, dir_tgt);
 //										_delay_ms(50);
+										if((db_tgt&0xffff) > ((0x10000-(sizeof(romprops) + sizeof(len) + pathlen + 1))&0xffff)) {
+											dprintf("switch! old=%lx ", db_tgt);
+											db_tgt &= 0xffff0000;
+											db_tgt += 0x00010000;
+											dprintf("new=%lx\n", db_tgt);
+										}
 										sram_writelong(db_tgt, dir_tgt);
 //										sram_writeblock((uint8_t*)&db_tgt, dir_tgt, sizeof(db_tgt));
 										dir_tgt += 4;

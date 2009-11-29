@@ -111,6 +111,9 @@ menu_updates:
 	lda #$20
 	and pad1trig+1
 	bne key_select
+	lda #$80
+	and pad1trig
+	bne key_a
 	bra menuupd_out
 key_down
 	jsr menu_key_down
@@ -126,6 +129,9 @@ key_left
 	bra menuupd_out
 key_b
 	jsr menu_key_b
+	bra menuupd_out
+key_a
+	jsr menu_key_a
 	bra menuupd_out
 key_select
 	jsr menu_key_select
@@ -335,9 +341,9 @@ menu_key_left:
 	sbc listdisp
 	sec
 	sbc listdisp
+	bcc +
 	cmp dirstart_addr
 	bcc +
-	bmi +
 -	sta dirptr_addr
 	sep #$20 : .as
 	rts
@@ -383,6 +389,18 @@ do_setup448
 	jsr setup_448
 	rts
 
+menu_key_a:
+	rep #$20 : .al
+	lda dirstart_addr
+	beq skip_key_a
+	sta dirptr_addr
+	lda #$0000
+	sta menu_sel
+	bra select_item
+skip_key_a
+	sep #$20 : .as
+	rts
+
 select_item:
 	rep #$20 : .al
 	lda menu_sel
@@ -425,6 +443,10 @@ select_file:
 	sep #$20 : .as
 	lda #$01
 	sta @AVR_CMD
+	lda #$00
+	sta @$4200
+	cli
+	jsl @infloop
 	rts
 
 select_dir: ; y = direntry ptr

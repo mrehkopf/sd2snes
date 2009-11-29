@@ -11,11 +11,10 @@
 #include "fileops.h"
 #include "ff.h"
 #include "led.h"
-
+#include "smc.h"
 
 uint8_t initloop=1;
 uint32_t saveram_crc, saveram_crc_old;
-uint32_t saveram_size = 8192; // sane default
 uint32_t saveram_base_addr = 0x600000; // chip 3
 void snes_init() {
 	DDRD |= _BV(PD5);	// PD5 = RESET_DIR
@@ -55,14 +54,15 @@ uint8_t get_snes_reset() {
  * SD2SNES main loop.
  * monitors SRAM changes and other things
  */
-uint32_t diffcount = 0, samecount = 0;
+uint32_t diffcount = 0, samecount = 0, didnotsave = 0;
 uint8_t sram_valid = 0;
 void snes_main_loop() {
+	if(!romprops.ramsize_bytes)return;
 	if(initloop) {
-		saveram_crc_old = calc_sram_crc(saveram_base_addr, saveram_size);
+		saveram_crc_old = calc_sram_crc(saveram_base_addr, romprops.ramsize_bytes);
 		initloop=0;
 	}
-	saveram_crc = calc_sram_crc(saveram_base_addr, saveram_size);
+	saveram_crc = calc_sram_crc(saveram_base_addr, romprops.ramsize_bytes);
 	sram_valid = sram_reliable();
 	if(crc_valid && sram_valid) {
 		if(saveram_crc != saveram_crc_old) {
@@ -70,23 +70,33 @@ void snes_main_loop() {
 				diffcount=1;
 			} else {
 				diffcount++;
+				didnotsave++;
 			}
 			samecount=0;
 		}
 		if(saveram_crc == saveram_crc_old) {
 			samecount++;
 		}
-		if(diffcount>=1 && samecount==3) {
+		if(diffcount>=1 && samecount==5) {
 			uart_putc('U');
 			uart_puthexshort(saveram_crc);
 			uart_putcrlf();
 			set_busy_led(1);
-			save_sram(file_lfn, saveram_size, saveram_base_addr);
+			save_sram(file_lfn, romprops.ramsize_bytes, saveram_base_addr);
 			set_busy_led(0);
+			didnotsave=0;
+		}
+		if(didnotsave>50) {
+			diffcount=0;
+			uart_putc('V');
+			set_busy_led(1);
+			save_sram(file_lfn, romprops.ramsize_bytes, saveram_base_addr);
+			didnotsave=0;	
+                        set_busy_led(0);
 		}
 		saveram_crc_old = saveram_crc;
 	}
-	dprintf("crc_valid=%d sram_valid=%d diffcount=%ld samecount=%ld\n", crc_valid, sram_valid, diffcount, samecount);
+	dprintf("crc_valid=%d sram_valid=%d diffcount=%ld samecount=%ld, didnotsave=%ld\n", crc_valid, sram_valid, diffcount, samecount, didnotsave);
 }
 
 /*

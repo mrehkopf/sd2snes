@@ -65,8 +65,21 @@ void smc_id(snes_romprops_t* props) {
 			score = 0;
 		} else {
 			score = smc_headerscore(header)/(1+(num&1));
+			if((file_handle.fsize & 0x2ff) == 0x200) {
+				if(num&1) {
+					score+=20;
+				} else {
+					score=0;
+				}
+			} else {
+				if(!(num&1)) {
+					score+=20;
+				} else {
+					score=0;
+				}
+			}
 		}
-		dprintf("%d: offset = %lX; score = %d\n", num, hdr_addr[num], score);
+//		dprintf("%d: offset = %lX; score = %d\n", num, hdr_addr[num], score);
 //		_delay_ms(100);
 		if(score>=maxscore) {
 			score_idx=num;
@@ -81,7 +94,7 @@ void smc_id(snes_romprops_t* props) {
 	}
 	
 	// restore the chosen one
-	dprintf("winner is %d\n", score_idx);
+//	dprintf("winner is %d\n", score_idx);
 //	_delay_ms(30);
 	file_readblock(header, hdr_addr[score_idx], sizeof(snes_header_t));
 	switch(header->map & 0xef) {
@@ -118,6 +131,11 @@ void smc_id(snes_romprops_t* props) {
 	props->ramsize_bytes = (uint32_t)1024 << header->ramsize;
 	props->romsize_bytes = (uint32_t)1024 << header->romsize;
 	props->expramsize_bytes = (uint32_t)1024 << header->expramsize;
+//	dprintf("ramsize_bytes: %ld\n", props->ramsize_bytes);
+	if(props->ramsize_bytes > 32768 || props->ramsize_bytes < 2048) {
+		props->ramsize_bytes = 0;
+	}
+//	dprintf("ramsize_bytes: %ld\n", props->ramsize_bytes);
 	f_lseek(&file_handle, 0);
 }
 

@@ -124,7 +124,6 @@ void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
 }
 
 uint32_t load_rom(uint8_t* filename) {
-	snes_romprops_t romprops;
 	set_avr_bank(0);
 	UINT bytes_read;
 	DWORD filesize;
@@ -269,6 +268,7 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
 
 uint8_t sram_reliable() {
 	uint16_t score=0;
+	uint32_t val;
 //	uint32_t val = sram_readlong(SRAM_SCRATCHPAD);
 	uint8_t result = 0;
 /*	while(score<SRAM_RELIABILITY_SCORE) {
@@ -280,7 +280,8 @@ uint8_t sram_reliable() {
 		}
 	}*/
 	for(uint16_t i = 0; i < SRAM_RELIABILITY_SCORE; i++) {
-		if(sram_readlong(SRAM_SCRATCHPAD)==0x12345678) {
+		val=sram_readlong(SRAM_SCRATCHPAD);
+		if(val==0x12345678) {
 			score++;
 		}
 	}

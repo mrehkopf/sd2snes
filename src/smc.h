@@ -39,9 +39,4 @@ typedef struct _snes_romprops {
 void smc_id(snes_romprops_t*);
 uint8_t smc_headerscore(snes_header_t*);
 
-
-/*pedef struct {
-	
-}*/
-
 #endif
