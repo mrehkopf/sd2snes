@@ -6,6 +6,7 @@
 #define FPGA_H
 
 void fpga_init(void);
+uint8_t fpga_test(void);
 void fpga_postinit(void);
 void fpga_pgm(uint8_t* filename);
 
@@ -18,6 +19,7 @@ void set_avr_data(uint8_t data);
 void set_avr_addr_en(uint8_t val);
 void set_avr_mapper(uint8_t val);
 void set_avr_bank(uint8_t val);
+
 
 // some macros for bulk transfers (faster)
 #define FPGA_SEND_BYTE(data)	do {SET_AVR_DATA(data); CCLK();} while (0)

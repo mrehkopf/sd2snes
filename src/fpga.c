@@ -138,3 +138,11 @@ void set_avr_bank(uint8_t val) {
 	SPI_SS_LOW();
 }
 
+uint8_t fpga_test() {
+	spi_fpga();
+	spiTransferByte(0xF0); // TEST
+	uint8_t result = spiTransferByte(0x00);
+	spi_none();
+	return result;
+}
+

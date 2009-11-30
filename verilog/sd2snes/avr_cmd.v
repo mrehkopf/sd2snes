@@ -68,6 +68,8 @@ always @(posedge clk) begin
             MAPPER_BUF <= cmd_data[3:0];
          4'h8:
             AVR_DATA_IN_BUF <= avr_data_in;
+         4'hF:
+            AVR_DATA_IN_BUF <= 8'hA5;
       endcase
    end else if (param_ready) begin
       case (cmd_data[7:4])

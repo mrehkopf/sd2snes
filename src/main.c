@@ -255,7 +255,7 @@ restart:
 	cmd=0;
 	uint8_t snes_reset_prev=0, snes_reset_now=0, snes_reset_state=0;
 	uint16_t reset_count=0;
-	while(1) {
+	while(fpga_test() == 0xa5) {
 		snes_reset_now=get_snes_reset();
 		if(snes_reset_now) {
 			if(!snes_reset_prev) {
@@ -292,6 +292,18 @@ restart:
 			goto restart;
 		}
 		snes_reset_prev = snes_reset_now;
+	}
+	// FPGA TEST FAIL. PANIC.
+
+	led_std();
+
+	while(1) {
+		set_pwr_led(1);
+		set_busy_led(1);
+		_delay_ms(150);
+		set_pwr_led(0);
+		set_busy_led(0);
+		_delay_ms(150);
 	}
 
 

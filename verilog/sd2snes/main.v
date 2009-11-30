@@ -114,17 +114,21 @@ my_dcm snes_dcm(.CLKIN(CLKIN),
                   .CLKFX(CLK2),
                   .LOCKED(DCM_LOCKED),
                   .RST(DCM_RST),
-                  .STATUS(DCM_STATUS)
+                  .STATUS(DCM_STATUS),
+                  .CLKFB(CLKFB),
+                  .CLK0(CLK0)
                 );
-assign DCM_RST = 1'b0;
-                
-/*always @(posedge CLKIN) begin
+reg DCM_RSTr;
+assign DCM_RST = DCM_RSTr;
+assign CLKFB = CLK0;
+wire DCM_FX_STOPPED = DCM_STATUS[2];
+always @(posedge CLKIN) begin
    if(DCM_FX_STOPPED)
-      DCM_RST <= 1'b1;
+      DCM_RSTr <= 1'b1;
    else
-      DCM_RST <= 1'b0;
+      DCM_RSTr <= 1'b0;
 end
-*/
+
 /*reg DO_DCM_RESET, DCM_RESETTING;
 reg DCM_RSTr;
 assign DCM_RST = DCM_RSTr;
