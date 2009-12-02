@@ -56,7 +56,7 @@
 // access routines
 void spiInit(void)
 {
-  uint8_t dummy;
+  volatile uint8_t dummy;
 
   // setup SPI I/O pins
   SPI_PORT = (SPI_PORT & ~SPI_MASK) | SPI_SCK | SPI_SS | SPI_MISO;
@@ -78,7 +78,7 @@ void spiInit(void)
 }
 
 
-uint8_t spiTransferByte(uint8_t data)
+inline uint8_t spiTransferByte(uint8_t data)
 {
   // send the given data
   SPDR = data;
@@ -94,7 +94,7 @@ uint8_t spiTransferByte(uint8_t data)
 }
 
 
-uint32_t spiTransferLong(const uint32_t data)
+inline uint32_t spiTransferLong(const uint32_t data)
 {
   // It seems to be necessary to use the union in order to get efficient
   // assembler code.

@@ -96,7 +96,7 @@ void fpga_pgm(uint8_t* filename) {
 			}
 		}
 		file_close();
-		_delay_ms(10);
+		_delay_ms(100);
 	} while (!fpga_get_done() && retries--);
 	if(!fpga_get_done()) {
 		dprintf("FPGA failed to configure after %d tries.\n", MAXRETRIES);

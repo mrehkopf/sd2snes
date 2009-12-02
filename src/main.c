@@ -282,7 +282,8 @@ restart:
 			led_std();
 			set_avr_ena(0);
 			snes_reset(1);
-			if(romprops.ramsize_bytes) {
+			_delay_ms(100);
+			if(romprops.ramsize_bytes && fpga_test() == 0xa5) {
 				set_busy_led(1);
 				save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
 				set_busy_led(0);
