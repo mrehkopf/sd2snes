@@ -124,6 +124,7 @@ void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
 }
 
 uint32_t load_rom(uint8_t* filename) {
+	uint8_t dummy;
 	set_avr_bank(0);
 	UINT bytes_read;
 	DWORD filesize;
@@ -138,12 +139,11 @@ uint32_t load_rom(uint8_t* filename) {
 	}
 	f_lseek(&file_handle, romprops.offset);
 	for(;;) {
-		FPGA_SS_HIGH();
-		SPI_SS_LOW();
+		spi_none();
 		bytes_read = file_read();
-		SPI_SS_HIGH();
+		spi_none();
 		if (file_res || !bytes_read) break;
-		FPGA_SS_LOW();
+		spi_fpga();
 		spiTransferByte(0x91); // write w/ increment
 		if(!(count++ % 8)) {
 //			toggle_busy_led();
@@ -151,10 +151,12 @@ uint32_t load_rom(uint8_t* filename) {
 			uart_putc('.');
 		}
 		for(int j=0; j<bytes_read; j++) {
-			spiTransferByte(file_buf[j]);
+//			spiTransferByte(file_buf[j]);
+			SPDR = file_buf[j];
+			loop_until_bit_is_set(SPSR, SPIF);
+			dummy = SPDR;
 		}
-		spiTransferByte(0x00); // dummy tx for increment+write pulse
-		FPGA_SS_HIGH();
+		spiTransferByte(0x00); // dummy tx for increment+write pulse		
 	}
 	file_close();
 	spi_none();
