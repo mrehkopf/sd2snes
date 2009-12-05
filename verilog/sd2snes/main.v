@@ -116,17 +116,16 @@ my_dcm snes_dcm(.CLKIN(CLKIN),
                   .CLKFX(CLK2),
                   .LOCKED(DCM_LOCKED),
                   .RST(DCM_RST),
-                  .STATUS(DCM_STATUS),
-                  .CLKFB(CLKFB),
-                  .CLK0(CLK0)
+                  .STATUS(DCM_STATUS)
                 );
+                
+assign DCM_RST=0;
 
+/*
 dcm_srl16 snes_dcm_resetter(.CLK(CLKIN),
                               .Q(DCM_RST)
                            );
-                           
-assign CLKFB = CLK0;
-
+*/
 //wire DCM_FX_STOPPED = DCM_STATUS[2];
 //always @(posedge CLKIN) begin
 //   if(DCM_FX_STOPPED)

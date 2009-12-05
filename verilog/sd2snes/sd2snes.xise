@@ -89,16 +89,18 @@
     <property xil_pn:name="Implementation Top Instance Path" xil_pn:value="/main"/>
     <property xil_pn:name="Map Effort Level" xil_pn:value="High"/>
     <property xil_pn:name="Map Slice Logic into Unused Block RAMs" xil_pn:value="true"/>
-    <property xil_pn:name="Optimization Strategy (Cover Mode)" xil_pn:value="Speed"/>
+    <property xil_pn:name="Optimization Effort" xil_pn:value="High"/>
+    <property xil_pn:name="Optimization Strategy (Cover Mode)" xil_pn:value="Balanced"/>
+    <property xil_pn:name="Optimize Instantiated Primitives" xil_pn:value="true"/>
     <property xil_pn:name="PROP_BehavioralSimTop" xil_pn:value="Module|main_tf2"/>
     <property xil_pn:name="PROP_DesignName" xil_pn:value="sd2snes"/>
     <property xil_pn:name="PROP_PostParSimTop" xil_pn:value="Module|main_tf2"/>
     <property xil_pn:name="Package" xil_pn:value="tq144"/>
-    <property xil_pn:name="Perform Timing-Driven Packing" xil_pn:value="true"/>
     <property xil_pn:name="Place &amp; Route Effort Level (Overall)" xil_pn:value="High"/>
     <property xil_pn:name="Placer Effort Level (Overrides Overall Level)" xil_pn:value="High"/>
     <property xil_pn:name="Preferred Language" xil_pn:value="Verilog"/>
     <property xil_pn:name="Project Description" xil_pn:value="sd2snes"/>
+    <property xil_pn:name="Register Balancing" xil_pn:value="Yes"/>
     <property xil_pn:name="Register Duplication" xil_pn:value="On"/>
     <property xil_pn:name="Release Write Enable (Output Events)" xil_pn:value="5"/>
     <property xil_pn:name="Router Effort Level (Overrides Overall Level)" xil_pn:value="High"/>
@@ -110,6 +112,7 @@
     <property xil_pn:name="Synthesis Tool" xil_pn:value="XST (VHDL/Verilog)"/>
     <property xil_pn:name="Top-Level Source Type" xil_pn:value="HDL"/>
     <property xil_pn:name="Unused IOB Pins" xil_pn:value="Float"/>
+    <property xil_pn:name="User Browsed Strategy Files" xil_pn:value="/home/ikari/prj/sd2snes/verilog/sd2snes/smartxplorer_results/run9/maptimingextraeffortct3.xds"/>
     <property xil_pn:name="Verbose Property Persistence" xil_pn:value="false"/>
   </properties>
 

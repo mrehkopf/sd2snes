@@ -62,10 +62,8 @@
 #    error Unknown chip!
 #  endif
 #  define SD_CHANGE_VECT        INT0_vect
-#  define SDCARD_WP  			(0)
-#  define SDCARD_WP_SETUP()     do { DDRB &= ~ _BV(PB1); PORTB |= _BV(PB1); } while(0)
-// #  define SDCARD_WP  			(PINB & _BV(PB1))
-// #  define SDCARD_WP_SETUP()     do { DDRB &= ~ _BV(PB1); PORTB |= _BV(PB1); } while(0)
+#  define SDCARD_WP  			(PINA & _BV(PA0))
+#  define SDCARD_WP_SETUP()     do { DDRA &= ~ _BV(PA0); PORTA |= _BV(PA0); } while(0)
 #  define SD_CHANGE_ICR         MCUCR
 #  define SD_SUPPLY_VOLTAGE     (1L<<21)
 #  define DEVICE_SELECT         (8+!(PINA & _BV(PA2))+2*!(PINA & _BV(PA3)))
