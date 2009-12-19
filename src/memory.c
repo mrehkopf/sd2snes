@@ -286,6 +286,7 @@ uint8_t sram_reliable() {
 		if(val==0x12345678) {
 			score++;
 		}
+//		dprintf("val=%08lX\n", val);
 	}
 	if(score<SRAM_RELIABILITY_SCORE) {
 		result = 0;

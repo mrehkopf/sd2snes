@@ -46,7 +46,7 @@ wire [7:0] FROM_SRAM_BYTE;
 
 assign SNES_DATA = SNES_READ ? 8'bZ : SNES_OUT_MEM;                   
 
-assign FROM_SRAM_BYTE = ((SRAM_ADDR0 ^ !AVR_ENA) ? SRAM_DATA[7:0] : SRAM_DATA[15:8]);
+assign FROM_SRAM_BYTE = (SRAM_ADDR0 ? SRAM_DATA[7:0] : SRAM_DATA[15:8]);
 
 assign AVR_OUT_DATA = !AVR_ENA ? (FROM_SRAM_BYTE)
                   : (AVR_OUT_MEM);
@@ -58,6 +58,7 @@ assign SRAM_DATA[7:0] = SRAM_ADDR0 ? (!AVR_ENA ? (!AVR_WRITE ? AVR_IN_DATA : 8'b
 assign SRAM_DATA[15:8] = SRAM_ADDR0 ? 8'bZ : (!AVR_ENA ? (!AVR_WRITE ? AVR_IN_DATA : 8'bZ)
                                                 : (MODE ? (!AVR_WRITE ? AVR_IN_MEM : 8'bZ)                   
                                                         : (!SNES_WRITE ? SNES_IN_MEM : 8'bZ)));
+                                                        
 always @(posedge CLK) begin
    if(SNES_DATA_TO_MEM)
       SNES_IN_MEM <= SNES_DATA;

@@ -24,9 +24,9 @@ menu_init:
 	rts
 
 menuloop:
+menuloop_s1
 	sep #$20 : .as
 	rep #$10 : .xl
-menuloop_s1
 	lda isr_done
 	lsr
 	bcc menuloop_s1

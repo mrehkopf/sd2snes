@@ -309,13 +309,15 @@ initial begin
    SRAM_OE_ARRAY[2'b11] = 13'b0000000000000;
    
    SNES_DATA_TO_MEM_ARRAY[1'b0] = 13'b0001000000000;  // SNES write
+   /* 13'b0001000000000 */
    SNES_DATA_TO_MEM_ARRAY[1'b1] = 13'b0000000000000;  // SNES read
    
-   AVR_DATA_TO_MEM_ARRAY[1'b0] = 13'b0000000010000;  // AVR write
+   AVR_DATA_TO_MEM_ARRAY[1'b0] = 13'b0000000001000;  // AVR write
    AVR_DATA_TO_MEM_ARRAY[1'b1] = 13'b0000000000000;  // AVR read
    
    SRAM_DATA_TO_SNES_MEM_ARRAY[1'b0] = 13'b0000000000000;  // SNES write
    SRAM_DATA_TO_SNES_MEM_ARRAY[1'b1] = 13'b0000100000000;  // SNES read
+   /* 13'b0000100000000; */
    
    SRAM_DATA_TO_AVR_MEM_ARRAY[1'b0] = 13'b0000000000000;  // AVR write
    SRAM_DATA_TO_AVR_MEM_ARRAY[1'b1] = 13'b0000000000001;  // AVR read
@@ -328,7 +330,7 @@ end
 // we have 24 internal cycles to work with. (CLKIN * 4)
 
 always @(posedge CLK2) begin
-	CYCLE_RESET <= {CYCLE_RESET[0], SNES_cycle_start};
+	CYCLE_RESET <= {CYCLE_RESET[0], SNES_RW_start};
 end
 
 always @(posedge CLK2) begin

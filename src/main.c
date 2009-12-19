@@ -49,6 +49,32 @@
 #include "avrcompat.h"
 #include "filetypes.h"
 
+void writetest(void) {
+// HERE BE LIONS, GET IN THE CAR
+	char teststring[58];
+	while(1) {
+		sram_writeblock((void*)"Testtext of DOOM!!1! 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", SRAM_SCRATCHPAD+0x20, 58);
+		sram_readblock((void*)teststring, SRAM_SCRATCHPAD+0x20, 58);
+		teststring[57]=0;
+		dprintf("%s\n", teststring);
+	}
+// END OF LIONS
+}
+
+
+void memtest(void) {
+/* HERE BE DRAGONS */
+	uint32_t dbg_i;
+	for(dbg_i=0; dbg_i < 65536; dbg_i++) {
+		sram_writeshort((uint16_t)dbg_i&0xffff, dbg_i*2);
+	}
+	save_sram((uint8_t*)"/sd2snes/memtest", 0x20000, 0);
+	set_pwr_led(0);
+	while(1);
+/* END OF DRAGONS */
+}
+
+
 /* Make sure the watchdog is disabled as soon as possible    */
 /* Copy this code to your bootloader if you use one and your */
 /* MCU doesn't disable the WDT after reset!                  */
@@ -163,14 +189,13 @@ restart:
 	uint16_t mem_dir_id = sram_readshort(SRAM_DIRID);
 	uint32_t mem_magic = sram_readlong(SRAM_SCRATCHPAD);
 
+
 	if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id)) {
 		uint16_t curr_dir_id = scan_dir(fs_path, 0, 0); // generate files footprint
 		dprintf("curr dir id = %x\n", curr_dir_id);
-
 		if((get_db_id(&saved_dir_id) != FR_OK)	// no database?
 		|| saved_dir_id != curr_dir_id) {	// files changed? // XXX
 			dprintf("saved dir id = %x\n", saved_dir_id);
-			_delay_ms(50);
 			dprintf("rebuilding database...");
 			_delay_ms(50);
 			curr_dir_id = scan_dir(fs_path, 1, 0);	// then rebuild database
@@ -184,6 +209,7 @@ restart:
 			dprintf("done\n"); 
 			sram_hexdump(SRAM_DB_ADDR, 0x400);
 		} else {
+			dprintf("saved dir id = %x\n", saved_dir_id);
 			dprintf("different card, consistent db, loading db...\n");
 			load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
 			load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
@@ -220,7 +246,6 @@ restart:
 	uint8_t cmd = 0;
 
 	while(!sram_reliable());
-
 	while(!cmd) {
 		cmd=menu_main_loop();
 		switch(cmd) {
@@ -255,7 +280,8 @@ restart:
 	cmd=0;
 	uint8_t snes_reset_prev=0, snes_reset_now=0, snes_reset_state=0;
 	uint16_t reset_count=0;
-	while(fpga_test() == 0xa5) {
+	while(fpga_test() == FPGA_TEST_TOKEN) {
+		dprintf("%02X\n", fpga_test());
 		snes_reset_now=get_snes_reset();
 		if(snes_reset_now) {
 			if(!snes_reset_prev) {
@@ -307,7 +333,6 @@ restart:
 		_delay_ms(150);
 	}
 
-
 /* HERE BE LIONS */
 while(1)  {	
 	set_avr_addr(0x600000);
@@ -335,6 +360,6 @@ while(1)  {
 	}
 	spi_none();
 }
-	while(1);
+		while(1);
 }
 

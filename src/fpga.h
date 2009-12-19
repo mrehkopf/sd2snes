@@ -21,6 +21,8 @@ void set_avr_mapper(uint8_t val);
 void set_avr_bank(uint8_t val);
 
 
+#define FPGA_TEST_TOKEN	(0xa5)
+
 // some macros for bulk transfers (faster)
 #define FPGA_SEND_BYTE(data)	do {SET_AVR_DATA(data); CCLK();} while (0)
 #define FPGA_SEND_BYTE_SERIAL(data)	do {SET_AVR_DATA(data); CCLK();\
