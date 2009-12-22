@@ -46,10 +46,11 @@ module main(
 
    /* AVR signals */
     input SPI_MOSI,
-    output SPI_MISO,
+    inout SPI_MISO,
     input SPI_SS,
-    input SPI_SCK,
-    input AVR_ENA
+    inout SPI_SCK,
+    input AVR_ENA,
+    inout SPI_DMA_CTRL
     
    /* debug */
    //output DCM_IN_STOPPED,
@@ -69,13 +70,15 @@ wire [7:0] AVR_OUT_DATA;
 wire [3:0] MAPPER;
 wire [23:0] SAVERAM_MASK;
 wire [23:0] ROM_MASK;
+wire [23:0] spi_dma_addr;
+wire [7:0] spi_dma_sram_data;
+wire spi_dma_trig = SPI_DMA_CTRL;
 
 spi snes_spi(.clk(CLK2),
              .MOSI(SPI_MOSI),
              .MISO(SPI_MISO),
              .SSEL(SPI_SS),
              .SCK(SPI_SCK),
-             .LED(SPI_LSB),
              .cmd_ready(spi_cmd_ready),
              .param_ready(spi_param_ready),
              .cmd_data(spi_cmd_data),
@@ -84,7 +87,10 @@ spi snes_spi(.clk(CLK2),
              .startmessage(spi_startmessage),
              .input_data(spi_input_data),
              .byte_cnt(spi_byte_cnt),
-             .bit_cnt(spi_bit_cnt)
+             .bit_cnt(spi_bit_cnt),
+             
+             .spi_dma_sck(spi_dma_sck),
+             .spi_dma_ovr(spi_dma_ovr)
 );
 
 avr_cmd snes_avr_cmd(
@@ -106,10 +112,27 @@ avr_cmd snes_avr_cmd(
     .endmessage(spi_endmessage),
     .startmessage(spi_startmessage),
     .saveram_mask_out(SAVERAM_MASK),
-    .rom_mask_out(ROM_MASK)
+    .rom_mask_out(ROM_MASK),
+    
+    .spi_dma_ovr(spi_dma_ovr),
+    .spi_dma_nextaddr(spi_dma_nextaddr),
+    .spi_dma_sram_data(spi_dma_sram_data),
+    .spi_dma_sram_we(spi_dma_sram_we)
 );
 
-//wire [7:0] DCM_STATUS;
+spi_dma snes_spi_dma(
+   .clk(CLK2),
+   .spi_dma_ovr(spi_dma_ovr),              // to spi, avr_cmd
+   .spi_dma_miso(SPI_MISO),                // to spi
+   .spi_dma_sck(spi_dma_sck),              // to spi
+   .spi_dma_trig(spi_dma_trig),            // from avr
+   .spi_dma_nextaddr(spi_dma_nextaddr),            // to avr_cmd?
+   .spi_dma_sram_data(spi_dma_sram_data),  // to avr_cmd?
+   .spi_dma_sram_we(spi_dma_sram_we),      // to avr_cmd?
+   .spi_dma_done(spi_dma_done)             // to avr
+);
+
+assign SPI_DMA_CTRL = spi_dma_ovr ? 1'b0 : 1'bZ;
 
 // dcm1: dfs 4x
 my_dcm snes_dcm(.CLKIN(CLKIN),

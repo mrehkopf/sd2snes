@@ -20,11 +20,10 @@
 
 //////////////////////////////////////////////////////////////////////////////////
 module spi(input clk,
-           input SCK,
+           inout SCK,
            input MOSI,
-           output MISO,
+           inout MISO,
            input SSEL,
-           output LED,
            output cmd_ready,
            output param_ready,
            output [7:0] cmd_data,
@@ -33,15 +32,41 @@ module spi(input clk,
            output startmessage,
            input [7:0] input_data,
            output [31:0] byte_cnt,
-           output [2:0] bit_cnt);
+           output [2:0] bit_cnt,
+
+// spi "DMA" extension           
+           input spi_dma_sck,
+           input spi_dma_ovr);
            
 reg [7:0] cmd_data_r;
 reg [7:0] param_data_r;
 
 // sync SCK to the FPGA clock using a 3-bits shift register
+// SCK is an OUTPUT in "DMA" mode
+reg [2:0] spi_dma_ovr_r;
+reg [9:0] spi_dma_leadout_cnt;
+reg spi_dma_leadout;
+initial begin 
+   spi_dma_ovr_r = 3'b000;
+   spi_dma_leadout_cnt <= 10'b0000000000;
+end
+always @(posedge clk) spi_dma_ovr_r <= {spi_dma_ovr_r[1:0], spi_dma_ovr};
+wire spi_dma_ovr_falling = (spi_dma_ovr_r[1:0] == 2'b10);
+always @(posedge clk) begin
+   if (spi_dma_ovr_falling) begin
+      spi_dma_leadout <= 1;
+      spi_dma_leadout_cnt <= 0;
+   end else begin
+      if(spi_dma_leadout_cnt == 100)
+         spi_dma_leadout <= 0;
+      if(spi_dma_leadout)
+         spi_dma_leadout_cnt <= spi_dma_leadout_cnt + 1;
+   end   
+end
+assign SCK = spi_dma_ovr ? spi_dma_sck : spi_dma_leadout ? 1'b0 : 1'bZ;
 reg [2:0] SCKr;  always @(posedge clk) SCKr <= {SCKr[1:0], SCK};
-wire SCK_risingedge = (SCKr[2:1]==2'b01);  // now we can detect SCK rising edges
-wire SCK_fallingedge = (SCKr[2:1]==2'b10);  // and falling edges
+wire SCK_risingedge = spi_dma_ovr ? 0 : (SCKr[2:1]==2'b01);  // now we can detect SCK rising edges
+wire SCK_fallingedge = spi_dma_ovr ? 0 : (SCKr[2:1]==2'b10);  // and falling edges
 
 // same thing for SSEL
 reg [2:0] SSELr;  always @(posedge clk) SSELr <= {SSELr[1:0], SSEL};
@@ -55,7 +80,7 @@ assign startmessage = SSEL_startmessage;
 reg [1:0] MOSIr;  always @(posedge clk) MOSIr <= {MOSIr[0], MOSI};
 wire MOSI_data = MOSIr[1];
 
-// we handle SPI in 8-bits format, so we need a 3 bits counter to count the bits as they come in
+// bit count for one SPI byte + byte count for the message
 reg [2:0] bitcnt;
 reg [31:0] byte_cnt_r;
 
@@ -66,44 +91,32 @@ assign bit_cnt = bitcnt;
 
 always @(posedge clk)
 begin
-  if(~SSEL_active) begin
-    bitcnt <= 3'b000;
-  end else   
-  if(SCK_risingedge)
-  begin
-    bitcnt <= bitcnt + 3'b001;
-
-    // implement a shift-left register (since we receive the data MSB first)
-    byte_data_received <= {byte_data_received[6:0], MOSI_data};
-  end
+   if(~SSEL_active) begin
+     bitcnt <= 3'b000;
+   end
+   else if(SCK_risingedge) begin
+      bitcnt <= bitcnt + 3'b001;
+      // shift received data into the register
+      byte_data_received <= {byte_data_received[6:0], MOSI_data};
+   end
 end
 
 always @(posedge clk) byte_received <= SSEL_active && SCK_risingedge && (bitcnt==3'b111);
 
-// we use the LSB of the data received to control an LED
-reg LEDr;
-
 always @(posedge clk) begin
    if(~SSEL_active)
-       byte_cnt_r <= 16'h0000;    
+      byte_cnt_r <= 16'h0000;    
    else if(byte_received) begin
-      LEDr <= byte_data_received[0];
       byte_cnt_r <= byte_cnt_r + 16'h0001;
    end
 end
-assign LED = LEDr;
 
 reg [7:0] byte_data_sent;
-
-reg [7:0] cnt;
-always @(posedge clk) begin
-   if(SSEL_startmessage) cnt<=cnt+8'h1;  // count the messages
-end
 
 always @(posedge clk) begin
    if(SSEL_active) begin
      if(SSEL_startmessage)
-       byte_data_sent <= cnt;  // first byte sent in a message is the message count
+       byte_data_sent <= 8'h5A;  // dummy byte
      else
      if(SCK_fallingedge) begin
        if(bitcnt==3'b000)
@@ -114,7 +127,8 @@ always @(posedge clk) begin
    end
 end
 
-assign MISO = SSEL_active ? byte_data_sent[7] : 1'bZ;  // send MSB first
+// Slave out is an INPUT in "DMA" mode
+assign MISO = spi_dma_ovr ? 1'bZ : SSEL_active ? byte_data_sent[7] : 1'bZ;  // send MSB first
 
 reg cmd_ready_r;
 reg param_ready_r;
@@ -128,6 +142,8 @@ assign byte_cnt = byte_cnt_r;
 
 always @(posedge clk) cmd_ready_r2 = byte_received && byte_cnt_r == 32'h0;
 always @(posedge clk) param_ready_r2 = byte_received && byte_cnt_r > 32'h0;
+
+// fill registers
 always @(posedge clk) begin
    if (SSEL_startmessage)
       cmd_data_r <= 8'h00;
@@ -135,8 +151,9 @@ always @(posedge clk) begin
       cmd_data_r <= byte_data_received;
    else if(param_ready_r2)
       param_data_r <= byte_data_received;
-   
 end
+
+// delay ready signals by one clock (why did I do this again...)
 always @(posedge clk) begin
    cmd_ready_r <= cmd_ready_r2;
    param_ready_r <= param_ready_r2;

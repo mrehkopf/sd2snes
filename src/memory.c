@@ -124,7 +124,7 @@ void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
 }
 
 uint32_t load_rom(uint8_t* filename) {
-	uint8_t dummy;
+//	uint8_t dummy;
 	set_avr_bank(0);
 	UINT bytes_read;
 	DWORD filesize;
@@ -132,18 +132,25 @@ uint32_t load_rom(uint8_t* filename) {
 	file_open(filename, FA_READ);
 	filesize = file_handle.fsize;
 	smc_id(&romprops);
+	dprintf("no nervous breakdown beyond this point! or else!\n");
 	if(file_res) {
 		uart_putc('?');
 		uart_putc(0x30+file_res);
 		return 0;
 	}
 	f_lseek(&file_handle, romprops.offset);
+	spi_none();
 	for(;;) {
+		SPI_OFFLOAD=1;
 		spi_none();
 		bytes_read = file_read();
-		spi_none();
 		if (file_res || !bytes_read) break;
-		spi_fpga();
+		if(!(count++ % 8)) {
+//			toggle_busy_led();
+			bounce_busy_led();
+			uart_putc('.');
+		}
+/*		spi_fpga();
 		spiTransferByte(0x91); // write w/ increment
 		if(!(count++ % 8)) {
 //			toggle_busy_led();
@@ -156,7 +163,7 @@ uint32_t load_rom(uint8_t* filename) {
 			loop_until_bit_is_set(SPSR, SPIF);
 			dummy = SPDR;
 		}
-		spiTransferByte(0x00); // dummy tx for increment+write pulse		
+		spiTransferByte(0x00); // dummy tx for increment+write pulse		*/
 	}
 	file_close();
 	spi_none();

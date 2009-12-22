@@ -46,7 +46,6 @@ module main_tf2;
 	wire SRAM_WE;
 	wire SPI_MISO;
 	wire MODE;
-	wire SPI_LSB;
    wire SRAM_BHE;
    wire SRAM_BLE;
    

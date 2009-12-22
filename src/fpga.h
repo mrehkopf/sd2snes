@@ -20,6 +20,7 @@ void set_avr_addr_en(uint8_t val);
 void set_avr_mapper(uint8_t val);
 void set_avr_bank(uint8_t val);
 
+uint8_t SPI_OFFLOAD;
 
 #define FPGA_TEST_TOKEN	(0xa5)
 

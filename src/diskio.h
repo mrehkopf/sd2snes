@@ -80,6 +80,8 @@ DRESULT disk_getinfo(BYTE drv, BYTE page, void *buffer);
 
 void disk_init(void);
 
+uint8_t SD_SPI_OFFLOAD;
+
 /* Will be set to DISK_ERROR if any access on the card fails */
 enum diskstates { DISK_CHANGED = 0, DISK_REMOVED, DISK_OK, DISK_ERROR };
 

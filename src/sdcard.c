@@ -60,6 +60,7 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include <util/crc16.h>
+#include <util/delay.h>
 #include "config.h"
 #include "avrcompat.h"
 #include "crc7.h"
@@ -307,6 +308,8 @@ static uint8_t extendedInit(const uint8_t card) {
 static void sdInit(const uint8_t card) {
   uint8_t i;
   uint16_t counter;
+
+  SD_SPI_OFFLOAD = 0;
 
   counter = 0xffff;
   do {
@@ -557,24 +560,46 @@ DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
 
       // Get data
       crc = 0;
-      // Initiate data exchange over SPI
-      SPDR = 0xff;
 
-      for (i=0; i<512; i++) {
-        // Wait until data has been received
-        loop_until_bit_is_set(SPSR, SPIF);
-        tmp = SPDR;
-        // Transmit the next byte while we store the current one
+      if(SD_SPI_OFFLOAD) {
+//	uart_putc('O');
+        PORTB |= _BV(PB2);
+        DDRB |= _BV(PB2);
+        PORTB &= ~_BV(PB2);
+        PORTB |= _BV(PB2);
+	PORTB &= ~_BV(PB7);
+        DDRB &= ~_BV(PB7); // tristate SCK
+//        SPCR=0;
+        DDRB &= ~_BV(PB2);
+	_delay_us(1);
+	loop_until_bit_is_set(PINB, PB2);
+        DDRB |= _BV(PB2);
+//        SPCR=0b01010000;
+	SD_SPI_OFFLOAD = 0;
+	deselectCard(drv);
+        DDRB |= _BV(PB7);
+	return RES_OK;
         SPDR = 0xff;
-
-        *(buffer++) = tmp;
+      } else {
+        // Initiate data exchange over SPI
+        SPDR = 0xff;
+  
+        for (i=0; i<512; i++) {
+          // Wait until data has been received
+          loop_until_bit_is_set(SPSR, SPIF);
+          tmp = SPDR;
+          // Transmit the next byte while we store the current one
+          SPDR = 0xff;
+  
+          *(buffer++) = tmp;
 #ifdef CONFIG_SD_DATACRC
-        crc = _crc_xmodem_update(crc, tmp);
+          crc = _crc_xmodem_update(crc, tmp);
 #endif
+        }
       }
       // Wait until the first CRC byte is received
       loop_until_bit_is_set(SPSR, SPIF);
-
+  
       // Check CRC
       recvcrc = (SPDR << 8) + spiTransferByte(0xff);
 #ifdef CONFIG_SD_DATACRC
@@ -586,7 +611,6 @@ DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
         continue;
       }
 #endif
-
       break;
     }
     deselectCard(drv);

@@ -60,6 +60,7 @@
 #include "ff.h"         /* FatFs declarations */
 #include "diskio.h"     /* Include file for user provided disk functions */
 #include "uart.h"
+#include "fpga.h"
 
 /*--------------------------------------------------------------------------
 
@@ -1603,8 +1604,12 @@ FRESULT f_read (
       cc = btr / SS(fs);              /* When left bytes >= SS(fs), */
       if (cc) {                       /* Read maximum contiguous sectors directly */
         if (cc > fp->csect) cc = fp->csect;
+	if(SPI_OFFLOAD) {
+		SD_SPI_OFFLOAD = 1;
+	}
         if (disk_read(fs->drive, rbuff, sect, (BYTE)cc) != RES_OK)
           goto fr_error;
+	SD_SPI_OFFLOAD = 0;
         fp->csect -= (BYTE)(cc - 1);
         fp->curr_sect += cc - 1;
         rcnt = cc * SS(fs);
@@ -1619,10 +1624,13 @@ FRESULT f_read (
     }
   }
 
+  SPI_OFFLOAD = 0;
   return FR_OK;
 
 fr_error: /* Abort this file due to an unrecoverable error */
   fp->flag |= FA__ERROR;
+  SPI_OFFLOAD = 0;
+  SD_SPI_OFFLOAD = 0;
   return FR_RW_ERROR;
 }
 

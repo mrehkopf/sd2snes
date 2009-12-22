@@ -55,6 +55,10 @@ void fpga_init() {
 	DDRD |= _BV(PD3) | _BV(PD4); // PD3, PD4 are outputs
 	
 	DDRA = ~_BV(PA3); // PA3 is input <- DONE
+
+	DDRB |= _BV(PB2); // DMA_CTRL preinit
+	PORTB |= _BV(PB2);
+	SPI_OFFLOAD=0;
 	set_cclk(0);    // initial clk=0
 }
 
@@ -64,7 +68,7 @@ int fpga_get_done(void) {
 
 void fpga_postinit() {
 	DDRA |= _BV(PA0) | _BV(PA1) | _BV(PA2) | _BV(PA4) | _BV(PA5) | _BV(PA6); // MAPPER+NEXTADDR output
-	DDRB |= _BV(PB2) | _BV(PB1) | _BV(PB0);	// turn PB2 into output, enable AVR_BANK
+	DDRB |= _BV(PB1) | _BV(PB0);	// turn PB2 into output, enable AVR_BANK
 	DDRD |= _BV(PD7);	// turn PD7 into output
 }
 

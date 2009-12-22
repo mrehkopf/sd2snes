@@ -69,6 +69,22 @@
       <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="Implementation"/>
     </file>
+    <file xil_pn:name="spi_dma.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="Implementation"/>
+      <association xil_pn:name="BehavioralSimulation"/>
+    </file>
+    <file xil_pn:name="tf_spi_dma.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="PostTranslateSimulation"/>
+      <association xil_pn:name="PostMapSimulation"/>
+      <association xil_pn:name="PostRouteSimulation"/>
+    </file>
+    <file xil_pn:name="tf_main_3.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="PostTranslateSimulation"/>
+      <association xil_pn:name="PostMapSimulation"/>
+      <association xil_pn:name="PostRouteSimulation"/>
+    </file>
   </files>
 
   <properties>
@@ -92,9 +108,9 @@
     <property xil_pn:name="Optimization Effort" xil_pn:value="High"/>
     <property xil_pn:name="Optimization Strategy (Cover Mode)" xil_pn:value="Balanced"/>
     <property xil_pn:name="Optimize Instantiated Primitives" xil_pn:value="true"/>
-    <property xil_pn:name="PROP_BehavioralSimTop" xil_pn:value="Module|main_tf2"/>
+    <property xil_pn:name="PROP_BehavioralSimTop" xil_pn:value="Module|tf_main_3"/>
     <property xil_pn:name="PROP_DesignName" xil_pn:value="sd2snes"/>
-    <property xil_pn:name="PROP_PostParSimTop" xil_pn:value="Module|main_tf2"/>
+    <property xil_pn:name="PROP_PostParSimTop" xil_pn:value="Module|tf_main_3"/>
     <property xil_pn:name="Package" xil_pn:value="tq144"/>
     <property xil_pn:name="Place &amp; Route Effort Level (Overall)" xil_pn:value="High"/>
     <property xil_pn:name="Placer Effort Level (Overrides Overall Level)" xil_pn:value="High"/>
@@ -104,8 +120,8 @@
     <property xil_pn:name="Register Duplication" xil_pn:value="On"/>
     <property xil_pn:name="Release Write Enable (Output Events)" xil_pn:value="5"/>
     <property xil_pn:name="Router Effort Level (Overrides Overall Level)" xil_pn:value="High"/>
-    <property xil_pn:name="Selected Simulation Root Source Node Behavioral" xil_pn:value="Module|main_tf2"/>
-    <property xil_pn:name="Selected Simulation Root Source Node Post-Route" xil_pn:value="Module|main_tf2"/>
+    <property xil_pn:name="Selected Simulation Root Source Node Behavioral" xil_pn:value="Module|tf_main_3"/>
+    <property xil_pn:name="Selected Simulation Root Source Node Post-Route" xil_pn:value="Module|tf_main_3"/>
     <property xil_pn:name="Selected Simulation Source Node" xil_pn:value="uut"/>
     <property xil_pn:name="Simulator" xil_pn:value="ISim (VHDL/Verilog)"/>
     <property xil_pn:name="Speed Grade" xil_pn:value="-4"/>

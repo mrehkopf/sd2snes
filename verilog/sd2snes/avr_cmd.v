@@ -38,7 +38,13 @@ module avr_cmd(
     input endmessage,
     input startmessage,
     output [23:0] saveram_mask_out,
-    output [23:0] rom_mask_out
+    output [23:0] rom_mask_out,
+    
+    // SPI "DMA" extension
+    input spi_dma_ovr,
+    input spi_dma_nextaddr,
+    input [7:0] spi_dma_sram_data,
+    input spi_dma_sram_we
     );
 
 reg [3:0] MAPPER_BUF;
@@ -50,6 +56,8 @@ reg [7:0] AVR_DATA_OUT_BUF;
 reg [7:0] AVR_DATA_IN_BUF;
 reg [1:0] avr_nextaddr_buf;
 wire avr_nextaddr;
+wire spi_dma_nextaddr_trig;
+reg [2:0] spi_dma_nextaddr_r;
 
 reg [1:0] SRAM_MASK_IDX;
 reg [23:0] SAVERAM_MASK;
@@ -59,17 +67,15 @@ assign spi_data_out = AVR_DATA_IN_BUF;
 
 initial begin
    ADDR_OUT_BUF = 0;
+   spi_dma_nextaddr_r = 0;
 end
 
+// command interpretation
 always @(posedge clk) begin
    if (cmd_ready) begin
       case (cmd_data[7:4])
          4'h3:
             MAPPER_BUF <= cmd_data[3:0];
-//         4'h8:
-//            AVR_DATA_IN_BUF <= avr_data_in;
-//         4'hF:
-// TODO            AVR_DATA_IN_BUF <= 8'hA5;
       endcase
    end else if (param_ready) begin
       case (cmd_data[7:4])
@@ -102,16 +108,15 @@ always @(posedge clk) begin
                32'h4:
                   SAVERAM_MASK[7:0] <= param_data;
             endcase
-//         4'h8:
-//            AVR_DATA_IN_BUF <= avr_data_in;
          4'h9:
             AVR_DATA_OUT_BUF <= param_data;
       endcase
    end
-   if (avr_nextaddr & (cmd_data[7:5] == 3'h4) && (cmd_data[0]) && (spi_byte_cnt > (32'h1+cmd_data[4])))
+   if (spi_dma_nextaddr_trig | (avr_nextaddr & (cmd_data[7:5] == 3'h4) && (cmd_data[0]) && (spi_byte_cnt > (32'h1+cmd_data[4]))))
       ADDR_OUT_BUF <= ADDR_OUT_BUF + 1;
 end
 
+// value fetch during last SPI bit
 always @(posedge clk) begin
    if (spi_bit_cnt == 3'h7)
       if (cmd_data[7:4] == 4'hF)
@@ -120,6 +125,7 @@ always @(posedge clk) begin
          AVR_DATA_IN_BUF <= avr_data_in;
 end
 
+// nextaddr pulse generation
 always @(posedge clk) begin
    if (spi_bit_cnt == 3'h0)
       avr_nextaddr_buf <= {avr_nextaddr_buf[0], 1'b1};
@@ -127,23 +133,33 @@ always @(posedge clk) begin
       avr_nextaddr_buf <= {avr_nextaddr_buf[0], 1'b0};
 end
 
+assign spi_dma_nextaddr_trig = (spi_dma_nextaddr_r[2:1] == 2'b01);
+always @(posedge clk) begin
+   spi_dma_nextaddr_r <= {spi_dma_nextaddr_r[1:0], spi_dma_nextaddr};
+end
+
+// r/w pulse
 always @(posedge clk) begin
    if ((spi_bit_cnt == 3'h1) & (cmd_data[7:4] == 4'h9) & (spi_byte_cnt > 32'h1))
       AVR_WRITE_BUF <= 1'b0;
    else
       AVR_WRITE_BUF <= 1'b1;
 
+// Read pulse is two spi cycles to ensure that the value
+// is ready in the 2nd cycle in AVR master mode
    if ((spi_bit_cnt == 3'h6 || spi_bit_cnt == 3'h7) & (cmd_data[7:4] == 4'h8) & (spi_byte_cnt > 32'h0))
       AVR_READ_BUF <= 1'b0;
    else
       AVR_READ_BUF <= 1'b1;
 end
 
+// trigger for nextaddr
 assign avr_nextaddr = avr_nextaddr_buf == 2'b01;
+
 assign avr_read = AVR_READ_BUF;
-assign avr_write = AVR_WRITE_BUF;
+assign avr_write = spi_dma_ovr ? spi_dma_sram_we : AVR_WRITE_BUF;
 assign addr_out = ADDR_OUT_BUF;
-assign avr_data_out = AVR_DATA_OUT_BUF;
+assign avr_data_out = spi_dma_ovr ? spi_dma_sram_data : AVR_DATA_OUT_BUF;
 assign avr_mapper = MAPPER_BUF;
 assign avr_sram_size = SRAM_SIZE_BUF;
 assign rom_mask_out = ROM_MASK;

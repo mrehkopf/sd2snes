@@ -48,6 +48,7 @@
 #include "spi.h"
 #include "avrcompat.h"
 #include "filetypes.h"
+#include "sdcard.h"
 
 void writetest(void) {
 // HERE BE LIONS, GET IN THE CAR
@@ -116,12 +117,6 @@ void poison_memory(void) {
 }
 #endif
 
-void avr_goto_addr(const uint32_t val) {
-	AVR_ADDR_RESET();
-	for(uint32_t i=0; i<val; i++) {
-		AVR_NEXTADDR();
-	}
-}
 #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 1)
 int main(void) __attribute__((OS_main));
 #endif
@@ -189,7 +184,41 @@ restart:
 	uint16_t mem_dir_id = sram_readshort(SRAM_DIRID);
 	uint32_t mem_magic = sram_readlong(SRAM_SCRATCHPAD);
 
-
+	while(0) {
+		SD_SPI_OFFLOAD=1;
+		sd_read(0, file_buf, 32L, 1);
+//		sram_writeblock((void*)file_buf, 0, 0x200);
+		sram_hexdump(0,0x10);
+		uart_putc('+');
+	}
+/* here be strange monsters */
+	while(0){
+//	uint16_t hurdur1 = 0, hurdur2 = 0;
+	spiTransferByte(0x00);
+	spiTransferByte(0x00);
+	spiTransferByte(0x00);
+	spiTransferByte(0x00);
+	spiTransferByte(0x00);
+	spiTransferByte(0x00);
+	spiTransferByte(0x00);
+	spiTransferByte(0x00);
+	spiTransferByte(0x00);
+	spiTransferByte(0x00);
+	spiTransferByte(0x00);
+	spiTransferByte(0x00);
+	spiTransferByte(0x00);
+        PORTB |= _BV(PB2);
+        DDRB |= _BV(PB2);
+        PORTB &= ~_BV(PB2);
+        DDRB &= ~_BV(PB7); // tristate SCK
+        PORTB |= _BV(PB2);
+        DDRB &= ~_BV(PB2);
+        while(!(PINB & _BV(PB2))) {
+        }
+        DDRB |= _BV(PB7);
+        _delay_ms(1);
+//	dprintf("hurdur1=%d hurdur2=%d\n", hurdur1, hurdur2);
+}
 	if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id)) {
 		uint16_t curr_dir_id = scan_dir(fs_path, 0, 0); // generate files footprint
 		dprintf("curr dir id = %x\n", curr_dir_id);
@@ -207,7 +236,7 @@ restart:
 			save_sram((uint8_t*)"/sd2snes/sd2snes.db", endaddr-SRAM_DB_ADDR, SRAM_DB_ADDR);
 			save_sram((uint8_t*)"/sd2snes/sd2snes.dir", direndaddr-(SRAM_DIR_ADDR), SRAM_DIR_ADDR);
 			dprintf("done\n"); 
-			sram_hexdump(SRAM_DB_ADDR, 0x400);
+//			sram_hexdump(SRAM_DB_ADDR, 0x400);
 		} else {
 			dprintf("saved dir id = %x\n", saved_dir_id);
 			dprintf("different card, consistent db, loading db...\n");
@@ -229,10 +258,14 @@ restart:
 
 	led_pwm();
 
+//	sram_hexdump(0, 0x200);
 	uart_putc('(');
 	load_rom((uint8_t*)"/sd2snes/menu.bin");
 	set_rom_mask(0x3fffff); // force mirroring off
 	uart_putc(')');
+	uart_putcrlf();
+//	sram_hexdump(0, 0x200);
+//	save_sram((uint8_t*)"/sd2snes/dump", 65536, 0);
 
 	sram_writebyte(0, SRAM_CMD_ADDR);
 
@@ -256,6 +289,7 @@ restart:
 				set_avr_ena(0);
 				dprintf("Selected name: %s\n", file_lfn);
 				load_rom(file_lfn);
+//				save_sram((uint8_t*)"/sd2snes/test.smc", romprops.romsize_bytes, 0);
 				if(romprops.ramsize_bytes) {
 					strcpy(strrchr((char*)file_lfn, (int)'.'), ".srm");
 					dprintf("SRM file: %s\n", file_lfn);
@@ -281,7 +315,6 @@ restart:
 	uint8_t snes_reset_prev=0, snes_reset_now=0, snes_reset_state=0;
 	uint16_t reset_count=0;
 	while(fpga_test() == FPGA_TEST_TOKEN) {
-		dprintf("%02X\n", fpga_test());
 		snes_reset_now=get_snes_reset();
 		if(snes_reset_now) {
 			if(!snes_reset_prev) {
