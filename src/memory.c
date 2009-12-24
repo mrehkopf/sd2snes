@@ -207,18 +207,19 @@ uint32_t load_sram(uint8_t* filename, uint32_t base_addr) {
 	filesize = file_handle.fsize;
 	if(file_res) return 0;
 	for(;;) {
-		FPGA_SS_HIGH();
-		SPI_SS_LOW();
+//		FPGA_SS_HIGH();
+//		SPI_SS_LOW();
+		SPI_OFFLOAD=1;
 		bytes_read = file_read();
-		SPI_SS_HIGH();
+//		SPI_SS_HIGH();
 		if (file_res || !bytes_read) break;
-		FPGA_SS_LOW();
-		spiTransferByte(0x91);
+//		FPGA_SS_LOW();
+/*		spiTransferByte(0x91);
 		for(int j=0; j<bytes_read; j++) {
 			spiTransferByte(file_buf[j]);
 		}
 		spiTransferByte(0x00); // dummy tx
-		FPGA_SS_HIGH();
+		FPGA_SS_HIGH(); // */
 	}
 	file_close();
 	return (uint32_t)filesize;

@@ -5,9 +5,9 @@ GAME_MAIN:
 	sep #$20 : .as
 	jsr snes_init
 	jsr setup_gfx
+	jsr colortest
 	jsr setup_hdma
 	jsr tests
-	jsr colortest
 	sep #$20 : .as
 	lda #$00
 	sta @AVR_CMD
@@ -154,8 +154,8 @@ snes_init:
 	stz $2101		;
 	stz $2102		;
 	stz $2103		;
-	stz $2104		; (OAM Data?!)
-	stz $2104		; (OAM Data?!)
+;	stz $2104		; (OAM Data?!)
+;	stz $2104		; (OAM Data?!)
 	stz $2105		;
 	stz $2106		;
 	stz $2107		;
@@ -185,8 +185,8 @@ snes_init:
 	sta $2115		;
 	stz $2116		;
 	stz $2117		;
-	stz $2118		;(VRAM Data?!)
-	stz $2119		;(VRAM Data?!)
+;	stz $2118		;(VRAM Data?!)
+;	stz $2119		;(VRAM Data?!)
 	stz $211a		;
 	stz $211b		;
 	lda #$01
@@ -202,8 +202,8 @@ snes_init:
 	stz $2120		;
 	stz $2120		;
 	stz $2121		;
-	stz $2122		; (CG Data?!)
-	stz $2122		; (CG Data?!)
+;	stz $2122		; (CG Data?!)
+;	stz $2122		; (CG Data?!)
 	stz $2123		;
 	stz $2124		;
 	stz $2125		;

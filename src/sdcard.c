@@ -68,7 +68,7 @@
 #include "spi.h"
 #include "uart.h"
 #include "sdcard.h"
-
+#include "fpga_spi.h"
 #ifndef TRUE
 #define TRUE -1
 #endif
@@ -540,6 +540,7 @@ DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
 
       if (res != 0) {
 		uart_putc('?');
+	dprintf("SD error: %02x\n", res);
         SPI_SS_HIGH(drv);
         disk_state = DISK_ERROR;
         return RES_ERROR;
@@ -565,19 +566,18 @@ DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
 //	uart_putc('O');
         PORTB |= _BV(PB2);
         DDRB |= _BV(PB2);
+	_delay_us(1);
         PORTB &= ~_BV(PB2);
-        PORTB |= _BV(PB2);
-	PORTB &= ~_BV(PB7);
         DDRB &= ~_BV(PB7); // tristate SCK
-//        SPCR=0;
+        PORTB |= _BV(PB2);
         DDRB &= ~_BV(PB2);
 	_delay_us(1);
-	loop_until_bit_is_set(PINB, PB2);
-        DDRB |= _BV(PB2);
-//        SPCR=0b01010000;
-	SD_SPI_OFFLOAD = 0;
-	deselectCard(drv);
+	while(!(PINB & _BV(PB2)));
         DDRB |= _BV(PB7);
+        DDRB |= _BV(PB2);
+//	_delay_us(1);
+	deselectCard(drv);
+	SD_SPI_OFFLOAD = 0;
 	return RES_OK;
         SPDR = 0xff;
       } else {

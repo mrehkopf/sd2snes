@@ -186,7 +186,8 @@ restart:
 
 	while(0) {
 		SD_SPI_OFFLOAD=1;
-		sd_read(0, file_buf, 32L, 1);
+		set_avr_addr(0L);
+		sd_read(0, file_buf, 8L, 1);
 //		sram_writeblock((void*)file_buf, 0, 0x200);
 		sram_hexdump(0,0x10);
 		uart_putc('+');
@@ -264,7 +265,8 @@ restart:
 	set_rom_mask(0x3fffff); // force mirroring off
 	uart_putc(')');
 	uart_putcrlf();
-//	sram_hexdump(0, 0x200);
+//	sram_hexdump(0x7ffff0, 0x10);
+//	sram_hexdump(0, 0x400);
 //	save_sram((uint8_t*)"/sd2snes/dump", 65536, 0);
 
 	sram_writebyte(0, SRAM_CMD_ADDR);
