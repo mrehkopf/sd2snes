@@ -163,13 +163,13 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 								uint16_t pathlen = strlen(path);
 								switch(type) {
 									case TYPE_SMC:
-										file_open_by_filinfo(&fno);
-										if(file_res){
-											dprintf("ZOMG NOOOO %d\n", file_res);
-											_delay_ms(30);
-										}
-										smc_id(&romprops);
-										file_close();
+// XXX										file_open_by_filinfo(&fno);
+// XXX										if(file_res){
+// XXX											dprintf("ZOMG NOOOO %d\n", file_res);
+// XXX											_delay_ms(30);
+// XXX										}
+// XXX										smc_id(&romprops);
+// XXX										file_close();
 		//								_delay_ms(30);
 										// write element pointer to current dir structure
 //										dprintf("d=%d Saving %lX to Address %lX  [file]\n", depth, db_tgt, dir_tgt);

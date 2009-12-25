@@ -278,6 +278,8 @@ restart:
 	uart_puts_P(PSTR("SNES GO!\r\n"));
 	snes_reset(0);
 
+
+
 	uint8_t cmd = 0;
 
 	while(!sram_reliable());
@@ -316,6 +318,7 @@ restart:
 	cmd=0;
 	uint8_t snes_reset_prev=0, snes_reset_now=0, snes_reset_state=0;
 	uint16_t reset_count=0;
+// /* XXX */	writetest();
 	while(fpga_test() == FPGA_TEST_TOKEN) {
 		snes_reset_now=get_snes_reset();
 		if(snes_reset_now) {

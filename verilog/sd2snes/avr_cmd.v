@@ -140,7 +140,7 @@ end
 
 // r/w pulse
 always @(posedge clk) begin
-   if ((spi_bit_cnt == 3'h1) & (cmd_data[7:4] == 4'h9) & (spi_byte_cnt > 32'h1))
+   if ((spi_bit_cnt == 3'h1 || spi_bit_cnt == 3'h2 || spi_bit_cnt == 3'h3) & (cmd_data[7:4] == 4'h9) & (spi_byte_cnt > 32'h1))
       AVR_WRITE_BUF <= 1'b0;
    else
       AVR_WRITE_BUF <= 1'b1;
