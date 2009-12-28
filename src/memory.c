@@ -88,11 +88,15 @@ uint32_t sram_readlong(uint32_t addr) {
 	spi_fpga();
 	spiTransferByte(0x81);
 	spiTransferByte(0x00);
-
-	uint32_t val = spiTransferByte(0x00);
-	val |= ((uint32_t)spiTransferByte(0x00)<<8);
-	val |= ((uint32_t)spiTransferByte(0x00)<<16);
-	val |= ((uint32_t)spiTransferByte(0x00)<<24);
+	uint32_t count=0;
+	uint32_t val = spiTransferByte(count & 0xff);
+	count++;
+	val |= ((uint32_t)spiTransferByte(count & val)<<8);
+	count++;
+	val |= ((uint32_t)spiTransferByte(count & val)<<16);
+	count++;
+	val |= ((uint32_t)spiTransferByte(count & val)<<24);
+	count++;
 	spi_none();
 	return val;
 }
@@ -123,15 +127,15 @@ void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
 	spi_none();
 }
 
-uint32_t load_rom(uint8_t* filename) {
+uint32_t load_rom(uint8_t* filename, uint32_t base_addr) {
 //	uint8_t dummy;
-	set_avr_bank(0);
 	UINT bytes_read;
 	DWORD filesize;
 	UINT count=0;
 	file_open(filename, FA_READ);
 	filesize = file_handle.fsize;
 	smc_id(&romprops);
+	set_avr_addr(base_addr);
 	dprintf("no nervous breakdown beyond this point! or else!\n");
 	if(file_res) {
 		uart_putc('?');
@@ -293,8 +297,9 @@ uint8_t sram_reliable() {
 		val=sram_readlong(SRAM_SCRATCHPAD);
 		if(val==0x12345678) {
 			score++;
+		} else {
+			dprintf("i=%d val=%08lX\n", i, val);
 		}
-//		dprintf("val=%08lX\n", val);
 	}
 	if(score<SRAM_RELIABILITY_SCORE) {
 		result = 0;

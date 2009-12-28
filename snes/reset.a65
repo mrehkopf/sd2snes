@@ -18,17 +18,17 @@ NMI_ROUTINE:
 	plb
         lda $4210
 
-	ldx #BG1_TILE_BASE+32*10
+	ldx #BG1_TILE_BASE+32*9
 	stx $2116
-	DMA0(#$01, #34*64, #^BG1_TILE_BUF, #!BG1_TILE_BUF+64*10, #$18)
+	DMA0(#$01, #36*64, #^BG1_TILE_BUF, #!BG1_TILE_BUF+64*9, #$18)
 
-	ldx #BG2_TILE_BASE+32*10
+	ldx #BG2_TILE_BASE+32*9
 	stx $2116
-	DMA0(#$01, #34*64, #^BG2_TILE_BUF, #!BG2_TILE_BUF+64*10, #$18)
+	DMA0(#$01, #36*64, #^BG2_TILE_BUF, #!BG2_TILE_BUF+64*9, #$18)
 
 	ldx #BG2_TILE_BASE
 	stx $2116
-	DMA0(#$01, #64*10, #^BG2_TILE_BUF, #!BG2_TILE_BUF, #$18)
+	DMA0(#$01, #64*9, #^BG2_TILE_BUF, #!BG2_TILE_BUF, #$18)
 
 	lda bar_yl
 	asl
@@ -37,13 +37,14 @@ NMI_ROUTINE:
 	lda barstep
 	php
 	txa
+	dec
 	plp
 	bne small_bar
 	asl
 	bra normal_bar
 small_bar
 	clc
-	adc #36
+	adc #31
 normal_bar
 	sta bar_y
 

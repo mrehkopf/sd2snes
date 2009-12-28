@@ -147,7 +147,7 @@ always @(posedge clk) begin
 
 // Read pulse is two spi cycles to ensure that the value
 // is ready in the 2nd cycle in AVR master mode
-   if ((spi_bit_cnt == 3'h6 || spi_bit_cnt == 3'h7) & (cmd_data[7:4] == 4'h8) & (spi_byte_cnt > 32'h0))
+   if ((spi_bit_cnt == 3'h5 || spi_bit_cnt == 3'h6 || spi_bit_cnt == 3'h7) & (cmd_data[7:4] == 4'h8) & (spi_byte_cnt > 32'h0))
       AVR_READ_BUF <= 1'b0;
    else
       AVR_READ_BUF <= 1'b1;

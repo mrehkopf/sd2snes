@@ -3,33 +3,33 @@ zero		.word	0
 bg2tile		.byt $20
 hdma_pal_src	.byt 44
 		.byt $60, $2d
-		.byt 24
+		.byt 14
 		.byt $00, $00
 		.byt 2
 		.byt $60, $2d
-		.byt 10
+		.byt 11
 		.byt $00, $00
-		.byt 10
+		.byt 11
 		.byt $20, $04
-		.byt 10
+		.byt 11
 		.byt $40, $08
-		.byt 10
+		.byt 11
 		.byt $60, $0c
-		.byt 10
+		.byt 11
 		.byt $80, $10
-		.byt 10
+		.byt 11
 		.byt $a0, $14
-		.byt 10
+		.byt 11
 		.byt $c0, $18
-		.byt 10
+		.byt 11
 		.byt $e0, $1c
-		.byt 10
+		.byt 11
 		.byt $00, $21
-		.byt 10
+		.byt 11
 		.byt $20, $25
-		.byt 10
+		.byt 11
 		.byt $40, $29
-		.byt 32
+		.byt 31
 		.byt $60, $2d
 		.byt 2
 		.byt $20, $04
@@ -69,8 +69,8 @@ hdma_cg_addr_src
 		.byt $00, $00, $00, $00, $00, $00, $00, $00
 		.byt $00, $00, $00, $00, $00, $00, $00, $00
 		.byt $00
-hdma_mode_src	.byt 74, $03, $01, $05, $00
-hdma_scroll_src	.byt 74
+hdma_mode_src	.byt 64, $03, $01, $05, $00
+hdma_scroll_src	.byt 64
 		.byt $00, $00, $ff, $0f
 		.byt $01
 		.byt $fc, $00, $05, $00
@@ -80,10 +80,37 @@ hdma_math_src	.byt 1
 		.byt 1
 		.byt $00, $e0
 		.byt 10
-		.byt $20, $ea
+		.byt $70, $ff
 		.byt 1
 		.byt $00, $e0
 		.byt 0
+
+oam_data_l	.byt 75, 56, 31, $0e
+		.byt 83, 56, 1, $0e
+		.byt 91, 56, 2, $0e
+		.byt 99, 56, 3, $0e
+		.byt 107, 56, 4, $0e
+		.byt 115, 56, 5, $0e
+		.byt 123, 56, 6, $0e
+		.byt 131, 56, 7, $0e
+;x shift left due to mode switch glitch
+		.byt 75, 64, 8, $0e
+		.byt 83, 64, 9, $0e
+		.byt 91, 64, 10, $0e
+		.byt 99, 64, 11, $0e
+		.byt 107, 64, 12, $0e
+		.byt 115, 64, 13, $0e
+		.byt 123, 64, 14, $0e
+		.byt 131, 64, 15, $0e
+		.byt 75, 72, 16, $0e
+		.byt 83, 72, 17, $0e
+		.byt 91, 72, 18, $0e
+		.byt 99, 72, 19, $0e
+		.byt 75, 80, 24, $0e
+		.byt 83, 80, 25, $0e
+		.byt 91, 80, 26, $0e
+		
+oam_data_h	.byt 0, 0, 0, 0, 0, 0, 0, 0
 
 space64	.byt $20, $20, $20, $20, $20, $20, $20, $20
 	.byt $20, $20, $20, $20, $20, $20, $20, $20

@@ -15,7 +15,6 @@
 
 uint8_t initloop=1;
 uint32_t saveram_crc, saveram_crc_old;
-uint32_t saveram_base_addr = 0x600000; // chip 3
 void snes_init() {
 	DDRD |= _BV(PD5);	// PD5 = RESET_DIR
 	DDRD |= _BV(PD6); 	// PD6 = RESET
@@ -59,10 +58,10 @@ uint8_t sram_valid = 0;
 void snes_main_loop() {
 	if(!romprops.ramsize_bytes)return;
 	if(initloop) {
-		saveram_crc_old = calc_sram_crc(saveram_base_addr, romprops.ramsize_bytes);
+		saveram_crc_old = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
 		initloop=0;
 	}
-	saveram_crc = calc_sram_crc(saveram_base_addr, romprops.ramsize_bytes);
+	saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
 	sram_valid = sram_reliable();
 	if(crc_valid && sram_valid) {
 		if(saveram_crc != saveram_crc_old) {
@@ -82,7 +81,7 @@ void snes_main_loop() {
 			uart_puthexshort(saveram_crc);
 			uart_putcrlf();
 			set_busy_led(1);
-			save_sram(file_lfn, romprops.ramsize_bytes, saveram_base_addr);
+			save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
 			set_busy_led(0);
 			didnotsave=0;
 		}
@@ -90,7 +89,7 @@ void snes_main_loop() {
 			diffcount=0;
 			uart_putc('V');
 			set_busy_led(1);
-			save_sram(file_lfn, romprops.ramsize_bytes, saveram_base_addr);
+			save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
 			didnotsave=0;	
                         set_busy_led(0);
 		}
@@ -121,5 +120,5 @@ uint8_t menu_main_loop() {
 void get_selected_name(uint8_t* fn) {
 	uint32_t addr = sram_readlong(SRAM_FD_ADDR);
 	dprintf("fd addr=%lX\n", addr);
-	sram_readblock(fn, addr+0x41, 256);
+	sram_readblock(fn, addr+0x41+SRAM_MENU_ADDR, 256);
 }

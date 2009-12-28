@@ -14,7 +14,7 @@ menu_init:
 	stz dirend_onscreen
 	lda #$04
 	sta cursor_x
-	lda #$0A
+	lda #$09
 	sta cursor_y
 	ldx #$0000
 	stx dirptr_idx
@@ -57,7 +57,7 @@ menu_cleanup_loop
 	beq +
 	pha
 	clc
-	adc #$0a
+	adc #$09
 	sta print_y
 	lda #^space64
 	ldx #!space64
@@ -88,7 +88,7 @@ menu_updates:
 	sta dirptr_idx
 	lda menu_sel
 	clc
-	adc #$09
+	adc #$08
 	sta bar_yl
 
 ;get input
@@ -138,7 +138,7 @@ key_select
 	bra menuupd_out
 
 menuupd_out
-	lda #$0A
+	lda #$09
 	sta cursor_y
 	rts
 
@@ -487,7 +487,7 @@ select_dir: ; y = direntry ptr
 setup_224:
 	php
 	rep #$30 : .xl : .al
-	lda #17
+	lda #18
 	sta listdisp
 	dec
 	cmp menu_sel
@@ -496,17 +496,18 @@ setup_224:
 setup_228_adjsel
 	sta menu_sel
 +
-	lda #18*64
+	lda #19*64
 	sta textdmasize
-	lda #$0005
+	lda #$0007
 	sta hdma_scroll+8
 	sep #$20 : .as
-	lda #$05
+	lda #$07
 	sta $2110
 	lda #$00
 	sta $2110
 	lda #$00
 	sta barstep
+	ora #$08
 	sta $2133
 	lda #$0a
 	sta hdma_math+6
@@ -534,19 +535,20 @@ setup_228_adjsel
 setup_448:
 	php
 	rep #$30 : .xl : .al
-	lda #34
+	lda #36
 	sta listdisp
-	lda #36*64
+	lda #38*64
 	sta textdmasize
-	lda #$ffba
+	lda #$ffc6
 	sta hdma_scroll+8
 	sep #$20 : .as
-	lda #$ba
+	lda #$c6
 	sta $2110
 	lda #$ff
 	sta $2110
 	lda #$01
 	sta barstep
+	ora #$08
 	sta $2133
 	lda #$06
 	sta hdma_math+6

@@ -59,6 +59,7 @@ print_loop_inner
 	asl
 	asl
 	adc #$00
+	ora #$20
 	sta @$2180
 	lda @print_done
 	inc
@@ -105,6 +106,7 @@ print_loop2_inner
 	asl
 	asl
 	adc #$00
+	ora #$20
 	sta @$2180
 	lda @print_done
 	inc

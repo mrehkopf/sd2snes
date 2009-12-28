@@ -39,10 +39,12 @@ extern volatile uint8_t led_state;
 
 /* Update the LEDs to match the buffer state */
 void toggle_busy_led(void);
+void toggle_pwr_led(void);
 void set_busy_led(uint8_t);
 void set_pwr_led(uint8_t);
 void set_busy_pwm(uint8_t brightness);
 void bounce_busy_led(void);
 void led_pwm(void);
 void led_std(void);
+void led_panic(void);
 #endif

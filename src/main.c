@@ -261,8 +261,9 @@ restart:
 
 //	sram_hexdump(0, 0x200);
 	uart_putc('(');
-	load_rom((uint8_t*)"/sd2snes/menu.bin");
+	load_rom((uint8_t*)"/sd2snes/menu.bin", SRAM_MENU_ADDR);
 	set_rom_mask(0x3fffff); // force mirroring off
+	set_avr_mapper(0x7); // menu mapper
 	uart_putc(')');
 	uart_putcrlf();
 //	sram_hexdump(0x7ffff0, 0x10);
@@ -279,7 +280,6 @@ restart:
 	snes_reset(0);
 
 
-
 	uint8_t cmd = 0;
 
 	while(!sram_reliable());
@@ -292,7 +292,7 @@ restart:
 //				snes_reset(1);
 				set_avr_ena(0);
 				dprintf("Selected name: %s\n", file_lfn);
-				load_rom(file_lfn);
+				load_rom(file_lfn, SRAM_ROM_ADDR);
 //				save_sram((uint8_t*)"/sd2snes/test.smc", romprops.romsize_bytes, 0);
 				if(romprops.ramsize_bytes) {
 					strcpy(strrchr((char*)file_lfn, (int)'.'), ".srm");
@@ -318,7 +318,6 @@ restart:
 	cmd=0;
 	uint8_t snes_reset_prev=0, snes_reset_now=0, snes_reset_state=0;
 	uint16_t reset_count=0;
-// /* XXX */	writetest();
 	while(fpga_test() == FPGA_TEST_TOKEN) {
 		snes_reset_now=get_snes_reset();
 		if(snes_reset_now) {
@@ -359,17 +358,7 @@ restart:
 		snes_reset_prev = snes_reset_now;
 	}
 	// FPGA TEST FAIL. PANIC.
-
-	led_std();
-
-	while(1) {
-		set_pwr_led(1);
-		set_busy_led(1);
-		_delay_ms(150);
-		set_pwr_led(0);
-		set_busy_led(0);
-		_delay_ms(150);
-	}
+	led_panic();
 
 /* HERE BE LIONS */
 while(1)  {	

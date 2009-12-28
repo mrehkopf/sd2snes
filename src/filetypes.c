@@ -90,10 +90,10 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 					db_tgt += 0x00010000;
 					dprintf("new=%lx\n", db_tgt);
 				}
-				sram_writelong(parent_tgt, db_tgt);
+				sram_writelong((parent_tgt-SRAM_MENU_ADDR), db_tgt);
 				sram_writebyte(0, db_tgt+sizeof(next_subdir_tgt));
 				sram_writeblock("../\0", db_tgt+sizeof(next_subdir_tgt)+sizeof(len), 4);
-				sram_writelong(db_tgt|((uint32_t)0x80<<24), dir_tgt);
+				sram_writelong((db_tgt-SRAM_MENU_ADDR)|((uint32_t)0x80<<24), dir_tgt);
 				db_tgt += sizeof(next_subdir_tgt)+sizeof(len)+4;
 				dir_tgt += 4;
 			}
@@ -122,7 +122,7 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 							// write element pointer to current dir structure
 							dprintf("d=%d Saving %lX to Address %lX  [dir]\n", depth, db_tgt, dir_tgt);
 //							_delay_ms(50);
-							sram_writelong(db_tgt|((uint32_t)0x80<<24), dir_tgt);
+							sram_writelong((db_tgt-SRAM_MENU_ADDR)|((uint32_t)0x80<<24), dir_tgt);
 //							sram_writeblock((uint8_t*)&db_tgt, dir_tgt_save, sizeof(dir_tgt_save));
 
 							// save element:
@@ -136,7 +136,7 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 							}
 							dprintf("    Saving dir descriptor to %lX, tgt=%lX, path=%s\n", db_tgt, next_subdir_tgt, path);
 //							_delay_ms(100);
-							sram_writelong(next_subdir_tgt, db_tgt);
+							sram_writelong((next_subdir_tgt-SRAM_MENU_ADDR), db_tgt);
 							sram_writebyte(len+1, db_tgt+sizeof(next_subdir_tgt));
 							sram_writeblock(path, db_tgt+sizeof(next_subdir_tgt)+sizeof(len), pathlen);
 							sram_writeblock("/\0", db_tgt + sizeof(next_subdir_tgt) + sizeof(len) + pathlen, 2);
@@ -180,7 +180,7 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 											db_tgt += 0x00010000;
 											dprintf("new=%lx\n", db_tgt);
 										}
-										sram_writelong(db_tgt, dir_tgt);
+										sram_writelong((db_tgt-SRAM_MENU_ADDR), dir_tgt);
 //										sram_writeblock((uint8_t*)&db_tgt, dir_tgt, sizeof(db_tgt));
 										dir_tgt += 4;
 										// save element:
@@ -214,8 +214,8 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 	}
 //	dprintf("%x\n", crc);
 //	_delay_ms(50);
-	sram_writeblock(&db_tgt, SRAM_DB_ADDR+4, sizeof(db_tgt));
-	sram_writeblock(&dir_end, SRAM_DB_ADDR+8, sizeof(dir_end));
+	sram_writelong(db_tgt, SRAM_DB_ADDR+4);
+	sram_writelong(dir_end, SRAM_DB_ADDR+8);
 	return crc;
 }
 

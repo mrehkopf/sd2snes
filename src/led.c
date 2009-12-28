@@ -25,6 +25,7 @@
 */
 
 #include <avr/io.h>
+#include <util/delay.h>
 #include "config.h"
 #include "led.h"
 
@@ -34,9 +35,28 @@ static uint8_t led_bounce_dir = 1;
 
 volatile uint8_t led_state;
 
+void led_panic(void) {
+        led_std();
+
+        while(1) {
+                set_pwr_led(1);
+                set_busy_led(1);
+                _delay_ms(150);
+                set_pwr_led(0);
+                set_busy_led(0);
+                _delay_ms(150);
+        }
+
+}
+
 void toggle_busy_led(void) {
 	PORTB &= ~_BV(PB3);
 	DDRB ^= _BV(PB3);
+}
+
+void toggle_pwr_led(void) {
+	PORTB &= ~_BV(PB0);
+	DDRB ^= _BV(PB0);
 }
 
 void set_busy_led(uint8_t state) {

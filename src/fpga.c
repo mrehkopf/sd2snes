@@ -27,6 +27,7 @@
 #include "fpga_spi.h"
 #include "spi.h"
 #include "avrcompat.h"
+#include "led.h"
 
 /*DWORD get_fattime(void) {
 	return 0L;
@@ -75,6 +76,7 @@ void fpga_postinit() {
 void fpga_pgm(uint8_t* filename) {
 	int MAXRETRIES = 10;
 	int retries = MAXRETRIES;
+	int j=0;
 	do {
 		set_prog_b(0);
 		uart_putc('P');
@@ -93,6 +95,9 @@ void fpga_pgm(uint8_t* filename) {
 		}
 	
 		for (;;) {
+			if(!(j++ % 8)) {
+				toggle_pwr_led();
+			}
 			bytes_read = file_read();
 			if (file_res || bytes_read == 0) break;   // error or eof
 			for(int i=0; i<bytes_read; i++) {
@@ -105,6 +110,7 @@ void fpga_pgm(uint8_t* filename) {
 	if(!fpga_get_done()) {
 		dprintf("FPGA failed to configure after %d tries.\n", MAXRETRIES);
 		_delay_ms(50);
+		led_panic();
 	}
 	fpga_postinit();
 }
@@ -113,13 +119,13 @@ void set_avr_ena(uint8_t val) {
 	if(val) { // shared mode
 		PORTD |= _BV(PD7);
 		// Disable SPI double speed mode -> clock = f/4
-		SPSR = 0;
-		dprintf("SPI slow\n");
+// 		SPSR = 0;
+//		dprintf("SPI slow\n");
 	} else { // avr only
 		PORTD &= ~_BV(PD7);
 		// Enable SPI double speed mode -> clock = f/2
-		SPSR = _BV(SPI2X);
-		dprintf("SPI fast\n");
+//		SPSR = _BV(SPI2X);
+//		dprintf("SPI fast\n");
 	}
 }
 

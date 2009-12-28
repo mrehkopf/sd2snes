@@ -60,15 +60,33 @@ setup_gfx:
 	stx $2116
 	DMA0(#$09, #$1000, #^zero, #!zero, #$18)
 
+;clear OAM tables
+	ldx #$0000
+	stx $2102
+	DMA0(#$08, #$544, #^zero, #!zero, #$04)
+
 ;copy logo tiles
 	ldx #$2000
 	stx $2116
-	DMA0(#$01, #$3480, #^logo, #!logo, #$18)
+	DMA0(#$01, #$3740, #^logo, #!logo, #$18)
 
 ;copy logo tilemap
 	ldx #BG1_TILE_BASE
 	stx $2116
 	DMA0(#$01, #$280, #^logomap, #!logomap, #$18)
+
+;copy sprites tiles
+	ldx #OAM_TILE_BASE
+	stx $2116
+	DMA0(#$01, #$400, #^logospr, #!logospr, #$18)
+
+;set OAM tables
+	ldx #$0000
+	stx $2102
+	DMA0(#$00, #$5C, #^oam_data_l, #!oam_data_l, #$04)
+	ldx #$0100
+	stx $2102
+	DMA0(#$00, #$08, #^oam_data_h, #!oam_data_h, #$04)
 
 ;set palette
 	stz $2121
@@ -131,8 +149,9 @@ tests:
 	sta $2108		;for BG2
 	lda #$40		;chr base addr:
 	sta $210b		;BG1=0x0000, BG2=0x8000
-	lda #$03		;enable BG1+BG2 
+	lda #$13		;enable BG1+BG2+OBJ 
 	sta $212c		;BG Main
+	lda #$13		;enable BG1+BG2+OBJ 
 	sta $212d		;BG Sub
 	jsr setup_224
 	lda #$00
@@ -151,7 +170,8 @@ snes_init:
 	sta $420d		; FAAAAAST
 	lda #$8f
 	sta $2100		;INIDISP: force blank
-	stz $2101		;
+	lda #$03		; 8x8+16x16; name=0; base=3
+	sta $2101		;
 	stz $2102		;
 	stz $2103		;
 ;	stz $2104		; (OAM Data?!)

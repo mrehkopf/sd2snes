@@ -32,16 +32,16 @@ int main(int argc, char** argv) {
 //	depth = 2;
 // 4->2
 
-	pixperbyte = 2;
-	mask_shift = 4;
-	mask = 0x0f;
-	depth = 4;
+//	pixperbyte = 2;
+//	mask_shift = 4;
+//	mask = 0x0f;
+//	depth = 4;
 // 4->4?
 
-//	pixperbyte = 1;
-//	mask_shift = 0;
-//	mask = 0xff;
-//	depth = 8;
+	pixperbyte = 1;
+	mask_shift = 0;
+	mask = 0xff;
+	depth = 8;
 // 8->8
 
 	dsize = fsize * depth / (8/pixperbyte);

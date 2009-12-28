@@ -55,6 +55,8 @@ end
       000      HiROM
       001      LoROM
       010      ExHiROM (48-64Mbit)
+      
+      111      menu (ROM in upper SRAM)
 */
 
 /*                               HiROM:   SRAM @ Bank 0x30-0x3f, 0xb0-0xbf
@@ -67,9 +69,11 @@ assign IS_ROM = ( (MAPPER == 3'b000) ? ( (!SNES_ADDR[22]
                                         |(SNES_ADDR[22]))                                         
                 : (MAPPER == 3'b010) ? ((!SNES_ADDR[22] & SNES_ADDR[15])
                                        |(SNES_ADDR[22]))
+                : (MAPPER == 3'b111) ? ((!SNES_ADDR[22] & SNES_ADDR[15])
+                                       |(SNES_ADDR[22]))
                 : 1'b0);
 
-assign IS_SAVERAM = ((MAPPER == 3'b000 || MAPPER == 3'b010) ? (!SNES_ADDR[22]
+assign IS_SAVERAM = ((MAPPER == 3'b000 || MAPPER == 3'b010 || MAPPER == 3'b111) ? (!SNES_ADDR[22]
                                            & SNES_ADDR[21:20]                                           
                                            & &SNES_ADDR[14:13]
                                            & !SNES_ADDR[15]
@@ -94,6 +98,9 @@ assign SRAM_ADDR_FULL = (MODE) ? AVR_ADDR
                             :(MAPPER == 3'b010) ?
                               (IS_SAVERAM ? (SNES_ADDR[14:0] - 15'h6000) & SAVERAM_MASK
                                           : ({!SNES_ADDR[23], SNES_ADDR[21:0]} & ROM_MASK))
+                            :(MAPPER == 3'b111) ?
+                              (IS_SAVERAM ? 23'h7F0000 + ((SNES_ADDR[14:0] - 15'h6000) & SAVERAM_MASK)
+                                          : ((SNES_ADDR[22:0] & ROM_MASK) + 23'h600000))
                             : 23'b0);
 
 assign SRAM_BANK = SRAM_ADDR_FULL[22:21];

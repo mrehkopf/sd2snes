@@ -44,9 +44,7 @@ UINT file_readblock(void* buf, uint32_t addr, uint16_t size) {
 	if(file_handle.fptr != addr) {
 		return 0;
 	}
-	if(file_res) { dprintf("no lseek %d\n", file_res); _delay_ms(30); return 0;}
 	file_res = f_read(&file_handle, buf, size, &bytes_read);
-	if(file_res) { dprintf("no read %d\n", file_res); _delay_ms(30); }
 	return bytes_read;
 }
 
