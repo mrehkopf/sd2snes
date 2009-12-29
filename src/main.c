@@ -185,11 +185,12 @@ restart:
 	uint32_t mem_magic = sram_readlong(SRAM_SCRATCHPAD);
 
 	while(0) {
-		SD_SPI_OFFLOAD=1;
+		SD_SPI_OFFLOAD=0;
 		set_avr_addr(0L);
-		sd_read(0, file_buf, 8L, 1);
+		sd_read(0, file_buf, 0L, 1);
+		uart_trace((void*)file_buf, 0, 0x200);
 //		sram_writeblock((void*)file_buf, 0, 0x200);
-		sram_hexdump(0,0x10);
+//		sram_hexdump(0,0x200);
 		uart_putc('+');
 	}
 /* here be strange monsters */

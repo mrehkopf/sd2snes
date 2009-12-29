@@ -119,13 +119,13 @@ void set_avr_ena(uint8_t val) {
 	if(val) { // shared mode
 		PORTD |= _BV(PD7);
 		// Disable SPI double speed mode -> clock = f/4
-// 		SPSR = 0;
-//		dprintf("SPI slow\n");
+ 		SPSR = 0;
+		dprintf("SPI slow\n");
 	} else { // avr only
 		PORTD &= ~_BV(PD7);
 		// Enable SPI double speed mode -> clock = f/2
-//		SPSR = _BV(SPI2X);
-//		dprintf("SPI fast\n");
+		SPSR = _BV(SPI2X);
+		dprintf("SPI fast\n");
 	}
 }
 

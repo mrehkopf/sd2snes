@@ -70,20 +70,20 @@
       <association xil_pn:name="Implementation"/>
     </file>
     <file xil_pn:name="spi_dma.v" xil_pn:type="FILE_VERILOG">
-      <association xil_pn:name="Implementation"/>
       <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="Implementation"/>
     </file>
     <file xil_pn:name="tf_spi_dma.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation"/>
-      <association xil_pn:name="PostTranslateSimulation"/>
-      <association xil_pn:name="PostMapSimulation"/>
       <association xil_pn:name="PostRouteSimulation"/>
+      <association xil_pn:name="PostMapSimulation"/>
+      <association xil_pn:name="PostTranslateSimulation"/>
     </file>
     <file xil_pn:name="tf_main_3.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation"/>
-      <association xil_pn:name="PostTranslateSimulation"/>
-      <association xil_pn:name="PostMapSimulation"/>
       <association xil_pn:name="PostRouteSimulation"/>
+      <association xil_pn:name="PostMapSimulation"/>
+      <association xil_pn:name="PostTranslateSimulation"/>
     </file>
   </files>
 

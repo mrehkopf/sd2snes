@@ -260,10 +260,10 @@ typedef enum {
     FR_NO_FILESYSTEM,   /* 11 */
     FR_INVALID_OBJECT,  /* 12 */
     FR_MKFS_ABORTED,    /* 13 */
-    FR_IS_DIRECTORY,    /* 13 */
-    FR_IS_READONLY,     /* 14 */
-    FR_DIR_NOT_EMPTY,   /* 15 */
-    FR_NOT_DIRECTORY    /* 16 */
+    FR_IS_DIRECTORY,    /* 14 */
+    FR_IS_READONLY,     /* 15 */
+    FR_DIR_NOT_EMPTY,   /* 16 */
+    FR_NOT_DIRECTORY    /* 17 */
 } FRESULT;
 
 

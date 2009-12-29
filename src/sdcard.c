@@ -275,7 +275,6 @@ static int sendCommand(const uint8_t  card,
 static uint8_t extendedInit(const uint8_t card) {
   uint8_t  i;
   uint32_t answer;
-
   // Send CMD8: SEND_IF_COND
   //   0b000110101010 == 2.7-3.6V supply, check pattern 0xAA
   i = sendCommand(card, SEND_IF_COND, 0b000110101010, 0);
@@ -315,10 +314,9 @@ static void sdInit(const uint8_t card) {
   do {
     // Prepare for ACMD, send CMD55: APP_CMD
     i = sendCommand(card, APP_CMD, 0, 1);
-    if (i > 1) {
+    if (i > 1)
       // Command not accepted, could be MMC
       return;
-    }
 
     // Send ACMD41: SD_SEND_OP_COND
     //   1L<<30 == Host has High Capacity Support
@@ -526,7 +524,6 @@ DSTATUS disk_initialize(BYTE drv) __attribute__ ((weak, alias("sd_initialize")))
 DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
   uint8_t sec,res,tmp,errorcount;
   uint16_t crc,recvcrc;
-
   if (drv >= MAX_CARDS)
     return RES_PARERR;
 
@@ -617,7 +614,6 @@ DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
 
     if (errorcount >= CONFIG_SD_AUTO_RETRIES) return RES_ERROR;
   }
-
   return RES_OK;
 }
 DRESULT disk_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sd_read")));
