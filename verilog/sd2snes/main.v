@@ -56,7 +56,14 @@ module main(
    //output DCM_IN_STOPPED,
    //output DCM_FX_STOPPED
    //input DCM_RST
+   ,
+   output DBG_P44,
+   output DBG_P46,
+   output DBG_P47,
+   output DBG_P52,
+   output DBG_P53
     );
+   
 wire [7:0] spi_cmd_data;
 wire [7:0] spi_param_data;
 wire [7:0] spi_input_data;
@@ -197,7 +204,7 @@ wire SNES_WRITEs = (SNES_WRITEr == 2'b11);
 wire SNES_CSs = (SNES_CSr == 2'b11);
 wire SNES_CPU_CLKs = SNES_CPU_CLK; // (SNES_CPU_CLKr == 2'b11);
 wire SNES_RW_start = (SNES_RWr == 6'b111110); // falling edge marks beginning of cycle
-wire SNES_cycle_start = (SNES_CPU_CLKr == 6'b000001);
+wire SNES_cycle_start = (SNES_CPU_CLKr == 6'b000011); // slight delay, RD/WR comes after CLK
 wire SNES_ADDRCHG = (SNES_ADDRr != SNES_ADDR_PREVr);
 wire SNES_addr_start = (SNES_ADDRCHGr[0] == 1'b1);
 
@@ -326,21 +333,34 @@ initial begin
    SRAM_WE_ARRAY[2'b10] = 13'b1_111111_000000;
    SRAM_WE_ARRAY[2'b11] = 13'b1_111111_111111;
 
-   SRAM_OE_ARRAY[2'b00] = 13'b1_111111_111111;
-   SRAM_OE_ARRAY[2'b01] = 13'b1_111111_000000;
+   SRAM_OE_ARRAY[2'b00] = 13'b0_111111_111111;
+   SRAM_OE_ARRAY[2'b01] = 13'b0_111111_000000;
    SRAM_OE_ARRAY[2'b10] = 13'b0_000000_111111;
    SRAM_OE_ARRAY[2'b11] = 13'b0_000000_000000;
    
-   SNES_DATA_TO_MEM_ARRAY[1'b0] = 13'b0_001000_000000;  // SNES write
-   /* 13'b0001000000000 */
-   SNES_DATA_TO_MEM_ARRAY[1'b1] = 13'b0_000000_000000;  // SNES read
    
-   AVR_DATA_TO_MEM_ARRAY[1'b0] = 13'b1_111111_111111;  // AVR write
-//   AVR_DATA_TO_MEM_ARRAY[1'b0] = 13'b0000000001000;  // AVR write
+   // *************************************************************
+   // enable sequences for data path related operations. These
+   // control when to take a data value from SNES or AVR to the
+   // SRAM bus and vice versa.
+   // *************************************************************
+   // SNES write. Data cannot be latched earlier because data from
+   // the SNES is not valid before ~50ns after falling edge of /WR.
+   // This timing is *just* enough to satisfy SRAM's t_SD (Data Setup to
+   // write end) _and_ SNES's data valid delay.
+   SNES_DATA_TO_MEM_ARRAY[1'b0] = 13'b0_000100_000000;
+   // SNES read. No transfers to SRAM.
+   SNES_DATA_TO_MEM_ARRAY[1'b1] = 13'b0_000000_000000;
 
+   // AVR write. Data is buffered via the SPI module and has to be
+   // used at any given point.
+   AVR_DATA_TO_MEM_ARRAY[1'b0] = 13'b1_111111_111111;  // AVR write
+   // AVR read. No transfers to SRAM.
    AVR_DATA_TO_MEM_ARRAY[1'b1] = 13'b0_000000_000000;  // AVR read
    
+   // SNES write. No transfers from SRAM.
    SRAM_DATA_TO_SNES_MEM_ARRAY[1'b0] = 13'b0_000000_000000;  // SNES write
+   // SNES read. 000001 _should_ work but might get too close to the next edge of CE/BHE/ADDR???
    SRAM_DATA_TO_SNES_MEM_ARRAY[1'b1] = 13'b0_000100_000000;  // SNES read
    /* 13'b0000100000000; */
    
@@ -363,7 +383,7 @@ end
 always @(posedge CLK2) begin
        AVR_READ_CYCLE <= AVR_READ;
        AVR_WRITE_CYCLE <= AVR_WRITE;
-       if (SNES_RW_start) begin
+       if (SNES_cycle_start) begin
            SNES_READ_CYCLE <= SNES_READ;
            SNES_WRITE_CYCLE <= SNES_WRITE;
            STATE <= STATE_0;
@@ -473,11 +493,14 @@ assign SRAM_WE = !AVR_ENA ? AVR_WRITE
 assign SRAM_OE = !AVR_ENA ? AVR_READ 
                           : SRAM_OE_ARRAY[{SNES_WRITE_CYCLE, AVR_WRITE_CYCLE}][STATEIDX];
 
-assign SRAM_BHE = !SRAM_WE ? SRAM_ADDR0 : 1'b0;
-assign SRAM_BLE = !SRAM_WE ? !SRAM_ADDR0 : 1'b0;
 
+// This crashes after a couple million instructions under rare
+// circumstances. I don't have the slightest.
 //assign SRAM_BHE = SRAM_ADDR0;
 //assign SRAM_BLE = ~SRAM_ADDR0;
+// This works
+assign SRAM_BHE = !SRAM_WE ? SRAM_ADDR0 : 1'b0;
+assign SRAM_BLE = !SRAM_WE ? ~SRAM_ADDR0 : 1'b0;
 
 // dumb version
 //assign SRAM_OE = !AVR_ENA ? AVR_READ : SNES_READs;
@@ -497,5 +520,16 @@ assign SNES_READ_CYCLEw = SNES_READ_CYCLE;
 assign SNES_WRITE_CYCLEw = SNES_WRITE_CYCLE;
 assign IRQ_DIR = 1'b0;
 assign SNES_IRQ = 1'bZ;
+
+
+// DEBUG
+
+    assign DBG_P44 = SRAM_DATA[0];
+    assign DBG_P46 = SRAM_DATA[1];
+    assign DBG_P47 = SRAM_DATA[2];
+    assign DBG_P52 = SRAM_OE;
+    assign DBG_P53 = SRAM_DATA_TO_SNES_MEM;
+    //SNES_ADDR==24'hC0F000 || SNES_ADDR==24'h40F000 || SNES_ADDR==24'h80F000 || SNES_ADDR==24'h00F000;
+
 
 endmodule

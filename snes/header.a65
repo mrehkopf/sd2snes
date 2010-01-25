@@ -33,7 +33,7 @@ BRK_8bit: BRK_16bit:
 COP_8bit: COP_16bit:
 IRQ_8bit:
 NMI_8bit:
-        - lda $ABCDEF : bra -
+        - wai: lda $ABCDEF : bra -
 
 *= $C0FFB0
         ; Zero the area from $FFB0 - $FFFF

@@ -264,7 +264,7 @@ restart:
 	uart_putc('(');
 	load_rom((uint8_t*)"/sd2snes/menu.bin", SRAM_MENU_ADDR);
 	set_rom_mask(0x3fffff); // force mirroring off
-	set_avr_mapper(0x7); // menu mapper
+ 	set_avr_mapper(0x7); // menu mapper XXX
 	uart_putc(')');
 	uart_putcrlf();
 //	sram_hexdump(0x7ffff0, 0x10);
@@ -279,8 +279,17 @@ restart:
 	_delay_ms(100);
 	uart_puts_P(PSTR("SNES GO!\r\n"));
 	snes_reset(0);
-
-
+// writetest();
+// XXX
+	uart_putc(uart_getc());
+/*	snes_reset(1);
+	set_avr_ena(0);
+	led_std();
+	set_busy_led(1);
+	save_sram((uint8_t*)"/sd2snes/dump", 65536, SRAM_MENU_ADDR);
+	set_busy_led(0);
+	set_avr_ena(1);
+	snes_reset(0); */
 	uint8_t cmd = 0;
 
 	while(!sram_reliable());

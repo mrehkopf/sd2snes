@@ -3,6 +3,9 @@
 
 GAME_MAIN:
 	sep #$20 : .as
+	lda #$01
+	sta $420d ; fast cpu
+	sep #$20 : .as
 	jsr snes_init
 	jsr setup_gfx
 	jsr colortest
@@ -17,6 +20,16 @@ GAME_MAIN:
 	sta @AVR_PARAM+2
 	jsr menu_init
 	sep #$20 : .as
+	sep #$20 : .as
+-	lda @$C00000
+	lda @$D00000
+	lda @$E00000
+	lda @$F00000
+	lda @$400000
+	lda @$500000
+	lda @$600000
+	lda @$700000
+;	bra -
 	jsr menuloop
 	cli
 	stz $4200
