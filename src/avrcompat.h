@@ -1,3 +1,9 @@
+/* sd2snes - SD card based universal cartridge for the SNES
+   Copyright (C) 2009-2010 Maximilian Rehkopf <otakon@gmx.net>
+
+   This file was adapted from sd2iec, written by Ingo Korb, original
+   disclaimer follows: 
+*/
 /* sd2iec - SD/MMC to Commodore serial bus interface/controller
    Copyright (C) 2007-2009  Ingo Korb <ingo@akana.de>
 

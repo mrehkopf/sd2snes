@@ -101,7 +101,7 @@ FORMAT = ihex
 TARGET = $(OBJDIR)/sd2snes
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c ff.c utils.c timer.c led.c diskio.c sdcard.c spi.c crc7.c snes.c fpga.c memory.c crc16.c fileops.c fpga_spi.c smc.c filetypes.c
+SRC = main.c ff.c utils.c led.c diskio.c sdcard.c spi.c crc7.c snes.c fpga.c memory.c crc16.c fileops.c fpga_spi.c smc.c filetypes.c
 
 ifeq ($(CONFIG_UART_DEBUG),y)
   SRC += uart.c

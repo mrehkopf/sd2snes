@@ -1,10 +1,12 @@
-/* sd2iec - SD/MMC to Commodore serial bus interface/controller
-   Copyright (C) 2007-2009  Ingo Korb <ingo@akana.de>
+/* sd2snes - SD card based universal cartridge for the SNES
+   Copyright (C) 2009-2010 Maximilian Rehkopf <otakon@gmx.net>
+   AVR firmware portion
 
-   Inspiration and low-level SD/MMC access based on code from MMC2IEC
-     by Lars Pontoppidan et al., see sdcard.c|h and config.h.
+   Inspired by and based on code from sd2iec, written by Ingo Korb et al.
+   See sdcard.c|h, config.h.
 
-   FAT filesystem access based on code from ChaN and Jim Brain, see ff.c|h.
+   FAT file system access based on code by ChaN, Jim Brain, Ingo Korb,
+   see ff.c|h.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,9 +21,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
-   led.h: Definitions for the LEDs
-
+   led.c: LED control
 */
 
 #ifndef LED_H
