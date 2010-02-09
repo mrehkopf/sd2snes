@@ -1,0 +1,101 @@
+Cmp-Mod V01 Created by CvPCB (20100205 SVN-R2303)-unstable date = Tue 09 Feb 2010 11:10:01 PM CET
+
+BeginCmp
+TimeStamp = /4B6E16F2/4B6E1766;
+Reference = J1;
+ValeurCmp = SNESCART_EXT;
+IdModule  = SNESCART_EXT;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4B716001;
+Reference = J2;
+ValeurCmp = SDCARD;
+IdModule  = JAE-SG5S009V1A;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4B71DB24;
+Reference = sw1;
+ValeurCmp = TESTSW;
+IdModule  = 8DIPCMS;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4B71DCB8;
+Reference = sw2;
+ValeurCmp = TESTSW2;
+IdModule  = 8DIPCMS;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4B6E1740;
+Reference = U1;
+ValeurCmp = 74ALVC164245;
+IdModule  = TSSOP48;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4B6E1744;
+Reference = U2;
+ValeurCmp = 74ALVC164245;
+IdModule  = TSSOP48;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4B6E1748;
+Reference = U3;
+ValeurCmp = 74ALVC164245;
+IdModule  = TSSOP48;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4B6E1931;
+Reference = U4;
+ValeurCmp = XC3S400-PQ208;
+IdModule  = PQFP208_ALTPADS;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4B6EB593;
+Reference = U5;
+ValeurCmp = 74LVC1T45;
+IdModule  = SOT563;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4B6ECEE5;
+Reference = U7;
+ValeurCmp = LT1117-3.3;
+IdModule  = SOT223;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4B6ECEEA;
+Reference = U8;
+ValeurCmp = LT1117-1.2;
+IdModule  = SOT223;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4B6ED144;
+Reference = U9;
+ValeurCmp = MCP1824-1.8;
+IdModule  = SOT23-5;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4B6ED134;
+Reference = U10;
+ValeurCmp = MCP1824-2.5;
+IdModule  = SOT23-5;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4B6F321A;
+Reference = U11;
+ValeurCmp = LPC1754;
+IdModule  = LQFP80-.5;
+EndCmp
+
+EndListe

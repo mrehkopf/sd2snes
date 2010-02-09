@@ -290,6 +290,7 @@ restart:
 	set_busy_led(0);
 	set_avr_ena(1);
 	snes_reset(0); */
+	while(1)dprintf("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!");
 	uint8_t cmd = 0;
 
 	while(!sram_reliable());

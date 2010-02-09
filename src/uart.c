@@ -163,8 +163,13 @@ static FILE mystdout = FDEV_SETUP_STREAM(ioputc, NULL, _FDEV_SETUP_WRITE);
 void uart_init(void) {
   /* Seriellen Port konfigurieren */
 
-  UBRRH = (int)((double)F_CPU/(16.0*CONFIG_UART_BAUDRATE)-1) >> 8;
-  UBRRL = (int)((double)F_CPU/(16.0*CONFIG_UART_BAUDRATE)-1) & 0xff;
+/*  UBRRH = (int)((double)F_CPU/(16.0*CONFIG_UART_BAUDRATE)-1) >> 8;
+  UBRRL = (int)((double)F_CPU/(16.0*CONFIG_UART_BAUDRATE)-1) & 0xff;*/
+
+  UBRRH = (int)((double)F_CPU/(8.0*CONFIG_UART_BAUDRATE)-1) >> 8;
+  UBRRL = (int)((double)F_CPU/(8.0*CONFIG_UART_BAUDRATE)-1) & 0xff;
+
+  UCSRA |= _BV(U2X0);
 
   UCSRB = _BV(RXEN) | _BV(TXEN);
   // I really don't like random #ifdefs in the code =(
