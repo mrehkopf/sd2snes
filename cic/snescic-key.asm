@@ -1,8 +1,8 @@
-    #include <p12f683.inc>
-processor p12f683
+    #include <p12f629.inc>
+processor p12f629
 
 ; -----------------------------------------------------------------------
-    __CONFIG _EC_OSC & _WDT_OFF & _PWRTE_OFF & _MCLRE_OFF & _CP_OFF & _CPD_OFF & _BOD_ON & _IESO_ON & _FCMEN_ON
+    __CONFIG _EC_OSC & _WDT_OFF & _PWRTE_OFF & _MCLRE_OFF & _CP_OFF & _CPD_OFF
 
 ; -----------------------------------------------------------------------
 ; code memory
@@ -29,15 +29,14 @@ init
 	org 0x0010
 	banksel GPIO
 	clrf	GPIO
-	movlw	0x17	; GPIO4, GPIO2, GPIO1, GPIO0 are digital I/O
-	movwf	CMCON0
+	movlw	0x07	; GPIO2..0 are digital I/O (not connected to comparator)
+	movwf	CMCON
 	movlw	0x90	; Enable interrupts + enable INT
 	movwf	INTCON
-	banksel	ANSEL
-	clrf	ANSEL
+	banksel	TRISIO
 	movlw	0x2e	; in out in in in out
 	movwf	TRISIO
-	movlw	0x80 ; 0x3f for pullups
+	movlw	0x80	; 0x00 for pullups
 	movwf	OPTION_REG
 	banksel GPIO
 	bsf 	GPIO, 0x0
@@ -50,7 +49,6 @@ main
 	bsf	TRISIO, 1
 	bcf	TRISIO, 0
 	banksel	GPIO
-;	sleep
 ;--------INIT KEY SEED--------
 	movlw	0xb
 	movwf	0x21
@@ -287,31 +285,31 @@ mangle_key_withoutskip
 
 	movf	0x28, w ;
 	addlw	0x1	;inc
-	addwf	0x29, f ;add to 28
+	addwf	0x29, f ;add to 29
 
 	movf	0x29, w ;
 	addlw	0x1	;inc
-	addwf	0x2a, f ;add to 28
+	addwf	0x2a, f ;add to 2a
 
 	movf	0x2a, w ;
 	addlw	0x1	;inc
-	addwf	0x2b, f ;add to 28
+	addwf	0x2b, f ;add to 2b
 
 	movf	0x2b, w ;
 	addlw	0x1	;inc
-	addwf	0x2c, f ;add to 28
+	addwf	0x2c, f ;add to 2c
 
 	movf	0x2c, w ;
 	addlw	0x1	;inc
-	addwf	0x2d, f ;add to 28
+	addwf	0x2d, f ;add to 2d
 
 	movf	0x2d, w ;
 	addlw	0x1	;inc
-	addwf	0x2e, f ;add to 28
+	addwf	0x2e, f ;add to 2e
 
 	movf	0x2e, w ;
 	addlw	0x1	;inc
-	addwf	0x2f, f ;add to 28
+	addwf	0x2f, f ;add to 2f
 ;60
 	movf	0x20, w ;restore original 0xf
 	andlw	0xf
@@ -331,17 +329,18 @@ mangle_key_withoutskip
 	nop
 	goto mangle_key_loop
 ; 69 when goto, 69 when return
-; CIC has 78	
+; CIC has 78 -> 9 nops
+
 mangle_key_withskip
 	movf	0x41, w ;restore 23
 	addwf	0x23, f ;add to 23
 	movf	0x24, w
-	movwf	0x40	;save 25 to 40
+	movwf	0x40	;save 24 to 40
 	movf	0x23, w
 	addwf	0x24, f
 	movf	0x25, w
-	movwf	0x41	;save 26 to 41
-	movf	0x40, w ;restore 25
+	movwf	0x41	;save 25 to 41
+	movf	0x40, w ;restore 24
 	andlw	0xf	;mask nibble
 	addlw	0x8	;add #8 to HIGH nibble
 	movwf	0x40
@@ -349,13 +348,13 @@ mangle_key_withskip
 	addwf	0x25, w
 	movwf	0x25
 
-	movf	0x41, w ;restore 26
+	movf	0x41, w ;restore 25
 	addlw	0x1	;inc
-	addwf	0x26, f	;add to 27
+	addwf	0x26, f	;add to 26
 
 	movf	0x26, w ;
 	addlw	0x1	;inc
-	addwf	0x27, f ;add to 28
+	addwf	0x27, f ;add to 27
 
 	movf	0x27, w ;
 	addlw	0x1	;inc
@@ -363,31 +362,31 @@ mangle_key_withskip
 
 	movf	0x28, w ;
 	addlw	0x1	;inc
-	addwf	0x29, f ;add to 28
+	addwf	0x29, f ;add to 29
 
 	movf	0x29, w ;
 	addlw	0x1	;inc
-	addwf	0x2a, f ;add to 28
+	addwf	0x2a, f ;add to 2a
 
 	movf	0x2a, w ;
 	addlw	0x1	;inc
-	addwf	0x2b, f ;add to 28
+	addwf	0x2b, f ;add to 2b
 
 	movf	0x2b, w ;
 	addlw	0x1	;inc
-	addwf	0x2c, f ;add to 28
+	addwf	0x2c, f ;add to 2c
 
 	movf	0x2c, w ;
 	addlw	0x1	;inc
-	addwf	0x2d, f ;add to 28
+	addwf	0x2d, f ;add to 2d
 
 	movf	0x2d, w ;
 	addlw	0x1	;inc
-	addwf	0x2e, f ;add to 28
+	addwf	0x2e, f ;add to 2e
 
 	movf	0x2e, w ;
 	addlw	0x1	;inc
-	addwf	0x2f, f ;add to 28
+	addwf	0x2f, f ;add to 2f
 ;64
 	movf	0x20, w ;restore original 0xf
 	andlw	0xf
@@ -411,7 +410,7 @@ mangle_key_withskip
 mangle_return
 	return
 ;73 when goto, 73 when return
-;CIC has 84
+;CIC has 84 -> 11 nops
 
 mangle_lock
 	movf	0x3f, w
@@ -506,7 +505,7 @@ mangle_lock_withoutskip
 	nop
 	goto mangle_lock_loop
 ; 69 when goto, 69 when return
-; CIC has 78	
+; CIC has 78 -> 9 nops
 	
 mangle_lock_withskip
 	movf	0x41, w ;restore 33
@@ -585,7 +584,7 @@ mangle_lock_withskip
 	nop
 	goto mangle_lock_loop
 ;73 when goto, 73 when return
-;CIC has 84
+;CIC has 84 -> 11 nops
 
 ;--------wait: 3*(W-1)+7 cycles (including call+return). W=0 -> 256!--------
 wait	
@@ -638,6 +637,7 @@ die_intloop
 	bsf	INTCON, GIE
 
 	banksel	GPIO
+;--------forever: blink status pin--------
 die_blink	
 	clrw
 	call	longwait

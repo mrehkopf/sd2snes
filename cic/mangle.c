@@ -58,25 +58,22 @@ void mangle(unsigned char* data) {
 		offset &= 0xf;
 		a=x;
 		a+=0xf;
-		CARRY
+		CARRY;
 	} while(carry);
 }
 
 int main(void) {
 	unsigned char restart=1;
-	unsigned char keyseed_orig[16]= {0x0, // dummy
+	unsigned char keyseed[16]= {0x0, // dummy
 			   0xb,0x1,0x4,0xf,
 			   0x4,0xb,0x5,0x7,
 			   0xf,0xd,0x6,0x1,
 			   0xe,0x9,0x8};
-	unsigned char lockseed_orig[16]={0x0, // dummy
+	unsigned char lockseed[16]={0x0, // dummy
 			   0x0,0x9,0xa,0x1,
 			   0x8,0x5,0xf,0x1,
 			   0x1,0xe,0x1,0x0,
 			   0xd,0xe,0xc};
-
-	unsigned char keyseed[16];
-	unsigned char lockseed[16];
 
 	printseed(keyseed);
 	printseed(lockseed);
@@ -85,6 +82,7 @@ int main(void) {
 while(1) {
 	printf("\n");
 	printstream(keyseed, restart);
+	printstream(lockseed, restart);
 	mangle(keyseed);
 	mangle(keyseed);
 	mangle(keyseed);
@@ -94,8 +92,8 @@ while(1) {
 
 //	printseed(keyseed);
 //	printseed(lockseed);
-	restart=lockseed[3];
-	lockseed[3]=lockseed[7];
+	restart=lockseed[7];
+//	lockseed[3]=lockseed[7];
 	if(!restart)restart=1;
 //	printf("send %d-15\n", restart);
 }
