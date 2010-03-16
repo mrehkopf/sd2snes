@@ -2,7 +2,7 @@
 processor p12f629
 
 ; -----------------------------------------------------------------------
-    __CONFIG _EC_OSC & _WDT_OFF & _PWRTE_OFF & _MCLRE_OFF & _CP_OFF & _CPD_OFF
+    __CONFIG _EC_OSC & _WDT_OFF & _PWRTE_OFF & _MCLRE_OFF & _CP_OFF & _CPD_OFF; & _BOD_ON & _IESO_ON & _FCMEN_ON
 
 ; -----------------------------------------------------------------------
 ; code memory
@@ -34,20 +34,18 @@ init
 	movlw	0x90	; Enable interrupts + enable INT
 	movwf	INTCON
 	banksel	TRISIO
-	movlw	0x2e	; in out in in in out
+	movlw	0x2d	; in out in in out in
 	movwf	TRISIO
 	movlw	0x80	; 0x00 for pullups
 	movwf	OPTION_REG
 	banksel GPIO
 	bsf 	GPIO, 0x0
 
-idle	bcf	GPIO, 0
-	bsf	GPIO, 0
-	goto	idle
+idle	goto	idle
 main
 	banksel	TRISIO
-	bsf	TRISIO, 1
-	bcf	TRISIO, 0
+	bsf	TRISIO, 0
+	bcf	TRISIO, 1
 	banksel	GPIO
 ;--------INIT KEY SEED--------
 	movlw	0xb
@@ -121,7 +119,7 @@ main
 ;--------lock sends stream ID. 15 cycles per bit--------
 ;	bsf	GPIO, 0
 ;	bcf	GPIO, 0
-	btfsc	GPIO, 1		; check stream ID bit
+	btfsc	GPIO, 0		; check stream ID bit
 	bsf	0x31, 3		; copy to lock seed
 	movlw	0x2		; wait=3*W+5
 	call	wait		; burn 11 cycles
@@ -130,7 +128,7 @@ main
 
 ;	bsf	GPIO, 0
 ;	bcf	GPIO, 0
-	btfsc	GPIO, 1		; check stream ID bit
+	btfsc	GPIO, 0		; check stream ID bit
 	bsf	0x31, 0		; copy to lock seed
 	movlw	0x2		;
 	call	wait		; burn 11 cycles
@@ -139,7 +137,7 @@ main
 
 ;	bsf	GPIO, 0
 ;	bcf	GPIO, 0
-	btfsc	GPIO, 1		; check stream ID bit
+	btfsc	GPIO, 0		; check stream ID bit
 	bsf	0x31, 1		; copy to lock seed
 	movlw	0x2		;
 	call	wait		; burn 11 cycles
@@ -148,11 +146,11 @@ main
 
 ;	bsf	GPIO, 0
 ;	bcf	GPIO, 0
-	btfsc	GPIO, 1		; check stream ID bit
+	btfsc	GPIO, 0		; check stream ID bit
 	bsf	0x31, 2		; copy to lock seed
 	banksel	TRISIO
-	bsf	TRISIO, 0
-	bcf	TRISIO, 1
+	bcf	TRISIO, 0
+	bsf	TRISIO, 1
 	banksel	GPIO
 	nop
 	nop
@@ -213,13 +211,13 @@ loop1
 	btfsc	0x37, 0
 	goto	swap
 	banksel	TRISIO
-	bsf	TRISIO, 0
-	bcf	TRISIO, 1
+	bcf	TRISIO, 0
+	bsf	TRISIO, 1
 	goto	swapskip
 swap
 	banksel	TRISIO
-	bcf	TRISIO, 0
-	bsf	TRISIO, 1
+	bsf	TRISIO, 0
+	bcf	TRISIO, 1
 	nop
 swapskip
 	banksel GPIO
