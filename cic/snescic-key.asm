@@ -1,8 +1,59 @@
     #include <p12f629.inc>
 processor p12f629
 
+; ---------------------------------------------------------------------
+;   SNES CIC clone for PIC Microcontroller (key mode only)
+;
+;   Copyright (C) 2010 by Maximilian Rehkopf <otakon@gmx.net>
+;
+;   This program is free software; you can redistribute it and/or modify
+;   it under the terms of the GNU General Public License as published by
+;   the Free Software Foundation; version 2 of the License only.
+;
+;   This program is distributed in the hope that it will be useful,
+;   but WITHOUT ANY WARRANTY; without even the implied warranty of
+;   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;   GNU General Public License for more details.
+;
+;   You should have received a copy of the GNU General Public License
+;   along with this program; if not, write to the Free Software
+;   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+;
+; ---------------------------------------------------------------------
+;
+;   pin configuration: (cartridge pin) [key CIC pin]
+;
+;                       ,---_---.
+;      +5V (27,58) [16] |1     8| GND (5,36) [8]
+;      CIC clk (56) [6] |2     7| CIC data i/o 0 (55) [1]
+;            status out |3     6| CIC data i/o 1 (24) [2]
+;                    nc |4     5| CIC slave reset (25) [7]
+;                       `-------'
+;
+;
+;   status out can be connected to a LED. It indicates:
+;
+;   state                   | output
+;  -------------------------+--------------------
+;   OK (normal operation)   | high
+;   error (unlock failed)   | alternating @~2.5Hz
+;
+;   memory usage:
+;
+;   0x20		buffer for seed calc and transfer
+;   0x21 - 0x2f		seed area (lock seed)
+;   0x30		buffer for seed calc
+;   0x31 - 0x3f		seed area (key seed; 0x31 filled in by lock)
+;   0x40 - 0x41		buffer for seed calc
+;   0x4d		buffer for eeprom access
+;   0x4e		loop variable for longwait
+;   0x4f		loop variable for wait
+;
+; ---------------------------------------------------------------------
+
+
 ; -----------------------------------------------------------------------
-    __CONFIG _EC_OSC & _WDT_OFF & _PWRTE_OFF & _MCLRE_OFF & _CP_OFF & _CPD_OFF; & _BOD_ON & _IESO_ON & _FCMEN_ON
+    __CONFIG _EC_OSC & _WDT_OFF & _PWRTE_OFF & _MCLRE_OFF & _CP_OFF & _CPD_OFF
 
 ; -----------------------------------------------------------------------
 ; code memory
@@ -11,19 +62,19 @@ processor p12f629
 	nop
 	nop
 	goto	init
-;"isr"
+isr
 	org	0x0004
 	bcf	INTCON, 1	; clear interrupt cause
 	bcf	GPIO, 0
 	bcf	GPIO, 1
-	bsf	GPIO, 4
+	bsf	GPIO, 4		; LED on
 	nop
 	nop
 	nop
 	nop
 	nop
 	nop
-	bsf	INTCON, 7	; re-enable interrupts (for the ISR will replace the main)
+	bsf	INTCON, 7	; re-enable interrupts (ISR will continue as main)
 	goto	main
 init
 	org 0x0010
@@ -31,7 +82,7 @@ init
 	clrf	GPIO
 	movlw	0x07	; GPIO2..0 are digital I/O (not connected to comparator)
 	movwf	CMCON
-	movlw	0x90	; Enable interrupts + enable INT
+	movlw	0x90	; global enable interrupts + enable external interrupt
 	movwf	INTCON
 	banksel	TRISIO
 	movlw	0x2d	; in out in in out in
@@ -39,15 +90,16 @@ init
 	movlw	0x80	; 0x00 for pullups
 	movwf	OPTION_REG
 	banksel GPIO
-	bsf 	GPIO, 0x0
+	bsf 	GPIO, 4	; LED on
+idle
+	goto	idle	; wait for interrupt from lock
 
-idle	goto	idle
 main
 	banksel	TRISIO
 	bsf	TRISIO, 0
 	bcf	TRISIO, 1
 	banksel	GPIO
-;--------INIT KEY SEED--------
+; --------INIT LOCK SEED (what the lock sends)--------
 	movlw	0xb
 	movwf	0x21
 	movlw	0x1
@@ -79,11 +131,11 @@ main
 	movlw	0x8
 	movwf 	0x2f
 	
-;--------INIT LOCK SEED--------
-	banksel	EEADR
-	clrf	EEADR
-	bsf	EECON1, RD
-	movf	EEDAT, w
+; --------INIT KEY SEED (what we must send)--------
+	banksel	EEADR		; D/F411 and D/F413
+	clrf	EEADR		; differ in 2nd seed nibble
+	bsf	EECON1, RD	; of key stream,
+	movf	EEDAT, w	; restore saved nibble from EEPROM
 	banksel GPIO
 	movwf	0x32
 	movlw	0xa
@@ -112,13 +164,14 @@ main
 	movlw	0xc
 	movwf 	0x3f
 	
-;--------Main loop--------
+; --------wait for stream ID--------
 	movlw	0xb5
 	call	wait
 	clrf	0x31		; clear lock stream ID
-;--------lock sends stream ID. 15 cycles per bit--------
-;	bsf	GPIO, 0
-;	bcf	GPIO, 0
+
+; --------lock sends stream ID. 15 cycles per bit--------
+;	bsf	GPIO, 0		; (debug marker)
+;	bcf	GPIO, 0		; 
 	btfsc	GPIO, 0		; check stream ID bit
 	bsf	0x31, 3		; copy to lock seed
 	movlw	0x2		; wait=3*W+5
@@ -153,29 +206,15 @@ main
 	bsf	TRISIO, 1
 	banksel	GPIO
 	nop
+	movlw	0x27		; "wait" 1
+	call	wait		; wait 121
 	nop
 	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	movlw	0x22		; "wait" 1
-	call	wait		; wait 107
-	nop
-	nop
+; --------main loop--------
 loop	
 	movlw	0x1
 loop0
-	addlw	0x30	; key stream (what we thought was the lock stream...)
+	addlw	0x30	; key stream
 	movwf	FSR	; store in index reg
 loop1
 	movf	INDF, w ; load seed value
@@ -183,7 +222,7 @@ loop1
 	bcf	0x20, 1	; clear bit 1 
 	btfsc	0x20, 0 ; copy from bit 0
 	bsf	0x20, 1 ; (if set)
-	bsf	0x20, 4 ; status pin
+	bsf	0x20, 4 ; LED on
 	movf	0x20, w
 	movwf	GPIO
 	nop
@@ -192,10 +231,10 @@ loop1
 	movlw	0x16
 	call	wait
 	nop
-	btfsc	GPIO, 0
+	btfsc	GPIO, 0 ; both pins must be low...
 	goto	die
-	btfsc	GPIO, 1
-	goto	die
+	btfsc	GPIO, 1 ; ...when no bit transfer takes place
+	goto	die	; if not -> lock cic error state -> die
 	incf	FSR, f	; next one
 	movlw	0xf
 	andwf	FSR, w
@@ -227,9 +266,9 @@ swapskip
 	goto	loop0
 	goto	loop
 
-;--------mangle--------
-;this is damn tight because the PIC has no convenient instructions at all
-;
+; --------calculate new seeds--------
+; had to be unrolled because PIC has an inefficient way of handling
+; indirect access, no post increment, etc.
 mangle
 	call	mangle_lock
 	nop
@@ -260,56 +299,56 @@ mangle_key_withoutskip
 	movf	0x41, w ; restore 23
 	addwf	0x24, f ; add to 24
 	movf	0x25, w
-	movwf	0x40	;save 25 to 40
+	movwf	0x40	; save 25 to 40
 	movf	0x24, w
 	addwf	0x25, f
 	movf	0x26, w
-	movwf	0x41	;save 26 to 41
-	movf	0x40, w ;restore 25
-	andlw	0xf	;mask nibble
-	addlw	0x8	;add #8 to HIGH nibble
+	movwf	0x41	; save 26 to 41
+	movf	0x40, w ; restore 25
+	andlw	0xf	; mask nibble
+	addlw	0x8	; add #8 to HIGH nibble
 	movwf	0x40
-	btfss	0x40, 4 ;skip if carry to 5th bit
+	btfss	0x40, 4 ; skip if carry to 5th bit
 	addwf	0x26, w
 	movwf	0x26
 
-	movf	0x41, w ;restore 26
-	addlw	0x1	;inc
-	addwf	0x27, f	;add to 27
+	movf	0x41, w ; restore 26
+	addlw	0x1	; inc
+	addwf	0x27, f	; add to 27
 
 	movf	0x27, w ;
-	addlw	0x1	;inc
-	addwf	0x28, f ;add to 28
+	addlw	0x1	; inc
+	addwf	0x28, f ; add to 28
 
 	movf	0x28, w ;
-	addlw	0x1	;inc
-	addwf	0x29, f ;add to 29
+	addlw	0x1	; inc
+	addwf	0x29, f ; add to 29
 
 	movf	0x29, w ;
-	addlw	0x1	;inc
-	addwf	0x2a, f ;add to 2a
+	addlw	0x1	; inc
+	addwf	0x2a, f ; add to 2a
 
 	movf	0x2a, w ;
-	addlw	0x1	;inc
-	addwf	0x2b, f ;add to 2b
+	addlw	0x1	; inc
+	addwf	0x2b, f ; add to 2b
 
 	movf	0x2b, w ;
-	addlw	0x1	;inc
-	addwf	0x2c, f ;add to 2c
+	addlw	0x1	; inc
+	addwf	0x2c, f ; add to 2c
 
 	movf	0x2c, w ;
-	addlw	0x1	;inc
-	addwf	0x2d, f ;add to 2d
+	addlw	0x1	; inc
+	addwf	0x2d, f ; add to 2d
 
 	movf	0x2d, w ;
-	addlw	0x1	;inc
-	addwf	0x2e, f ;add to 2e
+	addlw	0x1	; inc
+	addwf	0x2e, f ; add to 2e
 
 	movf	0x2e, w ;
-	addlw	0x1	;inc
-	addwf	0x2f, f ;add to 2f
-;60
-	movf	0x20, w ;restore original 0xf
+	addlw	0x1	; inc
+	addwf	0x2f, f ; add to 2f
+
+	movf	0x20, w ; restore original 0xf
 	andlw	0xf
 	addlw	0xf
 	movwf	0x20
@@ -322,7 +361,7 @@ mangle_key_withoutskip
 	nop
 	nop
 	nop
-	btfss	0x20, 4 ;skip if half-byte carry
+	btfss	0x20, 4 ; skip if half-byte carry
 	goto mangle_return ; +2 cycles in return
 	nop
 	goto mangle_key_loop
@@ -330,63 +369,63 @@ mangle_key_withoutskip
 ; CIC has 78 -> 9 nops
 
 mangle_key_withskip
-	movf	0x41, w ;restore 23
-	addwf	0x23, f ;add to 23
+	movf	0x41, w ; restore 23
+	addwf	0x23, f ; add to 23
 	movf	0x24, w
-	movwf	0x40	;save 24 to 40
+	movwf	0x40	; save 24 to 40
 	movf	0x23, w
 	addwf	0x24, f
 	movf	0x25, w
-	movwf	0x41	;save 25 to 41
-	movf	0x40, w ;restore 24
-	andlw	0xf	;mask nibble
-	addlw	0x8	;add #8 to HIGH nibble
+	movwf	0x41	; save 25 to 41
+	movf	0x40, w ; restore 24
+	andlw	0xf	; mask nibble
+	addlw	0x8	; add #8 to HIGH nibble
 	movwf	0x40
-	btfss	0x40, 4 ;skip if carry to 5th bit
+	btfss	0x40, 4 ; skip if carry to 5th bit
 	addwf	0x25, w
 	movwf	0x25
 
-	movf	0x41, w ;restore 25
-	addlw	0x1	;inc
-	addwf	0x26, f	;add to 26
+	movf	0x41, w ; restore 25
+	addlw	0x1	; inc
+	addwf	0x26, f	; add to 26
 
 	movf	0x26, w ;
-	addlw	0x1	;inc
-	addwf	0x27, f ;add to 27
+	addlw	0x1	; inc
+	addwf	0x27, f ; add to 27
 
 	movf	0x27, w ;
-	addlw	0x1	;inc
-	addwf	0x28, f ;add to 28
+	addlw	0x1	; inc
+	addwf	0x28, f ; add to 28
 
 	movf	0x28, w ;
-	addlw	0x1	;inc
-	addwf	0x29, f ;add to 29
+	addlw	0x1	; inc
+	addwf	0x29, f ; add to 29
 
 	movf	0x29, w ;
-	addlw	0x1	;inc
-	addwf	0x2a, f ;add to 2a
+	addlw	0x1	; inc
+	addwf	0x2a, f ; add to 2a
 
 	movf	0x2a, w ;
-	addlw	0x1	;inc
-	addwf	0x2b, f ;add to 2b
+	addlw	0x1	; inc
+	addwf	0x2b, f ; add to 2b
 
 	movf	0x2b, w ;
-	addlw	0x1	;inc
-	addwf	0x2c, f ;add to 2c
+	addlw	0x1	; inc
+	addwf	0x2c, f ; add to 2c
 
 	movf	0x2c, w ;
-	addlw	0x1	;inc
-	addwf	0x2d, f ;add to 2d
+	addlw	0x1	; inc
+	addwf	0x2d, f ; add to 2d
 
 	movf	0x2d, w ;
-	addlw	0x1	;inc
-	addwf	0x2e, f ;add to 2e
+	addlw	0x1	; inc
+	addwf	0x2e, f ; add to 2e
 
 	movf	0x2e, w ;
-	addlw	0x1	;inc
-	addwf	0x2f, f ;add to 2f
-;64
-	movf	0x20, w ;restore original 0xf
+	addlw	0x1	; inc
+	addwf	0x2f, f ; add to 2f
+
+	movf	0x20, w ; restore original 0xf
 	andlw	0xf
 	addlw	0xf
 	movwf	0x20
@@ -401,14 +440,14 @@ mangle_key_withskip
 	nop
 	nop
 	nop
-	btfss	0x20, 4 ;skip if half-byte carry
+	btfss	0x20, 4 ; skip if half-byte carry
 	goto mangle_return ; +2 cycles in return
 	nop
 	goto mangle_key_loop
 mangle_return
 	return
-;73 when goto, 73 when return
-;CIC has 84 -> 11 nops
+; 73 when goto, 73 when return
+; CIC has 84 -> 11 nops
 
 mangle_lock
 	movf	0x3f, w
@@ -436,56 +475,56 @@ mangle_lock_withoutskip
 	movf	0x41, w ; restore 33
 	addwf	0x34, f ; add to 34
 	movf	0x35, w
-	movwf	0x40	;save 35 to 40
+	movwf	0x40	; save 35 to 40
 	movf	0x34, w
 	addwf	0x35, f
 	movf	0x36, w
-	movwf	0x41	;save 36 to 41
-	movf	0x40, w ;restore 35
-	andlw	0xf	;mask nibble
-	addlw	0x8	;add #8 to HIGH nibble
+	movwf	0x41	; save 36 to 41
+	movf	0x40, w ; restore 35
+	andlw	0xf	; mask nibble
+	addlw	0x8	; add #8 to HIGH nibble
 	movwf	0x40
-	btfss	0x40, 4 ;skip if carry to 5th bit
+	btfss	0x40, 4 ; skip if carry to 5th bit
 	addwf	0x36, w
 	movwf	0x36
 
-	movf	0x41, w ;restore 36
-	addlw	0x1	;inc
-	addwf	0x37, f	;add to 37
+	movf	0x41, w ; restore 36
+	addlw	0x1	; inc
+	addwf	0x37, f	; add to 37
 
 	movf	0x37, w ;
-	addlw	0x1	;inc
-	addwf	0x38, f ;add to 38
+	addlw	0x1	; inc
+	addwf	0x38, f ; add to 38
 
 	movf	0x38, w ;
-	addlw	0x1	;inc
-	addwf	0x39, f ;add to 39
+	addlw	0x1	; inc
+	addwf	0x39, f ; add to 39
 
 	movf	0x39, w ;
-	addlw	0x1	;inc
-	addwf	0x3a, f ;add to 3a
+	addlw	0x1	; inc
+	addwf	0x3a, f ; add to 3a
 
 	movf	0x3a, w ;
-	addlw	0x1	;inc
-	addwf	0x3b, f ;add to 3b
+	addlw	0x1	; inc
+	addwf	0x3b, f ; add to 3b
 
 	movf	0x3b, w ;
-	addlw	0x1	;inc
-	addwf	0x3c, f ;add to 3c
+	addlw	0x1	; inc
+	addwf	0x3c, f ; add to 3c
 
 	movf	0x3c, w ;
-	addlw	0x1	;inc
-	addwf	0x3d, f ;add to 3d
+	addlw	0x1	; inc
+	addwf	0x3d, f ; add to 3d
 
 	movf	0x3d, w ;
-	addlw	0x1	;inc
-	addwf	0x3e, f ;add to 3e
+	addlw	0x1	; inc
+	addwf	0x3e, f ; add to 3e
 
 	movf	0x3e, w ;
-	addlw	0x1	;inc
-	addwf	0x3f, f ;add to 3f
+	addlw	0x1	; inc
+	addwf	0x3f, f ; add to 3f
 
-	movf	0x30, w ;restore original 0xf
+	movf	0x30, w ; restore original 0xf
 	andlw	0xf
 	addlw	0xf
 	movwf	0x30
@@ -498,7 +537,7 @@ mangle_lock_withoutskip
 	nop
 	nop
 	nop
-	btfss	0x30, 4 ;skip if half-byte carry
+	btfss	0x30, 4 ; skip if half-byte carry
 	goto mangle_return
 	nop
 	goto mangle_lock_loop
@@ -506,63 +545,63 @@ mangle_lock_withoutskip
 ; CIC has 78 -> 9 nops
 	
 mangle_lock_withskip
-	movf	0x41, w ;restore 33
-	addwf	0x33, f ;add to 33
+	movf	0x41, w ; restore 33
+	addwf	0x33, f ; add to 33
 	movf	0x34, w
-	movwf	0x40	;save 34 to 40
+	movwf	0x40	; save 34 to 40
 	movf	0x33, w
 	addwf	0x34, f
 	movf	0x35, w
-	movwf	0x41	;save 35 to 41
-	movf	0x40, w ;restore 34
-	andlw	0xf	;mask nibble
-	addlw	0x8	;add #8 to HIGH nibble
+	movwf	0x41	; save 35 to 41
+	movf	0x40, w ; restore 34
+	andlw	0xf	; mask nibble
+	addlw	0x8	; add #8 to HIGH nibble
 	movwf	0x40
-	btfss	0x40, 4 ;skip if carry to 5th bit
+	btfss	0x40, 4 ; skip if carry to 5th bit
 	addwf	0x35, w
 	movwf	0x35
 
-	movf	0x41, w ;restore 35
-	addlw	0x1	;inc
-	addwf	0x36, f	;add to 36
+	movf	0x41, w ; restore 35
+	addlw	0x1	; inc
+	addwf	0x36, f	; add to 36
 
 	movf	0x36, w ;
-	addlw	0x1	;inc
-	addwf	0x37, f ;add to 37
+	addlw	0x1	; inc
+	addwf	0x37, f ; add to 37
 
 	movf	0x37, w ;
-	addlw	0x1	;inc
-	addwf	0x38, f ;add to 38
+	addlw	0x1	; inc
+	addwf	0x38, f ; add to 38
 
 	movf	0x38, w ;
-	addlw	0x1	;inc
-	addwf	0x39, f ;add to 39
+	addlw	0x1	; inc
+	addwf	0x39, f ; add to 39
 
 	movf	0x39, w ;
-	addlw	0x1	;inc
-	addwf	0x3a, f ;add to 3a
+	addlw	0x1	; inc
+	addwf	0x3a, f ; add to 3a
 
 	movf	0x3a, w ;
-	addlw	0x1	;inc
-	addwf	0x3b, f ;add to 3b
+	addlw	0x1	; inc
+	addwf	0x3b, f ; add to 3b
 
 	movf	0x3b, w ;
-	addlw	0x1	;inc
-	addwf	0x3c, f ;add to 3c
+	addlw	0x1	; inc
+	addwf	0x3c, f ; add to 3c
 
 	movf	0x3c, w ;
-	addlw	0x1	;inc
-	addwf	0x3d, f ;add to 3d
+	addlw	0x1	; inc
+	addwf	0x3d, f ; add to 3d
 
 	movf	0x3d, w ;
-	addlw	0x1	;inc
-	addwf	0x3e, f ;add to 3e
+	addlw	0x1	; inc
+	addwf	0x3e, f ; add to 3e
 
 	movf	0x3e, w ;
-	addlw	0x1	;inc
-	addwf	0x3f, f ;add to 3f
+	addlw	0x1	; inc
+	addwf	0x3f, f ; add to 3f
 
-	movf	0x30, w ;restore original 0xf
+	movf	0x30, w ; restore original 0xf
 	andlw	0xf
 	addlw	0xf
 	movwf	0x30
@@ -577,21 +616,21 @@ mangle_lock_withskip
 	nop
 	nop
 	nop
-	btfss	0x30, 4 ;skip if half-byte carry
+	btfss	0x30, 4 ; skip if half-byte carry
 	goto mangle_return
 	nop
 	goto mangle_lock_loop
-;73 when goto, 73 when return
-;CIC has 84 -> 11 nops
+; 73 when goto, 73 when return
+; CIC has 84 -> 11 nops
 
-;--------wait: 3*(W-1)+7 cycles (including call+return). W=0 -> 256!--------
+; --------wait: 3*(W-1)+7 cycles (including call+return). W=0 -> 256!--------
 wait	
 	movwf	0x4f
 wait0	decfsz	0x4f, f
 	goto	wait0
 	return	
 
-;--------wait long: 8+(3*(w-1))+(772*w). W=0 -> 256!--------
+; --------wait long: 8+(3*(w-1))+(772*w). W=0 -> 256!--------
 longwait
 	movwf	0x4e
 	clrw
@@ -601,7 +640,7 @@ longwait0
 	goto	longwait0
 	return
 
-;--------change region in eeprom and die--------
+; --------change region in eeprom and die--------
 die
 	banksel	EEADR
 	clrw
@@ -613,10 +652,10 @@ die
 	btfsc	0x4d, 0
 	goto	die_reg_6
 die_reg_9
-	movlw	0x9
+	movlw	0x9	; died with PAL, fall back to NTSC
 	goto	die_reg_cont
 die_reg_6
-	movlw	0x6	
+	movlw	0x6	; died with NTSC, fall back to PAL
 die_reg_cont
 	banksel	EEADR
 	movwf	EEDAT
@@ -635,16 +674,16 @@ die_intloop
 	bsf	INTCON, GIE
 
 	banksel	GPIO
-;--------forever: blink status pin--------
+; --------forever: blink status pin--------
 die_blink	
 	clrw
 	call	longwait
-	bsf	GPIO, 4
-	call	longwait
 	bcf	GPIO, 4
+	call	longwait
+	bsf	GPIO, 4
 	goto	die_blink
 ; -----------------------------------------------------------------------
 ; eeprom memory
 DEEPROM	CODE
-	de      0x09
+	de      0x09	; D411 (NTSC)
 end
