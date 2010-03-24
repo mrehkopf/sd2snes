@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (20100205 SVN-R2303)-unstable date = Tue 09 Feb 2010 11:10:01 PM CET
+Cmp-Mod V01 Created by CvPCB (20100205 SVN-R2303)-unstable date = Wed 24 Mar 2010 11:36:00 PM CET
 
 BeginCmp
 TimeStamp = /4B6E16F2/4B6E1766;
@@ -8,24 +8,10 @@ IdModule  = SNESCART_EXT;
 EndCmp
 
 BeginCmp
-TimeStamp = /4B6ED75B/4B716001;
+TimeStamp = /4B6ED75B/4BAA6A9C;
 Reference = J2;
-ValeurCmp = SDCARD;
-IdModule  = JAE-SG5S009V1A;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6ED75B/4B71DB24;
-Reference = sw1;
-ValeurCmp = TESTSW;
-IdModule  = 8DIPCMS;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6ED75B/4B71DCB8;
-Reference = sw2;
-ValeurCmp = TESTSW2;
-IdModule  = 8DIPCMS;
+ValeurCmp = SD_CARD;
+IdModule  = SD-RSMT-2-MQ-WF;
 EndCmp
 
 BeginCmp
@@ -53,7 +39,7 @@ BeginCmp
 TimeStamp = /4B6E18FC/4B6E1931;
 Reference = U4;
 ValeurCmp = XC3S400-PQ208;
-IdModule  = PQFP208_ALTPADS;
+IdModule  = PQFP208;
 EndCmp
 
 BeginCmp
@@ -96,6 +82,34 @@ TimeStamp = /4B6ED75B/4B6F321A;
 Reference = U11;
 ValeurCmp = LPC1754;
 IdModule  = LQFP80-.5;
+EndCmp
+
+BeginCmp
+TimeStamp = /4BAA6ABD/4B868602;
+Reference = U12;
+ValeurCmp = MT45W8MW16;
+IdModule  = VFBGA54;
+EndCmp
+
+BeginCmp
+TimeStamp = /4BAA6ABD/4B86E25C;
+Reference = U13;
+ValeurCmp = CY62148EV30-BVXI;
+IdModule  = VFBGA36;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BAA9331;
+Reference = U14;
+ValeurCmp = CS4344;
+IdModule  = TSSOP10;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BAA92DB;
+Reference = U15;
+ValeurCmp = PIC12F629;
+IdModule  = SO8N;
 EndCmp
 
 EndListe

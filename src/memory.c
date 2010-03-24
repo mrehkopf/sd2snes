@@ -326,7 +326,7 @@ uint8_t sram_reliable() {
 	}
 	if(score<SRAM_RELIABILITY_SCORE) {
 		result = 0;
-		dprintf("score=%d\n", score);
+//		dprintf("score=%d\n", score);
 	} else {
 		result = 1;
 	}

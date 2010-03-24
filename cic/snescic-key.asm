@@ -4,7 +4,8 @@ processor p12f629
 ; ---------------------------------------------------------------------
 ;   SNES CIC clone for PIC Microcontroller (key mode only)
 ;
-;   Copyright (C) 2010 by Maximilian Rehkopf <otakon@gmx.net>
+;   Copyright (C) 2010 by Maximilian Rehkopf (ikari_01) <otakon@gmx.net>
+;   This software is part of the sd2snes project.
 ;
 ;   This program is free software; you can redistribute it and/or modify
 ;   it under the terms of the GNU General Public License as published by
@@ -25,18 +26,22 @@ processor p12f629
 ;
 ;                       ,---_---.
 ;      +5V (27,58) [16] |1     8| GND (5,36) [8]
-;      CIC clk (56) [6] |2     7| CIC data i/o 0 (55) [1]
-;            status out |3     6| CIC data i/o 1 (24) [2]
+;      CIC clk (56) [6] |2     7| CIC data i/o 0 (55) [2]
+;            status out |3     6| CIC data i/o 1 (24) [1]
 ;                    nc |4     5| CIC slave reset (25) [7]
 ;                       `-------'
 ;
 ;
-;   status out can be connected to a LED. It indicates:
+;   Status out can be connected to a LED. It indicates:
 ;
 ;   state                   | output
 ;  -------------------------+--------------------
 ;   OK (normal operation)   | high
 ;   error (unlock failed)   | alternating @~2.5Hz
+;   no CIC (modded SNES)    | low
+;
+;   In case lockout fails, the region is switched automatically and
+;   will be used after the next reset.
 ;
 ;   memory usage:
 ;
@@ -87,10 +92,13 @@ init
 	banksel	TRISIO
 	movlw	0x2d	; in out in in out in
 	movwf	TRISIO
-	movlw	0x80	; 0x00 for pullups
+	movlw	0x24	; pullups for reset+clk to avoid errors when no CIC in host 
+	movwf	WPU
+	movlw	0x00	; 0x80 for global pullup disable
 	movwf	OPTION_REG
+	
 	banksel GPIO
-	bsf 	GPIO, 4	; LED on
+	bcf 	GPIO, 4	; LED off
 idle
 	goto	idle	; wait for interrupt from lock
 

@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Tue 09 Feb 2010 11:25:34 PM CET
+EESchema Schematic File Version 2  date Wed 24 Mar 2010 11:33:24 PM CET
 LIBS:sd2snes-cache
 LIBS:power
 LIBS:device
@@ -35,11 +35,14 @@ LIBS:misc-74
 LIBS:vreg
 LIBS:lpc1754
 LIBS:sdcard
-LIBS:testsw
+LIBS:sd_card
+LIBS:cy62148ev30
+LIBS:mt45w8mw16
+LIBS:cs4344
 EELAYER 24  0
 EELAYER END
 $Descr A4 11700 8267
-Sheet 3 5
+Sheet 3 6
 Title ""
 Date "9 feb 2010"
 Rev ""
@@ -49,6 +52,24 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+$Comp
+L CS4344 U?
+U 1 1 4BAA9331
+P 6650 4850
+F 0 "U?" H 6300 5250 60  0000 C CNN
+F 1 "CS4344" H 6850 4450 60  0000 C CNN
+	1    6650 4850
+	1    0    0    -1  
+$EndComp
+$Comp
+L PIC12F629 U?
+U 1 1 4BAA92DB
+P 8450 2650
+F 0 "U?" H 8400 2650 60  0000 C CNN
+F 1 "PIC12F629" H 8450 3400 60  0000 C CNN
+	1    8450 2650
+	1    0    0    -1  
+$EndComp
 $Comp
 L GND #PWR01
 U 1 1 4B6ED41C

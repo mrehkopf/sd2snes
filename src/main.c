@@ -280,8 +280,6 @@ restart:
 	uart_puts_P(PSTR("SNES GO!\r\n"));
 	snes_reset(0);
 // writetest();
-// XXX
-	uart_putc(uart_getc());
 /*	snes_reset(1);
 	set_avr_ena(0);
 	led_std();
@@ -290,7 +288,6 @@ restart:
 	set_busy_led(0);
 	set_avr_ena(1);
 	snes_reset(0); */
-	while(1)dprintf("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!");
 	uint8_t cmd = 0;
 
 	while(!sram_reliable());

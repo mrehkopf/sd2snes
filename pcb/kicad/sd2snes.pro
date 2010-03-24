@@ -1,16 +1,6 @@
-update=Tue 09 Feb 2010 11:25:42 PM CET
+update=Wed 24 Mar 2010 11:33:10 PM CET
 version=1
 last_client=eeschema
-[cvpcb]
-version=1
-NetITyp=0
-NetIExt=.net
-PkgIExt=.pkg
-NetDir=
-LibDir=
-NetType=0
-[cvpcb/libraries]
-EquName1=devcms
 [general]
 version=1
 [pcbnew]
@@ -36,7 +26,6 @@ TxtLar=120
 MSegLar=40
 WpenSer=2
 [pcbnew/libraries]
-LibDir=
 LibName1=sockets
 LibName2=connect
 LibName3=discret
@@ -51,6 +40,12 @@ LibName11=libs/snescart
 LibName12=/home/ikari/src/easyflash2-git/easyflash/Hardware/ef2-kicad/ef2-footprints
 LibName13=libs/mypackages
 LibName14=libs/sdcard
+LibDir=
+[cvpcb]
+version=1
+NetIExt=net
+[cvpcb/libraries]
+EquName1=devcms
 [eeschema]
 version=1
 LibDir=
@@ -122,3 +117,7 @@ LibName32=libs/misc-74
 LibName33=libs/vreg
 LibName34=libs/lpc1754
 LibName35=libs/sdcard
+LibName36=libs/sd_card
+LibName37=libs/cy62148ev30
+LibName38=libs/mt45w8mw16
+LibName39=libs/cs4344
