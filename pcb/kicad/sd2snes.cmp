@@ -1,4 +1,235 @@
-Cmp-Mod V01 Created by CvPCB (20100205 SVN-R2303)-unstable date = Wed 24 Mar 2010 11:36:00 PM CET
+Cmp-Mod V01 Created by CvPCB (20100205 SVN-R2303)-unstable date = Sat 27 Mar 2010 07:44:28 PM CET
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BABC8D1;
+Reference = C1;
+ValeurCmp = 10u;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BABC93A;
+Reference = C2;
+ValeurCmp = 10u;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BABCB5C;
+Reference = C3;
+ValeurCmp = 4.7u;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BABCA9C;
+Reference = C4;
+ValeurCmp = 4.7u;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BABC8DF;
+Reference = C5;
+ValeurCmp = 100u;
+IdModule  = CP_TANTAL_SMD_D;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BABC94E;
+Reference = C6;
+ValeurCmp = 100u;
+IdModule  = CP_TANTAL_SMD_D;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BABCB68;
+Reference = C7;
+ValeurCmp = 4.7u;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BABCAD2;
+Reference = C8;
+ValeurCmp = 4.7u;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4BAD42D5;
+Reference = C9;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4BAD42D8;
+Reference = C10;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4BAD42DA;
+Reference = C11;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4BAD42DF;
+Reference = C12;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4BAD42E0;
+Reference = C13;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4BAD42E2;
+Reference = C14;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4BAA6ABD/4BAD3D47;
+Reference = C15;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4BAA6ABD/4BAD3D53;
+Reference = C16;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4BAA6ABD/4BAD3D55;
+Reference = C17;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE47;
+Reference = C18;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE62;
+Reference = C19;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE64;
+Reference = C20;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE65;
+Reference = C21;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE67;
+Reference = C22;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE6A;
+Reference = C23;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE6B;
+Reference = C24;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE6D;
+Reference = C25;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE74;
+Reference = C26;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE78;
+Reference = C27;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE7A;
+Reference = C28;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE7B;
+Reference = C29;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE7D;
+Reference = C30;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BADCE85;
+Reference = C31;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BADC719;
+Reference = C32;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BADC720;
+Reference = C33;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4B6E1766;
@@ -12,6 +243,13 @@ TimeStamp = /4B6ED75B/4BAA6A9C;
 Reference = J2;
 ValeurCmp = SD_CARD;
 IdModule  = SD-RSMT-2-MQ-WF;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4BAE51CA;
+Reference = R1;
+ValeurCmp = 300;
+IdModule  = SM0805;
 EndCmp
 
 BeginCmp

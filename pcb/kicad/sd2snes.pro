@@ -1,8 +1,6 @@
-update=Wed 24 Mar 2010 11:33:10 PM CET
+update=Thu 25 Mar 2010 11:18:34 PM CET
 version=1
-last_client=eeschema
-[general]
-version=1
+last_client=kicad
 [pcbnew]
 version=1
 PadDrlX=0
@@ -40,12 +38,8 @@ LibName11=libs/snescart
 LibName12=/home/ikari/src/easyflash2-git/easyflash/Hardware/ef2-kicad/ef2-footprints
 LibName13=libs/mypackages
 LibName14=libs/sdcard
+LibName15=libs/diy_capacitors
 LibDir=
-[cvpcb]
-version=1
-NetIExt=net
-[cvpcb/libraries]
-EquName1=devcms
 [eeschema]
 version=1
 LibDir=
@@ -121,3 +115,10 @@ LibName36=libs/sd_card
 LibName37=libs/cy62148ev30
 LibName38=libs/mt45w8mw16
 LibName39=libs/cs4344
+[cvpcb]
+version=1
+NetIExt=net
+[cvpcb/libraries]
+EquName1=devcms
+[general]
+version=1

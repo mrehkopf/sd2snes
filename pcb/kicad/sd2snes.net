@@ -1,670 +1,1332 @@
-# EESchema Netlist Version 1.1 created  Wed 24 Mar 2010 11:36:00 PM CET
+# EESchema Netlist Version 1.1 created  Sat 27 Mar 2010 10:52:19 PM CET
 (
- ( /4B6E16F2/4B6E1766 SNESCART_EXT J1 SNESCART_EXT
-  ( 1 ? )
-  ( 2 ? )
-  ( 3 ? )
-  ( 4 ? )
-  ( 5 GND )
-  ( 6 ? )
-  ( 7 ? )
-  ( 8 ? )
-  ( 9 ? )
-  ( 10 ? )
-  ( 11 ? )
-  ( 12 ? )
-  ( 13 ? )
-  ( 14 ? )
-  ( 15 ? )
-  ( 16 ? )
-  ( 17 ? )
-  ( 18 ? )
-  ( 19 ? )
-  ( 20 ? )
-  ( 21 ? )
-  ( 22 ? )
-  ( 23 ? )
-  ( 24 ? )
-  ( 25 ? )
-  ( 26 ? )
-  ( 27 +5V )
-  ( 28 ? )
-  ( 29 ? )
-  ( 30 ? )
-  ( 31 ? )
-  ( 32 ? )
-  ( 33 ? )
-  ( 34 ? )
-  ( 35 ? )
-  ( 36 GND )
-  ( 37 ? )
-  ( 38 ? )
-  ( 39 ? )
-  ( 40 ? )
-  ( 41 ? )
-  ( 42 ? )
-  ( 43 ? )
-  ( 44 ? )
-  ( 45 ? )
-  ( 46 ? )
-  ( 47 ? )
-  ( 48 ? )
-  ( 49 ? )
-  ( 50 ? )
-  ( 51 ? )
-  ( 52 ? )
-  ( 53 ? )
-  ( 54 ? )
-  ( 55 ? )
-  ( 56 ? )
-  ( 57 ? )
-  ( 58 +5V )
-  ( 59 ? )
-  ( 60 ? )
-  ( 61 ? )
-  ( 62 ? )
+ ( /4BAA6ABD/4BAD3D55 $noname  C17 100n {Lib=C}
+  (    1 +1.8V )
+  (    2 GND )
  )
- ( /4B6ED75B/4BAA6A9C SD-RSMT-2-MQ-WF J2 SD_CARD
-  ( 1 ? )
-  ( 2 ? )
-  ( 3 ? )
-  ( 4 ? )
-  ( 5 ? )
-  ( 6 ? )
-  ( 7 ? )
-  ( 8 ? )
-  ( 9 ? )
-  ( DT ? )
+ ( /4BAA6ABD/4BAD3D53 $noname  C16 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4BAA6ABD/4BAD3D47 $noname  C15 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4BAA6ABD/4B86E25C $noname  U13 CY62148EV30-BVXI {Lib=CY62148EV30-BVXI}
+  (   B4 ? )
+  (   C4 ? )
+  (   F4 ? )
+  (   G4 ? )
+  (   H4 ? )
+  (   A5 ? )
+  (   B5 ? )
+  (   G5 ? )
+  (   H5 ? )
+  (   A6 ? )
+  (   B6 ? )
+  (   C6 ? )
+  (   D6 +3.3V )
+  (   E6 GND )
+  (   F6 ? )
+  (   G6 ? )
+  (   H6 ? )
+  (   A1 ? )
+  (   B1 ? )
+  (   C1 ? )
+  (   D1 GND )
+  (   E1 +3.3V )
+  (   F1 ? )
+  (   G1 ? )
+  (   H1 ? )
+  (   A2 ? )
+  (   B2 ? )
+  (   G2 ? )
+  (   H2 ? )
+  (   A3 ? )
+  (   B3 ? )
+  (   F3 ? )
+  (   G3 ? )
+  (   H3 ? )
+  (   A4 ? )
+ )
+ ( /4BAA6ABD/4B868602 $noname  U12 MT45W8MW16 {Lib=MT45W8MW16}
+  (   J3 ? )
+  (   A4 ? )
+  (   B4 ? )
+  (   C4 ? )
+  (   D4 ? )
+  (   E4 ? )
+  (   F4 ? )
+  (   G4 ? )
+  (   H4 ? )
+  (   J4 ? )
+  (   A5 ? )
+  (   B5 ? )
+  (   C5 ? )
+  (   D5 ? )
+  (   E5 ? )
+  (   F5 ? )
+  (   G5 ? )
+  (   H5 ? )
+  (   A6 ? )
+  (   B6 ? )
+  (   C6 ? )
+  (   D6 +1.8V )
+  (   E6 GND )
+  (   F6 ? )
+  (   G6 ? )
+  (   H6 ? )
+  (   A1 ? )
+  (   B1 ? )
+  (   C1 ? )
+  (   D1 GND )
+  (   E1 +3.3V )
+  (   F1 ? )
+  (   G1 ? )
+  (   H1 ? )
+  (   J1 ? )
+  (   A2 ? )
+  (   B2 ? )
+  (   C2 ? )
+  (   D2 ? )
+  (   E2 ? )
+  (   F2 ? )
+  (   G2 ? )
+  (   H2 ? )
+  (   J2 ? )
+  (   A3 ? )
+  (   B3 ? )
+  (   C3 ? )
+  (   D3 ? )
+  (   E3 ? )
+  (   F3 ? )
+  (   G3 ? )
+  (   H3 ? )
+ )
+ ( /4B6ED75B/4BAA6A9C $noname  J2 SD_CARD {Lib=SD_CARD}
+  (   WP ? )
+  (   DT ? )
   ( GND1 ? )
   ( GND2 ? )
-  ( WP ? )
+  (    1 ? )
+  (    2 ? )
+  (    3 ? )
+  (    4 ? )
+  (    5 ? )
+  (    6 ? )
+  (    7 ? )
+  (    8 ? )
+  (    9 ? )
  )
- ( /4B6E16F2/4B6E1740 TSSOP48 U1 74ALVC164245
-  ( 1 ? )
-  ( 2 ? )
-  ( 3 ? )
-  ( 4 GND )
-  ( 5 ? )
-  ( 6 ? )
-  ( 7 +5V )
-  ( 8 ? )
-  ( 9 ? )
-  ( 10 GND )
-  ( 11 ? )
-  ( 12 ? )
-  ( 13 ? )
-  ( 14 ? )
-  ( 15 GND )
-  ( 16 ? )
-  ( 17 ? )
-  ( 18 +5V )
-  ( 19 ? )
-  ( 20 ? )
-  ( 21 GND )
-  ( 22 ? )
-  ( 23 ? )
-  ( 24 ? )
-  ( 25 ? )
-  ( 26 ? )
-  ( 27 ? )
-  ( 28 GND )
-  ( 29 ? )
-  ( 30 ? )
-  ( 31 +3.3V )
-  ( 32 ? )
-  ( 33 ? )
-  ( 34 GND )
-  ( 35 ? )
-  ( 36 ? )
-  ( 37 ? )
-  ( 38 ? )
-  ( 39 GND )
-  ( 40 ? )
-  ( 41 ? )
-  ( 42 +3.3V )
-  ( 43 ? )
-  ( 44 ? )
-  ( 45 GND )
-  ( 46 ? )
-  ( 47 ? )
-  ( 48 ? )
+ ( /4B6ED75B/4B6F321A $noname  U11 LPC1754 {Lib=LPC1754}
+  (    1 ? )
+  (    2 ? )
+  (    3 ? )
+  (    4 ? )
+  (    5 ? )
+  (    6 ? )
+  (    7 ? )
+  (    8 ? )
+  (    9 ? )
+  (   10 ? )
+  (   11 ? )
+  (   12 ? )
+  (   13 ? )
+  (   14 ? )
+  (   15 ? )
+  (   16 ? )
+  (   17 ? )
+  (   18 ? )
+  (   19 ? )
+  (   20 ? )
+  (   21 ? )
+  (   22 ? )
+  (   23 ? )
+  (   24 ? )
+  (   25 ? )
+  (   26 ? )
+  (   27 ? )
+  (   28 ? )
+  (   29 ? )
+  (   30 ? )
+  (   31 ? )
+  (   32 ? )
+  (   33 ? )
+  (   34 ? )
+  (   35 ? )
+  (   36 ? )
+  (   37 ? )
+  (   38 ? )
+  (   39 ? )
+  (   40 ? )
+  (   41 ? )
+  (   42 ? )
+  (   43 ? )
+  (   44 ? )
+  (   45 ? )
+  (   46 ? )
+  (   47 ? )
+  (   48 ? )
+  (   49 ? )
+  (   50 ? )
+  (   51 ? )
+  (   52 ? )
+  (   53 ? )
+  (   54 ? )
+  (   55 ? )
+  (   56 ? )
+  (   57 ? )
+  (   58 ? )
+  (   59 ? )
+  (   60 ? )
+  (   61 ? )
+  (   62 ? )
+  (   63 ? )
+  (   64 ? )
+  (   65 ? )
+  (   66 ? )
+  (   67 ? )
+  (   68 ? )
+  (   69 ? )
+  (   70 ? )
+  (   71 ? )
+  (   72 ? )
+  (   73 ? )
+  (   74 ? )
+  (   75 ? )
+  (   76 ? )
+  (   77 ? )
+  (   78 ? )
+  (   79 ? )
+  (   80 ? )
  )
- ( /4B6E16F2/4B6E1744 TSSOP48 U2 74ALVC164245
-  ( 1 ? )
-  ( 2 ? )
-  ( 3 ? )
-  ( 4 GND )
-  ( 5 ? )
-  ( 6 ? )
-  ( 7 +5V )
-  ( 8 ? )
-  ( 9 ? )
-  ( 10 GND )
-  ( 11 ? )
-  ( 12 ? )
-  ( 13 ? )
-  ( 14 ? )
-  ( 15 GND )
-  ( 16 ? )
-  ( 17 ? )
-  ( 18 +5V )
-  ( 19 ? )
-  ( 20 ? )
-  ( 21 GND )
-  ( 22 ? )
-  ( 23 ? )
-  ( 24 ? )
-  ( 25 ? )
-  ( 26 ? )
-  ( 27 ? )
-  ( 28 GND )
-  ( 29 ? )
-  ( 30 ? )
-  ( 31 +3.3V )
-  ( 32 ? )
-  ( 33 ? )
-  ( 34 GND )
-  ( 35 ? )
-  ( 36 ? )
-  ( 37 ? )
-  ( 38 ? )
-  ( 39 GND )
-  ( 40 ? )
-  ( 41 ? )
-  ( 42 +3.3V )
-  ( 43 ? )
-  ( 44 ? )
-  ( 45 GND )
-  ( 46 ? )
-  ( 47 ? )
-  ( 48 ? )
+ ( /4B6EC9C3/4BADC720 $noname  C33 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
  )
- ( /4B6E16F2/4B6E1748 TSSOP48 U3 74ALVC164245
-  ( 1 ? )
-  ( 2 ? )
-  ( 3 ? )
-  ( 4 GND )
-  ( 5 ? )
-  ( 6 ? )
-  ( 7 +5V )
-  ( 8 ? )
-  ( 9 ? )
-  ( 10 GND )
-  ( 11 ? )
-  ( 12 ? )
-  ( 13 ? )
-  ( 14 ? )
-  ( 15 GND )
-  ( 16 ? )
-  ( 17 ? )
-  ( 18 +5V )
-  ( 19 ? )
-  ( 20 ? )
-  ( 21 GND )
-  ( 22 ? )
-  ( 23 ? )
-  ( 24 ? )
-  ( 25 ? )
-  ( 26 ? )
-  ( 27 ? )
-  ( 28 GND )
-  ( 29 ? )
-  ( 30 ? )
-  ( 31 +3.3V )
-  ( 32 ? )
-  ( 33 ? )
-  ( 34 GND )
-  ( 35 ? )
-  ( 36 ? )
-  ( 37 ? )
-  ( 38 ? )
-  ( 39 GND )
-  ( 40 ? )
-  ( 41 ? )
-  ( 42 +3.3V )
-  ( 43 ? )
-  ( 44 ? )
-  ( 45 GND )
-  ( 46 ? )
-  ( 47 ? )
-  ( 48 ? )
+ ( /4B6EC9C3/4BADC719 $noname  C32 100n {Lib=C}
+  (    1 +5V )
+  (    2 GND )
  )
- ( /4B6E18FC/4B6E1931 PQFP208 U4 XC3S400-PQ208
-  ( 1 ? )
-  ( 2 ? )
-  ( 3 ? )
-  ( 4 ? )
-  ( 5 ? )
-  ( 6 ? )
-  ( 7 ? )
-  ( 8 ? )
-  ( 9 ? )
-  ( 10 ? )
-  ( 11 ? )
-  ( 12 ? )
-  ( 13 ? )
-  ( 14 ? )
-  ( 15 ? )
-  ( 16 ? )
-  ( 17 ? )
-  ( 18 ? )
-  ( 19 ? )
-  ( 20 ? )
-  ( 21 ? )
-  ( 22 ? )
-  ( 23 ? )
-  ( 24 ? )
-  ( 25 ? )
-  ( 26 ? )
-  ( 27 ? )
-  ( 28 ? )
-  ( 29 ? )
-  ( 30 ? )
-  ( 31 ? )
-  ( 32 ? )
-  ( 33 ? )
-  ( 34 ? )
-  ( 35 ? )
-  ( 36 ? )
-  ( 37 ? )
-  ( 38 ? )
-  ( 39 ? )
-  ( 40 ? )
-  ( 41 ? )
-  ( 42 ? )
-  ( 43 ? )
-  ( 44 ? )
-  ( 45 ? )
-  ( 46 ? )
-  ( 47 ? )
-  ( 48 ? )
-  ( 49 ? )
-  ( 50 ? )
-  ( 51 ? )
-  ( 52 ? )
-  ( 53 ? )
-  ( 54 ? )
-  ( 55 ? )
-  ( 56 ? )
-  ( 57 ? )
-  ( 58 ? )
-  ( 59 ? )
-  ( 60 ? )
-  ( 61 ? )
-  ( 62 ? )
-  ( 63 ? )
-  ( 64 ? )
-  ( 65 ? )
-  ( 66 ? )
-  ( 67 ? )
-  ( 68 ? )
-  ( 69 ? )
-  ( 70 ? )
-  ( 71 ? )
-  ( 72 ? )
-  ( 73 ? )
-  ( 74 ? )
-  ( 75 ? )
-  ( 76 ? )
-  ( 77 ? )
-  ( 78 ? )
-  ( 79 ? )
-  ( 80 ? )
-  ( 81 ? )
-  ( 82 ? )
-  ( 83 ? )
-  ( 84 ? )
-  ( 85 ? )
-  ( 86 ? )
-  ( 87 ? )
-  ( 88 ? )
-  ( 89 ? )
-  ( 90 ? )
-  ( 91 ? )
-  ( 92 ? )
-  ( 93 ? )
-  ( 94 ? )
-  ( 95 ? )
-  ( 96 ? )
-  ( 97 ? )
-  ( 98 ? )
-  ( 99 ? )
-  ( 100 ? )
-  ( 101 ? )
-  ( 102 ? )
-  ( 103 ? )
-  ( 104 ? )
-  ( 105 ? )
-  ( 106 ? )
-  ( 107 ? )
-  ( 108 ? )
-  ( 109 ? )
-  ( 110 ? )
-  ( 111 ? )
-  ( 112 ? )
-  ( 113 ? )
-  ( 114 ? )
-  ( 115 ? )
-  ( 116 ? )
-  ( 117 ? )
-  ( 118 ? )
-  ( 119 ? )
-  ( 120 ? )
-  ( 121 ? )
-  ( 122 ? )
-  ( 123 ? )
-  ( 124 ? )
-  ( 125 ? )
-  ( 126 ? )
-  ( 127 ? )
-  ( 128 ? )
-  ( 129 ? )
-  ( 130 ? )
-  ( 131 ? )
-  ( 132 ? )
-  ( 133 ? )
-  ( 134 ? )
-  ( 135 ? )
-  ( 136 ? )
-  ( 137 ? )
-  ( 138 ? )
-  ( 139 ? )
-  ( 140 ? )
-  ( 141 ? )
-  ( 142 ? )
-  ( 143 ? )
-  ( 144 ? )
-  ( 145 ? )
-  ( 146 ? )
-  ( 147 ? )
-  ( 148 ? )
-  ( 149 ? )
-  ( 150 ? )
-  ( 151 ? )
-  ( 152 ? )
-  ( 153 ? )
-  ( 154 ? )
-  ( 155 ? )
-  ( 156 ? )
-  ( 157 ? )
-  ( 158 ? )
-  ( 159 ? )
-  ( 160 ? )
-  ( 161 ? )
-  ( 162 ? )
-  ( 163 ? )
-  ( 164 ? )
-  ( 165 ? )
-  ( 166 ? )
-  ( 167 ? )
-  ( 168 ? )
-  ( 169 ? )
-  ( 170 ? )
-  ( 171 ? )
-  ( 172 ? )
-  ( 173 ? )
-  ( 174 ? )
-  ( 175 ? )
-  ( 176 ? )
-  ( 177 ? )
-  ( 178 ? )
-  ( 179 ? )
-  ( 180 ? )
-  ( 181 ? )
-  ( 182 ? )
-  ( 183 ? )
-  ( 184 ? )
-  ( 185 ? )
-  ( 186 ? )
-  ( 187 ? )
-  ( 188 ? )
-  ( 189 ? )
-  ( 190 ? )
-  ( 191 ? )
-  ( 192 ? )
-  ( 193 ? )
-  ( 194 ? )
-  ( 195 ? )
-  ( 196 ? )
-  ( 197 ? )
-  ( 198 ? )
-  ( 199 ? )
-  ( 200 ? )
-  ( 201 ? )
-  ( 202 ? )
-  ( 203 ? )
-  ( 204 ? )
-  ( 205 ? )
-  ( 206 ? )
-  ( 207 ? )
-  ( 208 ? )
+ ( /4B6EC9C3/4BABCB68 $noname  C7 4.7u {Lib=C}
+  (    1 +1.8V )
+  (    2 GND )
  )
- ( /4B6E16F2/4B6EB593 SOT563 U5 74LVC1T45
-  ( 1 ? )
-  ( 2 ? )
-  ( 3 ? )
-  ( 4 ? )
-  ( 5 ? )
-  ( 6 ? )
+ ( /4B6EC9C3/4BABCB5C $noname  C3 4.7u {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
  )
- ( /4B6EC9C3/4B6ECEE5 SOT223 U7 LT1117-3.3
-  ( 1 GND )
-  ( 2 +3.3V )
-  ( 3 +5V )
+ ( /4B6EC9C3/4BABCAD2 $noname  C8 4.7u {Lib=C}
+  (    1 +2.5V )
+  (    2 GND )
  )
- ( /4B6EC9C3/4B6ECEEA SOT223 U8 LT1117-1.2
-  ( 1 GND )
-  ( 2 +1.2V )
-  ( 3 +3.3V )
+ ( /4B6EC9C3/4BABCA9C $noname  C4 4.7u {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
  )
- ( /4B6EC9C3/4B6ED144 SOT23-5 U9 MCP1824-1.8
-  ( 1 +3.3V )
-  ( 2 GND )
-  ( 3 +3.3V )
-  ( 4 ? )
-  ( 5 +1.8V )
+ ( /4B6EC9C3/4BABC94E $noname  C6 100u {Lib=CP1}
+  (    1 +1.2V )
+  (    2 GND )
  )
- ( /4B6EC9C3/4B6ED134 SOT23-5 U10 MCP1824-2.5
-  ( 1 +3.3V )
-  ( 2 GND )
-  ( 3 +3.3V )
-  ( 4 ? )
-  ( 5 +2.5V )
+ ( /4B6EC9C3/4BABC93A $noname  C2 10u {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
  )
- ( /4B6ED75B/4B6F321A LQFP80-.5 U11 LPC1754
-  ( 1 ? )
-  ( 2 ? )
-  ( 3 ? )
-  ( 4 ? )
-  ( 5 ? )
-  ( 6 ? )
-  ( 7 ? )
-  ( 8 ? )
-  ( 9 ? )
-  ( 10 ? )
-  ( 11 ? )
-  ( 12 ? )
-  ( 13 ? )
-  ( 14 ? )
-  ( 15 ? )
-  ( 16 ? )
-  ( 17 ? )
-  ( 18 ? )
-  ( 19 ? )
-  ( 20 ? )
-  ( 21 ? )
-  ( 22 ? )
-  ( 23 ? )
-  ( 24 ? )
-  ( 25 ? )
-  ( 26 ? )
-  ( 27 ? )
-  ( 28 ? )
-  ( 29 ? )
-  ( 30 ? )
-  ( 31 ? )
-  ( 32 ? )
-  ( 33 ? )
-  ( 34 ? )
-  ( 35 ? )
-  ( 36 ? )
-  ( 37 ? )
-  ( 38 ? )
-  ( 39 ? )
-  ( 40 ? )
-  ( 41 ? )
-  ( 42 ? )
-  ( 43 ? )
-  ( 44 ? )
-  ( 45 ? )
-  ( 46 ? )
-  ( 47 ? )
-  ( 48 ? )
-  ( 49 ? )
-  ( 50 ? )
-  ( 51 ? )
-  ( 52 ? )
-  ( 53 ? )
-  ( 54 ? )
-  ( 55 ? )
-  ( 56 ? )
-  ( 57 ? )
-  ( 58 ? )
-  ( 59 ? )
-  ( 60 ? )
-  ( 61 ? )
-  ( 62 ? )
-  ( 63 ? )
-  ( 64 ? )
-  ( 65 ? )
-  ( 66 ? )
-  ( 67 ? )
-  ( 68 ? )
-  ( 69 ? )
-  ( 70 ? )
-  ( 71 ? )
-  ( 72 ? )
-  ( 73 ? )
-  ( 74 ? )
-  ( 75 ? )
-  ( 76 ? )
-  ( 77 ? )
-  ( 78 ? )
-  ( 79 ? )
-  ( 80 ? )
+ ( /4B6EC9C3/4BABC8DF $noname  C5 100u {Lib=CP1}
+  (    1 +3.3V )
+  (    2 GND )
  )
- ( /4BAA6ABD/4B868602 VFBGA54 U12 MT45W8MW16
-  ( A1 ? )
-  ( A2 ? )
-  ( A3 ? )
-  ( A4 ? )
-  ( A5 ? )
-  ( A6 ? )
-  ( B1 ? )
-  ( B2 ? )
-  ( B3 ? )
-  ( B4 ? )
-  ( B5 ? )
-  ( B6 ? )
-  ( C1 ? )
-  ( C2 ? )
-  ( C3 ? )
-  ( C4 ? )
-  ( C5 ? )
-  ( C6 ? )
-  ( D1 ? )
-  ( D2 ? )
-  ( D3 ? )
-  ( D4 ? )
-  ( D5 ? )
-  ( D6 ? )
-  ( E1 ? )
-  ( E2 ? )
-  ( E3 ? )
-  ( E4 ? )
-  ( E5 ? )
-  ( E6 ? )
-  ( F1 ? )
-  ( F2 ? )
-  ( F3 ? )
-  ( F4 ? )
-  ( F5 ? )
-  ( F6 ? )
-  ( G1 ? )
-  ( G2 ? )
-  ( G3 ? )
-  ( G4 ? )
-  ( G5 ? )
-  ( G6 ? )
-  ( H1 ? )
-  ( H2 ? )
-  ( H3 ? )
-  ( H4 ? )
-  ( H5 ? )
-  ( H6 ? )
-  ( J1 ? )
-  ( J2 ? )
-  ( J3 ? )
-  ( J4 ? )
+ ( /4B6EC9C3/4BABC8D1 $noname  C1 10u {Lib=C}
+  (    1 +5V )
+  (    2 GND )
  )
- ( /4BAA6ABD/4B86E25C VFBGA36 U13 CY62148EV30-BVXI
-  ( A1 ? )
-  ( A2 ? )
-  ( A3 ? )
-  ( A4 ? )
-  ( A5 ? )
-  ( A6 ? )
-  ( B1 ? )
-  ( B2 ? )
-  ( B3 ? )
-  ( B4 ? )
-  ( B5 ? )
-  ( B6 ? )
-  ( C1 ? )
-  ( C4 ? )
-  ( C6 ? )
-  ( D1 ? )
-  ( D6 ? )
-  ( E1 ? )
-  ( E6 ? )
-  ( F1 ? )
-  ( F3 ? )
-  ( F4 ? )
-  ( F6 ? )
-  ( G1 ? )
-  ( G2 ? )
-  ( G3 ? )
-  ( G4 ? )
-  ( G5 ? )
-  ( G6 ? )
-  ( H1 ? )
-  ( H2 ? )
-  ( H3 ? )
-  ( H4 ? )
-  ( H5 ? )
-  ( H6 ? )
+ ( /4B6EC9C3/4BAA9331 $noname  U14 CS4344 {Lib=CS4344}
+  (    1 ? )
+  (    2 ? )
+  (    3 ? )
+  (    4 ? )
+  (    5 ? )
+  (    6 ? )
+  (    7 ? )
+  (    8 GND )
+  (    9 +3.3V )
+  (   10 ? )
  )
- ( /4B6EC9C3/4BAA9331 TSSOP10 U14 CS4344
-  ( 1 ? )
-  ( 2 ? )
-  ( 3 ? )
-  ( 4 ? )
-  ( 5 ? )
-  ( 6 ? )
-  ( 7 ? )
-  ( 8 ? )
-  ( 9 ? )
-  ( 10 ? )
+ ( /4B6EC9C3/4BAA92DB $noname  U15 PIC12F629 {Lib=PIC12F629}
+  (    1 +5V )
+  (    2 ? )
+  (    3 ? )
+  (    4 ? )
+  (    5 ? )
+  (    6 ? )
+  (    7 ? )
+  (    8 GND )
  )
- ( /4B6EC9C3/4BAA92DB SO8N U15 PIC12F629
-  ( 1 ? )
-  ( 2 ? )
-  ( 3 ? )
-  ( 4 ? )
-  ( 5 ? )
-  ( 6 ? )
-  ( 7 ? )
-  ( 8 ? )
+ ( /4B6EC9C3/4B6ED144 $noname  U9 MCP1824-1.8 {Lib=MCP1824-SOT23-Fixed}
+  (    1 +3.3V )
+  (    2 GND )
+  (    3 +3.3V )
+  (    4 ? )
+  (    5 +1.8V )
+ )
+ ( /4B6EC9C3/4B6ED134 $noname  U10 MCP1824-2.5 {Lib=MCP1824-SOT23-Fixed}
+  (    1 +3.3V )
+  (    2 GND )
+  (    3 +3.3V )
+  (    4 ? )
+  (    5 +2.5V )
+ )
+ ( /4B6EC9C3/4B6ECEEA $noname  U8 LT1117-1.2 {Lib=LT1117}
+  (    1 GND )
+  (    2 +1.2V )
+  (    3 +3.3V )
+ )
+ ( /4B6EC9C3/4B6ECEE5 $noname  U7 LT1117-3.3 {Lib=LT1117}
+  (    1 GND )
+  (    2 +3.3V )
+  (    3 +5V )
+ )
+ ( /4B6E18FC/4BADCE85 $noname  C31 100n {Lib=C}
+  (    1 +1.2V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE7D $noname  C30 100n {Lib=C}
+  (    1 +1.2V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE7B $noname  C29 100n {Lib=C}
+  (    1 +2.5V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE7A $noname  C28 100n {Lib=C}
+  (    1 +2.5V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE78 $noname  C27 100n {Lib=C}
+  (    1 +2.5V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE74 $noname  C26 100n {Lib=C}
+  (    1 +2.5V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE6D $noname  C25 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE6B $noname  C24 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE6A $noname  C23 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE67 $noname  C22 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE65 $noname  C21 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE64 $noname  C20 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE62 $noname  C19 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE47 $noname  C18 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4B6E1931 $noname  U4 XC3S400-PQ208 {Lib=XC3S400-PQ208}
+  (    1 GND )
+  (    2 ? )
+  (    3 ? )
+  (    4 ? )
+  (    5 ? )
+  (    6 +3.3V )
+  (    7 ? )
+  (    8 GND )
+  (    9 ? )
+  (   10 ? )
+  (   11 ? )
+  (   12 ? )
+  (   13 ? )
+  (   14 GND )
+  (   15 ? )
+  (   16 ? )
+  (   17 +2.5V )
+  (   18 ? )
+  (   19 ? )
+  (   20 ? )
+  (   21 ? )
+  (   22 ? )
+  (   23 +3.3V )
+  (   24 ? )
+  (   25 GND )
+  (   26 ? )
+  (   27 ? )
+  (   28 ? )
+  (   29 ? )
+  (   30 GND )
+  (   31 ? )
+  (   32 +3.3V )
+  (   33 ? )
+  (   34 ? )
+  (   35 ? )
+  (   36 ? )
+  (   37 ? )
+  (   38 +2.5V )
+  (   39 ? )
+  (   40 ? )
+  (   41 GND )
+  (   42 ? )
+  (   43 ? )
+  (   44 ? )
+  (   45 ? )
+  (   46 ? )
+  (   47 GND )
+  (   48 ? )
+  (   49 +3.3V )
+  (   50 ? )
+  (   51 ? )
+  (   52 ? )
+  (   53 GND )
+  (   54 ? )
+  (   55 GND )
+  (   56 ? )
+  (   57 N-000083 )
+  (   58 ? )
+  (   59 GND )
+  (   60 +3.3V )
+  (   61 ? )
+  (   62 ? )
+  (   63 ? )
+  (   64 ? )
+  (   65 ? )
+  (   66 GND )
+  (   67 ? )
+  (   68 ? )
+  (   69 +2.5V )
+  (   70 +1.2V )
+  (   71 ? )
+  (   72 ? )
+  (   73 +3.3V )
+  (   74 ? )
+  (   75 GND )
+  (   76 ? )
+  (   77 ? )
+  (   78 ? )
+  (   79 ? )
+  (   80 ? )
+  (   81 ? )
+  (   82 GND )
+  (   83 ? )
+  (   84 +3.3V )
+  (   85 ? )
+  (   86 ? )
+  (   87 ? )
+  (   88 +1.2V )
+  (   89 +2.5V )
+  (   90 ? )
+  (   91 GND )
+  (   92 ? )
+  (   93 ? )
+  (   94 ? )
+  (   95 ? )
+  (   96 ? )
+  (   97 ? )
+  (   98 +3.3V )
+  (   99 GND )
+  (  100 ? )
+  (  101 ? )
+  (  102 ? )
+  (  103 ? )
+  (  104 ? )
+  (  105 GND )
+  (  106 ? )
+  (  107 ? )
+  (  108 ? )
+  (  109 ? )
+  (  110 +3.3V )
+  (  111 ? )
+  (  112 GND )
+  (  113 ? )
+  (  114 ? )
+  (  115 ? )
+  (  116 ? )
+  (  117 ? )
+  (  118 GND )
+  (  119 ? )
+  (  120 ? )
+  (  121 +2.5V )
+  (  122 ? )
+  (  123 ? )
+  (  124 ? )
+  (  125 ? )
+  (  126 ? )
+  (  127 +3.3V )
+  (  128 ? )
+  (  129 GND )
+  (  130 ? )
+  (  131 ? )
+  (  132 ? )
+  (  133 ? )
+  (  134 GND )
+  (  135 ? )
+  (  136 +3.3V )
+  (  137 ? )
+  (  138 ? )
+  (  139 ? )
+  (  140 ? )
+  (  141 ? )
+  (  142 +2.5V )
+  (  143 ? )
+  (  144 ? )
+  (  145 GND )
+  (  146 ? )
+  (  147 ? )
+  (  148 ? )
+  (  149 ? )
+  (  150 ? )
+  (  151 GND )
+  (  152 ? )
+  (  153 +3.3V )
+  (  154 ? )
+  (  155 ? )
+  (  156 ? )
+  (  157 GND )
+  (  158 ? )
+  (  159 ? )
+  (  160 ? )
+  (  161 ? )
+  (  162 ? )
+  (  163 GND )
+  (  164 +3.3V )
+  (  165 ? )
+  (  166 ? )
+  (  167 ? )
+  (  168 ? )
+  (  169 ? )
+  (  170 GND )
+  (  171 ? )
+  (  172 ? )
+  (  173 +2.5V )
+  (  174 +1.2V )
+  (  175 ? )
+  (  176 ? )
+  (  177 +3.3V )
+  (  178 ? )
+  (  179 GND )
+  (  180 ? )
+  (  181 ? )
+  (  182 ? )
+  (  183 ? )
+  (  184 ? )
+  (  185 ? )
+  (  186 GND )
+  (  187 ? )
+  (  188 +3.3V )
+  (  189 ? )
+  (  190 ? )
+  (  191 ? )
+  (  192 +1.2V )
+  (  193 +2.5V )
+  (  194 ? )
+  (  195 GND )
+  (  196 ? )
+  (  197 ? )
+  (  198 ? )
+  (  199 ? )
+  (  200 ? )
+  (  201 +3.3V )
+  (  202 GND )
+  (  203 ? )
+  (  204 ? )
+  (  205 ? )
+  (  206 GND )
+  (  207 ? )
+  (  208 ? )
+ )
+ ( /4B6E16F2/4BAE51CA $noname  R1 300 {Lib=R}
+  (    1 /SNES_Slot/SNES_EXT_SYS_CLK )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BAD42E2 $noname  C14 100n {Lib=C}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BAD42E0 $noname  C13 100n {Lib=C}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BAD42DF $noname  C12 100n {Lib=C}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BAD42DA $noname  C11 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BAD42D8 $noname  C10 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BAD42D5 $noname  C9 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4B6EB593 $noname  U5 74LVC1T45 {Lib=74LVC1T45}
+  (    1 +5V )
+  (    2 GND )
+  (    3 ? )
+  (    4 /SNES_Slot/SNES_EXT_/IRQ )
+  (    5 ? )
+  (    6 +3.3V )
+ )
+ ( /4B6E16F2/4B6E1766 $noname  J1 SNESCART_EXT {Lib=SNESCART_EXT}
+  (    1 /SNES_Slot/SNES_EXT_SYS_CLK )
+  (    2 ? )
+  (    3 /SNES_Slot/SNES_EXT_PA6 )
+  (    4 /SNES_Slot/SNES_EXT_/PARD )
+  (    5 GND )
+  (    6 /SNES_Slot/SNES_EXT_A11 )
+  (    7 /SNES_Slot/SNES_EXT_A10 )
+  (    8 /SNES_Slot/SNES_EXT_A9 )
+  (    9 /SNES_Slot/SNES_EXT_A8 )
+  (   10 /SNES_Slot/SNES_EXT_A7 )
+  (   11 /SNES_Slot/SNES_EXT_A6 )
+  (   12 /SNES_Slot/SNES_EXT_A5 )
+  (   13 /SNES_Slot/SNES_EXT_A4 )
+  (   14 /SNES_Slot/SNES_EXT_A3 )
+  (   15 /SNES_Slot/SNES_EXT_A2 )
+  (   16 /SNES_Slot/SNES_EXT_A1 )
+  (   17 /SNES_Slot/SNES_EXT_A0 )
+  (   18 /SNES_Slot/SNES_EXT_/IRQ )
+  (   19 /SNES_Slot/SNES_EXT_D0 )
+  (   20 /SNES_Slot/SNES_EXT_D1 )
+  (   21 /SNES_Slot/SNES_EXT_D2 )
+  (   22 /SNES_Slot/SNES_EXT_D3 )
+  (   23 /SNES_Slot/SNES_EXT_/RD )
+  (   24 ? )
+  (   25 ? )
+  (   26 ? )
+  (   27 +5V )
+  (   28 /SNES_Slot/SNES_EXT_PA0 )
+  (   29 /SNES_Slot/SNES_EXT_PA2 )
+  (   30 /SNES_Slot/SNES_EXT_PA4 )
+  (   31 ? )
+  (   32 ? )
+  (   33 /SNES_Slot/SNES_EXT_REFRESH )
+  (   34 /SNES_Slot/SNES_EXT_PA7 )
+  (   35 /SNES_Slot/SNES_EXT_/PAWR )
+  (   36 GND )
+  (   37 /SNES_Slot/SNES_EXT_A12 )
+  (   38 /SNES_Slot/SNES_EXT_A13 )
+  (   39 /SNES_Slot/SNES_EXT_A14 )
+  (   40 /SNES_Slot/SNES_EXT_A15 )
+  (   41 /SNES_Slot/SNES_EXT_A16 )
+  (   42 /SNES_Slot/SNES_EXT_A17 )
+  (   43 /SNES_Slot/SNES_EXT_A18 )
+  (   44 /SNES_Slot/SNES_EXT_A19 )
+  (   45 /SNES_Slot/SNES_EXT_A20 )
+  (   46 /SNES_Slot/SNES_EXT_A21 )
+  (   47 /SNES_Slot/SNES_EXT_A22 )
+  (   48 /SNES_Slot/SNES_EXT_A23 )
+  (   49 /SNES_Slot/SNES_EXT_/ROMSEL )
+  (   50 /SNES_Slot/SNES_EXT_D4 )
+  (   51 /SNES_Slot/SNES_EXT_D5 )
+  (   52 /SNES_Slot/SNES_EXT_D6 )
+  (   53 /SNES_Slot/SNES_EXT_D7 )
+  (   54 /SNES_Slot/SNES_EXT_/WR )
+  (   55 ? )
+  (   56 ? )
+  (   57 /SNES_Slot/SNES_EXT_CPU_CLK )
+  (   58 +5V )
+  (   59 /SNES_Slot/SNES_EXT_PA1 )
+  (   60 /SNES_Slot/SNES_EXT_PA3 )
+  (   61 /SNES_Slot/SNES_EXT_PA5 )
+  (   62 ? )
+ )
+ ( /4B6E16F2/4B6E1748 $noname  U3 74ALVC164245 {Lib=74ALVC164245}
+  (    1 ? )
+  (    2 /SNES_Slot/SNES_EXT_A16 )
+  (    3 /SNES_Slot/SNES_EXT_A7 )
+  (    4 GND )
+  (    5 /SNES_Slot/SNES_EXT_A15 )
+  (    6 /SNES_Slot/SNES_EXT_A8 )
+  (    7 +5V )
+  (    8 /SNES_Slot/SNES_EXT_A14 )
+  (    9 /SNES_Slot/SNES_EXT_A9 )
+  (   10 GND )
+  (   11 /SNES_Slot/SNES_EXT_A13 )
+  (   12 /SNES_Slot/SNES_EXT_A10 )
+  (   13 /SNES_Slot/SNES_EXT_A12 )
+  (   14 /SNES_Slot/SNES_EXT_A11 )
+  (   15 GND )
+  (   16 /SNES_Slot/SNES_EXT_/PARD )
+  (   17 /SNES_Slot/SNES_EXT_/PAWR )
+  (   18 +5V )
+  (   19 /SNES_Slot/SNES_EXT_PA6 )
+  (   20 /SNES_Slot/SNES_EXT_PA7 )
+  (   21 GND )
+  (   22 /SNES_Slot/SNES_EXT_REFRESH )
+  (   23 /SNES_Slot/SNES_EXT_SYS_CLK )
+  (   24 ? )
+  (   25 ? )
+  (   26 ? )
+  (   27 ? )
+  (   28 GND )
+  (   29 ? )
+  (   30 ? )
+  (   31 +3.3V )
+  (   32 ? )
+  (   33 ? )
+  (   34 GND )
+  (   35 ? )
+  (   36 ? )
+  (   37 ? )
+  (   38 ? )
+  (   39 GND )
+  (   40 ? )
+  (   41 ? )
+  (   42 +3.3V )
+  (   43 ? )
+  (   44 ? )
+  (   45 GND )
+  (   46 N-000083 )
+  (   47 ? )
+  (   48 ? )
+ )
+ ( /4B6E16F2/4B6E1744 $noname  U2 74ALVC164245 {Lib=74ALVC164245}
+  (    1 ? )
+  (    2 /SNES_Slot/SNES_EXT_/RD )
+  (    3 /SNES_Slot/SNES_EXT_/ROMSEL )
+  (    4 GND )
+  (    5 /SNES_Slot/SNES_EXT_A23 )
+  (    6 /SNES_Slot/SNES_EXT_A0 )
+  (    7 +5V )
+  (    8 /SNES_Slot/SNES_EXT_A22 )
+  (    9 /SNES_Slot/SNES_EXT_A1 )
+  (   10 GND )
+  (   11 /SNES_Slot/SNES_EXT_A21 )
+  (   12 /SNES_Slot/SNES_EXT_A2 )
+  (   13 /SNES_Slot/SNES_EXT_A20 )
+  (   14 /SNES_Slot/SNES_EXT_A3 )
+  (   15 GND )
+  (   16 /SNES_Slot/SNES_EXT_A19 )
+  (   17 /SNES_Slot/SNES_EXT_A4 )
+  (   18 +5V )
+  (   19 /SNES_Slot/SNES_EXT_A18 )
+  (   20 /SNES_Slot/SNES_EXT_A5 )
+  (   21 GND )
+  (   22 /SNES_Slot/SNES_EXT_A17 )
+  (   23 /SNES_Slot/SNES_EXT_A6 )
+  (   24 ? )
+  (   25 ? )
+  (   26 ? )
+  (   27 ? )
+  (   28 GND )
+  (   29 ? )
+  (   30 ? )
+  (   31 +3.3V )
+  (   32 ? )
+  (   33 ? )
+  (   34 GND )
+  (   35 ? )
+  (   36 ? )
+  (   37 ? )
+  (   38 ? )
+  (   39 GND )
+  (   40 ? )
+  (   41 ? )
+  (   42 +3.3V )
+  (   43 ? )
+  (   44 ? )
+  (   45 GND )
+  (   46 ? )
+  (   47 ? )
+  (   48 ? )
+ )
+ ( /4B6E16F2/4B6E1740 $noname  U1 74ALVC164245 {Lib=74ALVC164245}
+  (    1 ? )
+  (    2 /SNES_Slot/SNES_EXT_PA4 )
+  (    3 /SNES_Slot/SNES_EXT_PA5 )
+  (    4 GND )
+  (    5 /SNES_Slot/SNES_EXT_PA2 )
+  (    6 /SNES_Slot/SNES_EXT_PA3 )
+  (    7 +5V )
+  (    8 /SNES_Slot/SNES_EXT_PA0 )
+  (    9 /SNES_Slot/SNES_EXT_PA1 )
+  (   10 GND )
+  (   11 /SNES_Slot/SNES_EXT_CPU_CLK )
+  (   12 /SNES_Slot/SNES_EXT_/WR )
+  (   13 /SNES_Slot/SNES_EXT_D3 )
+  (   14 /SNES_Slot/SNES_EXT_D7 )
+  (   15 GND )
+  (   16 /SNES_Slot/SNES_EXT_D2 )
+  (   17 /SNES_Slot/SNES_EXT_D6 )
+  (   18 +5V )
+  (   19 /SNES_Slot/SNES_EXT_D1 )
+  (   20 /SNES_Slot/SNES_EXT_D5 )
+  (   21 GND )
+  (   22 /SNES_Slot/SNES_EXT_D0 )
+  (   23 /SNES_Slot/SNES_EXT_D4 )
+  (   24 ? )
+  (   25 ? )
+  (   26 ? )
+  (   27 ? )
+  (   28 GND )
+  (   29 ? )
+  (   30 ? )
+  (   31 +3.3V )
+  (   32 ? )
+  (   33 ? )
+  (   34 GND )
+  (   35 ? )
+  (   36 ? )
+  (   37 ? )
+  (   38 ? )
+  (   39 GND )
+  (   40 ? )
+  (   41 ? )
+  (   42 +3.3V )
+  (   43 ? )
+  (   44 ? )
+  (   45 GND )
+  (   46 ? )
+  (   47 ? )
+  (   48 ? )
  )
 )
 *
+{ Allowed footprints by component:
+$component C17
+ SM*
+ C?
+ C1-1
+$endlist
+$component C16
+ SM*
+ C?
+ C1-1
+$endlist
+$component C15
+ SM*
+ C?
+ C1-1
+$endlist
+$component C33
+ SM*
+ C?
+ C1-1
+$endlist
+$component C32
+ SM*
+ C?
+ C1-1
+$endlist
+$component C7
+ SM*
+ C?
+ C1-1
+$endlist
+$component C3
+ SM*
+ C?
+ C1-1
+$endlist
+$component C8
+ SM*
+ C?
+ C1-1
+$endlist
+$component C4
+ SM*
+ C?
+ C1-1
+$endlist
+$component C6
+ CP*
+ SM*
+$endlist
+$component C2
+ SM*
+ C?
+ C1-1
+$endlist
+$component C5
+ CP*
+ SM*
+$endlist
+$component C1
+ SM*
+ C?
+ C1-1
+$endlist
+$component C31
+ SM*
+ C?
+ C1-1
+$endlist
+$component C30
+ SM*
+ C?
+ C1-1
+$endlist
+$component C29
+ SM*
+ C?
+ C1-1
+$endlist
+$component C28
+ SM*
+ C?
+ C1-1
+$endlist
+$component C27
+ SM*
+ C?
+ C1-1
+$endlist
+$component C26
+ SM*
+ C?
+ C1-1
+$endlist
+$component C25
+ SM*
+ C?
+ C1-1
+$endlist
+$component C24
+ SM*
+ C?
+ C1-1
+$endlist
+$component C23
+ SM*
+ C?
+ C1-1
+$endlist
+$component C22
+ SM*
+ C?
+ C1-1
+$endlist
+$component C21
+ SM*
+ C?
+ C1-1
+$endlist
+$component C20
+ SM*
+ C?
+ C1-1
+$endlist
+$component C19
+ SM*
+ C?
+ C1-1
+$endlist
+$component C18
+ SM*
+ C?
+ C1-1
+$endlist
+$component R1
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component C14
+ SM*
+ C?
+ C1-1
+$endlist
+$component C13
+ SM*
+ C?
+ C1-1
+$endlist
+$component C12
+ SM*
+ C?
+ C1-1
+$endlist
+$component C11
+ SM*
+ C?
+ C1-1
+$endlist
+$component C10
+ SM*
+ C?
+ C1-1
+$endlist
+$component C9
+ SM*
+ C?
+ C1-1
+$endlist
+$endfootprintlist
+}
+{ Pin List by Nets
+Net 1 "/SNES Slot/SNES_EXT_PA5" "SNES_EXT_PA5"
+ U1 3
+ J1 61
+Net 2 "/SNES Slot/SNES_EXT_PA4" "SNES_EXT_PA4"
+ U1 2
+ J1 30
+Net 3 "/SNES Slot/SNES_EXT_A17" "SNES_EXT_A17"
+ J1 42
+ U2 22
+Net 4 "/SNES Slot/SNES_EXT_A5" "SNES_EXT_A5"
+ J1 12
+ U2 20
+Net 5 "/SNES Slot/SNES_EXT_A18" "SNES_EXT_A18"
+ J1 43
+ U2 19
+Net 6 "/SNES Slot/SNES_EXT_A4" "SNES_EXT_A4"
+ U2 17
+ J1 13
+Net 7 "/SNES Slot/SNES_EXT_A19" "SNES_EXT_A19"
+ U2 16
+ J1 44
+Net 8 "/SNES Slot/SNES_EXT_A3" "SNES_EXT_A3"
+ J1 14
+ U2 14
+Net 9 "/SNES Slot/SNES_EXT_A20" "SNES_EXT_A20"
+ J1 45
+ U2 13
+Net 10 "+5V" "+5V"
+ U7 3
+ U3 7
+ J1 27
+ U2 7
+ U5 1
+ U3 18
+ C32 1
+ J1 58
+ U2 18
+ U15 1
+ C1 1
+ C13 1
+ C12 1
+ U1 7
+ C14 1
+ U1 18
+Net 11 "/SNES Slot/SNES_EXT_/IRQ" "SNES_EXT_/IRQ"
+ J1 18
+ U5 4
+Net 12 "/SNES Slot/SNES_EXT_/WR" "SNES_EXT_/WR"
+ J1 54
+ U1 12
+Net 13 "/SNES Slot/SNES_EXT_CPU_CLK" "SNES_EXT_CPU_CLK"
+ J1 57
+ U1 11
+Net 14 "/SNES Slot/SNES_EXT_PA1" "SNES_EXT_PA1"
+ U1 9
+ J1 59
+Net 15 "/SNES Slot/SNES_EXT_PA0" "SNES_EXT_PA0"
+ J1 28
+ U1 8
+Net 16 "/SNES Slot/SNES_EXT_PA3" "SNES_EXT_PA3"
+ J1 60
+ U1 6
+Net 17 "/SNES Slot/SNES_EXT_PA2" "SNES_EXT_PA2"
+ U1 5
+ J1 29
+Net 18 "/SNES Slot/SNES_EXT_D7" "SNES_EXT_D7"
+ J1 53
+ U1 14
+Net 19 "/SNES Slot/SNES_EXT_D3" "SNES_EXT_D3"
+ J1 22
+ U1 13
+Net 20 "GND" "GND"
+ U2 45
+ U2 15
+ U1 15
+ U1 34
+ C11 2
+ C10 2
+ C9 2
+ U5 2
+ U2 39
+ U2 28
+ C12 2
+ C13 2
+ J1 5
+ C14 2
+ U2 34
+ U4 157
+ U4 186
+ U4 206
+ U4 195
+ U4 179
+ U4 129
+ U4 118
+ U4 112
+ U4 202
+ U4 151
+ U4 145
+ U4 105
+ U4 163
+ U2 21
+ U4 134
+ U1 4
+ U15 8
+ U7 1
+ U8 1
+ U10 2
+ U9 2
+ C2 2
+ C6 2
+ C4 2
+ C32 2
+ C33 2
+ C15 2
+ C16 2
+ C17 2
+ U12 E6
+ U13 E6
+ U12 D1
+ C8 2
+ C3 2
+ C7 2
+ U14 8
+ C5 2
+ C1 2
+ U13 D1
+ U4 25
+ U4 55
+ U4 75
+ U4 91
+ U4 82
+ U4 53
+ U4 14
+ U4 59
+ U4 99
+ U4 170
+ U4 8
+ U4 30
+ U4 41
+ C27 2
+ C26 2
+ C25 2
+ C24 2
+ C23 2
+ C22 2
+ C21 2
+ C20 2
+ C19 2
+ C18 2
+ U4 1
+ U4 66
+ U4 47
+ C31 2
+ C30 2
+ C29 2
+ C28 2
+ R1 2
+ U3 21
+ U3 10
+ U3 4
+ U1 28
+ U3 39
+ U3 28
+ U1 45
+ J1 36
+ U3 45
+ U3 15
+ U3 34
+ U1 21
+ U2 10
+ U2 4
+ U1 39
+ U1 10
+Net 27 "/SNES Slot/SNES_EXT_A2" "SNES_EXT_A2"
+ J1 15
+ U2 12
+Net 28 "/SNES Slot/SNES_EXT_A21" "SNES_EXT_A21"
+ U2 11
+ J1 46
+Net 29 "/SNES Slot/SNES_EXT_A1" "SNES_EXT_A1"
+ J1 16
+ U2 9
+Net 30 "/SNES Slot/SNES_EXT_A22" "SNES_EXT_A22"
+ J1 47
+ U2 8
+Net 31 "/SNES Slot/SNES_EXT_A0" "SNES_EXT_A0"
+ J1 17
+ U2 6
+Net 32 "/SNES Slot/SNES_EXT_A23" "SNES_EXT_A23"
+ U2 5
+ J1 48
+Net 33 "/SNES Slot/SNES_EXT_/ROMSEL" "SNES_EXT_/ROMSEL"
+ J1 49
+ U2 3
+Net 34 "/SNES Slot/SNES_EXT_/RD" "SNES_EXT_/RD"
+ U2 2
+ J1 23
+Net 35 "/SNES Slot/SNES_EXT_D4" "SNES_EXT_D4"
+ J1 50
+ U1 23
+Net 36 "/SNES Slot/SNES_EXT_D0" "SNES_EXT_D0"
+ U1 22
+ J1 19
+Net 37 "/SNES Slot/SNES_EXT_D5" "SNES_EXT_D5"
+ U1 20
+ J1 51
+Net 38 "/SNES Slot/SNES_EXT_D1" "SNES_EXT_D1"
+ J1 20
+ U1 19
+Net 39 "/SNES Slot/SNES_EXT_D6" "SNES_EXT_D6"
+ U1 17
+ J1 52
+Net 40 "/SNES Slot/SNES_EXT_D2" "SNES_EXT_D2"
+ U1 16
+ J1 21
+Net 71 "/SNES Slot/SNES_EXT_A6" "SNES_EXT_A6"
+ U2 23
+ J1 11
+Net 72 "/SNES Slot/SNES_EXT_A7" "SNES_EXT_A7"
+ U3 3
+ J1 10
+Net 73 "/SNES Slot/SNES_EXT_A8" "SNES_EXT_A8"
+ J1 9
+ U3 6
+Net 74 "/SNES Slot/SNES_EXT_A9" "SNES_EXT_A9"
+ U3 9
+ J1 8
+Net 75 "/SNES Slot/SNES_EXT_A10" "SNES_EXT_A10"
+ J1 7
+ U3 12
+Net 76 "/SNES Slot/SNES_EXT_A11" "SNES_EXT_A11"
+ U3 14
+ J1 6
+Net 77 "/SNES Slot/SNES_EXT_A12" "SNES_EXT_A12"
+ J1 37
+ U3 13
+Net 78 "/SNES Slot/SNES_EXT_A13" "SNES_EXT_A13"
+ U3 11
+ J1 38
+Net 79 "/SNES Slot/SNES_EXT_A14" "SNES_EXT_A14"
+ U3 8
+ J1 39
+Net 80 "/SNES Slot/SNES_EXT_A15" "SNES_EXT_A15"
+ J1 40
+ U3 5
+Net 81 "/SNES Slot/SNES_EXT_A16" "SNES_EXT_A16"
+ J1 41
+ U3 2
+Net 83 "" ""
+ U3 46
+ U4 57
+Net 94 "/SNES Slot/SNES_EXT_REFRESH" "SNES_EXT_REFRESH"
+ J1 33
+ U3 22
+Net 95 "/SNES Slot/SNES_EXT_/PARD" "SNES_EXT_/PARD"
+ J1 4
+ U3 16
+Net 96 "/SNES Slot/SNES_EXT_/PAWR" "SNES_EXT_/PAWR"
+ J1 35
+ U3 17
+Net 97 "/SNES Slot/SNES_EXT_PA6" "SNES_EXT_PA6"
+ U3 19
+ J1 3
+Net 98 "/SNES Slot/SNES_EXT_PA7" "SNES_EXT_PA7"
+ J1 34
+ U3 20
+Net 99 "/SNES Slot/SNES_EXT_SYS_CLK" "SNES_EXT_SYS_CLK"
+ U3 23
+ J1 1
+ R1 1
+Net 109 "+3.3V" "+3.3V"
+ U13 E1
+ U4 188
+ U4 110
+ U4 49
+ U4 32
+ U4 23
+ U4 73
+ C18 1
+ C19 1
+ U3 42
+ U3 31
+ C20 1
+ C21 1
+ C22 1
+ U1 42
+ U1 31
+ C23 1
+ U2 31
+ U4 6
+ C24 1
+ U2 42
+ C25 1
+ U4 60
+ U4 201
+ C15 1
+ C16 1
+ U4 164
+ U4 153
+ U13 D6
+ U12 E1
+ C33 1
+ U4 98
+ U5 6
+ C11 1
+ C10 1
+ C9 1
+ U8 3
+ U7 2
+ C4 1
+ U9 1
+ C2 1
+ U9 3
+ U10 1
+ U10 3
+ U4 84
+ U4 136
+ C5 1
+ C3 1
+ U14 9
+ U4 127
+ U4 177
+Net 130 "+2.5V" "+2.5V"
+ C26 1
+ C8 1
+ U10 5
+ U4 69
+ U4 89
+ U4 17
+ U4 38
+ U4 193
+ U4 173
+ U4 121
+ U4 142
+ C27 1
+ C28 1
+ C29 1
+Net 195 "+1.2V" "+1.2V"
+ C31 1
+ C30 1
+ U4 88
+ U8 2
+ U4 174
+ C6 1
+ U4 70
+ U4 192
+Net 281 "+1.8V" "+1.8V"
+ C7 1
+ U9 5
+ U12 D6
+ C17 1
+}
+#End
