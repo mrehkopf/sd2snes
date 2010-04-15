@@ -2,7 +2,7 @@
 processor p12f629
 
 ; ---------------------------------------------------------------------
-;   SNES CIC clone for PIC Microcontroller (lock mode, auto key detect,
+;   SNES CIC clone for PIC Microcontroller (lock mode, auto key region detect,
 ;   error tolerant)
 ;
 ;   Copyright (C) 2010 by Maximilian Rehkopf (ikari_01) <otakon@gmx.net>
@@ -34,16 +34,18 @@ processor p12f629
 ;
 ;   pin 3 connected to PPU2 reset in
 ;   pin 4 connected to reset button
+;   pin 5 connected to key CIC pin 7 (or clone CIC pin 5)
+;   pin 6 connected to key CIC pin 1 (or clone CIC pin 6)
+;   pin 7 connected to key CIC pin 2 (or clone CIC pin 7)
 ;
-;
-;   host reset out behaves as follows:
-;   after powerup it is held low for a couple of us to properly allow the
+;   Host reset out behaves as follows:
+;   After powerup it is held low for a couple of us to properly allow the
 ;   components to power-up.
-;   it is then asserted a high level even if the CIC "auth" should fail at
+;   It is then asserted a high level even if the CIC "auth" should fail at
 ;   any point, thus enabling homebrew or other cartridges without a CIC or
-;   CIC clone to be run properly, while maintaining compatibility with CIC
+;   CIC clone to be run properly while maintaining compatibility with CIC
 ;   demanding cartridges like S-DD1 or SA-1 powered ones.
-;   The region of the key CIC is detected automatically.
+;   The type of key CIC (411/413) is detected automatically.
 ;
 ;   memory usage:
 ;
@@ -97,16 +99,16 @@ init
 	banksel	TRISIO
 	movlw	0x29	; in out in OUT out in. slave reset is an output on lock
 	movwf	TRISIO
-	movlw	0x08	; pullups for clk to avoid errors when no CIC in slave 
+	movlw	0x00	; no pullups
 	movwf	WPU
-	movlw	0x00	; 0x80 for global pullup disable.
+	movlw	0x80	; global pullup disable
 	movwf	OPTION_REG
 	
 	banksel GPIO
 	bcf 	GPIO, 4	; LED off
 	goto	rst
 main
-	movlw	0x2	; wait a bit before initializing the slave + console
+	movlw	0x40	; wait a bit before initializing the slave + console
 	call	longwait
 
 	bsf	GPIO, 4 ; enable console
@@ -241,7 +243,7 @@ main
 	banksel	GPIO
 	movlw	0x24		; "wait" 1
 	call	wait		; wait 112
-	nop
+;	nop
 	movlw	0x1		; 'first time' bit
 	movwf	0x43		; for key detection
 ; --------main loop--------
