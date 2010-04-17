@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sat 27 Mar 2010 11:02:39 PM CET
+EESchema Schematic File Version 2  date Sun 18 Apr 2010 12:26:45 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -38,13 +38,14 @@ LIBS:sd_card
 LIBS:cy62148ev30
 LIBS:mt45w8mw16
 LIBS:cs4344
+LIBS:double_sch_kcom
 LIBS:sd2snes-cache
 EELAYER 24  0
 EELAYER END
 $Descr A4 11700 8267
-Sheet 3 6
+Sheet 4 6
 Title "sd2snes Mark II"
-Date "27 mar 2010"
+Date "17 apr 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -52,22 +53,253 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+Text GLabel 6800 3450 2    50   Output ~ 0
+MCU_SPI_MOSI
+Text GLabel 6800 3350 2    50   Input ~ 0
+MCU_SPI_MISO
+Text GLabel 6800 3250 2    50   Output ~ 0
+MCU_SPI_SS
+Text GLabel 6800 3150 2    50   Output ~ 0
+MCU_SPI_SCK
+Wire Wire Line
+	6500 3450 6800 3450
+Wire Wire Line
+	6500 3250 6800 3250
+Connection ~ 8450 2850
+Wire Wire Line
+	8450 2300 8450 2850
+Connection ~ 8650 2650
+Wire Wire Line
+	8650 2300 8650 2650
+Wire Wire Line
+	7450 2950 7450 2850
+Wire Wire Line
+	7450 2950 7850 2950
+Wire Wire Line
+	7850 2750 7850 2950
+Wire Wire Line
+	8850 2650 7750 2650
+Wire Wire Line
+	7750 2650 7750 2750
+Wire Wire Line
+	7750 2750 6500 2750
+Wire Wire Line
+	8850 2850 7550 2850
+Wire Wire Line
+	7550 2850 7550 2550
+Wire Wire Line
+	7550 2550 6500 2550
+Connection ~ 10200 3050
+Wire Wire Line
+	10100 3050 10200 3050
+Wire Wire Line
+	10200 3250 10100 3250
+Wire Wire Line
+	4450 1200 4450 1300
+Wire Wire Line
+	4150 1200 4150 1300
+Connection ~ 5250 1200
+Wire Wire Line
+	5250 1200 5250 1300
+Connection ~ 4950 1200
+Wire Wire Line
+	4950 1200 4950 1300
+Wire Wire Line
+	4650 1200 5450 1200
+Wire Wire Line
+	4650 1200 4650 1300
+Wire Wire Line
+	4450 6400 4450 6600
+Connection ~ 4850 6500
+Wire Wire Line
+	4850 6500 4850 6400
+Connection ~ 5050 6500
+Wire Wire Line
+	5050 6500 5050 6400
+Wire Wire Line
+	4650 6500 4650 6400
+Wire Wire Line
+	4650 6500 5150 6500
+Wire Wire Line
+	5150 6500 5150 6400
+Wire Wire Line
+	4900 6500 4900 6600
+Connection ~ 4900 6500
+Wire Wire Line
+	4950 6500 4950 6400
+Connection ~ 4950 6500
+Wire Wire Line
+	4750 6500 4750 6400
+Connection ~ 4750 6500
+Wire Wire Line
+	5450 1200 5450 1300
+Wire Wire Line
+	4850 1200 4850 1300
+Connection ~ 4850 1200
+Wire Wire Line
+	5150 1200 5150 1300
+Connection ~ 5150 1200
+Wire Wire Line
+	5350 1300 5350 1200
+Connection ~ 5350 1200
+Connection ~ 5050 1200
+Wire Wire Line
+	4250 6400 4250 6600
+Wire Wire Line
+	10100 2550 10200 2550
+Wire Wire Line
+	10200 2550 10200 2300
+Wire Wire Line
+	10200 2950 10100 2950
+Wire Wire Line
+	10200 3550 10200 2950
+Connection ~ 10200 3250
+Wire Wire Line
+	10200 3150 10100 3150
+Connection ~ 10200 3150
+Wire Wire Line
+	6500 2650 7650 2650
+Wire Wire Line
+	7650 2550 7650 2650
+Wire Wire Line
+	8850 2550 7650 2550
+Wire Wire Line
+	7450 2850 6500 2850
+Wire Wire Line
+	8850 2750 7850 2750
+Wire Wire Line
+	8750 2550 8750 2300
+Connection ~ 8750 2550
+Wire Wire Line
+	8550 2750 8550 2300
+Connection ~ 8550 2750
+Wire Wire Line
+	6500 3150 6800 3150
+Wire Wire Line
+	6500 3350 6800 3350
+Text GLabel 8450 2300 1    50   Input ~ 0
+SD_SPI_SS
+Text GLabel 8550 2300 1    50   Input ~ 0
+SD_SPI_MOSI
+Text GLabel 8650 2300 1    50   Output ~ 0
+SD_SPI_MISO
+Text GLabel 8750 2300 1    50   Input ~ 0
+SD_SPI_SCK
+$Comp
+L USB J3
+U 1 1 4BC24D19
+P 1150 1150
+F 0 "J3" H 1100 1550 60  0000 C CNN
+F 1 "USB" V 900 1300 60  0000 C CNN
+	1    1150 1150
+	1    0    0    -1  
+$EndComp
+$Comp
+L CRYSTAL X2
+U 1 1 4BC243CB
+P 1700 5650
+F 0 "X2" H 1700 5800 60  0000 C CNN
+F 1 "CRYSTAL" H 1700 5500 60  0000 C CNN
+	1    1700 5650
+	1    0    0    -1  
+$EndComp
+$Comp
+L CRYSTAL X1
+U 1 1 4BC243C8
+P 1700 5200
+F 0 "X1" H 1700 5350 60  0000 C CNN
+F 1 "CRYSTAL" H 1700 5050 60  0000 C CNN
+	1    1700 5200
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR039
+U 1 1 4BB8BBE8
+P 10200 3550
+F 0 "#PWR039" H 10200 3550 30  0001 C CNN
+F 1 "GND" H 10200 3480 30  0001 C CNN
+	1    10200 3550
+	1    0    0    -1  
+$EndComp
+$Comp
+L +3.3V #PWR040
+U 1 1 4BB8BBD6
+P 10200 2300
+F 0 "#PWR040" H 10200 2260 30  0001 C CNN
+F 1 "+3.3V" H 10200 2410 30  0000 C CNN
+	1    10200 2300
+	1    0    0    -1  
+$EndComp
+$Comp
+L +3.3V #PWR041
+U 1 1 4BB8BB64
+P 4450 1200
+F 0 "#PWR041" H 4450 1160 30  0001 C CNN
+F 1 "+3.3V" H 4450 1310 30  0000 C CNN
+	1    4450 1200
+	-1   0    0    -1  
+$EndComp
+$Comp
+L GND #PWR042
+U 1 1 4BB8BB56
+P 4250 6600
+F 0 "#PWR042" H 4250 6600 30  0001 C CNN
+F 1 "GND" H 4250 6530 30  0001 C CNN
+	1    4250 6600
+	-1   0    0    -1  
+$EndComp
+$Comp
+L +BATT #PWR043
+U 1 1 4BB8AE61
+P 4150 1200
+F 0 "#PWR043" H 4150 1150 20  0001 C CNN
+F 1 "+BATT" H 4150 1300 30  0000 C CNN
+	1    4150 1200
+	-1   0    0    -1  
+$EndComp
+$Comp
+L +3.3V #PWR044
+U 1 1 4BB8AE12
+P 5050 1200
+F 0 "#PWR044" H 5050 1160 30  0001 C CNN
+F 1 "+3.3V" H 5050 1310 30  0000 C CNN
+	1    5050 1200
+	-1   0    0    -1  
+$EndComp
+$Comp
+L GND #PWR045
+U 1 1 4BAF2DEB
+P 4450 6600
+F 0 "#PWR045" H 4450 6600 30  0001 C CNN
+F 1 "GND" H 4450 6530 30  0001 C CNN
+	1    4450 6600
+	-1   0    0    -1  
+$EndComp
+$Comp
+L GND #PWR046
+U 1 1 4BAF2DE3
+P 4900 6600
+F 0 "#PWR046" H 4900 6600 30  0001 C CNN
+F 1 "GND" H 4900 6530 30  0001 C CNN
+	1    4900 6600
+	-1   0    0    -1  
+$EndComp
 $Comp
 L SD_CARD J2
 U 1 1 4BAA6A9C
-P 8650 2500
-F 0 "J2" H 8400 1950 60  0000 C CNN
-F 1 "SD_CARD" H 8650 3000 60  0000 C CNN
-	1    8650 2500
+P 9450 2900
+F 0 "J2" H 9200 2350 60  0000 C CNN
+F 1 "SD_CARD" H 9450 3400 60  0000 C CNN
+	1    9450 2900
 	1    0    0    -1  
 $EndComp
 $Comp
 L LPC1754 U11
 U 1 1 4B6F321A
-P 3900 3850
-F 0 "U11" H 3900 3450 60  0000 C CNN
-F 1 "LPC1754" H 3900 3150 60  0000 C CNN
-	1    3900 3850
-	1    0    0    -1  
+P 4800 3850
+F 0 "U11" H 4800 3450 60  0000 C CNN
+F 1 "LPC1754" H 4800 3150 60  0000 C CNN
+	1    4800 3850
+	-1   0    0    -1  
 $EndComp
 $EndSCHEMATC

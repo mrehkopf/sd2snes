@@ -1,6 +1,6 @@
-update=Thu 25 Mar 2010 11:18:34 PM CET
+update=Sun 11 Apr 2010 10:59:07 PM CEST
 version=1
-last_client=kicad
+last_client=eeschema
 [pcbnew]
 version=1
 PadDrlX=0
@@ -40,6 +40,13 @@ LibName13=libs/mypackages
 LibName14=libs/sdcard
 LibName15=libs/diy_capacitors
 LibDir=
+[cvpcb]
+version=1
+NetIExt=net
+[cvpcb/libraries]
+EquName1=devcms
+[general]
+version=1
 [eeschema]
 version=1
 LibDir=
@@ -72,9 +79,9 @@ RptD_Y=100
 RptLab=1
 SimCmd=
 UseNetN=0
-LabSize=60
+LabSize=50
 PrintMonochrome=1
-ShowSheetReferenceAndTitleBlock=1
+ShowSheetReferenceAndTitleBlock=0
 [eeschema/libraries]
 LibName1=power
 LibName2=device
@@ -115,10 +122,4 @@ LibName36=libs/sd_card
 LibName37=libs/cy62148ev30
 LibName38=libs/mt45w8mw16
 LibName39=libs/cs4344
-[cvpcb]
-version=1
-NetIExt=net
-[cvpcb/libraries]
-EquName1=devcms
-[general]
-version=1
+LibName40=libs/double_sch_kcom

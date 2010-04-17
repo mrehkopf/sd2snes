@@ -1,4 +1,4 @@
-EESchema-LIBRARY Version 2.3  Date: Sun 07 Feb 2010 03:39:27 PM CET
+EESchema-LIBRARY Version 2.3  Date: Sun 04 Apr 2010 06:23:51 PM CEST
 #
 # LT1117
 #
@@ -10,6 +10,7 @@ S -350 250 350 -250 0 1 0 N
 X GND 1 0 -550 300 U 50 50 1 1 W
 X Vout 2 650 0 300 L 50 50 1 1 w
 X Vin 3 -650 0 300 R 50 50 1 1 W
+X Vout 4 650 -100 300 L 50 50 1 1 w
 ENDDRAW
 ENDDEF
 #

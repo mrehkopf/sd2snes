@@ -1,0 +1,367 @@
+EESchema Schematic File Version 2  date Sun 18 Apr 2010 12:26:45 AM CEST
+LIBS:power
+LIBS:device
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:special
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:snescart
+LIBS:misc-74
+LIBS:vreg
+LIBS:lpc1754
+LIBS:sdcard
+LIBS:sd_card
+LIBS:cy62148ev30
+LIBS:mt45w8mw16
+LIBS:cs4344
+LIBS:double_sch_kcom
+LIBS:sd2snes-cache
+EELAYER 24  0
+EELAYER END
+$Descr A4 11700 8267
+Sheet 3 6
+Title "sd2snes Mark II"
+Date "17 apr 2010"
+Rev "A"
+Comp "Maximilian Rehkopf"
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+NoConn ~ 4250 4550
+NoConn ~ 8500 4350
+Connection ~ 4550 4650
+Wire Wire Line
+	4550 5400 4550 4350
+Connection ~ 4550 4750
+Wire Wire Line
+	8500 4050 8800 4050
+Wire Wire Line
+	2550 4550 2450 4550
+Wire Wire Line
+	8850 5600 2450 5600
+Wire Wire Line
+	2450 5600 2450 4550
+Wire Wire Line
+	2550 4750 2250 4750
+Wire Wire Line
+	2550 4650 2250 4650
+Wire Wire Line
+	2550 4350 2250 4350
+Wire Wire Line
+	2550 4250 2250 4250
+Wire Wire Line
+	2550 4150 2250 4150
+Wire Wire Line
+	2550 4050 2250 4050
+Wire Wire Line
+	2550 3950 2250 3950
+Wire Wire Line
+	2550 3850 2250 3850
+Wire Wire Line
+	2550 3750 2250 3750
+Wire Wire Line
+	2550 3650 2250 3650
+Wire Wire Line
+	2550 3550 2250 3550
+Wire Wire Line
+	2550 3450 2250 3450
+Wire Wire Line
+	2550 3350 2250 3350
+Wire Wire Line
+	2550 3250 2250 3250
+Wire Wire Line
+	2550 3150 2250 3150
+Wire Wire Line
+	2550 3050 2250 3050
+Wire Wire Line
+	2550 2950 2250 2950
+Wire Wire Line
+	2550 2850 2250 2850
+Wire Wire Line
+	2550 2750 2250 2750
+Wire Wire Line
+	2550 2650 2250 2650
+Wire Wire Line
+	2550 2550 2250 2550
+Wire Wire Line
+	2550 2450 2250 2450
+Wire Wire Line
+	2550 2350 2250 2350
+Wire Wire Line
+	2550 2250 2250 2250
+Wire Wire Line
+	2550 2150 2250 2150
+Wire Wire Line
+	3000 6750 3000 6700
+Wire Wire Line
+	2850 6800 2850 6750
+Connection ~ 3000 7250
+Wire Wire Line
+	2850 7250 3150 7250
+Wire Wire Line
+	2850 7250 2850 7200
+Wire Wire Line
+	3850 7200 3850 7300
+Connection ~ 7650 4900
+Wire Wire Line
+	7750 4900 7550 4900
+Wire Wire Line
+	7750 4900 7750 4750
+Connection ~ 3400 5300
+Wire Wire Line
+	3500 5300 3300 5300
+Wire Wire Line
+	3500 5300 3500 5150
+Wire Wire Line
+	3500 1750 3500 1550
+Connection ~ 7650 2000
+Wire Wire Line
+	7750 2000 7550 2000
+Wire Wire Line
+	7750 2000 7750 2150
+Wire Wire Line
+	7550 2000 7550 2150
+Wire Wire Line
+	7650 1900 7650 2000
+Wire Wire Line
+	3300 1750 3300 1550
+Wire Wire Line
+	3300 5300 3300 5150
+Wire Wire Line
+	3400 5400 3400 5300
+Wire Wire Line
+	7550 4900 7550 4750
+Wire Wire Line
+	7650 5000 7650 4900
+Wire Wire Line
+	3150 7250 3150 7200
+Wire Wire Line
+	3000 7300 3000 7250
+Wire Wire Line
+	3850 6800 3850 6700
+Wire Wire Line
+	3150 6800 3150 6750
+Wire Wire Line
+	3150 6750 2850 6750
+Connection ~ 3000 6750
+Wire Wire Line
+	4250 2150 4550 2150
+Wire Wire Line
+	4250 2250 4550 2250
+Wire Wire Line
+	4250 2350 4550 2350
+Wire Wire Line
+	4250 2450 4550 2450
+Wire Wire Line
+	4250 2550 4550 2550
+Wire Wire Line
+	4250 2650 4550 2650
+Wire Wire Line
+	4250 2750 4550 2750
+Wire Wire Line
+	4250 2850 4550 2850
+Wire Wire Line
+	4250 3050 4550 3050
+Wire Wire Line
+	4250 3150 4550 3150
+Wire Wire Line
+	4250 3250 4550 3250
+Wire Wire Line
+	4250 3350 4550 3350
+Wire Wire Line
+	4250 3450 4550 3450
+Wire Wire Line
+	4250 3550 4550 3550
+Wire Wire Line
+	4250 3650 4550 3650
+Wire Wire Line
+	4250 3750 4550 3750
+Wire Wire Line
+	4250 4050 4550 4050
+Wire Wire Line
+	4250 4150 4550 4150
+Wire Wire Line
+	4550 4350 4250 4350
+Wire Wire Line
+	4550 4650 4250 4650
+Wire Wire Line
+	4250 4750 4550 4750
+Wire Wire Line
+	8500 3850 8600 3850
+Wire Wire Line
+	8600 3850 8600 5600
+Connection ~ 8600 5600
+Wire Wire Line
+	8500 3950 8800 3950
+$Comp
+L GND #PWR?
+U 1 1 4BCA30BF
+P 4550 5400
+F 0 "#PWR?" H 4550 5400 30  0001 C CNN
+F 1 "GND" H 4550 5330 30  0001 C CNN
+	1    4550 5400
+	1    0    0    -1  
+$EndComp
+Text GLabel 2250 4750 0    50   Input ~ 0
+ROM_/WE
+Text GLabel 2250 4650 0    50   Input ~ 0
+ROM_/OE
+Text GLabel 8850 5600 2    50   Input ~ 0
+RAM_/CE
+$Comp
+L C C17
+U 1 1 4BAD3D55
+P 3850 7000
+F 0 "C17" H 3900 7100 50  0000 L CNN
+F 1 "100n" H 3900 6900 50  0000 L CNN
+	1    3850 7000
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C16
+U 1 1 4BAD3D53
+P 3150 7000
+F 0 "C16" H 3200 7100 50  0000 L CNN
+F 1 "100n" H 3200 6900 50  0000 L CNN
+	1    3150 7000
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C15
+U 1 1 4BAD3D47
+P 2850 7000
+F 0 "C15" H 2900 7100 50  0000 L CNN
+F 1 "100n" H 2900 6900 50  0000 L CNN
+	1    2850 7000
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR030
+U 1 1 4BAD3D2B
+P 3850 7300
+F 0 "#PWR030" H 3850 7300 30  0001 C CNN
+F 1 "GND" H 3850 7230 30  0001 C CNN
+	1    3850 7300
+	1    0    0    -1  
+$EndComp
+$Comp
+L +1.8V #PWR031
+U 1 1 4BAD3D27
+P 3850 6700
+F 0 "#PWR031" H 3850 6840 20  0001 C CNN
+F 1 "+1.8V" H 3850 6810 30  0000 C CNN
+	1    3850 6700
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR032
+U 1 1 4BAD3D20
+P 3000 7300
+F 0 "#PWR032" H 3000 7300 30  0001 C CNN
+F 1 "GND" H 3000 7230 30  0001 C CNN
+	1    3000 7300
+	1    0    0    -1  
+$EndComp
+$Comp
+L +3.3V #PWR033
+U 1 1 4BAD3D0B
+P 3000 6700
+F 0 "#PWR033" H 3000 6660 30  0001 C CNN
+F 1 "+3.3V" H 3000 6810 30  0000 C CNN
+	1    3000 6700
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR034
+U 1 1 4BAD33A7
+P 3400 5400
+F 0 "#PWR034" H 3400 5400 30  0001 C CNN
+F 1 "GND" H 3400 5330 30  0001 C CNN
+	1    3400 5400
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR035
+U 1 1 4BAD339F
+P 7650 5000
+F 0 "#PWR035" H 7650 5000 30  0001 C CNN
+F 1 "GND" H 7650 4930 30  0001 C CNN
+	1    7650 5000
+	1    0    0    -1  
+$EndComp
+$Comp
+L +1.8V #PWR036
+U 1 1 4BAD32D2
+P 3300 1550
+F 0 "#PWR036" H 3300 1690 20  0001 C CNN
+F 1 "+1.8V" H 3300 1660 30  0000 C CNN
+	1    3300 1550
+	1    0    0    -1  
+$EndComp
+$Comp
+L +3.3V #PWR037
+U 1 1 4BAD32BE
+P 3500 1550
+F 0 "#PWR037" H 3500 1510 30  0001 C CNN
+F 1 "+3.3V" H 3500 1660 30  0000 C CNN
+	1    3500 1550
+	1    0    0    -1  
+$EndComp
+$Comp
+L +3.3V #PWR038
+U 1 1 4BAD32A8
+P 7650 1900
+F 0 "#PWR038" H 7650 1860 30  0001 C CNN
+F 1 "+3.3V" H 7650 2010 30  0000 C CNN
+	1    7650 1900
+	1    0    0    -1  
+$EndComp
+Text Notes 7100 2400 0    60   ~ 0
+SRAM
+Text Notes 2900 2000 0    60   ~ 0
+"ROM"
+$Comp
+L CY62148EV30-BVXI U13
+U 1 1 4B86E25C
+P 7650 3450
+F 0 "U13" H 7650 3550 60  0000 C CNN
+F 1 "CY62148EV30-BVXI" H 7700 3450 60  0000 C CNN
+	1    7650 3450
+	1    0    0    -1  
+$EndComp
+$Comp
+L MT45W8MW16 U12
+U 1 1 4B868602
+P 3400 3450
+F 0 "U12" H 3400 3550 60  0000 C CNN
+F 1 "MT45W8MW16" H 3400 3450 60  0000 C CNN
+	1    3400 3450
+	1    0    0    -1  
+$EndComp
+$EndSCHEMATC
