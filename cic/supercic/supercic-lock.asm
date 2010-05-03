@@ -63,6 +63,7 @@ processor p16f630
 ;   0x40 - 0x41		buffer for seed calc
 ;   0x42		input buffer
 ;   0x43		variable for key detect
+;   0x44		temp input buffer
 ;   0x4d		buffer for eeprom access
 ;   0x4e		loop variable for longwait
 ;   0x4f		loop variable for wait
@@ -75,8 +76,8 @@ processor p16f630
 ;   0x54		region output (0: 60Hz, 2: 50Hz)
 ;   0x55		final mode setting
 ;   0x56		temp LED state
-;   0x57		detected mode (0: 60Hz, 2: 50Hz)
-;   0x58		forced mode (0: 60Hz, 2: 50Hz)
+;   0x57		detected region (0: 60Hz, 2: 50Hz)
+;   0x58		forced region (0: 60Hz, 2: 50Hz)
 ;
 ; ---------------------------------------------------------------------
 
@@ -298,8 +299,6 @@ loop1
 	bcf	0x20, 1	; clear bit 1 
 	btfsc	0x20, 0 ; copy from bit 0
 	bsf	0x20, 1 ; (if set)
-nop ;	bsf	0x20, 4 ; run console
-nop ;	bcf	0x20, 2 ; run slave
 	movf	0x50, w ; get LED state
 	iorwf	0x20, f	; combine with data i/o
 	movf	0x20, w
@@ -308,15 +307,28 @@ nop ;	bcf	0x20, 2 ; run slave
 	movwf	0x42	; store input
 	movf	0x50, w	; get LED state
 	movwf	PORTC	; reset GPIO
+	movf	0x42, w
+	movwf	0x44	; temp input buffer, will be destroyed
+
 	call	checkkey
+
+	btfsc	0x37, 0	; check "direction"
+	rrf	0x44, f	; shift received bit into place
+	bsf	FSR, 4  ; goto other stream
+	movf	INDF, w	; read
+	xorwf	0x44, f ; xor received + calculated
+	bcf	FSR, 4	; back to our own stream
+	btfsc	0x44, 0 ; equal? then continue
+	bsf	0x43, 1	; else mark key invalid
+	btfsc	0x43, 1 ; if key invalid:
+	bcf	0x57, 0 ; set det.region=60Hz
+	btfsc	0x43, 1 ; if key invalid:
+	bcf	0x54, 0 ; set init.region=60Hz
+
 	call	checkrst
-	call	checktmr
+
 	movlw	0x10	; wait 52 cycles
 	call	wait
-	btfsc	PORTC, 0 ; both pins must be low...
-	nop;	goto	die
-	btfsc	PORTC, 1 ; ...when no bit transfer takes place
-	nop;	goto	die	; if not -> lock cic error state -> die
 	incf	FSR, f	; next one
 	movlw	0xf
 	andwf	FSR, w
@@ -345,7 +357,7 @@ swapskip
 	bsf	0x54, 2		; run the console
 	movf	0x54, w		; read resolved mode
 	movwf	PORTA
-	clrf	0x43	; don't check key region anymore
+	bcf	0x43, 0		; don't check key region anymore
 	movf	0x37, w
 	andlw	0xf
 	btfss	STATUS, Z
@@ -733,7 +745,7 @@ die
 	goto	die
 
 ; --------check the key input and change "region" when appropriate--------
-; --------requires 17 cycles (incl. call+return)
+; --------requires 19 cycles (incl. call+return)
 checkkey
 	btfss	0x43, 0			; first time?
 	goto 	checkkey_nocheck	; if not, just burn some cycles
@@ -762,8 +774,6 @@ checkkey_nocheck
 	nop
 	nop
 checkkey_nocheck2
-	nop
-	nop
 	nop
 	nop
 	nop
@@ -857,6 +867,7 @@ checkrst_0_0_setregion_auto
 	goto checkrst_0_0_setregion_save
 checkrst_0_0_setregion_forced
 	movf	0x58, w	; get forced region
+	nop
 checkrst_0_0_setregion_save
 	movwf	0x54	; set to output
 	goto	checkrst_end
