@@ -63,7 +63,7 @@ processor p16f630
 ;   0x40 - 0x41		buffer for seed calc
 ;   0x42		input buffer
 ;   0x43		variable for key detect
-;   0x44		temp input buffer
+;   0x44		"direction" buffer
 ;   0x4d		buffer for eeprom access
 ;   0x4e		loop variable for longwait
 ;   0x4f		loop variable for wait
@@ -94,6 +94,8 @@ processor p16f630
 	goto	init
 trap
 	org	0x0004
+	movlw	0x3
+	xorwf	PORTC, f
 	goto	trap
 rst				; we jump here after powerup or RC0=1
 	bcf	PORTC, 0		; clear stream i/o
@@ -106,6 +108,7 @@ rst				; we jump here after powerup or RC0=1
 rst_loop
 	btfsc	PORTA, 0		; stay in "reset" as long as RA0=1
 	goto	rst_loop
+	clrf	0x44			; clear dir buffer
 	clrf	0x51			; clear reset button state
 	clrf	0x52			; clear modechange flag
 	clrf	0x53
@@ -229,8 +232,6 @@ main
 ; --------wait before sending stream ID--------
 	movlw	0xba
 	call	wait
-	nop
-	nop
 
 ; --------lock sends stream ID. 15 cycles per bit--------
 ;	bsf	GPIO, 0		; (debug marker)
@@ -282,8 +283,8 @@ main
 	bsf	TRISC, 0
 	bcf	TRISC, 1
 	banksel	PORTC
-	movlw	0x24		; "wait" 1
-	call	wait		; wait 112
+	movlw	0x23		;
+	call	wait		; wait 109
 ;	nop
 	movlw	0x1		; 'first time' bit
 	movwf	0x43		; for key detection
@@ -302,45 +303,56 @@ loop1
 	movf	0x50, w ; get LED state
 	iorwf	0x20, f	; combine with data i/o
 	movf	0x20, w
+	andlw	0x33	; mask out anything unwanted
 	movwf	PORTC
 	movf	PORTC, w ; read input
 	movwf	0x42	; store input
 	movf	0x50, w	; get LED state
 	movwf	PORTC	; reset GPIO
-	movf	0x42, w
-	movwf	0x44	; temp input buffer, will be destroyed
+	nop
+	nop
 
 	call	checkkey
 
-	btfsc	0x37, 0	; check "direction"
-	rrf	0x44, f	; shift received bit into place
+	btfsc	0x44, 0	; check "direction"
+	rrf	0x42, f	; shift received bit into place
 	bsf	FSR, 4  ; goto other stream
 	movf	INDF, w	; read
-	xorwf	0x44, f ; xor received + calculated
+movwf 0x5f
+rlf 0x5f
+movf 0x5f, w
+movwf PORTC
+	xorwf	0x42, f ; xor received + calculated
 	bcf	FSR, 4	; back to our own stream
-	btfsc	0x44, 0 ; equal? then continue
-	bsf	0x43, 1	; else mark key invalid
+	btfsc	0x42, 0 ; equal? then continue
+goto trap ;	bsf	0x43, 1	; else mark key invalid
 	btfsc	0x43, 1 ; if key invalid:
-	bcf	0x57, 0 ; set det.region=60Hz
+	bcf	0x57, 1 ; set det.region=60Hz
+;	btfsc	0x43, 1 ; if key invalid:
+;	bcf	0x54, 1 ; set init.region=60Hz
 	btfsc	0x43, 1 ; if key invalid:
-	bcf	0x54, 0 ; set init.region=60Hz
-
+	bsf	0x53, 4 ; simulate region timeout
+	nop
+	nop
+	nop
+	nop
 	call	checkrst
 
-	movlw	0x10	; wait 52 cycles
-	call	wait
 	incf	FSR, f	; next one
 	movlw	0xf
 	andwf	FSR, w
 	btfss	STATUS, Z	
 	goto	loop1
-	movlw	0x1	; wait 7
-	call	wait	;
+	call	mangle
+	call	mangle
+	call	mangle
+	movf	0x37, w
+	movwf	0x44
 	nop
 	nop
-	call	mangle
-	call	mangle
-	call	mangle
+	nop
+	nop
+	nop
 	btfsc	0x37, 0
 	goto	swap
 	banksel	TRISC
@@ -787,15 +799,17 @@ checkkey_done
 	return
 
 ; -------- check reset button, update status LEDs, etc.
-checkrst
+checkrst	; 4
 	movf	PORTA, w
 	btfss	0x51, 0
 	goto	checkrst_0
-checkrst_1
+	nop
+checkrst_1	; 4
 	movwf	0x51
 	btfsc	0x51, 0
 	goto	checkrst_1_1
-checkrst_1_0
+	nop
+checkrst_1_0	; 24
 	; if modechange flag is set: clear modechange flag, set mode, save, restart timer
 	; else reset
 	btfss	0x52, 0
@@ -821,12 +835,18 @@ checkrst_1_0
 	clrf	TMR1H
 	bsf	T1CON, 0	; restart the timer	
 	goto	checkrst_end	
-checkrst_1_1
+checkrst_1_1	; 24
 	; check TMR overflow
 	; if overflow, change LED, reset TMR+overflow, set modechange flag
 	; else do nothing
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
 	btfss	PIR1, 0
-	goto	checkrst_end
+	goto	checkrst_end_plus15
 	bcf	T1CON, 0	; stop the timer
 	clrf	PIR1		; reset overflow bit
 	clrf	TMR1L		; reset counter
@@ -843,21 +863,28 @@ checkrst_1_1
 	bsf	0x52, 0		; set modechange flag
 	goto	checkrst_end
 
-checkrst_0
+checkrst_0	; 4
 	movwf	0x51
 	btfsc	0x51, 0
 	goto	checkrst_0_1
-checkrst_0_0
+	nop
+checkrst_0_0	; 24
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
 	; count some overflows, change region from detected to forced unless auto
 	btfsc	0x53, 4	; past delay?
-	goto	checkrst_0_0_setregion
+	goto	checkrst_0_0_setregion_plus5 ; 3
 	btfss	PIR1, 0
-	goto	checkrst_end
+	goto	checkrst_end_plus13 ; 5
 	clrf	PIR1
 	incf	0x53, f	; increment overflow counter
 	btfss	0x53, 4	; 0x10 reached?
-	goto	checkrst_end
-checkrst_0_0_setregion
+	goto	checkrst_end ; 9
+checkrst_0_0_setregion ; 10
 	movlw	0x3
 	xorwf	0x55, w ; mode=auto?
 	btfss	STATUS, Z
@@ -872,15 +899,45 @@ checkrst_0_0_setregion_save
 	movwf	0x54	; set to output
 	goto	checkrst_end
 
-checkrst_0_1
+checkrst_0_1	; 24
 	; reset + start TMR, reset TMR overflow
 	clrf	TMR1L	; reset timer register
 	clrf	TMR1H
 	clrf	PIR1	; clear overflow bit
 	bsf	T1CON, 0
+	goto	checkrst_end_plus18
 
-checkrst_end
+checkrst_end	; 2
 	return
+
+checkrst_end_plus18
+	nop
+	nop
+	nop
+checkrst_end_plus15
+	nop
+	nop
+checkrst_end_plus13
+	nop
+	nop
+	nop
+	nop
+checkrst_end_plus9
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	goto	checkrst_end
+
+checkrst_0_0_setregion_plus5	; 5
+	nop
+	nop
+	nop
+	goto	checkrst_0_0_setregion
+
 checktmr	; TODO
 	return
 ; -----------------------------------------------------------------------
