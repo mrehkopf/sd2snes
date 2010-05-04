@@ -305,11 +305,11 @@ loop1
 	movf	0x20, w
 	andlw	0x33	; mask out anything unwanted
 	movwf	PORTC
+nop
 	movf	PORTC, w ; read input
 	movwf	0x42	; store input
 	movf	0x50, w	; get LED state
 	movwf	PORTC	; reset GPIO
-	nop
 	nop
 
 	call	checkkey
@@ -318,10 +318,6 @@ loop1
 	rrf	0x42, f	; shift received bit into place
 	bsf	FSR, 4  ; goto other stream
 	movf	INDF, w	; read
-movwf 0x5f
-rlf 0x5f
-movf 0x5f, w
-movwf PORTC
 	xorwf	0x42, f ; xor received + calculated
 	bcf	FSR, 4	; back to our own stream
 	btfsc	0x42, 0 ; equal? then continue
