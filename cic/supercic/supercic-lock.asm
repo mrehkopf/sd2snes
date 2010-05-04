@@ -114,7 +114,6 @@ rst_loop
 	clrf	0x53
 	clrf	0x54			; clear user mode
 	clrf	0x57			; clear key mode
-	clrf	0x58			; clear forced mode
         banksel EEADR			; fetch current mode from EEPROM
         clrf    EEADR			; address 0
         bsf     EECON1, RD		; 
@@ -122,10 +121,16 @@ rst_loop
         banksel PORTA
 	movwf	0x55			; store saved mode in mode var
 	movwf	0x56			; and temp LED
-	movwf	0x50			; and final LED
+	movwf	0x58
+
+	movwf	0x50			; and final LED	
 	movlw	0x3			; mask
 	andwf	0x50, f			;
 	swapf	0x50, f			; and nibbleswap for actual output
+
+	movlw	0x2
+	andwf	0x58, f
+
 	clrf	PIR1		; reset overflow bit
 	clrf	TMR1L		; reset counter
 	clrf	TMR1H
@@ -305,7 +310,7 @@ loop1
 	movf	0x20, w
 	andlw	0x33	; mask out anything unwanted
 	movwf	PORTC
-nop
+	nop
 	movf	PORTC, w ; read input
 	movwf	0x42	; store input
 	movf	0x50, w	; get LED state
@@ -321,7 +326,7 @@ nop
 	xorwf	0x42, f ; xor received + calculated
 	bcf	FSR, 4	; back to our own stream
 	btfsc	0x42, 0 ; equal? then continue
-goto trap ;	bsf	0x43, 1	; else mark key invalid
+	bsf	0x43, 1	; else mark key invalid
 	btfsc	0x43, 1 ; if key invalid:
 	bcf	0x57, 1 ; set det.region=60Hz
 ;	btfsc	0x43, 1 ; if key invalid:
@@ -805,7 +810,7 @@ checkrst_1	; 4
 	btfsc	0x51, 0
 	goto	checkrst_1_1
 	nop
-checkrst_1_0	; 24
+checkrst_1_0	; 26
 	; if modechange flag is set: clear modechange flag, set mode, save, restart timer
 	; else reset
 	btfss	0x52, 0
@@ -813,8 +818,8 @@ checkrst_1_0	; 24
 	clrf	0x52	; clear modechange flag
 	movf	0x56, w	; get temp mode
 	movwf	0x55	; set final mode
-	movwf	0x58
-	banksel	EEADR	; save to EEPROM
+	movwf	0x58	; set forced mode
+	banksel	EEADR	; save to EEPROM. this somehow takes 2 extra cycles!!!
 	movwf	EEDAT
 	bsf	EECON1,WREN
 	movlw	0x55
@@ -830,7 +835,7 @@ checkrst_1_0	; 24
 	clrf	TMR1L		; reset counter
 	clrf	TMR1H
 	bsf	T1CON, 0	; restart the timer	
-	goto	checkrst_end	
+	return			; shortcut (no goto checkrst_end)
 checkrst_1_1	; 24
 	; check TMR overflow
 	; if overflow, change LED, reset TMR+overflow, set modechange flag
@@ -879,7 +884,7 @@ checkrst_0_0	; 24
 	clrf	PIR1
 	incf	0x53, f	; increment overflow counter
 	btfss	0x53, 4	; 0x10 reached?
-	goto	checkrst_end ; 9
+	goto	checkrst_end_plus9 ; 9
 checkrst_0_0_setregion ; 10
 	movlw	0x3
 	xorwf	0x55, w ; mode=auto?
