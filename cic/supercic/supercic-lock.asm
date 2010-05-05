@@ -31,30 +31,76 @@ processor p16f630
 ;      CIC clk (56) [7] |2  A5 A0 13| CIC lock reset in [8]
 ;                       |3  A4 A1 12| 50/60Hz out
 ;                       |4  A3 A2 11| host reset out [10]
-;         LED out (red) |5  C5 C0 10| CIC data i/o 0 (55) [1]
-;         LED out (grn) |6  C4 C1  9| CIC data i/o 1 (24) [2]
+;         LED out (grn) |5  C5 C0 10| CIC data i/o 0 (55) [1]
+;         LED out (red) |6  C4 C1  9| CIC data i/o 1 (24) [2]
 ;                       |7  C3 C2  8| CIC slave reset out (25) [11]
 ;                       `-----------'
 ;
-;   PORTA:  in  in  in out out  in
-;   PORTC: out out  in out out  in
-;
-;   pin 11 connected to PPU2 reset in
-;   pin 13 connected to reset button
 ;   pin 8 connected to key CIC pin 7 (or clone CIC pin 5)
 ;   pin 9 connected to key CIC pin 1 (or clone CIC pin 6)
 ;   pin 10 connected to key CIC pin 2 (or clone CIC pin 7)
+;   pin 11 connected to key CIC pin 9 (SNES /reset line)
+;   pin 12 connected to PPU1 pin 24 and PPU2 pin 30 (both isolated from mainboard)
+;   pin 13 connected to reset button
 ;
 ;   Host reset out behaves as follows:
-;   After powerup it is held low for a couple of us to properly allow the
-;   components to power-up.
+;   After powerup it is held low for a couple of ms to allow the components
+;   to power-up properly.
 ;   It is then asserted a high level even if the CIC "auth" should fail at
 ;   any point, thus enabling homebrew or other cartridges without a CIC or
 ;   CIC clone to be run properly while maintaining compatibility with CIC
 ;   demanding cartridges like S-DD1 or SA-1 powered ones.
 ;   The type of key CIC (411/413) is detected automatically.
 ;
-;   memory usage:
+;   This implementation supports automatic 50/60Hz switching based on the
+;   detected key CIC in the game cartridge. Also the 50/60Hz setting can be
+;   overridden by the user via the reset button.
+;
+;   Reset / Mode switch behaves as follows:
+;   Reset is pressed for < 586ms -> reset console upon release
+;   Reset is pressed for >= 586ms -> enter mode switch cycle, no reset
+;   Modes are cycled every 586ms as shown in Fig.1 as long as the reset button
+;   is held down.
+;   The currently selected mode is indicated by the color of the power LED
+;   (see Table 2).
+;   The mode is finally selected by releasing the reset button while the
+;   desired LED color is shown. The selected mode will then become effective
+;   and will be saved to EEPROM. Mode switching does not reset the console.
+;
+;   Note that in case a valid CIC is detected in the game cartridge, video mode
+;   will be forced to its corresponding region for the first ~9 seconds after
+;   reset or powerup. This is an attempt to trick the region detection on most
+;   games. See Table 1.
+;   In case no CIC is present in the game cartridge the user setting is applied
+;   immediately.
+;
+;   Table 1. 50/60Hz output behavior according to user setting and key CIC type.
+;   SuperCIC	key CIC		"region"
+;   ------------------------------------------------------
+;   60Hz	D/F413		50Hz for ~9 sec, then 60Hz
+;   60Hz	D/F411		60Hz permanent
+;   60Hz	none		60Hz permanent
+;
+;   50Hz	D/F413		50Hz permanent
+;   50Hz	D/F411		60Hz for ~9 sec, then 50Hz
+;   50Hz	none		50Hz permanent
+;
+;   Auto	D/F413		50Hz permanent
+;   Auto	D/F411		60Hz permanent
+;   Auto	none		60Hz permanent
+;
+;   Fig.1. SuperCIC mode cycle.
+;   ,->60Hz--->50Hz--->Auto->.
+;   `-------<--------<-------'
+;
+;   Table 2. LED color according to user setting.
+;   mode	LED color
+;   ---------------------
+;   60Hz	red
+;   50Hz	green
+;   Auto	orange
+;
+;   Table 3. memory usage.
 ;   -------------------basic CIC functions--------------------
 ;   0x20		buffer for seed calc and transfer
 ;   0x21 - 0x2f		seed area (lock seed)
@@ -67,7 +113,6 @@ processor p16f630
 ;   0x4d		buffer for eeprom access
 ;   0x4e		loop variable for longwait
 ;   0x4f		loop variable for wait
-;
 ;   -------------------SuperCIC extensions--------------------
 ;   0x50		power LED state (no bits except 4 and 5 must be set!!)
 ;   0x51		last reset button state
@@ -93,40 +138,39 @@ processor p16f630
 	nop
 	goto	init
 trap
-	org	0x0004
 	movlw	0x3
 	xorwf	PORTC, f
 	goto	trap
 rst				; we jump here after powerup or RC0=1
-	bcf	PORTC, 0		; clear stream i/o
-	bcf	PORTC, 1		; clear stream i/o
-	bcf	PORTC, 2		; disable slave reset
-	bcf	PORTA, 2		; hold the SNES in reset
-	movlw	0x30			; prescaler 1:8
-	movwf	T1CON			;
+	bcf	PORTC, 0	; clear stream i/o
+	bcf	PORTC, 1	; clear stream i/o
+	bcf	PORTC, 2	; disable slave reset
+	bcf	PORTA, 2	; hold the SNES in reset
+	movlw	0x30		; prescaler 1:8
+	movwf	T1CON		;
 	clrf	PIR1
 rst_loop
-	btfsc	PORTA, 0		; stay in "reset" as long as RA0=1
+	btfsc	PORTA, 0	; stay in "reset" as long as RA0=1
 	goto	rst_loop
-	clrf	0x44			; clear dir buffer
-	clrf	0x51			; clear reset button state
-	clrf	0x52			; clear modechange flag
+	clrf	0x44		; clear dir buffer
+	clrf	0x51		; clear reset button state
+	clrf	0x52		; clear modechange flag
 	clrf	0x53
-	clrf	0x54			; clear user mode
-	clrf	0x57			; clear key mode
-        banksel EEADR			; fetch current mode from EEPROM
-        clrf    EEADR			; address 0
-        bsf     EECON1, RD		; 
-        movf    EEDAT, w        	; 
+	clrf	0x54		; clear user mode
+	clrf	0x57		; clear key mode
+        banksel EEADR		; fetch current mode from EEPROM
+        clrf    EEADR		; address 0
+        bsf     EECON1, RD	; 
+        movf    EEDAT, w        ; 
         banksel PORTA
-	movwf	0x55			; store saved mode in mode var
-	movwf	0x56			; and temp LED
+	movwf	0x55		; store saved mode in mode var
+	movwf	0x56		; and temp LED
 	movwf	0x58
 
-	movwf	0x50			; and final LED	
-	movlw	0x3			; mask
-	andwf	0x50, f			;
-	swapf	0x50, f			; and nibbleswap for actual output
+	movwf	0x50		; and final LED	
+	movlw	0x3		; mask
+	andwf	0x50, f		;
+	swapf	0x50, f		; and nibbleswap for actual output
 
 	movlw	0x2
 	andwf	0x58, f
@@ -135,34 +179,36 @@ rst_loop
 	clrf	TMR1L		; reset counter
 	clrf	TMR1H
 	bsf	T1CON, 0	; start the timer	
-	goto	main			; go go go
+	goto	main		; go go go
 init
+;	PORTA:  in  in  in out out  in
+;	PORTC: out out  in out out  in
 	banksel PORTA
 	clrf	PORTA
-	movlw	0x07	; GPIO2..0 are digital I/O (not connected to comparator)
+	movlw	0x07		; GPIO2..0 are digital I/O (not connected to comparator)
 	movwf	CMCON
-	movlw	0x00	; disable all interrupts
+	movlw	0x00		; disable all interrupts
 	movwf	INTCON
 	banksel	TRISA
-	movlw	0x39	; in in in out out in
+	movlw	0x39		; in in in out out in
 	movwf	TRISA
-	movlw	0x09	; out out in out out in
+	movlw	0x09		; out out in out out in
 	movwf	TRISC
-	movlw	0x00	; no pullups
+	movlw	0x00		; no pullups
 	movwf	WPUA
-	movlw	0x80	; global pullup disable
+	movlw	0x80		; global pullup disable
 	movwf	OPTION_REG
 	
 	banksel PORTA
 	bcf 	PORTA, 2	; hold SNES in reset
 	goto	rst
 main
-	movlw	0x40	; wait a bit before initializing the slave + console
+	movlw	0x40		; wait a bit before initializing the slave + console
 	call	longwait
 
 	nop
 	
-	bsf	PORTC, 2 ; trigger the slave
+	bsf	PORTC, 2 	; trigger the slave
 	nop
 	nop
 	bcf	PORTC, 2 	
@@ -204,9 +250,9 @@ main
 	movwf 	0x2f
 	
 ; --------INIT KEY SEED (what the key sends)--------
-	movlw	0xf	; we always request the same stream for simplicity
+	movlw	0xf		; we always request the same stream for simplicity
 	movwf	0x31
-	movlw	0x0	; this is filled in by key autodetect
+	movlw	0x0		; this is filled in by key autodetect
 	movwf	0x32
 	movlw	0xa
 	movwf	0x33
@@ -239,107 +285,96 @@ main
 	call	wait
 
 ; --------lock sends stream ID. 15 cycles per bit--------
-;	bsf	GPIO, 0		; (debug marker)
-;	bcf	GPIO, 0		; 
 	btfsc	0x31, 3		; read stream select bit
-	bsf	PORTC, 0		; send bit
-	nop
-	nop
-	bcf	PORTC, 0
-	movlw	0x1		; wait=7
-	call	wait		; burn 10 cycles
-	nop
-	nop
-
-;	bsf	GPIO, 0
-;	bcf	GPIO, 0
-	btfsc	0x31, 0		; read stream select bit
-	bsf	PORTC, 0		; send bit
-	nop
-	nop
-	bcf	PORTC, 0
-	movlw	0x1		; wait=3*W+5
-	call	wait		; burn 11 cycles
-	nop
-	nop
-
-;	bsf	GPIO, 0
-;	bcf	GPIO, 0
-	btfsc	0x31, 1		; read stream select bit
-	bsf	PORTC, 0		; send bit
-	nop
-	nop
-	bcf	PORTC, 0
-	movlw	0x1		; wait=3*W+5
-	call	wait		; burn 11 cycles
-	nop
-	nop
-
-;	bsf	GPIO, 0
-;	bcf	GPIO, 0
-	btfsc	0x31, 2		; read stream select bit
-	bsf	PORTC, 0		; send bit
+	bsf	PORTC, 0	; send bit
 	nop
 	nop
 	bcf	PORTC, 0
 	movlw	0x1		; wait=3*0+7
-	call	wait		; burn 10 cycles
+	call	wait		; burn 10 cycles in total
+	nop
+	nop
+
+	btfsc	0x31, 0		; read stream select bit
+	bsf	PORTC, 0	; send bit
+	nop
+	nop
+	bcf	PORTC, 0
+	movlw	0x1		; wait=3*0+7
+	call	wait		; burn 10 cycles in total
+	nop
+	nop
+
+	btfsc	0x31, 1		; read stream select bit
+	bsf	PORTC, 0	; send bit
+	nop
+	nop
+	bcf	PORTC, 0
+	movlw	0x1		; wait=3*0+7
+	call	wait		; burn 10 cycles in total
+	nop
+	nop
+
+	btfsc	0x31, 2		; read stream select bit
+	bsf	PORTC, 0	; send bit
+	nop
+	nop
+	bcf	PORTC, 0
+	movlw	0x1		; wait=3*0+7
+	call	wait		; burn 10 cycles in total
 	banksel	TRISC
 	bsf	TRISC, 0
 	bcf	TRISC, 1
 	banksel	PORTC
 	movlw	0x23		;
 	call	wait		; wait 109
-;	nop
 	movlw	0x1		; 'first time' bit
 	movwf	0x43		; for key detection
 ; --------main loop--------
 loop	
 	movlw	0x1
 loop0
-	addlw	0x20	; lock stream
-	movwf	FSR	; store in index reg
+	addlw	0x20		; lock stream
+	movwf	FSR		; store in index reg
 loop1
-	movf	INDF, w ; load seed value
+	movf	INDF, w 	; load seed value
 	movwf	0x20
-	bcf	0x20, 1	; clear bit 1 
-	btfsc	0x20, 0 ; copy from bit 0
-	bsf	0x20, 1 ; (if set)
-	movf	0x50, w ; get LED state
-	iorwf	0x20, f	; combine with data i/o
+	bcf	0x20, 1		; clear bit 1 
+	btfsc	0x20, 0 	; copy from bit 0
+	bsf	0x20, 1 	; (if set)
+	movf	0x50, w 	; get LED state
+	iorwf	0x20, f		; combine with data i/o
 	movf	0x20, w
-	andlw	0x33	; mask out anything unwanted
+	andlw	0x33		; mask out anything unwanted
 	movwf	PORTC
 	nop
-	movf	PORTC, w ; read input
-	movwf	0x42	; store input
-	movf	0x50, w	; get LED state
-	movwf	PORTC	; reset GPIO
+	movf	PORTC, w 	; read input
+	movwf	0x42		; store input
+	movf	0x50, w		; get LED state
+	movwf	PORTC		; reset GPIO
 	nop
 
 	call	checkkey
 
-	btfsc	0x44, 0	; check "direction"
-	rrf	0x42, f	; shift received bit into place
-	bsf	FSR, 4  ; goto other stream
-	movf	INDF, w	; read
-	xorwf	0x42, f ; xor received + calculated
-	bcf	FSR, 4	; back to our own stream
-	btfsc	0x42, 0 ; equal? then continue
-	bsf	0x43, 1	; else mark key invalid
-	btfsc	0x43, 1 ; if key invalid:
-	bcf	0x57, 1 ; set det.region=60Hz
-;	btfsc	0x43, 1 ; if key invalid:
-;	bcf	0x54, 1 ; set init.region=60Hz
-	btfsc	0x43, 1 ; if key invalid:
-	bsf	0x53, 4 ; simulate region timeout
+	btfsc	0x44, 0		; check "direction"
+	rrf	0x42, f		; shift received bit into place
+	bsf	FSR, 4  	; goto other stream
+	movf	INDF, w		; read
+	xorwf	0x42, f 	; xor received + calculated
+	bcf	FSR, 4		; back to our own stream
+	btfsc	0x42, 0 	; equal? then continue
+	bsf	0x43, 1		; else mark key invalid
+	btfsc	0x43, 1 	; if key invalid:
+	bcf	0x57, 1 	; set det.region=60Hz
+	btfsc	0x43, 1 	; if key invalid:
+	bsf	0x53, 4 	; simulate region timeout->immediate region chg
 	nop
 	nop
 	nop
 	nop
 	call	checkrst
 
-	incf	FSR, f	; next one
+	incf	FSR, f		; next one
 	movlw	0xf
 	andwf	FSR, w
 	btfss	STATUS, Z	
@@ -397,69 +432,69 @@ mangle_key_loop
 	incf	0x22, f
 	comf	0x22, f
 	movf	0x23, w
-	movwf	0x41	; store 23 to 41
+	movwf	0x41		; store 23 to 41
 	movlw	0xf
 	andwf	0x23, f
-	movf	0x40, w ; add 40(22 old)+23+#1 and skip if carry
+	movf	0x40, w 	; add 40(22 old)+23+#1 and skip if carry
 	andlw	0xf
 	addwf	0x23, f
 	incf	0x23, f
 	btfsc	0x23, 4
 	goto	mangle_key_withskip
 mangle_key_withoutskip
-	movf	0x41, w ; restore 23
-	addwf	0x24, f ; add to 24
+	movf	0x41, w 	; restore 23
+	addwf	0x24, f 	; add to 24
 	movf	0x25, w
-	movwf	0x40	; save 25 to 40
+	movwf	0x40		; save 25 to 40
 	movf	0x24, w
 	addwf	0x25, f
 	movf	0x26, w
-	movwf	0x41	; save 26 to 41
-	movf	0x40, w ; restore 25
-	andlw	0xf	; mask nibble
-	addlw	0x8	; add #8 to HIGH nibble
+	movwf	0x41		; save 26 to 41
+	movf	0x40, w 	; restore 25
+	andlw	0xf		; mask nibble
+	addlw	0x8		; add #8 to HIGH nibble
 	movwf	0x40
-	btfss	0x40, 4 ; skip if carry to 5th bit
+	btfss	0x40, 4 	; skip if carry to 5th bit
 	addwf	0x26, w
 	movwf	0x26
 
-	movf	0x41, w ; restore 26
-	addlw	0x1	; inc
-	addwf	0x27, f	; add to 27
+	movf	0x41, w 	; restore 26
+	addlw	0x1		; inc
+	addwf	0x27, f		; add to 27
 
-	movf	0x27, w ;
-	addlw	0x1	; inc
-	addwf	0x28, f ; add to 28
+	movf	0x27, w 	;
+	addlw	0x1		; inc
+	addwf	0x28, f 	; add to 28
 
-	movf	0x28, w ;
-	addlw	0x1	; inc
-	addwf	0x29, f ; add to 29
+	movf	0x28, w 	;
+	addlw	0x1		; inc
+	addwf	0x29, f 	; add to 29
 
-	movf	0x29, w ;
-	addlw	0x1	; inc
-	addwf	0x2a, f ; add to 2a
+	movf	0x29, w 	;
+	addlw	0x1		; inc
+	addwf	0x2a, f 	; add to 2a
 
-	movf	0x2a, w ;
-	addlw	0x1	; inc
-	addwf	0x2b, f ; add to 2b
+	movf	0x2a, w 	;
+	addlw	0x1		; inc
+	addwf	0x2b, f 	; add to 2b
 
-	movf	0x2b, w ;
-	addlw	0x1	; inc
-	addwf	0x2c, f ; add to 2c
+	movf	0x2b, w 	;
+	addlw	0x1		; inc
+	addwf	0x2c, f 	; add to 2c
 
-	movf	0x2c, w ;
-	addlw	0x1	; inc
-	addwf	0x2d, f ; add to 2d
+	movf	0x2c, w 	;
+	addlw	0x1		; inc
+	addwf	0x2d, f 	; add to 2d
 
-	movf	0x2d, w ;
-	addlw	0x1	; inc
-	addwf	0x2e, f ; add to 2e
+	movf	0x2d, w 	;
+	addlw	0x1		; inc
+	addwf	0x2e, f 	; add to 2e
 
-	movf	0x2e, w ;
-	addlw	0x1	; inc
-	addwf	0x2f, f ; add to 2f
+	movf	0x2e, w 	;
+	addlw	0x1		; inc
+	addwf	0x2f, f 	; add to 2f
 
-	movf	0x20, w ; restore original 0xf
+	movf	0x20, w 	; restore original 0xf
 	andlw	0xf
 	addlw	0xf
 	movwf	0x20
@@ -472,71 +507,71 @@ mangle_key_withoutskip
 	nop
 	nop
 	nop
-	btfss	0x20, 4 ; skip if half-byte carry
-	goto mangle_return ; +2 cycles in return
+	btfss	0x20, 4 	; skip if half-byte carry
+	goto mangle_return 	; +2 cycles in return
 	nop
 	goto mangle_key_loop
 ; 69 when goto, 69 when return
 ; CIC has 78 -> 9 nops
 
 mangle_key_withskip
-	movf	0x41, w ; restore 23
-	addwf	0x23, f ; add to 23
+	movf	0x41, w 	; restore 23
+	addwf	0x23, f 	; add to 23
 	movf	0x24, w
-	movwf	0x40	; save 24 to 40
+	movwf	0x40		; save 24 to 40
 	movf	0x23, w
 	addwf	0x24, f
 	movf	0x25, w
-	movwf	0x41	; save 25 to 41
-	movf	0x40, w ; restore 24
-	andlw	0xf	; mask nibble
-	addlw	0x8	; add #8 to HIGH nibble
+	movwf	0x41		; save 25 to 41
+	movf	0x40, w 	; restore 24
+	andlw	0xf		; mask nibble
+	addlw	0x8		; add #8 to HIGH nibble
 	movwf	0x40
-	btfss	0x40, 4 ; skip if carry to 5th bit
+	btfss	0x40, 4 	; skip if carry to 5th bit
 	addwf	0x25, w
 	movwf	0x25
 
-	movf	0x41, w ; restore 25
-	addlw	0x1	; inc
-	addwf	0x26, f	; add to 26
+	movf	0x41, w 	; restore 25
+	addlw	0x1		; inc
+	addwf	0x26, f		; add to 26
 
-	movf	0x26, w ;
-	addlw	0x1	; inc
-	addwf	0x27, f ; add to 27
+	movf	0x26, w 	;
+	addlw	0x1		; inc
+	addwf	0x27, f 	; add to 27
 
-	movf	0x27, w ;
-	addlw	0x1	; inc
-	addwf	0x28, f ; add to 28
+	movf	0x27, w 	;
+	addlw	0x1		; inc
+	addwf	0x28, f 	; add to 28
 
-	movf	0x28, w ;
-	addlw	0x1	; inc
-	addwf	0x29, f ; add to 29
+	movf	0x28, w 	;
+	addlw	0x1		; inc
+	addwf	0x29, f 	; add to 29
 
-	movf	0x29, w ;
-	addlw	0x1	; inc
-	addwf	0x2a, f ; add to 2a
+	movf	0x29, w 	;
+	addlw	0x1		; inc
+	addwf	0x2a, f 	; add to 2a
 
-	movf	0x2a, w ;
-	addlw	0x1	; inc
-	addwf	0x2b, f ; add to 2b
+	movf	0x2a, w 	;
+	addlw	0x1		; inc
+	addwf	0x2b, f 	; add to 2b
 
-	movf	0x2b, w ;
-	addlw	0x1	; inc
-	addwf	0x2c, f ; add to 2c
+	movf	0x2b, w 	;
+	addlw	0x1		; inc
+	addwf	0x2c, f 	; add to 2c
 
-	movf	0x2c, w ;
-	addlw	0x1	; inc
-	addwf	0x2d, f ; add to 2d
+	movf	0x2c, w 	;
+	addlw	0x1		; inc
+	addwf	0x2d, f 	; add to 2d
 
-	movf	0x2d, w ;
-	addlw	0x1	; inc
-	addwf	0x2e, f ; add to 2e
+	movf	0x2d, w 	;
+	addlw	0x1		; inc
+	addwf	0x2e, f 	; add to 2e
 
-	movf	0x2e, w ;
-	addlw	0x1	; inc
-	addwf	0x2f, f ; add to 2f
+	movf	0x2e, w 	;
+	addlw	0x1		; inc
+	addwf	0x2f, f 	; add to 2f
 
-	movf	0x20, w ; restore original 0xf
+	movf	0x20, w 	; restore original 0xf
 	andlw	0xf
 	addlw	0xf
 	movwf	0x20
@@ -551,8 +586,8 @@ mangle_key_withskip
 	nop
 	nop
 	nop
-	btfss	0x20, 4 ; skip if half-byte carry
-	goto mangle_return ; +2 cycles in return
+	btfss	0x20, 4 	; skip if half-byte carry
+	goto mangle_return 	; +2 cycles in return
 	nop
 	goto mangle_key_loop
 mangle_return
@@ -573,69 +608,69 @@ mangle_lock_loop
 	incf	0x32, f
 	comf	0x32, f
 	movf	0x33, w
-	movwf	0x41	; store 33 to 41
+	movwf	0x41		; store 33 to 41
 	movlw	0xf
 	andwf	0x33, f
-	movf	0x40, w ; add 40(32 old)+33+#1 and skip if carry
+	movf	0x40, w 	; add 40(32 old)+33+#1 and skip if carry
 	andlw	0xf
 	addwf	0x33, f
 	incf	0x33, f
 	btfsc	0x33, 4
 	goto	mangle_lock_withskip
 mangle_lock_withoutskip
-	movf	0x41, w ; restore 33
-	addwf	0x34, f ; add to 34
+	movf	0x41, w 	; restore 33
+	addwf	0x34, f 	; add to 34
 	movf	0x35, w
-	movwf	0x40	; save 35 to 40
+	movwf	0x40		; save 35 to 40
 	movf	0x34, w
 	addwf	0x35, f
 	movf	0x36, w
-	movwf	0x41	; save 36 to 41
-	movf	0x40, w ; restore 35
-	andlw	0xf	; mask nibble
-	addlw	0x8	; add #8 to HIGH nibble
+	movwf	0x41		; save 36 to 41
+	movf	0x40, w 	; restore 35
+	andlw	0xf		; mask nibble
+	addlw	0x8		; add #8 to HIGH nibble
 	movwf	0x40
-	btfss	0x40, 4 ; skip if carry to 5th bit
+	btfss	0x40, 4 	; skip if carry to 5th bit
 	addwf	0x36, w
 	movwf	0x36
 
-	movf	0x41, w ; restore 36
-	addlw	0x1	; inc
-	addwf	0x37, f	; add to 37
+	movf	0x41, w 	; restore 36
+	addlw	0x1		; inc
+	addwf	0x37, f		; add to 37
 
-	movf	0x37, w ;
-	addlw	0x1	; inc
-	addwf	0x38, f ; add to 38
+	movf	0x37, w 	;
+	addlw	0x1		; inc
+	addwf	0x38, f 	; add to 38
 
-	movf	0x38, w ;
-	addlw	0x1	; inc
-	addwf	0x39, f ; add to 39
+	movf	0x38, w 	;
+	addlw	0x1		; inc
+	addwf	0x39, f 	; add to 39
 
-	movf	0x39, w ;
-	addlw	0x1	; inc
-	addwf	0x3a, f ; add to 3a
+	movf	0x39, w 	;
+	addlw	0x1		; inc
+	addwf	0x3a, f 	; add to 3a
 
-	movf	0x3a, w ;
-	addlw	0x1	; inc
-	addwf	0x3b, f ; add to 3b
+	movf	0x3a, w 	;
+	addlw	0x1		; inc
+	addwf	0x3b, f 	; add to 3b
 
-	movf	0x3b, w ;
-	addlw	0x1	; inc
-	addwf	0x3c, f ; add to 3c
+	movf	0x3b, w 	;
+	addlw	0x1		; inc
+	addwf	0x3c, f 	; add to 3c
 
-	movf	0x3c, w ;
-	addlw	0x1	; inc
-	addwf	0x3d, f ; add to 3d
+	movf	0x3c, w 	;
+	addlw	0x1		; inc
+	addwf	0x3d, f 	; add to 3d
 
-	movf	0x3d, w ;
-	addlw	0x1	; inc
-	addwf	0x3e, f ; add to 3e
+	movf	0x3d, w 	;
+	addlw	0x1		; inc
+	addwf	0x3e, f 	; add to 3e
 
-	movf	0x3e, w ;
-	addlw	0x1	; inc
-	addwf	0x3f, f ; add to 3f
+	movf	0x3e, w 	;
+	addlw	0x1		; inc
+	addwf	0x3f, f 	; add to 3f
 
-	movf	0x30, w ; restore original 0xf
+	movf	0x30, w 	; restore original 0xf
 	andlw	0xf
 	addlw	0xf
 	movwf	0x30
@@ -648,7 +683,7 @@ mangle_lock_withoutskip
 	nop
 	nop
 	nop
-	btfss	0x30, 4 ; skip if half-byte carry
+	btfss	0x30, 4 	; skip if half-byte carry
 	goto mangle_return
 	nop
 	goto mangle_lock_loop
@@ -656,63 +691,63 @@ mangle_lock_withoutskip
 ; CIC has 78 -> 9 nops
 	
 mangle_lock_withskip
-	movf	0x41, w ; restore 33
-	addwf	0x33, f ; add to 33
+	movf	0x41, w 	; restore 33
+	addwf	0x33, f 	; add to 33
 	movf	0x34, w
-	movwf	0x40	; save 34 to 40
+	movwf	0x40		; save 34 to 40
 	movf	0x33, w
 	addwf	0x34, f
 	movf	0x35, w
-	movwf	0x41	; save 35 to 41
-	movf	0x40, w ; restore 34
-	andlw	0xf	; mask nibble
-	addlw	0x8	; add #8 to HIGH nibble
+	movwf	0x41		; save 35 to 41
+	movf	0x40, w 	; restore 34
+	andlw	0xf		; mask nibble
+	addlw	0x8		; add #8 to HIGH nibble
 	movwf	0x40
-	btfss	0x40, 4 ; skip if carry to 5th bit
+	btfss	0x40, 4 	; skip if carry to 5th bit
 	addwf	0x35, w
 	movwf	0x35
 
-	movf	0x41, w ; restore 35
-	addlw	0x1	; inc
-	addwf	0x36, f	; add to 36
+	movf	0x41, w 	; restore 35
+	addlw	0x1		; inc
+	addwf	0x36, f		; add to 36
 
-	movf	0x36, w ;
-	addlw	0x1	; inc
-	addwf	0x37, f ; add to 37
+	movf	0x36, w 	;
+	addlw	0x1		; inc
+	addwf	0x37, f 	; add to 37
 
-	movf	0x37, w ;
-	addlw	0x1	; inc
-	addwf	0x38, f ; add to 38
+	movf	0x37, w 	;
+	addlw	0x1		; inc
+	addwf	0x38, f 	; add to 38
 
-	movf	0x38, w ;
-	addlw	0x1	; inc
-	addwf	0x39, f ; add to 39
+	movf	0x38, w 	;
+	addlw	0x1		; inc
+	addwf	0x39, f 	; add to 39
 
-	movf	0x39, w ;
-	addlw	0x1	; inc
-	addwf	0x3a, f ; add to 3a
+	movf	0x39, w 	;
+	addlw	0x1		; inc
+	addwf	0x3a, f 	; add to 3a
 
-	movf	0x3a, w ;
-	addlw	0x1	; inc
-	addwf	0x3b, f ; add to 3b
+	movf	0x3a, w 	;
+	addlw	0x1		; inc
+	addwf	0x3b, f 	; add to 3b
 
-	movf	0x3b, w ;
-	addlw	0x1	; inc
-	addwf	0x3c, f ; add to 3c
+	movf	0x3b, w 	;
+	addlw	0x1		; inc
+	addwf	0x3c, f 	; add to 3c
 
-	movf	0x3c, w ;
-	addlw	0x1	; inc
-	addwf	0x3d, f ; add to 3d
+	movf	0x3c, w 	;
+	addlw	0x1		; inc
+	addwf	0x3d, f 	; add to 3d
 
-	movf	0x3d, w ;
-	addlw	0x1	; inc
-	addwf	0x3e, f ; add to 3e
+	movf	0x3d, w 	;
+	addlw	0x1		; inc
+	addwf	0x3e, f 	; add to 3e
 
-	movf	0x3e, w ;
-	addlw	0x1	; inc
-	addwf	0x3f, f ; add to 3f
+	movf	0x3e, w 	;
+	addlw	0x1		; inc
+	addwf	0x3f, f 	; add to 3f
 
-	movf	0x30, w ; restore original 0xf
+	movf	0x30, w 	; restore original 0xf
 	andlw	0xf
 	addlw	0xf
 	movwf	0x30
@@ -727,7 +762,7 @@ mangle_lock_withskip
 	nop
 	nop
 	nop
-	btfss	0x30, 4 ; skip if half-byte carry
+	btfss	0x30, 4 	; skip if half-byte carry
 	goto mangle_return
 	nop
 	goto mangle_lock_loop
@@ -760,24 +795,24 @@ die
 ; --------check the key input and change "region" when appropriate--------
 ; --------requires 19 cycles (incl. call+return)
 checkkey
-	btfss	0x43, 0			; first time?
-	goto 	checkkey_nocheck	; if not, just burn some cycles
-	movlw	0x22			; are we at the correct stream offset?
+	btfss	0x43, 0		; first time?
+	goto 	checkkey_nocheck; if not, just burn some cycles
+	movlw	0x22		; are we at the correct stream offset?
 	xorwf	FSR, w
-	btfss	STATUS, Z		; if not equal:
-	goto	checkkey_nocheck2	; burn some cycles less.
-					; if equal do the check
-	btfss	0x42, 0			; if value from slave is set it's a 411
+	btfss	STATUS, Z	; if not equal:
+	goto	checkkey_nocheck2; burn some cycles less.
+				; if equal do the check
+	btfss	0x42, 0		; if value from slave is set it's a 411
 	goto	checkkey_413
 checkkey_411
-	nop				; to compensate for untaken branch
-	bcf	0x57, 1			; set detected mode (60Hz)
-	bcf	0x54, 1			; set output mode (60Hz)
+	nop			; to compensate for untaken branch
+	bcf	0x57, 1		; set detected mode (60Hz)
+	bcf	0x54, 1		; set output mode (60Hz)
 	movlw	0x9
 	goto	checkkey_save
 checkkey_413
-	bsf	0x57, 1			; set detected mode (50Hz)
-	bsf	0x54, 1			; set output mode (50Hz)
+	bsf	0x57, 1		; set detected mode (50Hz)
+	bsf	0x54, 1		; set output mode (50Hz)
 	movlw	0x6
 	goto	checkkey_save
 
@@ -814,12 +849,12 @@ checkrst_1_0	; 26
 	; if modechange flag is set: clear modechange flag, set mode, save, restart timer
 	; else reset
 	btfss	0x52, 0
-	goto	rst	; modechange flag is not set, reset. timing is irrelevant
-	clrf	0x52	; clear modechange flag
-	movf	0x56, w	; get temp mode
-	movwf	0x55	; set final mode
-	movwf	0x58	; set forced mode
-	banksel	EEADR	; save to EEPROM. this somehow takes 2 extra cycles!!!
+	goto	rst		; modechange flag is not set, reset. timing is irrelevant
+	clrf	0x52		; clear modechange flag
+	movf	0x56, w		; get temp mode
+	movwf	0x55		; set final mode
+	movwf	0x58		; set forced mode
+	banksel	EEADR		; save to EEPROM. note: banksels take two cycles each!
 	movwf	EEDAT
 	bsf	EECON1,WREN
 	movlw	0x55
@@ -827,9 +862,9 @@ checkrst_1_0	; 26
 	movlw	0xaa
 	movwf	EECON2
 	bsf	EECON1, WR
-	banksel	PORTA
+	banksel	PORTA		; two cycles again
 	movlw	0x2
-	andwf	0x58, f
+	andwf	0x58, f		; cleanup forced mode
 	bcf	T1CON, 0	; stop the timer
 	clrf	PIR1		; reset overflow bit
 	clrf	TMR1L		; reset counter
@@ -877,34 +912,34 @@ checkrst_0_0	; 24
 	nop
 	nop
 	; count some overflows, change region from detected to forced unless auto
-	btfsc	0x53, 4	; past delay?
-	goto	checkrst_0_0_setregion_plus5 ; 3
+	btfsc	0x53, 4		; past delay?
+	goto	checkrst_0_0_setregion_plus5
 	btfss	PIR1, 0
-	goto	checkrst_end_plus13 ; 5
+	goto	checkrst_end_plus13
 	clrf	PIR1
-	incf	0x53, f	; increment overflow counter
-	btfss	0x53, 4	; 0x10 reached?
-	goto	checkrst_end_plus9 ; 9
-checkrst_0_0_setregion ; 10
+	incf	0x53, f		; increment overflow counter
+	btfss	0x53, 4		; 0x10 reached?
+	goto	checkrst_end_plus9
+checkrst_0_0_setregion
 	movlw	0x3
-	xorwf	0x55, w ; mode=auto?
+	xorwf	0x55, w 	; mode=auto?
 	btfss	STATUS, Z
 	goto	checkrst_0_0_setregion_forced
 checkrst_0_0_setregion_auto
-	movf	0x57, w ; get detected region
+	movf	0x57, w 	; get detected region
 	goto checkrst_0_0_setregion_save
 checkrst_0_0_setregion_forced
-	movf	0x58, w	; get forced region
+	movf	0x58, w		; get forced region
 	nop
 checkrst_0_0_setregion_save
-	movwf	0x54	; set to output
+	movwf	0x54		; set to output
 	goto	checkrst_end
 
 checkrst_0_1	; 24
 	; reset + start TMR, reset TMR overflow
-	clrf	TMR1L	; reset timer register
+	clrf	TMR1L		; reset timer register
 	clrf	TMR1H
-	clrf	PIR1	; clear overflow bit
+	clrf	PIR1		; clear overflow bit
 	bsf	T1CON, 0
 	goto	checkrst_end_plus18
 
@@ -933,7 +968,7 @@ checkrst_end_plus9
 	nop
 	goto	checkrst_end
 
-checkrst_0_0_setregion_plus5	; 5
+checkrst_0_0_setregion_plus5
 	nop
 	nop
 	nop
@@ -944,6 +979,6 @@ checktmr	; TODO
 ; -----------------------------------------------------------------------
 ; eeprom data
 DEEPROM	CODE
-	de	0x01	;current mode (default: 60Hz)
+	de	0x01		;current mode (default: 60Hz)
 end
 ; ------------------------------------------------------------------------
