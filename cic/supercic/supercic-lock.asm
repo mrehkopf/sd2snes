@@ -29,7 +29,7 @@ processor p16f630
 ;                       ,-----_-----.
 ;      +5V (27,58) [18] |1        14| GND (5,36) [9]
 ;      CIC clk (56) [7] |2  A5 A0 13| CIC lock reset in [8]
-;                       |3  A4 A1 12| 50/60Hz out
+;                D4 out |3  A4 A1 12| 50/60Hz out
 ;                       |4  A3 A2 11| host reset out [10]
 ;         LED out (grn) |5  C5 C0 10| CIC data i/o 0 (55) [1]
 ;         LED out (red) |6  C4 C1  9| CIC data i/o 1 (24) [2]
@@ -42,6 +42,11 @@ processor p16f630
 ;   pin 11 connected to key CIC pin 9 (SNES /reset line)
 ;   pin 12 connected to PPU1 pin 24 and PPU2 pin 30 (both isolated from mainboard)
 ;   pin 13 connected to reset button
+;
+;   D4 out is always switched to the autodetected region and is not user
+;   overridable. It can be used, by adding an address decoder and a latch,
+;   to override bit 4 of the $213f register (used by games to detect the
+;   console region).
 ;
 ;   Host reset out behaves as follows:
 ;   After powerup it is held low for a couple of ms to allow the components
@@ -73,6 +78,14 @@ processor p16f630
 ;   games. See Table 1.
 ;   In case no CIC is present in the game cartridge the user setting is applied
 ;   immediately.
+;
+;   SuperCIC pair mode: when a SuperCIC lock and SuperCIC key detect each other
+;   they both switch both of the data pins to inputs. The lock then passes through
+;   data i/o 0 to SNES 50/60Hz and data i/o 1 to an optional D4 output (for
+;   overriding the 213f register using additional hardware). This makes it
+;   possible to switch 50/60Hz and D4 from the cartridge slot, e.g. by connecting
+;   an additional MCU to the CIC data lines. Of course, they have to be tristated
+;   for normal (non-passthrough) operation first.
 ;
 ;   Table 1. 50/60Hz output behavior according to user setting and key CIC type.
 ;   SuperCIC	key CIC		"region"
@@ -123,6 +136,9 @@ processor p16f630
 ;   0x56		temp LED state
 ;   0x57		detected region (0: 60Hz, 2: 50Hz)
 ;   0x58		forced region (0: 60Hz, 2: 50Hz)
+;   0x59		detected D4 (0: 60Hz, 16: 50Hz)
+;   0x5e		SuperCIC pair mode detect (phase 1)
+;   0x5f		SuperCIC pair mode detect (phase 2)
 ;
 ; ---------------------------------------------------------------------
 
@@ -158,6 +174,9 @@ rst_loop
 	clrf	0x53
 	clrf	0x54		; clear user mode
 	clrf	0x57		; clear key mode
+	clrf	0x59		; clear D4
+	clrf	0x5e		;
+	clrf	0x5f		;
         banksel EEADR		; fetch current mode from EEPROM
         clrf    EEADR		; address 0
         bsf     EECON1, RD	; 
@@ -166,7 +185,6 @@ rst_loop
 	movwf	0x55		; store saved mode in mode var
 	movwf	0x56		; and temp LED
 	movwf	0x58
-
 	movwf	0x50		; and final LED	
 	movlw	0x3		; mask
 	andwf	0x50, f		;
@@ -181,7 +199,7 @@ rst_loop
 	bsf	T1CON, 0	; start the timer	
 	goto	main		; go go go
 init
-;	PORTA:  in  in  in out out  in
+;	PORTA:  in out  in out out  in
 ;	PORTC: out out  in out out  in
 	banksel PORTA
 	clrf	PORTA
@@ -190,7 +208,7 @@ init
 	movlw	0x00		; disable all interrupts
 	movwf	INTCON
 	banksel	TRISA
-	movlw	0x39		; in in in out out in
+	movlw	0x29		; in out in out out in
 	movwf	TRISA
 	movlw	0x09		; out out in out out in
 	movwf	TRISC
@@ -352,7 +370,6 @@ loop1
 	movwf	0x42		; store input
 	movf	0x50, w		; get LED state
 	movwf	PORTC		; reset GPIO
-	nop
 
 	call	checkkey
 
@@ -388,7 +405,6 @@ loop1
 	nop
 	nop
 	nop
-	nop
 	btfsc	0x37, 0
 	goto	swap
 	banksel	TRISC
@@ -404,6 +420,7 @@ swapskip
 	banksel PORTA
 	bsf	0x54, 2		; run the console
 	movf	0x54, w		; read resolved mode
+	iorwf	0x59, w		; get D4 value
 	movwf	PORTA
 	bcf	0x43, 0		; don't check key region anymore
 	movf	0x37, w
@@ -576,10 +593,10 @@ mangle_key_withskip
 	addlw	0xf
 	movwf	0x20
 	bsf	PORTC, 1
-	movlw	PORTC
+	movf	PORTC, w
 	movwf	0x5e
 	bcf	PORTC, 1
-	movlw	PORTC
+	movf	PORTC, w
 	movwf	0x5f
 	nop
 	nop
@@ -751,17 +768,23 @@ mangle_lock_withskip
 	andlw	0xf
 	addlw	0xf
 	movwf	0x30
+	
+	btfsc	0x5e, 0
+	goto	scic_pair_skip1
+	btfss	0x5f, 0
+	goto	scic_pair_skip2
+	goto	supercic_pairmode
+scic_pair_skip1
+	nop
+	nop
+scic_pair_skip2	
 	nop
 	nop
 	nop
 	nop
 	nop
 	nop
-	nop
-	nop
-	nop
-	nop
-	nop
+
 	btfss	0x30, 4 	; skip if half-byte carry
 	goto mangle_return
 	nop
@@ -793,7 +816,7 @@ die
 	goto	die
 
 ; --------check the key input and change "region" when appropriate--------
-; --------requires 19 cycles (incl. call+return)
+; --------requires 20 cycles (incl. call+return)
 checkkey
 	btfss	0x43, 0		; first time?
 	goto 	checkkey_nocheck; if not, just burn some cycles
@@ -807,11 +830,13 @@ checkkey
 checkkey_411
 	nop			; to compensate for untaken branch
 	bcf	0x57, 1		; set detected mode (60Hz)
+	bcf	0x59, 4		; set detected D4 mode (60Hz)
 	bcf	0x54, 1		; set output mode (60Hz)
 	movlw	0x9
 	goto	checkkey_save
 checkkey_413
 	bsf	0x57, 1		; set detected mode (50Hz)
+	bsf	0x59, 4		; set detected D4 mode (50Hz)
 	bsf	0x54, 1		; set output mode (50Hz)
 	movlw	0x6
 	goto	checkkey_save
@@ -822,6 +847,7 @@ checkkey_nocheck
 	nop
 	nop
 checkkey_nocheck2
+	nop
 	nop
 	nop
 	nop
@@ -974,8 +1000,32 @@ checkrst_0_0_setregion_plus5
 	nop
 	goto	checkrst_0_0_setregion
 
-checktmr	; TODO
-	return
+supercic_pairmode
+	banksel	TRISC
+	bsf	TRISC, 0	; tristate both
+	bsf	TRISC, 1	; data lines
+	banksel	PORTC
+supercic_pairmode_loop
+	clrf	0x5d
+	bsf	0x5d, 2
+	btfsc	PORTC, 0
+	bsf	0x5d, 1
+	btfsc	PORTC, 1
+	bsf	0x5d, 4
+	btfsc	PORTA, 0
+	bcf	0x5d, 2
+	movf	0x5d, w
+	movwf	PORTA
+	btfss	PORTC, 0
+	goto	supercic_pairmode_led_60
+supercic_pairmode_led_50
+	bcf	PORTC, 4
+	bsf	PORTC, 5
+	goto	supercic_pairmode_loop
+supercic_pairmode_led_60
+	bsf	PORTC, 4
+	bcf	PORTC, 5
+	goto	supercic_pairmode_loop
 ; -----------------------------------------------------------------------
 ; eeprom data
 DEEPROM	CODE
