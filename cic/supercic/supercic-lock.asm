@@ -575,12 +575,12 @@ mangle_key_withskip
 	andlw	0xf
 	addlw	0xf
 	movwf	0x20
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
+	bsf	PORTC, 1
+	movlw	PORTC
+	movwf	0x5e
+	bcf	PORTC, 1
+	movlw	PORTC
+	movwf	0x5f
 	nop
 	nop
 	nop
@@ -588,7 +588,7 @@ mangle_key_withskip
 	nop
 	btfss	0x20, 4 	; skip if half-byte carry
 	goto mangle_return 	; +2 cycles in return
-	nop
+	movf	0x20, w		; restore w (previously destroyed)
 	goto mangle_key_loop
 mangle_return
 	return

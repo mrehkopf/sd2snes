@@ -248,7 +248,7 @@ loop1
 	andwf	FSR, w
 	btfss	STATUS, Z	
 	goto	loop1
-	movlw	0x2	; wait 20
+	movlw	0x2	; wait 10
 	call	wait	;
 	nop
 	nop
