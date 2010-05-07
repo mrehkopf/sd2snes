@@ -444,11 +444,11 @@ mangle_key_withskip
 	bcf	GPIO, 0
 	movf	GPIO, w
 	movwf	0x5e
+	btfsc	GPIO, 3
 	bsf	GPIO, 0
 	movf	GPIO, w
 	movwf	0x5f
 	bcf	GPIO, 0
-	nop
 	nop
 	nop
 	nop
@@ -622,6 +622,8 @@ mangle_lock_withskip
 	goto	scic_pair_skip1
 	btfsc	0x5f, 1
 	goto	scic_pair_skip2
+	btfss	GPIO, 3
+	goto	scic_pair_skip3
 	goto	supercic_pairmode
 scic_pair_skip1
 	nop
@@ -629,6 +631,7 @@ scic_pair_skip1
 scic_pair_skip2
 	nop
 	nop
+scic_pair_skip3	
 	nop
 	nop
 	nop

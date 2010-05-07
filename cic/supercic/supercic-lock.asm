@@ -595,10 +595,10 @@ mangle_key_withskip
 	bsf	PORTC, 1
 	movf	PORTC, w
 	movwf	0x5e
+	nop
 	bcf	PORTC, 1
 	movf	PORTC, w
 	movwf	0x5f
-	nop
 	nop
 	nop
 	nop
