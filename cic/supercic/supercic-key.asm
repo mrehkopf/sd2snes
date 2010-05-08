@@ -28,7 +28,7 @@ processor p12f629
 ;      +5V (27,58) [16] |1     8| GND (5,36) [8]
 ;      CIC clk (56) [6] |2     7| CIC data i/o 0 (55) [2]
 ;            status out |3     6| CIC data i/o 1 (24) [1]
-;                    nc |4     5| CIC slave reset (25) [7]
+;                 /PAIR |4     5| CIC slave reset (25) [7]
 ;                       `-------'
 ;
 ;
@@ -38,7 +38,7 @@ processor p12f629
 ;  -------------------------+----------------------------
 ;   OK or no lock CIC       | high
 ;   error                   | low
-;   SuperCIC pair mode      | high-low alternating @1kHz
+;   SuperCIC pair mode      | 148.75kHz / 50% duty cycle
 ;
 ;   In case lockout fails, the region is switched automatically and
 ;   will be used after the next reset.
@@ -53,7 +53,8 @@ processor p12f629
 ;   0x4d		buffer for eeprom access
 ;   0x4e		loop variable for longwait
 ;   0x4f		loop variable for wait
-;
+;   0x5e                SuperCIC pair mode detect (phase 1)
+;   0x5f                SuperCIC pair mode detect (phase 2)
 ; ---------------------------------------------------------------------
 
 
@@ -444,13 +445,13 @@ mangle_key_withskip
 	bcf	GPIO, 0
 	movf	GPIO, w
 	movwf	0x5e
-	btfsc	GPIO, 3
+	btfss	GPIO, 3
 	bsf	GPIO, 0
 	movf	GPIO, w
 	movwf	0x5f
 	bcf	GPIO, 0
-	nop
-	nop
+	btfsc	GPIO, 3
+	clrf	0x5e
 	nop
 	btfss	0x20, 4 ; skip if half-byte carry
 	goto mangle_return ; +2 cycles in return
@@ -622,7 +623,7 @@ mangle_lock_withskip
 	goto	scic_pair_skip1
 	btfsc	0x5f, 1
 	goto	scic_pair_skip2
-	btfss	GPIO, 3
+	btfsc	GPIO, 3
 	goto	scic_pair_skip3
 	goto	supercic_pairmode
 scic_pair_skip1
@@ -696,7 +697,7 @@ die_intloop
 
 	banksel	GPIO
 	bcf	GPIO, 4
-; --------forever: blink status pin--------
+; --------get caught up--------
 die_trap
 	goto	die_trap
 ; -----------------------------------------------------------------------

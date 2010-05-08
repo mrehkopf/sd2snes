@@ -40,21 +40,21 @@ processor p16f630
 ;   pin 9 connected to key CIC pin 1 (or clone CIC pin 6)
 ;   pin 10 connected to key CIC pin 2 (or clone CIC pin 7)
 ;   pin 11 connected to key CIC pin 9 (SNES /reset line)
-;   pin 12 connected to PPU1 pin 24 and PPU2 pin 30 (both isolated from mainboard)
+;   pin 12 connected to PPU1 pin 24 & PPU2 pin 30 (both isolated from mainboard)
 ;   pin 13 connected to reset button
 ;
 ;   D4 out is always switched to the autodetected region and is not user
-;   overridable. It can be used, by adding an address decoder and a latch,
-;   to override bit 4 of the $213f register (used by games to detect the
-;   console region).
+;   overridable except in SuperCIC pair mode.
+;   It can be used, by adding an address decoder and a latch, to override
+;   bit 4 of the $213f register (used by games to detect the console region).
 ;
 ;   Host reset out behaves as follows:
 ;   After powerup it is held low for a couple of ms to allow the components
 ;   to power-up properly.
 ;   It is then asserted a high level even if the CIC "auth" should fail at
 ;   any point, thus enabling homebrew or other cartridges without a CIC or
-;   CIC clone to be run properly while maintaining compatibility with CIC
-;   demanding cartridges like S-DD1 or SA-1 powered ones.
+;   CIC clone to be run properly while maintaining compatibility with
+;   cartridges requiring a CIC, like S-DD1 or SA-1 games.
 ;   The type of key CIC (411/413) is detected automatically.
 ;
 ;   This implementation supports automatic 50/60Hz switching based on the
@@ -80,12 +80,12 @@ processor p16f630
 ;   immediately.
 ;
 ;   SuperCIC pair mode: when a SuperCIC lock and SuperCIC key detect each other
-;   they both switch both of the data pins to inputs. The lock then passes through
-;   data i/o 0 to SNES 50/60Hz and data i/o 1 to an optional D4 output (for
-;   overriding the 213f register using additional hardware). This makes it
-;   possible to switch 50/60Hz and D4 from the cartridge slot, e.g. by connecting
-;   an additional MCU to the CIC data lines. Of course, they have to be tristated
-;   for normal (non-passthrough) operation first.
+;   they both switch both of the data pins to inputs. The lock then passes
+;   through data i/o 0 to SNES 50/60Hz and data i/o 1 to an optional D4 output
+;   (for overriding the 213f register using additional hardware). This makes it
+;   possible to switch 50/60Hz and D4 from the cartridge slot, e.g. by
+;   connecting an additional MCU to the CIC data lines. Of course, they have to
+;   be tristated for normal (non-passthrough) operation.
 ;
 ;   Table 1. 50/60Hz output behavior according to user setting and key CIC type.
 ;   SuperCIC	key CIC		"region"
