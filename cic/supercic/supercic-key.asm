@@ -43,6 +43,15 @@ processor p12f629
 ;   In case lockout fails, the region is switched automatically and
 ;   will be used after the next reset.
 ;
+;   The /PAIR pin can be used to enable or disable SuperCIC pair mode.
+;   It can be tied low or high to statically enable or disable pair mode
+;   detection, or connected to a switch or MCU to dynamically enable pair
+;   mode detection (it should then be connected to a pull-up resistor to
+;   Vcc). Pair mode detection can be enabled during operation,
+;   but pair mode cannot be left until the next power cycle.
+;   See SuperCIC lock documentation for a more detailed description of
+;   pair mode.
+;
 ;   memory usage:
 ;
 ;   0x20		buffer for seed calc and transfer
@@ -711,7 +720,7 @@ supercic_pairmode_loop
 	nop
 	nop
 	bcf	GPIO, 4
-	goto supercic_pairmode_loop
+	goto	supercic_pairmode_loop
 
 ; eeprom memory
 DEEPROM	CODE

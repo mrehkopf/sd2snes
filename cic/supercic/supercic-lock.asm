@@ -28,9 +28,9 @@ processor p16f630
 ;
 ;                       ,-----_-----.
 ;      +5V (27,58) [18] |1        14| GND (5,36) [9]
-;      CIC clk (56) [7] |2  A5 A0 13| CIC lock reset in [8]
+;   CIC clk in (56) [7] |2  A5 A0 13| CIC lock reset in [8]
 ;                D4 out |3  A4 A1 12| 50/60Hz out
-;                       |4  A3 A2 11| host reset out [10]
+;        REG_TIMEOUT in |4  A3 A2 11| host reset out [10]
 ;         LED out (grn) |5  C5 C0 10| CIC data i/o 0 (55) [1]
 ;         LED out (red) |6  C4 C1  9| CIC data i/o 1 (24) [2]
 ;                       |7  C3 C2  8| CIC slave reset out (25) [11]
@@ -44,9 +44,13 @@ processor p16f630
 ;   pin 13 connected to reset button
 ;
 ;   D4 out is always switched to the autodetected region and is not user
-;   overridable except in SuperCIC pair mode.
+;   overridable except in SuperCIC pair mode or when no key CIC is detected.
 ;   It can be used, by adding an address decoder and a latch, to override
 ;   bit 4 of the $213f register (used by games to detect the console region).
+;
+;   REG_TIMEOUT in (Pin 4) enables a ~9 sec timeout before switching
+;   to the forced region. If D4 is not used, the REG_TIMEOUT pin should be
+;   connected to Vcc.
 ;
 ;   Host reset out behaves as follows:
 ;   After powerup it is held low for a couple of ms to allow the components
@@ -67,17 +71,17 @@ processor p16f630
 ;   Modes are cycled every 586ms as shown in Fig.1 as long as the reset button
 ;   is held down.
 ;   The currently selected mode is indicated by the color of the power LED
-;   (see Table 2).
+;   (see Table 3).
 ;   The mode is finally selected by releasing the reset button while the
 ;   desired LED color is shown. The selected mode will then become effective
 ;   and will be saved to EEPROM. Mode switching does not reset the console.
 ;
 ;   Note that in case a valid CIC is detected in the game cartridge, video mode
 ;   will be forced to its corresponding region for the first ~9 seconds after
-;   reset or powerup. This is an attempt to trick the region detection on most
-;   games. See Table 1.
-;   In case no CIC is present in the game cartridge the user setting is applied
-;   immediately.
+;   reset or powerup if the REG_TIMEOUT enable pin is high.
+;   This is an attempt to trick the region detection on most games. See Table 1.
+;   In case no CIC is present in the game cartridge, or REG_TIMEOUT is low, the
+;   user setting is applied immediately.
 ;
 ;   SuperCIC pair mode: when a SuperCIC lock and SuperCIC key detect each other
 ;   they both switch both of the data pins to inputs. The lock then passes
@@ -102,18 +106,25 @@ processor p16f630
 ;   Auto	D/F411		60Hz permanent
 ;   Auto	none		60Hz permanent
 ;
+;   Table 2. D4 output behavior according to key CIC type
+;   key CIC	output
+;   -----------------------------------------------
+;   D/F413	1 (PAL)
+;   D/F411	0 (NTSC)
+;   none	same as user setting (NTSC if Auto)
+;
 ;   Fig.1. SuperCIC mode cycle.
 ;   ,->60Hz--->50Hz--->Auto->.
 ;   `-------<--------<-------'
 ;
-;   Table 2. LED color according to user setting.
+;   Table 3. LED color according to user setting.
 ;   mode	LED color
 ;   ---------------------
 ;   60Hz	red
 ;   50Hz	green
 ;   Auto	orange
 ;
-;   Table 3. memory usage.
+;   Table 4. memory usage.
 ;   -------------------basic CIC functions--------------------
 ;   0x20		buffer for seed calc and transfer
 ;   0x21 - 0x2f		seed area (lock seed)
@@ -189,6 +200,9 @@ rst_loop
 	movlw	0x3		; mask
 	andwf	0x50, f		;
 	swapf	0x50, f		; and nibbleswap for actual output
+
+	btfss	PORTA, 3	; if D4 mode is disabled:
+	bsf	0x53, 4 	; simulate region timeout->immediate region chg
 
 	movlw	0x2
 	andwf	0x58, f
@@ -381,14 +395,17 @@ loop1
 	bcf	FSR, 4		; back to our own stream
 	btfsc	0x42, 0 	; equal? then continue
 	bsf	0x43, 1		; else mark key invalid
-	btfsc	0x43, 1 	; if key invalid:
+
+	btfss	0x43, 1 	; if key invalid:
+	goto	main_skipinval1 ; 
 	bcf	0x57, 1 	; set det.region=60Hz
-	btfsc	0x43, 1 	; if key invalid:
 	bsf	0x53, 4 	; simulate region timeout->immediate region chg
+	clrf	0x59		; clear D4 output
+	btfsc	0x54, 1		; use effective region for D4 output
+	bsf	0x59, 4
 	nop
-	nop
-	nop
-	nop
+
+main_skipinval2
 	call	checkrst
 
 	incf	FSR, f		; next one
@@ -428,6 +445,14 @@ swapskip
 	btfss	STATUS, Z
 	goto	loop0
 	goto	loop
+
+
+main_skipinval1
+	nop
+	nop
+	nop
+	goto	main_skipinval2
+
 
 ; --------calculate new seeds--------
 ; had to be unrolled because PIC has an inefficient way of handling
@@ -1026,6 +1051,7 @@ supercic_pairmode_led_60
 	bsf	PORTC, 4
 	bcf	PORTC, 5
 	goto	supercic_pairmode_loop
+
 ; -----------------------------------------------------------------------
 ; eeprom data
 DEEPROM	CODE
