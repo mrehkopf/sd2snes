@@ -83,9 +83,9 @@ isr
 	bcf	GPIO, 0
 	bcf	GPIO, 1
 	bsf	GPIO, 4		; LED on
-	nop
-	nop
-	nop
+	clrf	0x5e		; clear pair mode detect
+	clrf	0x5f		; clear pair mode detect
+	bsf	0x5f, 1		;
 	nop
 	nop
 	nop
@@ -453,9 +453,9 @@ mangle_key_withskip
 	movwf	0x20
 	bcf	GPIO, 0
 	movf	GPIO, w
-	movwf	0x5e
 	btfss	GPIO, 3
 	bsf	GPIO, 0
+	movwf	0x5e
 	movf	GPIO, w
 	movwf	0x5f
 	bcf	GPIO, 0
@@ -646,7 +646,7 @@ scic_pair_skip3
 	nop
 	nop
 	nop
-
+ 
 	btfss	0x30, 4 ; skip if half-byte carry
 	goto mangle_return
 	nop
@@ -715,6 +715,7 @@ supercic_pairmode
 	bsf	TRISIO, 0
 	bsf	TRISIO, 1
 	banksel	GPIO
+	bcf	INTCON, GIE
 supercic_pairmode_loop
 	bsf	GPIO, 4
 	nop
