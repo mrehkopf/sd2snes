@@ -24,16 +24,16 @@ processor p16f630
 ; ---------------------------------------------------------------------
 ;
 ;   pin configuration: (cartridge slot pin) [original 18-pin SMD lock CIC pin]
-;
+;   {alternative pin function in pair mode}
 ;
 ;                       ,-----_-----.
 ;      +5V (27,58) [18] |1        14| GND (5,36) [9]
 ;   CIC clk in (56) [7] |2  A5 A0 13| CIC lock reset in [8]
 ;                D4 out |3  A4 A1 12| 50/60Hz out
 ;        REG_TIMEOUT in |4  A3 A2 11| host reset out [10]
-;         LED out (grn) |5  C5 C0 10| CIC data i/o 0 (55) [1]
-;         LED out (red) |6  C4 C1  9| CIC data i/o 1 (24) [2]
-;                       |7  C3 C2  8| CIC slave reset out (25) [11]
+;         LED out (grn) |5  C5 C0 10| CIC data i/o 0 (55) [1] / {50/60Hz in}
+;         LED out (red) |6  C4 C1  9| CIC data i/o 1 (24) [2] / {D4 in}
+;           LED_TYPE in |7  C3 C2  8| CIC slave reset out (25) [11]
 ;                       `-----------'
 ;
 ;   pin 8 connected to key CIC pin 7 (or clone CIC pin 5)
@@ -42,6 +42,10 @@ processor p16f630
 ;   pin 11 connected to key CIC pin 9 (SNES /reset line)
 ;   pin 12 connected to PPU1 pin 24 & PPU2 pin 30 (both isolated from mainboard)
 ;   pin 13 connected to reset button
+;
+;   LED_TYPE sets the output mode for the LED pins (must be tied to either level):
+;      low  = common cathode
+;      high = common anode   (output inverted)
 ;
 ;   D4 out is always switched to the autodetected region and is not user
 ;   overridable except in SuperCIC pair mode or when no key CIC is detected.
@@ -195,10 +199,11 @@ rst_loop
         banksel PORTA
 	movwf	0x55		; store saved mode in mode var
 	movwf	0x56		; and temp LED
-	movwf	0x58
-	movwf	0x50		; and final LED	
-	movlw	0x3		; mask
-	andwf	0x50, f		;
+	movwf	0x58		; and forced region
+	andlw	0x03		; mask
+	btfsc	PORTC, 3	; invert LEDs?
+	xorlw	0x03		; then make it so	
+	movwf	0x50		; and store
 	swapf	0x50, f		; and nibbleswap for actual output
 
 	btfss	PORTA, 3	; if D4 mode is disabled:
@@ -369,15 +374,15 @@ loop0
 	addlw	0x20		; lock stream
 	movwf	FSR		; store in index reg
 loop1
+	nop
 	movf	INDF, w 	; load seed value
+	andlw	0x01		; mask LSB
 	movwf	0x20
-	bcf	0x20, 1		; clear bit 1 
 	btfsc	0x20, 0 	; copy from bit 0
 	bsf	0x20, 1 	; (if set)
 	movf	0x50, w 	; get LED state
 	iorwf	0x20, f		; combine with data i/o
 	movf	0x20, w
-	andlw	0x33		; mask out anything unwanted
 	movwf	PORTC
 	nop
 	movf	PORTC, w 	; read input
@@ -930,10 +935,8 @@ checkrst_1_1	; 24
 	nop
 	nop
 	nop
-	nop
-	nop
 	btfss	PIR1, 0
-	goto	checkrst_end_plus15
+	goto	checkrst_end_plus17
 	bcf	T1CON, 0	; stop the timer
 	clrf	PIR1		; reset overflow bit
 	clrf	TMR1L		; reset counter
@@ -945,6 +948,8 @@ checkrst_1_1	; 24
 	xorwf	0x56, f		; change back to 1
 	movf	0x56, w
 	andlw	0x03		; mask
+	btfsc	PORTC, 3	; invert LEDs?
+	xorlw	0x03		; then make it so
 	movwf	0x50
 	swapf	0x50, f		; adjust for GPIO pins
 	bsf	0x52, 0		; set modechange flag
@@ -999,9 +1004,9 @@ checkrst_end	; 2
 
 checkrst_end_plus18
 	nop
+checkrst_end_plus17
 	nop
 	nop
-checkrst_end_plus15
 	nop
 	nop
 checkrst_end_plus13
@@ -1044,12 +1049,16 @@ supercic_pairmode_loop
 	btfss	PORTC, 0
 	goto	supercic_pairmode_led_60
 supercic_pairmode_led_50
-	bcf	PORTC, 4
-	bsf	PORTC, 5
+	movlw	0x20
+	btfsc	PORTC, 3
+	xorlw	0x30
+	movwf	PORTC
 	goto	supercic_pairmode_loop
 supercic_pairmode_led_60
-	bsf	PORTC, 4
-	bcf	PORTC, 5
+	movlw	0x10
+	btfsc	PORTC, 3
+	xorlw	0x30
+	movwf	PORTC
 	goto	supercic_pairmode_loop
 
 ; -----------------------------------------------------------------------
