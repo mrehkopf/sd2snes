@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Thu 22 Apr 2010 07:50:14 PM CEST
+EESchema Schematic File Version 2  date Sat 15 May 2010 02:07:58 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -45,7 +45,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 3 6
 Title "sd2snes Mark II"
-Date "22 apr 2010"
+Date "14 may 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -77,11 +77,7 @@ Wire Wire Line
 	8500 2550 8800 2550
 Connection ~ 4550 4650
 Wire Wire Line
-	4550 5400 4550 4750
-Wire Wire Line
-	4550 4750 4550 4650
-Wire Wire Line
-	4550 4650 4550 4350
+	4550 5400 4550 4350
 Connection ~ 4550 4750
 Wire Wire Line
 	8500 4050 8800 4050
@@ -140,37 +136,29 @@ Wire Wire Line
 Wire Wire Line
 	3000 6700 3000 6750
 Wire Wire Line
-	2850 6750 2850 6800
+	2850 6800 2850 6750
 Connection ~ 3000 7250
 Wire Wire Line
-	2850 7250 3000 7250
-Wire Wire Line
-	3000 7250 3150 7250
+	2850 7250 3150 7250
 Wire Wire Line
 	2850 7250 2850 7200
 Wire Wire Line
 	3850 7200 3850 7300
 Connection ~ 7650 4900
 Wire Wire Line
-	7750 4900 7650 4900
-Wire Wire Line
-	7650 4900 7550 4900
+	7750 4900 7550 4900
 Wire Wire Line
 	7750 4900 7750 4750
 Connection ~ 3400 5300
 Wire Wire Line
-	3500 5300 3400 5300
-Wire Wire Line
-	3400 5300 3300 5300
+	3500 5300 3300 5300
 Wire Wire Line
 	3500 5300 3500 5150
 Wire Wire Line
 	3500 1750 3500 1550
 Connection ~ 7650 2000
 Wire Wire Line
-	7750 2000 7650 2000
-Wire Wire Line
-	7650 2000 7550 2000
+	7750 2000 7550 2000
 Wire Wire Line
 	7750 2000 7750 2150
 Wire Wire Line
@@ -194,11 +182,9 @@ Wire Wire Line
 Wire Wire Line
 	3850 6800 3850 6700
 Wire Wire Line
-	3150 6750 3150 6800
+	3150 6800 3150 6750
 Wire Wire Line
-	2850 6750 3000 6750
-Wire Wire Line
-	3000 6750 3150 6750
+	3150 6750 2850 6750
 Connection ~ 3000 6750
 Wire Wire Line
 	4250 2150 4550 2150
