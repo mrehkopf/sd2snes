@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sat 15 May 2010 02:07:58 AM CEST
+EESchema Schematic File Version 2  date Sat 15 May 2010 04:06:22 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -45,7 +45,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 5 6
 Title "sd2snes Mark II"
-Date "14 may 2010"
+Date "15 may 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -214,7 +214,7 @@ L DOUBLE_SCH_KCOM2 D1
 U 1 1 4BAF3507
 P 5950 5300
 F 0 "D1" H 6100 5175 60  0000 C CNN
-F 1 "DOUBLE_SCH_KCOM2" H 5950 5450 60  0000 C CNN
+F 1 "BAT54C" H 5950 5450 60  0000 C CNN
 	1    5950 5300
 	1    0    0    -1  
 $EndComp

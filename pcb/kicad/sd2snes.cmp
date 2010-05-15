@@ -1,4 +1,11 @@
-Cmp-Mod V01 Created by CvPCB (20100205 SVN-R2303)-unstable date = Sat 27 Mar 2010 07:44:28 PM CET
+Cmp-Mod V01 Created by CvPCB (20100326 SVN-R2482)-unstable date = Sat 15 May 2010 12:46:12 PM CEST
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BAF2EAF;
+Reference = BT1;
+ValeurCmp = BATTERY;
+IdModule  = BT_KEYSTONE_1059_20MM;
+EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BABC8D1;
@@ -232,6 +239,13 @@ IdModule  = SM0805;
 EndCmp
 
 BeginCmp
+TimeStamp = /4B6EC9C3/4BAF3507;
+Reference = D1;
+ValeurCmp = BAT54C;
+IdModule  = SOT23EBC;
+EndCmp
+
+BeginCmp
 TimeStamp = /4B6E16F2/4B6E1766;
 Reference = J1;
 ValeurCmp = SNESCART_EXT;
@@ -243,6 +257,13 @@ TimeStamp = /4B6ED75B/4BAA6A9C;
 Reference = J2;
 ValeurCmp = SD_CARD;
 IdModule  = SD-RSMT-2-MQ-WF;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4BC24D19;
+Reference = J3;
+ValeurCmp = USB;
+IdModule  = ;
 EndCmp
 
 BeginCmp
@@ -348,6 +369,20 @@ TimeStamp = /4B6EC9C3/4BAA92DB;
 Reference = U15;
 ValeurCmp = PIC12F629;
 IdModule  = SO8N;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4BC243C8;
+Reference = X1;
+ValeurCmp = CRYSTAL;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4BC243CB;
+Reference = X2;
+ValeurCmp = CRYSTAL;
+IdModule  = ;
 EndCmp
 
 EndListe

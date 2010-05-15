@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sat 15 May 2010 02:07:58 AM CEST
+EESchema Schematic File Version 2  date Sat 15 May 2010 04:06:22 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -45,7 +45,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 3 6
 Title "sd2snes Mark II"
-Date "14 may 2010"
+Date "15 may 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -53,90 +53,244 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text GLabel 2250 4550 0    50   Input ~ 0
-ROM_/CE
-Text GLabel 8800 4050 2    50   Input ~ 0
+Text Label 8600 4050 0    50   ~ 0
 RAM_/WE
-Text GLabel 8800 3950 2    50   Input ~ 0
+Text Label 8600 3950 0    50   ~ 0
+RAM_/OE
+Text Label 8600 3850 0    50   ~ 0
+RAM_/CE
+Text Label 8600 3250 0    50   ~ 0
+RAM_DQ7
+Text Label 8600 3150 0    50   ~ 0
+RAM_DQ6
+Text Label 8600 3050 0    50   ~ 0
+RAM_DQ5
+Text Label 8600 2950 0    50   ~ 0
+RAM_DQ4
+Text Label 8600 2850 0    50   ~ 0
+RAM_DQ3
+Text Label 8600 2750 0    50   ~ 0
+RAM_DQ2
+Text Label 8600 2650 0    50   ~ 0
+RAM_DQ1
+Text Label 8600 2550 0    50   ~ 0
+RAM_DQ0
+Text Label 6400 4350 0    50   ~ 0
+RAM_A18
+Text Label 6400 4250 0    50   ~ 0
+RAM_A17
+Text Label 6400 4150 0    50   ~ 0
+RAM_A16
+Text Label 6400 4050 0    50   ~ 0
+RAM_A15
+Text Label 6400 3950 0    50   ~ 0
+RAM_A14
+Text Label 6400 3850 0    50   ~ 0
+RAM_A13
+Text Label 6400 3750 0    50   ~ 0
+RAM_A12
+Text Label 6400 3650 0    50   ~ 0
+RAM_A11
+Text Label 6400 3550 0    50   ~ 0
+RAM_A10
+Text Label 6400 3450 0    50   ~ 0
+RAM_A9
+Text Label 6400 3350 0    50   ~ 0
+RAM_A8
+Text Label 6400 3250 0    50   ~ 0
+RAM_A7
+Text Label 6400 3150 0    50   ~ 0
+RAM_A6
+Text Label 6400 3050 0    50   ~ 0
+RAM_A5
+Text Label 6400 2950 0    50   ~ 0
+RAM_A4
+Text Label 6400 2850 0    50   ~ 0
+RAM_A3
+Text Label 6400 2750 0    50   ~ 0
+RAM_A2
+Text Label 6400 2650 0    50   ~ 0
+RAM_A1
+Text Label 6400 2550 0    50   ~ 0
+RAM_A0
+Text Label 4350 4750 0    50   ~ 0
+ROM_CLK
+Text Label 4350 4650 0    50   ~ 0
+ROM_/ADV
+Text Label 4350 4350 0    50   ~ 0
+ROM_CRE
+Text Label 4350 4150 0    50   ~ 0
+ROM_/UB
+Text Label 4350 4050 0    50   ~ 0
+ROM_/LB
+Text Label 4350 3750 0    50   ~ 0
+ROM_DQ15
+Text Label 4350 3650 0    50   ~ 0
+ROM_DQ14
+Text Label 4350 3550 0    50   ~ 0
+ROM_DQ13
+Text Label 4350 3450 0    50   ~ 0
+ROM_DQ12
+Text Label 4350 3350 0    50   ~ 0
+ROM_DQ11
+Text Label 4350 3250 0    50   ~ 0
+ROM_DQ10
+Text Label 4350 3150 0    50   ~ 0
+ROM_DQ9
+Text Label 4350 3050 0    50   ~ 0
+ROM_DQ8
+Text Label 4350 2850 0    50   ~ 0
+ROM_DQ7
+Text Label 4350 2750 0    50   ~ 0
+ROM_DQ6
+Text Label 4350 2650 0    50   ~ 0
+ROM_DQ5
+Text Label 4350 2550 0    50   ~ 0
+ROM_DQ4
+Text Label 4350 2450 0    50   ~ 0
+ROM_DQ3
+Text Label 4350 2350 0    50   ~ 0
+ROM_DQ2
+Text Label 4350 2250 0    50   ~ 0
+ROM_DQ1
+Text Label 4350 2150 0    50   ~ 0
+ROM_DQ0
+Text Label 2100 4750 0    50   ~ 0
+ROM_/WE
+Text Label 2100 4650 0    50   ~ 0
+ROM_/OE
+Text Label 2100 4550 0    50   ~ 0
+ROM_/CE
+Text Label 2100 4350 0    50   ~ 0
+ROM_A22
+Text Label 2100 4250 0    50   ~ 0
+ROM_A21
+Text Label 2100 4150 0    50   ~ 0
+ROM_A20
+Text Label 2100 4050 0    50   ~ 0
+ROM_A19
+Text Label 2100 3950 0    50   ~ 0
+ROM_A18
+Text Label 2100 3850 0    50   ~ 0
+ROM_A17
+Text Label 2100 3750 0    50   ~ 0
+ROM_A16
+Text Label 2100 3650 0    50   ~ 0
+ROM_A15
+Text Label 2100 3550 0    50   ~ 0
+ROM_A14
+Text Label 2100 3450 0    50   ~ 0
+ROM_A13
+Text Label 2100 3350 0    50   ~ 0
+ROM_A12
+Text Label 2100 3250 0    50   ~ 0
+ROM_A11
+Text Label 2100 3150 0    50   ~ 0
+ROM_A10
+Text Label 2100 3050 0    50   ~ 0
+ROM_A9
+Text Label 2100 2950 0    50   ~ 0
+ROM_A8
+Text Label 2100 2850 0    50   ~ 0
+ROM_A7
+Text Label 2100 2750 0    50   ~ 0
+ROM_A6
+Text Label 2100 2650 0    50   ~ 0
+ROM_A5
+Text Label 2100 2550 0    50   ~ 0
+ROM_A4
+Text Label 2100 2450 0    50   ~ 0
+ROM_A3
+Text Label 2100 2350 0    50   ~ 0
+ROM_A2
+Text Label 2100 2250 0    50   ~ 0
+ROM_A1
+Text Label 2100 2150 0    50   ~ 0
+ROM_A0
+Text GLabel 2050 4550 0    50   Input ~ 0
+ROM_/CE
+Text GLabel 9000 4050 2    50   Input ~ 0
+RAM_/WE
+Text GLabel 9000 3950 2    50   Input ~ 0
 RAM_/OE
 Wire Wire Line
-	8500 3250 8800 3250
+	8500 3250 9000 3250
 Wire Wire Line
-	8500 3150 8800 3150
+	8500 3150 9000 3150
 Wire Wire Line
-	8500 3050 8800 3050
+	8500 3050 9000 3050
 Wire Wire Line
-	8500 2950 8800 2950
+	8500 2950 9000 2950
 Wire Wire Line
-	8500 2850 8800 2850
+	8500 2850 9000 2850
 Wire Wire Line
-	8500 2750 8800 2750
+	8500 2750 9000 2750
 Wire Wire Line
-	8500 2650 8800 2650
+	8500 2650 9000 2650
 Wire Wire Line
-	8500 2550 8800 2550
-Connection ~ 4550 4650
+	8500 2550 9000 2550
+Connection ~ 4750 4650
 Wire Wire Line
-	4550 5400 4550 4350
-Connection ~ 4550 4750
+	4750 5400 4750 4350
+Connection ~ 4750 4750
 Wire Wire Line
-	8500 4050 8800 4050
+	8500 4050 9000 4050
 Wire Wire Line
-	2550 4550 2250 4550
+	2550 4550 2050 4550
 Wire Wire Line
-	2550 4750 2250 4750
+	2550 4750 2050 4750
 Wire Wire Line
-	2550 4650 2250 4650
+	2550 4650 2050 4650
 Wire Wire Line
-	2550 4350 2250 4350
+	2550 4350 2050 4350
 Wire Wire Line
-	2550 4250 2250 4250
+	2550 4250 2050 4250
 Wire Wire Line
-	2550 4150 2250 4150
+	2550 4150 2050 4150
 Wire Wire Line
-	2550 4050 2250 4050
+	2550 4050 2050 4050
 Wire Wire Line
-	2550 3950 2250 3950
+	2550 3950 2050 3950
 Wire Wire Line
-	2550 3850 2250 3850
+	2550 3850 2050 3850
 Wire Wire Line
-	2550 3750 2250 3750
+	2550 3750 2050 3750
 Wire Wire Line
-	2550 3650 2250 3650
+	2550 3650 2050 3650
 Wire Wire Line
-	2550 3550 2250 3550
+	2550 3550 2050 3550
 Wire Wire Line
-	2550 3450 2250 3450
+	2550 3450 2050 3450
 Wire Wire Line
-	2550 3350 2250 3350
+	2550 3350 2050 3350
 Wire Wire Line
-	2550 3250 2250 3250
+	2550 3250 2050 3250
 Wire Wire Line
-	2550 3150 2250 3150
+	2550 3150 2050 3150
 Wire Wire Line
-	2550 3050 2250 3050
+	2550 3050 2050 3050
 Wire Wire Line
-	2550 2950 2250 2950
+	2550 2950 2050 2950
 Wire Wire Line
-	2550 2850 2250 2850
+	2550 2850 2050 2850
 Wire Wire Line
-	2550 2750 2250 2750
+	2550 2750 2050 2750
 Wire Wire Line
-	2550 2650 2250 2650
+	2550 2650 2050 2650
 Wire Wire Line
-	2550 2550 2250 2550
+	2550 2550 2050 2550
 Wire Wire Line
-	2550 2450 2250 2450
+	2550 2450 2050 2450
 Wire Wire Line
-	2550 2350 2250 2350
+	2550 2350 2050 2350
 Wire Wire Line
-	2550 2250 2250 2250
+	2550 2250 2050 2250
 Wire Wire Line
-	2550 2150 2250 2150
+	2550 2150 2050 2150
 Wire Wire Line
 	3000 6700 3000 6750
 Wire Wire Line
-	2850 6800 2850 6750
+	2850 6750 2850 6800
 Connection ~ 3000 7250
 Wire Wire Line
 	2850 7250 3150 7250
@@ -182,244 +336,244 @@ Wire Wire Line
 Wire Wire Line
 	3850 6800 3850 6700
 Wire Wire Line
-	3150 6800 3150 6750
+	3150 6750 3150 6800
 Wire Wire Line
-	3150 6750 2850 6750
+	2850 6750 3150 6750
 Connection ~ 3000 6750
 Wire Wire Line
-	4250 2150 4550 2150
+	4250 2150 4750 2150
 Wire Wire Line
-	4250 2250 4550 2250
+	4250 2250 4750 2250
 Wire Wire Line
-	4250 2350 4550 2350
+	4250 2350 4750 2350
 Wire Wire Line
-	4250 2450 4550 2450
+	4250 2450 4750 2450
 Wire Wire Line
-	4250 2550 4550 2550
+	4250 2550 4750 2550
 Wire Wire Line
-	4250 2650 4550 2650
+	4250 2650 4750 2650
 Wire Wire Line
-	4250 2750 4550 2750
+	4250 2750 4750 2750
 Wire Wire Line
-	4250 2850 4550 2850
+	4250 2850 4750 2850
 Wire Wire Line
-	4250 3050 4550 3050
+	4250 3050 4750 3050
 Wire Wire Line
-	4250 3150 4550 3150
+	4250 3150 4750 3150
 Wire Wire Line
-	4250 3250 4550 3250
+	4250 3250 4750 3250
 Wire Wire Line
-	4250 3350 4550 3350
+	4250 3350 4750 3350
 Wire Wire Line
-	4250 3450 4550 3450
+	4250 3450 4750 3450
 Wire Wire Line
-	4250 3550 4550 3550
+	4250 3550 4750 3550
 Wire Wire Line
-	4250 3650 4550 3650
+	4250 3650 4750 3650
 Wire Wire Line
-	4250 3750 4550 3750
+	4250 3750 4750 3750
 Wire Wire Line
-	4250 4050 4550 4050
+	4250 4050 4750 4050
 Wire Wire Line
-	4250 4150 4550 4150
+	4250 4150 4750 4150
 Wire Wire Line
-	4550 4350 4250 4350
+	4750 4350 4250 4350
 Wire Wire Line
-	4550 4650 4250 4650
+	4750 4650 4250 4650
 Wire Wire Line
-	4250 4750 4550 4750
+	4250 4750 4750 4750
 Wire Wire Line
-	8500 3850 8800 3850
+	8500 3850 9000 3850
 Wire Wire Line
-	8500 3950 8800 3950
+	8500 3950 9000 3950
 Wire Wire Line
-	6800 2550 6500 2550
+	6800 2550 6300 2550
 Wire Wire Line
-	6800 2650 6500 2650
+	6800 2650 6300 2650
 Wire Wire Line
-	6800 2750 6500 2750
+	6800 2750 6300 2750
 Wire Wire Line
-	6800 2850 6500 2850
+	6800 2850 6300 2850
 Wire Wire Line
-	6800 2950 6500 2950
+	6800 2950 6300 2950
 Wire Wire Line
-	6800 3050 6500 3050
+	6800 3050 6300 3050
 Wire Wire Line
-	6800 3150 6500 3150
+	6800 3150 6300 3150
 Wire Wire Line
-	6800 3250 6500 3250
+	6800 3250 6300 3250
 Wire Wire Line
-	6800 3350 6500 3350
+	6800 3350 6300 3350
 Wire Wire Line
-	6800 3450 6500 3450
+	6800 3450 6300 3450
 Wire Wire Line
-	6800 3550 6500 3550
+	6800 3550 6300 3550
 Wire Wire Line
-	6800 3650 6500 3650
+	6800 3650 6300 3650
 Wire Wire Line
-	6800 3750 6500 3750
+	6800 3750 6300 3750
 Wire Wire Line
-	6800 3850 6500 3850
+	6800 3850 6300 3850
 Wire Wire Line
-	6800 3950 6500 3950
+	6800 3950 6300 3950
 Wire Wire Line
-	6800 4050 6500 4050
+	6800 4050 6300 4050
 Wire Wire Line
-	6800 4150 6500 4150
+	6800 4150 6300 4150
 Wire Wire Line
-	6800 4250 6500 4250
+	6800 4250 6300 4250
 Wire Wire Line
-	6800 4350 6500 4350
-Text GLabel 8800 3250 2    50   BiDi ~ 0
+	6800 4350 6300 4350
+Text GLabel 9000 3250 2    50   BiDi ~ 0
 RAM_DQ7
-Text GLabel 8800 3150 2    50   BiDi ~ 0
+Text GLabel 9000 3150 2    50   BiDi ~ 0
 RAM_DQ6
-Text GLabel 8800 3050 2    50   BiDi ~ 0
+Text GLabel 9000 3050 2    50   BiDi ~ 0
 RAM_DQ5
-Text GLabel 8800 2950 2    50   BiDi ~ 0
+Text GLabel 9000 2950 2    50   BiDi ~ 0
 RAM_DQ4
-Text GLabel 8800 2850 2    50   BiDi ~ 0
+Text GLabel 9000 2850 2    50   BiDi ~ 0
 RAM_DQ3
-Text GLabel 8800 2750 2    50   BiDi ~ 0
+Text GLabel 9000 2750 2    50   BiDi ~ 0
 RAM_DQ2
-Text GLabel 8800 2650 2    50   BiDi ~ 0
+Text GLabel 9000 2650 2    50   BiDi ~ 0
 RAM_DQ1
-Text GLabel 8800 2550 2    50   BiDi ~ 0
+Text GLabel 9000 2550 2    50   BiDi ~ 0
 RAM_DQ0
-Text GLabel 6500 4350 0    50   Input ~ 0
+Text GLabel 6300 4350 0    50   Input ~ 0
 RAM_A18
-Text GLabel 6500 4250 0    50   Input ~ 0
+Text GLabel 6300 4250 0    50   Input ~ 0
 RAM_A17
-Text GLabel 6500 4150 0    50   Input ~ 0
+Text GLabel 6300 4150 0    50   Input ~ 0
 RAM_A16
-Text GLabel 6500 4050 0    50   Input ~ 0
+Text GLabel 6300 4050 0    50   Input ~ 0
 RAM_A15
-Text GLabel 6500 3950 0    50   Input ~ 0
+Text GLabel 6300 3950 0    50   Input ~ 0
 RAM_A14
-Text GLabel 6500 3850 0    50   Input ~ 0
+Text GLabel 6300 3850 0    50   Input ~ 0
 RAM_A13
-Text GLabel 6500 3750 0    50   Input ~ 0
+Text GLabel 6300 3750 0    50   Input ~ 0
 RAM_A12
-Text GLabel 6500 3650 0    50   Input ~ 0
+Text GLabel 6300 3650 0    50   Input ~ 0
 RAM_A11
-Text GLabel 6500 3550 0    50   Input ~ 0
+Text GLabel 6300 3550 0    50   Input ~ 0
 RAM_A10
-Text GLabel 6500 3450 0    50   Input ~ 0
+Text GLabel 6300 3450 0    50   Input ~ 0
 RAM_A9
-Text GLabel 6500 3350 0    50   Input ~ 0
+Text GLabel 6300 3350 0    50   Input ~ 0
 RAM_A8
-Text GLabel 6500 3250 0    50   Input ~ 0
+Text GLabel 6300 3250 0    50   Input ~ 0
 RAM_A7
-Text GLabel 6500 3150 0    50   Input ~ 0
+Text GLabel 6300 3150 0    50   Input ~ 0
 RAM_A6
-Text GLabel 6500 3050 0    50   Input ~ 0
+Text GLabel 6300 3050 0    50   Input ~ 0
 RAM_A5
-Text GLabel 6500 2950 0    50   Input ~ 0
+Text GLabel 6300 2950 0    50   Input ~ 0
 RAM_A4
-Text GLabel 6500 2850 0    50   Input ~ 0
+Text GLabel 6300 2850 0    50   Input ~ 0
 RAM_A3
-Text GLabel 6500 2750 0    50   Input ~ 0
+Text GLabel 6300 2750 0    50   Input ~ 0
 RAM_A2
-Text GLabel 6500 2650 0    50   Input ~ 0
+Text GLabel 6300 2650 0    50   Input ~ 0
 RAM_A1
-Text GLabel 6500 2550 0    50   Input ~ 0
+Text GLabel 6300 2550 0    50   Input ~ 0
 RAM_A0
-Text GLabel 4550 4150 2    50   Input ~ 0
+Text GLabel 4750 4150 2    50   Input ~ 0
 ROM_/UB
-Text GLabel 4550 4050 2    50   Input ~ 0
+Text GLabel 4750 4050 2    50   Input ~ 0
 ROM_/LB
-Text GLabel 4550 3750 2    50   BiDi ~ 0
+Text GLabel 4750 3750 2    50   BiDi ~ 0
 ROM_DQ15
-Text GLabel 4550 3650 2    50   BiDi ~ 0
+Text GLabel 4750 3650 2    50   BiDi ~ 0
 ROM_DQ14
-Text GLabel 4550 3550 2    50   BiDi ~ 0
+Text GLabel 4750 3550 2    50   BiDi ~ 0
 ROM_DQ13
-Text GLabel 4550 3450 2    50   BiDi ~ 0
+Text GLabel 4750 3450 2    50   BiDi ~ 0
 ROM_DQ12
-Text GLabel 4550 3350 2    50   BiDi ~ 0
+Text GLabel 4750 3350 2    50   BiDi ~ 0
 ROM_DQ11
-Text GLabel 4550 3250 2    50   BiDi ~ 0
+Text GLabel 4750 3250 2    50   BiDi ~ 0
 ROM_DQ10
-Text GLabel 4550 3150 2    50   BiDi ~ 0
+Text GLabel 4750 3150 2    50   BiDi ~ 0
 ROM_DQ9
-Text GLabel 4550 3050 2    50   BiDi ~ 0
+Text GLabel 4750 3050 2    50   BiDi ~ 0
 ROM_DQ8
-Text GLabel 4550 2850 2    50   BiDi ~ 0
+Text GLabel 4750 2850 2    50   BiDi ~ 0
 ROM_DQ7
-Text GLabel 4550 2750 2    50   BiDi ~ 0
+Text GLabel 4750 2750 2    50   BiDi ~ 0
 ROM_DQ6
-Text GLabel 4550 2650 2    50   BiDi ~ 0
+Text GLabel 4750 2650 2    50   BiDi ~ 0
 ROM_DQ5
-Text GLabel 4550 2550 2    50   BiDi ~ 0
+Text GLabel 4750 2550 2    50   BiDi ~ 0
 ROM_DQ4
-Text GLabel 4550 2450 2    50   BiDi ~ 0
+Text GLabel 4750 2450 2    50   BiDi ~ 0
 ROM_DQ3
-Text GLabel 4550 2350 2    50   BiDi ~ 0
+Text GLabel 4750 2350 2    50   BiDi ~ 0
 ROM_DQ2
-Text GLabel 4550 2250 2    50   BiDi ~ 0
+Text GLabel 4750 2250 2    50   BiDi ~ 0
 ROM_DQ1
-Text GLabel 4550 2150 2    50   BiDi ~ 0
+Text GLabel 4750 2150 2    50   BiDi ~ 0
 ROM_DQ0
-Text GLabel 2250 4350 0    50   Input ~ 0
+Text GLabel 2050 4350 0    50   Input ~ 0
 ROM_A22
-Text GLabel 2250 4250 0    50   Input ~ 0
+Text GLabel 2050 4250 0    50   Input ~ 0
 ROM_A21
-Text GLabel 2250 4150 0    50   Input ~ 0
+Text GLabel 2050 4150 0    50   Input ~ 0
 ROM_A20
-Text GLabel 2250 4050 0    50   Input ~ 0
+Text GLabel 2050 4050 0    50   Input ~ 0
 ROM_A19
-Text GLabel 2250 3950 0    50   Input ~ 0
+Text GLabel 2050 3950 0    50   Input ~ 0
 ROM_A18
-Text GLabel 2250 3850 0    50   Input ~ 0
+Text GLabel 2050 3850 0    50   Input ~ 0
 ROM_A17
-Text GLabel 2250 3750 0    50   Input ~ 0
+Text GLabel 2050 3750 0    50   Input ~ 0
 ROM_A16
-Text GLabel 2250 3650 0    50   Input ~ 0
+Text GLabel 2050 3650 0    50   Input ~ 0
 ROM_A15
-Text GLabel 2250 3550 0    50   Input ~ 0
+Text GLabel 2050 3550 0    50   Input ~ 0
 ROM_A14
-Text GLabel 2250 3450 0    50   Input ~ 0
+Text GLabel 2050 3450 0    50   Input ~ 0
 ROM_A13
-Text GLabel 2250 3350 0    50   Input ~ 0
+Text GLabel 2050 3350 0    50   Input ~ 0
 ROM_A12
-Text GLabel 2250 3250 0    50   Input ~ 0
+Text GLabel 2050 3250 0    50   Input ~ 0
 ROM_A11
-Text GLabel 2250 3150 0    50   Input ~ 0
+Text GLabel 2050 3150 0    50   Input ~ 0
 ROM_A10
-Text GLabel 2250 3050 0    50   Input ~ 0
+Text GLabel 2050 3050 0    50   Input ~ 0
 ROM_A9
-Text GLabel 2250 2950 0    50   Input ~ 0
+Text GLabel 2050 2950 0    50   Input ~ 0
 ROM_A8
-Text GLabel 2250 2850 0    50   Input ~ 0
+Text GLabel 2050 2850 0    50   Input ~ 0
 ROM_A7
-Text GLabel 2250 2750 0    50   Input ~ 0
+Text GLabel 2050 2750 0    50   Input ~ 0
 ROM_A6
-Text GLabel 2250 2650 0    50   Input ~ 0
+Text GLabel 2050 2650 0    50   Input ~ 0
 ROM_A5
-Text GLabel 2250 2550 0    50   Input ~ 0
+Text GLabel 2050 2550 0    50   Input ~ 0
 ROM_A4
-Text GLabel 2250 2450 0    50   Input ~ 0
+Text GLabel 2050 2450 0    50   Input ~ 0
 ROM_A3
-Text GLabel 2250 2350 0    50   Input ~ 0
+Text GLabel 2050 2350 0    50   Input ~ 0
 ROM_A2
-Text GLabel 2250 2250 0    50   Input ~ 0
+Text GLabel 2050 2250 0    50   Input ~ 0
 ROM_A1
-Text GLabel 2250 2150 0    50   Input ~ 0
+Text GLabel 2050 2150 0    50   Input ~ 0
 ROM_A0
 NoConn ~ 4250 4550
 NoConn ~ 8500 4350
 $Comp
 L GND #PWR030
 U 1 1 4BCA30BF
-P 4550 5400
-F 0 "#PWR030" H 4550 5400 30  0001 C CNN
-F 1 "GND" H 4550 5330 30  0001 C CNN
-	1    4550 5400
+P 4750 5400
+F 0 "#PWR030" H 4750 5400 30  0001 C CNN
+F 1 "GND" H 4750 5330 30  0001 C CNN
+	1    4750 5400
 	1    0    0    -1  
 $EndComp
-Text GLabel 2250 4750 0    50   Input ~ 0
+Text GLabel 2050 4750 0    50   Input ~ 0
 ROM_/WE
-Text GLabel 2250 4650 0    50   Input ~ 0
+Text GLabel 2050 4650 0    50   Input ~ 0
 ROM_/OE
 $Comp
 L C C17
