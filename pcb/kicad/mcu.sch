@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sun 16 May 2010 01:08:34 AM CEST
+EESchema Schematic File Version 2  date Sun 16 May 2010 01:45:32 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -53,8 +53,10 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text GLabel 2500 4200 0    50   Output ~ 0
-PROG_B
+Text Notes 6850 4500 0    50   ~ 0
+LEDs
+Wire Wire Line
+	6500 4500 6800 4500
 Wire Wire Line
 	3000 4200 2500 4200
 Wire Wire Line
@@ -234,6 +236,10 @@ Wire Wire Line
 	6500 3300 6800 3300
 Wire Wire Line
 	6800 3800 6500 3800
+Wire Wire Line
+	6500 4400 6800 4400
+Text GLabel 2500 4200 0    50   Output ~ 0
+PROG_B
 Text GLabel 6800 3200 2    50   Output ~ 0
 FPGA_CLK
 Text GLabel 6800 3300 2    50   Output ~ 0
