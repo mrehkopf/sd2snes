@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sat 15 May 2010 04:06:22 PM CEST
+EESchema Schematic File Version 2  date Sun 16 May 2010 01:08:34 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -290,7 +290,7 @@ Wire Wire Line
 Wire Wire Line
 	3000 6700 3000 6750
 Wire Wire Line
-	2850 6750 2850 6800
+	2850 6800 2850 6750
 Connection ~ 3000 7250
 Wire Wire Line
 	2850 7250 3150 7250
@@ -336,9 +336,9 @@ Wire Wire Line
 Wire Wire Line
 	3850 6800 3850 6700
 Wire Wire Line
-	3150 6750 3150 6800
+	3150 6800 3150 6750
 Wire Wire Line
-	2850 6750 3150 6750
+	3150 6750 2850 6750
 Connection ~ 3000 6750
 Wire Wire Line
 	4250 2150 4750 2150
