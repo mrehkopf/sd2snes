@@ -1,4 +1,4 @@
-update=Sun 11 Apr 2010 10:59:07 PM CEST
+update=Sun 16 May 2010 04:29:55 PM CEST
 version=1
 last_client=eeschema
 [pcbnew]
@@ -40,13 +40,13 @@ LibName13=libs/mypackages
 LibName14=libs/sdcard
 LibName15=libs/diy_capacitors
 LibDir=
+[general]
+version=1
 [cvpcb]
 version=1
 NetIExt=net
 [cvpcb/libraries]
 EquName1=devcms
-[general]
-version=1
 [eeschema]
 version=1
 LibDir=
@@ -123,3 +123,4 @@ LibName37=libs/cy62148ev30
 LibName38=libs/mt45w8mw16
 LibName39=libs/cs4344
 LibName40=libs/double_sch_kcom
+LibName41=libs/usb_minib
