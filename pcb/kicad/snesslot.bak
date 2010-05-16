@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sun 16 May 2010 04:22:26 PM CEST
+EESchema Schematic File Version 2  date Mon 17 May 2010 01:10:46 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -39,6 +39,7 @@ LIBS:cy62148ev30
 LIBS:mt45w8mw16
 LIBS:cs4344
 LIBS:double_sch_kcom
+LIBS:usb_minib
 LIBS:sd2snes-cache
 EELAYER 24  0
 EELAYER END

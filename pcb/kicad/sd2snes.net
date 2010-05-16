@@ -1,4 +1,4 @@
-# EESchema Netlist Version 1.1 created  Sun 16 May 2010 04:33:29 PM CEST
+# EESchema Netlist Version 1.1 created  Mon 17 May 2010 01:11:07 AM CEST
 (
  ( /4B6E16F2/4BAE51CA $noname  R1 300 {Lib=R}
   (    1 /SNES_Slot/SNES_EXT_SYS_CLK )
@@ -762,9 +762,9 @@
   (  106 N-000039 )
   (  107 N-000037 )
   (  108 N-000034 )
-  (  109 N-000030 )
+  (  109 N-000031 )
   (  110 +3.3V )
-  (  111 N-000031 )
+  (  111 N-000030 )
   (  112 GND )
   (  113 N-000111 )
   (  114 N-000112 )
@@ -1278,8 +1278,8 @@ Net 26 "" ""
  U4 120
  U2 41
 Net 27 "/SNES Slot/SNES_EXT_A20" "SNES_EXT_A20"
- U2 13
  J1 45
+ U2 13
 Net 28 "" ""
  U4 119
  U2 43
@@ -1287,11 +1287,11 @@ Net 29 "/SNES Slot/SNES_EXT_D7" "SNES_EXT_D7"
  J1 53
  U1 14
 Net 30 "" ""
- U4 109
+ U4 111
  U1 24
 Net 31 "" ""
- U4 111
  U1 25
+ U4 109
 Net 32 "" ""
  U1 35
  U4 97
@@ -1302,11 +1302,11 @@ Net 34 "" ""
  U1 26
  U4 108
 Net 35 "" ""
- U4 96
  U1 36
+ U4 96
 Net 36 "/SNES Slot/SNES_EXT_D6" "SNES_EXT_D6"
- J1 52
  U1 17
+ J1 52
 Net 37 "" ""
  U1 27
  U4 107
