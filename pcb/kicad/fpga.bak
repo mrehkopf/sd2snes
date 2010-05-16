@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Mon 17 May 2010 01:10:46 AM CEST
+EESchema Schematic File Version 2  date Mon 17 May 2010 01:25:04 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -826,9 +826,9 @@ Text GLabel 5350 9400 0    50   Input ~ 0
 SNES_CPU_CLK
 Text GLabel 5350 9500 0    50   Input ~ 0
 SNES_/WR
-Text GLabel 11350 9350 2    50   BiDi ~ 0
+Text GLabel 11350 9250 2    50   BiDi ~ 0
 SNES_/IRQ
-Text GLabel 11350 9250 2    50   Output ~ 0
+Text GLabel 11350 9350 2    50   Output ~ 0
 IRQ_DIR
 Text GLabel 5350 9600 0    50   BiDi ~ 0
 SNES_D3
