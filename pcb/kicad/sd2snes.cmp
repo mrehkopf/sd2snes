@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (20100314 SVN-R2462)-final date = Sun 16 May 2010 04:33:26 PM CEST
+Cmp-Mod V01 Created by CvPCB (20100314 SVN-R2462)-final date = Mon 17 May 2010 09:54:39 PM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -267,9 +267,9 @@ IdModule  = SM0805;
 EndCmp
 
 BeginCmp
-TimeStamp = /4B6EC9C3/4BAF3507;
+TimeStamp = /4BAA6ABD/4BF19DCA;
 Reference = D1;
-ValeurCmp = BAT54C;
+ValeurCmp = DOUBLE_SCH_KCOM2;
 IdModule  = SOT23EBC;
 EndCmp
 
@@ -288,9 +288,9 @@ IdModule  = SD-RSMT-2-MQ-WF;
 EndCmp
 
 BeginCmp
-TimeStamp = /4B6ED75B/4BC24D19;
+TimeStamp = /4B6ED75B/4BF00175;
 Reference = J3;
-ValeurCmp = USB;
+ValeurCmp = USB_MINIB;
 IdModule  = USB-MINIB-THT;
 EndCmp
 
