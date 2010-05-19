@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (20100314 SVN-R2462)-final date = Tue 18 May 2010 10:56:18 PM CEST
+Cmp-Mod V01 Created by CvPCB (2010-03-14)-final date = Wed 19 May 2010 01:55:27 PM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -295,15 +295,22 @@ IdModule  = USB-MINIB-THT;
 EndCmp
 
 BeginCmp
-TimeStamp = /4B6ED75B/4BEFBC60;
+TimeStamp = /4B6ED75B/4BF3C8DA;
 Reference = P1;
-ValeurCmp = CONN_12;
-IdModule  = pin_array_6x2;
+ValeurCmp = CONN_14;
+IdModule  = pin_array_7x2;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BEFBC73;
 Reference = P2;
+ValeurCmp = CONN_2;
+IdModule  = PIN_ARRAY_2X1;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BF3CB50;
+Reference = P3;
 ValeurCmp = CONN_2;
 IdModule  = PIN_ARRAY_2X1;
 EndCmp

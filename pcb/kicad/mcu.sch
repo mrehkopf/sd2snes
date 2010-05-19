@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Tue 18 May 2010 10:59:09 PM CEST
+EESchema Schematic File Version 2  date Wed 19 May 2010 03:09:32 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 4 6
 Title "sd2snes Mark II"
-Date "18 may 2010"
+Date "19 may 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -54,6 +54,15 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+$Comp
+L CONN_14 P1
+U 1 1 4BF3C8DA
+P 700 4000
+F 0 "P1" V 670 4000 60  0000 C CNN
+F 1 "CONN_14" V 780 4000 60  0000 C CNN
+	1    700  4000
+	-1   0    0    1   
+$EndComp
 Connection ~ 9000 4800
 Wire Wire Line
 	9000 4800 9100 4800
@@ -280,15 +289,6 @@ P 650 5300
 F 0 "P2" V 600 5300 40  0000 C CNN
 F 1 "CONN_2" V 700 5300 40  0000 C CNN
 	1    650  5300
-	-1   0    0    1   
-$EndComp
-$Comp
-L CONN_12 P1
-U 1 1 4BEFBC60
-P 650 4400
-F 0 "P1" V 600 4400 60  0000 C CNN
-F 1 "CONN_12" V 700 4400 60  0000 C CNN
-	1    650  4400
 	-1   0    0    1   
 $EndComp
 Text GLabel 2500 4900 0    50   Input ~ 0

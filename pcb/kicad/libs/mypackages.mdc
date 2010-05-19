@@ -1,9 +1,15 @@
-PCBNEW-LibDoc----V1  Tue 18 May 2010 01:12:03 PM CEST
+PCBNEW-LibDoc----V1  Wed 19 May 2010 02:07:24 PM CEST
 #
 $MODULE PQFP208_ALTPADS
 Li PQFP208_ALTPADS
 Cd Module cms PQFP 208 pins
 Kw PQFP CMS
+$EndMODULE
+#
+$MODULE pin_array_7x2
+Li pin_array_7x2
+Cd Double rangee de contacts 2 x 7 pins
+Kw CONN
 $EndMODULE
 #
 $EndLIBDOC
