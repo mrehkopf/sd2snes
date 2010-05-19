@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 19 May 2010 03:09:32 PM CEST
+EESchema Schematic File Version 2  date Wed 19 May 2010 07:19:30 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -54,15 +54,14 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-$Comp
-L CONN_14 P1
-U 1 1 4BF3C8DA
-P 700 4000
-F 0 "P1" V 670 4000 60  0000 C CNN
-F 1 "CONN_14" V 780 4000 60  0000 C CNN
-	1    700  4000
-	-1   0    0    1   
-$EndComp
+Text GLabel 2500 4800 0    50   Input ~ 0
+/TRST
+Wire Wire Line
+	3000 4800 2500 4800
+Wire Wire Line
+	6500 2600 6800 2600
+Wire Wire Line
+	6500 5800 6800 5800
 Connection ~ 9000 4800
 Wire Wire Line
 	9000 4800 9100 4800
@@ -255,6 +254,27 @@ Wire Wire Line
 Wire Wire Line
 	9100 4700 9000 4700
 Connection ~ 9000 4700
+Wire Wire Line
+	3000 2400 2500 2400
+Wire Wire Line
+	6500 2700 6800 2700
+Text GLabel 6800 2700 2    50   Input ~ 0
+RX0
+Text GLabel 6800 2600 2    50   Output ~ 0
+TX0
+Text GLabel 2500 2400 0    50   3State ~ 0
+CIC_DATA0
+Text GLabel 6800 5800 2    50   3State ~ 0
+CIC_DATA1
+$Comp
+L CONN_14 P1
+U 1 1 4BF3C8DA
+P 10400 6050
+F 0 "P1" V 10370 6050 60  0000 C CNN
+F 1 "CONN_14" V 10480 6050 60  0000 C CNN
+	1    10400 6050
+	1    0    0    -1  
+$EndComp
 $Comp
 L GND #PWR044
 U 1 1 4BF0021F

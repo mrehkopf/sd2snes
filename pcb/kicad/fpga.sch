@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 19 May 2010 03:09:32 PM CEST
+EESchema Schematic File Version 2  date Wed 19 May 2010 07:19:30 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -640,7 +640,7 @@ P 1500 7200
 F 0 "P3" V 1450 7200 40  0000 C CNN
 F 1 "CONN_2" V 1550 7200 40  0000 C CNN
 	1    1500 7200
-	-1   0    0    -1  
+	-1   0    0    1   
 $EndComp
 Text GLabel 5650 1450 0    50   Input ~ 0
 TMS
