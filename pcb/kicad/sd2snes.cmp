@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (2010-03-14)-final date = Wed 19 May 2010 01:55:27 PM CEST
+Cmp-Mod V01 Created by CvPCB (20100314 SVN-R2462)-final date = Thu 20 May 2010 11:07:22 PM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -263,6 +263,20 @@ BeginCmp
 TimeStamp = /4B6ED75B/4BEECBD1;
 Reference = C37;
 ValeurCmp = 22p;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BF5A43F;
+Reference = C38;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4BF5A441;
+Reference = C39;
+ValeurCmp = 100n;
 IdModule  = SM0805;
 EndCmp
 

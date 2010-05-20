@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Thu 20 May 2010 05:57:13 PM CEST
+EESchema Schematic File Version 2  date Fri 21 May 2010 12:12:26 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A3 16535 11700
 Sheet 6 6
 Title "sd2snes Mark II"
-Date "19 may 2010"
+Date "20 may 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -54,15 +54,14 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-$Comp
-L GND #PWR088
-U 1 1 4BF3CB99
-P 2050 7500
-F 0 "#PWR088" H 2050 7500 30  0001 C CNN
-F 1 "GND" H 2050 7430 30  0001 C CNN
-	1    2050 7500
-	1    0    0    -1  
-$EndComp
+Connection ~ 4850 10950
+Wire Wire Line
+	4350 10950 5100 10950
+Wire Wire Line
+	5100 10950 5100 10850
+Connection ~ 4850 10350
+Wire Wire Line
+	4850 10450 4850 10350
 Wire Wire Line
 	2050 7500 2050 7300
 Wire Wire Line
@@ -422,12 +421,8 @@ Wire Wire Line
 	3250 10950 3250 10850
 Connection ~ 3250 10950
 Wire Wire Line
-	4350 10350 4600 10350
-Wire Wire Line
 	4600 10350 4600 10450
 Connection ~ 4350 10350
-Wire Wire Line
-	4350 10950 4600 10950
 Connection ~ 4350 10950
 Wire Wire Line
 	4600 10950 4600 10850
@@ -633,6 +628,41 @@ Wire Wire Line
 	6200 1750 5650 1750
 Wire Wire Line
 	1850 7100 6200 7100
+Wire Wire Line
+	4350 10350 5100 10350
+Wire Wire Line
+	5100 10350 5100 10450
+Connection ~ 4600 10350
+Wire Wire Line
+	4850 10950 4850 10850
+Connection ~ 4600 10950
+$Comp
+L C C39
+U 1 1 4BF5A441
+P 5100 10650
+F 0 "C39" H 5150 10750 50  0000 L CNN
+F 1 "100n" H 5150 10550 50  0000 L CNN
+	1    5100 10650
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C38
+U 1 1 4BF5A43F
+P 4850 10650
+F 0 "C38" H 4900 10750 50  0000 L CNN
+F 1 "100n" H 4900 10550 50  0000 L CNN
+	1    4850 10650
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR088
+U 1 1 4BF3CB99
+P 2050 7500
+F 0 "#PWR088" H 2050 7500 30  0001 C CNN
+F 1 "GND" H 2050 7430 30  0001 C CNN
+	1    2050 7500
+	1    0    0    -1  
+$EndComp
 $Comp
 L CONN_2 P3
 U 1 1 4BF3CB50
