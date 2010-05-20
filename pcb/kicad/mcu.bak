@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 19 May 2010 06:56:49 PM CEST
+EESchema Schematic File Version 2  date Wed 19 May 2010 07:19:30 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -269,11 +269,11 @@ CIC_DATA1
 $Comp
 L CONN_14 P1
 U 1 1 4BF3C8DA
-P 700 4000
-F 0 "P1" V 670 4000 60  0000 C CNN
-F 1 "CONN_14" V 780 4000 60  0000 C CNN
-	1    700  4000
-	-1   0    0    1   
+P 10400 6050
+F 0 "P1" V 10370 6050 60  0000 C CNN
+F 1 "CONN_14" V 10480 6050 60  0000 C CNN
+	1    10400 6050
+	1    0    0    -1  
 $EndComp
 $Comp
 L GND #PWR044
