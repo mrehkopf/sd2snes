@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (20100314 SVN-R2462)-final date = Fri 21 May 2010 07:26:36 PM CEST
+Cmp-Mod V01 Created by CvPCB (20100314 SVN-R2462)-final date = Sat 22 May 2010 11:50:36 PM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -323,6 +323,20 @@ IdModule  = SOT23EBC;
 EndCmp
 
 BeginCmp
+TimeStamp = /4B6ED75B/4BF8324A;
+Reference = D2;
+ValeurCmp = BusyLED;
+IdModule  = PIN_ARRAY_2X1;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4BF8328D;
+Reference = D3;
+ValeurCmp = RdyLED;
+IdModule  = PIN_ARRAY_2X1;
+EndCmp
+
+BeginCmp
 TimeStamp = /4B6E16F2/4B6E1766;
 Reference = J1;
 ValeurCmp = SNESCART_EXT;
@@ -396,6 +410,34 @@ BeginCmp
 TimeStamp = /4BAA6ABD/4BF2FDAF;
 Reference = R4;
 ValeurCmp = 20k;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4BF847A7;
+Reference = R5;
+ValeurCmp = 100;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4BF847B1;
+Reference = R6;
+ValeurCmp = 100;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4BF850A9;
+Reference = R7;
+ValeurCmp = 270;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4BF850D1;
+Reference = R8;
+ValeurCmp = 270;
 IdModule  = SM0805;
 EndCmp
 
