@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (20100314 SVN-R2462)-final date = Sat 22 May 2010 11:50:36 PM CEST
+Cmp-Mod V01 Created by CvPCB (2010-03-14)-final date = Sun 23 May 2010 10:29:33 PM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -316,6 +316,55 @@ IdModule  = SM0805;
 EndCmp
 
 BeginCmp
+TimeStamp = /4B6EC9C3/4BF98EBE;
+Reference = C45;
+ValeurCmp = 3.3u;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BF98E9E;
+Reference = C46;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BF98EBB;
+Reference = C47;
+ValeurCmp = 3.3u;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BF98AAB;
+Reference = C48;
+ValeurCmp = 10u;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BF98EBF;
+Reference = C49;
+ValeurCmp = 3.3u;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BF98AA5;
+Reference = C50;
+ValeurCmp = 10u;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BF98AA2;
+Reference = C51;
+ValeurCmp = 100n;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
 TimeStamp = /4BAA6ABD/4BF19DCA;
 Reference = D1;
 ValeurCmp = BAT54C;
@@ -326,14 +375,14 @@ BeginCmp
 TimeStamp = /4B6ED75B/4BF8324A;
 Reference = D2;
 ValeurCmp = BusyLED;
-IdModule  = PIN_ARRAY_2X1;
+IdModule  = LED-3MM;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF8328D;
 Reference = D3;
 ValeurCmp = RdyLED;
-IdModule  = PIN_ARRAY_2X1;
+IdModule  = LED-3MM;
 EndCmp
 
 BeginCmp
@@ -358,10 +407,10 @@ IdModule  = USB-MINIB-THT;
 EndCmp
 
 BeginCmp
-TimeStamp = /4B6ED75B/4BF3C8DA;
+TimeStamp = /4B6ED75B/4BF950B0;
 Reference = P1;
-ValeurCmp = CONN_14;
-IdModule  = pin_array_7x2;
+ValeurCmp = CONN_8X2;
+IdModule  = pin_array_8x2;
 EndCmp
 
 BeginCmp
@@ -438,6 +487,34 @@ BeginCmp
 TimeStamp = /4B6ED75B/4BF850D1;
 Reference = R8;
 ValeurCmp = 270;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BF98EC4;
+Reference = R9;
+ValeurCmp = 10k;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BF98EC6;
+Reference = R10;
+ValeurCmp = 470;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BF98EB9;
+Reference = R11;
+ValeurCmp = 10k;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4BF98EB4;
+Reference = R12;
+ValeurCmp = 470;
 IdModule  = SM0805;
 EndCmp
 
