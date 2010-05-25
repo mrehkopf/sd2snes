@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sun 23 May 2010 11:04:02 PM CEST
+EESchema Schematic File Version 2  date Tue 25 May 2010 06:48:44 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 4 6
 Title "sd2snes Mark II"
-Date "23 may 2010"
+Date "25 may 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -55,14 +55,52 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L CONN_8X2 P1
-U 1 1 4BF950B0
-P 9650 6100
-F 0 "P1" H 9650 6550 60  0000 C CNN
-F 1 "CONN_8X2" V 9650 6100 50  0000 C CNN
-	1    9650 6100
+L +5V #PWR?
+U 1 1 4BFBFF63
+P 10300 5750
+F 0 "#PWR?" H 10300 5840 20  0001 C CNN
+F 1 "+5V" H 10300 5840 30  0000 C CNN
+	1    10300 5750
 	1    0    0    -1  
 $EndComp
+$Comp
+L +3.3V #PWR?
+U 1 1 4BFBFF50
+P 9000 5750
+F 0 "#PWR?" H 9000 5710 30  0001 C CNN
+F 1 "+3.3V" H 9000 5860 30  0000 C CNN
+	1    9000 5750
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR?
+U 1 1 4BFBFF44
+P 8650 5850
+F 0 "#PWR?" H 8650 5850 30  0001 C CNN
+F 1 "GND" H 8650 5780 30  0001 C CNN
+	1    8650 5850
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	8650 5850 9250 5850
+Wire Wire Line
+	6500 4000 6800 4000
+Wire Wire Line
+	10050 6450 10300 6450
+Wire Wire Line
+	10050 6350 10300 6350
+Wire Wire Line
+	10050 6250 10300 6250
+Wire Wire Line
+	10050 6150 10300 6150
+Wire Wire Line
+	10050 6050 10300 6050
+Wire Wire Line
+	10050 5950 10300 5950
+Wire Wire Line
+	10050 5850 10300 5850
+Wire Wire Line
+	10050 5750 10300 5750
 Wire Wire Line
 	8850 3400 8250 3400
 Wire Wire Line
@@ -86,19 +124,19 @@ Wire Wire Line
 	1400 3100 900  3100
 Wire Wire Line
 	900  3100 900  2850
-Connection ~ 6150 7600
+Connection ~ 6150 7500
 Wire Wire Line
-	6400 7500 6400 7600
+	6400 7400 6400 7500
 Wire Wire Line
-	6400 7600 5650 7600
-Connection ~ 5650 7600
+	6400 7500 5650 7500
+Connection ~ 5650 7500
 Wire Wire Line
-	5900 7500 5900 7600
-Connection ~ 5900 7000
+	5900 7400 5900 7500
+Connection ~ 5900 6900
 Wire Wire Line
-	6150 7000 6150 7100
+	6150 6900 6150 7000
 Wire Wire Line
-	5650 6900 5650 7100
+	5650 6800 5650 7000
 Wire Wire Line
 	3000 4800 2500 4800
 Wire Wire Line
@@ -298,18 +336,18 @@ Wire Wire Line
 Wire Wire Line
 	6500 2700 6800 2700
 Wire Wire Line
-	5650 7700 5650 7500
+	5650 7600 5650 7400
 Wire Wire Line
-	5900 7000 5900 7100
-Connection ~ 5650 7000
+	5900 6900 5900 7000
+Connection ~ 5650 6900
 Wire Wire Line
-	5650 7000 6400 7000
+	5650 6900 6400 6900
 Wire Wire Line
-	6400 7000 6400 7100
-Connection ~ 6150 7000
+	6400 6900 6400 7000
+Connection ~ 6150 6900
 Wire Wire Line
-	6150 7600 6150 7500
-Connection ~ 5900 7600
+	6150 7500 6150 7400
+Connection ~ 5900 7500
 Wire Wire Line
 	1200 2850 1200 3000
 Wire Wire Line
@@ -332,6 +370,66 @@ Wire Wire Line
 	8150 950  8150 3500
 Wire Wire Line
 	8150 3500 8850 3500
+Wire Wire Line
+	9250 5750 9000 5750
+Wire Wire Line
+	9250 5950 9000 5950
+Wire Wire Line
+	9250 6050 9000 6050
+Wire Wire Line
+	9250 6150 9000 6150
+Wire Wire Line
+	9250 6250 9000 6250
+Wire Wire Line
+	9250 6350 9000 6350
+Wire Wire Line
+	9250 6450 9000 6450
+Wire Wire Line
+	6500 3900 6800 3900
+Wire Wire Line
+	2600 4000 2600 3900
+Connection ~ 2600 4000
+Wire Wire Line
+	2600 3900 2500 3900
+Text GLabel 9000 5950 0    50   Output ~ 0
+/RESET
+Text GLabel 10300 5850 2    50   Input ~ 0
+P2.10
+Text GLabel 2500 3900 0    50   Input ~ 0
+P2.10
+Text GLabel 10300 5950 2    50   Input ~ 0
+TX3
+Text GLabel 9000 6050 0    50   Output ~ 0
+RX3
+Text GLabel 10300 6050 2    50   Output ~ 0
+TCK
+Text GLabel 9000 6150 0    50   Output ~ 0
+/TRST
+Text GLabel 10300 6150 2    50   Output ~ 0
+TMS
+Text GLabel 9000 6250 0    50   Output ~ 0
+EXT_TDI
+Text GLabel 10300 6250 2    50   Input ~ 0
+EXT_TDO
+Text GLabel 10300 6350 2    50   Input ~ 0
+TX0
+Text GLabel 9000 6350 0    50   Output ~ 0
+RX0
+NoConn ~ 10300 6450
+NoConn ~ 9000 6450
+Text GLabel 6800 4000 2    50   Input ~ 0
+RX3
+Text GLabel 6800 3900 2    50   Output ~ 0
+TX3
+$Comp
+L CONN_8X2 P1
+U 1 1 4BF950B0
+P 9650 6100
+F 0 "P1" H 9650 6550 60  0000 C CNN
+F 1 "CONN_8X2" V 9650 6100 50  0000 C CNN
+	1    9650 6100
+	1    0    0    -1  
+$EndComp
 $Comp
 L R R8
 U 1 1 4BF850D1
@@ -398,55 +496,55 @@ $EndComp
 $Comp
 L GND #PWR045
 U 1 1 4BF6C1FC
-P 5650 7700
-F 0 "#PWR045" H 5650 7700 30  0001 C CNN
-F 1 "GND" H 5650 7630 30  0001 C CNN
-	1    5650 7700
+P 5650 7600
+F 0 "#PWR045" H 5650 7600 30  0001 C CNN
+F 1 "GND" H 5650 7530 30  0001 C CNN
+	1    5650 7600
 	1    0    0    -1  
 $EndComp
 $Comp
 L +3.3V #PWR046
 U 1 1 4BF6C1F7
-P 5650 6900
-F 0 "#PWR046" H 5650 6860 30  0001 C CNN
-F 1 "+3.3V" H 5650 7010 30  0000 C CNN
-	1    5650 6900
+P 5650 6800
+F 0 "#PWR046" H 5650 6760 30  0001 C CNN
+F 1 "+3.3V" H 5650 6910 30  0000 C CNN
+	1    5650 6800
 	-1   0    0    -1  
 $EndComp
 $Comp
 L C C43
 U 1 1 4BF6BFE6
-P 6400 7300
-F 0 "C43" H 6450 7400 50  0000 L CNN
-F 1 "C" H 6450 7200 50  0000 L CNN
-	1    6400 7300
+P 6400 7200
+F 0 "C43" H 6450 7300 50  0000 L CNN
+F 1 "C" H 6450 7100 50  0000 L CNN
+	1    6400 7200
 	1    0    0    -1  
 $EndComp
 $Comp
 L C C42
 U 1 1 4BF6BFE5
-P 6150 7300
-F 0 "C42" H 6200 7400 50  0000 L CNN
-F 1 "C" H 6200 7200 50  0000 L CNN
-	1    6150 7300
+P 6150 7200
+F 0 "C42" H 6200 7300 50  0000 L CNN
+F 1 "C" H 6200 7100 50  0000 L CNN
+	1    6150 7200
 	1    0    0    -1  
 $EndComp
 $Comp
 L C C41
 U 1 1 4BF6BFE2
-P 5900 7300
-F 0 "C41" H 5950 7400 50  0000 L CNN
-F 1 "C" H 5950 7200 50  0000 L CNN
-	1    5900 7300
+P 5900 7200
+F 0 "C41" H 5950 7300 50  0000 L CNN
+F 1 "C" H 5950 7100 50  0000 L CNN
+	1    5900 7200
 	1    0    0    -1  
 $EndComp
 $Comp
 L C C40
 U 1 1 4BF6BFE1
-P 5650 7300
-F 0 "C40" H 5700 7400 50  0000 L CNN
-F 1 "C" H 5700 7200 50  0000 L CNN
-	1    5650 7300
+P 5650 7200
+F 0 "C40" H 5700 7300 50  0000 L CNN
+F 1 "C" H 5700 7100 50  0000 L CNN
+	1    5650 7200
 	1    0    0    -1  
 $EndComp
 $Comp
