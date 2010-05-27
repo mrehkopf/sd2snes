@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 26 May 2010 01:59:56 AM CEST
+EESchema Schematic File Version 2  date Thu 27 May 2010 03:04:17 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -33,7 +33,6 @@ LIBS:snescart
 LIBS:misc-74
 LIBS:vreg
 LIBS:lpc1754
-LIBS:sdcard
 LIBS:sd_card
 LIBS:cy62148ev30
 LIBS:mt45w8mw16
