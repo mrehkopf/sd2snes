@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (20100314 SVN-R2462)-final date = Thu 27 May 2010 02:08:47 AM CEST
+Cmp-Mod V01 Genere par PcbNew le Sat 29 May 2010 12:07:14 AM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -11,28 +11,28 @@ BeginCmp
 TimeStamp = /4B6EC9C3/4BABC8D1;
 Reference = C1;
 ValeurCmp = 10u;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BABC93A;
 Reference = C2;
 ValeurCmp = 10u;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BABCB5C;
 Reference = C3;
 ValeurCmp = 4.7u;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BABCA9C;
 Reference = C4;
 ValeurCmp = 4.7u;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
@@ -53,210 +53,210 @@ BeginCmp
 TimeStamp = /4B6EC9C3/4BABCB68;
 Reference = C7;
 ValeurCmp = 4.7u;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BABCAD2;
 Reference = C8;
 ValeurCmp = 4.7u;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4BAD42D5;
 Reference = C9;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4BAD42D8;
 Reference = C10;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4BAD42DA;
 Reference = C11;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4BAD42DF;
 Reference = C12;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4BAD42E0;
 Reference = C13;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4BAD42E2;
 Reference = C14;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4BAA6ABD/4BAD3D47;
 Reference = C15;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4BAA6ABD/4BAD3D53;
 Reference = C16;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4BAA6ABD/4BAD3D55;
 Reference = C17;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE47;
 Reference = C18;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE62;
 Reference = C19;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE64;
 Reference = C20;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE65;
 Reference = C21;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE67;
 Reference = C22;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE6A;
 Reference = C23;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE6B;
 Reference = C24;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE6D;
 Reference = C25;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE74;
 Reference = C26;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE78;
 Reference = C27;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE7A;
 Reference = C28;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE7B;
 Reference = C29;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE7D;
 Reference = C30;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BADCE85;
 Reference = C31;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BADC719;
 Reference = C32;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BADC720;
 Reference = C33;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BEECBC1;
 Reference = C34;
 ValeurCmp = 22p;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BEECBCA;
 Reference = C35;
 ValeurCmp = 22p;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BEECBCD;
 Reference = C36;
 ValeurCmp = 22p;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
@@ -270,140 +270,140 @@ BeginCmp
 TimeStamp = /4B6E18FC/4BF5A43F;
 Reference = C38;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E18FC/4BF5A441;
 Reference = C39;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF6BFE1;
 Reference = C40;
 ValeurCmp = C;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF6BFE2;
 Reference = C41;
 ValeurCmp = C;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF6BFE5;
 Reference = C42;
 ValeurCmp = C;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF6BFE6;
 Reference = C43;
 ValeurCmp = C;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF6BFBB;
 Reference = C44;
 ValeurCmp = C;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98EBE;
 Reference = C45;
 ValeurCmp = 3.3u;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98E9E;
 Reference = C46;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98EBB;
 Reference = C47;
 ValeurCmp = 3.3u;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98AAB;
 Reference = C48;
 ValeurCmp = 10u;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98EBF;
 Reference = C49;
 ValeurCmp = 3.3u;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98AA5;
 Reference = C50;
 ValeurCmp = 10u;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98AA2;
 Reference = C51;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4BFB1190;
 Reference = C52;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4BFB1192;
 Reference = C53;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4BFB1194;
 Reference = C54;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4BFB119A;
 Reference = C55;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4BFB1199;
 Reference = C56;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4BFB1197;
 Reference = C57;
 ValeurCmp = 100n;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
@@ -480,84 +480,84 @@ BeginCmp
 TimeStamp = /4B6E16F2/4BAE51CA;
 Reference = R1;
 ValeurCmp = 300;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4BAA6ABD/4BF2FDA9;
 Reference = R2;
 ValeurCmp = 4k7;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4BAA6ABD/4BF2FDAC;
 Reference = R3;
 ValeurCmp = 1k;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4BAA6ABD/4BF2FDAF;
 Reference = R4;
 ValeurCmp = 20k;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF847A7;
 Reference = R5;
 ValeurCmp = 100;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF847B1;
 Reference = R6;
 ValeurCmp = 100;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF850A9;
 Reference = R7;
 ValeurCmp = 270;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF850D1;
 Reference = R8;
 ValeurCmp = 270;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98EC4;
 Reference = R9;
 ValeurCmp = 10k;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98EC6;
 Reference = R10;
 ValeurCmp = 470;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98EB9;
 Reference = R11;
 ValeurCmp = 10k;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98EB4;
 Reference = R12;
 ValeurCmp = 470;
-IdModule  = SM0805;
+IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp

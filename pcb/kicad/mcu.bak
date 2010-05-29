@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 26 May 2010 01:59:56 AM CEST
+EESchema Schematic File Version 2  date Fri 28 May 2010 08:41:48 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -33,7 +33,6 @@ LIBS:snescart
 LIBS:misc-74
 LIBS:vreg
 LIBS:lpc1754
-LIBS:sdcard
 LIBS:sd_card
 LIBS:cy62148ev30
 LIBS:mt45w8mw16
@@ -46,7 +45,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 4 6
 Title "sd2snes Mark II"
-Date "25 may 2010"
+Date "28 may 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -54,8 +53,11 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text GLabel 2500 5100 0    50   Input ~ 0
-/RESET
+Connection ~ 10250 3200
+Wire Wire Line
+	10250 3300 10250 3100
+Wire Wire Line
+	10250 3100 10100 3100
 Wire Wire Line
 	2500 5100 2600 5100
 Connection ~ 2600 5200
@@ -371,6 +373,11 @@ Wire Wire Line
 	6500 4000 6800 4000
 Wire Wire Line
 	8650 5850 9250 5850
+Wire Wire Line
+	10250 3200 10100 3200
+Connection ~ 10250 3300
+Text GLabel 2500 5100 0    50   Input ~ 0
+/RESET
 $Comp
 L +5V #PWR044
 U 1 1 4BFBFF63
