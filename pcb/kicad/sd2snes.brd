@@ -1,6 +1,6 @@
-PCBNEW-BOARD Version 1 date Mon 31 May 2010 04:59:34 AM CEST
+PCBNEW-BOARD Version 1 date Tue 01 Jun 2010 10:20:53 PM CEST
 
-# Created by Pcbnew(20100409 SVN-R2518)-unstable 
+# Created by Pcbnew(20100409 SVN-R2518)-unstable
 
 $GENERAL
 LayerCount 2
@@ -20,7 +20,7 @@ $EndGENERAL
 $SHEETDESCR
 Sheet A4 11700 8267
 Title "sd2snes Mark II"
-Date "31 may 2010"
+Date "1 jun 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -67,8 +67,8 @@ TextPcbSize 300 300
 EdgeModWidth 60
 TextModSize 300 300
 TextModWidth 60
-PadSize 660 660
-PadDrill 400
+PadSize 79 295
+PadDrill 0
 Pad2MaskClearance 40
 AuxiliaryAxisOrg 0 0
 $EndSETUP
