@@ -1,24 +1,10 @@
-Cmp-Mod V01 Genere par PcbNew le Mon 31 May 2010 04:05:09 AM CEST
+Cmp-Mod V01 Created by CvPCB (20100409 SVN-R2518)-unstable date = Wed 02 Jun 2010 03:20:36 AM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
 Reference = BT1;
 ValeurCmp = BATTERY;
 IdModule  = BT_KEYSTONE_1059_20MM;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6EC9C3/4BABC8D1;
-Reference = C1;
-ValeurCmp = 10u;
-IdModule  = SM0805_FIXEDMASK;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6EC9C3/4BABC93A;
-Reference = C2;
-ValeurCmp = 10u;
-IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
@@ -33,20 +19,6 @@ TimeStamp = /4B6EC9C3/4BABCA9C;
 Reference = C4;
 ValeurCmp = 4.7u;
 IdModule  = SM0805_FIXEDMASK;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6EC9C3/4BABC8DF;
-Reference = C5;
-ValeurCmp = 100u;
-IdModule  = CP_TANTAL_SMD_D;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6EC9C3/4BABC94E;
-Reference = C6;
-ValeurCmp = 100u;
-IdModule  = CP_TANTAL_SMD_D;
 EndCmp
 
 BeginCmp
@@ -346,7 +318,7 @@ EndCmp
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98EBF;
 Reference = C49;
-ValeurCmp = 3.3u;
+ValeurCmp = 100n;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
@@ -407,6 +379,34 @@ IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
+TimeStamp = /4B6EC9C3/4C05ACA4;
+Reference = C58;
+ValeurCmp = 4.7u;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4C05ACA2;
+Reference = C59;
+ValeurCmp = 4.7u;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4C05AC9D;
+Reference = C60;
+ValeurCmp = 10n;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4C05AC9A;
+Reference = C61;
+ValeurCmp = 4.7u;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
 TimeStamp = /4BAA6ABD/4BF19DCA;
 Reference = D1;
 ValeurCmp = BAT54C;
@@ -446,6 +446,20 @@ TimeStamp = /4B6ED75B/4BF00175;
 Reference = J3;
 ValeurCmp = USB_MINIB;
 IdModule  = USB-MINIB-THT;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4C05A97C;
+Reference = L1;
+ValeurCmp = 1uH;
+IdModule  = SM1210L;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4C05A983;
+Reference = L2;
+ValeurCmp = 1uH;
+IdModule  = SM1210L;
 EndCmp
 
 BeginCmp
@@ -568,6 +582,20 @@ IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
+TimeStamp = /4B6EC9C3/4C05AF60;
+Reference = R14;
+ValeurCmp = 10k;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4C05AF56;
+Reference = R15;
+ValeurCmp = 10k;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
 TimeStamp = /4B6E16F2/4B6E1740;
 Reference = U1;
 ValeurCmp = 74ALVC164245;
@@ -600,20 +628,6 @@ TimeStamp = /4B6E16F2/4B6EB593;
 Reference = U5;
 ValeurCmp = 74LVC1T45;
 IdModule  = SOT563;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6EC9C3/4B6ECEE5;
-Reference = U7;
-ValeurCmp = LT1117-3.3;
-IdModule  = SOT223;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6EC9C3/4B6ECEEA;
-Reference = U8;
-ValeurCmp = LT1117-1.2;
-IdModule  = SOT223;
 EndCmp
 
 BeginCmp
@@ -663,6 +677,13 @@ TimeStamp = /4B6EC9C3/4BAA92DB;
 Reference = U15;
 ValeurCmp = PIC12F629;
 IdModule  = SO8N;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4C05879D;
+Reference = U16;
+ValeurCmp = MIC23250_FIXOUT;
+IdModule  = QFN10-2x2;
 EndCmp
 
 BeginCmp
