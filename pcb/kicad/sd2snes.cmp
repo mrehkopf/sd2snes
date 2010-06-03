@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (20100409 SVN-R2518)-unstable date = Wed 02 Jun 2010 03:20:36 AM CEST
+Cmp-Mod V01 Created by CvPCB (20100409 SVN-R2518)-unstable date = Wed 02 Jun 2010 01:12:13 PM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -407,6 +407,13 @@ IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
+TimeStamp = /4B6ED75B/4C063C47;
+Reference = C62;
+ValeurCmp = 100n;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
 TimeStamp = /4BAA6ABD/4BF19DCA;
 Reference = D1;
 ValeurCmp = BAT54C;
@@ -582,15 +589,8 @@ IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
-TimeStamp = /4B6EC9C3/4C05AF60;
+TimeStamp = /4B6ED75B/4C063C2F;
 Reference = R14;
-ValeurCmp = 10k;
-IdModule  = SM0805_FIXEDMASK;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6EC9C3/4C05AF56;
-Reference = R15;
 ValeurCmp = 10k;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
