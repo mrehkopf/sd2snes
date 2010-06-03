@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 02 Jun 2010 01:14:36 PM CEST
+EESchema Schematic File Version 2  date Thu 03 Jun 2010 09:42:08 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 4 6
 Title "sd2snes Mark II"
-Date "2 jun 2010"
+Date "3 jun 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -54,6 +54,10 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+Text Notes 550  7700 0    250  ~ 0
+MCU, SD, debug
+Text Notes 500  5050 0    50   ~ 0
+Reset button
 Connection ~ 1000 5950
 Wire Wire Line
 	1000 5950 1200 5950
@@ -392,6 +396,8 @@ Wire Wire Line
 	1200 4600 1200 4500
 Wire Wire Line
 	1200 5400 1200 5100
+Text Notes 650  3250 0    50   ~ 0
+2mA low current LEDs
 $Comp
 L C C62
 U 1 1 4C063C47
@@ -537,7 +543,7 @@ L R R6
 U 1 1 4BF847B1
 P 1650 3100
 F 0 "R6" V 1730 3100 50  0000 C CNN
-F 1 "100" V 1650 3100 50  0000 C CNN
+F 1 "680" V 1650 3100 50  0000 C CNN
 	1    1650 3100
 	0    1    1    0   
 $EndComp
@@ -546,7 +552,7 @@ L R R5
 U 1 1 4BF847A7
 P 1650 3000
 F 0 "R5" V 1550 3000 50  0000 C CNN
-F 1 "100" V 1650 3000 50  0000 C CNN
+F 1 "680" V 1650 3000 50  0000 C CNN
 	1    1650 3000
 	0    1    1    0   
 $EndComp

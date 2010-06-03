@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 02 Jun 2010 02:08:21 PM CEST
+EESchema Schematic File Version 2  date Fri 04 Jun 2010 01:55:30 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 3 6
 Title "sd2snes Mark II"
-Date "2 jun 2010"
+Date "3 jun 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -54,6 +54,12 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+Text Notes 7050 7000 0    250  ~ 50
+Memory
+Text Notes 7300 1300 0    50   ~ 0
+SRAM battery power
+Text Notes 9800 5300 0    50   ~ 0
+Battery power OE switch
 $Comp
 L +3.3V #PWR030
 U 1 1 4BF2FE97
@@ -777,10 +783,10 @@ F 1 "+3.3V" H 3500 1660 30  0000 C CNN
 	1    3500 1550
 	1    0    0    -1  
 $EndComp
-Text Notes 7100 2400 0    60   ~ 0
-SRAM
-Text Notes 2900 2000 0    60   ~ 0
-"ROM"
+Text Notes 6300 5700 0    60   ~ 0
+4Mbits 55ns SRAM (battery RAM + custom chip work RAM)
+Text Notes 2650 5700 0    60   ~ 0
+128Mbits 70ns PSRAM (ROM area)
 $Comp
 L CY62148EV30-BVXI U13
 U 1 1 4B86E25C

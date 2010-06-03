@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 02 Jun 2010 02:08:21 PM CEST
+EESchema Schematic File Version 2  date Fri 04 Jun 2010 01:55:30 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 2 6
 Title "sd2snes Mark II"
-Date "2 jun 2010"
+Date "3 jun 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -54,6 +54,8 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+Text Notes 7100 6550 0    250  ~ 50
+SNES bus,\nlevel shift
 Wire Wire Line
 	6550 6850 6550 6700
 Connection ~ 5800 7400

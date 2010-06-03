@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 02 Jun 2010 02:08:21 PM CEST
+EESchema Schematic File Version 2  date Fri 04 Jun 2010 01:55:30 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A3 16535 11700
 Sheet 6 6
 Title "sd2snes Mark II"
-Date "2 jun 2010"
+Date "3 jun 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -54,6 +54,22 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+Text Notes 11850 10450 0    500  ~ 100
+FPGA
+Text Notes 12800 8150 1    50   ~ 0
+SNES A+B bus
+Text Notes 11800 4500 1    50   ~ 0
+70ns PSRAM bus
+Text Notes 4650 5600 1    50   ~ 0
+55ns SRAM bus
+Text Notes 2800 7400 0    50   ~ 0
+SPI (SD); shared with MCU
+Text Notes 3450 7800 0    50   ~ 0
+SPI (MCU)
+Text Notes 3700 8150 0    50   ~ 0
+DAC
+Text Notes 1250 7000 0    50   ~ 0
+Freeze button
 Connection ~ 4850 10950
 Wire Wire Line
 	4350 10950 5100 10950
