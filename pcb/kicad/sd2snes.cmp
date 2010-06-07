@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (20100409 SVN-R2518)-unstable date = Wed 02 Jun 2010 01:12:13 PM CEST
+Cmp-Mod V01 Created by CvPCB (20100409 SVN-R2518)-unstable date = Fri 04 Jun 2010 08:21:15 PM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -255,35 +255,35 @@ EndCmp
 BeginCmp
 TimeStamp = /4B6ED75B/4BF6BFE1;
 Reference = C40;
-ValeurCmp = C;
+ValeurCmp = 100n;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF6BFE2;
 Reference = C41;
-ValeurCmp = C;
+ValeurCmp = 100n;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF6BFE5;
 Reference = C42;
-ValeurCmp = C;
+ValeurCmp = 100n;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF6BFE6;
 Reference = C43;
-ValeurCmp = C;
+ValeurCmp = 100n;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF6BFBB;
 Reference = C44;
-ValeurCmp = C;
+ValeurCmp = 100n;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
@@ -423,14 +423,14 @@ EndCmp
 BeginCmp
 TimeStamp = /4B6ED75B/4BF8324A;
 Reference = D2;
-ValeurCmp = BusyLED;
+ValeurCmp = LED_2mA_1.7V,_red;
 IdModule  = LED-3MM-FIXED;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF8328D;
 Reference = D3;
-ValeurCmp = RdyLED;
+ValeurCmp = LED_2mA_1.9V,_green;
 IdModule  = LED-3MM-FIXED;
 EndCmp
 
@@ -470,10 +470,10 @@ IdModule  = SM1210L;
 EndCmp
 
 BeginCmp
-TimeStamp = /4B6ED75B/4BF950B0;
+TimeStamp = /4B6ED75B/4C0943CA;
 Reference = P1;
-ValeurCmp = CONN_8X2;
-IdModule  = pin_array_8x2;
+ValeurCmp = CONN_7X2;
+IdModule  = pin_array_7x2;
 EndCmp
 
 BeginCmp
@@ -528,14 +528,14 @@ EndCmp
 BeginCmp
 TimeStamp = /4B6ED75B/4BF847A7;
 Reference = R5;
-ValeurCmp = 100;
+ValeurCmp = 680;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6ED75B/4BF847B1;
 Reference = R6;
-ValeurCmp = 100;
+ValeurCmp = 680;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
