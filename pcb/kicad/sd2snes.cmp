@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (20100409 SVN-R2518)-unstable date = Fri 04 Jun 2010 08:21:15 PM CEST
+Cmp-Mod V01 Created by CvPCB (20100409 SVN-R2518)-unstable date = Tue 08 Jun 2010 04:16:26 AM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -423,7 +423,7 @@ EndCmp
 BeginCmp
 TimeStamp = /4B6ED75B/4BF8324A;
 Reference = D2;
-ValeurCmp = LED_2mA_1.7V,_red;
+ValeurCmp = LED_2mA_1.8V,_yellow;
 IdModule  = LED-3MM-FIXED;
 EndCmp
 
@@ -431,6 +431,13 @@ BeginCmp
 TimeStamp = /4B6ED75B/4BF8328D;
 Reference = D3;
 ValeurCmp = LED_2mA_1.9V,_green;
+IdModule  = LED-3MM-FIXED;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4C0DA78D;
+Reference = D4;
+ValeurCmp = LED_2mA_1.7V,_red;
 IdModule  = LED-3MM-FIXED;
 EndCmp
 
@@ -592,6 +599,13 @@ BeginCmp
 TimeStamp = /4B6ED75B/4C063C2F;
 Reference = R14;
 ValeurCmp = 10k;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4C0DA785;
+Reference = R15;
+ValeurCmp = 680;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
