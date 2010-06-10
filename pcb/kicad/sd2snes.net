@@ -1,4 +1,4 @@
-# EESchema Netlist Version 1.1 created  Tue 08 Jun 2010 04:16:31 AM CEST
+# EESchema Netlist Version 1.1 created  Thu 10 Jun 2010 11:56:48 PM CEST
 (
  ( /4B6E16F2/4BFB119A $noname  C55 100n {Lib=C}
   (    1 +5V )
@@ -24,7 +24,7 @@
   (    1 +3.3V )
   (    2 GND )
  )
- ( /4B6E16F2/4BAE51CA $noname  R1 300 {Lib=R}
+ ( /4B6E16F2/4BAE51CA $noname  R1 330 {Lib=R}
   (    1 /SNES_Slot/SNES_EXT_SYS_CLK )
   (    2 GND )
  )
@@ -286,7 +286,7 @@
   (    1 N-000279 )
   (    2 +3.3V )
  )
- ( /4BAA6ABD/4BF2FD9F $noname  Q1 NPN {Lib=NPN}
+ ( /4BAA6ABD/4BF2FD9F $noname  Q1 2N2222A {Lib=NPN}
   (    1 GND )
   (    2 N-000279 )
   (    3 /Memory/RAM_/CE )
@@ -475,7 +475,7 @@
   (    1 +3.3V )
   (    2 GND )
  )
- ( /4B6ED75B/4BF6BFBB $noname  C44 100n {Lib=C}
+ ( /4B6ED75B/4BF6BFBB $noname  C44 10u {Lib=C}
   (    1 +3.3V )
   (    2 GND )
  )
