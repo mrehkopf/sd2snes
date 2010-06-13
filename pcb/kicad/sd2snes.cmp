@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (20100409 SVN-R2518)-unstable date = Fri 11 Jun 2010 11:50:04 PM CEST
+Cmp-Mod V01 Genere par PcbNew le Sat 12 Jun 2010 10:27:39 PM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -473,14 +473,14 @@ BeginCmp
 TimeStamp = /4B6EC9C3/4C05A97C;
 Reference = L1;
 ValeurCmp = 1uH;
-IdModule  = SM1210L;
+IdModule  = SM1210L_NEW;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4C05A983;
 Reference = L2;
 ValeurCmp = 1uH;
-IdModule  = SM1210L;
+IdModule  = SM1210L_NEW;
 EndCmp
 
 BeginCmp

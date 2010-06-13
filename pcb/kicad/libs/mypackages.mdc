@@ -1,4 +1,4 @@
-PCBNEW-LibDoc----V1  Fri 11 Jun 2010 11:56:14 PM CEST
+PCBNEW-LibDoc----V1  Sat 12 Jun 2010 10:26:59 PM CEST
 #
 $MODULE PQFP208_ALTPADS
 Li PQFP208_ALTPADS
@@ -16,6 +16,16 @@ $MODULE pin_array_7x2
 Li pin_array_7x2
 Cd Double rangee de contacts 2 x 7 pins
 Kw CONN
+$EndMODULE
+#
+$MODULE SM1210L
+Li SM1210L
+Kw CMS SM
+$EndMODULE
+#
+$MODULE SM1210L_NEW
+Li SM1210L_NEW
+Kw CMS SM
 $EndMODULE
 #
 $EndLIBDOC

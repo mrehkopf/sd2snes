@@ -1,4 +1,4 @@
-# EESchema Netlist Version 1.1 created  Fri 11 Jun 2010 11:50:08 PM CEST
+# EESchema Netlist Version 1.1 created  Sat 12 Jun 2010 06:26:13 PM CEST
 (
  ( /4B6E16F2/4BFB119A SM0805_FIXEDMASK  C55 100n {Lib=C}
   (    1 +5V )
@@ -640,7 +640,7 @@
   (    1 +1.2V )
   (    2 /Power_Supply_/_Misc./REG_SW1 )
  )
- ( /4B6EC9C3/4C05879D QFN10-2x2  U16 MIC23250_FIXOUT {Lib=MIC23250_FIXOUT}
+ ( /4B6EC9C3/4C05879D QFN10-2x2  U16 MIC23250-S4YMT {Lib=MIC23250_FIXOUT}
   (    1 +1.2V )
   (    2 +5V )
   (    3 GND )
@@ -696,7 +696,7 @@
   (    1 N-000223 )
   (    2 GND )
  )
- ( /4B6EC9C3/4BAF2EAF BT_KEYSTONE_1059_20MM  BT1 BATTERY {Lib=BATTERY}
+ ( /4B6EC9C3/4BAF2EAF BT_KEYSTONE_1059_20MM  BT1 Keystone_1059_/_KZH20PCB {Lib=BATTERY}
   (    1 +BATT )
   (    2 GND )
  )

@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Fri 11 Jun 2010 11:43:50 PM CEST
+EESchema Schematic File Version 2  date Sat 12 Jun 2010 06:26:09 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 5 6
 Title "sd2snes Mark II"
-Date "11 jun 2010"
+Date "12 jun 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -427,7 +427,7 @@ L MIC23250_FIXOUT U16
 U 1 1 4C05879D
 P 2550 2500
 F 0 "U16" H 2550 2600 60  0000 C CNN
-F 1 "MIC23250_FIXOUT" H 2550 2400 60  0000 C CNN
+F 1 "MIC23250-S4YMT" H 2550 2400 60  0000 C CNN
 F 2 "QFN10-2x2" H 2550 2500 60  0001 C CNN
 	1    2550 2500
 	1    0    0    -1  
@@ -641,7 +641,7 @@ L BATTERY BT1
 U 1 1 4BAF2EAF
 P 5800 7000
 F 0 "BT1" H 5800 7200 50  0000 C CNN
-F 1 "BATTERY" H 5800 6810 50  0000 C CNN
+F 1 "Keystone 1059 / KZH20PCB" H 5800 6810 50  0000 C CNN
 F 2 "BT_KEYSTONE_1059_20MM" H 5800 7000 60  0001 C CNN
 	1    5800 7000
 	1    0    0    -1  
