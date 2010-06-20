@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Thu 17 Jun 2010 09:22:08 PM CEST
+EESchema Schematic File Version 2  date Sun 20 Jun 2010 12:59:58 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -54,8 +54,6 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text GLabel 7000 5700 2    50   Output ~ 0
-DAC_/DEM
 Wire Wire Line
 	6700 5700 7000 5700
 Connection ~ 10600 3300
@@ -402,6 +400,8 @@ Wire Wire Line
 Connection ~ 10600 2900
 Wire Wire Line
 	3200 3800 2700 3800
+Text GLabel 7000 5700 2    50   Output ~ 0
+DAC_/DEM
 Text GLabel 2700 3800 0    50   Output ~ 0
 DIN+MCU_/OVR
 $Comp
