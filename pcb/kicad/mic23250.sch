@@ -1,0 +1,262 @@
+EESchema Schematic File Version 2  date Tue 29 Jun 2010 07:26:50 PM CEST
+LIBS:power
+LIBS:device
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:special
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:sd2snes-cache
+EELAYER 24  0
+EELAYER END
+$Descr A4 11700 8267
+Sheet 1 1
+Title "noname.sch"
+Date "29 jun 2010"
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+Text Notes 7200 3450 0    60   ~ 0
+near AVIN
+$Comp
+L MIC23250_FIXOUT U1
+U 1 1 4C2A2BD4
+P 6000 4050
+F 0 "U1" H 6000 4150 60  0000 C CNN
+F 1 "MIC23250-S4YMT" H 6000 3950 60  0000 C CNN
+F 2 "QFN10-2x2" H 6000 4050 60  0001 C CNN
+	1    6000 4050
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR5
+U 1 1 4C2A2BD3
+P 5900 5150
+F 0 "#PWR5" H 5900 5150 30  0001 C CNN
+F 1 "GND" H 5900 5080 30  0001 C CNN
+	1    5900 5150
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR6
+U 1 1 4C2A2BD2
+P 6100 5150
+F 0 "#PWR6" H 6100 5150 30  0001 C CNN
+F 1 "GND" H 6100 5080 30  0001 C CNN
+	1    6100 5150
+	1    0    0    -1  
+$EndComp
+$Comp
+L INDUCTOR L1
+U 1 1 4C2A2BD1
+P 4800 4050
+F 0 "L1" V 4750 4050 40  0000 C CNN
+F 1 "1uH" V 4900 4050 40  0000 C CNN
+F 2 "SM1210L" H 4800 4050 60  0001 C CNN
+	1    4800 4050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L INDUCTOR L2
+U 1 1 4C2A2BD0
+P 7200 4050
+F 0 "L2" V 7150 4050 40  0000 C CNN
+F 1 "1uH" V 7300 4050 40  0000 C CNN
+F 2 "SM1210L" H 7200 4050 60  0001 C CNN
+	1    7200 4050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C C4
+U 1 1 4C2A2BCF
+P 7650 4450
+F 0 "C4" H 7700 4550 50  0000 L CNN
+F 1 "4.7u" H 7700 4350 50  0000 L CNN
+F 2 "SM0805_FIXEDMASK" H 7650 4450 60  0001 C CNN
+	1    7650 4450
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C3
+U 1 1 4C2A2BCE
+P 7050 3400
+F 0 "C3" H 7100 3500 50  0000 L CNN
+F 1 "10n" H 7100 3300 50  0000 L CNN
+F 2 "SM0805_FIXEDMASK" H 7050 3400 60  0001 C CNN
+	1    7050 3400
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C1
+U 1 1 4C2A2BCD
+P 4350 4450
+F 0 "C1" H 4400 4550 50  0000 L CNN
+F 1 "4.7u" H 4400 4350 50  0000 L CNN
+F 2 "SM0805_FIXEDMASK" H 4350 4450 60  0001 C CNN
+	1    4350 4450
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR7
+U 1 1 4C2A2BCC
+P 7050 3750
+F 0 "#PWR7" H 7050 3750 30  0001 C CNN
+F 1 "GND" H 7050 3680 30  0001 C CNN
+	1    7050 3750
+	1    0    0    -1  
+$EndComp
+$Comp
+L +5V #PWR2
+U 1 1 4C2A2BCB
+P 4350 2950
+F 0 "#PWR2" H 4350 3040 20  0001 C CNN
+F 1 "+5V" H 4350 3040 30  0000 C CNN
+	1    4350 2950
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR3
+U 1 1 4C2A2BCA
+P 4350 5150
+F 0 "#PWR3" H 4350 5150 30  0001 C CNN
+F 1 "GND" H 4350 5080 30  0001 C CNN
+	1    4350 5150
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR8
+U 1 1 4C2A2BC9
+P 7650 5150
+F 0 "#PWR8" H 7650 5150 30  0001 C CNN
+F 1 "GND" H 7650 5080 30  0001 C CNN
+	1    7650 5150
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C2
+U 1 1 4C2A2BC8
+P 4850 3400
+F 0 "C2" H 4700 3500 50  0000 L CNN
+F 1 "4.7u" H 4650 3300 50  0000 L CNN
+F 2 "SM0805_FIXEDMASK" H 4850 3400 60  0001 C CNN
+	1    4850 3400
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR4
+U 1 1 4C2A2BC7
+P 4850 3750
+F 0 "#PWR4" H 4850 3750 30  0001 C CNN
+F 1 "GND" H 4850 3680 30  0001 C CNN
+	1    4850 3750
+	1    0    0    -1  
+$EndComp
+$Comp
+L +1.2V #PWR1
+U 1 1 4C2A2BC6
+P 4200 4050
+F 0 "#PWR1" H 4200 4190 20  0001 C CNN
+F 1 "+1.2V" H 4200 4160 30  0000 C CNN
+	1    4200 4050
+	1    0    0    -1  
+$EndComp
+$Comp
+L +3.3V #PWR9
+U 1 1 4C2A2BC5
+P 7800 4050
+F 0 "#PWR9" H 7800 4010 30  0001 C CNN
+F 1 "+3.3V" H 7800 4160 30  0000 C CNN
+	1    7800 4050
+	1    0    0    -1  
+$EndComp
+Text Label 6800 4050 0    50   ~ 0
+REG_SW2
+Text Label 5150 4050 0    50   ~ 0
+REG_SW1
+Text Notes 5550 2900 0    50   ~ 0
+3.3V + 1.2V Step-Down
+Connection ~ 4350 4050
+Wire Wire Line
+	4500 4050 4200 4050
+Wire Wire Line
+	6850 3850 6850 3050
+Connection ~ 6100 3050
+Wire Wire Line
+	6100 3050 6100 3150
+Connection ~ 5150 3050
+Wire Wire Line
+	6750 3850 6850 3850
+Wire Wire Line
+	7050 3050 7050 3200
+Wire Wire Line
+	7650 5150 7650 4650
+Wire Wire Line
+	4350 4250 5250 4250
+Wire Wire Line
+	4350 4050 4350 4250
+Wire Wire Line
+	5100 4050 5250 4050
+Wire Wire Line
+	7050 3750 7050 3600
+Connection ~ 5900 3150
+Wire Wire Line
+	5900 4950 5900 5150
+Wire Wire Line
+	6100 4950 6100 5150
+Connection ~ 6100 3150
+Wire Wire Line
+	4850 3750 4850 3600
+Wire Wire Line
+	6750 4050 6900 4050
+Wire Wire Line
+	7650 4250 6750 4250
+Wire Wire Line
+	7650 4050 7650 4250
+Wire Wire Line
+	4350 5150 4350 4650
+Wire Wire Line
+	4850 3050 4850 3200
+Wire Wire Line
+	5150 3850 5250 3850
+Connection ~ 6850 3050
+Wire Wire Line
+	5900 3050 5900 3150
+Connection ~ 5900 3050
+Wire Wire Line
+	4350 3050 4350 2950
+Wire Wire Line
+	4350 3050 7050 3050
+Connection ~ 4850 3050
+Wire Wire Line
+	5150 3050 5150 3850
+Wire Wire Line
+	7500 4050 7800 4050
+Connection ~ 7650 4050
+$EndSCHEMATC
