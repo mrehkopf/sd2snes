@@ -1,0 +1,115 @@
+Cmp-Mod V01 Created by CvPCB (20100409 SVN-R2518)-unstable date = Mon 05 Jul 2010 09:08:59 PM CEST
+
+BeginCmp
+TimeStamp = /4C3229B3;
+Reference = C1;
+ValeurCmp = 3.3u;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C3229B7;
+Reference = C2;
+ValeurCmp = 3700p;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C3229B4;
+Reference = C3;
+ValeurCmp = 3.3u;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C3229BA;
+Reference = C4;
+ValeurCmp = 10u;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C3229B2;
+Reference = C5;
+ValeurCmp = 3700p;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C3229BB;
+Reference = C6;
+ValeurCmp = 10u;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C3229BE;
+Reference = C7;
+ValeurCmp = 100n;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C3229BC;
+Reference = C8;
+ValeurCmp = 100n;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C3229AB;
+Reference = C9;
+ValeurCmp = 1u;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C322CC8;
+Reference = P1;
+ValeurCmp = CONN_4;
+IdModule  = SIL-4;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C322D83;
+Reference = P2;
+ValeurCmp = CONN_4;
+IdModule  = SIL-4;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C3229B1;
+Reference = R1;
+ValeurCmp = 10k;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C3229B0;
+Reference = R2;
+ValeurCmp = 470;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C3229B5;
+Reference = R3;
+ValeurCmp = 10k;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C3229B6;
+Reference = R4;
+ValeurCmp = 470;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4C3229C2;
+Reference = U1;
+ValeurCmp = CS4344;
+IdModule  = TSSOP10;
+EndCmp
+
+EndListe
