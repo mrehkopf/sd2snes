@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Mon 07 Jun 2010 03:08:18 AM CEST
+EESchema Schematic File Version 2  date Mon 07 Jun 2010 05:23:48 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -311,10 +311,10 @@ $EndComp
 $Comp
 L 74HC04 U2
 U 6 1 4C0C2CC2
-P 5250 4800
-F 0 "U2" H 5400 4900 40  0000 C CNN
-F 1 "74HCU04" H 5450 4700 40  0000 C CNN
-	6    5250 4800
+P 2500 4800
+F 0 "U2" H 2650 4900 40  0000 C CNN
+F 1 "74HCU04" H 2700 4700 40  0000 C CNN
+	6    2500 4800
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -329,10 +329,10 @@ $EndComp
 $Comp
 L 74HC04 U2
 U 4 1 4C0C2CBD
-P 2500 4800
-F 0 "U2" H 2650 4900 40  0000 C CNN
-F 1 "74HCU04" H 2700 4700 40  0000 C CNN
-	4    2500 4800
+P 5250 4800
+F 0 "U2" H 5400 4900 40  0000 C CNN
+F 1 "74HCU04" H 5450 4700 40  0000 C CNN
+	4    5250 4800
 	1    0    0    -1  
 $EndComp
 $Comp
