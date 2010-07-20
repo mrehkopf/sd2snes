@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Thu 17 Jun 2010 09:22:08 PM CEST
+EESchema Schematic File Version 2  date Sun 18 Jul 2010 12:25:10 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 5 6
 Title "sd2snes Mark II"
-Date "17 jun 2010"
+Date "18 jul 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -54,8 +54,8 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text GLabel 5550 3900 0    50   Input ~ 0
-DAC_/DEM
+Wire Wire Line
+	6350 1400 6700 1400
 Wire Wire Line
 	5850 3900 5550 3900
 Wire Wire Line
@@ -139,8 +139,6 @@ Wire Wire Line
 	8150 1800 8650 1800
 Wire Wire Line
 	6700 2100 6350 2100
-Wire Wire Line
-	6700 1400 6350 1400
 Wire Wire Line
 	8500 1200 8500 1100
 Wire Wire Line
@@ -281,6 +279,20 @@ Wire Wire Line
 Wire Wire Line
 	10500 6450 10150 6450
 Connection ~ 10150 6450
+Wire Wire Line
+	5850 1400 5650 1400
+$Comp
+L R R16
+U 1 1 4C42D578
+P 6100 1400
+F 0 "R16" V 6180 1400 50  0000 C CNN
+F 1 "680" V 6100 1400 50  0000 C CNN
+F 2 "SM0805_FIXEDMASK" H 6100 1400 60  0001 C CNN
+	1    6100 1400
+	0    1    1    0   
+$EndComp
+Text GLabel 5550 3900 0    50   Input ~ 0
+DAC_/DEM
 $Comp
 L C C64
 U 1 1 4C17DE31
@@ -640,7 +652,7 @@ Text Label 6450 2100 0    50   ~ 0
 CIC_MCLR
 Text Label 6450 1800 0    50   ~ 0
 CIC_STATUS
-Text Label 6450 1400 0    50   ~ 0
+Text Label 5650 1400 0    50   ~ 0
 CIC_CLK
 $Comp
 L +BATT #PWR081
@@ -766,7 +778,7 @@ Text GLabel 6350 2100 0    60   Input ~ 0
 CIC_MCLR
 Text GLabel 6350 1800 0    60   Output ~ 0
 CIC_STATUS
-Text GLabel 6350 1400 0    60   Input ~ 0
+Text GLabel 5650 1400 0    60   Input ~ 0
 CIC_CLK
 $Comp
 L GND #PWR089

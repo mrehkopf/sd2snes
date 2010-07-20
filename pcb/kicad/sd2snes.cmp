@@ -1,9 +1,9 @@
-Cmp-Mod V01 Genere par PcbNew le Sat 12 Jun 2010 10:27:39 PM CEST
+Cmp-Mod V01 Created by CvPCB (20100409 SVN-R2518)-unstable date = Wed 14 Jul 2010 08:04:37 AM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
 Reference = BT1;
-ValeurCmp = BATTERY;
+ValeurCmp = Keystone_1059_/_KZH20PCB;
 IdModule  = BT_KEYSTONE_1059_20MM;
 EndCmp
 
@@ -297,7 +297,7 @@ EndCmp
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98E9E;
 Reference = C46;
-ValeurCmp = 100n;
+ValeurCmp = 3700p;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
@@ -318,7 +318,7 @@ EndCmp
 BeginCmp
 TimeStamp = /4B6EC9C3/4BF98EBF;
 Reference = C49;
-ValeurCmp = 100n;
+ValeurCmp = 3700p;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
@@ -417,6 +417,13 @@ BeginCmp
 TimeStamp = /4B6ED75B/4C1286D5;
 Reference = C63;
 ValeurCmp = 100n;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4C17DE31;
+Reference = C64;
+ValeurCmp = 1u;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
@@ -710,8 +717,15 @@ EndCmp
 BeginCmp
 TimeStamp = /4B6EC9C3/4C05879D;
 Reference = U16;
-ValeurCmp = MIC23250_FIXOUT;
+ValeurCmp = MIC23250-S4YMT;
 IdModule  = QFN10-2x2;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E18FC/4C3D5324;
+Reference = U17;
+ValeurCmp = XC3S200AN/FT256;
+IdModule  = BGA256;
 EndCmp
 
 BeginCmp

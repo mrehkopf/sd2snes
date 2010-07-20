@@ -1,4 +1,4 @@
-update=Fri 11 Jun 2010 07:48:03 PM CEST
+update=Mon 19 Jul 2010 11:30:03 PM CEST
 version=1
 last_client=pcbnew
 [general]
@@ -91,10 +91,6 @@ PadDrlX=0
 PadDimH=787
 PadDimV=1181
 BoardThickness=500
-RouteTo=15
-RouteBo=0
-Segm45=1
-Racc45=1
 SgPcb45=1
 TxtPcbV=300
 TxtPcbH=300
@@ -106,7 +102,7 @@ DrawLar=59
 EdgeLar=150
 TxtLar=60
 MSegLar=120
-WpenSer=80
+LastNetListRead=
 [pcbnew/libraries]
 LibDir=
 LibName1=sockets
