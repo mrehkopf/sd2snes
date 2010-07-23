@@ -905,7 +905,7 @@ checkrst_1_0	; 26
 	; if modechange flag is set: clear modechange flag, set mode, save, restart timer
 	; else reset
 	btfss	0x52, 0
-	goto	rst		; modechange flag is not set, reset. timing is irrelevant
+	goto	rst2		; modechange flag is not set, reset. timing is irrelevant
 	clrf	0x52		; clear modechange flag
 	movf	0x56, w		; get temp mode
 	movwf	0x55		; set final mode
@@ -1061,6 +1061,39 @@ supercic_pairmode_led_60
 	movwf	PORTC
 	goto	supercic_pairmode_loop
 
+rst2
+	bcf	PORTA, 2	; hold the SNES in reset
+	bcf	T1CON, 0	; stop the timer
+	clrf	TMR1L		; reset timer register
+	clrf	TMR1H
+	clrf	PIR1		; clear overflow bit
+	bsf	T1CON, 0
+	clrf	0x51		; clear reset button state
+rst2_loop1
+	btfsc	PORTA, 0	; if reset button is pressed
+	bsf	0x51, 0		; set reset flag
+	btfss	PIR1, 0		; break if timeout
+	goto	rst2_loop1
+	
+	btfss	0x51, 0		; if no 2nd reset button press occured:
+	goto	rst		; just reset normally
+
+	clrf	0x53		; else keep resetting some more	
+	bcf	T1CON, 0	; stop the timer
+	clrf	TMR1L		; reset timer register
+	clrf	TMR1H
+	clrf	PIR1		; clear overflow bit
+	bsf	T1CON, 0
+rst2_loop2
+	btfss	PIR1, 0
+	goto	rst2_loop2
+	clrf	PIR1
+	incf	0x53, f
+	movlw	0x0a
+	xorwf	0x53, w
+	btfss	STATUS, Z	; 10 overflows ~= 5.86s
+	goto	rst2_loop2
+	goto	rst		; finally reset
 ; -----------------------------------------------------------------------
 ; eeprom data
 DEEPROM	CODE
