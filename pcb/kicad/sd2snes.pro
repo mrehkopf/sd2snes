@@ -1,4 +1,4 @@
-update=Mon 19 Jul 2010 11:30:03 PM CEST
+update=Sun 25 Jul 2010 11:01:51 PM CEST
 version=1
 last_client=pcbnew
 [general]
@@ -87,9 +87,9 @@ LibName40=libs/usb_minib
 LibName41=libs/mic23250
 [pcbnew]
 version=1
-PadDrlX=0
-PadDimH=787
-PadDimV=1181
+PadDrlX=433
+PadDimH=512
+PadDimV=512
 BoardThickness=500
 SgPcb45=1
 TxtPcbV=300
