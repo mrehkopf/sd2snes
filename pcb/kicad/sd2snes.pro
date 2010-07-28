@@ -1,4 +1,4 @@
-update=Sun 25 Jul 2010 11:01:51 PM CEST
+update=Wed 28 Jul 2010 15:30:01 CEST
 version=1
 last_client=pcbnew
 [general]
@@ -102,7 +102,7 @@ DrawLar=59
 EdgeLar=150
 TxtLar=60
 MSegLar=120
-LastNetListRead=
+LastNetListRead=sd2snes.net
 [pcbnew/libraries]
 LibDir=
 LibName1=sockets
