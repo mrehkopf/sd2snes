@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sat 24 Jul 2010 12:08:35 AM CEST
+EESchema Schematic File Version 2  date Tue 27 Jul 2010 09:27:38 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A3 16535 11700
 Sheet 6 6
 Title "sd2snes Mark II"
-Date "23 jul 2010"
+Date "27 jul 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -806,31 +806,31 @@ Text GLabel 10900 4350 2    50   BiDi ~ 0
 ROM_DQ3
 Text GLabel 10900 4450 2    50   BiDi ~ 0
 ROM_DQ2
-Text GLabel 10900 4550 2    50   BiDi ~ 0
-ROM_DQ1
 Text GLabel 10900 4650 2    50   BiDi ~ 0
+ROM_DQ1
+Text GLabel 10900 4750 2    50   BiDi ~ 0
 ROM_DQ0
-Text GLabel 10900 4750 2    50   Output ~ 0
-ROM_A6
 Text GLabel 10900 4850 2    50   Output ~ 0
-ROM_/CE
+ROM_A6
 Text GLabel 10900 4950 2    50   Output ~ 0
-ROM_A2
+ROM_/CE
 Text GLabel 10900 5050 2    50   Output ~ 0
-ROM_A4
+ROM_A2
 Text GLabel 10900 5150 2    50   Output ~ 0
-ROM_A1
+ROM_A4
 Text GLabel 10900 5250 2    50   Output ~ 0
-ROM_A7
+ROM_A1
 Text GLabel 10900 5350 2    50   Output ~ 0
-ROM_A0
+ROM_A7
 Text GLabel 10900 5450 2    50   Output ~ 0
-ROM_A3
+ROM_A0
 Text GLabel 10900 5550 2    50   Output ~ 0
-ROM_/OE
+ROM_A3
 Text GLabel 10900 5650 2    50   Output ~ 0
-ROM_/UB
+ROM_/OE
 Text GLabel 10900 5750 2    50   Output ~ 0
+ROM_/UB
+Text GLabel 11350 5950 2    50   Output ~ 0
 ROM_/LB
 Text GLabel 4600 7400 0    50   Input ~ 0
 SD_SPI_MISO
@@ -962,7 +962,7 @@ Text GLabel 11350 6150 2    50   Input ~ 0
 SNES_PA7
 Text GLabel 11350 6050 2    50   Input ~ 0
 SNES_REFRESH
-Text GLabel 11350 5950 2    50   Input ~ 0
+Text GLabel 10900 4550 2    50   Input ~ 0
 SNES_SYS_CLK
 $Comp
 L GND #PWR0102

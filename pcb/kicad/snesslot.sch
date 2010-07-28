@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sat 24 Jul 2010 12:08:58 AM CEST
+EESchema Schematic File Version 2  date Tue 27 Jul 2010 10:18:35 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 2 6
 Title "sd2snes Mark II"
-Date "23 jul 2010"
+Date "27 jul 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
