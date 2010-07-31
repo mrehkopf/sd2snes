@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 28 Jul 2010 15:28:41 CEST
+EESchema Schematic File Version 2  date Sun 01 Aug 2010 01:27:51 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 4 6
 Title "sd2snes Mark II"
-Date "28 jul 2010"
+Date "31 jul 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -54,10 +54,9 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text GLabel 2700 4200 0    50   BiDi ~ 0
-SD_DAT1
+Connection ~ 7950 5000
 Wire Wire Line
-	3200 4200 2700 4200
+	7950 5000 7950 5200
 Wire Wire Line
 	6700 5100 8550 5100
 Wire Wire Line
@@ -124,7 +123,7 @@ Wire Wire Line
 Wire Wire Line
 	8350 950  2900 950 
 Wire Wire Line
-	7950 5000 7700 5000
+	7950 4900 7700 4900
 Wire Wire Line
 	2350 3000 3200 3000
 Wire Wire Line
@@ -310,8 +309,6 @@ Wire Wire Line
 Wire Wire Line
 	6700 3200 7000 3200
 Wire Wire Line
-	6700 5000 7200 5000
-Wire Wire Line
 	3200 4600 2700 4600
 Wire Wire Line
 	3200 4900 2700 4900
@@ -415,7 +412,7 @@ Wire Wire Line
 Wire Wire Line
 	8550 4000 8550 5100
 Wire Wire Line
-	7850 5100 7850 5200
+	7850 5200 7850 5100
 Connection ~ 7850 5100
 Wire Wire Line
 	7400 6700 7400 6500
@@ -424,7 +421,13 @@ Wire Wire Line
 Wire Wire Line
 	7600 5200 6700 5200
 Wire Wire Line
-	8450 3900 8450 5200
+	8450 3900 8450 5000
+Wire Wire Line
+	7200 4900 6700 4900
+Wire Wire Line
+	8450 5000 6700 5000
+Text GLabel 7950 5200 3    50   BiDi ~ 0
+SD_DAT1
 $Comp
 L CONN_2 P3
 U 1 1 4C4A0B6F
@@ -448,8 +451,6 @@ Text Notes 7682 6200 0    50   ~ 0
 Freeze button
 Text GLabel 7850 5200 3    50   BiDi ~ 0
 SD_DAT2
-Text GLabel 8450 5200 3    50   BiDi ~ 0
-SD_DAT1
 Text GLabel 7000 5700 2    50   Output ~ 0
 DAC_/DEM
 Text GLabel 2700 3800 0    50   Output ~ 0
@@ -618,11 +619,11 @@ $EndComp
 $Comp
 L R R7
 U 1 1 4BF850A9
-P 7450 5000
-F 0 "R7" V 7350 5000 50  0000 C CNN
-F 1 "100" V 7450 5000 50  0000 C CNN
-F 2 "SM0805_FIXEDMASK" H 7450 5000 60  0001 C CNN
-	1    7450 5000
+P 7450 4900
+F 0 "R7" V 7350 4900 50  0000 C CNN
+F 1 "100" V 7450 4900 50  0000 C CNN
+F 2 "SM0805_FIXEDMASK" H 7450 4900 60  0001 C CNN
+	1    7450 4900
 	0    -1   1    0   
 $EndComp
 $Comp
@@ -798,7 +799,7 @@ Text GLabel 2700 4600 0    50   Input ~ 0
 EXT_TDI
 Text GLabel 2700 4500 0    50   Output ~ 0
 MCU_TDO
-Text GLabel 7950 5000 2    50   Output ~ 0
+Text GLabel 7950 4900 2    50   Output ~ 0
 PROG_B
 Text GLabel 7000 3200 2    50   Output ~ 0
 FPGA_CLK

@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 28 Jul 2010 14:05:50 CEST
+EESchema Schematic File Version 2  date Sun 01 Aug 2010 01:26:17 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 2 6
 Title "sd2snes Mark II"
-Date "28 jul 2010"
+Date "31 jul 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -953,7 +953,7 @@ L R R1
 U 1 1 4BAE51CA
 P 4850 5650
 F 0 "R1" V 4930 5650 50  0000 C CNN
-F 1 "330" V 4850 5650 50  0000 C CNN
+F 1 "220" V 4850 5650 50  0000 C CNN
 F 2 "SM0805_FIXEDMASK" H 4850 5650 60  0001 C CNN
 	1    4850 5650
 	1    0    0    -1  
