@@ -1,4 +1,4 @@
-# EESchema Netlist Version 1.1 created  Sun 01 Aug 2010 01:27:55 AM CEST
+# EESchema Netlist Version 1.1 created  Mon 02 Aug 2010 02:10:51 AM CEST
 (
  ( /4B6E16F2/4BFB119A SM0805_FIXEDMASK  C55 100n {Lib=C}
   (    1 +5V )
@@ -275,33 +275,33 @@
   (   48 GND )
  )
  ( /4BAA6ABD/4BF2FDAF SM0805_FIXEDMASK  R4 20k {Lib=R}
-  (    1 N-000277 )
+  (    1 N-000279 )
   (    2 /Memory/RAM_/CE )
  )
  ( /4BAA6ABD/4BF2FDAC SM0805_FIXEDMASK  R3 1k {Lib=R}
-  (    1 N-000279 )
+  (    1 N-000281 )
   (    2 GND )
  )
  ( /4BAA6ABD/4BF2FDA9 SM0805_FIXEDMASK  R2 4k7 {Lib=R}
-  (    1 N-000279 )
+  (    1 N-000281 )
   (    2 +3.3V )
  )
  ( /4BAA6ABD/4BF2FD9F SOT23EBC  Q1 2N2222A {Lib=NPN}
   (    1 GND )
-  (    2 N-000279 )
+  (    2 N-000281 )
   (    3 /Memory/RAM_/CE )
  )
  ( /4BAA6ABD/4BF19DCA SOT23EBC  D1 BAT54C {Lib=DOUBLE_SCH_KCOM2}
   (    1 +3.3V )
   (    2 +BATT )
-  (    3 N-000277 )
+  (    3 N-000279 )
  )
  ( /4BAA6ABD/4BAD3D55 SM0805_FIXEDMASK  C17 100n {Lib=C}
   (    1 +1.8V )
   (    2 GND )
  )
  ( /4BAA6ABD/4BAD3D53 SM0805_FIXEDMASK  C16 100n {Lib=C}
-  (    1 N-000277 )
+  (    1 N-000279 )
   (    2 GND )
  )
  ( /4BAA6ABD/4BAD3D47 SM0805_FIXEDMASK  C15 100n {Lib=C}
@@ -321,7 +321,7 @@
   (   A6 /Memory/RAM_A8 )
   (   B6 /Memory/RAM_DQ0 )
   (   C6 /Memory/RAM_DQ1 )
-  (   D6 N-000277 )
+  (   D6 N-000279 )
   (   E6 GND )
   (   F6 /Memory/RAM_DQ2 )
   (   G6 /Memory/RAM_DQ3 )
@@ -330,7 +330,7 @@
   (   B1 /Memory/RAM_DQ4 )
   (   C1 /Memory/RAM_DQ5 )
   (   D1 GND )
-  (   E1 N-000277 )
+  (   E1 N-000279 )
   (   F1 /Memory/RAM_DQ6 )
   (   G1 /Memory/RAM_DQ7 )
   (   H1 /Memory/RAM_A9 )
@@ -399,9 +399,17 @@
   (   G3 /Memory/ROM_A12 )
   (   H3 /Memory/ROM_A9 )
  )
+ ( /4B6ED75B/4C5608C9 SM0805_FIXEDMASK  R21 33 {Lib=R}
+  (    1 N-000253 )
+  (    2 N-000243 )
+ )
+ ( /4B6ED75B/4C5608C6 SM0805_FIXEDMASK  R20 33 {Lib=R}
+  (    1 N-000252 )
+  (    2 N-000242 )
+ )
  ( /4B6ED75B/4C4A0B6F PIN_ARRAY_2X1  P3 CONN_2 {Lib=CONN_2}
   (    1 GND )
-  (    2 N-000242 )
+  (    2 N-000234 )
  )
  ( /4B6ED75B/4C1286D5 SM0805_FIXEDMASK  C63 100n {Lib=C}
   (    1 +3.3V )
@@ -409,51 +417,51 @@
  )
  ( /4B6ED75B/4C0DA78D LED-3MM-FIXED  D4 LED_2mA_1.7V,_red {Lib=LED}
   (    1 +3.3V )
-  (    2 N-000233 )
+  (    2 N-000241 )
  )
  ( /4B6ED75B/4C0DA785 SM0805_FIXEDMASK  R15 680 {Lib=R}
-  (    1 N-000240 )
-  (    2 N-000233 )
+  (    1 N-000233 )
+  (    2 N-000241 )
  )
  ( /4B6ED75B/4C0943CA pin_array_7x2  P1 CONN_7X2 {Lib=CONN_7X2}
   (    1 +3.3V )
   (    2 +5V )
   (    3 GND )
-  (    4 N-000239 )
-  (    5 N-000251 )
-  (    6 N-000252 )
-  (    7 N-000236 )
+  (    4 N-000240 )
+  (    5 N-000256 )
+  (    6 N-000235 )
+  (    7 N-000239 )
   (    8 N-000131 )
   (    9 N-000238 )
   (   10 N-000127 )
-  (   11 N-000245 )
+  (   11 N-000237 )
   (   12 N-000124 )
-  (   13 N-000253 )
-  (   14 N-000237 )
+  (   13 N-000236 )
+  (   14 N-000249 )
  )
  ( /4B6ED75B/4C063C47 SM0805_FIXEDMASK  C62 100n {Lib=C}
-  (    1 N-000251 )
+  (    1 N-000256 )
   (    2 GND )
  )
  ( /4B6ED75B/4C063C2F SM0805_FIXEDMASK  R14 10k {Lib=R}
-  (    1 N-000251 )
+  (    1 N-000256 )
   (    2 +3.3V )
  )
  ( /4B6ED75B/4C01596A SM0805_FIXEDMASK  R13 1.5k {Lib=R}
-  (    1 +3.3V )
-  (    2 N-000249 )
+  (    1 N-000252 )
+  (    2 +3.3V )
  )
  ( /4B6ED75B/4BF850D1 SM0805_FIXEDMASK  R8 100 {Lib=R}
   (    1 N-000123 )
-  (    2 N-000254 )
+  (    2 N-000244 )
  )
  ( /4B6ED75B/4BF850A9 SM0805_FIXEDMASK  R7 100 {Lib=R}
-  (    1 N-000241 )
+  (    1 N-000254 )
   (    2 N-000156 )
  )
  ( /4B6ED75B/4BF847B1 SM0805_FIXEDMASK  R6 680 {Lib=R}
-  (    1 N-000243 )
-  (    2 N-000244 )
+  (    1 N-000250 )
+  (    2 N-000251 )
  )
  ( /4B6ED75B/4BF847A7 SM0805_FIXEDMASK  R5 680 {Lib=R}
   (    1 N-000246 )
@@ -465,7 +473,7 @@
  )
  ( /4B6ED75B/4BF8324A LED-3MM-FIXED  D2 LED_2mA_1.8V,_yellow {Lib=LED}
   (    1 +3.3V )
-  (    2 N-000244 )
+  (    2 N-000251 )
  )
  ( /4B6ED75B/4BF6BFE6 SM0805_FIXEDMASK  C43 100n {Lib=C}
   (    1 +3.3V )
@@ -489,19 +497,19 @@
  )
  ( /4B6ED75B/4BF00175 USB-MINIB-THT  J3 USB_MINIB {Lib=USB_MINIB}
   (    1 N-000248 )
-  (    2 N-000235 )
-  (    3 N-000249 )
+  (    2 N-000253 )
+  (    3 N-000252 )
   (    5 GND )
   (    6 GND )
   (    7 GND )
  )
  ( /4B6ED75B/4BEFBC73 PIN_ARRAY_2X1  P2 CONN_2 {Lib=CONN_2}
   (    1 GND )
-  (    2 N-000251 )
+  (    2 N-000256 )
  )
  ( /4B6ED75B/4BAA6A9C SD-RSMT-2-MQ-WF  J2 SD_CARD {Lib=SD_CARD}
-  (   WP N-000234 )
-  (   DT N-000250 )
+  (   WP N-000255 )
+  (   DT N-000245 )
   ( GND1 GND )
   ( GND2 GND )
   (    1 N-000114 )
@@ -515,60 +523,60 @@
   (    9 N-000125 )
  )
  ( /4B6ED75B/4BEECBD1 SM0805_FIXEDMASK  C37 22p {Lib=C}
-  (    1 N-000273 )
+  (    1 N-000276 )
   (    2 GND )
  )
  ( /4B6ED75B/4BEECBCD SM0805_FIXEDMASK  C36 22p {Lib=C}
-  (    1 N-000274 )
+  (    1 N-000277 )
   (    2 GND )
  )
  ( /4B6ED75B/4BEECBCA SM0805_FIXEDMASK  C35 22p {Lib=C}
-  (    1 N-000271 )
+  (    1 N-000274 )
   (    2 GND )
  )
  ( /4B6ED75B/4BEECBC1 SM0805_FIXEDMASK  C34 22p {Lib=C}
-  (    1 N-000272 )
+  (    1 N-000275 )
   (    2 GND )
  )
  ( /4B6ED75B/4BC243CB XTAL_SMD_05019  X2 32.768kHz {Lib=CRYSTAL}
-  (    1 N-000274 )
-  (    2 N-000273 )
+  (    1 N-000277 )
+  (    2 N-000276 )
  )
  ( /4B6ED75B/4BC243C8 XTAL_SMD_05032  X1 12MHz {Lib=CRYSTAL}
-  (    1 N-000272 )
-  (    2 N-000271 )
+  (    1 N-000275 )
+  (    2 N-000274 )
  )
  ( /4B6ED75B/4B6F321A LQFP80-.5  U11 LPC1754 {Lib=LPC1754}
   (    1 N-000129 )
-  (    2 N-000245 )
+  (    2 N-000237 )
   (    3 N-000127 )
   (    4 N-000238 )
   (    5 N-000131 )
-  (    6 N-000236 )
-  (    7 N-000252 )
+  (    6 N-000239 )
+  (    7 N-000235 )
   (    8 +3.3V )
   (    9 GND )
   (   10 +3.3V )
   (   11 ? )
   (   12 GND )
-  (   13 N-000274 )
-  (   14 N-000251 )
-  (   15 N-000273 )
+  (   13 N-000277 )
+  (   14 N-000256 )
+  (   15 N-000276 )
   (   16 +BATT )
   (   17 ? )
   (   18 N-000248 )
-  (   19 N-000272 )
-  (   20 N-000271 )
+  (   19 N-000275 )
+  (   20 N-000274 )
   (   21 +3.3V )
-  (   22 N-000249 )
-  (   23 N-000235 )
+  (   22 N-000242 )
+  (   23 N-000243 )
   (   24 GND )
-  (   25 N-000242 )
+  (   25 N-000234 )
   (   26 ? )
   (   27 ? )
   (   28 ? )
   (   29 ? )
-  (   30 N-000225 )
+  (   30 N-000230 )
   (   31 /Power_Supply_/_Misc./CIC_DATA1 )
   (   32 /Power_Supply_/_Misc./CIC_DATA0 )
   (   33 GND )
@@ -578,8 +586,8 @@
   (   37 /Power_Supply_/_Misc./CIC_MCLR )
   (   38 /Power_Supply_/_Misc./CIC_STATUS )
   (   39 N-000189 )
-  (   40 N-000254 )
-  (   41 N-000239 )
+  (   40 N-000244 )
+  (   41 N-000240 )
   (   42 +3.3V )
   (   43 GND )
   (   44 N-000121 )
@@ -592,12 +600,12 @@
   (   51 ? )
   (   52 ? )
   (   53 ? )
-  (   54 N-000234 )
-  (   55 N-000250 )
+  (   54 N-000255 )
+  (   55 N-000245 )
   (   56 +3.3V )
   (   57 GND )
-  (   58 N-000240 )
-  (   59 N-000243 )
+  (   58 N-000233 )
+  (   59 N-000250 )
   (   60 N-000246 )
   (   61 N-000193 )
   (   62 N-000115 )
@@ -609,7 +617,7 @@
   (   68 ? )
   (   69 N-000125 )
   (   70 N-000126 )
-  (   71 N-000241 )
+  (   71 N-000254 )
   (   72 ? )
   (   73 ? )
   (   74 ? )
@@ -617,11 +625,11 @@
   (   76 ? )
   (   77 +3.3V )
   (   78 GND )
-  (   79 N-000237 )
-  (   80 N-000253 )
+  (   79 N-000249 )
+  (   80 N-000236 )
  )
  ( /4B6EC9C3/4C42D578 SM0805_FIXEDMASK  R16 680 {Lib=R}
-  (    1 N-000230 )
+  (    1 N-000225 )
   (    2 /Power_Supply_/_Misc./CIC_CLK )
  )
  ( /4B6EC9C3/4C17DE31 SM0805_FIXEDMASK  C64 1u {Lib=C}
@@ -666,10 +674,10 @@
  )
  ( /4B6EC9C3/4BF98EC6 SM0805_FIXEDMASK  R10 470 {Lib=R}
   (    1 N-000073 )
-  (    2 N-000217 )
+  (    2 N-000220 )
  )
  ( /4B6EC9C3/4BF98EC4 SM0805_FIXEDMASK  R9 10k {Lib=R}
-  (    1 N-000217 )
+  (    1 N-000220 )
   (    2 GND )
  )
  ( /4B6EC9C3/4BF98EBF SM0805_FIXEDMASK  C49 3700p {Lib=C}
@@ -677,35 +685,35 @@
   (    2 GND )
  )
  ( /4B6EC9C3/4BF98EBE SM0805_FIXEDMASK  C45 3.3u {Lib=C}
-  (    1 N-000217 )
-  (    2 N-000227 )
- )
- ( /4B6EC9C3/4BF98EBB SM0805_FIXEDMASK  C47 3.3u {Lib=C}
-  (    1 N-000222 )
+  (    1 N-000220 )
   (    2 N-000218 )
  )
+ ( /4B6EC9C3/4BF98EBB SM0805_FIXEDMASK  C47 3.3u {Lib=C}
+  (    1 N-000219 )
+  (    2 N-000217 )
+ )
  ( /4B6EC9C3/4BF98EB9 SM0805_FIXEDMASK  R11 10k {Lib=R}
-  (    1 N-000222 )
+  (    1 N-000219 )
   (    2 GND )
  )
  ( /4B6EC9C3/4BF98EB4 SM0805_FIXEDMASK  R12 470 {Lib=R}
   (    1 N-000067 )
-  (    2 N-000222 )
+  (    2 N-000219 )
  )
  ( /4B6EC9C3/4BF98E9E SM0805_FIXEDMASK  C46 3700p {Lib=C}
   (    1 N-000073 )
   (    2 GND )
  )
  ( /4B6EC9C3/4BF98AAB SM0805_FIXEDMASK  C48 10u {Lib=C}
-  (    1 N-000226 )
+  (    1 N-000229 )
   (    2 GND )
  )
  ( /4B6EC9C3/4BF98AA5 SM0805_FIXEDMASK  C50 10u {Lib=C}
-  (    1 N-000219 )
+  (    1 N-000221 )
   (    2 GND )
  )
  ( /4B6EC9C3/4BF98AA2 SM0805_FIXEDMASK  C51 100n {Lib=C}
-  (    1 N-000219 )
+  (    1 N-000221 )
   (    2 GND )
  )
  ( /4B6EC9C3/4BAF2EAF BT_KEYSTONE_1059_20MM  BT1 Keystone_1059_/_KZH20PCB {Lib=BATTERY}
@@ -718,15 +726,15 @@
  )
  ( /4B6EC9C3/4BAA9331 TSSOP10  U14 CS4344 {Lib=CS4344}
   (    1 N-000119 )
-  (    2 N-000225 )
+  (    2 N-000230 )
   (    3 N-000190 )
   (    4 N-000118 )
-  (    5 N-000219 )
-  (    6 N-000226 )
-  (    7 N-000218 )
+  (    5 N-000221 )
+  (    6 N-000229 )
+  (    7 N-000217 )
   (    8 GND )
   (    9 +3.3V )
-  (   10 N-000227 )
+  (   10 N-000218 )
  )
  ( /4B6EC9C3/4BADC719 SM0805_FIXEDMASK  C32 100n {Lib=C}
   (    1 +5V )
@@ -750,7 +758,7 @@
  )
  ( /4B6EC9C3/4BAA92DB SO8N  U15 PIC12F629 {Lib=PIC12F629}
   (    1 +5V )
-  (    2 N-000230 )
+  (    2 N-000225 )
   (    3 /Power_Supply_/_Misc./CIC_STATUS )
   (    4 /Power_Supply_/_Misc./CIC_MCLR )
   (    5 /Power_Supply_/_Misc./CIC_RESET )
@@ -931,7 +939,7 @@
   (   80 N-000189 )
   (   81 N-000109 )
   (   82 GND )
-  (   83 N-000239 )
+  (   83 N-000240 )
   (   84 +3.3V )
   (   85 N-000108 )
   (   86 N-000107 )
@@ -1159,6 +1167,18 @@ $component C15
  SM*
  C?
  C1-1
+$endlist
+$component R21
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component R20
+ R?
+ SM0603
+ SM0805
+ R?-*
 $endlist
 $component C63
  SM*
@@ -1509,279 +1529,279 @@ Net 2 "/SNES Slot/SNES_EXT_A11" "SNES_EXT_A11"
  U3 14
  J1 6
 Net 3 "/SNES Slot/SNES_EXT_A10" "SNES_EXT_A10"
- U3 12
  J1 7
+ U3 12
 Net 4 "/SNES Slot/SNES_EXT_A9" "SNES_EXT_A9"
- J1 8
  U3 9
+ J1 8
 Net 5 "/SNES Slot/SNES_EXT_A8" "SNES_EXT_A8"
  J1 9
  U3 6
 Net 6 "/SNES Slot/SNES_EXT_A7" "SNES_EXT_A7"
- U3 3
  J1 10
+ U3 3
 Net 7 "+3.3V" "+3.3V"
- U3 42
- U3 31
- U1 42
- U1 31
- U4 201
- U4 110
+ D1 1
+ U4 32
  C63 1
  D4 1
  P1 1
+ U4 98
+ U1 31
+ U4 110
+ U4 201
+ R2 2
+ U1 42
  U4 73
  U4 23
- U4 32
+ U4 136
+ C15 1
+ U4 188
  U2 42
- U2 31
  U4 84
- C33 1
- U4 49
- U4 98
- U12 E1
- C52 1
- C53 1
- C54 1
- D2 1
- D3 1
- U11 8
- U11 10
- U11 21
- U11 56
- U11 67
- U11 77
+ U2 31
+ U4 177
+ U4 127
+ U3 42
+ U3 31
  U11 42
  U11 34
- D1 1
- R2 2
- C44 1
- C40 1
- C41 1
+ U11 77
+ U11 67
+ U11 56
+ U11 21
+ U11 10
+ U11 8
+ R13 2
  J2 4
- R13 1
- R14 2
  C42 1
+ C41 1
+ C40 1
+ C44 1
+ U4 49
+ D3 1
+ D2 1
  C43 1
- C10 1
- C9 1
+ R14 2
  C61 1
- U4 60
- U4 153
- L2 2
- C64 1
- U4 188
- U10 1
- U9 3
- U10 3
- U9 1
- C4 1
- U4 164
- U14 9
- U16 10
- U4 6
- C3 1
- C15 1
+ U12 E1
+ C52 1
  C11 1
- C18 1
- U5 1
- C21 1
- U4 127
- C19 1
- U4 136
- C20 1
- C24 1
- C25 1
- U4 177
+ C53 1
+ C54 1
+ C3 1
  C23 1
+ C24 1
  C22 1
+ C21 1
+ C64 1
+ C20 1
+ C19 1
+ C10 1
+ C18 1
+ C9 1
+ C4 1
+ U10 1
+ C25 1
+ L2 2
+ U9 3
+ U4 6
+ U9 1
+ U10 3
+ U5 1
+ U4 164
+ U4 153
+ U14 9
+ U4 60
+ C33 1
+ U16 10
 Net 8 "GND" "GND"
- C25 2
- C39 2
- C38 2
- U4 30
- U16 3
- U16 5
- U4 8
- C28 2
- C29 2
- C31 2
- C62 2
- C26 2
- C30 2
- C43 2
- C27 2
- J2 3
- C44 2
- J2 6
- C40 2
- J2 GND1
- C41 2
- J2 GND2
- C42 2
  C37 2
+ C36 2
+ C35 2
+ C34 2
+ U11 66
+ U11 57
+ U11 78
+ U13 D1
+ U12 A6
+ U12 E6
+ U12 D1
+ U11 9
  R3 2
- U4 91
  Q1 1
- R9 2
- C49 2
+ C38 2
+ C39 2
+ J2 GND2
+ J2 GND1
+ J2 6
+ U13 E6
+ J2 3
+ C62 2
  J3 5
- U4 41
  J3 6
  J3 7
  P2 1
- R11 2
- U13 E6
- U4 59
- U4 163
- U4 129
- U4 195
- U4 206
- U4 202
- U4 112
- U4 82
- U4 186
- C51 2
- C50 2
- U4 157
+ C44 2
+ C40 2
+ C41 2
+ C42 2
+ C43 2
  C48 2
- U4 66
- C46 2
- U4 75
+ C50 2
+ C51 2
  BT1 2
- U4 25
- C33 2
- U4 118
- U4 47
- U4 151
- U4 179
- U4 170
- P3 1
- U4 99
- C63 2
- U4 14
- P1 3
- U4 53
- C64 2
- C24 2
- U11 9
- C23 2
- U11 12
- C34 2
- C22 2
- C21 2
- C20 2
- C19 2
- U11 66
- U11 57
- C18 2
- U11 78
- C35 2
- C36 2
+ U15 8
+ U9 2
  U4 1
- U11 33
- U11 43
- U11 24
+ C18 2
+ C19 2
+ C20 2
+ C21 2
+ C22 2
+ C23 2
+ C24 2
+ C25 2
+ C26 2
+ C27 2
+ U4 91
+ U4 41
+ U4 112
+ U4 202
+ U4 206
+ U4 195
+ U4 145
+ U4 105
+ U4 134
+ U10 2
+ C33 2
  U14 8
  C32 2
- U9 2
- U10 2
- C8 2
- C4 2
- U4 134
- U4 105
- U15 8
- U4 145
+ C46 2
+ C59 2
  C61 2
  C60 2
  C58 2
- C59 2
+ R11 2
+ C49 2
+ R9 2
  C7 2
  C3 2
- C52 2
- C53 2
- C54 2
- C57 2
- C56 2
- C55 2
+ U4 30
+ C8 2
+ U4 8
+ C4 2
+ C28 2
+ C29 2
+ C30 2
+ C31 2
+ C64 2
+ U16 5
+ U16 3
+ U11 12
+ U11 33
+ U11 43
+ U11 24
+ U4 82
+ P3 1
+ C63 2
+ U4 66
+ P1 3
+ U4 75
+ U4 25
+ U4 118
+ U4 157
+ U4 186
+ U4 179
+ U4 129
+ U4 163
+ U4 59
+ U4 47
+ U4 151
+ U4 170
+ U4 99
+ U4 14
+ U4 53
  R1 2
- J1 5
- C11 2
- C10 2
- C9 2
  U5 2
+ C55 2
+ C56 2
+ C57 2
+ U2 21
+ U2 10
+ U3 28
+ U3 48
+ U2 4
+ U2 1
+ U3 1
+ U3 39
+ U3 4
+ U3 10
+ U2 48
  U2 28
- U1 21
- J1 36
+ U3 21
  U2 45
  C15 2
+ J1 36
+ U1 21
+ U1 10
+ U1 4
+ U1 1
+ U2 39
+ U1 39
+ U1 48
+ U1 28
+ C16 2
+ U1 45
+ U1 15
+ U3 24
+ U3 34
+ U1 34
+ U3 15
+ U3 25
+ U3 45
  U2 25
  U2 15
  U2 34
  U2 24
- C14 2
- U13 D1
- C13 2
- U3 24
- U3 34
- U3 15
- U3 25
- U3 45
- U3 28
- U3 48
- U3 1
- U3 4
- U3 10
- U2 10
- U2 21
- U2 4
- C16 2
- U1 34
+ J1 5
+ C11 2
  C17 2
- U1 15
- U1 45
- U2 1
- U3 39
- U1 28
- U1 48
- U1 39
- U2 39
- U1 1
- U2 48
- U1 4
- U1 10
- U12 A6
- U12 E6
- U12 D1
+ C10 2
+ C9 2
+ C14 2
+ C13 2
+ C12 2
  U12 J2
  U12 J3
- U3 21
- C12 2
+ C52 2
+ C54 2
+ C53 2
 Net 9 "+5V" "+5V"
- U1 18
- P1 2
- U15 1
- U3 18
- C60 1
- U3 7
- C32 1
- U2 7
- J1 58
+ U16 2
  C59 1
- J1 27
- U2 18
- U1 7
+ C60 1
+ C55 1
+ C12 1
  C13 1
+ C56 1
+ C14 1
+ J1 27
+ J1 58
+ U16 9
  U16 8
  U16 6
- U16 2
- C55 1
- C56 1
+ U3 18
+ U1 7
  C57 1
- U16 9
+ P1 2
+ U1 18
+ U2 18
+ U3 7
+ U2 7
+ U15 1
+ C32 1
  U5 6
- C14 1
- C12 1
 Net 10 "/SNES Slot/SNES_EXT_SYS_CLK" "SNES_EXT_SYS_CLK"
  J1 1
  U3 23
@@ -1790,23 +1810,23 @@ Net 11 "/SNES Slot/SNES_EXT_/IRQ" "SNES_EXT_/IRQ"
  J1 18
  U5 4
 Net 12 "" ""
- U2 33
  U4 128
+ U2 33
 Net 13 "" ""
  U4 119
  U2 43
 Net 14 "" ""
- U4 117
  U2 44
+ U4 117
 Net 15 "" ""
- U4 135
  U2 26
+ U4 135
 Net 16 "" ""
- U4 116
  U2 46
+ U4 116
 Net 17 "" ""
- U2 27
  U4 133
+ U2 27
 Net 18 "" ""
  U4 124
  U2 37
@@ -1820,50 +1840,50 @@ Net 21 "" ""
  U4 132
  U2 29
 Net 22 "" ""
- U3 29
  U4 154
+ U3 29
 Net 23 "" ""
  U4 131
  U2 30
 Net 24 "" ""
- U2 40
  U4 122
+ U2 40
 Net 25 "" ""
  U4 120
  U2 41
 Net 26 "" ""
- U4 130
  U2 32
+ U4 130
 Net 27 "/SNES Slot/SNES_EXT_D7" "SNES_EXT_D7"
- J1 53
  U1 14
+ J1 53
 Net 28 "" ""
- U4 111
  U1 24
+ U4 111
 Net 29 "" ""
- U4 109
  U1 25
+ U4 109
 Net 30 "" ""
- U1 35
  U4 97
+ U1 35
 Net 31 "" ""
  U1 26
  U4 108
 Net 32 "" ""
- U4 96
  U1 36
+ U4 96
 Net 33 "/SNES Slot/SNES_EXT_D6" "SNES_EXT_D6"
- J1 52
  U1 17
+ J1 52
 Net 34 "" ""
- U4 107
  U1 27
+ U4 107
 Net 35 "" ""
  U1 29
  U4 106
 Net 36 "/SNES Slot/SNES_EXT_PA4" "SNES_EXT_PA4"
- U1 2
  J1 30
+ U1 2
 Net 37 "/SNES Slot/SNES_EXT_PA5" "SNES_EXT_PA5"
  J1 61
  U1 3
@@ -1871,8 +1891,8 @@ Net 38 "/SNES Slot/SNES_EXT_PA2" "SNES_EXT_PA2"
  J1 29
  U1 5
 Net 39 "/SNES Slot/SNES_EXT_PA3" "SNES_EXT_PA3"
- J1 60
  U1 6
+ J1 60
 Net 40 "/SNES Slot/SNES_EXT_PA0" "SNES_EXT_PA0"
  U1 8
  J1 28
@@ -1889,14 +1909,14 @@ Net 44 "" ""
  U4 101
  U1 32
 Net 45 "" ""
- U4 100
  U1 33
+ U4 100
 Net 46 "/SNES Slot/SNES_EXT_A19" "SNES_EXT_A19"
- U2 16
  J1 44
+ U2 16
 Net 47 "/SNES Slot/SNES_EXT_/WR" "SNES_EXT_/WR"
- U1 12
  J1 54
+ U1 12
 Net 48 "/SNES Slot/SNES_EXT_A2" "SNES_EXT_A2"
  U2 12
  J1 15
@@ -1907,45 +1927,45 @@ Net 50 "/SNES Slot/SNES_EXT_A20" "SNES_EXT_A20"
  U2 13
  J1 45
 Net 51 "/Power Supply / Misc./CIC_DATA0" "CIC_DATA0"
- U15 7
  U11 32
  J1 55
+ U15 7
 Net 52 "/SNES Slot/SNES_EXT_A1" "SNES_EXT_A1"
  U2 9
  J1 16
 Net 53 "/SNES Slot/SNES_EXT_A21" "SNES_EXT_A21"
- J1 46
  U2 11
+ J1 46
 Net 54 "/Power Supply / Misc./CIC_CLK" "CIC_CLK"
  J1 56
  R16 2
 Net 55 "/SNES Slot/SNES_EXT_A0" "SNES_EXT_A0"
- J1 17
  U2 6
+ J1 17
 Net 56 "/SNES Slot/SNES_EXT_A12" "SNES_EXT_A12"
- J1 37
  U3 13
+ J1 37
 Net 57 "/SNES Slot/SNES_EXT_A22" "SNES_EXT_A22"
- J1 47
  U2 8
+ J1 47
 Net 58 "/SNES Slot/SNES_EXT_CPU_CLK" "SNES_EXT_CPU_CLK"
- U1 11
  J1 57
+ U1 11
 Net 59 "/SNES Slot/SNES_EXT_A13" "SNES_EXT_A13"
- U3 11
  J1 38
+ U3 11
 Net 60 "/SNES Slot/SNES_EXT_A23" "SNES_EXT_A23"
- J1 48
  U2 5
+ J1 48
 Net 61 "/SNES Slot/SNES_EXT_D0" "SNES_EXT_D0"
- J1 19
  U1 22
+ J1 19
 Net 62 "/SNES Slot/SNES_EXT_D1" "SNES_EXT_D1"
- U1 19
  J1 20
+ U1 19
 Net 63 "/SNES Slot/SNES_EXT_A15" "SNES_EXT_A15"
- J1 40
  U3 5
+ J1 40
 Net 64 "/SNES Slot/SNES_EXT_D4" "SNES_EXT_D4"
  U1 23
  J1 50
@@ -1956,77 +1976,77 @@ Net 66 "/SNES Slot/SNES_EXT_D2" "SNES_EXT_D2"
  U1 16
  J1 21
 Net 67 "" ""
- R12 1
  J1 31
+ R12 1
  C49 1
 Net 68 "/SNES Slot/SNES_EXT_A16" "SNES_EXT_A16"
- U3 2
  J1 41
+ U3 2
 Net 69 "/SNES Slot/SNES_EXT_A5" "SNES_EXT_A5"
- J1 12
  U2 20
+ J1 12
 Net 70 "/SNES Slot/SNES_EXT_D3" "SNES_EXT_D3"
- U1 13
  J1 22
+ U1 13
 Net 72 "/SNES Slot/SNES_EXT_A17" "SNES_EXT_A17"
  J1 42
  U2 22
 Net 73 "" ""
+ J1 62
  C46 1
  R10 1
- J1 62
 Net 74 "/SNES Slot/SNES_EXT_A4" "SNES_EXT_A4"
- U2 17
  J1 13
+ U2 17
 Net 75 "/SNES Slot/SNES_EXT_/RD" "SNES_EXT_/RD"
  J1 23
  U2 2
 Net 76 "/SNES Slot/SNES_EXT_A18" "SNES_EXT_A18"
- U2 19
  J1 43
+ U2 19
 Net 77 "/SNES Slot/SNES_EXT_A3" "SNES_EXT_A3"
  U2 14
  J1 14
 Net 78 "/Power Supply / Misc./CIC_DATA1" "CIC_DATA1"
  U15 6
- U11 31
  J1 24
+ U11 31
 Net 79 "" ""
- U3 33
  U4 149
+ U3 33
 Net 80 "" ""
- U3 43
  U4 140
+ U3 43
 Net 81 "" ""
- U4 139
  U3 44
+ U4 139
 Net 82 "" ""
- U4 148
  U3 35
+ U4 148
 Net 83 "/SNES Slot/SNES_EXT_/PARD" "SNES_EXT_/PARD"
- U3 16
  J1 4
+ U3 16
 Net 84 "" ""
- U3 26
  U4 180
+ U3 26
 Net 85 "" ""
  U4 147
  U3 36
 Net 86 "" ""
- U3 46
  U4 138
+ U3 46
 Net 87 "/SNES Slot/SNES_EXT_/PAWR" "SNES_EXT_/PAWR"
  J1 35
  U3 17
 Net 88 "" ""
- U3 27
  U4 155
+ U3 27
 Net 89 "" ""
  U4 146
  U3 37
 Net 90 "" ""
- U3 47
  U4 137
+ U3 47
 Net 91 "" ""
  U4 144
  U3 38
@@ -2037,20 +2057,20 @@ Net 93 "/SNES Slot/SNES_EXT_A14" "SNES_EXT_A14"
  J1 39
  U3 8
 Net 94 "/SNES Slot/SNES_EXT_/ROMSEL" "SNES_EXT_/ROMSEL"
- J1 49
  U2 3
+ J1 49
 Net 95 "/SNES Slot/SNES_EXT_PA7" "SNES_EXT_PA7"
  J1 34
  U3 20
 Net 96 "" ""
- U3 30
  U4 152
+ U3 30
 Net 97 "" ""
- U3 40
  U4 143
+ U3 40
 Net 98 "" ""
- U3 41
  U4 141
+ U3 41
 Net 99 "/SNES Slot/SNES_EXT_REFRESH" "SNES_EXT_REFRESH"
  J1 33
  U3 22
@@ -2058,20 +2078,20 @@ Net 100 "" ""
  U3 32
  U4 150
 Net 101 "/SNES Slot/SNES_/RESET" "SNES_/RESET"
- J1 26
  U11 36
+ J1 26
 Net 102 "" ""
  U4 95
  U1 37
 Net 103 "" ""
- U1 38
  U4 94
+ U1 38
 Net 104 "" ""
  U4 93
  U1 40
 Net 105 "" ""
- U1 41
  U4 90
+ U1 41
 Net 106 "" ""
  U1 43
  U4 87
@@ -2082,8 +2102,8 @@ Net 108 "" ""
  U1 46
  U4 85
 Net 109 "" ""
- U1 47
  U4 81
+ U1 47
 Net 110 "" ""
  U5 3
  U4 114
@@ -2091,83 +2111,83 @@ Net 111 "" ""
  U4 113
  U5 5
 Net 112 "" ""
- U2 35
  U4 126
+ U2 35
 Net 113 "" ""
- U4 125
  U2 36
+ U4 125
 Net 114 "" ""
- J2 1
- U11 64
  U4 63
+ U11 64
+ J2 1
 Net 115 "" ""
+ U4 65
  U11 62
  J2 7
- U4 65
 Net 116 "" ""
- U11 48
  U4 68
+ U11 48
 Net 117 "" ""
- U11 46
  U4 72
+ U11 46
 Net 118 "" ""
- U14 4
  U4 76
+ U14 4
 Net 119 "" ""
- U4 78
  U14 1
+ U4 78
 Net 120 "/Memory/ROM_/LB" "ROM_/LB"
- U12 A1
  U4 156
+ U12 A1
 Net 121 "" ""
- U4 103
  U11 44
+ U4 103
 Net 122 "" ""
- U11 50
  U4 92
+ U11 50
 Net 123 "" ""
- U4 104
  R8 1
+ U4 104
 Net 124 "" ""
- U4 158
  P1 12
+ U4 158
 Net 125 "" ""
- J2 9
  U4 62
+ J2 9
  U11 69
 Net 126 "" ""
+ J2 8
  U11 70
  U4 79
- J2 8
 Net 127 "" ""
- U11 3
  R17 2
  P1 10
+ U11 3
 Net 128 "" ""
  R17 1
  U4 160
 Net 129 "" ""
- R18 2
  U11 1
+ R18 2
 Net 130 "" ""
  U4 208
  R18 1
 Net 131 "" ""
+ U11 5
  P1 8
  R19 2
- U11 5
 Net 132 "" ""
- R19 1
  U4 159
+ R19 1
 Net 133 "/Memory/RAM_A11" "RAM_A11"
  U4 27
  U13 H3
 Net 134 "/Memory/RAM_A10" "RAM_A10"
- U4 28
  U13 H2
+ U4 28
 Net 135 "/Memory/RAM_/OE" "RAM_/OE"
- U4 29
  U13 G2
+ U4 29
 Net 136 "/Memory/RAM_A9" "RAM_A9"
  U13 H1
  U4 31
@@ -2181,44 +2201,44 @@ Net 139 "/Memory/RAM_A18" "RAM_A18"
  U13 F3
  U4 35
 Net 140 "/Memory/RAM_DQ6" "RAM_DQ6"
- U4 36
  U13 F1
+ U4 36
 Net 141 "/Memory/RAM_A17" "RAM_A17"
- U13 F4
  U4 37
+ U13 F4
 Net 142 "/Memory/RAM_A5" "RAM_A5"
- U13 C4
  U4 39
+ U13 C4
 Net 143 "/Memory/RAM_DQ5" "RAM_DQ5"
- U4 40
  U13 C1
+ U4 40
 Net 144 "/Memory/RAM_DQ4" "RAM_DQ4"
- U4 42
  U13 B1
+ U4 42
 Net 145 "/Memory/RAM_DQ1" "RAM_DQ1"
  U13 C6
  U4 43
 Net 146 "/Memory/RAM_A0" "RAM_A0"
- U4 44
  U13 A1
+ U4 44
 Net 147 "/Memory/RAM_A2" "RAM_A2"
  U13 B2
  U4 45
 Net 148 "/Memory/RAM_A1" "RAM_A1"
- U13 A2
  U4 46
+ U13 A2
 Net 149 "/Memory/RAM_/WE" "RAM_/WE"
- U4 48
  U13 B3
+ U4 48
 Net 150 "/Memory/RAM_A4" "RAM_A4"
  U13 B4
  U4 50
 Net 151 "/Memory/RAM_A3" "RAM_A3"
- U13 A4
  U4 51
+ U13 A4
 Net 152 "/Memory/RAM_A7" "RAM_A7"
- U13 B5
  U4 52
+ U13 B5
 Net 153 "/Memory/RAM_A6" "RAM_A6"
  U4 57
  U13 A5
@@ -2226,8 +2246,8 @@ Net 154 "/Memory/RAM_DQ0" "RAM_DQ0"
  U4 58
  U13 B6
 Net 155 "/Memory/RAM_A8" "RAM_A8"
- U4 61
  U13 A6
+ U4 61
 Net 156 "" ""
  R7 2
  U4 207
@@ -2241,20 +2261,20 @@ Net 159 "/Memory/RAM_A15" "RAM_A15"
  U4 22
  U13 G5
 Net 160 "/Memory/RAM_A13" "RAM_A13"
- U13 H5
  U4 21
+ U13 H5
 Net 161 "/Memory/RAM_DQ3" "RAM_DQ3"
  U13 G6
  U4 20
 Net 162 "/Memory/RAM_A14" "RAM_A14"
- U4 19
  U13 H6
+ U4 19
 Net 163 "/Memory/ROM_A5" "ROM_A5"
  U12 C3
  U4 18
 Net 164 "/Memory/ROM_DQ10" "ROM_DQ10"
- U12 C2
  U4 15
+ U12 C2
 Net 165 "/Memory/ROM_DQ9" "ROM_DQ9"
  U12 C1
  U4 13
@@ -2286,8 +2306,8 @@ Net 174 "/Memory/ROM_A12" "ROM_A12"
  U12 G3
  U4 2
 Net 175 "/Memory/ROM_/UB" "ROM_/UB"
- U12 B2
  U4 161
+ U12 B2
 Net 176 "/Memory/ROM_DQ2" "ROM_DQ2"
  U4 181
  U12 C6
@@ -2295,8 +2315,8 @@ Net 177 "/Memory/ROM_DQ1" "ROM_DQ1"
  U4 178
  U12 C5
 Net 178 "/Memory/ROM_DQ0" "ROM_DQ0"
- U4 176
  U12 B6
+ U4 176
 Net 179 "/Memory/ROM_A6" "ROM_A6"
  U12 C4
  U4 175
@@ -2304,32 +2324,32 @@ Net 180 "/Memory/ROM_/CE" "ROM_/CE"
  U12 B5
  U4 172
 Net 181 "/Memory/ROM_A2" "ROM_A2"
- U4 171
  U12 A5
+ U4 171
 Net 182 "/Memory/ROM_A4" "ROM_A4"
- U12 B4
  U4 169
+ U12 B4
 Net 183 "/Memory/ROM_A1" "ROM_A1"
  U4 168
  U12 A4
 Net 184 "/Memory/ROM_A7" "ROM_A7"
- U12 D4
  U4 167
+ U12 D4
 Net 185 "/Memory/ROM_A0" "ROM_A0"
  U12 A3
  U4 166
 Net 186 "/Memory/ROM_A3" "ROM_A3"
- U4 165
  U12 B3
+ U4 165
 Net 187 "/Memory/ROM_/OE" "ROM_/OE"
- U12 A2
  U4 162
+ U12 A2
 Net 188 "/Memory/ROM_DQ8" "ROM_DQ8"
- U4 16
  U12 B1
+ U4 16
 Net 189 "" ""
- U4 80
  U11 39
+ U4 80
 Net 190 "" ""
  U4 77
  U14 3
@@ -2337,22 +2357,22 @@ Net 191 "" ""
  U11 45
  U4 74
 Net 192 "" ""
- U4 71
  U11 47
+ U4 71
 Net 193 "" ""
- U4 67
  J2 2
  U11 61
+ U4 67
 Net 194 "" ""
  J2 5
  U4 64
  U11 63
 Net 195 "/Memory/ROM_A8" "ROM_A8"
- U12 H2
  U4 205
+ U12 H2
 Net 196 "/Memory/ROM_A9" "ROM_A9"
- U12 H3
  U4 204
+ U12 H3
 Net 197 "/Memory/ROM_A21" "ROM_A21"
  U4 203
  U12 E3
@@ -2363,20 +2383,20 @@ Net 199 "/Memory/ROM_A16" "ROM_A16"
  U4 199
  U12 E4
 Net 200 "/Memory/ROM_A22" "ROM_A22"
- U12 J4
  U4 198
+ U12 J4
 Net 201 "/Memory/ROM_A10" "ROM_A10"
- U4 197
  U12 H4
+ U4 197
 Net 202 "/Memory/ROM_A11" "ROM_A11"
- U4 196
  U12 H5
+ U4 196
 Net 203 "/Memory/ROM_A13" "ROM_A13"
- U12 G4
  U4 194
+ U12 G4
 Net 204 "/Memory/ROM_A20" "ROM_A20"
- U4 191
  U12 H6
+ U4 191
 Net 205 "/Memory/ROM_/WE" "ROM_/WE"
  U12 G5
  U4 190
@@ -2384,193 +2404,199 @@ Net 206 "/Memory/ROM_DQ7" "ROM_DQ7"
  U12 G6
  U4 189
 Net 207 "/Memory/ROM_DQ5" "ROM_DQ5"
- U12 F5
  U4 187
+ U12 F5
 Net 208 "/Memory/ROM_DQ6" "ROM_DQ6"
- U4 185
  U12 F6
+ U4 185
 Net 209 "/Memory/ROM_A15" "ROM_A15"
- U4 184
  U12 F4
+ U4 184
 Net 210 "/Memory/ROM_DQ4" "ROM_DQ4"
  U12 E5
  U4 183
 Net 211 "/Memory/ROM_DQ3" "ROM_DQ3"
- U12 D5
  U4 182
+ U12 D5
 Net 212 "+2.5V" "+2.5V"
- U10 5
- C8 1
- U4 142
- U4 173
- U4 193
  U4 17
  U4 89
- U4 121
+ U4 173
+ U4 193
  U4 38
+ U10 5
+ U4 142
  U4 69
+ U4 121
  C29 1
  C28 1
+ C8 1
  C27 1
  C26 1
 Net 213 "+1.2V" "+1.2V"
- C31 1
- C30 1
- U16 1
- U4 70
- L1 1
- C58 1
- U4 174
  U4 192
+ U4 174
  U4 88
  C38 1
+ U16 1
+ L1 1
+ C58 1
+ C31 1
+ C30 1
+ U4 70
  C39 1
 Net 217 "" ""
- C45 1
- R9 1
- R10 2
-Net 218 "" ""
  C47 2
  U14 7
+Net 218 "" ""
+ C45 2
+ U14 10
 Net 219 "" ""
- C51 1
- C50 1
- U14 5
-Net 220 "+BATT" "+BATT"
- D1 2
- BT1 1
- U11 16
-Net 221 "+1.8V" "+1.8V"
- C7 1
- U9 5
- C17 1
- U12 D6
-Net 222 "" ""
  R12 2
  R11 1
  C47 1
+Net 220 "" ""
+ R10 2
+ C45 1
+ R9 1
+Net 221 "" ""
+ U14 5
+ C50 1
+ C51 1
+Net 222 "/Power Supply / Misc./REG_SW2" "REG_SW2"
+ U16 7
+ L2 1
 Net 223 "/Power Supply / Misc./REG_SW1" "REG_SW1"
  U16 4
  L1 2
-Net 224 "/Power Supply / Misc./REG_SW2" "REG_SW2"
- L2 1
- U16 7
 Net 225 "" ""
- U14 2
- U11 30
-Net 226 "" ""
- U14 6
- C48 1
-Net 227 "" ""
- C45 2
- U14 10
-Net 230 "" ""
  U15 2
  R16 1
-Net 231 "/Power Supply / Misc./CIC_MCLR" "CIC_MCLR"
- U11 37
- U15 4
-Net 232 "/Power Supply / Misc./CIC_STATUS" "CIC_STATUS"
- U11 38
+Net 226 "+BATT" "+BATT"
+ BT1 1
+ D1 2
+ U11 16
+Net 227 "/Power Supply / Misc./CIC_STATUS" "CIC_STATUS"
  U15 3
+ U11 38
+Net 228 "/Power Supply / Misc./CIC_MCLR" "CIC_MCLR"
+ U15 4
+ U11 37
+Net 229 "" ""
+ C48 1
+ U14 6
+Net 230 "" ""
+ U14 2
+ U11 30
+Net 232 "+1.8V" "+1.8V"
+ C7 1
+ U9 5
+ U12 D6
+ C17 1
 Net 233 "" ""
- D4 2
- R15 2
-Net 234 "" ""
- J2 WP
- U11 54
-Net 235 "" ""
- U11 23
- J3 2
-Net 236 "" ""
- U11 6
- P1 7
-Net 237 "" ""
- U11 79
- P1 14
-Net 238 "" ""
- P1 9
- U11 4
-Net 239 "" ""
- U4 83
- U11 41
- P1 4
-Net 240 "" ""
  R15 1
  U11 58
-Net 241 "" ""
- U11 71
- R7 1
-Net 242 "" ""
- P3 2
+Net 234 "" ""
  U11 25
-Net 243 "" ""
- R6 1
- U11 59
-Net 244 "" ""
- R6 2
- D2 2
-Net 245 "" ""
+ P3 2
+Net 235 "" ""
+ P1 6
+ U11 7
+Net 236 "" ""
+ P1 13
+ U11 80
+Net 237 "" ""
  U11 2
  P1 11
+Net 238 "" ""
+ U11 4
+ P1 9
+Net 239 "" ""
+ U11 6
+ P1 7
+Net 240 "" ""
+ P1 4
+ U11 41
+ U4 83
+Net 241 "" ""
+ R15 2
+ D4 2
+Net 242 "" ""
+ R20 2
+ U11 22
+Net 243 "" ""
+ R21 2
+ U11 23
+Net 244 "" ""
+ R8 2
+ U11 40
+Net 245 "" ""
+ J2 DT
+ U11 55
 Net 246 "" ""
- U11 60
  R5 1
+ U11 60
 Net 247 "" ""
- R5 2
  D3 2
+ R5 2
 Net 248 "" ""
  U11 18
  J3 1
 Net 249 "" ""
- U11 22
- R13 2
- J3 3
+ U11 79
+ P1 14
 Net 250 "" ""
- J2 DT
- U11 55
+ U11 59
+ R6 1
 Net 251 "" ""
- U11 14
+ D2 2
+ R6 2
+Net 252 "" ""
+ J3 3
+ R13 1
+ R20 1
+Net 253 "" ""
+ J3 2
+ R21 1
+Net 254 "" ""
+ U11 71
+ R7 1
+Net 255 "" ""
+ U11 54
+ J2 WP
+Net 256 "" ""
  C62 1
  R14 1
- P1 5
  P2 2
-Net 252 "" ""
- P1 6
- U11 7
-Net 253 "" ""
- U11 80
- P1 13
-Net 254 "" ""
- R8 2
- U11 40
-Net 271 "" ""
- U11 20
- C35 1
+ U11 14
+ P1 5
+Net 274 "" ""
  X1 2
-Net 272 "" ""
- U11 19
+ C35 1
+ U11 20
+Net 275 "" ""
  X1 1
  C34 1
-Net 273 "" ""
- U11 15
+ U11 19
+Net 276 "" ""
  C37 1
+ U11 15
  X2 2
-Net 274 "" ""
- C36 1
- X2 1
- U11 13
 Net 277 "" ""
+ X2 1
+ C36 1
+ U11 13
+Net 279 "" ""
  D1 3
- C16 1
- R4 1
- U13 D6
  U13 E1
-Net 278 "/Memory/RAM_/CE" "RAM_/CE"
- Q1 3
+ C16 1
+ U13 D6
+ R4 1
+Net 280 "/Memory/RAM_/CE" "RAM_/CE"
  U13 G3
  R4 2
-Net 279 "" ""
+ Q1 3
+Net 281 "" ""
  R3 1
  R2 1
  Q1 2
