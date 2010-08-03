@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Mon 02 Aug 2010 11:18:19 PM CEST
+EESchema Schematic File Version 2  date Tue 03 Aug 2010 15:22:28 CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 4 6
 Title "sd2snes Mark II"
-Date "2 aug 2010"
+Date "3 aug 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -54,6 +54,26 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+Text Notes 500  1700 0    50   ~ 0
+or super bright LEDs (3000mcd) (use 10k for R5, R6, R15)
+NoConn ~ 6700 5600
+NoConn ~ 6700 5500
+NoConn ~ 6700 5400
+NoConn ~ 6700 5300
+NoConn ~ 6700 4800
+NoConn ~ 6700 4700
+NoConn ~ 6700 4600
+NoConn ~ 6700 4500
+NoConn ~ 6700 4400
+NoConn ~ 3200 5100
+NoConn ~ 3200 4300
+NoConn ~ 3200 4200
+NoConn ~ 3200 3900
+NoConn ~ 3200 3700
+NoConn ~ 3200 3600
+NoConn ~ 3200 3500
+NoConn ~ 3200 2800
+NoConn ~ 3200 2500
 Connection ~ 9150 4650
 Wire Wire Line
 	9150 4700 9150 4650

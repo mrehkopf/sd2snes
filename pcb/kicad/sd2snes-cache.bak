@@ -1,4 +1,4 @@
-EESchema-LIBRARY Version 2.3  Date: Mon 02 Aug 2010 22:24:46 CEST
+EESchema-LIBRARY Version 2.3  Date: Tue 03 Aug 2010 11:01:16 CEST
 #
 # +1.2V
 #
@@ -162,7 +162,7 @@ P 2 0 1 6  -31 50  -31 -50 N
 P 2 0 1 6  39 90  39 -89 N
 P 2 0 1 0  100 0  150 0 N
 P 2 0 1 6  100 50  100 -50 N
-X + 1 -300 0 150 R 50 50 1 1 P
+X + 1 -300 0 150 R 50 50 1 1 w
 X - 2 300 0 150 L 50 50 1 1 P
 ENDDRAW
 ENDDEF
