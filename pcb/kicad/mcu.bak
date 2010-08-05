@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 04 Aug 2010 09:22:18 CEST
+EESchema Schematic File Version 2  date Thu 05 Aug 2010 10:52:51 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 4 6
 Title "sd2snes Mark II"
-Date "4 aug 2010"
+Date "5 aug 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -54,26 +54,12 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text Notes 1000 1700 0    50   ~ 0
-or 3000mcd LEDs (10k for R401-403)
-NoConn ~ 6700 5600
-NoConn ~ 6700 5500
-NoConn ~ 6700 5400
-NoConn ~ 6700 5300
-NoConn ~ 6700 4800
-NoConn ~ 6700 4700
-NoConn ~ 6700 4600
-NoConn ~ 6700 4500
-NoConn ~ 6700 4400
-NoConn ~ 3200 5100
-NoConn ~ 3200 4300
-NoConn ~ 3200 4200
-NoConn ~ 3200 3900
-NoConn ~ 3200 3700
-NoConn ~ 3200 3600
-NoConn ~ 3200 3500
-NoConn ~ 3200 2800
-NoConn ~ 3200 2500
+Text GLabel 9050 5300 0    50   Input ~ 0
+USB_SWCONN
+Text GLabel 2800 4200 0    50   Output ~ 0
+USB_SWCONN
+Wire Wire Line
+	3200 4200 2800 4200
 Connection ~ 9150 4650
 Wire Wire Line
 	9150 4700 9150 4650
@@ -443,13 +429,34 @@ Wire Wire Line
 	7950 5200 7950 5000
 Connection ~ 7950 5000
 Wire Wire Line
-	9150 5200 9000 5200
-Wire Wire Line
 	8050 4650 9700 4650
 Wire Wire Line
 	6700 4200 7200 4200
 Wire Wire Line
 	8050 4100 7700 4100
+Wire Wire Line
+	9150 5200 9150 5300
+Wire Wire Line
+	9150 5300 9050 5300
+Text Notes 1000 1700 0    50   ~ 0
+or 3000mcd LEDs (10k for R401-403)
+NoConn ~ 6700 5600
+NoConn ~ 6700 5500
+NoConn ~ 6700 5400
+NoConn ~ 6700 5300
+NoConn ~ 6700 4800
+NoConn ~ 6700 4700
+NoConn ~ 6700 4600
+NoConn ~ 6700 4500
+NoConn ~ 6700 4400
+NoConn ~ 3200 5100
+NoConn ~ 3200 4300
+NoConn ~ 3200 3900
+NoConn ~ 3200 3700
+NoConn ~ 3200 3600
+NoConn ~ 3200 3500
+NoConn ~ 3200 2800
+NoConn ~ 3200 2500
 $Comp
 L R R422
 U 1 1 4C5608C9
@@ -583,15 +590,6 @@ F 1 "1.5k" V 9150 4950 50  0000 C CNN
 F 2 "SM0805_FIXEDMASK" H 9150 4950 60  0001 C CNN
 	1    9150 4950
 	1    0    0    -1  
-$EndComp
-$Comp
-L +3.3V #PWR046
-U 1 1 4C015957
-P 9000 5200
-F 0 "#PWR046" H 9000 5160 30  0001 C CNN
-F 1 "+3.3V" H 9000 5310 30  0000 C CNN
-	1    9000 5200
-	0    -1   -1   0   
 $EndComp
 Text GLabel 2700 5100 0    50   Input ~ 0
 /RESET
