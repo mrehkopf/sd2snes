@@ -110,14 +110,23 @@ start
 	bsf	0x24, 1
 
 	clrf	0x23
-	btfss	0x24, 1		; SuperCIC present?
-	bsf	0x23, 1		; then enable passthru
+	btfss	0x24, 1		; SuperCIC absent?
+	goto	doregion_60	; then set defaults
+	
+	bsf	0x23, 1		; else enable passthru
 
-	goto	doregion_60	; set defaults
-
-waitforlatch_h	; wait for "latch" to become high 
+idle
+; check region passthru
+	btfss	0x23, 1		; passthru enabled?
+	goto	waitforlatch_h	; 
+	btfsc	PORTA, 3
+	bsf	PORTA, 4
+	btfss	PORTA, 3
+	bcf	PORTA, 4
+	call	setleds_passthru
+waitforlatch_h	; wait for "latch" to become high
 	btfss	PORTA, 1
-	goto	waitforlatch_h
+	goto	idle
 
 
 waitforlatch_l	; wait for "latch" to become low
@@ -140,7 +149,7 @@ dl1_wait
 	goto	dl1_wait
 	btfss	0x22, 3		;first byte done?
 	goto	dl1
-	bcf	STATUS, C	; clear carry
+	clrf	0x22
 dl2
 	movf	PORTA, w		;read data bit
 	rlf	0x21, f		;shift
@@ -150,53 +159,46 @@ dl2
 dl2_wait
 	btfss	PORTA, 2		;wait for clk=h
 	goto	dl2_wait
-	btfss	0x22, 4
+	btfss	0x22, 2		; read only 4 bits
 	goto	dl2
 
-; check region passthru
-	btfss	0x23, 1		; passthru enabled?
-	goto	checkkeys	; 
-	btfsc	PORTA, 3
-	bsf	PORTA, 4
-	btfss	PORTA, 3
-	bcf	PORTA, 4
-	call	setleds_passthru
+
 	
 
 checkkeys
-; we now have the first 8 bits in 0x20 and the second 8 bits in 0x21
+; we now have the first 8 bits in 0x20 and the second 4 bits in 0x21
 	; 00011111 00011111 = ABXY, Select, L
-	movlw	0x4f
+	movlw	0x04
 	xorwf	0x21, w
 	btfsc	STATUS, Z
-	goto	group4f
-	movlw	0x8f
+	goto	group04
+	movlw	0x08
 	xorwf	0x21, w
 	btfsc	STATUS, Z
-	goto	group8f
-	movlw	0xcf
+	goto	group08
+	movlw	0x0c
 	xorwf	0x21, w
 	btfsc	STATUS, Z
-	goto	groupcf
-	goto	waitforlatch_h
+	goto	group0c
+	goto	idle
 
-group4f
+group04
 	movlw	0xdf
 	xorwf	0x20, w
 	btfss	STATUS, Z
-	goto	waitforlatch_h
+	goto	idle
 	goto	doregion_60
 
-group8f
+group08
 	movlw	0xdf
 	xorwf	0x20, w
 	btfss	STATUS, Z
-	goto	waitforlatch_h
+	goto	idle
 	btfss	0x24, 1		; SuperCIC absent?
 	goto	doreset_long	; then do long reset
 	goto	doreset_dbl	; else do dbl reset
 
-groupcf
+group0c
 	movlw	0x5f
 	xorwf	0x20, w
 	btfsc	STATUS, Z
@@ -209,7 +211,7 @@ groupcf
 	xorwf	0x20, w
 	btfsc	STATUS, Z
 	goto	doreset_normal
-	goto	waitforlatch_h
+	goto	idle
 
 doreset_normal
 	banksel	TRISA
@@ -221,7 +223,7 @@ doreset_normal
 	banksel TRISA
 	bsf	TRISA, 5
 	banksel	PORTA
-	goto	waitforlatch_h
+	goto	idle
 
 doreset_dbl
 	banksel	TRISA
@@ -240,7 +242,7 @@ doreset_dbl
 	banksel	TRISA
 	bsf	TRISA, 5
 	banksel	PORTA
-	goto	waitforlatch_h
+	goto	idle
 
 doreset_long
 	banksel	TRISA
@@ -252,25 +254,25 @@ doreset_long
 	banksel	TRISA
 	bsf	TRISA, 5
 	banksel	PORTA
-	goto	waitforlatch_h
+	goto	idle
 
 doregion_50
 	bsf	PORTA, 4
 	clrf	0x23
 	call	setleds_own
-	goto	waitforlatch_h
+	goto	idle
 
 doregion_60
 	bcf	PORTA, 4
 	clrf	0x23
 	call	setleds_own
-	goto	waitforlatch_h
+	goto	idle
 
 doregion_passthru
 	clrf	0x23
 	btfsc	0x24, 1		; SuperCIC present?
 	bsf	0x23, 1		; then enable passthru
-	goto	waitforlatch_h
+	goto	idle
 
 ; --------wait: 3*(W-1)+7 cycles (including call+return). W=0 -> 256!--------
 wait
