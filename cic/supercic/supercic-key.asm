@@ -673,6 +673,8 @@ longwait0
 
 ; --------change region in eeprom and die--------
 die
+	movlw	0x3a		;wait 50ms before writing
+	call	longwait	;("error" might be due to power loss)
 	banksel	EEADR
 	clrw
 	movwf	EEADR

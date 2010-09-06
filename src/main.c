@@ -1,400 +1,84 @@
-/* sd2snes - SD card based universal cartridge for the SNES
-   Copyright (C) 2009-2010 Maximilian Rehkopf <otakon@gmx.net>
-   AVR firmware portion
+/* The classic embedded version of "Hello World": A blinking LED */
+#include <arm/NXP/LPC17xx/LPC17xx.h>
 
-   Inspired by and based on code from sd2iec, written by Ingo Korb et al.
-   See sdcard.c|h, config.h.
+#define BV(x) (1<<(x))
+#define BITBAND(addr,bit) (*((volatile unsigned long *)(((unsigned long)&(addr)-0x20000000)*32 + bit*4 + 0x22000000)))
+#define PLL_MULT(x)	((x)&0x7fff)
+#define PLL_PREDIV(x)	(((x)<<16)&0xff0000)
+#define CLKSRC_MAINOSC	(1)
+#define PLLE0		(1<<0)
+#define PLLC0		(1<<1)
+#define PLOCK0		(1<<26)
+#define OSCEN		(1<<5)
+#define OSCSTAT		(1<<6)
+#define EMC0TOGGLE	(3<<4)
+#define MR0R		(1<<1)
+#define FLASH5C		(0x403A)
+#define PCTIM3		(1<<23)
 
-   FAT file system access based on code by ChaN, Jim Brain, Ingo Korb,
-   see ff.c|h.
+#define PCLK_CCLK(x)	(1<<(x))
+#define PCLK_CCLK4(x)	(0)
+#define PCLK_CCLK8(x)	(3<<(x))
+#define PCLK_CCLK2(x)	(2<<(x))
+#define PCLK_TIMER3	(14)
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; version 2 of the License only.
+int i;
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+int main(void) {
+  LPC_GPIO2->FIODIR = BV(0) | BV(1) | BV(2);
+  LPC_GPIO1->FIODIR = 0;
+  uint32_t p1;
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+/* setup PLL0 */
+  LPC_SC->FLASHCFG=FLASH5C;
+  LPC_SC->PLL0CON &= ~PLLC0;
+  LPC_SC->PLL0FEED=0xaa;
+  LPC_SC->PLL0FEED=0x55;
+  LPC_SC->PLL0CON &= ~PLLE0;
+  LPC_SC->PLL0FEED=0xaa;
+  LPC_SC->PLL0FEED=0x55;
 
-   main.c: initialization and flow
+/* PLL is disabled and disconnected. setup PCLK NOW as it cannot be changed
+   reliably with PLL0 connected.
+   see:
+   http://ics.nxp.com/support/documents/microcontrollers/pdf/errata.lpc1754.pdf
 */
+  LPC_SC->PCLKSEL1=PCLK_CCLK(PCLK_TIMER3);
+  
+/* continue with PLL0 setup */
+  LPC_SC->SCS=OSCEN;
+  while(!(LPC_SC->SCS&OSCSTAT));
+  LPC_SC->CLKSRCSEL=CLKSRC_MAINOSC;
+  LPC_SC->PLL0CFG=PLL_MULT(428)|PLL_PREDIV(18);
+  LPC_SC->PLL0FEED=0xaa;
+  LPC_SC->PLL0FEED=0x55;
+  LPC_SC->PLL0CON |= PLLE0;
+  LPC_SC->PLL0FEED=0xaa;
+  LPC_SC->PLL0FEED=0x55;
+  LPC_SC->CCLKCFG=5;
+  while(!(LPC_SC->PLL0STAT&PLOCK0));
+  LPC_SC->PLL0CON |= PLLC0;
+  LPC_SC->PLL0FEED=0xaa;
+  LPC_SC->PLL0FEED=0x55;
 
-#include <stdio.h>
-#include <string.h>
-#include <avr/boot.h>
-#include <avr/interrupt.h>
-#include <avr/pgmspace.h>
-#include <avr/power.h>
-#include <avr/wdt.h>
-#include <util/delay.h>
-#include "config.h"
-#include "diskio.h"
-#include "ff.h"
-#include "led.h"
-/* #include "timer.h" */
-#include "fpga.h"
-#include "uart.h"
-#include "ustring.h"
-#include "utils.h"
-#include "snes.h"
-#include "fileops.h"
-#include "memory.h"
-#include "fpga_spi.h"
-#include "spi.h"
-#include "avrcompat.h"
-#include "filetypes.h"
-#include "sdcard.h"
+/* setup timer (fpga clk) */
+  LPC_SC->PCONP |= PCTIM3;	/* enable power */
+  LPC_TIM3->CTCR=0;
+  LPC_TIM3->EMR=EMC0TOGGLE;
+  LPC_PINCON->PINSEL0=(0x3<<20);
+  LPC_TIM3->MCR=MR0R;
+  LPC_TIM3->MR0=1;
+  LPC_TIM3->TCR=1;
+  
 
-void writetest(void) {
-// HERE BE LIONS, GET IN THE CAR
-	char teststring[58];
-	while(1) {
-		sram_writeblock((void*)"Testtext of DOOM!!1! 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", SRAM_SCRATCHPAD+0x20, 58);
-		sram_readblock((void*)teststring, SRAM_SCRATCHPAD+0x20, 58);
-		teststring[57]=0;
-		dprintf("%s\n", teststring);
-	}
-// END OF LIONS
-}
-
-
-void memtest(void) {
-/* HERE BE DRAGONS */
-	uint32_t dbg_i;
-	for(dbg_i=0; dbg_i < 65536; dbg_i++) {
-		sram_writeshort((uint16_t)dbg_i&0xffff, dbg_i*2);
-	}
-	save_sram((uint8_t*)"/sd2snes/memtest", 0x20000, 0);
-	set_pwr_led(0);
-	while(1);
-/* END OF DRAGONS */
-}
-
-
-/* Make sure the watchdog is disabled as soon as possible    */
-/* Copy this code to your bootloader if you use one and your */
-/* MCU doesn't disable the WDT after reset!                  */
-void get_mcusr(void) \
-      __attribute__((naked)) \
-      __attribute__((section(".init3")));
-void get_mcusr(void)
-{
-  MCUSR = 0;
-  wdt_disable();
-}
-
-#ifdef CONFIG_MEMPOISON
-void poison_memory(void) \
-  __attribute__((naked)) \
-  __attribute__((section(".init1")));
-void poison_memory(void) {
-  register uint16_t i;
-  register uint8_t  *ptr;
-
-  asm("clr r1\n");
-  /* There is no RAMSTARt variable =( */
-  if (RAMEND > 2048 && RAMEND < 4096) {
-    /* 2K memory */
-    ptr = (void *)RAMEND-2047;
-    for (i=0;i<2048;i++)
-      ptr[i] = 0x55;
-  } else if (RAMEND > 4096 && RAMEND < 8192) {
-    /* 4K memory */
-    ptr = (void *)RAMEND-4095;
-    for (i=0;i<4096;i++)
-      ptr[i] = 0x55;
-  } else {
-    /* Assume 8K memory */
-    ptr = (void *)RAMEND-8191;
-    for (i=0;i<8192;i++)
-      ptr[i] = 0x55;
+  while (1) {
+    p1 = LPC_GPIO1->FIOPIN;
+    BITBAND(LPC_GPIO2->FIOPIN, 0) = (p1 & BV(29))>>29;
+    BITBAND(LPC_GPIO2->FIOSET, 2) = 1;
+    for (i=0;i<100000;i++)
+      __NOP();
+    BITBAND(LPC_GPIO2->FIOCLR, 2) = 1;
+    for (i=0;i<100000;i++)
+      __NOP();
   }
 }
-#endif
-
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 1)
-int main(void) __attribute__((OS_main));
-#endif
-int main(void) {
-#if defined __AVR_ATmega644__ || defined __AVR_ATmega644P__ || defined __AVR_ATmega2561__
-  asm volatile("in  r24, %0\n"
-               "ori r24, 0x80\n"
-               "out %0, r24\n"
-               "out %0, r24\n"
-               :
-               : "I" (_SFR_IO_ADDR(MCUCR))
-               : "r24"
-               );
-#elif defined __AVR_ATmega32__
-  asm volatile ("in  r24, %0\n"
-                "ori r24, 0x80\n"
-                "out %0, r24\n"
-                "out %0, r24\n"
-                :
-                : "I" (_SFR_IO_ADDR(MCUCSR))
-                : "r24"
-                );
-#elif defined __AVR_ATmega128__ || defined __AVR_ATmega1281__
-  /* Just assume that JTAG doesn't hurt us on the m128 */
-#else
-#  error Unknown chip!
-#endif
-
-#ifdef CLOCK_PRESCALE
-	clock_prescale_set(CLOCK_PRESCALE);
-#endif
-	set_pwr_led(0);
-	set_busy_led(1);
-	spi_none();
-	snes_reset(1);
-	uart_init();
-	sei();
-	_delay_ms(100);
-	disk_init();
-	snes_init();
-/*	timer_init(); */
-	uart_puts_P(PSTR("\nsd2snes " VERSION));
-	uart_putcrlf();
-
-	file_init();
-	FATFS fatfs;
-	f_mount(0,&fatfs);
-	uart_putc('W');
-	fpga_init();
-	fpga_pgm((uint8_t*)"/sd2snes/main.bit");
-	_delay_ms(100);
-	set_pwr_led(1);
-	fpga_spi_init();
-	uart_putc('!');
-	_delay_ms(100);
-
-restart:
-	set_avr_ena(0);
-	snes_reset(1);
-
-	*fs_path=0;
-	uint16_t saved_dir_id;
-	get_db_id(&saved_dir_id);
-
-	uint16_t mem_dir_id = sram_readshort(SRAM_DIRID);
-	uint32_t mem_magic = sram_readlong(SRAM_SCRATCHPAD);
-
-	while(0) {
-		SD_SPI_OFFLOAD=0;
-		set_avr_addr(0L);
-		sd_read(0, file_buf, 0L, 1);
-		uart_trace((void*)file_buf, 0, 0x200);
-//		sram_writeblock((void*)file_buf, 0, 0x200);
-//		sram_hexdump(0,0x200);
-		uart_putc('+');
-	}
-/* here be strange monsters */
-	while(0){
-//	uint16_t hurdur1 = 0, hurdur2 = 0;
-	spiTransferByte(0x00);
-	spiTransferByte(0x00);
-	spiTransferByte(0x00);
-	spiTransferByte(0x00);
-	spiTransferByte(0x00);
-	spiTransferByte(0x00);
-	spiTransferByte(0x00);
-	spiTransferByte(0x00);
-	spiTransferByte(0x00);
-	spiTransferByte(0x00);
-	spiTransferByte(0x00);
-	spiTransferByte(0x00);
-	spiTransferByte(0x00);
-        PORTB |= _BV(PB2);
-        DDRB |= _BV(PB2);
-        PORTB &= ~_BV(PB2);
-        DDRB &= ~_BV(PB7); // tristate SCK
-        PORTB |= _BV(PB2);
-        DDRB &= ~_BV(PB2);
-        while(!(PINB & _BV(PB2))) {
-        }
-        DDRB |= _BV(PB7);
-        _delay_ms(1);
-//	dprintf("hurdur1=%d hurdur2=%d\n", hurdur1, hurdur2);
-}
-	if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id)) {
-		uint16_t curr_dir_id = scan_dir(fs_path, 0, 0); // generate files footprint
-		dprintf("curr dir id = %x\n", curr_dir_id);
-		if((get_db_id(&saved_dir_id) != FR_OK)	// no database?
-		|| saved_dir_id != curr_dir_id) {	// files changed? // XXX
-			dprintf("saved dir id = %x\n", saved_dir_id);
-			dprintf("rebuilding database...");
-			_delay_ms(50);
-			curr_dir_id = scan_dir(fs_path, 1, 0);	// then rebuild database
-			sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 2);
-			uint32_t endaddr, direndaddr;
-			sram_readblock(&endaddr, SRAM_DB_ADDR+4, 4);
-			sram_readblock(&direndaddr, SRAM_DB_ADDR+8, 4);
-			dprintf("%lx %lx\n", endaddr, direndaddr);
-			save_sram((uint8_t*)"/sd2snes/sd2snes.db", endaddr-SRAM_DB_ADDR, SRAM_DB_ADDR);
-			save_sram((uint8_t*)"/sd2snes/sd2snes.dir", direndaddr-(SRAM_DIR_ADDR), SRAM_DIR_ADDR);
-			dprintf("done\n"); 
-//			sram_hexdump(SRAM_DB_ADDR, 0x400);
-		} else {
-			dprintf("saved dir id = %x\n", saved_dir_id);
-			dprintf("different card, consistent db, loading db...\n");
-			load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
-			load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
-		}
-//	save_sram((uint8_t*)"/debug.smc", 0x400000, 0);	
-//	uart_putc('[');
-//	load_sram((uint8_t*)"/test.srm", SRAM_SAVE_ADDR);
-//	uart_putc(']');
-
-		sram_writeshort(curr_dir_id, SRAM_DIRID);
-		sram_writelong(0x12345678, SRAM_SCRATCHPAD);
-	} else {
-		dprintf("same card, loading db...\n");
-		load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
-		load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
-	}
-
-	led_pwm();
-
-//	sram_hexdump(0, 0x200);
-	uart_putc('(');
-	load_rom((uint8_t*)"/sd2snes/menu.bin", SRAM_MENU_ADDR);
-	set_rom_mask(0x3fffff); // force mirroring off
- 	set_avr_mapper(0x7); // menu mapper XXX
-	uart_putc(')');
-	uart_putcrlf();
-//	sram_hexdump(0x7ffff0, 0x10);
-//	sram_hexdump(0, 0x400);
-//	save_sram((uint8_t*)"/sd2snes/dump", 65536, 0);
-
-	sram_writebyte(0, SRAM_CMD_ADDR);
-
-	set_busy_led(0);
-	set_avr_ena(1);
-
-	_delay_ms(100);
-	uart_puts_P(PSTR("SNES GO!\r\n"));
-	snes_reset(0);
-// writetest();
-/*	snes_reset(1);
-	set_avr_ena(0);
-	led_std();
-	set_busy_led(1);
-	save_sram((uint8_t*)"/sd2snes/dump", 65536, SRAM_MENU_ADDR);
-	set_busy_led(0);
-	set_avr_ena(1);
-	snes_reset(0); */
-	uint8_t cmd = 0;
-
-	while(!sram_reliable());
-	while(!cmd) {
-		cmd=menu_main_loop();
-		switch(cmd) {
-			case 0x01: // SNES_CMD_LOADROM:
-				get_selected_name(file_lfn);
-				_delay_ms(100);
-//				snes_reset(1);
-				set_avr_ena(0);
-				dprintf("Selected name: %s\n", file_lfn);
-				load_rom(file_lfn, SRAM_ROM_ADDR);
-//				save_sram((uint8_t*)"/sd2snes/test.smc", romprops.romsize_bytes, 0);
-				if(romprops.ramsize_bytes) {
-					strcpy(strrchr((char*)file_lfn, (int)'.'), ".srm");
-					dprintf("SRM file: %s\n", file_lfn);
-					load_sram(file_lfn, SRAM_SAVE_ADDR);
-				} else {
-					dprintf("No SRAM\n");
-				}
-				set_avr_ena(1);
-				snes_reset(1);
-				_delay_ms(100);
-				snes_reset(0);
-				break;
-			default:
-				dprintf("unknown cmd: %d\n", cmd);
-				cmd=0; // unknown cmd: stay in loop
-			break;
-		}
-		
-	}
-	dprintf("cmd was %x, going to snes main loop\n", cmd);
-	led_std();
-	cmd=0;
-	uint8_t snes_reset_prev=0, snes_reset_now=0, snes_reset_state=0;
-	uint16_t reset_count=0;
-	while(fpga_test() == FPGA_TEST_TOKEN) {
-		snes_reset_now=get_snes_reset();
-		if(snes_reset_now) {
-			if(!snes_reset_prev) {
-				dprintf("RESET BUTTON DOWN\n");
-				snes_reset_state=1;
-				// reset reset counter
-				reset_count=0;
-			}
-		} else {
-			if(snes_reset_prev) {
-				dprintf("RESET BUTTON UP\n");
-				snes_reset_state=0;
-			}
-		}
-		if(snes_reset_state) {
-			_delay_ms(10);
-			reset_count++;
-		} else {
-			sram_reliable();
-			snes_main_loop();
-		}
-		if(reset_count>100) {
-			reset_count=0;
-			led_std();
-			set_avr_ena(0);
-			snes_reset(1);
-			_delay_ms(100);
-			if(romprops.ramsize_bytes && fpga_test() == 0xa5) {
-				set_busy_led(1);
-				save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
-				set_busy_led(0);
-			}
-			_delay_ms(1000);
-			set_busy_led(1);
-			goto restart;
-		}
-		snes_reset_prev = snes_reset_now;
-	}
-	// FPGA TEST FAIL. PANIC.
-	led_panic();
-
-/* HERE BE LIONS */
-while(1)  {	
-	set_avr_addr(0x600000);
-	spi_fpga();
-	spiTransferByte(0x81); // read w/ increment... hopefully
-	spiTransferByte(0x00); // 1 dummy read
-	uart_putcrlf();
-	uint8_t buff[21];
-	for(uint8_t cnt=0; cnt<21; cnt++) {
-		uint8_t data=spiTransferByte(0x00);
-		buff[cnt]=data;
-	}
-	for(uint8_t cnt=0; cnt<21; cnt++) {
-		uint8_t data = buff[cnt];
-		_delay_ms(2);
-		if(data>=0x20 && data <= 0x7a) {
-			uart_putc(data);
-		} else {
-//			uart_putc('.');
-			uart_putc("0123456789ABCDEF"[data>>4]);
-			uart_putc("0123456789ABCDEF"[data&15]);
-			uart_putc(' ');
-		}
-//		set_avr_bank(3);
-	}
-	spi_none();
-}
-		while(1);
-}
-
