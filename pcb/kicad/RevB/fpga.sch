@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Tue 07 Sep 2010 14:57:48 CEST
+EESchema Schematic File Version 2  date Tue 07 Sep 2010 11:48:39 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -40,6 +40,7 @@ LIBS:cs4344
 LIBS:double_sch_kcom
 LIBS:usb_minib
 LIBS:mic23250
+LIBS:sd2snes-cache
 EELAYER 24  0
 EELAYER END
 $Descr A3 16535 11700
