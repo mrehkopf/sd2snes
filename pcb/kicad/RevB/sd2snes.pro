@@ -1,4 +1,4 @@
-update=Mon 06 Sep 2010 11:48:57 PM CEST
+update=Tue 07 Sep 2010 20:07:28 CEST
 version=1
 last_client=pcbnew
 [general]
@@ -116,5 +116,3 @@ LibName10=dip_sockets
 LibName11=libs/snescart
 LibName12=libs/mypackages
 LibName13=libs/sdcard
-LibName14=libs/diy_capacitors
-LibName15=snail

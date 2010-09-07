@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (2010-07-19 BZR 2416)-unstable date = Sat 04 Sep 2010 08:48:29 PM CEST
+Cmp-Mod V01 Created by CvPCB (2010-07-23 BZR 2422)-unstable date = Tue 07 Sep 2010 14:21:25 CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -477,6 +477,13 @@ IdModule  = USB-MINIB-THT;
 EndCmp
 
 BeginCmp
+TimeStamp = /4B6ED75B/4C86265B;
+Reference = JP401;
+ValeurCmp = JUMPER;
+IdModule  = GS2;
+EndCmp
+
+BeginCmp
 TimeStamp = /4B6EC9C3/4C05A97C;
 Reference = L301;
 ValeurCmp = 1uH;
@@ -550,6 +557,13 @@ BeginCmp
 TimeStamp = /4B6E16F2/4C7EAF13;
 Reference = R103;
 ValeurCmp = 4k7;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4C82A889;
+Reference = R104;
+ValeurCmp = 680;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
@@ -732,7 +746,7 @@ BeginCmp
 TimeStamp = /4B6EC9C3/4BAA92DB;
 Reference = U331;
 ValeurCmp = PIC12F629;
-IdModule  = SO8N;
+IdModule  = DIP-8__300;
 EndCmp
 
 BeginCmp

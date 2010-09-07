@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Mon 06 Sep 2010 11:48:45 PM CEST
+EESchema Schematic File Version 2  date Tue 07 Sep 2010 14:57:48 CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -45,7 +45,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 1 6
 Title "sd2snes Mark II"
-Date "6 sep 2010"
+Date "7 sep 2010"
 Rev "B"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -54,7 +54,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 Text Notes 800  5250 0    100  ~ 0
-Changes from Rev.A / TODO:\n [x] remove FPGA from JTAG chain\n [x] remove SNES IRQ_DIR+IRQ, replace with IRQ_OE. IRQ is unidirectional cart -> console\n      (replace 1gate w/ transistor)\n [x] disconnect P2.10 from FPGA, using a different GPIO for IRQ / INIT_B\n [x] add pullup to P2.10\n [ ] add JTAG pullups\n [x] add series resistor for CPU_CLK\n [ ] add a jumper in PIC MCLR line to MCU
+Changes from Rev.A / TODO:\n [x] remove FPGA from JTAG chain\n [x] remove SNES IRQ_DIR+IRQ, replace with IRQ_OE. IRQ is unidirectional cart -> console\n      (replace 1gate w/ transistor)\n [x] disconnect P2.10 from FPGA, using a different GPIO for IRQ / INIT_B\n [x] add pullup to P2.10\n [ ] add JTAG pullups\n [x] add series resistor for CPU_CLK\n [ ] add a jumper in PIC MCLR line to MCU\n [ ] change PIC to DIP8 type for easier preprogramming
 $Sheet
 S 1250 1250 1700 1250
 U 4B6E16F2
