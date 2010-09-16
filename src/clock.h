@@ -49,6 +49,8 @@
 #define PCLK_SYSCON	(28)
 #define PCLK_MC		(30)
 
+void clock_disconnect(void);
+
 void clock_init(void);
 
 void setFlashAccessTime(uint8_t clocks);

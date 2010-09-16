@@ -4,11 +4,17 @@
 
 #include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "clock.h"
+#include "bits.h"
 
-uint32_t f_cpu;
+uint32_t f_cpu=4000000;
 uint16_t pll_mult = 1;
 uint8_t pll_prediv = 1;
 uint8_t cclk_div = 1;
+
+void clock_disconnect() {
+  disconnectPLL0();
+  disablePLL0();
+}
 
 void clock_init() {
 
@@ -25,16 +31,14 @@ void clock_init() {
    -> FPGA freq = 11289473.7Hz
    First, disable and disconnect PLL0.
 */
-	disconnectPLL0();
-	disablePLL0();
+  clock_disconnect();
 
 /* PLL is disabled and disconnected. setup PCLK NOW as it cannot be changed
    reliably with PLL0 connected.
    see:
    http://ics.nxp.com/support/documents/microcontrollers/pdf/errata.lpc1754.pdf
 */
-	LPC_SC->PCLKSEL1 = ( PCLK_CCLK(PCLK_TIMER3)
-                           | PCLK_CCLK8(PCLK_UART3) );
+
 
 /* continue with PLL0 setup:
    enable the xtal oscillator and wait for it to become stable

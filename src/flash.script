@@ -7,7 +7,6 @@
 
 reset init
 flash write_image erase unlock obj/sd2snes.bin 0 bin
-sleep 200
 reset run
 shutdown
 
