@@ -1,1 +1,1 @@
-# empty config file
+CONFIG_MCU_FOSC=12000000

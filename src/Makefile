@@ -55,7 +55,7 @@ TARGET = $(OBJDIR)/sd2snes
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c
+SRC = main.c ff.c clock.c uart.c
 
 
 # List Assembler source files here.
@@ -95,7 +95,7 @@ CSTANDARD = -std=gnu99
 
 
 # Place -D or -U options here
-CDEFS = #-DF_CPU=$(CONFIG_MCU_FREQ)UL
+CDEFS = -DF_OSC=$(CONFIG_MCU_FOSC)UL
 
 
 # Place -I options here
