@@ -87,7 +87,7 @@
 
 #include "ff.h"			/* FatFs configurations and declarations */
 #include "diskio.h"		/* Declarations of low level disk I/O functions */
-#include "uart.h"
+
 
 /*--------------------------------------------------------------------------
 
@@ -319,7 +319,7 @@ void mem_cpy (void* dst, const void* src, UINT cnt) {
 
 #if _WORD_ACCESS == 1
 	while (cnt >= sizeof(int)) {
-		*((int*)d) = *((int*)s);
+		*(int*)d = *(int*)s;
 		d += sizeof(int); s += sizeof(int);
 		cnt -= sizeof(int);
 	}
@@ -1815,8 +1815,6 @@ FRESULT chk_mounted (	/* FR_OK(0): successful, !=0: any error occurred */
 	fs->fs_type = 0;					/* Clear the file system object */
 	fs->drv = (BYTE)LD2PD(vol);			/* Bind the logical drive and a physical drive */
 	stat = disk_initialize(fs->drv);	/* Initialize low level disk I/O layer */
-printf("disk_initialize status: %d\n", stat);
-
 	if (stat & STA_NOINIT)				/* Check if the initialization succeeded */
 		return FR_NOT_READY;			/* Failed to initialize due to no media or hard error */
 #if _MAX_SS != 512						/* Get disk sector size (variable sector size cfg only) */

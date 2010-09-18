@@ -25,7 +25,7 @@
 */
 
 #include <arm/NXP/LPC17xx/LPC17xx.h>
-#include <arm/bits.h>
+#include "bits.h"
 #include "config.h"
 #include "spi.h"
 
@@ -39,19 +39,34 @@
 #define SSP_CLK_DIVISOR_FAST 4
 #define SSP_CLK_DIVISOR_SLOW 250
 
-#define SSP_REGS LPC_SSP1
-#define SSP_PCLKREG PCLKSEL0
+// #define SSP_REGS LPC_SSP1
+// #define SSP_PCLKREG PCLKSEL0
 /* SSP0: PCLKSEL1
    SSP1: PCLKSEL0 */
-#define SSP_PCLKBIT 20
+// #define SSP_PCLKBIT 20
 /* SSP0: 10
    SSP1: 20 */
-#define SSP_DMAID_TX 2
+// #define SSP_DMAID_TX 2
 /* SSP0: 0
    SSP1: 2 */
-#define SSP_DMAID_RX 3
+// #define SSP_DMAID_RX 3
 /* SSP0: 1
    SSP1: 3 */
+
+typedef struct {
+  LPC_SSP_TypeDef   *SSP_REGS;
+  LPC_GPDMA_TypeDef *SSP_DMAC;
+  __IO uint32_t      SSP_PCLKREG;
+  int                SSP_PCLKBIT;
+  int                SSP_DMAID_TX;
+  int                SSP_DMAID_RX;
+} ssp_props;
+
+
+static ssp_props SSP_SEL[2] = {
+  { LPC_SSP0, LPC_GPDMA0, PCLKSEL1, 10, 0, 1 }, /* SSP0 */
+  { LPC_SSP1, LPC_GPDMA1, PCLKSEL0, 20, 2, 3 }
+};
 
 void spi_init(spi_speed_t speed) {
   /* Set clock prescaler to 1:1 */

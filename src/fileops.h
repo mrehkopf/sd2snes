@@ -28,7 +28,7 @@
 #define FILEOPS_H
 #include "ff.h"
 
-BYTE file_buf[4096];
+BYTE file_buf[512];
 FATFS fatfs;
 FIL file_handle;
 FRESULT file_res;

@@ -5,11 +5,7 @@
 #include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "clock.h"
 #include "bits.h"
-
-uint32_t f_cpu=4000000;
-uint16_t pll_mult = 1;
-uint8_t pll_prediv = 1;
-uint8_t cclk_div = 1;
+#include "uart.h"
 
 void clock_disconnect() {
   disconnectPLL0();
@@ -64,7 +60,6 @@ void setFlashAccessTime(uint8_t clocks) {
 
 void setPLL0MultPrediv(uint16_t mult, uint8_t prediv) {
 	LPC_SC->PLL0CFG=PLL_MULT(mult) | PLL_PREDIV(prediv);
-	f_cpu = F_OSC*2*mult/prediv/cclk_div;
 	PLL0feed();
 }
 
@@ -91,7 +86,6 @@ void disconnectPLL0() {
 
 void setCCLKDiv(uint8_t div) {
 	LPC_SC->CCLKCFG=CCLK_DIV(div);
-	f_cpu=F_OSC*2*pll_mult/pll_prediv/div;
 }
 
 void enableMainOsc() {

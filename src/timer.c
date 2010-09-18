@@ -14,7 +14,6 @@
 #define PCRIT 16
 
 volatile tick_t ticks;
-extern uint32_t f_cpu;
 
 void __attribute__((weak,noinline)) SysTick_Hook(void) {
   // Empty function for hooking the systick handler
@@ -59,7 +58,7 @@ void delay_ms(unsigned int time) {
   /* Prepare RIT */
   LPC_RIT->RICOUNTER = 0;
   LPC_RIT->RICTRL    = BV(RITEN) | BV(RITINT);
-  LPC_RIT->RICOMPVAL = (f_cpu / 1000) * time;
+  LPC_RIT->RICOMPVAL = (CONFIG_CPU_FREQUENCY / 1000) * time;
 
   /* Wait until RIT signals an interrupt */
   while (!(BITBAND(LPC_RIT->RICTRL, RITINT))) ;

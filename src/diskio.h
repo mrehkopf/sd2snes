@@ -55,7 +55,7 @@ DRESULT disk_read (BYTE, BYTE*, DWORD, BYTE);
 #if	_READONLY == 0
 DRESULT disk_write (BYTE, const BYTE*, DWORD, BYTE);
 #endif
-DRESULT disk_ioctl (BYTE, BYTE, void*);
+#define disk_ioctl(a,b,c) RES_OK
 
 void disk_init(void);
 

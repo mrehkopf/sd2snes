@@ -68,7 +68,7 @@
 
 // FIXME: Move, make configurable
 static void set_sd_led(uint8_t state) {
-  BITBAND(LPC_GPIO2->FIODIR, 2) = state;
+//  BITBAND(LPC_GPIO2->FIODIR, 2) = state;
 }
 
 // FIXME: Move, add generic C or AVR ASM version
@@ -410,7 +410,7 @@ DSTATUS sd_initialize(BYTE drv) {
   uint8_t  i;
   uint16_t counter;
   uint32_t answer;
-
+printf("sd_initialize\n");
   if (drv >= MAX_CARDS)
     return STA_NOINIT|STA_NODISK;
   /* Don't bother initializing a card that isn't there */
@@ -527,7 +527,7 @@ DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
   uint16_t crc,recvcrc;
   if (drv >= MAX_CARDS)
     return RES_PARERR;
-
+//printf("sd_read: sector=%lu, count=%u\n", sector, count);
   for (sec=0;sec<count;sec++) {
     errorcount = 0;
     while (errorcount < CONFIG_SD_AUTO_RETRIES) {
