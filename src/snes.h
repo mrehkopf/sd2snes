@@ -26,6 +26,10 @@
 
 #ifndef SNES_H
 #define SNES_H
+
+#define SNES_CMD_LOADROM   (1)
+#define SNES_CMD_SETRTC    (2)
+
 uint8_t crc_valid;
 
 void snes_init(void);

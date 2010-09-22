@@ -55,7 +55,7 @@ TARGET = $(OBJDIR)/sd2snes
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c printf.c sdcard.c spi.c fileops.c rtc.c fpga.c
+SRC = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c printf.c sdcard.c spi.c fileops.c rtc.c fpga.c fpga_spi.c snes.c smc.c memory.c crc16.c filetypes.c faulthandler.c sort.c
 
 
 # List Assembler source files here.
@@ -217,6 +217,9 @@ program: bin
 
 debug: bin
 	openocd -f openocd-usb.cfg -f lpc1754.cfg
+
+reset:
+	openocd -f openocd-usb.cfg -f lpc1754.cfg -f reset.cfg
 
 # Display size of file.
 HEXSIZE = $(SIZE) --target=$(FORMAT) $(TARGET).hex

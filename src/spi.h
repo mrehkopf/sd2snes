@@ -30,24 +30,33 @@
 #define SPI_H
 
 /* Low speed 400kHz for init, fast speed <=20MHz (MMC limit) */
-typedef enum { SPI_SPEED_FAST, SPI_SPEED_SLOW } spi_speed_t;
+typedef enum { SPI_SPEED_FAST, SPI_SPEED_SLOW, SPI_SPEED_FPGA_FAST, SPI_SPEED_FPGA_SLOW } spi_speed_t;
+
+/* Pre-Initialize SPI interface (PCLK divider before PLL setup) */
+void spi_preinit(int device);
 
 /* Initialize SPI interface */
-void spi_init(spi_speed_t speed);
+void spi_init(spi_speed_t speed, int device);
 
 /* Transmit a single byte */
-void spi_tx_byte(uint8_t data);
+void spi_tx_byte(uint8_t data, int device);
+
+/* Transmit a single byte and return received data */
+uint8_t spi_txrx_byte(uint8_t data, int device);
 
 /* Transmit a data block */
-void spi_tx_block(const void *data, unsigned int length);
+void spi_tx_block(const void *data, unsigned int length, int device);
 
 /* Receive a single byte */
-uint8_t spi_rx_byte(void);
+uint8_t spi_rx_byte(int device);
 
 /* Receive a data block */
-void spi_rx_block(void *data, unsigned int length);
+void spi_rx_block(void *data, unsigned int length, int device);
 
 /* Switch speed of SPI interface */
-void spi_set_speed(spi_speed_t speed);
+void spi_set_speed(spi_speed_t speed, int device);
+
+/* wait for SPI TX FIFO to become empty */
+void spi_tx_sync(int device);
 
 #endif

@@ -6,6 +6,8 @@
 #include "led.h"
 
 int led_rdyledstate = 0;
+int led_readledstate = 0;
+int led_writeledstate = 0;
 
 void rdyled(unsigned int state) {
   BITBAND(LPC_GPIO2->FIODIR, 0) = state;
@@ -14,6 +16,12 @@ void rdyled(unsigned int state) {
 
 void readled(unsigned int state) {
   BITBAND(LPC_GPIO2->FIODIR, 1) = state;
+  led_readledstate = state;
+}
+
+void writeled(unsigned int state) {
+  BITBAND(LPC_GPIO2->FIODIR, 2) = state;
+  led_writeledstate = state;
 }
 
 void led_clkout32(uint32_t val) {
@@ -29,6 +37,14 @@ void led_clkout32(uint32_t val) {
 
 void toggle_rdy_led() {
   rdyled(~led_rdyledstate);
+}
+
+void toggle_read_led() {
+  readled(~led_readledstate);
+}
+
+void toggle_write_led() {
+  writeled(~led_writeledstate);
 }
 
 void led_panic() {

@@ -29,6 +29,11 @@
 
 #include "diskio.h"
 
+#define SD_TX_BYTE(x)		spi_tx_byte(x, SPI_SD);
+#define SD_RX_BYTE(x)		spi_rx_byte(x, SPI_SD);
+#define SD_TX_BLOCK(x,y)	spi_tx_block(x,y, SPI_SD);
+#define SD_RX_BLOCK(x,y)	spi_rx_block(x,y, SPI_SD);
+
 /* These functions are weak-aliased to disk_... */
 void    sd_init(void);
 DSTATUS sd_status(BYTE drv);

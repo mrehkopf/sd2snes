@@ -26,6 +26,7 @@
 
 #ifndef FILEOPS_H
 #define FILEOPS_H
+#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "ff.h"
 
 BYTE file_buf[512];

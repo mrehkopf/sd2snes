@@ -179,6 +179,7 @@ static int internal_nprintf(void (*output_function)(char c), const char *fmt, va
       output_function('x');
       width -= 2;
     case 'x':
+    case 'X':
       base = 16;
       flags |= FLAG_UNSIGNED;
       break;
