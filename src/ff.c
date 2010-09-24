@@ -1639,6 +1639,8 @@ void get_fileinfo (		/* No return code */
 		fno->fsize = LD_DWORD(dir+DIR_FileSize);	/* Size */
 		fno->fdate = LD_WORD(dir+DIR_WrtDate);		/* Date */
 		fno->ftime = LD_WORD(dir+DIR_WrtTime);		/* Time */
+		fno->clust = ((DWORD)LD_WORD(dir+DIR_FstClusHI) << 16)
+		  | LD_WORD(dir+DIR_FstClusLO);
 	}
 	*p = 0;		/* Terminate SFN str by a \0 */
 
@@ -2820,6 +2822,25 @@ FRESULT f_stat (
 	LEAVE_FF(dj.fs, res);
 }
 
+
+FRESULT l_openfilebycluster (
+  FATFS *fs,           /* Pointer to file system object */
+  FIL *fp,             /* Pointer to the blank file object */
+  const TCHAR *path,
+  DWORD clust,         /* Cluster number to be opened */
+  DWORD fsize          /* File size to be assumed */
+)
+{
+  chk_mounted(&path, &fs, 0);
+  fp->flag = FA_READ;
+  fp->org_clust = clust;
+  fp->fsize = fsize;
+  fp->fptr = 0;
+  fp->dsect = 0;
+  fp->fs = fs;
+
+  return FR_OK;
+}
 
 
 #if !_FS_READONLY

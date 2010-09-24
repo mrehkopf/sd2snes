@@ -28,6 +28,7 @@
 #define MEMORY_H
 
 #include <arm/NXP/LPC17xx/LPC17xx.h>
+#include "smc.h"
 
 #define SRAM_ROM_ADDR (0x000000L)
 #define SRAM_SAVE_ADDR (0xE00000L)
@@ -42,22 +43,21 @@
 #define SRAM_DIRID (0xFFFFF0L)
 #define SRAM_RELIABILITY_SCORE (0x100)
 
-	uint32_t load_rom(uint8_t* filename, uint32_t base_addr);
-	uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
-	void sram_hexdump(uint32_t addr, uint32_t len);
-	uint8_t sram_readbyte(uint32_t addr);
-	uint16_t sram_readshort(uint32_t addr);
-	uint32_t sram_readlong(uint32_t addr);
-	void sram_writebyte(uint8_t val, uint32_t addr);
-	void sram_writeshort(uint16_t val, uint32_t addr);
-	void sram_writelong(uint32_t val, uint32_t addr);
-	void sram_readblock(void* buf, uint32_t addr, uint16_t size);
-	void sram_readlongblock(uint32_t* buf, uint32_t addr, uint16_t count);
-	void sram_writeblock(void* buf, uint32_t addr, uint16_t size);
-	void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
-	uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size);
-	uint8_t sram_reliable(void);
+uint32_t load_rom(uint8_t* filename, uint32_t base_addr);
+uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
+void sram_hexdump(uint32_t addr, uint32_t len);
+uint8_t sram_readbyte(uint32_t addr);
+uint16_t sram_readshort(uint32_t addr);
+uint32_t sram_readlong(uint32_t addr);
+void sram_writebyte(uint8_t val, uint32_t addr);
+void sram_writeshort(uint16_t val, uint32_t addr);
+void sram_writelong(uint32_t val, uint32_t addr);
+void sram_readblock(void* buf, uint32_t addr, uint16_t size);
+void sram_readlongblock(uint32_t* buf, uint32_t addr, uint16_t count);
+void sram_writeblock(void* buf, uint32_t addr, uint16_t size);
+void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
+uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size);
+uint8_t sram_reliable(void);
 
-#include "smc.h"
-	snes_romprops_t romprops;
+snes_romprops_t romprops;
 #endif

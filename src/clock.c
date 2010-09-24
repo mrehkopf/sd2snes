@@ -15,7 +15,7 @@ void clock_disconnect() {
 void clock_init() {
 
 /* set flash access time to 5 clks (80<f<=100MHz) */
-	setFlashAccessTime(5);
+  setFlashAccessTime(5);
 
 /* setup PLL0 for ~44100*256*8 Hz
    Base clock: 12MHz
@@ -46,62 +46,62 @@ void clock_init() {
    connect PLL0
    done
  */
-	enableMainOsc();
-	setClkSrc(CLKSRC_MAINOSC);
-	setPLL0MultPrediv(429, 19);
-	enablePLL0();
-	setCCLKDiv(6);
-	connectPLL0();
+  enableMainOsc();
+  setClkSrc(CLKSRC_MAINOSC);
+  setPLL0MultPrediv(429, 19);
+  enablePLL0();
+  setCCLKDiv(6);
+  connectPLL0();
 }
 
 void setFlashAccessTime(uint8_t clocks) {
-	LPC_SC->FLASHCFG=FLASHTIM(clocks);
+  LPC_SC->FLASHCFG=FLASHTIM(clocks);
 }
 
 void setPLL0MultPrediv(uint16_t mult, uint8_t prediv) {
-	LPC_SC->PLL0CFG=PLL_MULT(mult) | PLL_PREDIV(prediv);
-	PLL0feed();
+  LPC_SC->PLL0CFG=PLL_MULT(mult) | PLL_PREDIV(prediv);
+  PLL0feed();
 }
 
 void enablePLL0() {
-	LPC_SC->PLL0CON |= PLLE0;
-	PLL0feed();
+  LPC_SC->PLL0CON |= PLLE0;
+  PLL0feed();
 }
 
 void disablePLL0() {
-	LPC_SC->PLL0CON &= ~PLLE0;
-	PLL0feed();
+  LPC_SC->PLL0CON &= ~PLLE0;
+  PLL0feed();
 }
 
 void connectPLL0() {
-	while(!(LPC_SC->PLL0STAT&PLOCK0));
-	LPC_SC->PLL0CON |= PLLC0;
-	PLL0feed();
+  while(!(LPC_SC->PLL0STAT&PLOCK0));
+  LPC_SC->PLL0CON |= PLLC0;
+  PLL0feed();
 }
 
 void disconnectPLL0() {
-	LPC_SC->PLL0CON &= ~PLLC0;
-	PLL0feed();
+  LPC_SC->PLL0CON &= ~PLLC0;
+  PLL0feed();
 }
 
 void setCCLKDiv(uint8_t div) {
-	LPC_SC->CCLKCFG=CCLK_DIV(div);
+  LPC_SC->CCLKCFG=CCLK_DIV(div);
 }
 
 void enableMainOsc() {
-	LPC_SC->SCS=OSCEN;
-	while(!(LPC_SC->SCS&OSCSTAT));
+  LPC_SC->SCS=OSCEN;
+  while(!(LPC_SC->SCS&OSCSTAT));
 }
 
 void disableMainOsc() {
-	LPC_SC->SCS=0;
+  LPC_SC->SCS=0;
 }
 
 void PLL0feed() {
-	LPC_SC->PLL0FEED=0xaa;
-	LPC_SC->PLL0FEED=0x55;
+  LPC_SC->PLL0FEED=0xaa;
+  LPC_SC->PLL0FEED=0x55;
 }
 
 void setClkSrc(uint8_t src) {
-        LPC_SC->CLKSRCSEL=src;
+  LPC_SC->CLKSRCSEL=src;
 }

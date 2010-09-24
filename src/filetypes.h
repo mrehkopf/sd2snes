@@ -29,10 +29,10 @@
 
 #include "ff.h"
 typedef enum {
-	TYPE_UNKNOWN = 0,	/* 0 */
-	TYPE_SMC,		/* 1 */
-	TYPE_SRM,		/* 2 */
-	TYPE_SPC		/* 3 */
+  TYPE_UNKNOWN = 0,	/* 0 */
+  TYPE_SMC,		/* 1 */
+  TYPE_SRM,		/* 2 */
+  TYPE_SPC		/* 3 */
 } SNES_FTYPE;
 
 

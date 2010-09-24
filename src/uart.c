@@ -91,13 +91,13 @@ static uint32_t baud2divisor(unsigned int baudrate) {
   int_ratio = (int)f_ratio;
   error=(f_ratio*1000)-(int_ratio*1000);
   if(error>990) {
-          int_ratio++;
+    int_ratio++;
   } else if(error>10) {
-          f_fr=1.5;
-          f_dl=f_pclk / (16 * baudrate * (f_fr));
-          dl = (int)f_dl;
-          f_fr=f_pclk / (16 * baudrate * dl);
-          fract_ratio = uart_lookupratio(f_fr);
+    f_fr=1.5;
+    f_dl=f_pclk / (16 * baudrate * (f_fr));
+    dl = (int)f_dl;
+    f_fr=f_pclk / (16 * baudrate * dl);
+    fract_ratio = uart_lookupratio(f_fr);
   }
   if(!dl) {
     return int_ratio;

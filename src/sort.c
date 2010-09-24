@@ -41,9 +41,7 @@ int sort_cmp_elem(const void* elem1, const void* elem2) {
   uint32_t el2 = *(uint32_t*)elem2;
   sort_getstring_for_dirent(sort_str1, el1);
   sort_getstring_for_dirent(sort_str2, el2);
-//sort_getlong_for_dirent(sort_long1, elem1);
-//sort_getlong_for_dirent(sort_long2, elem2);
-//  printf("i1=%d i2=%d elem1=%lx elem2=%lx ; compare %s   ---   %s\n", index1, index2, elem1, elem2, sort_str1, sort_str2);
+/*printf("i1=%d i2=%d elem1=%lx elem2=%lx ; compare %s   ---   %s\n", index1, index2, elem1, elem2, sort_str1, sort_str2); */
 
   if ((el1 & 0x80000000) && !(el2 & 0x80000000)) {
     return -1;
@@ -58,7 +56,7 @@ int sort_cmp_elem(const void* elem1, const void* elem2) {
   if(cmp_i==8) {
     return 0;
   }
-  return sort_long1[cmp_i]-sort_long2[cmp_i];*/
+  return sort_long1[cmp_i]-sort_long2[cmp_i]; */
   return strcasecmp(sort_str1, sort_str2);
 }
 
@@ -70,32 +68,29 @@ stat_getstring++;
     sram_readblock(ptr, addr+0x6+SRAM_MENU_ADDR, 20);
   } else {
     /* is file link, name offset 65 */
-    sram_readblock(ptr, addr+0x41+SRAM_MENU_ADDR, 20);
+    sram_readblock(ptr, addr+1+SRAM_MENU_ADDR, 20);
   }
   ptr[20]=0;
 }
 
 void sort_heapify(uint32_t addr, unsigned int i, unsigned int heapsize)
 {
-    while(1)
-    {
-        unsigned int l = 2*i+1;
-        unsigned int r = 2*i+2;
+  while(1) {
+    unsigned int l = 2*i+1;
+    unsigned int r = 2*i+2;
+    unsigned int largest = (l < heapsize && sort_cmp_idx(addr, i, l) < 0) ? l : i;
 
-        unsigned int largest = (l < heapsize && sort_cmp_idx(addr, i, l) < 0) ? l : i;
+    if(r < heapsize && sort_cmp_idx(addr, largest, r) < 0)
+      largest = r;
 
-        if(r < heapsize && sort_cmp_idx(addr, largest, r) < 0)
-            largest = r;
-
-        if(largest != i)
-        {
-            uint32_t tmp = sort_get_elem(addr, i);
-            sort_put_elem(addr, i, sort_get_elem(addr, largest));
-            sort_put_elem(addr, largest, tmp);
-            i = largest;
-        }
-        else break;
+    if(largest != i) {
+      uint32_t tmp = sort_get_elem(addr, i);
+      sort_put_elem(addr, i, sort_get_elem(addr, largest));
+      sort_put_elem(addr, largest, tmp);
+      i = largest;
     }
+    else break;
+  }
 }
 
 void sort_dir(uint32_t addr, unsigned int size)
@@ -116,10 +111,10 @@ void ext_heapsort(uint32_t addr, unsigned int size) {
   for(unsigned int i = size/2; i > 0;) sort_heapify(addr, --i, size);
 
   for(unsigned int i = size-1; i>0; --i) {
-      uint32_t tmp = sort_get_elem(addr, 0);
-      sort_put_elem(addr, 0, sort_get_elem(addr, i));
-      sort_put_elem(addr, i, tmp);
-      sort_heapify(addr, 0, i);
+    uint32_t tmp = sort_get_elem(addr, 0);
+    sort_put_elem(addr, 0, sort_get_elem(addr, i));
+    sort_put_elem(addr, i, tmp);
+    sort_heapify(addr, 0, i);
   }
 }
 

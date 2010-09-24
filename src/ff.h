@@ -358,6 +358,7 @@ typedef struct {
 	WORD	ftime;			/* Last modified time */
 	BYTE	fattrib;		/* Attribute */
 	TCHAR	fname[13];		/* Short file name (8.3 format) */
+	DWORD	clust;			/* start cluster */
 #if _USE_LFN
 	TCHAR*	lfname;			/* Pointer to the LFN buffer */
 	UINT 	lfsize;			/* Size of LFN buffer in TCHAR */
@@ -395,6 +396,10 @@ typedef enum {
 /*--------------------------------------------------------------*/
 /* FatFs module application interface                           */
 
+/* Low Level functions */
+FRESULT l_openfilebycluster(FATFS *fs, FIL *fp, const TCHAR *path, DWORD clust, DWORD fsize);   /* Open a file by its start cluster using supplied file size */
+
+/* application level functions */
 FRESULT f_mount (BYTE, FATFS*);						/* Mount/Unmount a logical drive */
 FRESULT f_open (FIL*, const TCHAR*, BYTE);			/* Open or create a file */
 FRESULT f_read (FIL*, void*, UINT, UINT*);			/* Read data from a file */

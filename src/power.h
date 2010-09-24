@@ -5,9 +5,9 @@
 
 #include "bits.h"
 
-#define PCUART3		(25)
-#define PCUART0		(3)
-#define PCTIM3          (23)
+#define PCUART3 (25)
+#define PCUART0	(3)
+#define PCTIM3  (23)
 
 void power_init(void);
 

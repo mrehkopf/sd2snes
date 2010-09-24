@@ -1,6 +1,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#define VER		"0.0.1"
 #define IN_AHBRAM    __attribute__ ((section(".ahbram")))
 
 #define SDCARD_DETECT		(1)
@@ -28,7 +29,7 @@
 
 #define SNES_RESET_REG  LPC_GPIO1
 #define SNES_RESET_BIT  29
-// Rev.B: 26
+/* XXX Rev.B: 26 */
 
 #define QSORT_MAXELEM   1024
 

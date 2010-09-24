@@ -52,48 +52,48 @@
 #include "timer.h"
 
 void fpga_spi_init(void) {
-	spi_init(SPI_SPEED_FPGA_FAST, SPI_FPGA);
+  spi_init(SPI_SPEED_FPGA_FAST, SPI_FPGA);
 }
 
 void set_mcu_addr(uint32_t address) {
-	FPGA_SELECT();
-	FPGA_TX_BYTE(0x00);
-	FPGA_TX_BYTE((address>>16)&0xff);
-	FPGA_TX_BYTE((address>>8)&0xff);
-	FPGA_TX_BYTE((address)&0xff);
-	FPGA_DESELECT();
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x00);
+  FPGA_TX_BYTE((address>>16)&0xff);
+  FPGA_TX_BYTE((address>>8)&0xff);
+  FPGA_TX_BYTE((address)&0xff);
+  FPGA_DESELECT();
 }
 
 void set_saveram_mask(uint32_t mask) {
-	FPGA_SELECT();
-	FPGA_TX_BYTE(0x20);
-	FPGA_TX_BYTE((mask>>16)&0xff);
-	FPGA_TX_BYTE((mask>>8)&0xff);
-	FPGA_TX_BYTE((mask)&0xff);
-	FPGA_DESELECT();
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x20);
+  FPGA_TX_BYTE((mask>>16)&0xff);
+  FPGA_TX_BYTE((mask>>8)&0xff);
+  FPGA_TX_BYTE((mask)&0xff);
+  FPGA_DESELECT();
 }
 
 void set_rom_mask(uint32_t mask) {
-	FPGA_SELECT();
-	FPGA_TX_BYTE(0x10);
-	FPGA_TX_BYTE((mask>>16)&0xff);
-	FPGA_TX_BYTE((mask>>8)&0xff);
-	FPGA_TX_BYTE((mask)&0xff);
-	FPGA_DESELECT();
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x10);
+  FPGA_TX_BYTE((mask>>16)&0xff);
+  FPGA_TX_BYTE((mask>>8)&0xff);
+  FPGA_TX_BYTE((mask)&0xff);
+  FPGA_DESELECT();
 }
 
 void set_mapper(uint8_t val) {
-	FPGA_SELECT();
-        FPGA_TX_BYTE(0x30 | (val & 0x0f));
-	FPGA_DESELECT();
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x30 | (val & 0x0f));
+  FPGA_DESELECT();
 }
 
 uint8_t fpga_test() {
-	FPGA_SELECT();
-	FPGA_TX_BYTE(0xF0); // TEST
-	FPGA_TX_BYTE(0x00); // dummy
-	uint8_t result = FPGA_RX_BYTE();
-	FPGA_DESELECT();
-        return result;
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF0); /* TEST */
+  FPGA_TX_BYTE(0x00); /* dummy */
+  uint8_t result = FPGA_RX_BYTE();
+  FPGA_DESELECT();
+  return result;
 }
 
