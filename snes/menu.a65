@@ -233,8 +233,8 @@ dirent_is_dir
 	sta @print_pal
 	bra dirent_type_cont
 dirent_is_file
-	lda #$40	;skip game header
-	sta @fd_fnoff
+	lda #$00
+	sta @fd_fnoff	;no offset
 	lda #$00
 	sta @print_pal	;palette 0 (white)
 dirent_type_cont
