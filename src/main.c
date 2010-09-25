@@ -87,25 +87,25 @@ restart:
   set_mcu_ovr(1);
  
   *fs_path=0;
-  uint16_t saved_dir_id;
+  uint32_t saved_dir_id;
   get_db_id(&saved_dir_id);
 
-    uint16_t mem_dir_id = sram_readshort(SRAM_DIRID);
-    uint32_t mem_magic = sram_readlong(SRAM_SCRATCHPAD);
+  uint32_t mem_dir_id = sram_readlong(SRAM_DIRID);
+  uint32_t mem_magic = sram_readlong(SRAM_SCRATCHPAD);
 
-
-    if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id)) {
+  printf("mem_magic=%lx mem_dir_id=%lx saved_dir_id=%lx\n", mem_magic, mem_dir_id, saved_dir_id);
+  if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id)) {
     /* generate fs footprint (interesting files only) */
-    uint16_t curr_dir_id = scan_dir(fs_path, 0, 0);
-    printf("curr dir id = %x\n", curr_dir_id);
+    uint32_t curr_dir_id = scan_dir(fs_path, 0, 0);
+    printf("curr dir id = %lx\n", curr_dir_id);
     /* files changed or no database found? */
     if((get_db_id(&saved_dir_id) != FR_OK)
       || saved_dir_id != curr_dir_id) {
       /* rebuild database */
-      printf("saved dir id = %x\n", saved_dir_id);
+      printf("saved dir id = %lx\n", saved_dir_id);
       printf("rebuilding database...");
       curr_dir_id = scan_dir(fs_path, 1, 0);
-      sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 2);
+      sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 4);
       uint32_t endaddr, direndaddr;
       sram_readblock(&endaddr, SRAM_DB_ADDR+4, 4);
       sram_readblock(&direndaddr, SRAM_DB_ADDR+8, 4);
@@ -117,12 +117,12 @@ restart:
       save_sram((uint8_t*)"/sd2snes/sd2snes.dir", direndaddr-(SRAM_DIR_ADDR), SRAM_DIR_ADDR);
       printf("done\n");
     } else {
-      printf("saved dir id = %x\n", saved_dir_id);
+      printf("saved dir id = %lx\n", saved_dir_id);
       printf("different card, consistent db, loading db...\n");
       load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
       load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
     }
-    sram_writeshort(curr_dir_id, SRAM_DIRID);
+    sram_writelong(curr_dir_id, SRAM_DIRID);
     sram_writelong(0x12345678, SRAM_SCRATCHPAD);
   } else {
     printf("same card, loading db...\n");

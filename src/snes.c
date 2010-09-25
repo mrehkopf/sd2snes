@@ -106,7 +106,7 @@ void snes_main_loop() {
     }
     saveram_crc_old = saveram_crc;
   }
-  printf("crc_valid=%d sram_valid=%d diffcount=%ld samecount=%ld, didnotsave=%ld\n", crc_valid, sram_valid, diffcount, samecount, didnotsave);
+  printf("crc=%lx crc_valid=%d sram_valid=%d diffcount=%ld samecount=%ld, didnotsave=%ld\n", saveram_crc, crc_valid, sram_valid, diffcount, samecount, didnotsave);
 }
 
 /*

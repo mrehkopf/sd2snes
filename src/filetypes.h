@@ -40,8 +40,8 @@ char fs_path[256];
 SNES_FTYPE determine_filetype(char* filename);
 //uint32_t scan_fs();
 uint16_t scan_flat(const char* path);
-uint16_t scan_dir(char* path, char mkdb, uint32_t this_subdir_tgt);
-FRESULT get_db_id(uint16_t*);
+uint32_t scan_dir(char* path, char mkdb, uint32_t this_subdir_tgt);
+FRESULT get_db_id(uint32_t*);
 int get_num_dirent(uint32_t addr);
 void sort_all_dir(uint32_t endaddr);
 

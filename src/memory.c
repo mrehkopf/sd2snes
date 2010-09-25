@@ -29,6 +29,7 @@
 #include "uart.h"
 #include "fpga.h"
 #include "crc.h"
+#include "crc32.h"
 #include "ff.h"
 #include "fileops.h"
 #include "spi.h"
@@ -268,7 +269,7 @@ void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
 uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
   uint8_t data;
   uint32_t count;
-  uint16_t crc;
+  uint32_t crc;
   crc=0;
   crc_valid=1;
   set_mcu_addr(base_addr);
@@ -281,7 +282,7 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
       crc_valid = 0;
       break;
     }
-    crc += crc_xmodem_update(crc, data);
+    crc += crc32_update(crc, data);
   }
   FPGA_DESELECT();
   return crc;

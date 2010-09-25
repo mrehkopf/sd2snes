@@ -32,7 +32,7 @@
 #include "ff.h"
 #include "smc.h"
 #include "fileops.h"
-#include "crc.h"
+#include "crc32.h"
 #include "memory.h"
 #include "led.h"
 #include "sort.h"
@@ -54,14 +54,14 @@ uint16_t scan_flat(const char* path) {
   return numentries;
 }
 
-uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
+uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
   DIR dir;
   FILINFO fno;
   FRESULT res;
   uint8_t len;
   TCHAR* fn;
   static unsigned char depth = 0;
-  static uint16_t crc;
+  static uint32_t crc;
   static uint32_t db_tgt;
   static uint32_t next_subdir_tgt;
   static uint32_t parent_tgt;
@@ -212,7 +212,7 @@ uint16_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
             } else {
               TCHAR* sfn = fno.fname;
               while(*sfn != 0) {
-                crc += crc_xmodem_update(crc, *((unsigned char*)sfn++));
+                crc += crc32_update(crc, *((unsigned char*)sfn++));
               }
             }
           }
@@ -246,14 +246,14 @@ SNES_FTYPE determine_filetype(char* filename) {
   return TYPE_UNKNOWN;
 }
 
-FRESULT get_db_id(uint16_t* id) {
+FRESULT get_db_id(uint32_t* id) {
   file_open((uint8_t*)"/sd2snes/sd2snes.db", FA_READ);
   if(file_res == FR_OK) {
-    file_readblock(id, 0, 2);
+    file_readblock(id, 0, 4);
 /* XXX */// *id=0xdead;
     file_close();
   } else {
-    *id=0xdead;
+    *id=0xdeadbeef;
   }
   return file_res;
 }
