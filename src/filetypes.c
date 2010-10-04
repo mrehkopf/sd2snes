@@ -184,7 +184,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
                     file_close();
 */
                     /* write element pointer to current dir structure */
-                    printf("d=%d Saving %lX to Address %lX  [file]\n", depth, db_tgt, dir_tgt);
+/*                    printf("d=%d Saving %lX to Address %lX  [file]\n", depth, db_tgt, dir_tgt); */
                     if((db_tgt&0xffff) > ((0x10000-(sizeof(romprops) + sizeof(len) + pathlen + 1))&0xffff)) {
                       printf("switch! old=%lx ", db_tgt);
                       db_tgt &= 0xffff0000;
@@ -222,8 +222,6 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
       }
     } else uart_putc(0x30+res);
   }
-/*printf("%x\n", crc);
-  	_delay_ms(50); */
   sram_writelong(db_tgt, SRAM_DB_ADDR+4);
   sram_writelong(dir_end, SRAM_DB_ADDR+8);
   return crc;

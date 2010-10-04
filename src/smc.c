@@ -98,7 +98,7 @@ void smc_id(snes_romprops_t* props) {
         }
       }
     }
-/*		dprintf("%d: offset = %lX; score = %d\n", num, hdr_addr[num], score); */
+printf("%d: offset = %lX; score = %d\n", num, hdr_addr[num], score); // */
     if(score>=maxscore) {
       score_idx=num;
       maxscore=score;
@@ -111,18 +111,25 @@ void smc_id(snes_romprops_t* props) {
     props->offset = 0;
   }
 
-	/* restore the chosen one */
+  /* restore the chosen one */
 /*dprintf("winner is %d\n", score_idx); */
   file_readblock(header, hdr_addr[score_idx], sizeof(snes_header_t));
   switch(header->map & 0xef) {
-    case 0x20:
-      props->mapper_id = 1;
-      break;
-    case 0x21:
+    case 0x21: /* HiROM */
       props->mapper_id = 0;
       break;
-    case 0x25:
+    case 0x20: /* LoROM */
+      props->mapper_id = 1;
+      break;
+    case 0x25: /* ExHiROM */
       props->mapper_id = 2;
+      break;
+    case 0x22: /* ExLoROM */
+      if(file_handle.fsize > 0x400200) {
+        props->mapper_id = 6; /* SO96 */
+      } else {
+        props->mapper_id = 3;
+      }
       break;
     default: /* invalid/unsupported mapper, use header location */
       switch(score_idx) {
@@ -132,7 +139,13 @@ void smc_id(snes_romprops_t* props) {
           break;
         case 2:
         case 3:
-          props->mapper_id = 1;
+          if(file_handle.fsize > 0x800200) {
+            props->mapper_id = 6; /* SO96 interleaved */
+          } else if(file_handle.fsize > 0x400200) {
+            props->mapper_id = 3; /* ExLoROM */
+          } else {
+            props->mapper_id = 1; /* LoROM */
+          }
           break;
         case 4:
         case 5:

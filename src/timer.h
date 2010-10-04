@@ -46,5 +46,6 @@ void delay_us(unsigned int time);
 
 /* delay for "time" milliseconds - uses the RIT */
 void delay_ms(unsigned int time);
+void sleep_ms(unsigned int time);
 
 #endif

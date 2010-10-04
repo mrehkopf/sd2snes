@@ -34,6 +34,8 @@
 #include "ff.h"
 #include "led.h"
 #include "smc.h"
+#include "timer.h"
+#include "cli.h"
 
 uint8_t initloop=1;
 uint32_t saveram_crc, saveram_crc_old;
@@ -124,6 +126,8 @@ uint8_t menu_main_loop() {
     if(get_snes_reset()) {
       cmd = 0;
     }
+    sleep_ms(20);
+    cli_entrycheck();
   }
   return cmd;
 }

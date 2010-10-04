@@ -172,7 +172,6 @@ void uart_putc(char c) {
 unsigned char uart_getc(void) {
   /* wait for character */
   while (!(BITBAND(UART_REGS->LSR, 0))) ;
-
   return UART_REGS->RBR;
 }
 

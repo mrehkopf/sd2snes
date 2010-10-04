@@ -19,8 +19,9 @@
 #include "snes.h"
 #include "led.h"
 #include "sort.h"
-
+#include "cic.h"
 #include "tests.h"
+#include "cli.h"
 
 #define EMC0TOGGLE	(3<<4)
 #define MR0R		(1<<1)
@@ -29,7 +30,7 @@ int i;
 
 /* FIXME HACK */
 volatile enum diskstates disk_state;
-
+extern volatile tick_t ticks;
 int main(void) {
   LPC_GPIO2->FIODIR = BV(0) | BV(1) | BV(2);
   LPC_GPIO1->FIODIR = 0;
@@ -40,10 +41,11 @@ int main(void) {
                       | BV(3) | BV(5);                    /* SSP0 (FPGA) except SS */
   LPC_PINCON->PINSEL0 = BV(31)                            /* SSP0 */
                       | BV(13) | BV(15) | BV(17) | BV(19) /* SSP1 (SD) */
-                      | BV(20) | BV(21);                  /* MAT3.0 */
+                      | BV(20) | BV(21);                  /* MAT3.0 (FPGA clock) */
 
- /* enable pull-downs for CIC data lines */
+ /* pull-down CIC data lines */
   LPC_PINCON->PINMODE3 = BV(18) | BV(19) | BV(20) | BV(21);
+
   clock_disconnect();
   snes_init();
   snes_reset(1);
@@ -53,7 +55,7 @@ int main(void) {
   fpga_spi_init();
   spi_preinit(SPI_FPGA);
   spi_preinit(SPI_SD);
-/* do this last because the peripheral init()s change PCLK dividers */
+ /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
 
   sd_init();
@@ -61,6 +63,8 @@ int main(void) {
   delay_ms(10);
   printf("\n\nsd2snes mk.2\n============\nfw ver.: " VER "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
   file_init();
+  cic_init(1);
+
 /*  uart_putc('S');
   for(p1=0; p1<8192; p1++) {
     file_read();
@@ -80,6 +84,10 @@ int main(void) {
   fpga_init();
   fpga_pgm((uint8_t*)"/sd2snes/main.bit");
 restart:
+  if(get_cic_state() == CIC_PAIR) {
+    printf("PAIR MODE ENGAGED!\n");
+    cic_pair(CIC_NTSC, CIC_NTSC);
+  }
   rdyled(1);
   readled(0);
   writeled(0);
@@ -149,12 +157,13 @@ restart:
 
   uint8_t cmd = 0;
   printf("test sram\n");
-  while(!sram_reliable()) uart_puts("DERP");
+  while(!sram_reliable());
   printf("ok\n");
 
 sram_hexdump(SRAM_DB_ADDR, 0x200);
   while(!cmd) {
     cmd=menu_main_loop();
+    sleep_ms(50);
     switch(cmd) {
       case SNES_CMD_LOADROM:
         get_selected_name(file_lfn);
@@ -187,6 +196,10 @@ sram_hexdump(SRAM_DB_ADDR, 0x200);
   uint8_t snes_reset_prev=0, snes_reset_now=0, snes_reset_state=0;
   uint16_t reset_count=0;
   while(fpga_test() == FPGA_TEST_TOKEN) {
+  cli_entrycheck();
+  sleep_ms(250);
+  sram_reliable();
+  printf("%s ", get_cic_statename(get_cic_state()));
     snes_reset_now=get_snes_reset();
     if(snes_reset_now) {
       if(!snes_reset_prev) {

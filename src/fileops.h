@@ -33,7 +33,7 @@ BYTE file_buf[512];
 FATFS fatfs;
 FIL file_handle;
 FRESULT file_res;
-uint8_t file_lfn[256];
+uint8_t file_lfn[258];
 
 void file_init(void);
 void file_open(uint8_t* filename, BYTE flags);

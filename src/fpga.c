@@ -52,10 +52,6 @@
 #include "led.h"
 #include "timer.h"
 
-/*
-DWORD get_fattime(void) {
-  return 0L;
-}*/
 void fpga_set_prog_b(uint8_t val) {
   if(val)
     BITBAND(PROGBREG->FIOSET, PROGBBIT) = 1;

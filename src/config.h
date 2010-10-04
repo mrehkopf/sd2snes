@@ -27,9 +27,21 @@
 #define SSP_CLK_DIVISOR_FPGA_FAST 6
 #define SSP_CLK_DIVISOR_FPGA_SLOW 16
 
-#define SNES_RESET_REG  LPC_GPIO1
-#define SNES_RESET_BIT  29
-/* XXX Rev.B: 26 */
+#define SNES_RESET_REG      LPC_GPIO1
+#define SNES_RESET_BIT      29
+/* XXX Rev.B: 1.26 */
+#define SNES_CIC_D0_REG     LPC_GPIO1
+#define SNES_CIC_D0_BIT     26
+/* XXX Rev.B: 0.1 */
+#define SNES_CIC_D1_REG     LPC_GPIO1
+#define SNES_CIC_D1_BIT     25
+/* XXX Rev.B: 0.0 */
+#define SNES_CIC_STATUS_REG LPC_GPIO0
+#define SNES_CIC_STATUS_BIT 1
+/* XXX Rev.B: 1.29 */
+#define SNES_CIC_PAIR_REG   LPC_GPIO0
+#define SNES_CIC_PAIR_BIT   0
+/* XXX Rev.B: 1.25 */
 
 #define QSORT_MAXELEM   1024
 
