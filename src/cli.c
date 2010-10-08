@@ -44,6 +44,7 @@
 #include "snes.h"
 #include "fpga.h"
 #include "cic.h"
+#include "xmodem.h"
 
 #include "cli.h"
 
@@ -341,6 +342,21 @@ static void cmd_vmode(void) {
   free(buf);
 #endif
 
+void cmd_put(void) {
+  if(*curchar != 0) {
+    file_open((uint8_t*)curchar, FA_CREATE_ALWAYS | FA_WRITE);
+    if(file_res) {
+      printf("FAIL: error opening file %s\n", curchar);
+    } else {
+      printf("OK, start xmodem transfer now.\n");
+      xmodem_rxfile(&file_handle);
+    }
+    file_close();
+  } else {
+    printf("Usage: put <filename>\n");
+  }
+}
+
 /* ------------------------------------------------------------------------- */
 /*   CLI interface functions                                                 */
 /* ------------------------------------------------------------------------- */
@@ -435,6 +451,9 @@ void cli_loop(void) {
       cmd_vmode();
       break;
 
+    case CMD_PUT:
+      cmd_put();
+      break;
     }
   }
 }

@@ -65,6 +65,7 @@
 #include "timer.h"
 #include "uart.h"
 #include "sdcard.h"
+#include "led.h"
 
 // FIXME: Move, make configurable
 static void set_sd_led(uint8_t state) {
@@ -641,13 +642,14 @@ DRESULT sd_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
   for (sec=0;sec<count;sec++) {
     errorcount = 0;
     while (errorcount < CONFIG_SD_AUTO_RETRIES) {
+      writeled(1);
       if (cardtype[drv] & CARD_SDHC)
         res = sendCommand(drv, WRITE_BLOCK, sector+sec, 0);
       else
         res = sendCommand(drv, WRITE_BLOCK, (sector+sec)<<9, 0);
 
       if (res != 0) {
-        set_sd_led(0);
+        writeled(0);
         disk_state = DISK_ERROR;
         return RES_ERROR;
       }
@@ -680,7 +682,7 @@ DRESULT sd_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
 
       // Wait for write finish
       if (!wait_for_response(0)) {
-        set_sd_led(0);
+        writeled(0);
         disk_state = DISK_ERROR;
         return RES_ERROR;
       }
@@ -694,7 +696,7 @@ DRESULT sd_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
       return RES_ERROR;
     }
   }
-
+  writeled(0);
   return RES_OK;
 }
 DRESULT disk_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sd_write")));

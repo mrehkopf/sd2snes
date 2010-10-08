@@ -36,20 +36,6 @@
 #define SSP_RFF 3   // Receive FIFO full
 #define SSP_BSY 4   // Busy
 
-// #define SSP_REGS LPC_SSP1
-// #define SSP_PCLKREG PCLKSEL0
-/* SSP0: PCLKSEL1
-   SSP1: PCLKSEL0 */
-// #define SSP_PCLKBIT 20
-/* SSP0: 10
-   SSP1: 20 */
-// #define SSP_DMAID_TX 2
-/* SSP0: 0
-   SSP1: 2 */
-// #define SSP_DMAID_RX 3
-/* SSP0: 1
-   SSP1: 3 */
-
 typedef struct {
   LPC_SSP_TypeDef     *SSP_REGS;
   LPC_GPDMACH_TypeDef *SSP_DMACH;
