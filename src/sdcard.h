@@ -42,4 +42,5 @@ DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count);
 DRESULT sd_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count);
 DRESULT sd_getinfo(BYTE drv, BYTE page, void *buffer);
 
+void    sd_changed(void);
 #endif

@@ -339,14 +339,12 @@ printf("sdInit\n");
 }
 
 /* Detect changes of SD card 0 */
-#ifdef SD_CHANGE_VECT
-ISR(SD_CHANGE_VECT) {
+void sd_changed() {
   if (SDCARD_DETECT)
     disk_state = DISK_CHANGED;
   else
     disk_state = DISK_REMOVED;
 }
-#endif
 
 #ifdef CONFIG_TWINSD
 /* Detect changes of SD card 1 */
@@ -362,16 +360,9 @@ ISR(SD2_CHANGE_VECT) {
 // Public functions
 //
 void sd_init(void) {
-  /*
-  SDCARD_DETECT_SETUP();
-  SDCARD_WP_SETUP();
-  SD_CHANGE_SETUP();
-  */
-#ifdef CONFIG_TWINSD
-  /* Initialize the control lines for card 2 */
-  SD2_SETUP();
-  SD2_CHANGE_SETUP();
-#endif
+  /* enable GPIO interrupt on SD detect pin, both edges */
+  NVIC_EnableIRQ(EINT3_IRQn);
+  SD_DT_INT_SETUP();
 }
 void disk_init(void) __attribute__ ((weak, alias("sd_init")));
 

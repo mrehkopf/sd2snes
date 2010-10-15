@@ -43,6 +43,7 @@
 #include "memory.h"
 #include "snes.h"
 #include "fpga.h"
+#include "fpga_spi.h"
 #include "cic.h"
 #include "xmodem.h"
 
@@ -56,8 +57,8 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0put\0d4\0vmode\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_PUT, CMD_D4, CMD_VMODE };
+  "cd\0reset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0put\0d4\0vmode\0mapper\0";
+enum { CMD_CD = 0, CMD_RESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_PUT, CMD_D4, CMD_VMODE, CMD_MAPPER };
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
@@ -357,6 +358,13 @@ void cmd_put(void) {
   }
 }
 
+void cmd_mapper(void) {
+  int32_t mapper;
+  mapper = parse_unsigned(0,7);
+  set_mapper((uint8_t)mapper & 0x7);
+  printf("mapper set to %ld\n", mapper);
+}
+
 /* ------------------------------------------------------------------------- */
 /*   CLI interface functions                                                 */
 /* ------------------------------------------------------------------------- */
@@ -453,6 +461,10 @@ void cli_loop(void) {
 
     case CMD_PUT:
       cmd_put();
+      break;
+
+    case CMD_MAPPER:
+      cmd_mapper();
       break;
     }
   }
