@@ -1,4 +1,4 @@
-PCBNEW-BOARD Version 1 date Thu 16 Sep 2010 04:08:16 PM CEST
+PCBNEW-BOARD Version 1 date Sun 26 Sep 2010 08:56:48 PM CEST
 
 # Created by Pcbnew(2010-07-19 BZR 2416)-unstable
 
@@ -20,7 +20,7 @@ $EndGENERAL
 $SHEETDESCR
 Sheet A4 11700 8267
 Title "sd2snes Mark II"
-Date "16 sep 2010"
+Date "26 sep 2010"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -10022,7 +10022,7 @@ Po 0 49685 40748 52795 40748 59
 De 21 0 900 0 0
 $EndDRAWSEGMENT
 $TEXTPCB
-Te "P1"
+Te "P401"
 Po 51220 40551 300 300 60 0
 De 21 1 0 Normal
 $EndTEXTPCB
@@ -17540,7 +17540,7 @@ ZLayer 15
 ZAux 109 E
 ZClearance 100 T
 ZMinThickness 100
-ZOptions 0 16 F 118 118
+ZOptions 0 16 S 118 118
 ZCorner 76378 50039 0
 ZCorner 76378 48543 0
 ZCorner 75394 48543 0
@@ -23348,7 +23348,7 @@ ZLayer 0
 ZAux 50 E
 ZClearance 100 T
 ZMinThickness 100
-ZOptions 0 16 F 118 118
+ZOptions 0 16 S 118 118
 ZCorner 76378 50039 0
 ZCorner 76378 48543 0
 ZCorner 75394 48543 0
@@ -28304,7 +28304,7 @@ ZLayer 15
 ZAux 9 E
 ZClearance 60 I
 ZMinThickness 100
-ZOptions 0 16 F 118 118
+ZOptions 0 16 S 118 118
 ZCorner 73375 43250 0
 ZCorner 73550 43075 0
 ZCorner 73550 42775 0
@@ -28332,7 +28332,7 @@ ZLayer 15
 ZAux 9 E
 ZClearance 60 I
 ZMinThickness 100
-ZOptions 1 16 F 118 118
+ZOptions 1 16 S 118 118
 ZCorner 72125 43250 0
 ZCorner 72125 43175 0
 ZCorner 71975 43025 0
@@ -28367,7 +28367,7 @@ ZLayer 15
 ZAux 8 E
 ZClearance 60 I
 ZMinThickness 100
-ZOptions 1 16 F 118 118
+ZOptions 1 16 S 118 118
 ZCorner 74900 44600 0
 ZCorner 74900 43875 0
 ZCorner 73375 43875 0
@@ -28404,7 +28404,7 @@ ZLayer 15
 ZAux 8 E
 ZClearance 60 I
 ZMinThickness 100
-ZOptions 0 16 F 118 118
+ZOptions 0 16 S 118 118
 ZCorner 70775 44600 0
 ZCorner 71650 43725 0
 ZCorner 72100 43725 0
@@ -28428,7 +28428,7 @@ ZLayer 15
 ZAux 8 E
 ZClearance 60 I
 ZMinThickness 100
-ZOptions 0 16 F 118 118
+ZOptions 0 16 S 118 118
 ZCorner 72825 44400 0
 ZCorner 72825 44175 0
 ZCorner 72800 44150 0
@@ -28454,7 +28454,7 @@ ZLayer 15
 ZAux 15 E
 ZClearance 100 I
 ZMinThickness 100
-ZOptions 0 16 F 118 118
+ZOptions 0 16 S 118 118
 ZCorner 75118 44803 0
 ZCorner 75118 44724 0
 ZCorner 76969 44724 0
@@ -28538,7 +28538,7 @@ ZLayer 15
 ZAux 6 E
 ZClearance 60 I
 ZMinThickness 100
-ZOptions 0 16 F 118 118
+ZOptions 0 16 S 118 118
 ZCorner 72350 44425 0
 ZCorner 72350 43800 0
 ZCorner 71750 43800 0

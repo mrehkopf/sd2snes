@@ -1,4 +1,4 @@
-update=Sat 28 Aug 2010 02:32:58 PM CEST
+update=Sun 26 Sep 2010 02:05:28 AM CEST
 version=1
 last_client=pcbnew
 [general]
@@ -10,7 +10,7 @@ NetIExt=net
 EquName1=devcms
 [eeschema]
 version=1
-LibDir=
+LibDir=/home/ikari/prj/sd2snes/pcb/kicad
 NetFmt=1
 HPGLSpd=20
 HPGLDm=15
