@@ -185,7 +185,7 @@ static uint8_t wait_for_response(uint8_t expected) {
   tick_t timeout = getticks() + HZ/2;
 
   while (time_before(getticks(), timeout)) {
-    uint8_t byte = spi_rx_byte(1);
+    uint8_t byte = spi_rx_byte(SPI_SD);
 
     if (expected == 0 && byte != 0)
       return 1;
@@ -200,7 +200,7 @@ static uint8_t wait_for_response(uint8_t expected) {
 static void deselectCard(uint8_t card) {
   // Send 8 clock cycles
   set_sd_led(0);
-  spi_rx_byte(1);
+  spi_rx_byte(SPI_SD);
 }
 
 /**
@@ -245,15 +245,15 @@ static int sendCommand(const uint8_t  card,
 #endif
 
     // Transfer command
-    spi_tx_byte(0x40+command, 1);
+    spi_tx_byte(0x40+command, SPI_SD);
     uint32_t tmp = swap_word(parameter);
-    spi_tx_block(&tmp, 4, 1);
-    spi_tx_byte(crc, 1);
+    spi_tx_block(&tmp, 4, SPI_SD);
+    spi_tx_byte(crc, SPI_SD);
 
     // Wait for a valid response
     timeout = getticks() + HZ/2;
     do {
-      i = spi_rx_byte(1);
+      i = spi_rx_byte(SPI_SD);
     } while (i & 0x80 && time_before(getticks(), timeout));
 
 #ifdef CONFIG_TWINSD
@@ -292,7 +292,7 @@ static uint8_t extendedInit(const uint8_t card) {
   }
 
   // No error, continue SDHC initialization
-  spi_rx_block(&answer, 4, 1);
+  spi_rx_block(&answer, 4, SPI_SD);
   answer = swap_word(answer);
   deselectCard(card);
 
@@ -412,7 +412,7 @@ printf("sd_initialize\n");
    * IEC lines tied to SPI, so I moved it here to resolve the
    * conflict.
    */
-  spi_init(SPI_SPEED_SLOW, 1);
+  spi_init(SPI_SPEED_SLOW, SPI_SD);
   disk_state = DISK_ERROR;
 
   cardtype[drv] = 0;
@@ -421,7 +421,7 @@ printf("sd_initialize\n");
 
   // Send 8000 clks
   for (counter=0; counter<1000; counter++) {
-    spi_tx_byte(0xff, 1);
+    spi_tx_byte(0xff, SPI_SD);
   }
 
   // Reset card
@@ -447,7 +447,7 @@ printf("sd_initialize\n");
   } while (i > 1 && counter-- > 0);
 
   if (counter > 0) {
-    spi_rx_block(&answer, 4, 1);
+    spi_rx_block(&answer, 4, SPI_SD);
     answer = swap_word(answer);
 
     // See if the card likes our supply voltage
@@ -493,7 +493,7 @@ printf("sd_initialize\n");
   }
 
   // Thats it!
-  spi_set_speed(SPI_SPEED_FAST, 1);
+  spi_set_speed(SPI_SPEED_FAST, SPI_SD);
   disk_state = DISK_OK;
   return sd_status(drv);
 }
@@ -546,9 +546,9 @@ DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
 
 #ifdef CONFIG_SD_BLOCKTRANSFER
       /* Transfer data first, calculate CRC afterwards */
-      spi_rx_block(buffer, 512, 1);
+      spi_rx_block(buffer, 512, SPI_SD);
 
-      recvcrc = spi_rx_byte(1) << 8 | spi_rx_byte(1);
+      recvcrc = spi_rx_byte(SPI_SD) << 8 | spi_rx_byte(SPI_SD);
 #ifdef CONFIG_SD_DATACRC
       crc = crc_xmodem_block(0, buffer, 512);
 #endif
@@ -646,10 +646,10 @@ DRESULT sd_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
       }
 
       // Send data token
-      spi_tx_byte(0xfe, 1);
+      spi_tx_byte(0xfe, SPI_SD);
 
       // Send data
-      spi_tx_block(buffer, 512, 1);
+      spi_tx_block(buffer, 512, SPI_SD);
 #ifdef CONFIG_SD_DATACRC
       crc = crc_xmodem_block(0, buffer, 512);
 #else
@@ -657,11 +657,11 @@ DRESULT sd_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
 #endif
 
       // Send CRC
-      spi_tx_byte(crc >> 8, 1);
-      spi_tx_byte(crc & 0xff, 1);
+      spi_tx_byte(crc >> 8, SPI_SD);
+      spi_tx_byte(crc & 0xff, SPI_SD);
 
       // Get and check status feedback
-      status = spi_rx_byte(1);
+      status = spi_rx_byte(SPI_SD);
 
       // Retry if neccessary
       if ((status & 0x0F) != 0x05) {
@@ -718,7 +718,7 @@ DRESULT sd_getinfo(BYTE drv, BYTE page, void *buffer) {
     return RES_ERROR;
   }
 
-  spi_rx_block(buf, 18, 1);
+  spi_rx_block(buf, 18, SPI_SD);
   deselectCard(drv);
 
   if (cardtype[drv] & CARD_SDHC) {
