@@ -1,7 +1,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#define VER                       "0.0.1"
+#define VER                       "0.0.1(NSFW)"
 #define IN_AHBRAM                 __attribute__ ((section(".ahbram")))
 
 

@@ -22,6 +22,7 @@
 #include "cic.h"
 #include "tests.h"
 #include "cli.h"
+#include "sdnative.h"
 
 #define EMC0TOGGLE	(3<<4)
 #define MR0R		(1<<1)
@@ -40,7 +41,7 @@ int main(void) {
   LPC_PINCON->PINSEL1 = BV(18) | BV(19) | BV(20) | BV(21) /* UART3 */
                       | BV(3) | BV(5);                    /* SSP0 (FPGA) except SS */
   LPC_PINCON->PINSEL0 = BV(31)                            /* SSP0 */
-                      | BV(13) | BV(15) | BV(17) | BV(19) /* SSP1 (SD) */
+/*                      | BV(13) | BV(15) | BV(17) | BV(19)  SSP1 (SD) */
                       | BV(20) | BV(21);                  /* MAT3.0 (FPGA clock) */
 
  /* pull-down CIC data lines */
@@ -58,7 +59,10 @@ int main(void) {
  /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
 
-  sd_init();
+//  sd_init();
+  sdn_init();
+//  while(1);
+
   fpga_spi_init();
   delay_ms(10);
   printf("\n\nsd2snes mk.2\n============\nfw ver.: " VER "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
@@ -82,7 +86,7 @@ int main(void) {
   LPC_TIM3->MR0=1;
   LPC_TIM3->TCR=1;
   fpga_init();
-  fpga_pgm((uint8_t*)"/sd2snes/main.bit");
+  fpga_pgm((uint8_t*)"/main.bit.rle");
 restart:
   if(get_cic_state() == CIC_PAIR) {
     printf("PAIR MODE ENGAGED!\n");
@@ -102,6 +106,7 @@ restart:
   uint32_t mem_magic = sram_readlong(SRAM_SCRATCHPAD);
 
   printf("mem_magic=%lx mem_dir_id=%lx saved_dir_id=%lx\n", mem_magic, mem_dir_id, saved_dir_id);
+  mem_magic=0x12938712; /* always rescan card for now */
   if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id)) {
     /* generate fs footprint (interesting files only) */
     uint32_t curr_dir_id = scan_dir(fs_path, 0, 0);
@@ -159,7 +164,6 @@ restart:
   printf("test sram\n");
   while(!sram_reliable());
   printf("ok\n");
-
 sram_hexdump(SRAM_DB_ADDR, 0x200);
   while(!cmd) {
     cmd=menu_main_loop();

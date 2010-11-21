@@ -29,11 +29,15 @@
 #include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "ff.h"
 
+enum filestates { FILE_OK=0, FILE_ERR, FILE_EOF };
+
 BYTE file_buf[512];
 FATFS fatfs;
 FIL file_handle;
 FRESULT file_res;
 uint8_t file_lfn[258];
+uint16_t file_block_off, file_block_max;
+enum filestates file_status;
 
 void file_init(void);
 void file_open(uint8_t* filename, BYTE flags);
@@ -43,4 +47,6 @@ UINT file_read(void);
 UINT file_write(void);
 UINT file_readblock(void* buf, uint32_t addr, uint16_t size);
 UINT file_writeblock(void* buf, uint32_t addr, uint16_t size);
+
+uint8_t file_getc(void);
 #endif

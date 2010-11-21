@@ -65,20 +65,23 @@ always @(posedge clk) begin
 end
 assign SCK = spi_dma_ovr ? spi_dma_sck : spi_dma_leadout ? 1'b0 : 1'bZ;
 reg [2:0] SCKr;  always @(posedge clk) SCKr <= {SCKr[1:0], SCK};
-wire SCK_risingedge = spi_dma_ovr ? 0 : (SCKr[2:1]==2'b01);  // now we can detect SCK rising edges
-wire SCK_fallingedge = spi_dma_ovr ? 0 : (SCKr[2:1]==2'b10);  // and falling edges
+wire SCK_risingedge = spi_dma_ovr ? 0 : (SCKr[1:0]==2'b01);  // now we can detect SCK rising edges
+wire SCK_fallingedge = spi_dma_ovr ? 0 : (SCKr[1:0]==2'b10);  // and falling edges
+
+// wire SCK_risingedge = spi_dma_ovr ? 0 : ({SCKr[0], SCK}==2'b01);  // now we can detect SCK rising edges
+// wire SCK_fallingedge = spi_dma_ovr ? 0 : ({SCKr[0], SCK}==2'b10);  // and falling edges
 
 // same thing for SSEL
 reg [2:0] SSELr;  always @(posedge clk) SSELr <= {SSELr[1:0], SSEL};
 wire SSEL_active = ~SSELr[1];  // SSEL is active low
-wire SSEL_startmessage = (SSELr[2:1]==2'b10);  // message starts at falling edge
-wire SSEL_endmessage = (SSELr[2:1]==2'b01);  // message stops at rising edge
+wire SSEL_startmessage = (SSELr[1:0]==2'b10);  // message starts at falling edge
+wire SSEL_endmessage = (SSELr[1:0]==2'b01);  // message stops at rising edge
 assign endmessage = SSEL_endmessage;
 assign startmessage = SSEL_startmessage;
 
 // and for MOSI
 reg [1:0] MOSIr;  always @(posedge clk) MOSIr <= {MOSIr[0], MOSI};
-wire MOSI_data = MOSIr[1];
+wire MOSI_data = MOSIr[0];
 
 // bit count for one SPI byte + byte count for the message
 reg [2:0] bitcnt;

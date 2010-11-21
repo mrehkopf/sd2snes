@@ -154,7 +154,7 @@ void spi_tx_block(const void *ptr, unsigned int length, int device) {
   ssp_props *ssp = &(SSP_SEL[device]);
 
   while (length--) {
-    /* Wait until TX fifo can accept data */
+  /* Wait until TX fifo can accept data */
     while (!BITBAND(ssp->SSP_REGS->SR, SSP_TNF)) ;
 
     ssp->SSP_REGS->DR = *data++;

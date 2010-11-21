@@ -51,6 +51,7 @@
 #include "spi.h"
 #include "led.h"
 #include "timer.h"
+#include "rle.h"
 
 void fpga_set_prog_b(uint8_t val) {
   if(val)
@@ -95,6 +96,7 @@ void fpga_postinit() {
 void fpga_pgm(uint8_t* filename) {
   int MAXRETRIES = 10;
   int retries = MAXRETRIES;
+  uint8_t data;
   do {
     fpga_set_prog_b(0);
     uart_putc('P');
@@ -103,7 +105,6 @@ void fpga_pgm(uint8_t* filename) {
     LPC_GPIO2->FIOMASK1 = ~(BV(0));
     uart_putc('p');
 
-    UINT bytes_read;
 
     /* open configware file */
     file_open(filename, FA_READ);
@@ -112,14 +113,13 @@ void fpga_pgm(uint8_t* filename) {
       uart_putc(0x30+file_res);
       return;
     }
-
+    uart_putc('C');
     for (;;) {
-      bytes_read = file_read();
-      if (file_res || bytes_read == 0) break;   /* error or eof */
-      for(int i=0; i<bytes_read; i++) {
-        FPGA_SEND_BYTE_SERIAL(file_buf[i]);
-      }
+      data = rle_file_getc();
+      if (file_status || file_res) break;   /* error or eof */
+      FPGA_SEND_BYTE_SERIAL(data);
     }
+    uart_putc('c');
     file_close();
   } while (!fpga_get_done() && retries--);
   if(!fpga_get_done()) {

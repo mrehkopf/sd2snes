@@ -170,22 +170,22 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
             numentries++;
             if(pass) {
               if(mkdb) {
-                snes_romprops_t romprops;
+/*                snes_romprops_t romprops; */
                 path[len]='/';
                 strncpy(path+len+1, (char*)fn, sizeof(fs_path)-len);
                 uint16_t pathlen = strlen(path);
                 switch(type) {
                   case TYPE_SMC:
-/*                  file_open_by_filinfo(&fno);
+/*                    file_open_by_filinfo(&fno);
                     if(file_res){
                       printf("ZOMG NOOOO %d\n", file_res);
                     }
                     smc_id(&romprops);
-                    file_close();
-*/
+                    file_close(); */
+
                     /* write element pointer to current dir structure */
 /*                    printf("d=%d Saving %lX to Address %lX  [file]\n", depth, db_tgt, dir_tgt); */
-                    if((db_tgt&0xffff) > ((0x10000-(sizeof(romprops) + sizeof(len) + pathlen + 1))&0xffff)) {
+                    if((db_tgt&0xffff) > ((0x10000-(sizeof(len) + pathlen + sizeof(fno.fsize) + 1))&0xffff)) {
                       printf("switch! old=%lx ", db_tgt);
                       db_tgt &= 0xffff0000;
                       db_tgt += 0x00010000;
@@ -195,11 +195,13 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
                     dir_tgt += 4;
                     /* save element:
                         - index of last slash character
-                        - file name */
+                        - file name
+                        - file size */
 /*                  sram_writeblock((uint8_t*)&romprops, db_tgt, sizeof(romprops)); */
                     sram_writebyte(len+1, db_tgt);
                     sram_writeblock(path, db_tgt + sizeof(len), pathlen + 1);
-                    db_tgt += sizeof(len) + pathlen + 1;
+                    sram_writelong(fno.fsize, db_tgt + sizeof(len) + pathlen + 1);
+                    db_tgt += sizeof(len) + pathlen + sizeof(fno.fsize) + 1;
                     break;
                   case TYPE_UNKNOWN:
                   default:
@@ -222,6 +224,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
       }
     } else uart_putc(0x30+res);
   }
+  printf("db_tgt=%lx dir_end=%lx\n", db_tgt, dir_end);
   sram_writelong(db_tgt, SRAM_DB_ADDR+4);
   sram_writelong(dir_end, SRAM_DB_ADDR+8);
   return crc;

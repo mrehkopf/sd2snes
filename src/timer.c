@@ -47,10 +47,8 @@ void timer_init(void) {
   BITBAND(LPC_SC->PCLKSEL1, 26) = 1;
   BITBAND(LPC_SC->PCLKSEL1, PCLK_TIMER3) = 1;
   /* enable SysTick */
-// XXX  SysTick_Config(SysTick->CALIB & SysTick_CALIB_TENMS_Msk);
+  SysTick_Config(SysTick->CALIB & SysTick_CALIB_TENMS_Msk);
 }
-
-extern int testval;
 
 void delay_us(unsigned int time) {
   /* Prepare RIT */

@@ -98,7 +98,7 @@ void smc_id(snes_romprops_t* props) {
         }
       }
     }
-printf("%d: offset = %lX; score = %d\n", num, hdr_addr[num], score); // */
+//printf("%d: offset = %lX; score = %d\n", num, hdr_addr[num], score); // */
     if(score>=maxscore) {
       score_idx=num;
       maxscore=score;
@@ -166,7 +166,6 @@ printf("%d: offset = %lX; score = %d\n", num, hdr_addr[num], score); // */
     props->ramsize_bytes = 0;
   }
 /*dprintf("ramsize_bytes: %ld\n", props->ramsize_bytes); */
-  f_lseek(&file_handle, 0);
 }
 
 uint8_t smc_headerscore(snes_header_t* header) {

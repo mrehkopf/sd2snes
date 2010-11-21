@@ -174,6 +174,8 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr) {
   }
   f_lseek(&file_handle, romprops.offset);
   FPGA_DESELECT();
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x91); /* write w/ increment */
   for(;;) {
 /*  SPI_OFFLOAD=1; */
     bytes_read = file_read();
@@ -183,14 +185,13 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr) {
 /*    bounce_busy_led(); */
       uart_putc('.');
     }
-    FPGA_SELECT();
-    FPGA_TX_BYTE(0x91); /* write w/ increment */
-    for(int j=0; j<bytes_read; j++) {
-      FPGA_TX_BYTE(file_buf[j]);
-    }
-    FPGA_TX_BYTE(0x00); /* dummy tx for increment+write pulse */
-    FPGA_DESELECT();
+//    for(int j=0; j<bytes_read; j++) {
+//      FPGA_TX_BYTE(file_buf[j]);
+//    }
+    FPGA_TX_BLOCK(file_buf, 512);
   }
+  FPGA_TX_BYTE(0x00); /* dummy tx for increment+write pulse */
+  FPGA_DESELECT();
   file_close();
   set_mapper(romprops.mapper_id);
   printf("rom header map: %02x; mapper id: %d\n", romprops.header.map, romprops.mapper_id);
