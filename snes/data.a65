@@ -41,7 +41,7 @@ print_pal	.word 0	;palette number for text output
 print_temp	.word 0 ;work variable
 print_count	.byt 0	;how many characters may be printed?
 print_count_tmp .byt 0	;work variable
-print_done	.byt 0  ;how many characters were printed?
+print_done	.word 0  ;how many characters were printed?
 ;----------parameters for dma----------
 dma_a_bank	.byt 0
 dma_a_addr	.word 0

@@ -4,8 +4,8 @@ hiprint:
 	sep #$20 : .as
 	lda print_count
 	sta print_count_tmp
-	stz print_done
 	rep #$30 : .xl : .al
+	stz print_done
 	lda print_x
 	and #$00ff
 	lsr

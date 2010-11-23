@@ -12,7 +12,7 @@ menu_init:
 	stx dirstart_addr
 	stz menu_state
 	stz dirend_onscreen
-	lda #$04
+	lda #$02
 	sta cursor_x
 	lda #$09
 	sta cursor_y
@@ -58,7 +58,9 @@ menu_cleanup_loop
 	pha
 	clc
 	adc #$09
+        inc
 	sta print_y
+        stz print_x
 	lda #^space64
 	ldx #!space64
 	sta print_bank
@@ -215,6 +217,11 @@ redraw_filelist_out
 	brl menu_redraw_out
 
 print_direntry:
+        lda cursor_y
+        sta print_y
+	inc
+        sta cursor_y
+
 	lda dirent_bank
 	ldx dirent_addr
 
@@ -233,37 +240,34 @@ dirent_is_dir
 	sta @print_pal
 	bra dirent_type_cont
 dirent_is_file
-	lda #$00
+	lda #$09
 	sta @fd_fnoff	;no offset
 	lda #$00
 	sta @print_pal	;palette 0 (white)
 dirent_type_cont
+        rep #$20 : .al
 	txa
 	clc
 	adc @fd_fnoff
 	tax
 	sep #$20 : .as
 	lda !0, x	;load offset of leaf (file) name
-	clc
-	adc #1
+        inc
 	rep #$20 : .al
 	and #$00ff	;kill hi byte
 	sta @fd_fnoff
 	txa
+	clc
 	adc @fd_fnoff
 	sta @fd_fnoff
 	plb
 
-	lda cursor_y
-	sta print_y
-	inc
-	sta cursor_y
 	lda cursor_x
 	sta print_x
 
 	sep #$20 : .as
 	ldx fd_fnoff
-	lda #58
+	lda #52
 	sta print_count
 	stx print_src
 	lda dirent_bank
@@ -274,7 +278,8 @@ dirent_type_cont
 	clc
 	adc print_done
 	sta print_x
-	lda #58
+
+	lda #52
 	sec
 	sbc print_done
 	sta print_count
@@ -284,6 +289,29 @@ dirent_type_cont
 	stx print_src
 	jsr hiprint
 
+	sep #$20 : .as
+        lda dirent_type
+        cmp #$80
+        bne dirent_is_file_2
+        lda #^text_dirmark
+        ldx #!text_dirmark
+        inx
+        sta print_bank
+        stx print_src
+        bra dirent_type_cont_2
+dirent_is_file_2
+        lda dirent_bank
+        ldx dirent_addr
+        inx
+        sta print_bank 
+        stx print_src
+dirent_type_cont_2
+        lda #54
+        sta print_x
+        lda #8
+        sta print_count
+        jsr hiprint
+        
 	rts
 	
 menu_key_down:
