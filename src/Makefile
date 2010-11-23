@@ -73,7 +73,7 @@ ASRC = startup.S crc.S
 #     (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
 # Use s -mcall-prologues when you really need size...
 #OPT = 2
-OPT = s
+OPT = 2
 
 # Debugging format.
 DEBUG = dwarf-2

@@ -135,5 +135,5 @@ uint8_t menu_main_loop() {
 void get_selected_name(uint8_t* fn) {
   uint32_t addr = sram_readlong(SRAM_PARAM_ADDR);
   printf("fd addr=%lx\n", addr);
-  sram_readblock(fn, addr+1+SRAM_MENU_ADDR, 256);
+  sram_readblock(fn, addr+10+SRAM_MENU_ADDR, 256);
 }

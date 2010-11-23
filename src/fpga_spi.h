@@ -36,15 +36,15 @@
 #define FPGA_SELECT()	do {FPGA_TX_SYNC(); BITBAND(FPGA_SS_REG->FIOCLR, FPGA_SS_BIT) = 1;} while (0)
 #define FPGA_DESELECT()	do {FPGA_TX_SYNC(); BITBAND(FPGA_SS_REG->FIOSET, FPGA_SS_BIT) = 1;} while (0)
 
-#define FPGA_TX_SYNC()     spi_tx_sync(SPI_FPGA)
-#define FPGA_TX_BYTE(x)    spi_tx_byte(x, SPI_FPGA)
-#define FPGA_RX_BYTE()     spi_rx_byte(SPI_FPGA)
-#define FPGA_TXRX_BYTE(x)  spi_txrx_byte(x, SPI_FPGA)
-#define FPGA_TX_BLOCK(x,y) spi_tx_block(x,y,SPI_FPGA)
-#define FPGA_RX_BLOCK(x,y) spi_rx_block(x,y,SPI_FPGA)
+#define FPGA_TX_SYNC()     spi_tx_sync()
+#define FPGA_TX_BYTE(x)    spi_tx_byte(x)
+#define FPGA_RX_BYTE()     spi_rx_byte()
+#define FPGA_TXRX_BYTE(x)  spi_txrx_byte(x)
+#define FPGA_TX_BLOCK(x,y) spi_tx_block(x,y)
+#define FPGA_RX_BLOCK(x,y) spi_rx_block(x,y)
 
-#define FPGA_SPI_FAST()    spi_set_speed(SPI_SPEED_FPGA_FAST, SPI_FPGA)
-#define FPGA_SPI_SLOW()    spi_set_speed(SPI_SPEED_FPGA_SLOW, SPI_FPGA)
+#define FPGA_SPI_FAST()    spi_set_speed(SPI_SPEED_FPGA_FAST)
+#define FPGA_SPI_SLOW()    spi_set_speed(SPI_SPEED_FPGA_SLOW)
 
 void fpga_spi_init(void);
 void fpga_spi_test(void);

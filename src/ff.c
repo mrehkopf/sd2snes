@@ -2174,6 +2174,7 @@ FRESULT f_read (
 			if (cc) {								/* Read maximum contiguous sectors directly */
 				if (csect + cc > fp->fs->csize)		/* Clip at cluster boundary */
 					cc = fp->fs->csize - csect;
+/* XXX OFFLOAD GOES HERE */
 				if (disk_read(fp->fs->drv, rbuff, sect, (BYTE)cc) != RES_OK)
 					ABORT(fp->fs, FR_DISK_ERR);
 #if !_FS_READONLY && _FS_MINIMIZE <= 2				/* Replace one of the read sectors with cached data if it contains a dirty sector */

@@ -7,6 +7,7 @@
 #ifndef UART_H
 #define UART_H
 
+#include <stdio.h>
 #include <stdint.h>
 
 //#ifdef CONFIG_UART_DEBUG
@@ -28,6 +29,7 @@ void uart_puthex(uint8_t num);
 void uart_trace(void *ptr, uint16_t start, uint16_t len);
 void uart_flush(void);
 int  printf(const char *fmt, ...);
+int  snprintf(char *str, size_t size, const char *format, ...);
 #define uart_putcrlf() uart_putc('\n')
 
 #else

@@ -10,7 +10,6 @@
 #include "ff.h"
 #include "diskio.h"
 #include "spi.h"
-#include "sdcard.h"
 #include "fileops.h"
 #include "fpga.h"
 #include "fpga_spi.h"
@@ -23,6 +22,7 @@
 #include "tests.h"
 #include "cli.h"
 #include "sdnative.h"
+#include "crc.h"
 
 #define EMC0TOGGLE	(3<<4)
 #define MR0R		(1<<1)
@@ -54,15 +54,13 @@ int main(void) {
   timer_init();
   uart_init();
   fpga_spi_init();
-  spi_preinit(SPI_FPGA);
-  spi_preinit(SPI_SD);
+  spi_preinit();
  /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
 
 //  sd_init();
   sdn_init();
 //  while(1);
-
   fpga_spi_init();
   delay_ms(10);
   printf("\n\nsd2snes mk.2\n============\nfw ver.: " VER "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
@@ -105,6 +103,16 @@ restart:
   uint32_t mem_dir_id = sram_readlong(SRAM_DIRID);
   uint32_t mem_magic = sram_readlong(SRAM_SCRATCHPAD);
 
+/*  printf("savetest...");
+  int i;
+  uint16_t testcrc = 0;
+  for(i=0; i<128; i++) {
+    testcrc = crc_xmodem_update(testcrc, 0xff);
+  }
+  printf("testcrc = %04x\n", testcrc);
+  save_sram((uint8_t*)"/pretty long filename here you know.bin", 0x400000, SRAM_DB_ADDR);
+  printf("it's over!\n");
+  while(1)cli_entrycheck(); */
   printf("mem_magic=%lx mem_dir_id=%lx saved_dir_id=%lx\n", mem_magic, mem_dir_id, saved_dir_id);
   mem_magic=0x12938712; /* always rescan card for now */
   if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id)) {
@@ -142,7 +150,6 @@ restart:
     load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
     load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
   }
-
   /* load menu */
   uart_putc('(');
   load_rom((uint8_t*)"/sd2snes/menu.bin", SRAM_MENU_ADDR);
@@ -161,19 +168,23 @@ restart:
   snes_reset(0);
 
   uint8_t cmd = 0;
+  uint32_t filesize=0;
   printf("test sram\n");
   while(!sram_reliable());
   printf("ok\n");
 sram_hexdump(SRAM_DB_ADDR, 0x200);
+
   while(!cmd) {
     cmd=menu_main_loop();
+    printf("derp %d\n", cmd);
     sleep_ms(50);
+    uart_putc('-');
     switch(cmd) {
       case SNES_CMD_LOADROM:
         get_selected_name(file_lfn);
         set_mcu_ovr(1);
         printf("Selected name: %s\n", file_lfn);
-        load_rom(file_lfn, SRAM_ROM_ADDR);
+        filesize = load_rom(file_lfn, SRAM_ROM_ADDR);
         if(romprops.ramsize_bytes) {
           strcpy(strrchr((char*)file_lfn, (int)'.'), ".srm");
           printf("SRM file: %s\n", file_lfn);
@@ -181,6 +192,7 @@ sram_hexdump(SRAM_DB_ADDR, 0x200);
         } else {
           printf("No SRAM\n");
         }
+save_sram((uint8_t*)"/debug.smc", filesize, SRAM_ROM_ADDR);
         set_mcu_ovr(0);
         snes_reset(1);
         delay_ms(100);

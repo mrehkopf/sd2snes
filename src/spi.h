@@ -33,30 +33,30 @@
 typedef enum { SPI_SPEED_FAST, SPI_SPEED_SLOW, SPI_SPEED_FPGA_FAST, SPI_SPEED_FPGA_SLOW } spi_speed_t;
 
 /* Pre-Initialize SPI interface (PCLK divider before PLL setup) */
-void spi_preinit(int device);
+void spi_preinit(void);
 
 /* Initialize SPI interface */
-void spi_init(spi_speed_t speed, int device);
+void spi_init(spi_speed_t speed);
 
 /* Transmit a single byte */
-void spi_tx_byte(uint8_t data, int device);
+void spi_tx_byte(uint8_t data);
 
 /* Transmit a single byte and return received data */
-uint8_t spi_txrx_byte(uint8_t data, int device);
+uint8_t spi_txrx_byte(uint8_t data);
 
 /* Transmit a data block */
-void spi_tx_block(const void *data, unsigned int length, int device);
+void spi_tx_block(const void *data, unsigned int length);
 
 /* Receive a single byte */
-uint8_t spi_rx_byte(int device);
+uint8_t spi_rx_byte(void);
 
 /* Receive a data block */
-void spi_rx_block(void *data, unsigned int length, int device);
+void spi_rx_block(void *data, unsigned int length);
 
 /* Switch speed of SPI interface */
-void spi_set_speed(spi_speed_t speed, int device);
+void spi_set_speed(spi_speed_t speed);
 
 /* wait for SPI TX FIFO to become empty */
-void spi_tx_sync(int device);
+void spi_tx_sync(void);
 
 #endif

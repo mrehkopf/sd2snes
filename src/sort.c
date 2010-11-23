@@ -67,8 +67,8 @@ stat_getstring++;
     /* is directory link, name offset 6 */
     sram_readblock(ptr, addr+0x6+SRAM_MENU_ADDR, 20);
   } else {
-    /* is file link, name offset 65 */
-    sram_readblock(ptr, addr+1+SRAM_MENU_ADDR, 20);
+    /* is file link, name offset 10 */
+    sram_readblock(ptr, addr+10+SRAM_MENU_ADDR, 20);
   }
   ptr[20]=0;
 }

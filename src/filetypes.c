@@ -24,7 +24,6 @@
    filetypes.c: directory scanning and file type detection
 */
 
-#include <stdio.h>
 #include <string.h>
 #include "config.h"
 #include "uart.h"
@@ -71,6 +70,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
   uint16_t numentries;
   uint32_t dirsize;
   uint8_t pass = 0;
+  char buf[10];
 
   dir_tgt = this_dir_tgt;
   if(depth==0) {
@@ -198,10 +198,12 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
                         - file name
                         - file size */
 /*                  sram_writeblock((uint8_t*)&romprops, db_tgt, sizeof(romprops)); */
-                    sram_writebyte(len+1, db_tgt);
-                    sram_writeblock(path, db_tgt + sizeof(len), pathlen + 1);
-                    sram_writelong(fno.fsize, db_tgt + sizeof(len) + pathlen + 1);
-                    db_tgt += sizeof(len) + pathlen + sizeof(fno.fsize) + 1;
+                    snprintf(buf, sizeof(buf), " % 7ldk", fno.fsize/1024);
+                    sram_writeblock(buf, db_tgt, sizeof(buf)-1);
+                    sram_writebyte(len+1, db_tgt + sizeof(buf)-1);
+                    sram_writeblock(path, db_tgt + sizeof(len) + sizeof(buf)-1, pathlen + 1);
+//                    sram_writelong(fno.fsize, db_tgt + sizeof(len) + pathlen + 1);
+                    db_tgt += sizeof(len) + pathlen + sizeof(buf)-1 + 1;
                     break;
                   case TYPE_UNKNOWN:
                   default:
@@ -224,7 +226,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
       }
     } else uart_putc(0x30+res);
   }
-  printf("db_tgt=%lx dir_end=%lx\n", db_tgt, dir_end);
+//  printf("db_tgt=%lx dir_end=%lx\n", db_tgt, dir_end);
   sram_writelong(db_tgt, SRAM_DB_ADDR+4);
   sram_writelong(dir_end, SRAM_DB_ADDR+8);
   return crc;

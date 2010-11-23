@@ -52,7 +52,7 @@
 #include "timer.h"
 
 void fpga_spi_init(void) {
-  spi_init(SPI_SPEED_FPGA_FAST, SPI_FPGA);
+  spi_init(SPI_SPEED_FPGA_FAST);
 }
 
 void set_mcu_addr(uint32_t address) {

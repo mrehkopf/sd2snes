@@ -36,13 +36,11 @@
 #define CONFIG_UART_BAUDRATE      921600
 #define CONFIG_UART_DEADLOCKABLE
 
-#define SPI_SD                    1
-#define SPI_FPGA                  0
+#define SSP_CLK_DIVISOR_FAST 4
+#define SSP_CLK_DIVISOR_SLOW 250
 
-#define SSP_CLK_DIVISOR_FAST      4
-#define SSP_CLK_DIVISOR_SLOW      250
 #define SSP_CLK_DIVISOR_FPGA_FAST 6
-#define SSP_CLK_DIVISOR_FPGA_SLOW 16
+#define SSP_CLK_DIVISOR_FPGA_SLOW 20
 
 #define SNES_RESET_REG            LPC_GPIO1
 #define SNES_RESET_BIT            29
@@ -61,5 +59,16 @@
 /* XXX Rev.B: 1.25 */
 
 #define QSORT_MAXELEM             1024
+
+#define SSP_REGS LPC_SSP0
+#define SSP_PCLKREG PCLKSEL1
+// 1: PCLKSEL0
+#define SSP_PCLKBIT 10
+// 1: 20
+#define SSP_DMAID_TX 0
+// 1: 2
+#define SSP_DMAID_RX 1
+// 1: 3
+#define SSP_DMACH LPC_GPDMACH0
 
 #endif
