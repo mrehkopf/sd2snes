@@ -31,7 +31,6 @@ menuloop_s1
 	lsr
 	bcc menuloop_s1
 	stz isr_done
-	jsr menu_cleanup	;update phase 2
 	jsr menu_updates	;update stuff, check keys etc
 	lda menu_dirty		;is there ANY reason to redraw the menu?
 	cmp #$01
@@ -40,24 +39,25 @@ menuloop_s1
 menuloop_redraw
 	stz menu_dirty
 	jsr menu_redraw
+	jsr menu_cleanup	;update phase 2
 	bra menuloop_s1
 	rts
 
 menu_cleanup:
 	sep #$20 : .as
 	rep #$10 : .xl
-	lda dirend_onscreen
-	beq menu_cleanup_out
+	lda dirend_onscreen     ;end of file list on screen?
+	beq menu_cleanup_out    ;
 	lda dirend_idx
 	lsr
 	lsr
 	pha
-menu_cleanup_loop
-	cmp listdisp
-	beq +
+menu_cleanup_loop               ;pad rest of screen with empty lines
+	cmp listdisp            ;end of screen reached?
+	beq +                   ;then leave
 	pha
 	clc
-	adc #$09
+	adc #$09                ;first line in text area
         inc
 	sta print_y
         stz print_x
@@ -175,12 +175,12 @@ redraw_filelist_loop
 	iny
 	iny
 	sep #$20 : .as
-	lda (dirptr_addr), y
+	lda (dirptr_addr), y       ; load fileinfo bank
 	clc
-	adc #$c0
-	sta @dirent_bank
-	cmp #$c0
-	beq redraw_filelist_dirend
+	adc #$c0                   ; add $C0 for memory map
+	sta @dirent_bank           ; store as current bank
+	cmp #$c0                   ; if bank was 0 -> dirend entry in DB
+	beq redraw_filelist_dirend ; handle dirend
 	iny
 	lda (dirptr_addr), y
 	iny
@@ -191,14 +191,14 @@ redraw_filelist_loop
 	bra redraw_filelist_loop
 redraw_filelist_dirend
 	plb
+	dey                        ; recover last valid direntry number 
+	dey                        ; (we had 2x iny of the direntry pointer above,
+	dey                        ;  so account for those too)
 	dey
 	dey
 	dey
-	dey
-	dey
-	dey
-	sty dirend_idx
-	lda #$01
+	sty dirend_idx             ; dirend_idx <- last valid directory entry.
+	lda #$01                   ; encountered during redraw, so must be on screen
 	sta dirend_onscreen
 	bra redraw_filelist_out
 redraw_filelist_last	;check if next offscreen item is end of dir
@@ -240,19 +240,19 @@ dirent_is_dir
 	sta @print_pal
 	bra dirent_type_cont
 dirent_is_file
-	lda #$09
-	sta @fd_fnoff	;no offset
-	lda #$00
-	sta @print_pal	;palette 0 (white)
+	lda #$06	;skip size string
+	sta @fd_fnoff
+	lda #$00	;palette 0 (white)
+	sta @print_pal
 dirent_type_cont
-        rep #$20 : .al
+	rep #$20 : .al
 	txa
 	clc
 	adc @fd_fnoff
 	tax
 	sep #$20 : .as
 	lda !0, x	;load offset of leaf (file) name
-        inc
+	inc
 	rep #$20 : .al
 	and #$00ff	;kill hi byte
 	sta @fd_fnoff
@@ -267,7 +267,7 @@ dirent_type_cont
 
 	sep #$20 : .as
 	ldx fd_fnoff
-	lda #52
+	lda #54
 	sta print_count
 	stx print_src
 	lda dirent_bank
@@ -279,7 +279,7 @@ dirent_type_cont
 	adc print_done
 	sta print_x
 
-	lda #52
+	lda #54
 	sec
 	sbc print_done
 	sta print_count
@@ -290,28 +290,26 @@ dirent_type_cont
 	jsr hiprint
 
 	sep #$20 : .as
-        lda dirent_type
-        cmp #$80
-        bne dirent_is_file_2
-        lda #^text_dirmark
-        ldx #!text_dirmark
-        inx
-        sta print_bank
-        stx print_src
-        bra dirent_type_cont_2
+	lda dirent_type
+	cmp #$80
+	bne dirent_is_file_2
+	lda #^text_dirmark
+	ldx #!text_dirmark
+	sta print_bank
+	stx print_src
+	bra dirent_type_cont_2
 dirent_is_file_2
-        lda dirent_bank
-        ldx dirent_addr
-        inx
-        sta print_bank 
-        stx print_src
+	lda dirent_bank
+	ldx dirent_addr
+	sta print_bank 
+	stx print_src
 dirent_type_cont_2
-        lda #54
-        sta print_x
-        lda #8
-        sta print_count
-        jsr hiprint
-        
+	lda #56
+	sta print_x
+	lda #6
+	sta print_count
+	jsr hiprint
+
 	rts
 	
 menu_key_down:
@@ -330,6 +328,14 @@ menu_key_down:
 	sta dirptr_addr
 	sep #$20 : .as
 	rts
++	lda dirend_onscreen
+	beq +
+	lda dirend_idx
+	lsr
+	lsr
+	cmp menu_sel
+	beq menuupd_lastcursor
+	bcc menuupd_lastcursor
 +	lda menu_sel
 	inc
 	sta menu_sel
@@ -355,32 +361,39 @@ up_out
 	sep #$20 : .as
 	rts
 
-menu_key_left:
-	lda #$01
+menuupd_lastcursor
+	lda dirend_idx
+	lsr
+	lsr
+	sta menu_sel
+	rts
+
+; go back one page
+menu_key_left: 
+	lda #$01            ; must redraw afterwards
 	sta menu_dirty
 	rep #$20 : .al
-	lda dirptr_addr
-	beq +
-	sec
-	sbc listdisp
-	sec
-	sbc listdisp
-	sec
-	sbc listdisp
-	sec
-	sbc listdisp
+	lda dirptr_addr     ; get current direntry pointer
+	beq +               ; special case: if 0, we are at the first entry in memory
+	lsr
+	lsr                 ; make comparable to listdisp
+	cmp listdisp        ; if there's less or equal previous entries...
+	beq +               ; ...than display lines, reset to directory start
 	bcc +
-	cmp dirstart_addr
-	bcc +
--	sta dirptr_addr
+	sec
+	sbc listdisp        ; subtract one screen page's worth of entries
+	asl
+	asl                 ; make comparable to dirstart_addr again
+	cmp dirstart_addr   ; check whether calculated offset is before...
+	bcc +               ; ...start of directory
+-	sta dirptr_addr     ; store new selected entry
 	sep #$20 : .as
 	rts
-+	lda dirstart_addr
-	sep #$20 : .as
-	stz menu_sel
-	rep #$20 : .al
++	lda dirstart_addr   ; reset pointer to start of directory
+	stz menu_sel        ; reset the selection cursor too
 	bra -
-		
+
+; go forth one page
 menu_key_right:
 	sep #$20 : .as
 	lda dirend_onscreen
@@ -395,12 +408,6 @@ menu_key_right:
 	adc dirptr_addr
 	sta dirptr_addr
 	sep #$20 : .as
-	rts
-menuupd_lastcursor
-	lda dirend_idx
-	lsr
-	lsr
-	sta menu_sel
 	rts
 
 menu_key_b:
@@ -519,9 +526,9 @@ setup_224:
 	sta listdisp
 	dec
 	cmp menu_sel
-	bmi setup_228_adjsel
+	bmi setup_224_adjsel
 	bra +
-setup_228_adjsel
+setup_224_adjsel
 	sta menu_sel
 +
 	lda #19*64
