@@ -97,11 +97,22 @@ void fpga_pgm(uint8_t* filename) {
   int MAXRETRIES = 10;
   int retries = MAXRETRIES;
   uint8_t data;
+  int i;
+  tick_t timeout;
+//  UINT bytes_read;
+//  uint16_t j;
   do {
+    i=0;
+    timeout = getticks() + 100;
     fpga_set_prog_b(0);
     uart_putc('P');
     fpga_set_prog_b(1);
-    while(!fpga_get_initb());
+    while(!fpga_get_initb()){
+      if(getticks() > timeout) {
+        printf("no response from FPGA trying to initiate configuration!\n");
+        led_panic();
+      }
+    };
     LPC_GPIO2->FIOMASK1 = ~(BV(0));
     uart_putc('p');
 
@@ -114,13 +125,17 @@ void fpga_pgm(uint8_t* filename) {
       return;
     }
     uart_putc('C');
+
     for (;;) {
       data = rle_file_getc();
+i++;
       if (file_status || file_res) break;   /* error or eof */
       FPGA_SEND_BYTE_SERIAL(data);
     }
     uart_putc('c');
     file_close();
+    printf("fpga_pgm: %d bytes programmed\n", i);
+    delay_ms(1);
   } while (!fpga_get_done() && retries--);
   if(!fpga_get_done()) {
     printf("FPGA failed to configure after %d tries.\n", MAXRETRIES);

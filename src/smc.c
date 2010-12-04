@@ -29,6 +29,8 @@
 #include "uart.h"
 #include "smc.h"
 
+snes_romprops_t romprops;
+
 uint32_t hdr_addr[6] = {0xffb0, 0x101b0, 0x7fb0, 0x81b0, 0x40ffb0, 0x4101b0};
 uint8_t countAllASCII(uint8_t* data, int size) {
   uint8_t res = 0;

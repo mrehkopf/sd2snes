@@ -61,6 +61,9 @@ UINT file_read() {
 UINT file_write() {
   UINT bytes_written;
   file_res = f_write(&file_handle, file_buf, sizeof(file_buf), &bytes_written);
+  if(bytes_written < sizeof(file_buf)) {
+    printf("wrote less than expected - card full?\n");
+  }
   return bytes_written;
 }
 

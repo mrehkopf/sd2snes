@@ -45,6 +45,7 @@
 
 uint32_t load_rom(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
+uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr);
 void sram_hexdump(uint32_t addr, uint32_t len);
 uint8_t sram_readbyte(uint32_t addr);
 uint16_t sram_readshort(uint32_t addr);
@@ -58,6 +59,6 @@ void sram_writeblock(void* buf, uint32_t addr, uint16_t size);
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
 uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size);
 uint8_t sram_reliable(void);
+void sram_memset(uint32_t base_adde, uint32_t len, uint8_t val);
 
-snes_romprops_t romprops;
 #endif

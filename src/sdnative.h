@@ -3,7 +3,15 @@
 #ifndef SDNATIVE_H
 #define SDNATIVE_H
 
+#ifdef DEBUG_SD
+#define DBG_SD
+#else
+#define DBG_SD while(0)
+#endif
+
 #include "diskio.h"
+
+extern int sd_offload;
 
 /* These functions are weak-aliased to disk_... */
 void    sdn_init(void);

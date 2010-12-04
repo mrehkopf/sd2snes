@@ -1,5 +1,4 @@
 #include <arm/NXP/LPC17xx/LPC17xx.h>
-#include <arm/bits.h>
 #include <stdio.h>
 #include "config.h"
 #include "crc.h"
@@ -10,13 +9,18 @@
 #include "led.h"
 #include "sdnative.h"
 #include "fileops.h"
+#include "bits.h"
+#include "fpga_spi.h"
 
 #define MAX_CARDS 1
 
 // SD/MMC commands
 #define GO_IDLE_STATE           0
 #define SEND_OP_COND            1
+#define ALL_SEND_CID            2
+#define SEND_RELATIVE_ADDR      3
 #define SWITCH_FUNC             6
+#define SELECT_CARD             7
 #define SEND_IF_COND            8
 #define SEND_CSD                9
 #define SEND_CID               10
@@ -41,6 +45,7 @@
 #define CRC_ON_OFF             59
 
 // SD ACMDs
+#define SD_SET_BUS_WIDTH           6
 #define SD_STATUS                 13
 #define SD_SEND_NUM_WR_BLOCKS     22
 #define SD_SET_WR_BLK_ERASE_COUNT 23
@@ -61,20 +66,6 @@
 /* Card types - cardtype == 0 is MMC */
 #define CARD_SD   (1<<0)
 #define CARD_SDHC (1<<1)
-
-#define SD_CLKREG LPC_GPIO0
-#define SD_CMDREG LPC_GPIO0
-#define SD_DAT0REG LPC_GPIO0
-#define SD_DAT1REG LPC_GPIO1
-#define SD_DAT2REG LPC_GPIO1
-#define SD_DAT3REG LPC_GPIO0
-
-#define SD_CLKPIN (7)
-#define SD_CMDPIN (9)
-#define SD_DAT0PIN (8)
-#define SD_DAT1PIN (14)
-#define SD_DAT2PIN (15)
-#define SD_DAT3PIN (6)
 
 /*
     1 DAT3/SS   P0.6
@@ -118,7 +109,7 @@ uint8_t cmd[6]={0,0,0,0,0,0};
 uint8_t rsp[17];
 uint8_t csd[17];
 uint8_t ccs=0;
-uint8_t rca1, rca2;
+uint32_t rca;
 
 enum trans_state { TRANS_NONE = 0, TRANS_READ, TRANS_WRITE };
 enum cmd_state { CMD_RSP = 0, CMD_RSPDAT, CMD_DAT };
@@ -204,8 +195,12 @@ static inline void wiggle_fast_pos1(void) {
   BITBAND(SD_CLKREG->FIOCLR, SD_CLKPIN) = 1;
 }
 
-
-
+static inline void wait_busy(void) {
+  while(!(BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))) {
+    wiggle_fast_neg1();
+  }
+  wiggle_fast_neg(4);
+}
 
 /* 
    send_command_slow
@@ -215,9 +210,8 @@ static inline void wiggle_fast_pos1(void) {
 int send_command_slow(uint8_t* cmd, uint8_t* rsp){
   uint8_t shift, i=6;
   int rsplen;
-//  printf("send_command_slow: sending CMD:\n");
+  uint8_t cmdno = *cmd & 0x3f;
   wiggle_slow_pos(5);
-//  uart_trace(cmd, 0, 6);
   switch(*cmd & 0x3f) {
     case 0:
       rsplen = 0;
@@ -254,12 +248,11 @@ int send_command_slow(uint8_t* cmd, uint8_t* rsp){
   
   if(rsplen) {
     uint16_t timeout=1000;
-    /* wait for responsebob */
     while((BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN)) && --timeout) {
       wiggle_slow_neg(1);
     }
-  //  printf("timeout=%d\n", timeout);  
     if(!timeout) {
+      printf("CMD%d timed out\n", cmdno);
       return 0; /* no response within timeout */
     }
 
@@ -287,11 +280,11 @@ int send_command_slow(uint8_t* cmd, uint8_t* rsp){
 */
 int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
   uint8_t datshift=8, cmdshift, i=6;
+  uint8_t cmdno = *cmd & 0x3f;
   int rsplen, dat=0, waitbusy=0, datcnt=512, j=0;
   static int state=CMD_RSP;
-//  printf("send_command_fast: sending CMD:\n");
-  wiggle_fast_pos(9);
-//  uart_trace(cmd, 0, 6);
+  wiggle_fast_pos(9); /* give the card >=8 cycles after last command */
+  DBG_SD printf("send_command_fast: sending CMD%d; payload=%02x%02x%02x%02x%02x%02x...\n", cmdno, cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5]);
   switch(*cmd & 0x3f) {
     case 0:
       rsplen = 0;
@@ -319,32 +312,32 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
   BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 1;
 
   while(i--) {
+    uint8_t data = *cmd;
     cmdshift = 8;
     do {
       cmdshift--;
-      uint8_t data = *cmd;
-      *cmd<<=1;
       if(data&0x80) {
         BITBAND(SD_CMDREG->FIOSET, SD_CMDPIN) = 1;
       } else {
         BITBAND(SD_CMDREG->FIOCLR, SD_CMDPIN) = 1;
       }
+      data<<=1;
       wiggle_fast_pos1();
     } while (cmdshift);
     cmd++;
   }
 
-  wiggle_fast_pos(1);
+  wiggle_fast_pos1();
   BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 0;
   
   if(rsplen) {
-    uint16_t timeout=65535;
-    /* wait for responsebob */
+    uint32_t timeout=2000000;
+    /* wait for response */
     while((BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN)) && --timeout) {
       wiggle_fast_neg1();
     }
-  //  printf("timeout=%d\n", timeout);  
     if(!timeout) {
+      printf("CMD%d timed out\n", cmdno);
       return 0; /* no response within timeout */
     }
 
@@ -355,7 +348,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
       do {
 	if(dat) {
           if(!(BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))) {
-//            printf("data start\n");
+            DBG_SD printf("data start during response\n");
             j=datcnt;
             state=CMD_RSPDAT;
             break;
@@ -365,7 +358,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
         cmddata |= (BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN)) << cmdshift;
         wiggle_fast_neg1();
       } while (cmdshift);
-      if(state==1)break;
+      if(state==CMD_RSPDAT)break;
       *rsp=cmddata;
       cmddata=0;
       rsp++;
@@ -373,7 +366,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
 
     if(state==CMD_RSPDAT) { /* process response+data */
       int startbit=1;
-      printf("processing rsp+data cmdshift=%d i=%d j=%d\n", cmdshift, i, j);
+      DBG_SD printf("processing rsp+data cmdshift=%d i=%d j=%d\n", cmdshift, i, j);
       datshift=8;
       while(1) {
         cmdshift--;
@@ -385,16 +378,14 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
           rsp++;
           i--;
           if(!i) {
-            printf("response end\n");
+            DBG_SD printf("response end\n");
             if(j) state=CMD_DAT; /* response over, remaining data */
             break;
           }
         }
         if(!startbit) {
           datshift-=4;
-          datdata |= ((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))
-                      |((SD_DAT1REG->FIOPIN >> 13) & 0x6)
-                      |((BITBAND(SD_DAT3REG->FIOPIN, SD_DAT3PIN)) << 3)) << datshift;      
+          datdata |= SD_DAT << datshift;
           if(!datshift) {
             datshift=8;
             *buf=datdata;
@@ -413,25 +404,26 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
       state=CMD_DAT;
       j=datcnt;
       datshift=8;
-//      printf("response over, waiting for data...\n");
+      DBG_SD printf("response over, waiting for data...\n");
       while((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) && --timeout) {
         wiggle_fast_neg1();
       }
       wiggle_fast_neg1(); /* eat the start bit */
+      if(sd_offload) {
+        fpga_sd2ram();
+        state=CMD_RSP;
+        return rsplen;
+      }
     }
     
     if(state==CMD_DAT) { /* transfer rest of data */
-//      printf("remaining data: %d\n", j);
+      DBG_SD printf("remaining data: %d\n", j);
       if(datshift==8) {
         while(1) {
-          datdata |= ((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))
-                      |((SD_DAT1REG->FIOPIN >> 13) & 0x6)
-                      |((BITBAND(SD_DAT3REG->FIOPIN, SD_DAT3PIN)) << 3)) << 4;
+          datdata |= SD_DAT << 4; 
           wiggle_fast_neg1();
 
-          datdata |= ((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))
-                      |((SD_DAT1REG->FIOPIN >> 13) & 0x6)
-                      |((BITBAND(SD_DAT3REG->FIOPIN, SD_DAT3PIN)) << 3));
+          datdata |= SD_DAT;
           wiggle_fast_neg1();
 
           *buf=datdata;
@@ -444,9 +436,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
 
         while(1) {
           datshift-=4;
-          datdata |= ((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))
-                      |((SD_DAT1REG->FIOPIN >> 13) & 0x6)
-                      |((BITBAND(SD_DAT3REG->FIOPIN, SD_DAT3PIN)) << 3)) << datshift;
+          datdata |= SD_DAT << datshift;
           if(!datshift) {
             datshift=8;
             *buf=datdata;
@@ -463,17 +453,18 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
     if(dat) wiggle_fast_neg(17);
 
     if(waitbusy) {
-      while(!(BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))) {
-        wiggle_fast_neg1();
-      }
+      DBG_SD printf("waitbusy after send_cmd\n");
+      wait_busy();
     }
     state=CMD_RSP;
   }
+  rsp-=rsplen;
+  DBG_SD printf("send_command_fast: CMD%d response: %02x%02x%02x%02x%02x%02x\n", cmdno, rsp[0], rsp[1], rsp[2], rsp[3], rsp[4], rsp[5]);
   return rsplen;
 }
 
 
-void make_crc7(uint8_t* cmd) {
+static inline void make_crc7(uint8_t* cmd) {
   cmd[5]=crc7update(0, cmd[0]);
   cmd[5]=crc7update(cmd[5], cmd[1]);
   cmd[5]=crc7update(cmd[5], cmd[2]);
@@ -482,65 +473,85 @@ void make_crc7(uint8_t* cmd) {
   cmd[5]=(cmd[5] << 1) | 1;
 }
 
+int cmd_slow(uint8_t cmd, uint32_t param, uint8_t crc, uint8_t* dat, uint8_t* rsp) {
+  uint8_t cmdbuf[6];
+  cmdbuf[0] = 0x40 | cmd;
+  cmdbuf[1] = param >> 24;
+  cmdbuf[2] = param >> 16;
+  cmdbuf[3] = param >> 8;
+  cmdbuf[4] = param;
+  if(!crc) {
+    make_crc7(cmdbuf);
+  } else {
+    cmdbuf[5] = crc;
+  }
+  return send_command_slow(cmdbuf, rsp);
+}
+
+int acmd_slow(uint8_t cmd, uint32_t param, uint8_t crc, uint8_t* dat, uint8_t* rsp) {
+  if(!(cmd_slow(APP_CMD, rca, 0, NULL, rsp))) {
+    return 0;
+  }
+  return cmd_slow(cmd, param, crc, dat, rsp);
+}
+
+int cmd_fast(uint8_t cmd, uint32_t param, uint8_t crc, uint8_t* dat, uint8_t* rsp) {
+  uint8_t cmdbuf[6];
+  cmdbuf[0] = 0x40 | cmd;
+  cmdbuf[1] = param >> 24;
+  cmdbuf[2] = param >> 16;
+  cmdbuf[3] = param >> 8;
+  cmdbuf[4] = param;
+  if(!crc) {
+    make_crc7(cmdbuf);
+  } else {
+    cmdbuf[5] = crc;
+  }
+  return send_command_fast(cmdbuf, rsp, dat);
+}
+
+int acmd_fast(uint8_t cmd, uint32_t param, uint8_t crc, uint8_t* dat, uint8_t* rsp) {
+  if(!(cmd_fast(APP_CMD, rca, 0, NULL, rsp))) {
+    return 0;
+  }
+  return cmd_fast(cmd, param, crc, dat, rsp);
+}
+
 void stream_datablock(uint8_t *buf) {
 //  uint8_t datshift=8;
   int j=512;
   uint8_t datdata=0;
-  uint16_t timeout=65535;
+  uint32_t timeout=1000000;
 
   while((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) && --timeout) {
     wiggle_fast_neg1();
   }
   wiggle_fast_neg1(); /* eat the start bit */
+  if(sd_offload) {
+    fpga_sd2ram();
+  } else {
+    while(1) {
+      datdata = SD_DAT << 4;
+      wiggle_fast_neg1();
 
-  while(1) {
-/*
-    datshift-=4;
-    datdata |= ((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))
-                |((SD_DAT1REG->FIOPIN >> 13) & 0x6)
-                |((BITBAND(SD_DAT3REG->FIOPIN, SD_DAT3PIN)) << 3)) << datshift;
-    if(!datshift) {
-      datshift=8;
+      datdata |= SD_DAT;
+      wiggle_fast_neg1();
+
       *buf=datdata;
-      datdata=0;
       buf++;
       j--;
       if(!j) break;
     }
-*/
-    datdata |= ((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))
-                |((SD_DAT1REG->FIOPIN >> 13) & 0x6)
-                |((BITBAND(SD_DAT3REG->FIOPIN, SD_DAT3PIN)) << 3)) << 4;
-    wiggle_fast_neg1();
-
-    datdata |= ((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))
-                |((SD_DAT1REG->FIOPIN >> 13) & 0x6)
-                |((BITBAND(SD_DAT3REG->FIOPIN, SD_DAT3PIN)) << 3));
- 
-    wiggle_fast_neg1();
-
-    *buf=datdata;
-    datdata=0;
-    buf++;
-    j--;
-    if(!j) break;
-  }
-
   /* eat the crc for now */ 
   wiggle_fast_neg(17);
+  }
 }
 
 void send_datablock(uint8_t *buf) {
   uint16_t crc0=0, crc1=0, crc2=0, crc3=0, cnt=512;
   uint8_t dat0=0, dat1=0, dat2=0, dat3=0, crcshift, datshift;
-//uart_trace(buf, 0, 512);
-  wiggle_fast_pos(1);
-//  printf("send_datablock: wait for card\n");
-  /* wait - card might be busy */
-  while(!(BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))) {
-    wiggle_fast_neg(1);
-    printf(".");
-  }
+
+  wiggle_fast_pos1();
   BITBAND(SD_DAT0REG->FIODIR, SD_DAT0PIN) = 1;
   BITBAND(SD_DAT1REG->FIODIR, SD_DAT1PIN) = 1;
   BITBAND(SD_DAT2REG->FIODIR, SD_DAT2PIN) = 1;
@@ -551,7 +562,7 @@ void send_datablock(uint8_t *buf) {
   BITBAND(SD_DAT2REG->FIOCLR, SD_DAT2PIN) = 1;
   BITBAND(SD_DAT3REG->FIOCLR, SD_DAT3PIN) = 1;
   
-  wiggle_fast_pos(1); /* send start bit to card */
+  wiggle_fast_pos1(); /* send start bit to card */
   crcshift=8;
   while(cnt--) {
     datshift=8;
@@ -577,7 +588,7 @@ void send_datablock(uint8_t *buf) {
       } else {
         BITBAND(SD_DAT0REG->FIOCLR, SD_DAT0PIN) = 1;
       }
-      wiggle_fast_pos(1);
+      wiggle_fast_pos1();
     } while (datshift);
 
     crcshift-=2;
@@ -603,27 +614,27 @@ void send_datablock(uint8_t *buf) {
   datshift=16;
   do {
     datshift--;
-    if((crc0 >> datshift)&1) {
+    if((crc0 >> datshift) & 1) {
       BITBAND(SD_DAT0REG->FIOSET, SD_DAT0PIN) = 1;
     } else {
       BITBAND(SD_DAT0REG->FIOCLR, SD_DAT0PIN) = 1;
     }
-    if((crc1 >> datshift)&1) {
+    if((crc1 >> datshift) & 1) {
       BITBAND(SD_DAT1REG->FIOSET, SD_DAT1PIN) = 1;
     } else {
       BITBAND(SD_DAT1REG->FIOCLR, SD_DAT1PIN) = 1;
     }
-    if((crc2 >> datshift)&1) {
+    if((crc2 >> datshift) & 1) {
       BITBAND(SD_DAT2REG->FIOSET, SD_DAT2PIN) = 1;
     } else {
       BITBAND(SD_DAT2REG->FIOCLR, SD_DAT2PIN) = 1;
     }
-    if((crc3 >> datshift)&1) {
+    if((crc3 >> datshift) & 1) {
       BITBAND(SD_DAT3REG->FIOSET, SD_DAT3PIN) = 1;
     } else {
       BITBAND(SD_DAT3REG->FIOCLR, SD_DAT3PIN) = 1;
     }
-    wiggle_fast_pos(1);
+    wiggle_fast_pos1();
   } while(datshift);
   /* send end bit */
   BITBAND(SD_DAT0REG->FIOSET, SD_DAT0PIN) = 1;
@@ -631,88 +642,73 @@ void send_datablock(uint8_t *buf) {
   BITBAND(SD_DAT2REG->FIOSET, SD_DAT2PIN) = 1;
   BITBAND(SD_DAT3REG->FIOSET, SD_DAT3PIN) = 1;
 
-  wiggle_fast_pos(1);
+  wiggle_fast_pos1();
   
   BITBAND(SD_DAT0REG->FIODIR, SD_DAT0PIN) = 0;
   BITBAND(SD_DAT1REG->FIODIR, SD_DAT1PIN) = 0;
   BITBAND(SD_DAT2REG->FIODIR, SD_DAT2PIN) = 0;
   BITBAND(SD_DAT3REG->FIODIR, SD_DAT3PIN) = 0;
 
-  wiggle_fast_neg(4);
+  wiggle_fast_neg(3);
   dat0=0;
 
-  datshift=3;
+  datshift=4;
   do {
     datshift--;
     dat0 |= ((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) << datshift);
-    wiggle_fast_neg(1);
+    wiggle_fast_neg1();
   } while (datshift);
-
-  if(dat0!=2) {
+  DBG_SD printf("crc %02x\n", dat0);
+  if((dat0 & 7) != 2) {
     printf("crc error! %02x\n", dat0);
     while(1);
   }
-  wiggle_fast_neg(1);
-  while(!(BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))) {
-    wiggle_fast_neg(1);
-  } 
+  if(dat0 & 8) {
+    printf("missing start bit in CRC status response...\n");
+  }
+  wiggle_fast_neg(2);
+  wait_busy();
 }
 
 void read_block(uint32_t address, uint8_t *buf) {
   if(during_blocktrans == TRANS_READ && (last_block == address-1)) {
+//uart_putc('r');
     stream_datablock(buf);
     last_block=address;
   } else {
     if(during_blocktrans) {
+//printf("nonseq read (%lx -> %lx), restarting transmission\n", last_block, address);
       /* send STOP_TRANSMISSION to end an open READ/WRITE_MULTIPLE_BLOCK */ 
-      cmd[0]=0x40+STOP_TRANSMISSION;
-      cmd[1]=0;
-      cmd[2]=0;
-      cmd[3]=0;
-      cmd[4]=0;
-      cmd[5]=0x61;
-      send_command_fast(cmd, rsp, NULL);
+      cmd_fast(STOP_TRANSMISSION, 0, 0x61, NULL, rsp);
     }
     last_block=address;
-    if(!ccs) address <<= 9;
-    cmd[0]=0x40+READ_MULTIPLE_BLOCK;
-    cmd[1]=address>>24;
-    cmd[2]=address>>16;
-    cmd[3]=address>>8;
-    cmd[4]=address;
-    make_crc7(cmd);
-    send_command_fast(cmd, rsp, buf);
-//    uart_trace(cmd, 0, 6);
-//    uart_trace(rsp, 0, rsplen);
+    if(!ccs) {
+      address <<= 9;
+    }
+    cmd_fast(READ_MULTIPLE_BLOCK, address, 0, buf, rsp);
     during_blocktrans = TRANS_READ;
   }
-//  uart_trace(buf, 0, 512);
 }
 
 void write_block(uint32_t address, uint8_t* buf) {
   if(during_blocktrans == TRANS_WRITE && (last_block == address-1)) {
+    wait_busy();
     send_datablock(buf);
     last_block=address;
   } else {
     if(during_blocktrans) {
       /* send STOP_TRANSMISSION to end an open READ/WRITE_MULTIPLE_BLOCK */
-      cmd[0]=0x40+STOP_TRANSMISSION;
-      cmd[1]=0;
-      cmd[2]=0;
-      cmd[3]=0;
-      cmd[4]=0;
-      cmd[5]=0x61;
-      send_command_fast(cmd, rsp, NULL);
+      cmd_fast(STOP_TRANSMISSION, 0, 0x61, NULL, rsp);
     }
+    wait_busy();
     last_block=address;
-    if(!ccs) address <<= 9;
-    cmd[0]=0x40+WRITE_MULTIPLE_BLOCK;
-    cmd[1]=address>>24;
-    cmd[2]=address>>16;
-    cmd[3]=address>>8;
-    cmd[4]=address;
-    make_crc7(cmd);
-    send_command_fast(cmd, rsp, NULL); /* only send cmd & get response */
+    if(!ccs) {
+      address <<= 9;
+    }
+    /* only send cmd & get response */
+    cmd_fast(WRITE_MULTIPLE_BLOCK, address, 0, NULL, rsp);
+    DBG_SD printf("write_block: CMD25 response = %02x%02x%02x%02x%02x%02x\n", rsp[0], rsp[1], rsp[2], rsp[3], rsp[4], rsp[5]);
+    wiggle_fast_pos(8);
     send_datablock(buf);
     during_blocktrans = TRANS_WRITE;
   }
@@ -737,200 +733,74 @@ DRESULT disk_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) __attribute_
 
 DRESULT sdn_initialize(BYTE drv) {
 
-  uint8_t cmd[6]={0,0,0,0,0,0}; /* command */
   uint8_t rsp[17]; /* space for response */
   int rsplen;
   uint8_t hcs=0;
-  if(drv>=MAX_CARDS)
+  rca = 0;
+  if(drv>=MAX_CARDS) {
     return STA_NOINIT|STA_NODISK;
+  }
 
+  if(sdn_status(drv) & STA_NODISK) {
+    return STA_NOINIT|STA_NODISK;
+  }
   /* if the card is sending data from before a reset we try to deselect it
      prior to initialization */
   for(rsplen=0; rsplen<2042; rsplen++) {
     if(!(BITBAND(SD_DAT3REG->FIOPIN, SD_DAT3PIN))) {
       printf("card seems to be sending data, attempting deselect\n");
-      cmd[0]=0x40+7;
-      cmd[1]=0;
-      cmd[2]=0;
-      cmd[3]=0;
-      cmd[4]=0;
-      make_crc7(cmd);
-      if(send_command_slow(cmd, rsp)) {
-        printf("card was sending data, CMD7 succeeded\n");
-      } else {
-        printf("CMD7 deselect no response! D:\n");
-      }
+      cmd_slow(SELECT_CARD, 0, 0, NULL, rsp);
     }
     wiggle_slow_neg(1);
   }
-  cmd[0]=0x40+GO_IDLE_STATE;
-  cmd[5]=0x95;
   printf("sd_init start\n");  
-  if((rsplen=send_command_slow(cmd, rsp))) {
-//    printf("CMD0 response?!:\n");
-//    uart_trace(rsp, 0, rsplen);
-  }
+  cmd_slow(GO_IDLE_STATE, 0, 0x95, NULL, rsp);
 
-  wiggle_slow_pos(1000);
-  cmd[0]=0x40+SEND_IF_COND;
-  cmd[3]=0x01;
-  cmd[4]=0xaa;
-  cmd[5]=0x87;
-  if((rsplen=send_command_slow(cmd, rsp))) {
-//    uart_trace(cmd, 0, 6);
-//    printf("CMD8 response:\n");
-//    uart_trace(rsp, 0, rsplen);
+  if((rsplen=cmd_slow(SEND_IF_COND, 0x000001aa, 0x87, NULL, rsp))) {
+    DBG_SD printf("CMD8 response:\n");
+    DBG_SD uart_trace(rsp, 0, rsplen);
     hcs=1;
   }
   while(1) {
-    cmd[0]=0x40+APP_CMD;
-    cmd[1]=0;
-    cmd[2]=0;
-    cmd[3]=0;
-    cmd[4]=0;
-    cmd[5]=0x65;
-
-    if((rsplen=send_command_slow(cmd, rsp))) {
-//      printf("CMD55 response:\n");
-//      uart_trace(rsp, 0, rsplen);
-    } else {
-      printf("CMD55 no response!\n");
-    }
-
-    cmd[0]=0x40+41;
-    cmd[1]=hcs<<6;
-    cmd[2]=0xfc; /* 2.7-3.6V */
-    cmd[3]=0x00;
-    cmd[4]=0x00;
-    cmd[5]=hcs ? 0x53 : 0xc1;
-//    printf("send ACMD41 hcs=%d\n", hcs);
-    if((rsplen=send_command_slow(cmd, rsp))) {
-//      printf("ACMD41 response:\n");
-//      uart_trace(rsp, 0, rsplen);
-//      printf("busy=%d\n ccs=%d\n", rsp[1]>>7, (rsp[1]>>6)&1);
-    } else {
+    if(!(acmd_slow(SD_SEND_OP_COND, (hcs << 30) | 0xfc0000, 0, NULL, rsp))) {
       printf("ACMD41 no response!\n");
     }
     if(rsp[1]&0x80) break;
   }
 
-  ccs = (rsp[1]>>6) & 1; /* SDHC */
+  ccs = (rsp[1]>>6) & 1; /* SDHC/XC */
 
-  cmd[0]=0x40+2;
-  cmd[1]=0;
-  cmd[2]=0;
-  cmd[3]=0;
-  cmd[4]=0;
-  cmd[5]=0x4d;
-
-  if((rsplen=send_command_slow(cmd, rsp))) {
-//    printf("CMD2 response:\n");
-//    uart_trace(rsp, 0, rsplen);
-  } else {
-    printf("CMD2 no response!\n");
-  }
-
-  cmd[0]=0x40+3;
-  cmd[1]=0;
-  cmd[2]=0;
-  cmd[3]=0;
-  cmd[4]=0;
-  cmd[5]=0x21;
-
-  if((rsplen=send_command_slow(cmd, rsp))) {
-//    printf("CMD3 response:\n"); 
-//    uart_trace(rsp, 0, rsplen);
-    rca1=rsp[1];
-    rca2=rsp[2];
-//    printf("RCA: %02x%02x\n", rca1, rca2);
+  cmd_slow(ALL_SEND_CID, 0, 0x4d, NULL, rsp);
+  if(cmd_slow(SEND_RELATIVE_ADDR, 0, 0x21, NULL, rsp)) {
+    rca=(rsp[1]<<24) | (rsp[2]<<16);
+    printf("RCA: %04lx\n", rca>>16);
   } else {
     printf("CMD3 no response!\n");
-    rca1=0;
-    rca2=0;
+    rca=0;
   }
-
-  cmd[0]=0x40+9;
-  cmd[1]=rca1;
-  cmd[2]=rca2;
-  cmd[3]=0;
-  cmd[4]=0;
-  make_crc7(cmd);
 
   /* record CSD for getinfo */
-  if((rsplen=send_command_slow(cmd, csd))) {
-//    printf("CMD9 response:\n");
-//    uart_trace(rsp, 0, rsplen);
-  } else {
-    printf("CMD9 no response!\n");
-  }
-
-  cmd[0]=0x40+7;
-  cmd[1]=rca1;
-  cmd[2]=rca2;
-  cmd[3]=0;
-  cmd[4]=0;
-  make_crc7(cmd);
+  cmd_slow(SEND_CSD, rca, 0, NULL, rsp);
 
   /* select the card */
-  if((rsplen=send_command_slow(cmd, rsp))) {
-//    printf("CMD7 response:\n");
-//    uart_trace(rsp, 0, rsplen);
+  if(cmd_slow(SELECT_CARD, rca, 0, NULL, rsp)) {
     printf("card selected!\n");
   } else {
     printf("CMD7 no response!\n");
   }
 
-  cmd[0]=0x40+13;
-  cmd[1]=rca1;
-  cmd[2]=rca2;
-  cmd[3]=0;
-  cmd[4]=0;
-  make_crc7(cmd);
-
   /* get card status */
-  if((rsplen=send_command_fast(cmd, rsp, NULL))) {
-//    printf("CMD13 response:\n");
-//    uart_trace(rsp, 0, rsplen);
-  } else {
-    printf("CMD13 no response!\n");
-  }
+  cmd_slow(SEND_STATUS, rca, 0, NULL, rsp);
 
   /* set bus width */
-  cmd[0]=0x40+55;
-  cmd[1]=rca1;
-  cmd[2]=rca2;
-  cmd[3]=0;
-  cmd[4]=0;
-  make_crc7(cmd);
+  acmd_slow(SD_SET_BUS_WIDTH, 0x2, 0, NULL, rsp);
 
-  if((rsplen=send_command_slow(cmd, rsp))) {
-//      printf("CMD55 response:\n");
-//      uart_trace(rsp, 0, rsplen);
-  } else {
-    printf("CMD55 no response!\n");
-  }
+  /* set block length */
+  cmd_slow(SET_BLOCKLEN, 0x200, 0, NULL, rsp);
 
-  cmd[0]=0x40+6;
-  cmd[1]=0;
-  cmd[2]=0;
-  cmd[3]=0;
-  cmd[4]=2;
-  make_crc7(cmd);
-  if((rsplen=send_command_slow(cmd, rsp))) {
-//      printf("CMD55 response:\n");
-//      uart_trace(rsp, 0, rsplen);
-  } else {
-    printf("ACMD6 no response!\n");
-  }
-
-/*  int i;
-  printf("start 4MB streaming test\n");
-  for(i=0; i<8192; i++) {
-    read_block(i, file_buf);
-  }
-  printf("end 4MB streaming test\n");*/
   printf("SD init complete. SDHC/XC=%d\n", ccs);
-
+  disk_state = DISK_OK;
+  during_blocktrans = TRANS_NONE;
   return sdn_status(drv);
 }
 
@@ -955,28 +825,30 @@ void disk_init(void) __attribute__ ((weak, alias("sdn_init")));
 
 
 DSTATUS sdn_status(BYTE drv) {
-  if (SDCARD_DETECT)
-    if (SDCARD_WP)
+  if (SDCARD_DETECT) {
+    if (SDCARD_WP) {
       return STA_PROTECT;
-    else
+    } else {
       return RES_OK;
-  else
+    } 
+  } else {
     return STA_NOINIT|STA_NODISK;
+  }
 }
 DSTATUS disk_status(BYTE drv) __attribute__ ((weak, alias("sdn_status")));
 
 DRESULT sdn_getinfo(BYTE drv, BYTE page, void *buffer) {
   uint32_t capacity;
 
-  if (drv >= MAX_CARDS)
+  if (drv >= MAX_CARDS) {
     return RES_NOTRDY;
-
-  if (sdn_status(drv) & STA_NODISK)
+  }
+  if (sdn_status(drv) & STA_NODISK) {
     return RES_NOTRDY;
-
-  if (page != 0)
+  }
+  if (page != 0) {
     return RES_ERROR;
-
+  }
   if (ccs) {
     /* Special CSD for SDHC cards */
     capacity = (1 + getbits(csd,127-69+8,22)) * 1024;
@@ -993,6 +865,8 @@ DRESULT sdn_getinfo(BYTE drv, BYTE page, void *buffer) {
   di->disktype    = DISK_TYPE_SD;
   di->sectorsize  = 2;
   di->sectorcount = capacity;
+
+  printf("card capacity: %lu sectors\n", capacity);
   return RES_OK;
 }
 DRESULT disk_getinfo(BYTE drv, BYTE page, void *buffer) __attribute__ ((weak, alias("sdn_getinfo")));
@@ -1003,9 +877,9 @@ DRESULT sdn_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
   if(drv >= MAX_CARDS) {
     return RES_NOTRDY;
   }
-  if (sdn_status(drv) & STA_NODISK)
+  if (sdn_status(drv) & STA_NODISK) {
     return RES_NOTRDY;
-
+  }
   for(sec=0; sec<count; sec++) {
     write_block(sector+sec, buf);
     buf+=512;
@@ -1017,9 +891,10 @@ DRESULT disk_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) __att
 
 /* Detect changes of SD card 0 */
 void sdn_changed() {
-  if (SDCARD_DETECT)
+  if (SDCARD_DETECT) {
     disk_state = DISK_CHANGED;
-  else
+  } else {
     disk_state = DISK_REMOVED;
+  }
 }
 

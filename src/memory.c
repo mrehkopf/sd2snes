@@ -39,8 +39,12 @@
 #include "memory.h"
 #include "snes.h"
 #include "timer.h"
+#include "rle.h"
+#include "diskio.h"
 
 char* hex = "0123456789ABCDEF";
+
+extern snes_romprops_t romprops;
 
 void sram_hexdump(uint32_t addr, uint32_t len) {
   static uint8_t buf[16];
@@ -162,25 +166,30 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr) {
   UINT bytes_read;
   DWORD filesize;
   UINT count=0;
+  tick_t tickstmp, ticksstart, ticks_read=0, ticks_tx=0, ticks_total=0;
+ticksstart=getticks();
+printf("%s\n", filename);
   file_open(filename, FA_READ);
-  filesize = file_handle.fsize;
-  smc_id(&romprops);
-  set_mcu_addr(base_addr);
-  printf("no nervous breakdown beyond this point! or else!\n");
   if(file_res) {
     uart_putc('?');
     uart_putc(0x30+file_res);
     return 0;
   }
+  filesize = file_handle.fsize;
+  smc_id(&romprops);
+  set_mcu_addr(base_addr);
+  printf("no nervous breakdown beyond this point! or else!\n");
   f_lseek(&file_handle, romprops.offset);
-  FPGA_DESELECT();
-  FPGA_SELECT();
-  FPGA_TX_BYTE(0x91); /* write w/ increment */
+//  FPGA_DESELECT();
+//  FPGA_SELECT();
+//  FPGA_TX_BYTE(0x91); /* write w/ increment */
   for(;;) {
-/*  SPI_OFFLOAD=1; */
+    ff_sd_offload=1;
+tickstmp=getticks();
     bytes_read = file_read();
+ticks_read+=getticks()-tickstmp;
     if (file_res || !bytes_read) break;
-    if(!(count++ % 32)) {
+    if(!(count++ % 512)) {
       toggle_read_led();
 /*    bounce_busy_led(); */
       uart_putc('.');
@@ -188,14 +197,17 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr) {
 //    for(int j=0; j<bytes_read; j++) {
 //      FPGA_TX_BYTE(file_buf[j]);
 //    }
-    FPGA_TX_BLOCK(file_buf, 512);
+//tickstmp = getticks();
+//    FPGA_TX_BLOCK(file_buf, 512);
+//ticks_tx+=getticks()-tickstmp;
   }
-  FPGA_TX_BYTE(0x00); /* dummy tx for increment+write pulse */
-  FPGA_DESELECT();
+//  FPGA_TX_BYTE(0x00); /* dummy tx for increment+write pulse */
+//  FPGA_DESELECT();
   file_close();
   set_mapper(romprops.mapper_id);
   printf("rom header map: %02x; mapper id: %d\n", romprops.header.map, romprops.mapper_id);
-
+ticks_total=getticks()-ticksstart;
+  printf("%u ticks in read, %u ticks in tx, %u ticks total\n", ticks_read, ticks_tx, ticks_total);
   uint32_t rammask;
   uint32_t rommask;
 	
@@ -212,7 +224,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr) {
   printf("ramsize=%x rammask=%lx\nromsize=%x rommask=%lx\n", romprops.header.ramsize, rammask, romprops.header.romsize, rommask);
   set_saveram_mask(rammask);
   set_rom_mask(rommask);
-
+  readled(0);
   return (uint32_t)filesize;
 }
 
@@ -234,6 +246,26 @@ uint32_t load_sram(uint8_t* filename, uint32_t base_addr) {
     FPGA_TX_BYTE(0x00); /* dummy tx */
     FPGA_DESELECT();
   }
+  file_close();
+  return (uint32_t)filesize;
+}
+
+uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr) {
+  uint8_t data;
+  set_mcu_addr(base_addr);
+  DWORD filesize;
+  file_open(filename, FA_READ);
+  filesize = file_handle.fsize;
+  if(file_res) return 0;
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x91);
+  for(;;) {
+    data = rle_file_getc();
+    if (file_res || file_status) break;
+    FPGA_TX_BYTE(data);
+  }
+  FPGA_TX_BYTE(0x00); /* dummy tx */
+  FPGA_DESELECT();
   file_close();
   return (uint32_t)filesize;
 }
@@ -317,4 +349,15 @@ uint8_t sram_reliable() {
   }
   rdyled(result);
   return result;
+}
+
+void sram_memset(uint32_t base_addr, uint32_t len, uint8_t val) {
+  set_mcu_addr(base_addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x91);
+  for(uint32_t i=0; i<len; i++) {
+    FPGA_TX_BYTE(val);
+  }
+  FPGA_TX_BYTE(0x00);
+  FPGA_DESELECT();
 }

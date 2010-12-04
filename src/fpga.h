@@ -35,7 +35,6 @@ void fpga_set_cclk(uint8_t val);
 int fpga_get_initb(void);
 
 void fpga_init(void);
-uint8_t fpga_test(void);
 void fpga_postinit(void);
 void fpga_pgm(uint8_t* filename);
 

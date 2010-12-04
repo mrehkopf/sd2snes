@@ -29,16 +29,19 @@
 
 	cmd	param		function	
    =============================================
-	00	bb[hh[ll]]	set address to 0xbb0000, 0xbbhh00, or 0xbbhhll
-	10	bbhhll		set SNES input address mask to 0xbbhhll
-	20	bbhhll		set SRAM address mask to 0xbbhhll
+	00	bbhhll		set address to 0xbbhhll
+	01	bbhhll		set SNES input address mask to 0xbbhhll
+	02	bbhhll		set SRAM address mask to 0xbbhhll
 	3m	-		set mapper to m
-				0=HiROM, 1=LoROM, 2=ExHiROM, 7=Menu
+				0=HiROM, 1=LoROM, 2=ExHiROM, 6=SF96, 7=Menu
+	40	-		trigger SD DMA (512b from SD to memory)
 	80	-		read with increment
 	81	-		read w/o increment
 	90	{xx}*		write xx with increment
 	91	{xx}*		write xx w/o increment
+	Eu	-		set memory unit (u=0: "ROM"; u=1: SRAM)
 	F0	-		receive test token (to see if FPGA is alive)
+	F1	-		receive status
 	
 */
 
@@ -66,7 +69,7 @@ void set_mcu_addr(uint32_t address) {
 
 void set_saveram_mask(uint32_t mask) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x20);
+  FPGA_TX_BYTE(0x02);
   FPGA_TX_BYTE((mask>>16)&0xff);
   FPGA_TX_BYTE((mask>>8)&0xff);
   FPGA_TX_BYTE((mask)&0xff);
@@ -75,7 +78,7 @@ void set_saveram_mask(uint32_t mask) {
 
 void set_rom_mask(uint32_t mask) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x10);
+  FPGA_TX_BYTE(0x01);
   FPGA_TX_BYTE((mask>>16)&0xff);
   FPGA_TX_BYTE((mask>>8)&0xff);
   FPGA_TX_BYTE((mask)&0xff);
@@ -97,3 +100,25 @@ uint8_t fpga_test() {
   return result;
 }
 
+uint8_t fpga_status() {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF1); /* STATUS */
+  FPGA_TX_BYTE(0x00); /* dummy */
+  uint8_t result = FPGA_RX_BYTE();
+  FPGA_DESELECT();
+  return result;
+}
+
+void fpga_sd2ram() {
+  BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 0;
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x40); /* DO DMA */
+  FPGA_TX_BYTE(0x00); /* dummy for falling DMA_EN edge */
+  FPGA_DESELECT();
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF1); /* STATUS */
+  FPGA_TX_BYTE(0x00); /* dummy */
+  while(FPGA_RX_BYTE() & 0x80);
+  FPGA_DESELECT();
+  BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 1;
+}

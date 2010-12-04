@@ -70,7 +70,10 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
   uint16_t numentries;
   uint32_t dirsize;
   uint8_t pass = 0;
-  char buf[10];
+  char buf[7];
+  char *size_units[3] = {" ", "k", "M"};
+  uint32_t entry_fsize;
+  uint8_t entry_unit_idx;
 
   dir_tgt = this_dir_tgt;
   if(depth==0) {
@@ -185,7 +188,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 
                     /* write element pointer to current dir structure */
 /*                    printf("d=%d Saving %lX to Address %lX  [file]\n", depth, db_tgt, dir_tgt); */
-                    if((db_tgt&0xffff) > ((0x10000-(sizeof(len) + pathlen + sizeof(fno.fsize) + 1))&0xffff)) {
+                    if((db_tgt&0xffff) > ((0x10000-(sizeof(len) + pathlen + sizeof(buf)-1 + 1))&0xffff)) {
                       printf("switch! old=%lx ", db_tgt);
                       db_tgt &= 0xffff0000;
                       db_tgt += 0x00010000;
@@ -198,7 +201,14 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
                         - file name
                         - file size */
 /*                  sram_writeblock((uint8_t*)&romprops, db_tgt, sizeof(romprops)); */
-                    snprintf(buf, sizeof(buf), " % 7ldk", fno.fsize/1024);
+                    entry_fsize = fno.fsize;
+                    entry_unit_idx = 0;
+                    while(entry_fsize > 9999) {
+                      entry_fsize >>= 10;
+                      entry_unit_idx++;
+                    }
+                    snprintf(buf, sizeof(buf), "% 5ld", entry_fsize);
+                    strncat(buf, size_units[entry_unit_idx], 1);
                     sram_writeblock(buf, db_tgt, sizeof(buf)-1);
                     sram_writebyte(len+1, db_tgt + sizeof(buf)-1);
                     sram_writeblock(path, db_tgt + sizeof(len) + sizeof(buf)-1, pathlen + 1);

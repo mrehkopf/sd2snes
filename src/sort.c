@@ -62,13 +62,15 @@ int sort_cmp_elem(const void* elem1, const void* elem2) {
 
 /* get truncated string from database */
 void sort_getstring_for_dirent(char *ptr, uint32_t addr) {
-stat_getstring++;
+  uint8_t leaf_offset;
   if(addr & 0x80000000) {
-    /* is directory link, name offset 6 */
-    sram_readblock(ptr, addr+0x6+SRAM_MENU_ADDR, 20);
+    /* is directory link, name offset 4 */
+    leaf_offset = sram_readbyte(addr + 4 + SRAM_MENU_ADDR);
+    sram_readblock(ptr, addr + 5 + leaf_offset + SRAM_MENU_ADDR, 20);
   } else {
-    /* is file link, name offset 10 */
-    sram_readblock(ptr, addr+10+SRAM_MENU_ADDR, 20);
+    /* is file link, name offset 6 */
+    leaf_offset = sram_readbyte(addr + 6 + SRAM_MENU_ADDR);
+    sram_readblock(ptr, addr + 7 + leaf_offset + SRAM_MENU_ADDR, 20);
   }
   ptr[20]=0;
 }

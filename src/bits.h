@@ -11,4 +11,11 @@
       (bit)*4 + 0x02000000 + ((unsigned long)&(addr) & 0xfe000000) \
   )))
 
+#define BITBAND_OFF(addr,offset,bit) \
+  (*((volatile unsigned long *)( \
+     (((unsigned long)&(addr) + offset) & 0x01ffffff)*32 + \
+      (bit)*4 + 0x02000000 + (((unsigned long)&(addr) + offset) & 0xfe000000) \
+  )))
+
+
 #endif

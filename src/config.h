@@ -1,6 +1,8 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+// #define DEBUG_SD
+
 #define VER                       "0.0.1(NSFW)"
 #define IN_AHBRAM                 __attribute__ ((section(".ahbram")))
 
@@ -70,5 +72,23 @@
 #define SSP_DMAID_RX 1
 // 1: 3
 #define SSP_DMACH LPC_GPDMACH0
+
+#define SD_CLKREG LPC_GPIO0
+#define SD_CMDREG LPC_GPIO0
+#define SD_DAT0REG LPC_GPIO0
+#define SD_DAT1REG LPC_GPIO1
+#define SD_DAT2REG LPC_GPIO1
+#define SD_DAT3REG LPC_GPIO0
+
+#define SD_CLKPIN (7)
+#define SD_CMDPIN (9)
+#define SD_DAT0PIN (8)
+#define SD_DAT1PIN (14)
+#define SD_DAT2PIN (15)
+#define SD_DAT3PIN (6)
+
+#define SD_DAT ((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))\
+                |((SD_DAT1REG->FIOPIN1 >> 5) & 0x6)\
+                |((BITBAND(SD_DAT3REG->FIOPIN, SD_DAT3PIN)) << 3))
 
 #endif

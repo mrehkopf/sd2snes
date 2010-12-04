@@ -39,6 +39,8 @@
 
 uint8_t initloop=1;
 uint32_t saveram_crc, saveram_crc_old;
+extern snes_romprops_t romprops;
+
 void snes_init() {
   /* put reset level on reset pin */
   BITBAND(SNES_RESET_REG->FIOCLR, SNES_RESET_BIT) = 1;
@@ -135,5 +137,5 @@ uint8_t menu_main_loop() {
 void get_selected_name(uint8_t* fn) {
   uint32_t addr = sram_readlong(SRAM_PARAM_ADDR);
   printf("fd addr=%lx\n", addr);
-  sram_readblock(fn, addr+10+SRAM_MENU_ADDR, 256);
+  sram_readblock(fn, addr + 7 + SRAM_MENU_ADDR, 256);
 }

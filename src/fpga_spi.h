@@ -47,7 +47,8 @@
 #define FPGA_SPI_SLOW()    spi_set_speed(SPI_SPEED_FPGA_SLOW)
 
 void fpga_spi_init(void);
-void fpga_spi_test(void);
+uint8_t fpga_test(void);
+uint8_t fpga_status(void);
 void spi_fpga(void);
 void spi_sd(void);
 void spi_none(void);
@@ -55,5 +56,6 @@ void set_mcu_addr(uint32_t);
 void set_saveram_mask(uint32_t);
 void set_rom_mask(uint32_t);
 void set_mapper(uint8_t val);
+void fpga_sd2ram(void);
 
 #endif
