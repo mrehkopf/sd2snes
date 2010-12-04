@@ -50,18 +50,16 @@ module main(
     input SPI_SS,
     inout SPI_SCK,
     input MCU_OVR,
-    inout SPI_DMA_CTRL,
 	 
 	 output DAC_MCLK,
 	 output DAC_LRCK,
 	 output DAC_SDOUT,
 	 
 	/* SD signals */
-    inout  SD_MOSI,
-	 input  SD_MISO,
-	 inout  SD_SS,
-	 inout  SD_SCK
-   
+    input [3:0] SD_DAT,
+	 inout SD_CMD,
+	 inout SD_CLK
+	 
    /* debug */
    //output DCM_IN_STOPPED,
    //output DCM_FX_STOPPED
@@ -80,10 +78,19 @@ wire [7:0] MCU_OUT_DATA;
 wire [3:0] MAPPER;
 wire [23:0] SAVERAM_MASK;
 wire [23:0] ROM_MASK;
-wire [23:0] spi_dma_addr;
-wire [7:0] spi_dma_sram_data;
-wire spi_dma_trig = 1'b1; //SPI_DMA_CTRL;
+wire [7:0] SD_DMA_SRAM_DATA;
+//wire SD_DMA_EN; //SPI_DMA_CTRL;
 
+sd_dma snes_sd_dma(.CLK(CLK2),
+                   .SD_DAT(SD_DAT),
+						 .SD_CLK(SD_CLK),
+						 .SD_DMA_EN(SD_DMA_EN),
+						 .SD_DMA_STATUS(SD_DMA_STATUS),
+						 .SD_DMA_SRAM_WE(SD_DMA_SRAM_WE),
+						 .SD_DMA_SRAM_DATA(SD_DMA_SRAM_DATA),
+						 .SD_DMA_NEXTADDR(SD_DMA_NEXTADDR)
+);
+						 
 dac_test snes_dac_test(.clkin(CLK2),
                        .mclk(DAC_MCLK),
 							  .lrck(DAC_LRCK),
@@ -103,10 +110,7 @@ spi snes_spi(.clk(CLK2),
              .startmessage(spi_startmessage),
              .input_data(spi_input_data),
              .byte_cnt(spi_byte_cnt),
-             .bit_cnt(spi_bit_cnt),
-             
-             .spi_dma_sck(spi_dma_sck),
-             .spi_dma_ovr(spi_dma_ovr)
+             .bit_cnt(spi_bit_cnt)
 );
 
 mcu_cmd snes_mcu_cmd(
@@ -129,26 +133,12 @@ mcu_cmd snes_mcu_cmd(
     .startmessage(spi_startmessage),
     .saveram_mask_out(SAVERAM_MASK),
     .rom_mask_out(ROM_MASK),
-    
-    .spi_dma_ovr(spi_dma_ovr),
-    .spi_dma_nextaddr(spi_dma_nextaddr),
-    .spi_dma_sram_data(spi_dma_sram_data),
-    .spi_dma_sram_we(spi_dma_sram_we)
+	 .SD_DMA_EN(SD_DMA_EN),
+	 .SD_DMA_STATUS(SD_DMA_STATUS),
+    .SD_DMA_NEXTADDR(SD_DMA_NEXTADDR),
+    .SD_DMA_SRAM_DATA(SD_DMA_SRAM_DATA),
+    .SD_DMA_SRAM_WE(SD_DMA_SRAM_WE)
 );
-
-spi_dma snes_spi_dma(
-   .clk(CLK2),
-   .spi_dma_ovr(spi_dma_ovr),              // to spi, mcu_cmd
-   .spi_dma_miso(SPI_MISO),                // to spi
-   .spi_dma_sck(spi_dma_sck),              // to spi
-   .spi_dma_trig(spi_dma_trig),            // from mcu
-   .spi_dma_nextaddr(spi_dma_nextaddr),            // to mcu_cmd?
-   .spi_dma_sram_data(spi_dma_sram_data),  // to mcu_cmd?
-   .spi_dma_sram_we(spi_dma_sram_we),      // to mcu_cmd?
-   .spi_dma_done(spi_dma_done)             // to mcu
-);
-
-assign SPI_DMA_CTRL = spi_dma_ovr ? 1'b0 : 1'bZ;
 
 // dcm1: dfs 4x
 my_dcm snes_dcm(.CLKIN(CLKIN),

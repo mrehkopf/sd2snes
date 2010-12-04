@@ -41,10 +41,11 @@ module mcu_cmd(
     output [23:0] rom_mask_out,
     
     // SPI "DMA" extension
-    input spi_dma_ovr,
-    input spi_dma_nextaddr,
-    input [7:0] spi_dma_sram_data,
-    input spi_dma_sram_we
+	 output SD_DMA_EN,
+	 input SD_DMA_STATUS,
+    input SD_DMA_NEXTADDR,
+    input [7:0] SD_DMA_SRAM_DATA,
+    input SD_DMA_SRAM_WE
     );
 
 reg [3:0] MAPPER_BUF;
@@ -56,7 +57,10 @@ reg [7:0] MCU_DATA_OUT_BUF;
 reg [7:0] MCU_DATA_IN_BUF;
 reg [1:0] mcu_nextaddr_buf;
 wire mcu_nextaddr;
-wire spi_dma_nextaddr_trig;
+
+reg SD_DMA_ENr;
+assign SD_DMA_EN = SD_DMA_ENr;
+
 reg [2:0] spi_dma_nextaddr_r;
 
 reg [1:0] SRAM_MASK_IDX;
@@ -68,18 +72,23 @@ assign spi_data_out = MCU_DATA_IN_BUF;
 initial begin
    ADDR_OUT_BUF = 0;
    spi_dma_nextaddr_r = 0;
+	SD_DMA_ENr = 0;
 end
 
 // command interpretation
 always @(posedge clk) begin
    if (cmd_ready) begin
       case (cmd_data[7:4])
-         4'h3:
+         4'h3: // select mapper
             MAPPER_BUF <= cmd_data[3:0];
+		   4'h4: // SD DMA
+			   SD_DMA_ENr <= 1;
+//			4'hE:
+			   // select memory unit
       endcase
    end else if (param_ready) begin
-      case (cmd_data[7:4])
-         4'h0:
+      case (cmd_data[7:0])
+         8'h00:
             case (spi_byte_cnt)
                32'h2: begin
                   ADDR_OUT_BUF[23:16] <= param_data;
@@ -90,7 +99,7 @@ always @(posedge clk) begin
                32'h4:
                   ADDR_OUT_BUF[7:0] <= param_data;
             endcase
-         4'h1:
+         8'h01:
             case (spi_byte_cnt)
                32'h2:
                   ROM_MASK[23:16] <= param_data;
@@ -99,7 +108,7 @@ always @(posedge clk) begin
                32'h4:
                   ROM_MASK[7:0] <= param_data;
             endcase
-         4'h2:
+         8'h02:
             case (spi_byte_cnt)
                32'h2:
                   SAVERAM_MASK[23:16] <= param_data;
@@ -108,11 +117,15 @@ always @(posedge clk) begin
                32'h4:
                   SAVERAM_MASK[7:0] <= param_data;
             endcase
-         4'h9:
+			8'h40:
+			   SD_DMA_ENr <= 1'b0;
+         8'h90:
+            MCU_DATA_OUT_BUF <= param_data;
+         8'h91:
             MCU_DATA_OUT_BUF <= param_data;
       endcase
    end
-   if (spi_dma_nextaddr_trig | (mcu_nextaddr & (cmd_data[7:5] == 3'h4) && (cmd_data[0]) && (spi_byte_cnt > (32'h1+cmd_data[4]))))
+   if (SD_DMA_NEXTADDR | (mcu_nextaddr & (cmd_data[7:5] == 3'h4) && (cmd_data[0]) && (spi_byte_cnt > (32'h1+cmd_data[4]))))
       ADDR_OUT_BUF <= ADDR_OUT_BUF + 1;
 end
 
@@ -121,6 +134,8 @@ always @(posedge clk) begin
    if (spi_bit_cnt == 3'h7)
       if (cmd_data[7:0] == 8'hF0)
          MCU_DATA_IN_BUF <= 8'hA5;
+		else if (cmd_data[7:0] == 8'hF1)
+		   MCU_DATA_IN_BUF <= {SD_DMA_STATUS, 7'b0};
       else if (cmd_data[7:0] == 8'hFF)
 		   MCU_DATA_IN_BUF <= param_data;
 		else
@@ -135,10 +150,6 @@ always @(posedge clk) begin
       mcu_nextaddr_buf <= {mcu_nextaddr_buf[0], 1'b0};
 end
 
-assign spi_dma_nextaddr_trig = (spi_dma_nextaddr_r[2:1] == 2'b01);
-always @(posedge clk) begin
-   spi_dma_nextaddr_r <= {spi_dma_nextaddr_r[1:0], spi_dma_nextaddr};
-end
 
 // r/w pulse
 always @(posedge clk) begin
@@ -159,9 +170,9 @@ end
 assign mcu_nextaddr = mcu_nextaddr_buf == 2'b01;
 
 assign mcu_read = MCU_READ_BUF;
-assign mcu_write = spi_dma_ovr ? spi_dma_sram_we : MCU_WRITE_BUF;
+assign mcu_write = SD_DMA_STATUS ? SD_DMA_SRAM_WE : MCU_WRITE_BUF;
 assign addr_out = ADDR_OUT_BUF;
-assign mcu_data_out = spi_dma_ovr ? spi_dma_sram_data : MCU_DATA_OUT_BUF;
+assign mcu_data_out = SD_DMA_STATUS ? SD_DMA_SRAM_DATA : MCU_DATA_OUT_BUF;
 assign mcu_mapper = MAPPER_BUF;
 assign mcu_sram_size = SRAM_SIZE_BUF;
 assign rom_mask_out = ROM_MASK;

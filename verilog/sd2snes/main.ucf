@@ -1,4 +1,4 @@
-NET "CLKIN" TNM_NET = CLKIN;
+NET "CLKIN" TNM_NET = "CLKIN";
 TIMESPEC TS_CLKIN = PERIOD "CLKIN" 22.579 MHz HIGH 50 %;
 NET "SNES_CS" IOSTANDARD = LVCMOS33;
 NET "SNES_READ" IOSTANDARD = LVCMOS33;
@@ -11,13 +11,13 @@ NET "CLKIN" IOSTANDARD = LVCMOS33;
 NET "SPI_SS" PULLUP;
 //NET "DCM_RST" LOC = P46;
 //NET "DCM_RST" IOSTANDARD = LVCMOS33;
-NET "IRQ_DIR" IOSTANDARD = LVCMOS33;
 NET "SNES_DATABUS_DIR" IOSTANDARD = LVCMOS33;
 NET "SNES_DATABUS_OE" IOSTANDARD = LVCMOS33;
 NET "SNES_IRQ" IOSTANDARD = LVCMOS33;
-NET "SPI_DMA_CTRL" PULLUP;
 
-# PlanAhead generated physical constraints 
+NET "ROM_CE" LOC = P172;
+NET "ROM_CE" IOSTANDARD = LVCMOS33;
+NET "ROM_CE" DRIVE = 8;
 
 NET "SNES_ADDR[0]" LOC = P119;
 NET "SNES_ADDR[10]" LOC = P146;
@@ -52,409 +52,316 @@ NET "SNES_DATA[5]" LOC = P106;
 NET "SNES_DATA[6]" LOC = P101;
 NET "SNES_DATA[7]" LOC = P97;
 
-# PlanAhead generated physical constraints 
 
 NET "CLKIN" LOC = P80;
-NET "IRQ_DIR" LOC = P113;
+// NET "RST" LOC = P113;
 NET "MCU_OVR" LOC = P92;
 
-# PlanAhead generated IO constraints 
 
 NET "MCU_OVR" IOSTANDARD = LVCMOS33;
 NET "MCU_OVR" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[0]" LOC = P166;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[0]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[0]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[10]" LOC = P197;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[10]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[10]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[11]" LOC = P196;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[11]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[11]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[12]" LOC = P2;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[12]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[12]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[13]" LOC = P194;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[13]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[13]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[14]" LOC = P200;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[14]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[14]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[15]" LOC = P184;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[15]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[15]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[16]" LOC = P199;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[16]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[16]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[17]" LOC = P11;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[17]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[17]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[18]" LOC = P3;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[18]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[18]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[19]" LOC = P4;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[19]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[19]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[1]" LOC = P168;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[1]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[1]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[20]" LOC = P191;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[20]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[20]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[21]" LOC = P203;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[21]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[21]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[22]" LOC = P198;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[22]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[22]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[2]" LOC = P171;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[2]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[2]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[3]" LOC = P165;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[3]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[3]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[4]" LOC = P169;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[4]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[4]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[5]" LOC = P18;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[5]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[5]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[6]" LOC = P175;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[6]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[6]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[7]" LOC = P167;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[7]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[7]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[8]" LOC = P205;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[8]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[8]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_ADDR[9]" LOC = P204;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_ADDR[9]" IOSTANDARD = LVCMOS33;
 NET "ROM_ADDR[9]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_BHE" LOC = P161;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_BHE" IOSTANDARD = LVCMOS33;
 NET "ROM_BHE" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_BLE" LOC = P156;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_BLE" IOSTANDARD = LVCMOS33;
 NET "ROM_BLE" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
+NET "IRQ_DIR" LOC = P113;
+NET "IRQ_DIR" IOSTANDARD = LVCMOS33;
+NET "IRQ_DIR" DRIVE = 8;
 
-NET "ROM_CE" LOC = P172;
-
-# PlanAhead generated IO constraints 
-
-NET "ROM_CE" IOSTANDARD = LVCMOS33;
-NET "ROM_CE" DRIVE = 8;
-
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[0]" LOC = P176;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[0]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[0]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[10]" LOC = P15;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[10]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[10]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[11]" LOC = P12;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[11]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[11]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[12]" LOC = P10;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[12]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[12]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[13]" LOC = P7;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[13]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[13]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[14]" LOC = P9;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[14]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[14]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[15]" LOC = P5;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[15]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[15]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[1]" LOC = P178;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[1]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[1]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[2]" LOC = P181;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[2]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[2]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[3]" LOC = P182;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[3]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[3]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[4]" LOC = P183;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[4]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[4]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[5]" LOC = P187;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[5]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[5]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[6]" LOC = P185;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[6]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[6]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[7]" LOC = P189;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[7]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[7]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[8]" LOC = P16;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[8]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[8]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_DATA[9]" LOC = P13;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_DATA[9]" IOSTANDARD = LVCMOS33;
 NET "ROM_DATA[9]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_OE" LOC = P162;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_OE" IOSTANDARD = LVCMOS33;
 NET "ROM_OE" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "ROM_WE" LOC = P190;
 
-# PlanAhead generated IO constraints 
 
 NET "ROM_WE" IOSTANDARD = LVCMOS33;
 NET "ROM_WE" DRIVE = 8;
@@ -507,14 +414,12 @@ NET "SNES_ADDR[8]" DRIVE = 8;
 NET "SNES_ADDR[9]" IOSTANDARD = LVCMOS33;
 NET "SNES_ADDR[9]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "SNES_CPU_CLK" LOC = P94;
 NET "SNES_CS" LOC = P116;
 NET "SNES_DATABUS_DIR" LOC = P111;
 NET "SNES_DATABUS_OE" LOC = P109;
 
-# PlanAhead generated IO constraints 
 
 NET "SNES_DATA[0]" IOSTANDARD = LVCMOS33;
 NET "SNES_DATA[0]" DRIVE = 8;
@@ -533,79 +438,75 @@ NET "SNES_DATA[6]" DRIVE = 8;
 NET "SNES_DATA[7]" IOSTANDARD = LVCMOS33;
 NET "SNES_DATA[7]" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "SNES_IRQ" LOC = P114;
 NET "SNES_READ" LOC = P115;
 NET "SNES_REFRESH" LOC = P155;
 NET "SNES_WRITE" LOC = P95;
-NET "SPI_DMA_CTRL" LOC = P83;
-
-# PlanAhead generated IO constraints 
-
-NET "SPI_DMA_CTRL" IOSTANDARD = LVCMOS33;
-NET "SPI_DMA_CTRL" DRIVE = 8;
-
-# PlanAhead generated physical constraints 
 
 NET "SPI_MISO" LOC = P72;
 
-# PlanAhead generated IO constraints 
 
 NET "SPI_MISO" IOSTANDARD = LVCMOS33;
 NET "SPI_MISO" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "SPI_MOSI" LOC = P74;
 
-# PlanAhead generated IO constraints 
 
 NET "SPI_MOSI" IOSTANDARD = LVCMOS33;
 NET "SPI_MOSI" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "SPI_SCK" LOC = P71;
 
-# PlanAhead generated IO constraints 
 
 NET "SPI_SCK" IOSTANDARD = LVCMOS33;
 NET "SPI_SCK" DRIVE = 8;
 NET "SPI_SCK" PULLUP;
 
-# PlanAhead generated physical constraints 
 
 NET "SPI_SS" LOC = P68;
 
-# PlanAhead generated IO constraints 
 
 NET "SPI_SS" IOSTANDARD = LVCMOS33;
 NET "SPI_SS" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "DAC_LRCK" LOC = P77;
 
-# PlanAhead generated IO constraints 
 
 NET "DAC_LRCK" IOSTANDARD = LVCMOS33;
 NET "DAC_LRCK" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "DAC_MCLK" LOC = P76;
 
-# PlanAhead generated IO constraints 
 
 NET "DAC_MCLK" IOSTANDARD = LVCMOS33;
 NET "DAC_MCLK" DRIVE = 8;
 
-# PlanAhead generated physical constraints 
 
 NET "DAC_SDOUT" LOC = P78;
 
-# PlanAhead generated IO constraints 
 
 NET "DAC_SDOUT" IOSTANDARD = LVCMOS33;
 NET "DAC_SDOUT" DRIVE = 8;
+
+# PlanAhead Generated physical constraints 
+
+NET "SD_CLK" LOC = P64;
+NET "SD_CMD" LOC = P67;
+NET "SD_DAT[0]" LOC = P65;
+NET "SD_DAT[1]" LOC = P79;
+NET "SD_DAT[2]" LOC = P62;
+NET "SD_DAT[3]" LOC = P63;
+
+# PlanAhead Generated IO constraints 
+
+NET "SD_CLK" IOSTANDARD = LVCMOS33;
+NET "SD_CMD" IOSTANDARD = LVCMOS33;
+NET "SD_DAT[0]" IOSTANDARD = LVCMOS33;
+NET "SD_DAT[1]" IOSTANDARD = LVCMOS33;
+NET "SD_DAT[2]" IOSTANDARD = LVCMOS33;
+NET "SD_DAT[3]" IOSTANDARD = LVCMOS33;

@@ -20,7 +20,7 @@
 
 //////////////////////////////////////////////////////////////////////////////////
 module spi(input clk,
-           inout SCK,
+           input SCK,
            input MOSI,
            inout MISO,
            input SSEL,
@@ -32,44 +32,21 @@ module spi(input clk,
            output startmessage,
            input [7:0] input_data,
            output [31:0] byte_cnt,
-           output [2:0] bit_cnt,
+           output [2:0] bit_cnt
 
-// spi "DMA" extension           
-           input spi_dma_sck,
-           input spi_dma_ovr);
+// SD "DMA" extension           
+           /*input sd_dma_sck,
+           input sd_dma_ovr*/);
            
 reg [7:0] cmd_data_r;
 reg [7:0] param_data_r;
 
 // sync SCK to the FPGA clock using a 3-bits shift register
-// SCK is an OUTPUT in "DMA" mode
-reg [2:0] spi_dma_ovr_r;
-reg [9:0] spi_dma_leadout_cnt;
-reg spi_dma_leadout;
-initial begin 
-   spi_dma_ovr_r = 3'b000;
-   spi_dma_leadout_cnt <= 10'b0000000000;
-end
-always @(posedge clk) spi_dma_ovr_r <= {spi_dma_ovr_r[1:0], spi_dma_ovr};
-wire spi_dma_ovr_falling = (spi_dma_ovr_r[1:0] == 2'b10);
-always @(posedge clk) begin
-   if (spi_dma_ovr_falling) begin
-      spi_dma_leadout <= 1;
-      spi_dma_leadout_cnt <= 0;
-   end else begin
-      if(spi_dma_leadout_cnt == 100)
-         spi_dma_leadout <= 0;
-      if(spi_dma_leadout)
-         spi_dma_leadout_cnt <= spi_dma_leadout_cnt + 1;
-   end   
-end
-assign SCK = spi_dma_ovr ? spi_dma_sck : spi_dma_leadout ? 1'b0 : 1'bZ;
-reg [2:0] SCKr;  always @(posedge clk) SCKr <= {SCKr[1:0], SCK};
-wire SCK_risingedge = spi_dma_ovr ? 0 : (SCKr[1:0]==2'b01);  // now we can detect SCK rising edges
-wire SCK_fallingedge = spi_dma_ovr ? 0 : (SCKr[1:0]==2'b10);  // and falling edges
+reg [2:0] SCKr;
+always @(posedge clk) SCKr <= {SCKr[1:0], SCK};
 
-// wire SCK_risingedge = spi_dma_ovr ? 0 : ({SCKr[0], SCK}==2'b01);  // now we can detect SCK rising edges
-// wire SCK_fallingedge = spi_dma_ovr ? 0 : ({SCKr[0], SCK}==2'b10);  // and falling edges
+wire SCK_risingedge = (SCKr[1:0]==2'b01);  // now we can detect SCK rising edges
+wire SCK_fallingedge = (SCKr[1:0]==2'b10);  // and falling edges
 
 // same thing for SSEL
 reg [2:0] SSELr;  always @(posedge clk) SSELr <= {SSELr[1:0], SSEL};
@@ -130,8 +107,7 @@ always @(posedge clk) begin
    end
 end
 
-// Slave out is an INPUT in "DMA" mode
-assign MISO = spi_dma_ovr ? 1'bZ : SSEL_active ? byte_data_sent[7] : 1'bZ;  // send MSB first
+assign MISO = SSEL_active ? byte_data_sent[7] : 1'bZ;  // send MSB first
 
 reg cmd_ready_r;
 reg param_ready_r;
