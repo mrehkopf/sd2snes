@@ -224,9 +224,9 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
                 _delay_ms(30); */
               }
             } else {
-              TCHAR* sfn = fno.fname;
-              while(*sfn != 0) {
-                crc += crc32_update(crc, *((unsigned char*)sfn++));
+              TCHAR* fn2 = fn;
+              while(*fn2 != 0) {
+                crc += crc32_update(crc, *((unsigned char*)fn2++));
               }
             }
           }

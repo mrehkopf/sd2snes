@@ -59,9 +59,10 @@ int main(void) {
   uart_init();
   fpga_spi_init();
   spi_preinit();
+  led_init();
  /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
-
+led_pwm();
   sdn_init();
   fpga_spi_init();
   printf("\n\nsd2snes mk.2\n============\nfw ver.: " VER "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
@@ -176,7 +177,7 @@ restart:
         }
         set_mcu_ovr(0);
         snes_reset(1);
-        delay_ms(100);
+        delay_ms(1);
         snes_reset(0);
         break;
       case SNES_CMD_SETRTC:
@@ -221,7 +222,7 @@ restart:
       reset_count=0;
       set_mcu_ovr(1);
       snes_reset(1);
-      delay_ms(100);
+      delay_ms(1);
       if(romprops.ramsize_bytes && fpga_test() == FPGA_TEST_TOKEN) {
         writeled(1);
         save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
