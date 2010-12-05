@@ -112,3 +112,4 @@ hdma_math	.byt 0
 		.byt 0,0
 		.byt 0
 infloop		.byt 0,0  ; to be filled w/ 80 FE
+wram_fadeloop	.byt 0

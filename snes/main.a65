@@ -146,7 +146,11 @@ setup_gfx:
 	sta infloop
 	lda #$fe
 	sta infloop+1
-
+	lda #^wram_fadeloop
+	ldx #!wram_fadeloop
+	stx $2181
+	sta $2183
+	DMA0(#$00, #$22, #^fadeloop, #!fadeloop, #$80);
 	rts
 
 tests:
@@ -283,3 +287,27 @@ snes_init:
 
 	rts
 
+fadeloop:
+	sep #$30 : .as : .xs
+	ldx #$0f
+	and #$00
+	pha
+	plb
+fadeloop_start
+	lda $4212
+	and #$80
+	bne fadeloop_start
+-	lda $4212
+	and #$80
+	bne +
+	bra -
++	txa
+	dec
+	sta $2100
+	tax
+	bne fadeloop_start
+	stz $2100
+-	bra -
+
+fadeloop_end:
+	.byt $ff

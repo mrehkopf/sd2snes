@@ -481,7 +481,7 @@ select_file:
 	lda #$00
 	sta @$4200
 	cli
-	jsl @infloop
+	jsl @wram_fadeloop
 	rts
 
 select_dir: ; y = direntry ptr
