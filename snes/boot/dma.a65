@@ -1,0 +1,30 @@
+
+dma0:
+	rep #$10 : .xl
+	sep #$20 : .as
+	lda dma_mode
+	sta $4300
+	lda dma_b_reg
+	sta $4301
+	lda dma_a_bank
+	ldx dma_a_addr
+	stx $4302
+	sta $4304
+	ldx dma_len
+	stx $4305
+	lda #$01
+	sta $420b
+	rts
+
+setup_hdma:
+	sep #$20 : .as
+	rep #$10 : .xl
+	stz $420b
+	stz $420c
+
+;	lda #$06
+;	sta $420c		;enable HDMA ch. 1+2
+	stz $4200		;disable V-BLANK NMI
+	rts
+
+

@@ -1,0 +1,284 @@
+#include "memmap.i65"
+#include "dma.i65"
+
+GAME_MAIN:
+	sep #$20 : .as
+	stz $4200 ; inhibit VBlank NMI
+	jsr killdma
+	lda #$01
+	sta $420d ; fast cpu
+	jsr snes_init
+	jsr setup_gfx
+	jsr colortest
+	jsr setup_hdma
+	jsr tests
+
+	; copy routines to WRAM
+	lda #^printloop_wram
+	ldx #!printloop_wram
+	sta $2183
+	stx $2181
+	DMA0(#$00, #$6F, #^printloop, #!printloop, #$80);
+
+	lda #^loprint_wram
+	ldx #!loprint_wram
+	sta $2183
+	stx $2181
+	DMA0(#$00, #$4F, #^loprint, #!loprint, #$80);
+
+	jsl @printloop_wram
+	
+printloop
+	rep #$10 : .xl
+	sep #$20 : .as
+	lda #$00
+	sta @print_x
+	lda #13
+	sta @print_y
+	lda #^MCU_TXT
+	sta @print_bank
+	rep #$20 : .al
+	lda #!MCU_TXT
+	sta @print_src
+	sep #$20 : .as
+	lda #$00
+	sta @print_pal
+	jsr loprint_wram
+-	lda @$4212
+	and #$80
+	bne -
+-	lda @$4212
+	and #$80
+	beq -
+	rep #$20 : .al
+        lda #!BG1_TILE_BASE
+        sta $2116
+	sep #$20 : .as
+	lda #$01
+	sta $4300
+	lda #$18
+	sta $4301
+	lda #^BG1_TILE_BUF
+	sta $4304
+	ldx #!BG1_TILE_BUF
+	stx $4302
+	ldx #36*64
+	stx $4305
+	lda #$01
+	sta $420b
+	bra printloop
+printloop_end
+
+	cli
+	stz $4200
+	jmp @infloop	;infinite loop in WRAM
+
+killdma:
+	stz $420b
+	stz $420c
+	stz $4310
+	stz $4311
+	stz $4312
+	stz $4313
+	stz $4314
+	stz $4320
+	stz $4321
+	stz $4322
+	stz $4323
+	stz $4324
+	stz $4330
+	stz $4331
+	stz $4332
+	stz $4333
+	stz $4334
+	stz $4340
+	stz $4341
+	stz $4342
+	stz $4343
+	stz $4344
+	stz $4350
+	stz $4351
+	stz $4352
+	stz $4353
+	stz $4354
+	rts
+
+
+
+
+waitblank:
+-	lda $4212
+	and #$80
+	bne -
+-	lda $4212
+	and #$80
+	beq -
+	rts
+
+colortest:
+	sep #$20 : .as
+	rep #$10 : .xl
+	stz $2130
+	rts
+
+setup_gfx:
+	sep #$20 : .as
+	rep #$10 : .xl
+	stz $4200
+	stz $420b
+	stz $420c
+;clear tilemap buffers
+	ldx #$B000
+	stx $2181
+	lda #$01
+	sta $2183
+	DMA0(#$08, #32*29*2, #^zero, #!zero, #$80)
+
+;copy 2bpp font
+	ldx #$0000
+	stx $2116
+	DMA0(#$01, #$800, #^font7, #!font7, #$18)
+
+;clear BG1 tilemap
+	ldx #BG1_TILE_BASE
+	stx $2116
+	DMA0(#$09, #32*29*2, #^zero, #!zero, #$18)
+
+;clear OAM tables
+	ldx #$0000
+	stx $2102
+	DMA0(#$08, #544, #^zero, #!zero, #$04)
+
+;set palette
+	stz $2121
+	DMA0(#$00, #$10, #^palette, #!palette, #$22)
+
+	rts
+
+tests:
+	sep #$20 : .as		;8-bit accumulator
+	rep #$10 : .xl		;16-bit index
+	lda #$00		;mode 0
+	sta $2105
+	lda #$58		;Tilemap addr 0xB000
+	ora #$02		;SC size 32x64
+	sta $2107		;for BG1
+	lda #$40		;chr base addr:
+	sta $210b		;BG1=0x0000, BG2=0x8000
+	lda #$01		;enable BG1 
+	sta $212c		;BG Main
+	lda #$01		;enable none 
+	sta $212d		;BG Sub
+	lda #$00
+	sta $2130
+	stz $2121
+	lda #$0f
+	sta $2100		;screen on, full brightness
+	rts
+	
+snes_init:
+	sep #$20 : .as		;8-bit accumulator
+	rep #$10 : .xl		;16-bit index
+	stz $4200		;
+	lda #$ff
+	sta $4201		;
+	stz $4202		;
+	stz $4203		;
+	stz $4204		;
+	stz $4205		;
+	stz $4206		;
+	stz $4207		;
+	stz $4208		;
+	stz $4209		;
+	stz $420a		;
+	stz $420b		;
+	stz $420c		;
+	lda #$00
+	sta $420d		; FAAAAAST
+	lda #$8f
+	sta $2100		;INIDISP: force blank
+	lda #$03		; 8x8+16x16; name=0; base=3
+	sta $2101		;
+	stz $2102		;
+	stz $2103		;
+;	stz $2104		; (OAM Data?!)
+;	stz $2104		; (OAM Data?!)
+	stz $2105		;
+	stz $2106		;
+	stz $2107		;
+	stz $2108		;
+	stz $2109		;
+	stz $210a		;
+	stz $210b		;
+	stz $210c		;
+	stz $210d		;
+	stz $210d		;
+	stz $210e		;
+	stz $210e		;
+	stz $210f		;
+	stz $210f		;
+	lda #$05
+	sta $2110		;
+	stz $2110		;
+	stz $2111		;
+	stz $2111		;
+	stz $2112		;
+	stz $2112		;
+	stz $2113		;
+	stz $2113		;
+	stz $2114		;
+	stz $2114		;
+	lda #$80		
+	sta $2115		;
+	stz $2116		;
+	stz $2117		;
+;	stz $2118		;(VRAM Data?!)
+;	stz $2119		;(VRAM Data?!)
+	stz $211a		;
+	stz $211b		;
+	lda #$01
+	sta $211b		;
+	stz $211c		;
+	stz $211c		;
+	stz $211d		;
+	stz $211d		;
+	stz $211e		;
+	sta $211e		;
+	stz $211f		;
+	stz $211f		;
+	stz $2120		;
+	stz $2120		;
+	stz $2121		;
+;	stz $2122		; (CG Data?!)
+;	stz $2122		; (CG Data?!)
+	stz $2123		;
+	stz $2124		;
+	stz $2125		;
+	stz $2126		;
+	stz $2127		;
+	stz $2128		;
+	stz $2129		;
+	stz $212a		;
+	stz $212b		;
+	stz $212c		;
+	stz $212d		;
+	stz $212e		;
+	lda #$30
+	sta $2130		;
+	stz $2131		;
+	lda #$e0
+	sta $2132		;
+	stz $2133		;
+;clear WRAM lower page
+;        ldx #$0200
+;        stx $2181
+;        lda #$00
+;        sta $2183
+;        DMA0(#$08, #$FF00, #^zero, #!zero, #$80)
+;        ldx #$0000
+;        stx $2181
+;	lda #$00
+;	sta $2183
+;        DMA0(#$08, #$1e0, #^zero, #!zero, #$80)
+
+	rts

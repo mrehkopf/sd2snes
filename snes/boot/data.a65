@@ -1,0 +1,41 @@
+.data
+;don't anger the stack!
+;----------parameters for text output----------
+print_x	.byt 0		;x coordinate
+	.byt 0
+print_y	.byt 0		;y coordinate
+	.byt 0
+print_src	.word 0	;source data address
+print_bank	.byt 0	;source data bank
+print_pal	.word 0	;palette number for text output
+print_temp	.word 0 ;work variable
+print_count	.byt 0	;how many characters may be printed?
+print_count_tmp .byt 0	;work variable
+print_done	.word 0  ;how many characters were printed?
+;----------parameters for dma----------
+dma_a_bank	.byt 0
+dma_a_addr	.word 0
+dma_b_reg	.byt 0
+dma_len		.word 0
+dma_mode	.byt 0
+
+;----------state information----------
+isr_done	.byt 0  ; isr done flag
+;----------menu layout/system constants (224/448)
+textdmasize	.word 0 ; number of bytes to copy each frame
+
+infloop		.byt 0,0  ; to be filled w/ 80 FE
+
+printloop_wram	.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+loprint_wram	.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

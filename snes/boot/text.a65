@@ -1,0 +1,47 @@
+.text
+#include "memmap.i65"
+loprint:
+	rep #$30 : .xl : .al
+	lda !print_x
+	and #$00ff
+	asl ;double the offset for WRAM addressing
+	clc
+	adc #!BG1_TILE_BUF
+	sta !print_temp
+	lda !print_y
+	and #$00ff
+	asl
+	asl
+	asl
+	asl
+	asl
+	asl ;double the offset for WRAM addressing
+	clc
+	adc !print_temp
+; we need to transfer to WRAM and from there to VRAM via DMA during VBLANK
+; because VRAM can only be accessed during VBLANK and forced blanking.
+	sta @$2181
+	sep #$20 : .as
+	lda #$7f ;we really only need bit 0. full bank given for clarity
+	sta @$2183
+	ldx !print_src
+	lda !print_bank
+	pha 
+	plb
+loprint_loop_inner
+	lda !0,x
+	beq loprint_end
+	sta @$2180
+	lda #$00
+	adc #$00
+	ora #$20
+	sta @$2180
+	inx
+	bra loprint_loop_inner
+loprint_end
+	lda #$00
+	pha
+	plb
+	rts
+loprint_endend
+	.byt $ff

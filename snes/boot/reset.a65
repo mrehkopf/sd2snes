@@ -1,0 +1,34 @@
+; This file is part of the snescom-asm demo - a demo of how to build a SNES program.
+; See http://bisqwit.iki.fi/source/snescom.html for details.
+
+#include "memmap.i65"
+#include "dma.i65"
+
+#define TILE_ADDR_REG_VAL(addr, scsize) \
+          (((addr & $FC00) >> 8) + scsize)
+#define BMAP_ADDR_REG_VAL(addr, addr2) \
+          (((addr & $F000) >> 12) | (((addr2 & $F000) >> 12) << 4))
+
+; NMI - called on VBlank
+NMI_ROUTINE:
+        sep #$20 : .as
+	rep #$10 : .xl
+	lda #$00
+	pha
+	plb
+        lda $4210
+
+	ldx #BG1_TILE_BASE
+	stx $2116
+	DMA0(#$01, #36*64, #^BG1_TILE_BUF, #!BG1_TILE_BUF, #$18)
+
+	lda #$01
+	sta isr_done
+        rtl
+
+; IRQ - called when triggered
+IRQ_ROUTINE:
+        sep #$20 : .as
+        lda $4211  ;Acknowledge irq
+        rtl
+

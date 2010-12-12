@@ -1,0 +1,17 @@
+#if 0 /* #if0'd because it's #included, and those don't get parsed properly by snescom */
+; This file is part of the snescom-asm demo - a demo of how to build a SNES program.
+; See http://bisqwit.iki.fi/source/snescom.html for details.
+#endif
+
+/* These must be defined as constants, because they're used
+ * in calculation that is sent to PPU as parameters */
+
+#define BG1_TILE_BASE	$5800
+#define BG2_TILE_BASE	$5000
+
+#define OAM_TILE_BASE	$6000
+
+#define BG1_TILE_BUF	$7FB000
+#define BG2_TILE_BUF	$7FA000
+
+#define MCU_TXT		$307000
