@@ -44,7 +44,7 @@ reg [7:0] MCU_OUT_MEM;
 
 wire [7:0] FROM_ROM_BYTE;
 
-assign SNES_DATA = SNES_READ ? 8'bZ : SNES_OUT_MEM;                   
+assign SNES_DATA = SNES_READ ? 8'bZ : (!MCU_OVR ? 8'h00 : SNES_OUT_MEM);
 
 assign FROM_ROM_BYTE = (ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8]);
 
