@@ -67,6 +67,15 @@ setup_hdma:
 	sty $4352
 	sta $4354
 
+	lda #$01		;A to B; direct; 1x two reg
+	sta $4360		;ch. 5 for color math
+	lda #$26		;2126 + 2127 = window 1
+	sta $4361
+	lda #^hdma_window
+	ldy #!hdma_window
+	sty $4362
+	sta $4364
+
 ;	lda #$06
 ;	sta $420c		;enable HDMA ch. 1+2
 	lda #$81		;VBlank NMI + Auto Joypad Read

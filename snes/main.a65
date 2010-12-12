@@ -3,23 +3,24 @@
 
 GAME_MAIN:
 	sep #$20 : .as
-	lda #$01
-	sta $420d ; fast cpu
-	sep #$20 : .as
-	jsr snes_init
-	jsr setup_gfx
-	jsr colortest
-	jsr setup_hdma
-	jsr tests
-	sep #$20 : .as
 	lda #$00
 	sta @AVR_CMD
 	rep #$20 : .al
 	lda #$0000
 	sta @AVR_PARAM
 	sta @AVR_PARAM+2
-	jsr menu_init
 	sep #$20 : .as
+	stz $4200 ; inhibit VBlank NMI
+	jsr killdma
+	jsr waitblank
+	jsr snes_init
+	lda #$01
+	sta $420d ; fast cpu
+	jsr setup_gfx
+	jsr colortest
+	jsr setup_hdma
+	jsr menu_init
+	jsr tests
 	sep #$20 : .as
 -	lda @$C00000
 	lda @$D00000
@@ -35,6 +36,53 @@ GAME_MAIN:
 	stz $4200
 	jmp @infloop	;infinite loop in WRAM
 
+killdma:
+	stz $420b
+	stz $420c
+	stz $4310
+	stz $4311
+	stz $4312
+	stz $4313
+	stz $4314
+	stz $4320
+	stz $4321
+	stz $4322
+	stz $4323
+	stz $4324
+	stz $4330
+	stz $4331
+	stz $4332
+	stz $4333
+	stz $4334
+	stz $4340
+	stz $4341
+	stz $4342
+	stz $4343
+	stz $4344
+	stz $4350
+	stz $4351
+	stz $4352
+	stz $4353
+	stz $4354
+	stz $4360
+	stz $4361
+	stz $4362
+	stz $4363
+	stz $4364
+	rts
+
+
+
+
+waitblank:
+-	lda $4212
+	and #$80
+	bne -
+-	lda $4212
+	and #$80
+	beq -
+	rts
+
 colortest:
 	sep #$20 : .as
 	rep #$10 : .xl
@@ -44,6 +92,7 @@ colortest:
 setup_gfx:
 	sep #$20 : .as
 	rep #$10 : .xl
+	stz $4200
 	stz $420b
 	stz $420c
 ;clear tilemap buffers
@@ -150,7 +199,7 @@ setup_gfx:
 	ldx #!wram_fadeloop
 	stx $2181
 	sta $2183
-	DMA0(#$00, #$22, #^fadeloop, #!fadeloop, #$80);
+	DMA0(#$00, #$56, #^fadeloop, #!fadeloop, #$80);
 	rts
 
 tests:
@@ -170,9 +219,18 @@ tests:
 	sta $212c		;BG Main
 	lda #$13		;enable BG1+BG2+OBJ 
 	sta $212d		;BG Sub
+	lda #$20		;Window 1 for color
+	sta $2125		;Color window
+	lda #$01		;cut off leftmost subscreen pixel garbage
+	sta $2126
+	lda #$fe
+	sta $2127
 	jsr setup_224
-	lda #$00
+	lda #$10
 	sta $2130
+	lda #$1f
+	sta $212e
+	sta $212f
 	stz $2121
 	lda #$0f
 	sta $2100		;screen on, full brightness
@@ -183,6 +241,20 @@ tests:
 snes_init:
 	sep #$20 : .as		;8-bit accumulator
 	rep #$10 : .xl		;16-bit index
+	stz $4200		;
+	lda #$ff
+	sta $4201		;
+	stz $4202		;
+	stz $4203		;
+	stz $4204		;
+	stz $4205		;
+	stz $4206		;
+	stz $4207		;
+	stz $4208		;
+	stz $4209		;
+	stz $420a		;
+	stz $420b		;
+	stz $420c		;
 	lda #$01
 	sta $420d		; FAAAAAST
 	lda #$8f
@@ -253,26 +325,13 @@ snes_init:
 	stz $212c		;
 	stz $212d		;
 	stz $212e		;
+	stz $212f		;
 	lda #$30
 	sta $2130		;
 	stz $2131		;
 	lda #$e0
 	sta $2132		;
 	stz $2133		;
-	stz $4200		;
-	lda #$ff
-	sta $4201		;
-	stz $4202		;
-	stz $4203		;
-	stz $4204		;
-	stz $4205		;
-	stz $4206		;
-	stz $4207		;
-	stz $4208		;
-	stz $4209		;
-	stz $420a		;
-	stz $420b		;
-	stz $420c		;
 ;clear WRAM lower page
 ;        ldx #$0200
 ;        stx $2181
@@ -293,6 +352,19 @@ fadeloop:
 	and #$00
 	pha
 	plb
+	lda #$7f
+	sta hdma_math_selection+2
+	lda #$30
+	sta hdma_math_selection+1
+	lda #$bf
+	sta hdma_math+1
+	sta hdma_math+4
+	sta hdma_math+16
+	lda #$e0
+	sta hdma_math+2
+	sta hdma_math+5
+	sta hdma_math+17
+	stz $2126
 fadeloop_start
 	lda $4212
 	and #$80
@@ -301,7 +373,13 @@ fadeloop_start
 	and #$80
 	bne +
 	bra -
-+	txa
++	lda hdma_math+2
+	inc
+	inc
+	sta hdma_math+2
+	sta hdma_math+5
+	sta hdma_math+17
+	txa
 	dec
 	sta $2100
 	tax

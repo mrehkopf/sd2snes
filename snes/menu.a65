@@ -544,8 +544,8 @@ setup_224_adjsel
 	sta barstep
 	ora #$08
 	sta $2133
-	lda #$0a
-	sta hdma_math+6
+	lda #$08
+	sta hdma_math_selection
 	lda #$01
 	sta menu_dirty
 	lda #^space64
@@ -585,8 +585,8 @@ setup_448:
 	sta barstep
 	ora #$08
 	sta $2133
-	lda #$06
-	sta hdma_math+6
+	lda #$04
+	sta hdma_math_selection
 	lda #$01
 	sta menu_dirty
 	plp

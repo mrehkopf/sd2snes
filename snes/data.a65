@@ -104,6 +104,13 @@ hdma_math	.byt 0
 		.byt 0,0
 		.byt 0
 		.byt 0,0
+hdma_math_upperborder
+		.byt 0
+		.byt 0,0
+hdma_math_selection
+		.byt 0
+		.byt 0,0
+hdma_math_lowerborder
 		.byt 0
 		.byt 0,0
 		.byt 0
@@ -111,5 +118,24 @@ hdma_math	.byt 0
 		.byt 0
 		.byt 0,0
 		.byt 0
+
+hdma_window	.byt 0
+		.byt 0,0
+		.byt 0
+		.byt 0,0
+		.byt 0
+		.byt 0,0
+		.byt 0
+		.byt 0,0
+		.byt 0
+		.byt 0,0
+		.byt 0
+		.byt 0,0
+		.byt 0
+		.byt 0,0
+		.byt 0
+		.byt 0,0
+		.byt 0
+
 infloop		.byt 0,0  ; to be filled w/ 80 FE
 wram_fadeloop	.byt 0

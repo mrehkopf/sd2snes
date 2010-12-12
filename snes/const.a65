@@ -75,12 +75,20 @@ hdma_scroll_src	.byt 64
 		.byt $01
 		.byt $fc, $00, $05, $00
 		.byt $00
-hdma_math_src	.byt 1
-		.byt $00, $e0
+; colors:
+; upper border: + #547fff -> 10,15,31
+; selection bar:+ #5400ff -> 10,0,31
+; lower border: 1/2 #5400ff
+hdma_math_src	.byt 1 ; these are filled in...
+		.byt $00, $2a
+		.byt 1 ; ...to move the color bar
+		.byt $00, $9f
 		.byt 1
-		.byt $00, $e0
-		.byt 10
-		.byt $70, $ff
+		.byt $33, $4f
+		.byt 8
+		.byt $33, $40
+		.byt 1
+		.byt $73, $00
 		.byt 1
 		.byt $00, $e0
 		.byt 0
@@ -93,7 +101,6 @@ oam_data_l	.byt 75, 56, 31, $0e
 		.byt 115, 56, 5, $0e
 		.byt 123, 56, 6, $0e
 		.byt 131, 56, 7, $0e
-;x shift left due to mode switch glitch
 		.byt 75, 64, 8, $0e
 		.byt 83, 64, 9, $0e
 		.byt 91, 64, 10, $0e
