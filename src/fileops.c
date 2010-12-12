@@ -28,13 +28,23 @@
 #include "uart.h"
 #include "ff.h"
 #include "fileops.h"
+#include "diskio.h"
 
 /*
 WCHAR ff_convert(WCHAR w, UINT dir) {
   return w;	
 }*/
+
+int newcard;
+
 void file_init() {
   file_res=f_mount(0, &fatfs);
+  newcard = 0;
+}
+
+void file_reinit(void) {
+  disk_init();
+  file_init();
 }
 
 void file_open_by_filinfo(FILINFO* fno) {
@@ -42,6 +52,10 @@ void file_open_by_filinfo(FILINFO* fno) {
 }
 
 void file_open(uint8_t* filename, BYTE flags) {
+  if (disk_state == DISK_CHANGED) {
+    file_reinit();
+    newcard = 1;
+  }
   file_res = f_open(&file_handle, (TCHAR*)filename, flags);
   file_block_off = sizeof(file_buf);
   file_block_max = sizeof(file_buf);

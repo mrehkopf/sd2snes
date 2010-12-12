@@ -37,7 +37,7 @@ int fpga_get_initb(void);
 void fpga_init(void);
 void fpga_postinit(void);
 void fpga_pgm(uint8_t* filename);
-
+void fpga_rompgm(void);
 void set_mcu_ovr(uint8_t val);
 
 

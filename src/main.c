@@ -76,11 +76,52 @@ led_pwm();
   LPC_TIM3->MR0=1;
   LPC_TIM3->TCR=1;
   fpga_init();
-  fpga_pgm((uint8_t*)"/main.bit.rle");
+//  fpga_pgm((uint8_t*)"/main.bit.rle");
+  fpga_rompgm();
 restart:
+  if(disk_state == DISK_CHANGED) {
+    sdn_init();
+    newcard = 1;
+  }
+  load_bootrle(SRAM_MENU_ADDR);
+  set_saveram_mask(0x1fff);
+  set_rom_mask(0x3fffff);
+  set_mapper(0x7);
+  set_mcu_ovr(0);
+  snes_reset(0);
+  delay_ms(15); /* allow CIC to settle */
+
+  while(get_cic_state() == CIC_FAIL) {
+    rdyled(0);
+    readled(0);
+    writeled(0);
+    delay_ms(500);
+    rdyled(1);
+    readled(1);
+    writeled(1);
+    delay_ms(500);
+  }
+  /* some sanity checks */
+  uint8_t card_go = 0;
+  while(!card_go) {
+    if(disk_status(0) & (STA_NOINIT|STA_NODISK)) {
+      snes_bootprint("            No Card!            \0");
+      while(disk_status(0) & (STA_NOINIT|STA_NODISK));
+      delay_ms(200);
+    }
+    file_open((uint8_t*)"/sd2snes/menu.bin", FA_READ);
+    if(file_status != FILE_OK) {
+      snes_bootprint("  /sd2snes/menu.bin not found!  \0");
+      while(disk_status(0) == RES_OK);
+    } else {
+      card_go = 1;
+    }
+    file_close();
+  }
+  snes_bootprint("           Loading ...          \0");
   if(get_cic_state() == CIC_PAIR) {
     printf("PAIR MODE ENGAGED!\n");
-    cic_pair(CIC_NTSC, CIC_NTSC);
+    cic_pair(CIC_PAL, CIC_PAL);
   }
   rdyled(1);
   readled(0);
@@ -94,10 +135,9 @@ restart:
 
   uint32_t mem_dir_id = sram_readlong(SRAM_DIRID);
   uint32_t mem_magic = sram_readlong(SRAM_SCRATCHPAD);
-
   printf("mem_magic=%lx mem_dir_id=%lx saved_dir_id=%lx\n", mem_magic, mem_dir_id, saved_dir_id);
-  mem_magic=0x12938712; /* always rescan card for now */
-  if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id)) {
+  if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id) || (newcard)) {
+    newcard = 0;
     /* generate fs footprint (interesting files only) */
     uint32_t curr_dir_id = scan_dir(fs_path, 0, 0);
     printf("curr dir id = %lx\n", curr_dir_id);
@@ -107,6 +147,7 @@ restart:
       /* rebuild database */
       printf("saved dir id = %lx\n", saved_dir_id);
       printf("rebuilding database...");
+      snes_bootprint("     rebuilding database ...    \0");
       curr_dir_id = scan_dir(fs_path, 1, 0);
       sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 4);
       uint32_t endaddr, direndaddr;
@@ -114,8 +155,10 @@ restart:
       sram_readblock(&direndaddr, SRAM_DB_ADDR+8, 4);
       printf("%lx %lx\n", endaddr, direndaddr);
       printf("sorting database...");
+      snes_bootprint("       sorting database ...     \0");
       sort_all_dir(direndaddr);
       printf("done\n");
+      snes_bootprint("        saving database ...     \0");
       save_sram((uint8_t*)"/sd2snes/sd2snes.db", endaddr-SRAM_DB_ADDR, SRAM_DB_ADDR);
       save_sram((uint8_t*)"/sd2snes/sd2snes.dir", direndaddr-(SRAM_DIR_ADDR), SRAM_DIR_ADDR);
       printf("done\n");
@@ -147,16 +190,18 @@ restart:
   set_mcu_ovr(0);
 
   printf("SNES GO!\n");
+  snes_reset(1);
+  delay_ms(1);
   snes_reset(0);
 
   uint8_t cmd = 0;
   uint32_t filesize=0;
+  sram_writebyte(32, SRAM_CMD_ADDR);
   printf("test sram\n");
   while(!sram_reliable());
   printf("ok\n");
 //sram_hexdump(SRAM_DB_ADDR, 0x200);
 //sram_hexdump(SRAM_MENU_ADDR, 0x400);
-
   while(!cmd) {
     cmd=menu_main_loop();
     printf("cmd: %d\n", cmd);
@@ -195,10 +240,10 @@ restart:
   uint8_t snes_reset_prev=0, snes_reset_now=0, snes_reset_state=0;
   uint16_t reset_count=0;
   while(fpga_test() == FPGA_TEST_TOKEN) {
-  cli_entrycheck();
-  sleep_ms(250);
-  sram_reliable();
-  printf("%s ", get_cic_statename(get_cic_state()));
+    cli_entrycheck();
+    sleep_ms(250);
+    sram_reliable();
+    printf("%s ", get_cic_statename(get_cic_state()));
     snes_reset_now=get_snes_reset();
     if(snes_reset_now) {
       if(!snes_reset_prev) {
@@ -228,7 +273,13 @@ restart:
         save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
         writeled(0);
       }
-      delay_ms(1000);
+      rdyled(1);
+      readled(1);
+      writeled(1);
+      snes_reset(0);
+      while(get_snes_reset());
+      snes_reset(1);
+      delay_ms(200);
       goto restart;
     }
     snes_reset_prev = snes_reset_now;

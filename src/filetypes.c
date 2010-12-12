@@ -123,7 +123,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
       }
       len = strlen((char*)path);
       for (;;) {
-        toggle_read_led();
+//        toggle_read_led();
         res = f_readdir(&dir, &fno);
         if (res != FR_OK || fno.fname[0] == 0) {
           if(pass) {
@@ -247,7 +247,10 @@ SNES_FTYPE determine_filetype(char* filename) {
   char* ext = strrchr(filename, '.');
   if(ext == NULL)
     return TYPE_UNKNOWN;
-  if(!strcasecmp(ext+1, "SMC")) {
+  if(  (!strcasecmp(ext+1, "SMC"))
+     ||(!strcasecmp(ext+1, "SFC"))
+     ||(!strcasecmp(ext+1, "FIG"))
+    ) {
     return TYPE_SMC;
   }/* later
   if(!strcasecmp_P(ext+1, PSTR("SRM"))) {

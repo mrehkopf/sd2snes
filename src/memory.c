@@ -41,6 +41,7 @@
 #include "timer.h"
 #include "rle.h"
 #include "diskio.h"
+#include "snesboot.h"
 
 char* hex = "0123456789ABCDEF";
 
@@ -190,7 +191,7 @@ tickstmp=getticks();
 ticks_read+=getticks()-tickstmp;
     if (file_res || !bytes_read) break;
     if(!(count++ % 512)) {
-      toggle_read_led();
+//      toggle_read_led();
 /*    bounce_busy_led(); */
       uart_putc('.');
     }
@@ -267,6 +268,25 @@ uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr) {
   FPGA_TX_BYTE(0x00); /* dummy tx */
   FPGA_DESELECT();
   file_close();
+  return (uint32_t)filesize;
+}
+
+uint32_t load_bootrle(uint32_t base_addr) {
+  uint8_t data;
+  set_mcu_addr(base_addr);
+  DWORD filesize = 0;
+  rle_mem_init(bootrle, sizeof(bootrle));
+  
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x91);
+  for(;;) {
+    data = rle_mem_getc();
+    if(rle_state) break;
+    FPGA_TX_BYTE(data);
+    filesize++;
+  }
+  FPGA_TX_BYTE(0x00); /* dummy tx */
+  FPGA_DESELECT();
   return (uint32_t)filesize;
 }
 

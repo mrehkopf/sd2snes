@@ -38,4 +38,5 @@ uint8_t get_snes_reset(void);
 void snes_main_loop(void);
 uint8_t menu_main_loop(void);
 void get_selected_name(uint8_t* lfn);
+void snes_bootprint(void* msg);
 #endif

@@ -20,7 +20,7 @@ void xmodem_rxfile(FIL* fil) {
   FRESULT res;
   uart_flush();
   do {
-    delay_ms(10000);
+    delay_ms(3000);
     uart_putc(ASC_NAK);
   } while (uart_getc() != ASC_SOH);
   do {

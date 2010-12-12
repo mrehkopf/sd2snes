@@ -46,6 +46,7 @@
 uint32_t load_rom(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr);
+uint32_t load_bootrle(uint32_t base_addr);
 void sram_hexdump(uint32_t addr, uint32_t len);
 uint8_t sram_readbyte(uint32_t addr);
 uint16_t sram_readshort(uint32_t addr);

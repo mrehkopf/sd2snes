@@ -723,10 +723,12 @@ DRESULT sdn_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
   if(drv >= MAX_CARDS) {
     return RES_PARERR;
   }
+  readled(1);
   for(sec=0; sec<count; sec++) {
     read_block(sector+sec, buffer);
     buffer+=512;
   }
+  readled(0);
   return RES_OK;
 }
 DRESULT disk_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sdn_read")));
@@ -880,10 +882,12 @@ DRESULT sdn_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
   if (sdn_status(drv) & STA_NODISK) {
     return RES_NOTRDY;
   }
+  writeled(1);
   for(sec=0; sec<count; sec++) {
     write_block(sector+sec, buf);
     buf+=512;
   }
+  writeled(0);
   return RES_OK; 
 }
 

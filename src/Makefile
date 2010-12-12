@@ -65,7 +65,7 @@ SRC = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c printf.c spi.c f
 #     Even though the DOS/Win* filesystem matches both .s and .S the same,
 #     it will preserve the spelling of the filenames, and gcc itself does
 #     care about how the name is spelled on its command-line.
-ASRC = startup.S crc.S
+ASRC = startup.S crctab.S crc.S
 
 
 # Optimization level, can be [0, 1, 2, 3, s].

@@ -36,6 +36,7 @@
 #include "smc.h"
 #include "timer.h"
 #include "cli.h"
+#include "fpga.h"
 
 uint8_t initloop=1;
 uint32_t saveram_crc, saveram_crc_old;
@@ -138,4 +139,12 @@ void get_selected_name(uint8_t* fn) {
   uint32_t addr = sram_readlong(SRAM_PARAM_ADDR);
   printf("fd addr=%lx\n", addr);
   sram_readblock(fn, addr + 7 + SRAM_MENU_ADDR, 256);
+}
+
+void snes_bootprint(void* msg) {
+  set_mcu_ovr(1);
+  sram_writeblock(msg, SRAM_CMD_ADDR, 33);
+  set_mcu_ovr(0);
+  delay_ms(30);
+  set_mcu_ovr(1);
 }

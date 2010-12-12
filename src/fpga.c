@@ -52,6 +52,7 @@
 #include "led.h"
 #include "timer.h"
 #include "rle.h"
+#include "cfgware.h"
 
 void fpga_set_prog_b(uint8_t val) {
   if(val)
@@ -128,12 +129,56 @@ void fpga_pgm(uint8_t* filename) {
 
     for (;;) {
       data = rle_file_getc();
-i++;
+      i++;
       if (file_status || file_res) break;   /* error or eof */
       FPGA_SEND_BYTE_SERIAL(data);
     }
     uart_putc('c');
     file_close();
+    printf("fpga_pgm: %d bytes programmed\n", i);
+    delay_ms(1);
+  } while (!fpga_get_done() && retries--);
+  if(!fpga_get_done()) {
+    printf("FPGA failed to configure after %d tries.\n", MAXRETRIES);
+    led_panic();
+  }
+  printf("FPGA configured\n");
+  fpga_postinit();
+}
+
+void fpga_rompgm() {
+  int MAXRETRIES = 10;
+  int retries = MAXRETRIES;
+  uint8_t data;
+  int i;
+  tick_t timeout;
+//  UINT bytes_read;
+//  uint16_t j;
+  do {
+    i=0;
+    timeout = getticks() + 100;
+    fpga_set_prog_b(0);
+    uart_putc('P');
+    fpga_set_prog_b(1);
+    while(!fpga_get_initb()){
+      if(getticks() > timeout) {
+        printf("no response from FPGA trying to initiate configuration!\n");
+        led_panic();
+      }
+    };
+    LPC_GPIO2->FIOMASK1 = ~(BV(0));
+    uart_putc('p');
+
+    /* open configware file */
+    rle_mem_init(cfgware, sizeof(cfgware));
+    printf("sizeof(cfgware) = %d\n", sizeof(cfgware));
+    for (;;) {
+      data = rle_mem_getc();
+      if(rle_state) break;
+      i++;
+      FPGA_SEND_BYTE_SERIAL(data);
+    }
+    uart_putc('c');
     printf("fpga_pgm: %d bytes programmed\n", i);
     delay_ms(1);
   } while (!fpga_get_done() && retries--);
