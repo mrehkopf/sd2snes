@@ -186,6 +186,7 @@ printf("%s\n", filename);
 //  FPGA_TX_BYTE(0x91); /* write w/ increment */
   for(;;) {
     ff_sd_offload=1;
+    sd_offload_tgt=0;
 tickstmp=getticks();
     bytes_read = file_read();
 ticks_read+=getticks()-tickstmp;

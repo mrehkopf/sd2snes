@@ -1,6 +1,6 @@
 /* sd2snes - SD card based universal cartridge for the SNES
    Copyright (C) 2009-2010 Maximilian Rehkopf <otakon@gmx.net>
-   AVR firmware portion
+   uC firmware portion
 
    Inspired by and based on code from sd2iec, written by Ingo Korb et al.
    See sdcard.c|h, config.h.
@@ -34,7 +34,9 @@
 #define FPGA_SS_REG	LPC_GPIO0
 
 #define FPGA_SELECT()	do {FPGA_TX_SYNC(); BITBAND(FPGA_SS_REG->FIOCLR, FPGA_SS_BIT) = 1;} while (0)
+#define FPGA_SELECT_ASYNC()	do {BITBAND(FPGA_SS_REG->FIOCLR, FPGA_SS_BIT) = 1;} while (0)
 #define FPGA_DESELECT()	do {FPGA_TX_SYNC(); BITBAND(FPGA_SS_REG->FIOSET, FPGA_SS_BIT) = 1;} while (0)
+#define FPGA_DESELECT_ASYNC()	do {BITBAND(FPGA_SS_REG->FIOSET, FPGA_SS_BIT) = 1;} while (0)
 
 #define FPGA_TX_SYNC()     spi_tx_sync()
 #define FPGA_TX_BYTE(x)    spi_tx_byte(x)
@@ -48,14 +50,24 @@
 
 void fpga_spi_init(void);
 uint8_t fpga_test(void);
-uint8_t fpga_status(void);
+uint16_t fpga_status(void);
 void spi_fpga(void);
 void spi_sd(void);
 void spi_none(void);
 void set_mcu_addr(uint32_t);
+void set_dac_addr(uint32_t);
+void set_dac_vol(uint8_t);
+void dac_play(void);
+void dac_pause(void);
+void dac_reset(void);
+void set_msu_addr(uint32_t);
+void set_msu_status(uint8_t set, uint8_t reset);
 void set_saveram_mask(uint32_t);
 void set_rom_mask(uint32_t);
 void set_mapper(uint8_t val);
-void fpga_sd2ram(void);
-
+void fpga_sddma(uint8_t tgt, uint8_t partial);
+void fpga_set_sddma_range(uint16_t start, uint16_t end);
+uint8_t get_msu_volume(void);
+uint16_t get_msu_track(void);
+uint32_t get_msu_offset(void);
 #endif

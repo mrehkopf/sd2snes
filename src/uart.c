@@ -111,7 +111,6 @@ static volatile unsigned int read_idx,write_idx;
 
 void UART_HANDLER(void) {
   int iir = UART_REGS->IIR;
-
   if (!(iir & 1)) {
     /* Interrupt is pending */
     switch (iir & 14) {

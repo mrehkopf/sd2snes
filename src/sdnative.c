@@ -348,7 +348,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
       do {
 	if(dat) {
           if(!(BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))) {
-            DBG_SD printf("data start during response\n");
+            printf("data start during response\n");
             j=datcnt;
             state=CMD_RSPDAT;
             break;
@@ -401,6 +401,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
     }
 
     if(dat && state != CMD_DAT) { /* response ended before data */
+      BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 1;
       state=CMD_DAT;
       j=datcnt;
       datshift=8;
@@ -410,7 +411,13 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
       }
       wiggle_fast_neg1(); /* eat the start bit */
       if(sd_offload) {
-        fpga_sd2ram();
+        if(sd_offload_partial) {
+          fpga_set_sddma_range(sd_offload_partial_start, sd_offload_partial_end);
+          fpga_sddma(sd_offload_tgt, 1);
+          sd_offload_partial=0;
+        } else {
+          fpga_sddma(sd_offload_tgt, 0);
+        }
         state=CMD_RSP;
         return rsplen;
       }
@@ -460,6 +467,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
   }
   rsp-=rsplen;
   DBG_SD printf("send_command_fast: CMD%d response: %02x%02x%02x%02x%02x%02x\n", cmdno, rsp[0], rsp[1], rsp[2], rsp[3], rsp[4], rsp[5]);
+  BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 1;
   return rsplen;
 }
 
@@ -528,7 +536,13 @@ void stream_datablock(uint8_t *buf) {
   }
   wiggle_fast_neg1(); /* eat the start bit */
   if(sd_offload) {
-    fpga_sd2ram();
+    if(sd_offload_partial) {
+      fpga_set_sddma_range(sd_offload_partial_start, sd_offload_partial_end);
+      fpga_sddma(sd_offload_tgt, 1);
+      sd_offload_partial=0;
+    } else {
+      fpga_sddma(sd_offload_tgt, 0);
+    }
   } else {
     while(1) {
       datdata = SD_DAT << 4;
@@ -677,6 +691,7 @@ void read_block(uint32_t address, uint8_t *buf) {
     last_block=address;
   } else {
     if(during_blocktrans) {
+//      uart_putc('_');
 //printf("nonseq read (%lx -> %lx), restarting transmission\n", last_block, address);
       /* send STOP_TRANSMISSION to end an open READ/WRITE_MULTIPLE_BLOCK */ 
       cmd_fast(STOP_TRANSMISSION, 0, 0x61, NULL, rsp);

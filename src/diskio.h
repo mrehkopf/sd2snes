@@ -62,7 +62,10 @@ void disk_init(void);
 /* Will be set to DISK_ERROR if any access on the card fails */
 enum diskstates { DISK_CHANGED = 0, DISK_REMOVED, DISK_OK, DISK_ERROR };
 
-extern int sd_offload, ff_sd_offload, newcard;
+extern int sd_offload, ff_sd_offload, sd_offload_tgt, newcard;
+extern int sd_offload_partial;
+extern uint16_t sd_offload_partial_start;
+extern uint16_t sd_offload_partial_end;
 extern volatile enum diskstates disk_state;
 
 /* Disk type - part of the external API except for ATA2! */

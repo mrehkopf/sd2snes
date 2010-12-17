@@ -2,6 +2,7 @@
 #define _CONFIG_H
 
 // #define DEBUG_SD
+// #define DEBUG_IRQ
 
 #define VER                       "0.0.1(NSFW)"
 #define IN_AHBRAM                 __attribute__ ((section(".ahbram")))
@@ -38,7 +39,7 @@
 #define CONFIG_UART_BAUDRATE      921600
 #define CONFIG_UART_DEADLOCKABLE
 
-#define SSP_CLK_DIVISOR_FAST 4
+#define SSP_CLK_DIVISOR_FAST 2
 #define SSP_CLK_DIVISOR_SLOW 250
 
 #define SSP_CLK_DIVISOR_FPGA_FAST 6

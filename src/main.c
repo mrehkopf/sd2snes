@@ -30,7 +30,11 @@
 
 int i;
 
-int sd_offload = 0, ff_sd_offload = 0;
+int sd_offload = 0, ff_sd_offload = 0, sd_offload_tgt = 0;
+int sd_offload_partial = 0;
+uint16_t sd_offload_partial_start = 0;
+uint16_t sd_offload_partial_end = 0;
+
 /* FIXME HACK */
 volatile enum diskstates disk_state;
 extern volatile tick_t ticks;
@@ -44,9 +48,8 @@ int main(void) {
  /* connect UART3 on P0[25:26] + SSP0 on P0[15:18] SSP1 on P0[6:9] + MAT3.0 on P0[10] */
   LPC_PINCON->PINSEL1 = BV(18) | BV(19) | BV(20) | BV(21) /* UART3 */
                       | BV(3) | BV(5);                    /* SSP0 (FPGA) except SS */
-  LPC_PINCON->PINSEL0 = BV(31)                            /* SSP0 */
+  LPC_PINCON->PINSEL0 = BV(31);                            /* SSP0 */
 /*                      | BV(13) | BV(15) | BV(17) | BV(19)  SSP1 (SD) */
-                      | BV(20) | BV(21);                  /* MAT3.0 (FPGA clock) */
 
  /* pull-down CIC data lines */
   LPC_PINCON->PINMODE3 = BV(18) | BV(19) | BV(20) | BV(21);
@@ -62,6 +65,7 @@ int main(void) {
   led_init();
  /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
+  LPC_PINCON->PINSEL0 |= BV(20) | BV(21);                  /* MAT3.0 (FPGA clock) */
 led_pwm();
   sdn_init();
   fpga_spi_init();
@@ -76,7 +80,6 @@ led_pwm();
   LPC_TIM3->MR0=1;
   LPC_TIM3->TCR=1;
   fpga_init();
-//  fpga_pgm((uint8_t*)"/main.bit.rle");
   fpga_rompgm();
 restart:
   if(disk_state == DISK_CHANGED) {
@@ -121,7 +124,7 @@ restart:
   snes_bootprint("           Loading ...          \0");
   if(get_cic_state() == CIC_PAIR) {
     printf("PAIR MODE ENGAGED!\n");
-    cic_pair(CIC_PAL, CIC_PAL);
+    cic_pair(CIC_NTSC, CIC_NTSC);
   }
   rdyled(1);
   readled(0);
@@ -176,6 +179,7 @@ restart:
     load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
   }
   /* load menu */
+  fpga_pgm((uint8_t*)"/main.bit.rle");
   uart_putc('(');
   load_rom((uint8_t*)"/sd2snes/menu.bin", SRAM_MENU_ADDR);
   /* force memory size + mapper */
@@ -222,7 +226,7 @@ restart:
         }
         set_mcu_ovr(0);
         snes_reset(1);
-        delay_ms(1);
+        delay_ms(10);
         snes_reset(0);
         break;
       case SNES_CMD_SETRTC:
@@ -234,8 +238,161 @@ restart:
         break;
     }
   }
-
   printf("cmd was %x, going to snes main loop\n", cmd);
+
+/* MSU1 STUFF, GET ME OUTTA HERE */
+  FIL durr;
+  f_open(&durr, "/SF96SOE.smc", FA_READ);
+  ff_sd_offload=1;
+  sd_offload_tgt=2;
+  f_lseek(&durr, 79L);
+  set_msu_addr(0);
+  UINT bytes_read = 1024;
+  UINT bytes_read2 = 1;
+  uint16_t volume=0;
+  set_dac_vol(0x00);
+  spi_set_speed(SSP_CLK_DIVISOR_FAST);
+  while(fpga_status() & 0x4000);
+  uint16_t fpga_status_prev = fpga_status();
+  uint16_t fpga_status_now = fpga_status();
+  uint16_t dac_addr = 0;
+  uint16_t msu_addr = 0;
+  uint8_t msu_repeat = 0;
+  uint16_t msu_track = 0;
+  uint32_t msu_offset = 0;
+  uint8_t msu_volume = 0;
+  uint8_t msu_volupdate = 0;
+  uint8_t msu_volupdate_cnt = 0;
+  set_dac_addr(dac_addr);
+  dac_pause();
+  dac_reset();
+/* audio_start, data_start, volume_start, audio_ctrl[1:0], ctrl_start */
+while(1){
+  fpga_status_now = fpga_status();
+  if(fpga_status_now & 0x0020) {
+    char suffix[11];
+
+    /* get trackno */
+    msu_track = get_msu_track();
+    printf("Audio requested! Track=%d\n", msu_track);
+
+    /* open file */
+    f_close(&file_handle);
+    snprintf(suffix, sizeof(suffix), "-%d.wav", msu_track);
+    strcpy((char*)file_buf, (char*)file_lfn);
+    strcpy(strrchr((char*)file_buf, (int)'.'), suffix);
+    f_open(&file_handle, (const TCHAR*)file_buf, FA_READ);
+    ff_sd_offload=1;
+    sd_offload_tgt=1;
+    f_lseek(&file_handle, 44L);
+    ff_sd_offload=1;
+    sd_offload_tgt=1;
+    set_dac_addr(0);
+    dac_pause();
+    dac_reset();
+    f_read(&file_handle, file_buf, 2048, &bytes_read);
+
+    /* clear busy bit */
+    set_msu_status(0x00, 0x20); /* set no bits, reset bit 5 */
+  }
+
+  if(fpga_status_now & 0x0010) {
+    msu_offset=get_msu_offset();
+    printf("Data requested! Offset=%08lx\n", msu_offset);
+// get address
+// open file + fill buffer
+// clear busy bit
+    set_msu_status(0x00, 0x10);
+  }
+
+  if(fpga_status_now & 0x0001) {
+    if(fpga_status_now & 0x0004) {
+      msu_repeat = 1;
+      set_msu_status(0x04, 0x01); /* set bit 2, reset bit 0 */
+      printf("Repeat set!\n");
+    } else {
+      msu_repeat = 0;
+      set_msu_status(0x00, 0x05); /* set no bits, reset bit 0+2 */
+      printf("Repeat clear!\n");
+    }
+ 
+    if(fpga_status_now & 0x0002) {
+      printf("PLAY!\n");
+      set_msu_status(0x02, 0x01); /* set bit 0, reset bit 1 */
+      dac_play();
+    } else {
+      printf("PAUSE!\n");
+      set_msu_status(0x00, 0x03); /* set no bits, reset bit 1+0 */
+      dac_pause();
+    }
+  }
+
+  /* Audio buffer refill */
+  if((fpga_status_now & 0x4000) != (fpga_status_prev & 0x4000)) {
+    if(fpga_status_now & 0x4000) {
+      dac_addr = 0x0;
+    } else {
+      dac_addr = 0x400;
+    }
+    set_dac_addr(dac_addr);
+    sd_offload_tgt=1;
+    ff_sd_offload=1;
+    f_read(&file_handle, file_buf, 1024, &bytes_read);
+  }
+
+  /* volume update */
+  if(msu_volupdate && !(msu_volupdate_cnt++ & 0x1)) {
+    if(volume < msu_volume) {
+      volume++;
+    } else if(volume > msu_volume) {
+      volume--;
+    } else {
+      msu_volupdate = 0;
+    }
+    printf("should not see me!\n");
+    set_dac_vol(volume);
+  }
+
+  /* Data buffer refill */
+  if((fpga_status_now & 0x2000) != (fpga_status_prev & 0x2000)) {
+    printf("data\n");
+    if(fpga_status_now & 0x2000) {
+      msu_addr = 0x0;
+    } else {
+      msu_addr = 0x2000;
+    }
+    set_msu_addr(msu_addr);
+    sd_offload_tgt=2;
+    ff_sd_offload=1;
+    f_read(&durr, file_buf, 8192, &bytes_read2);
+  }
+  fpga_status_prev = fpga_status_now;
+
+  /* handle loop / end */
+  if(bytes_read<1024) {
+    ff_sd_offload=0;
+    sd_offload=0;
+    if(msu_repeat) {
+      printf("loop\n");
+      ff_sd_offload=1;
+      sd_offload_tgt=1;
+      f_lseek(&file_handle, 44L);
+      ff_sd_offload=1;
+      sd_offload_tgt=1;
+      f_read(&file_handle, file_buf, 1024 - bytes_read, &bytes_read);
+    } else {
+      set_msu_status(0x00, 0x02); /* clear play bit */
+    }
+    bytes_read=1024;
+  }
+  if(!bytes_read2) {
+    f_lseek(&durr, 0L);
+    uart_putc('*');
+  }
+}
+
+/* END OF MSU1 STUFF */
+
   cmd=0;
   uint8_t snes_reset_prev=0, snes_reset_now=0, snes_reset_state=0;
   uint16_t reset_count=0;

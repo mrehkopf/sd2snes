@@ -87,7 +87,8 @@
 
 #include "ff.h"			/* FatFs configurations and declarations */
 #include "diskio.h"		/* Declarations of low level disk I/O functions */
-
+#include "config.h"
+#include "uart.h"
 
 /*--------------------------------------------------------------------------
 
@@ -2013,7 +2014,6 @@ FRESULT f_open (
 	BYTE *dir;
 	DEF_NAMEBUF;
 
-
 	fp->fs = 0;			/* Clear file object */
 
 #if !_FS_READONLY
@@ -2186,8 +2186,8 @@ FRESULT f_read (
 				if (fp->fs->wflag && fp->fs->winsect - sect < cc)
 					mem_cpy(rbuff + ((fp->fs->winsect - sect) * SS(fp->fs)), fp->fs->win, SS(fp->fs));
 #else
-				if ((fp->flag & FA__DIRTY) && fp->dsect - sect < cc)
-					mem_cpy(rbuff + ((fp->dsect - sect) * SS(fp->fs)), fp->buf, SS(fp->fs));
+				if ((fp->flag & FA__DIRTY) && fp->dsect - sect < cc){
+					mem_cpy(rbuff + ((fp->dsect - sect) * SS(fp->fs)), fp->buf, SS(fp->fs)); uart_putc('Y');}
 #endif
 #endif
 				rcnt = SS(fp->fs) * cc;				/* Number of bytes transferred */
@@ -2196,27 +2196,45 @@ FRESULT f_read (
 #if !_FS_TINY
 #if !_FS_READONLY
 			if (fp->flag & FA__DIRTY) {				/* Write sector I/O buffer if needed */
+printf("DIRTY!?!\n");
 				if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1) != RES_OK)
 					ABORT(fp->fs, FR_DISK_ERR);
 				fp->flag &= ~FA__DIRTY;
 			}
 #endif
 			if (fp->dsect != sect) {				/* Fill sector buffer with file data */
-				if (disk_read(fp->fs->drv, fp->buf, sect, 1) != RES_OK)
-					ABORT(fp->fs, FR_DISK_ERR);
+				if(!ff_sd_offload) {
+					if (disk_read(fp->fs->drv, fp->buf, sect, 1) != RES_OK)
+						ABORT(fp->fs, FR_DISK_ERR);
+				}
 			}
 #endif
 			fp->dsect = sect;
 		}
 		rcnt = SS(fp->fs) - (fp->fptr % SS(fp->fs));	/* Get partial sector data from sector buffer */
 		if (rcnt > btr) rcnt = btr;
+		if(!ff_sd_offload) {
 #if _FS_TINY
-		if (move_window(fp->fs, fp->dsect))			/* Move sector window */
-			ABORT(fp->fs, FR_DISK_ERR);
-		mem_cpy(rbuff, &fp->fs->win[fp->fptr % SS(fp->fs)], rcnt);	/* Pick partial sector */
+			if (move_window(fp->fs, fp->dsect))			/* Move sector window */
+				ABORT(fp->fs, FR_DISK_ERR);
+			mem_cpy(rbuff, &fp->fs->win[fp->fptr % SS(fp->fs)], rcnt);	/* Pick partial sector */
 #else
-		mem_cpy(rbuff, &fp->buf[fp->fptr % SS(fp->fs)], rcnt);	/* Pick partial sector */
+			mem_cpy(rbuff, &fp->buf[fp->fptr % SS(fp->fs)], rcnt);	/* Pick partial sector */
+//			printf("final mem_cpy, rcnt=%d, rbuff-buff=%d\n", rcnt, (void*)rbuff-buff);
+		} else {
+			sd_offload_partial_start = fp->fptr % SS(fp->fs);
+			sd_offload_partial_end = sd_offload_partial_start + rcnt;
+//			printf("partial dma. sect=%08lx start=%d end=%d\n", fp->dsect, sd_offload_partial_start, sd_offload_partial_end);
+			/* set start + end */
+			sd_offload = 1;
+			sd_offload_partial = 1;
+			if(disk_read(fp->fs->drv, fp->buf, fp->dsect, 1) != RES_OK) {
+				sd_offload = 0;
+				ABORT(fp->fs, FR_DISK_ERR);
+			}
+			sd_offload = 0;
 #endif
+		}
 	}
 	ff_sd_offload = 0;
 	LEAVE_FF(fp->fs, FR_OK);
@@ -2356,6 +2374,7 @@ FRESULT f_sync (
 	res = validate(fp->fs, fp->id);		/* Check validity of the object */
 	if (res == FR_OK) {
 		if (fp->flag & FA__WRITTEN) {	/* Has the file been written? */
+printf("DIRTY?!?!?!\n");
 #if !_FS_TINY	/* Write-back dirty buffer */
 			if (fp->flag & FA__DIRTY) {
 				if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1) != RES_OK)
@@ -2696,8 +2715,14 @@ FRESULT f_lseek (
 				fp->flag &= ~FA__DIRTY;
 			}
 #endif
-			if (disk_read(fp->fs->drv, fp->buf, nsect, 1) != RES_OK)
-				ABORT(fp->fs, FR_DISK_ERR);
+			if(!ff_sd_offload) {
+				sd_offload_partial=0;
+				if (disk_read(fp->fs->drv, fp->buf, nsect, 1) != RES_OK)
+					ABORT(fp->fs, FR_DISK_ERR);
+			} else {
+				sd_offload_partial=1;
+				sd_offload_partial_start = fp->fptr % SS(fp->fs);
+			}
 #endif
 			fp->dsect = nsect;
 		}
@@ -2708,7 +2733,7 @@ FRESULT f_lseek (
 		}
 #endif
 	}
-
+	ff_sd_offload = 0;
 	LEAVE_FF(fp->fs, res);
 }
 
