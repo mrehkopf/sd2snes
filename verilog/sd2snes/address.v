@@ -32,7 +32,9 @@ module address(
     input ADDR_WRITE,
     output ROM_ADDR0,
     input [23:0] SAVERAM_MASK,
-    input [23:0] ROM_MASK
+    input [23:0] ROM_MASK,
+	 input use_msu,
+	 output msu_enable
     );
 
 wire [1:0] SRAM_BANK;
@@ -102,5 +104,7 @@ assign ROM_ADDR = SRAM_ADDR_FULL[23:1];
 assign ROM_SEL = 1'b0; // (MODE) ? CS_ARRAY[SRAM_BANK] : IS_SAVERAM ? 4'b1000 : CS_ARRAY[SRAM_BANK];
 
 assign ROM_ADDR0 = SRAM_ADDR_FULL[0];
+//488888
+assign msu_enable = (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
 
 endmodule

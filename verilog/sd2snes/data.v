@@ -34,7 +34,10 @@ module data(
       input ROM_DATA_TO_SNES_MEM,
       input ROM_DATA_TO_MCU_MEM,
       input MCU_OVR,
-      input ROM_ADDR0
+      input ROM_ADDR0,
+		output [7:0] MSU_DATA_IN,
+		input [7:0] MSU_DATA_OUT,
+		input msu_enable
     );
 
 reg [7:0] SNES_IN_MEM;
@@ -44,7 +47,9 @@ reg [7:0] MCU_OUT_MEM;
 
 wire [7:0] FROM_ROM_BYTE;
 
-assign SNES_DATA = SNES_READ ? 8'bZ : (!MCU_OVR ? 8'h00 : SNES_OUT_MEM);
+assign MSU_DATA_IN = SNES_DATA;
+
+assign SNES_DATA = SNES_READ ? 8'bZ : (!MCU_OVR ? 8'h00 : (msu_enable ? MSU_DATA_OUT : SNES_OUT_MEM));
 
 assign FROM_ROM_BYTE = (ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8]);
 

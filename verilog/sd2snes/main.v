@@ -79,6 +79,22 @@ wire [3:0] MAPPER;
 wire [23:0] SAVERAM_MASK;
 wire [23:0] ROM_MASK;
 wire [7:0] SD_DMA_SRAM_DATA;
+wire [1:0] SD_DMA_TGT;
+wire [10:0] SD_DMA_PARTIAL_START;
+wire [10:0] SD_DMA_PARTIAL_END;
+
+wire [10:0] dac_addr;
+//wire [7:0] dac_volume;
+wire [7:0] msu_volumerq_out;
+wire [6:0] msu_status_out;
+wire [31:0] msu_addressrq_out;
+wire [15:0] msu_trackrq_out;
+wire [13:0] msu_addr;
+wire [7:0] MSU_SNES_DATA_IN;
+wire [7:0] MSU_SNES_DATA_OUT;
+wire [5:0] msu_status_reset_bits;
+wire [5:0] msu_status_set_bits;
+
 //wire SD_DMA_EN; //SPI_DMA_CTRL;
 
 sd_dma snes_sd_dma(.CLK(CLK2),
@@ -88,15 +104,48 @@ sd_dma snes_sd_dma(.CLK(CLK2),
 						 .SD_DMA_STATUS(SD_DMA_STATUS),
 						 .SD_DMA_SRAM_WE(SD_DMA_SRAM_WE),
 						 .SD_DMA_SRAM_DATA(SD_DMA_SRAM_DATA),
-						 .SD_DMA_NEXTADDR(SD_DMA_NEXTADDR)
+						 .SD_DMA_NEXTADDR(SD_DMA_NEXTADDR),
+						 .SD_DMA_TGT(SD_DMA_TGT),
+						 .SD_DMA_PARTIAL(SD_DMA_PARTIAL),
+						 .SD_DMA_PARTIAL_START(SD_DMA_PARTIAL_START),
+						 .SD_DMA_PARTIAL_END(SD_DMA_PARTIAL_END)
 );
 						 
 dac_test snes_dac_test(.clkin(CLK2),
                        .mclk(DAC_MCLK),
 							  .lrck(DAC_LRCK),
-							  .sdout(DAC_SDOUT)
+							  .sdout(DAC_SDOUT),
+							  .we(SD_DMA_TGT==2'b01 ? SD_DMA_SRAM_WE : 1'b1),
+							  .pgm_address(dac_addr),
+	                    .pgm_data(SD_DMA_SRAM_DATA),
+							  .DAC_STATUS(DAC_STATUS),
+							  .volume(msu_volumerq_out),
+							  .vol_latch(msu_volume_latch_out),
+							  .play(dac_play),
+							  .reset(dac_reset)
 );
-							 
+
+msu snes_msu (
+    .clkin(CLK2),
+	 .enable(msu_enable),
+    .pgm_address(msu_addr), 
+    .pgm_data(SD_DMA_SRAM_DATA),
+    .pgm_we(SD_DMA_TGT==2'b10 ? SD_DMA_SRAM_WE : 1'b1),
+    .reg_addr(SNES_ADDR),
+    .reg_data_in(MSU_SNES_DATA_IN),
+    .reg_data_out(MSU_SNES_DATA_OUT),
+    .reg_oe(SNES_READ),
+    .reg_we(SNES_WRITE),
+    .status_out(msu_status_out),
+    .volume_out(msu_volumerq_out),
+	 .volume_latch_out(msu_volume_latch_out),
+    .addr_out(msu_addressrq_out),
+	 .track_out(msu_trackrq_out),
+	 .status_reset_bits(msu_status_reset_bits),
+	 .status_set_bits(msu_status_set_bits),
+	 .status_reset_we(msu_status_reset_we)
+    );
+	 
 spi snes_spi(.clk(CLK2),
              .MOSI(SPI_MOSI),
              .MISO(SPI_MISO),
@@ -137,7 +186,25 @@ mcu_cmd snes_mcu_cmd(
 	 .SD_DMA_STATUS(SD_DMA_STATUS),
     .SD_DMA_NEXTADDR(SD_DMA_NEXTADDR),
     .SD_DMA_SRAM_DATA(SD_DMA_SRAM_DATA),
-    .SD_DMA_SRAM_WE(SD_DMA_SRAM_WE)
+    .SD_DMA_SRAM_WE(SD_DMA_SRAM_WE),
+	 .SD_DMA_TGT(SD_DMA_TGT),
+	 .SD_DMA_PARTIAL(SD_DMA_PARTIAL),
+	 .SD_DMA_PARTIAL_START(SD_DMA_PARTIAL_START),
+	 .SD_DMA_PARTIAL_END(SD_DMA_PARTIAL_END),
+	 .dac_addr_out(dac_addr),
+	 .DAC_STATUS(DAC_STATUS),
+//	 .dac_volume_out(dac_volume),
+//	 .dac_volume_latch_out(dac_vol_latch),
+	 .dac_play_out(dac_play),
+	 .dac_reset_out(dac_reset),
+	 .msu_addr_out(msu_addr),
+	 .MSU_STATUS(msu_status_out),
+	 .msu_status_reset_out(msu_status_reset_bits),
+	 .msu_status_set_out(msu_status_set_bits),
+	 .msu_status_reset_we(msu_status_reset_we),
+    .msu_volumerq(msu_volumerq_out),
+    .msu_addressrq(msu_addressrq_out),
+	 .msu_trackrq(msu_trackrq_out)
 );
 
 // dcm1: dfs 4x
@@ -238,7 +305,10 @@ address snes_addr(
     .MCU_ADDR(MCU_ADDR),
     .ROM_ADDR0(ROM_ADDR0),
     .SAVERAM_MASK(SAVERAM_MASK),
-    .ROM_MASK(ROM_MASK)
+    .ROM_MASK(ROM_MASK),
+	 //MSU-1
+	 .use_msu(use_msu),
+	 .msu_enable(msu_enable)
     );
 
 wire SNES_READ_CYCLEw;
@@ -261,7 +331,10 @@ data snes_data(.CLK(CLK2),
       .MCU_OVR(MCU_OVR),
       .MCU_IN_DATA(MCU_IN_DATA),
       .MCU_OUT_DATA(MCU_OUT_DATA),
-      .ROM_ADDR0(ROM_ADDR0)
+      .ROM_ADDR0(ROM_ADDR0),
+		.MSU_DATA_IN(MSU_SNES_DATA_IN),
+		.MSU_DATA_OUT(MSU_SNES_DATA_OUT),
+		.msu_enable(msu_enable)
       );
       
 parameter MODE_SNES = 1'b0;
@@ -497,7 +570,7 @@ assign ROM_BLE = !ROM_WE ? !ROM_ADDR0 : 1'b0;
 //assign SRAM_WE = !MCU_ENA ? MCU_WRITE : 1'b1;
 
 //assign SNES_DATABUS_OE = (!IS_SAVERAM & SNES_CS) | (SNES_READ & SNES_WRITE);
-assign SNES_DATABUS_OE = (IS_ROM & SNES_CS) | (!IS_ROM & !IS_SAVERAM) | (SNES_READ & SNES_WRITE);
+assign SNES_DATABUS_OE = msu_enable ? 1'b0 : ((IS_ROM & SNES_CS) | (!IS_ROM & !IS_SAVERAM) | (SNES_READ & SNES_WRITE));
 assign SNES_DATABUS_DIR = !SNES_READ ? 1'b1 : 1'b0;
 
 assign SNES_DATA_TO_MEM = SNES_DATA_TO_MEM_ARRAY[SNES_WRITE_CYCLE][STATEIDX];
