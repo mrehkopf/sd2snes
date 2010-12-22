@@ -64,6 +64,7 @@
 	E1	-		pause DAC
 	E2	-		resume/play DAC
 	E3	-		reset DAC playback pointer (0)
+	E4	-		reset MSU read pointer (0)
 
 	F0	-		receive test token (to see if FPGA is alive)
 	F1	-		receive status
@@ -72,6 +73,7 @@
 	F3	-		get MSU audio track no. (16bit, MSB first)
 	F4	-		get MSU volume (8bit)
 
+	FE	-		get SNES master clock frequency (32bit, MSB first)
 	FF	{xx]*		echo (returns the sent data in the next byte)
 */
 
@@ -88,7 +90,7 @@ void fpga_spi_init(void) {
   spi_init(SPI_SPEED_FPGA_FAST);
 }
 
-void set_msu_addr(uint32_t address) {
+void set_msu_addr(uint16_t address) {
   FPGA_SELECT();
   FPGA_TX_BYTE(0x02);
   FPGA_TX_BYTE((address>>8)&0xff);
@@ -96,7 +98,7 @@ void set_msu_addr(uint32_t address) {
   FPGA_DESELECT();
 }
 
-void set_dac_addr(uint32_t address) {
+void set_dac_addr(uint16_t address) {
   FPGA_SELECT();
   FPGA_TX_BYTE(0x01);
   FPGA_TX_BYTE((address>>8)&0xff);
@@ -215,6 +217,17 @@ void dac_reset() {
   FPGA_SELECT();
   FPGA_TX_BYTE(0xe3);
   FPGA_TX_BYTE(0x00); /* latch reset */
+  FPGA_TX_BYTE(0x00); /* latch reset */
+  FPGA_DESELECT();
+}
+
+void msu_reset(uint16_t address) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xe4);
+  FPGA_TX_BYTE((address>>8) & 0xff); /* address hi */
+  FPGA_TX_BYTE(address & 0xff);      /* address lo */
+  FPGA_TX_BYTE(0x00);                /* latch reset */
+  FPGA_TX_BYTE(0x00);                /* latch reset */
   FPGA_DESELECT();
 }
 
@@ -223,7 +236,6 @@ void set_msu_status(uint8_t set, uint8_t reset) {
   FPGA_TX_BYTE(0xe0);
   FPGA_TX_BYTE(set);
   FPGA_TX_BYTE(reset);
-  FPGA_TX_BYTE(0x00); /* latch reset */
   FPGA_TX_BYTE(0x00); /* latch reset */
   FPGA_DESELECT();
 }
@@ -259,3 +271,15 @@ uint32_t get_msu_offset() {
   return result;
 }
 
+uint32_t get_snes_sysclk() {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xFE); /* GET_SYSCLK */
+  FPGA_TX_BYTE(0x00); /* dummy */
+  FPGA_TX_BYTE(0x00); /* dummy */
+  uint32_t result = (FPGA_RX_BYTE()) << 24;
+  result |= (FPGA_RX_BYTE()) << 16;
+  result |= (FPGA_RX_BYTE()) << 8;
+  result |= (FPGA_RX_BYTE());
+  FPGA_DESELECT();
+  return result;
+}

@@ -71,7 +71,7 @@ led_pwm();
   fpga_spi_init();
   printf("\n\nsd2snes mk.2\n============\nfw ver.: " VER "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
   file_init();
-  cic_init(1);
+  cic_init(0);
 
 /* setup timer (fpga clk) */
   LPC_TIM3->CTCR=0;
@@ -124,7 +124,7 @@ restart:
   snes_bootprint("           Loading ...          \0");
   if(get_cic_state() == CIC_PAIR) {
     printf("PAIR MODE ENGAGED!\n");
-    cic_pair(CIC_NTSC, CIC_NTSC);
+    cic_pair(CIC_PAL, CIC_NTSC);
   }
   rdyled(1);
   readled(0);
@@ -180,6 +180,7 @@ restart:
   }
   /* load menu */
   fpga_pgm((uint8_t*)"/main.bit.rle");
+
   uart_putc('(');
   load_rom((uint8_t*)"/sd2snes/menu.bin", SRAM_MENU_ADDR);
   /* force memory size + mapper */
@@ -204,10 +205,15 @@ restart:
   printf("test sram\n");
   while(!sram_reliable());
   printf("ok\n");
+//while(1) {
+//  delay_ms(1000);
+//  printf("Estimated SNES master clock: %ld Hz\n", get_snes_sysclk());
+//}
 //sram_hexdump(SRAM_DB_ADDR, 0x200);
 //sram_hexdump(SRAM_MENU_ADDR, 0x400);
   while(!cmd) {
     cmd=menu_main_loop();
+// cmd = 1;
     printf("cmd: %d\n", cmd);
     sleep_ms(50);
     uart_putc('-');
@@ -215,6 +221,7 @@ restart:
       case SNES_CMD_LOADROM:
         get_selected_name(file_lfn);
         set_mcu_ovr(1);
+// strcpy((char*)file_lfn, "/mon.smc"); 
         printf("Selected name: %s\n", file_lfn);
         filesize = load_rom(file_lfn, SRAM_ROM_ADDR);
         if(romprops.ramsize_bytes) {
@@ -242,14 +249,13 @@ restart:
 
 /* MSU1 STUFF, GET ME OUTTA HERE */
   FIL durr;
-  f_open(&durr, "/SF96SOE.smc", FA_READ);
-  ff_sd_offload=1;
-  sd_offload_tgt=2;
-  f_lseek(&durr, 79L);
-  set_msu_addr(0);
+// open MSU file
+  strcpy((char*)file_buf, (char*)file_lfn);
+  strcpy(strrchr((char*)file_buf, (int)'.'), ".msu");
+  printf("MSU datafile: %s\n", file_buf);
+  printf("f_open result: %d\n", f_open(&durr, (const TCHAR*)file_buf, FA_READ));
   UINT bytes_read = 1024;
   UINT bytes_read2 = 1;
-  uint16_t volume=0;
   set_dac_vol(0x00);
   spi_set_speed(SSP_CLK_DIVISOR_FAST);
   while(fpga_status() & 0x4000);
@@ -260,9 +266,20 @@ restart:
   uint8_t msu_repeat = 0;
   uint16_t msu_track = 0;
   uint32_t msu_offset = 0;
-  uint8_t msu_volume = 0;
-  uint8_t msu_volupdate = 0;
-  uint8_t msu_volupdate_cnt = 0;
+
+  uint32_t msu_page1_start = 0x0000;
+  uint32_t msu_page2_start = 0x2000;
+  uint32_t msu_page_size = 0x2000;
+
+  set_msu_addr(0x0);
+  msu_reset(0x0);
+  ff_sd_offload=1;
+  sd_offload_tgt=2;
+  f_lseek(&durr, 0L);
+  ff_sd_offload=1;
+  sd_offload_tgt=2;
+  f_read(&durr, file_buf, 16384, &bytes_read2);
+
   set_dac_addr(dac_addr);
   dac_pause();
   dac_reset();
@@ -281,15 +298,16 @@ while(1){
     snprintf(suffix, sizeof(suffix), "-%d.wav", msu_track);
     strcpy((char*)file_buf, (char*)file_lfn);
     strcpy(strrchr((char*)file_buf, (int)'.'), suffix);
+    printf("filename: %s\n", file_buf);
     f_open(&file_handle, (const TCHAR*)file_buf, FA_READ);
     ff_sd_offload=1;
     sd_offload_tgt=1;
     f_lseek(&file_handle, 44L);
-    ff_sd_offload=1;
-    sd_offload_tgt=1;
     set_dac_addr(0);
     dac_pause();
     dac_reset();
+    ff_sd_offload=1;
+    sd_offload_tgt=1;
     f_read(&file_handle, file_buf, 2048, &bytes_read);
 
     /* clear busy bit */
@@ -297,11 +315,56 @@ while(1){
   }
 
   if(fpga_status_now & 0x0010) {
+    /* get address */
     msu_offset=get_msu_offset();
-    printf("Data requested! Offset=%08lx\n", msu_offset);
-// get address
-// open file + fill buffer
-// clear busy bit
+    printf("Data requested! Offset=%08lx page1=%08lx page2=%08lx\n", msu_offset, msu_page1_start, msu_page2_start);
+    if(   ((msu_offset < msu_page1_start)
+       || (msu_offset >= msu_page1_start + msu_page_size))
+       && ((msu_offset < msu_page2_start)
+       || (msu_offset >= msu_page2_start + msu_page_size))) {
+      printf("offset %08lx out of range (%08lx-%08lx, %08lx-%08lx), reload\n", msu_offset, msu_page1_start,
+             msu_page1_start+msu_page_size-1, msu_page2_start, msu_page2_start+msu_page_size-1);
+      /* cache miss */
+      /* fill buffer */
+      set_msu_addr(0x0);
+      sd_offload_tgt=2;
+      ff_sd_offload=1;
+      printf("seek to %08lx, res = %d\n", msu_offset, f_lseek(&durr, msu_offset));
+      sd_offload_tgt=2;
+      ff_sd_offload=1;
+      printf("read res = %d\n", f_read(&durr, file_buf, 16384, &bytes_read2));
+      printf("read %d bytes\n", bytes_read2);
+      msu_reset(0x0);
+      msu_page1_start = msu_offset;
+      msu_page2_start = msu_offset + msu_page_size;
+    } else {
+      if (msu_offset >= msu_page1_start && msu_offset <= msu_page1_start + msu_page_size) {
+        msu_reset(0x0000 + msu_offset - msu_page1_start);
+        printf("inside page1, new offset: %08lx\n", 0x0000 + msu_offset-msu_page1_start);
+        if(!(msu_page2_start == msu_page1_start + msu_page_size)) {
+          set_msu_addr(0x2000);
+          sd_offload_tgt=2;
+          ff_sd_offload=1;
+          f_read(&durr, file_buf, 8192, &bytes_read2);
+          printf("next page dirty (was: %08lx), loaded page2 (start now: ", msu_page2_start);
+          msu_page2_start = msu_page1_start + msu_page_size;
+          printf("%08lx)\n", msu_page2_start);
+        }
+      } else if (msu_offset >= msu_page2_start && msu_offset <= msu_page2_start + msu_page_size) {
+        printf("inside page2, new offset: %08lx\n", 0x2000 + msu_offset-msu_page2_start);
+        msu_reset(0x2000 + msu_offset - msu_page2_start);
+        if(!(msu_page1_start == msu_page2_start + msu_page_size)) {
+          set_msu_addr(0x0);
+          sd_offload_tgt=2;
+          ff_sd_offload=1;
+          f_read(&durr, file_buf, 8192, &bytes_read2);
+          printf("next page dirty (was: %08lx), loaded page1 (start now: ", msu_page1_start);
+          msu_page1_start = msu_page2_start + msu_page_size;
+          printf("%08lx)\n", msu_page1_start);
+        }
+      } else printf("!!!WATWATWAT!!!\n");
+    }
+    /* clear busy bit */
     set_msu_status(0x00, 0x10);
   }
 
@@ -340,31 +403,20 @@ while(1){
     f_read(&file_handle, file_buf, 1024, &bytes_read);
   }
 
-  /* volume update */
-  if(msu_volupdate && !(msu_volupdate_cnt++ & 0x1)) {
-    if(volume < msu_volume) {
-      volume++;
-    } else if(volume > msu_volume) {
-      volume--;
-    } else {
-      msu_volupdate = 0;
-    }
-    printf("should not see me!\n");
-    set_dac_vol(volume);
-  }
-
   /* Data buffer refill */
   if((fpga_status_now & 0x2000) != (fpga_status_prev & 0x2000)) {
     printf("data\n");
     if(fpga_status_now & 0x2000) {
       msu_addr = 0x0;
+      msu_page1_start = msu_page2_start + msu_page_size;
     } else {
       msu_addr = 0x2000;
+      msu_page2_start = msu_page1_start + msu_page_size;
     }
     set_msu_addr(msu_addr);
     sd_offload_tgt=2;
     ff_sd_offload=1;
-    f_read(&durr, file_buf, 8192, &bytes_read2);
+    printf("data buffer refilled. res=%d page1=%08lx page2=%08lx\n", f_read(&durr, file_buf, 8192, &bytes_read2), msu_page1_start, msu_page2_start);
   }
   fpga_status_prev = fpga_status_now;
 
@@ -384,10 +436,6 @@ while(1){
       set_msu_status(0x00, 0x02); /* clear play bit */
     }
     bytes_read=1024;
-  }
-  if(!bytes_read2) {
-    f_lseek(&durr, 0L);
-    uart_putc('*');
   }
 }
 

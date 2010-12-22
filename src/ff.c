@@ -1937,6 +1937,7 @@ FRESULT validate (	/* FR_OK(0): The object is valid, !=0: Invalid */
 	WORD id			/* Member id of the target object to be checked */
 )
 {
+//	printf("fs=%p fs->fs_type=%d fs->id=%d id=%d\n", fs, fs->fs_type, fs->id, id);
 	if (!fs || !fs->fs_type || fs->id != id)
 		return FR_INVALID_OBJECT;
 
@@ -2144,6 +2145,7 @@ FRESULT f_read (
 	UINT rcnt, cc;
 	BYTE csect, *rbuff = buff;
 
+	if(btr>512 && !ff_sd_offload) printf("WARNING: read >512 bytes but offloading is inactive!!\n");
 
 	*br = 0;	/* Initialize byte counter */
 
@@ -2220,7 +2222,7 @@ printf("DIRTY!?!\n");
 			mem_cpy(rbuff, &fp->fs->win[fp->fptr % SS(fp->fs)], rcnt);	/* Pick partial sector */
 #else
 			mem_cpy(rbuff, &fp->buf[fp->fptr % SS(fp->fs)], rcnt);	/* Pick partial sector */
-//			printf("final mem_cpy, rcnt=%d, rbuff-buff=%d\n", rcnt, (void*)rbuff-buff);
+			printf("final mem_cpy, rcnt=%d, rbuff-buff=%d\n", rcnt, (void*)rbuff-buff);
 		} else {
 			sd_offload_partial_start = fp->fptr % SS(fp->fs);
 			sd_offload_partial_end = sd_offload_partial_start + rcnt;
