@@ -34,6 +34,7 @@ module main(
     output SNES_DATABUS_OE,
     output SNES_DATABUS_DIR,
     output IRQ_DIR,
+	 input SNES_SYSCLK,
 
    /* SRAM signals */
     inout [15:0] ROM_DATA,
@@ -89,7 +90,8 @@ wire [7:0] msu_volumerq_out;
 wire [6:0] msu_status_out;
 wire [31:0] msu_addressrq_out;
 wire [15:0] msu_trackrq_out;
-wire [13:0] msu_addr;
+wire [13:0] msu_write_addr;
+wire [13:0] msu_ptr_addr;
 wire [7:0] MSU_SNES_DATA_IN;
 wire [7:0] MSU_SNES_DATA_OUT;
 wire [5:0] msu_status_reset_bits;
@@ -128,7 +130,7 @@ dac_test snes_dac_test(.clkin(CLK2),
 msu snes_msu (
     .clkin(CLK2),
 	 .enable(msu_enable),
-    .pgm_address(msu_addr), 
+    .pgm_address(msu_write_addr), 
     .pgm_data(SD_DMA_SRAM_DATA),
     .pgm_we(SD_DMA_TGT==2'b10 ? SD_DMA_SRAM_WE : 1'b1),
     .reg_addr(SNES_ADDR),
@@ -143,7 +145,9 @@ msu snes_msu (
 	 .track_out(msu_trackrq_out),
 	 .status_reset_bits(msu_status_reset_bits),
 	 .status_set_bits(msu_status_set_bits),
-	 .status_reset_we(msu_status_reset_we)
+	 .status_reset_we(msu_status_reset_we),
+	 .msu_address_ext(msu_ptr_addr),
+	 .msu_address_ext_write(msu_addr_reset)
     );
 	 
 spi snes_spi(.clk(CLK2),
@@ -164,6 +168,7 @@ spi snes_spi(.clk(CLK2),
 
 mcu_cmd snes_mcu_cmd(
     .clk(CLK2),
+	 .snes_sysclk(SNES_SYSCLK),
     .cmd_ready(spi_cmd_ready),
     .param_ready(spi_param_ready),
     .cmd_data(spi_cmd_data),
@@ -197,14 +202,16 @@ mcu_cmd snes_mcu_cmd(
 //	 .dac_volume_latch_out(dac_vol_latch),
 	 .dac_play_out(dac_play),
 	 .dac_reset_out(dac_reset),
-	 .msu_addr_out(msu_addr),
+	 .msu_addr_out(msu_write_addr),
 	 .MSU_STATUS(msu_status_out),
 	 .msu_status_reset_out(msu_status_reset_bits),
 	 .msu_status_set_out(msu_status_set_bits),
 	 .msu_status_reset_we(msu_status_reset_we),
     .msu_volumerq(msu_volumerq_out),
     .msu_addressrq(msu_addressrq_out),
-	 .msu_trackrq(msu_trackrq_out)
+	 .msu_trackrq(msu_trackrq_out),
+	 .msu_ptr_out(msu_ptr_addr),
+	 .msu_reset_out(msu_addr_reset)
 );
 
 // dcm1: dfs 4x

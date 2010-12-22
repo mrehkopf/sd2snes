@@ -36,7 +36,9 @@ module msu(
 	 output [15:0] track_out,
 	 input [5:0] status_reset_bits,
 	 input [5:0] status_set_bits,
-	 input status_reset_we
+	 input status_reset_we,
+	 input [13:0] msu_address_ext,
+	 input msu_address_ext_write
     );
 
 reg [1:0] status_reset_we_r;
@@ -49,9 +51,13 @@ wire [13:0] msu_address = msu_address_r;
 wire [7:0] msu_data;
 reg [7:0] msu_data_r;
 
+reg [1:0] msu_address_ext_write_sreg;
+always @(posedge clkin) msu_address_ext_write_sreg <= {msu_address_ext_write_sreg[0], msu_address_ext_write};
+wire msu_address_ext_write_rising = (msu_address_ext_write_sreg[1:0] == 2'b01);
+
 reg [5:0] reg_oe_sreg;
 always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[4:0], reg_oe};
-wire reg_oe_falling = (reg_oe_sreg[5:0] == 6'b111110);
+wire reg_oe_falling = (reg_oe_sreg[5:0] == 6'b100000);
 wire reg_oe_rising = (reg_oe_sreg[5:0] == 6'b000001);
 
 reg [1:0] reg_we_sreg;
@@ -86,7 +92,7 @@ end
 assign status_out = {msu_address_r[13], 
                      audio_start_r, data_start_r, volume_start_r, audio_ctrl_r, ctrl_start_r};
 
-initial msu_address_r = 14'h0000;
+initial msu_address_r = 14'h1234;
 
 msu_databuf snes_msu_databuf (
 	.clka(clkin),
@@ -165,7 +171,9 @@ always @(posedge clkin) begin
 end
 
 always @(posedge clkin) begin
-  if(reg_oe_falling && enable && reg_addr == 3'h1) begin
+  if(msu_address_ext_write_rising)
+    msu_address_r <= msu_address_ext;
+  else if(enable && reg_addr == 3'h1 && reg_oe_falling) begin
     msu_address_r <= msu_address_r + 1;
 	 msu_data_r <= msu_data;
   end

@@ -118,7 +118,7 @@ always @(posedge CLK) begin
         SD_DMA_NEXTADDRr <= 1'b0;
 //	 3'h2:
       3'h3:
-        if(cyclecnt>=SD_DMA_STARTr && cyclecnt <= SD_DMA_ENDr) SD_DMA_SRAM_WEr <= 1'b0;
+        if(cyclecnt>=SD_DMA_STARTr && cyclecnt < SD_DMA_ENDr) SD_DMA_SRAM_WEr <= 1'b0;
       3'h4:
         SD_DMA_SRAM_DATAr[3:0] <= SD_DAT;
 //	 3'h5:

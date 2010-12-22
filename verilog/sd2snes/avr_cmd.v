@@ -67,8 +67,23 @@ module mcu_cmd(
 	 output msu_status_reset_we,
 	 input [31:0] msu_addressrq,
 	 input [15:0] msu_trackrq,
-	 input [7:0] msu_volumerq
+	 input [7:0] msu_volumerq,
+	 output [13:0] msu_ptr_out,
+	 output msu_reset_out,
+	 
+	 // SNES sync/clk
+ 	 input snes_sysclk	 
     );
+
+
+wire [31:0] snes_sysclk_freq;
+
+clk_test snes_clk_test (
+    .clk(clk), 
+    .sysclk(snes_sysclk), 
+    .snes_sysclk_freq(snes_sysclk_freq)
+    );
+
 
 reg [3:0] MAPPER_BUF;
 reg [3:0] SRAM_SIZE_BUF;
@@ -81,9 +96,14 @@ reg DAC_VOL_LATCH_BUF;
 reg DAC_PLAY_OUT_BUF;
 reg DAC_RESET_OUT_BUF;
 reg [13:0] MSU_ADDR_OUT_BUF;
+reg [13:0] MSU_PTR_OUT_BUF;
 reg [5:0] msu_status_set_out_buf;
 reg [5:0] msu_status_reset_out_buf;
 reg msu_status_reset_we_buf;
+reg MSU_RESET_OUT_BUF;
+
+reg [31:0] SNES_SYSCLK_FREQ_BUF;
+
 reg [7:0] MCU_DATA_OUT_BUF;
 reg [7:0] MCU_DATA_IN_BUF;
 reg [1:0] mcu_nextaddr_buf;
@@ -248,6 +268,19 @@ always @(posedge clk) begin
 					32'h3:
 						DAC_RESET_OUT_BUF <= 1'b0;
 				endcase
+			8'he4: // reset MSU read buffer pointer
+				case (spi_byte_cnt)
+				   32'h2: begin
+						MSU_PTR_OUT_BUF[13:8] <= param_data[5:0];
+						MSU_PTR_OUT_BUF[7:0] <= 8'h0;
+					end
+					32'h3: begin
+						MSU_PTR_OUT_BUF[7:0] <= param_data;
+						MSU_RESET_OUT_BUF <= 1'b1;
+					end
+					32'h4:
+						MSU_RESET_OUT_BUF <= 1'b0;
+				endcase
       endcase
    end
    if (SD_DMA_NEXTADDR | (mcu_nextaddr & (cmd_data[7:5] == 3'h4) && (cmd_data[0]) && (spi_byte_cnt > (32'h1+cmd_data[4])))) begin
@@ -284,13 +317,26 @@ always @(posedge clk) begin
 			endcase
 		else if (cmd_data[7:0] == 8'hF3)
 		   case (spi_byte_cnt)
-				23'h1:
+				32'h1:
 					MCU_DATA_IN_BUF <= msu_trackrq[15:8];
-				23'h2:
+				32'h2:
 					MCU_DATA_IN_BUF <= msu_trackrq[7:0];				
 			endcase
 		else if (cmd_data[7:0] == 8'hF4)
 			MCU_DATA_IN_BUF <= msu_volumerq;
+		else if (cmd_data[7:0] == 8'hFE)
+		   case (spi_byte_cnt)
+				32'h1:
+					SNES_SYSCLK_FREQ_BUF <= snes_sysclk_freq;
+				32'h2:
+					MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[31:24];
+				32'h3:
+					MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[23:16];
+				32'h4:
+					MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[15:8];
+				32'h5:
+					MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[7:0];
+			endcase
       else if (cmd_data[7:0] == 8'hFF)
 		   MCU_DATA_IN_BUF <= param_data;
 		else if (cmd_data[7:4] == 4'h8)
@@ -339,10 +385,12 @@ assign dac_reset_out = DAC_RESET_OUT_BUF;
 assign msu_status_reset_we = msu_status_reset_we_buf;
 assign msu_status_reset_out = msu_status_reset_out_buf;
 assign msu_status_set_out = msu_status_set_out_buf;
+assign msu_reset_out = MSU_RESET_OUT_BUF;
+assign msu_ptr_out = MSU_PTR_OUT_BUF;
 assign mcu_data_out = SD_DMA_STATUS ? SD_DMA_SRAM_DATA : MCU_DATA_OUT_BUF;
 assign mcu_mapper = MAPPER_BUF;
 assign mcu_sram_size = SRAM_SIZE_BUF;
 assign rom_mask_out = ROM_MASK;
 assign saveram_mask_out = SAVERAM_MASK;
-
+	 
 endmodule

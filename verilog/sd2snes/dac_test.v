@@ -90,7 +90,7 @@ initial begin
 	vol_valid = 1'b0;
 	vol_latch_reg = 1'b0;
 	vol_reg = 8'h0;
-	vol_target_reg = 8'h0;
+	vol_target_reg = 8'hff;
 	samples <= 16'h0;
 end
 
