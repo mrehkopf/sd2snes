@@ -199,7 +199,7 @@ setup_gfx:
 	ldx #!wram_fadeloop
 	stx $2181
 	sta $2183
-	DMA0(#$00, #$56, #^fadeloop, #!fadeloop, #$80);
+	DMA0(#$00, #$6C, #^fadeloop, #!fadeloop, #$80);
 	rts
 
 tests:
@@ -364,7 +364,6 @@ fadeloop:
 	sta hdma_math+2
 	sta hdma_math+5
 	sta hdma_math+17
-	stz $2126
 fadeloop_start
 	lda $4212
 	and #$80
@@ -381,10 +380,16 @@ fadeloop_start
 	sta hdma_math+17
 	txa
 	dec
-	sta $2100
+;	sta $2100
 	tax
 	bne fadeloop_start
-	stz $2100
+	stz $2126
+	stz $212e
+	stz $2131
+	stz $2130
+	lda #$00
+	sta @hdma_math
+;	stz $2100
 -	bra -
 
 fadeloop_end:

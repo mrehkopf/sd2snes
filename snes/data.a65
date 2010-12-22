@@ -72,6 +72,8 @@ listdisp	.word 0 ; number of displayable list entries
 textdmasize	.word 0 ; number of bytes to copy each frame
 barstep		.byt 0  ; step size for bar
 
+;-misc
+testvar		.word 0,0,0,0
 ;----------hdma tables in WRAM (must be stable when cartridge is cut off)
 hdma_pal	.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

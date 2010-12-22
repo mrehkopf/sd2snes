@@ -16,7 +16,8 @@ NMI_ROUTINE:
 	lda #$00
 	pha
 	plb
-        lda $4210
+
+        lda $4210	; ack interrupt
 
 	ldx #BG1_TILE_BASE+32*9
 	stx $2116

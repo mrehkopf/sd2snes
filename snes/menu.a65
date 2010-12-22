@@ -30,6 +30,7 @@ menuloop_s1
 	lda isr_done
 	lsr
 	bcc menuloop_s1
+
 	stz isr_done
 	jsr menu_updates	;update stuff, check keys etc
 	lda menu_dirty		;is there ANY reason to redraw the menu?
