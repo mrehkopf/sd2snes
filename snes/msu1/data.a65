@@ -1,0 +1,16 @@
+.data
+
+framecnt	.word 0
+dispcnt		.byt 0
+
+charaddr	.word 0
+charptr		.byt 0
+
+;----------parameters for dma----------
+dma_a_bank      .byt 0
+dma_a_addr      .word 0
+dma_b_reg       .byt 0
+dma_len         .word 0
+dma_mode        .byt 0
+
+isr_flag	.byt 0

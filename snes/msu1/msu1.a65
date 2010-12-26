@@ -1,0 +1,73 @@
+#include "dma.i65"
+#include "msu1.i65"
+
+msu1init:
+	sep #$20 : .as
+	rep #$10 : .xl
+	ldx #$0000
+	stx MSU_SEEK_OFFSET
+	stx MSU_SEEK_BANK
+-	bit MSU_STATUS
+	bmi -
+	ldx #$0000
+	stx $2116
+
+	lda #$04
+	sta charptr
+	sta $210b
+
+	; prepare DMA
+	ldx #$2001
+	stx $4302
+	stz $4304
+
+	rts
+
+msu1loop:
+	sep #$20 : .as
+	rep #$10 : .xl
+	stz dispcnt
+msu1loop2
+	lda isr_flag
+	beq msu1loop2
+	stz isr_flag
+	;load half picture
+	lda #$18
+	sta $4301
+	lda #$09
+	sta $4300
+	ldx #16256
+	stx $4305
+	lda #$01
+	sta $420b
+	inc dispcnt
+	lda dispcnt
+	cmp #$02
+	bne msu1loop2
+
+	stz dispcnt
+	;load palette
+	stz $2121
+	lda #$22
+	sta $4301
+	lda #$08
+	sta $4300
+	ldx #512
+	stx $4305
+	lda #$01
+	sta $420b
+	lda charptr
+	bne ptr2
+ptr1
+	lda #$04
+	sta $210b
+	sta charptr
+	ldx #$0000
+	stx $2116
+	bra msu1loop2
+ptr2
+	stz $210b
+	stz charptr
+	ldx #$4000
+	stx $2116
+	bra msu1loop2
