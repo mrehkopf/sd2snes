@@ -114,6 +114,7 @@ sd_dma snes_sd_dma(.CLK(CLK2),
 );
 						 
 dac_test snes_dac_test(.clkin(CLK2),
+                       .sysclk(SNES_SYSCLK),
                        .mclk(DAC_MCLK),
 							  .lrck(DAC_LRCK),
 							  .sdout(DAC_SDOUT),

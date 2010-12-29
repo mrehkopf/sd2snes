@@ -19,7 +19,8 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module dac_test(
-    input clkin,
+	 input clkin,
+    input sysclk,
 	 input we,
 	 input[10:0] pgm_address,
 	 input[7:0] pgm_data,
@@ -43,6 +44,15 @@ reg[7:0] vol_reg;
 reg[7:0] vol_target_reg;
 reg[1:0] vol_latch_reg;
 reg vol_valid;
+reg[2:0] sysclk_sreg;
+wire sysclk_rising = (sysclk_sreg[2:1] == 2'b01);
+
+reg [16:0] interpol_count;
+reg interpol_overflow;
+
+always @(posedge clkin) begin
+  sysclk_sreg <= {sysclk_sreg[1:0], sysclk};
+end
 
 dac_buf snes_dac_buf (
 	.clka(clkin),
@@ -95,6 +105,23 @@ initial begin
 end
 
 always @(posedge clkin) begin
+  if(reset_rising) begin
+    dac_address_r <= 0;
+	 interpol_overflow <= 0;
+	 interpol_count <= 0;
+  end else if(sysclk_rising) begin
+    if(interpol_count > 65437) begin
+	   interpol_count <= interpol_count + 135 - 65573;
+      dac_address_r <= dac_address_r + play_r;
+		interpol_overflow <= 1;
+	 end else begin
+		interpol_count <= interpol_count + 135;
+		interpol_overflow <= 0;
+	 end
+  end
+end
+
+always @(posedge clkin) begin
 	cnt <= cnt + 1;
 	lrck_sreg <= {lrck_sreg[1:0], lrck};
 	sclk_sreg <= {sclk_sreg[1:0], sclk};
@@ -126,7 +153,6 @@ end
 always @(posedge clkin) begin
    if (lrck_rising) begin	// right channel
 		smpshift <= (({16'h0, dac_data[31:16]^16'h8000} * vol_reg) >> 8) ^ 16'h8000;
-		dac_address_r <= reset_rising ? 9'h0 : (dac_address_r + play_r);
 		samples <= samples + 1;
 	end else if (lrck_falling) begin		// left channel
 		smpshift <= (({16'h0, dac_data[15:0]^16'h8000} * vol_reg) >> 8) ^ 16'h8000;
