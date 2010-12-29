@@ -1,9 +1,14 @@
 .data
 
-framecnt	.word 0
 dispcnt		.byt 0
 
-charaddr	.word 0
+stddur		.byt 0
+altdur		.byt 0
+altcnt		.byt 0
+curdur		.byt 0
+curcnt		.byt 0
+numframes	.word 0
+firstframe	.byt 0
 charptr		.byt 0
 
 ;----------parameters for dma----------

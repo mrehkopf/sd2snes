@@ -76,13 +76,18 @@ int main(int argc, char **argv) {
   char inpal[768], outpal[512];
 
   FILE *in, *out;
-  int fileno;
+  int fileno=1;
   uint16_t numcolors;
   char filename[80];
   out=fopen("out.msu", "wb");
-  for(fileno = 1; fileno < 9290; fileno++) {
-    sprintf(filename, "%08d.tga", fileno);
-    in=fopen(filename, "rb");
+  uint8_t numframes_l, numframes_h;
+  uint8_t std_frameduration = 2;
+  uint8_t alt_frameduration = 0;
+  uint8_t alt_durfreq = 0;
+  fwrite(&filename, 5, 1, out); /* write padding for now */
+  while(1) {
+    sprintf(filename, "%08d.tga", fileno++);
+    if((in=fopen(filename, "rb"))==NULL) break;
     fseek(in, 5, SEEK_SET);
     fread(&numcolors, 2, 1, in);
     fseek(in, 18, SEEK_SET);
@@ -99,6 +104,14 @@ int main(int argc, char **argv) {
     convertpalette(inpal, outpal);
     fwrite(outpal, 512, 1, out);
   }
+  numframes_l=fileno&0xff;
+  numframes_h=fileno>>8;
+  fseek(out, 0, SEEK_SET);
+  fwrite(&numframes_l, 1, 1, out);
+  fwrite(&numframes_h, 1, 1, out);
+  fwrite(&std_frameduration, 1, 1, out);
+  fwrite(&alt_frameduration, 1, 1, out);
+  fwrite(&alt_durfreq, 1, 1, out);
   fclose(out);
   return 0;
 }

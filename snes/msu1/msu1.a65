@@ -25,18 +25,39 @@ msu1init:
 	stx $4302
 	stz $4304
 
+	lda #$01
+	sta firstframe
+
 	rts
+
 
 msu1loop:
 	sep #$20 : .as
 	rep #$10 : .xl
 	stz dispcnt
-	lda #$01
-	sta MSU_CONTROL
+	lda $2001
+	sta numframes
+	lda $2001
+	sta numframes+1
+	lda $2001
+	sta curdur
+	sta stddur
+	lda $2001
+	sta altdur
+	lda $2001
+	sta altcnt
+	stz curcnt
+	ldy numframes
+	dey
+
 msu1loop2
 	lda isr_flag
 	beq msu1loop2
 	stz isr_flag
+	lda dispcnt
+	cmp #$02
+	beq +
+	bpl +
 	;load half picture
 	lda #$18
 	sta $4301
@@ -46,10 +67,31 @@ msu1loop2
 	stx $4305
 	lda #$01
 	sta $420b
-	inc dispcnt
++	inc dispcnt
 	lda dispcnt
-	cmp #$02
+	cmp curdur
 	bne msu1loop2
+
+	lda firstframe
+	beq +
+
+	lda #$01
+	sta MSU_CONTROL
+	stz firstframe
+
++
+	inc curcnt
+	lda curcnt
+	cmp altcnt
+	bne +
+	stz curcnt
+	lda altdur
+	bra skip
++	lda stddur
+skip	sta curdur
+	stz dispcnt
+	dey
+	beq msu1stop
 
 	;load palette
 	stz $2121
@@ -61,7 +103,6 @@ msu1loop2
 	stx $4305
 	lda #$01
 	sta $420b
-	stz dispcnt
 	lda charptr
 	bne ptr2
 ptr1
@@ -77,3 +118,11 @@ ptr2
 	ldx #$4000
 	stx $2116
 	jmp msu1loop2
+
+msu1stop:
+	lda #$80
+	sta $2100
+	stz $420c
+	stz MSU_CONTROL
+	- bra -
+
