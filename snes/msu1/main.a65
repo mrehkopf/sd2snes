@@ -6,6 +6,7 @@ GAME_MAIN:
 	jsr killdma
 	jsr waitblank
 	jsr snes_init
+	jsr spc_upload
 	lda #$01
 	sta $420d ; fast cpu
 	jsr setup_gfx
@@ -148,8 +149,7 @@ snes_init:
 	stz $420a		;
 	stz $420b		;
 	stz $420c		;
-	lda #$01
-	sta $420d		; FAAAAAST
+	stz $420d		; FAAAAAST
 	lda #$8f
 	sta $2100		;INIDISP: force blank
 	stz $2101		;

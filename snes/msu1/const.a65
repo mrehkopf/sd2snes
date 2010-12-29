@@ -14,11 +14,9 @@ hdma_blank	.byt 40
 
 ; h/vscroll: write to $210d twice, write to $210e twice (mode 3)
 ; adjust hscroll and vscroll to split one tilemap row into two display rows
-; (tilemap memory saving measure)
-hdma_scroll	.byt 40
-		.word 0
-		.word 511
-		.byt 16
+; in conjunction with 16x16 tiles this reduces the effective tilemap size
+; to 288 bytes
+hdma_scroll	.byt 56
 		.word 0
 		.word 152+255
 		.byt 16
@@ -51,13 +49,13 @@ hdma_scroll	.byt 40
 ; tilemap address switch: write to $2107 once (mode 0)
 ; last row of tilemap is located elsewhere due to size
 hdma_tilemap	.byt 40
-		.byt $3c
+		.byt $bc
 		.byt 127
-		.byt $3c
+		.byt $bc
 		.byt 1
-		.byt $3c
+		.byt $bc
 		.byt 1
-		.byt $7c
+		.byt $fc
 		.byt 0
 
 ; tilemap part 1 (goes to VRAM 7F00-7FFF)
@@ -89,3 +87,29 @@ tilemap		.word $0000, $0000, $0002, $0004, $0006, $0008, $000a, $000c
 tilemap2	.word $0000, $01c0, $01c2, $01c4, $01c6, $01c8, $01ca, $01cc
 		.word $01ce, $01e0, $01e2, $01e4, $01e6, $01e8, $01ea, $0000
 
+spcaddr		.word $0100	; target address
+spcexec		.word $0100	; execute address
+spclen		.byt 100	; length
+
+spccode		.byt $e8, $6c		; - MOV A, #$6c
+		.byt $c4, $f2		; MOV $f2, A
+		.byt $e8, $20		; MOV A, #$20
+		.byt $c4, $f3		; MOV $f3, A
+		.byt $78, $20, $f3	; CMP $f3, #$20
+		.byt $d0, $f3		; BNE -
+
+		.byt $e8, $2c		; - MOV A, #$6c
+		.byt $c4, $f2		; MOV $f2, A
+		.byt $e8, $00		; MOV A, #$20
+		.byt $c4, $f3		; MOV $f3, A
+		.byt $78, $00, $f3	; CMP $f3, #$20
+		.byt $d0, $f3		; BNE -
+
+		.byt $e8, $3c		; - MOV A, #$6c
+		.byt $c4, $f2		; MOV $f2, A
+		.byt $e8, $00		; MOV A, #$20
+		.byt $c4, $f3		; MOV $f3, A
+		.byt $78, $00, $f3	; CMP $f3, #$20
+		.byt $d0, $f3		; BNE -
+
+		.byt $2f, $fe		; - BRA -

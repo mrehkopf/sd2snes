@@ -1,0 +1,50 @@
+spc_upload:
+	rep #$20 : .al
+	sep #$10 : .xs
+
+	lda #$bbaa	; wait for IPL bootup
+-	cmp $2140
+	bne -
+
+	; IPL protocol: $2142-3 = target address
+	lda @spcaddr
+	sta $2142
+	ldx #$01
+	stx $2141
+	ldx #$cc
+	stx $2140
+	; wait for echo
+-	cpx $2140
+	bne -
+
+	; init counters
+	sep #$20 : .as
+	ldx #$00	; sequence counter
+	lda @spclen
+	tay		; countdown
+spc_loop
+	lda @spccode, x	; fill data byte
+	sta $2141	; write data...
+	stx $2140	; ...and write sequence counter
+-	cpx $2140	; wait for echo from IPL
+	bne -
+	inx		; increment sequence counter...
+	dey
+	bne spc_loop	; if not, do it again
+
+spc_end
+	rep #$20 : .al
+	lda @spcexec
+	sta $2142
+	stz $2141	; data = 0
+	ldx $2140
+	inx
+	inx
+	stx $2140	; send sequence end / execute
+-	cpx $2140	; wait for last echo
+	bne -
+
+	sep #$20 : .as
+	rep #$10 : .xl
+
+	rts		; and done!

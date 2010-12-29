@@ -1,4 +1,4 @@
-OBJS = header.ips reset.o65 main.o65 data.o65 const.o65 dma.o65 msu1.o65 # gfx.o65 # vars.o65
+OBJS = header.ips reset.o65 main.o65 data.o65 const.o65 dma.o65 msu1.o65 spc.o65 # gfx.o65 # vars.o65
 
 all: msu1vid.sfc
 

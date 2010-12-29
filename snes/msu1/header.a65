@@ -9,23 +9,22 @@ RESET:
         jmp @GAME_MAIN
 
 NMI_16bit:
-        php
-         rep #$30 : .al : .xl
-         pha: phx: phy: phd: phb
-          jsl @NMI_ROUTINE
-          rep #$30 : .al : .xl
-int_exit:
-         plb: pld: ply: plx: pla
-        plp
+	pha
+	sep #$20 : .as
+        lda $4210       ; ack interrupt
+        lda #$0e
+        sta $420c  ; enable HDMA ch. 1-3
+	pla
         rti
 
 IRQ_16bit:
-        php
-         rep #$30 : .al : .xl
-         pha: phx: phy: phd: phb
-          jsl @IRQ_ROUTINE
-          rep #$30 : .al : .xl
-          bra int_exit
+	pha
+	sep #$20 : .as
+        lda #$01
+        sta isr_flag
+        lda $4211  ;Acknowledge irq
+	pla
+        rti
 
 ;error vectors
 ABT_8bit: ABT_16bit:

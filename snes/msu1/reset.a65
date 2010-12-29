@@ -11,16 +11,20 @@
 ; NMI - called on VBlank
 NMI_ROUTINE:
         sep #$20 : .as
+	pha
         lda $4210	; ack interrupt
-	lda #$0e
-	sta $420c  ; enable HDMA ch. 1-3
+;	lda #$0e
+;	sta $420c  ; enable HDMA ch. 1-3
+	pla
         rtl
 
 ; IRQ - called when triggered
 IRQ_ROUTINE:
         sep #$20 : .as
+	pha
+        lda $4211  ;Acknowledge irq
 	lda #$01
 	sta isr_flag
-        lda $4211  ;Acknowledge irq
+	pla
         rtl
 

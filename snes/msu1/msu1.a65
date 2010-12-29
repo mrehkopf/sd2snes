@@ -9,6 +9,10 @@ msu1init:
 	stx MSU_SEEK_BANK
 -	bit MSU_STATUS
 	bmi -
+
+	stx MSU_TRACK
+-	bit MSU_STATUS
+	bvs -
 	ldx #$0000
 	stx $2116
 
@@ -27,6 +31,8 @@ msu1loop:
 	sep #$20 : .as
 	rep #$10 : .xl
 	stz dispcnt
+	lda #$01
+	sta MSU_CONTROL
 msu1loop2
 	lda isr_flag
 	beq msu1loop2
@@ -45,7 +51,6 @@ msu1loop2
 	cmp #$02
 	bne msu1loop2
 
-	stz dispcnt
 	;load palette
 	stz $2121
 	lda #$22
@@ -56,6 +61,7 @@ msu1loop2
 	stx $4305
 	lda #$01
 	sta $420b
+	stz dispcnt
 	lda charptr
 	bne ptr2
 ptr1
@@ -64,10 +70,10 @@ ptr1
 	sta charptr
 	ldx #$0000
 	stx $2116
-	bra msu1loop2
+	jmp msu1loop2
 ptr2
 	stz $210b
 	stz charptr
 	ldx #$4000
 	stx $2116
-	bra msu1loop2
+	jmp msu1loop2
