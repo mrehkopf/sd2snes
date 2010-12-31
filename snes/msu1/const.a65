@@ -89,27 +89,27 @@ tilemap2	.word $0000, $01c0, $01c2, $01c4, $01c6, $01c8, $01ca, $01cc
 
 spcaddr		.word $0100	; target address
 spcexec		.word $0100	; execute address
-spclen		.byt 100	; length
+spclen		.byt 41		; length
 
-spccode		.byt $e8, $6c		; - MOV A, #$6c
+spccode		.byt $e8, $6c		; - MOV A, #$6c ; FLG register
 		.byt $c4, $f2		; MOV $f2, A
-		.byt $e8, $20		; MOV A, #$20
+		.byt $e8, $20		; MOV A, #$20   ; unmute, disable echo
 		.byt $c4, $f3		; MOV $f3, A
 		.byt $78, $20, $f3	; CMP $f3, #$20
 		.byt $d0, $f3		; BNE -
 
-		.byt $e8, $2c		; - MOV A, #$6c
+		.byt $e8, $2c		; - MOV A, #$2c ; Echo volume left
 		.byt $c4, $f2		; MOV $f2, A
-		.byt $e8, $00		; MOV A, #$20
+		.byt $e8, $00		; MOV A, #$00   ; silent
 		.byt $c4, $f3		; MOV $f3, A
-		.byt $78, $00, $f3	; CMP $f3, #$20
+		.byt $78, $00, $f3	; CMP $f3, #$00
 		.byt $d0, $f3		; BNE -
 
-		.byt $e8, $3c		; - MOV A, #$6c
+		.byt $e8, $3c		; - MOV A, #$3c ; Echo volume right
 		.byt $c4, $f2		; MOV $f2, A
-		.byt $e8, $00		; MOV A, #$20
+		.byt $e8, $00		; MOV A, #$00   ; silent
 		.byt $c4, $f3		; MOV $f3, A
-		.byt $78, $00, $f3	; CMP $f3, #$20
+		.byt $78, $00, $f3	; CMP $f3, #$00
 		.byt $d0, $f3		; BNE -
 
 		.byt $2f, $fe		; - BRA -
