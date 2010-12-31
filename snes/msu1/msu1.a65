@@ -46,52 +46,52 @@ msu1loop:
 	sta altdur
 	lda $2001
 	sta altcnt
-	stz curcnt
-	ldy numframes
-	dey
+	lda #$01
+	sta curcnt
+	ldx numframes
+	dex
 
 msu1loop2
 	lda isr_flag
 	beq msu1loop2
 	stz isr_flag
-	lda dispcnt
-	cmp #$02
-	beq +
+	lda dispcnt	;load field count
+	cmp #$02	;if >= 2 don't draw anymore
 	bpl +
 	;load half picture
 	lda #$18
 	sta $4301
 	lda #$09
 	sta $4300
-	ldx #16256
-	stx $4305
+	ldy #16256
+	sty $4305
 	lda #$01
 	sta $420b
-+	inc dispcnt
-	lda dispcnt
-	cmp curdur
-	bne msu1loop2
++	inc dispcnt	;inc field count
+	lda dispcnt	;and compare with current duration
+	cmp curdur	;if not reached...
+	bne msu1loop2   ;...wait another field
 
-	lda firstframe
+	lda firstframe	;first frame ready for display?
 	beq +
 
-	lda #$01
+	lda #$01	;then start audio
 	sta MSU_CONTROL
 	stz firstframe
 
 +
-	inc curcnt
-	lda curcnt
-	cmp altcnt
-	bne +
-	stz curcnt
-	lda altdur
+	lda curcnt	;
+	cmp altcnt	;compare with alternation frequency
+	bne +		;if reached...
+	stz curcnt	;...reset current frame count
+	lda altdur	;use alternate duration for next frame
 	bra skip
-+	lda stddur
-skip	sta curdur
-	stz dispcnt
-	dey
-	beq msu1stop
++	lda stddur	;else use normal duration
+	inc curcnt	;and inc current frame count
+skip	sta curdur	;store in current duration
+	stz dispcnt	;reset field counter
+	dex		;countdown total frames
+	beq msu1stop	;stop if end of movie
 
 	;load palette
 	stz $2121
@@ -99,8 +99,8 @@ skip	sta curdur
 	sta $4301
 	lda #$08
 	sta $4300
-	ldx #512
-	stx $4305
+	ldy #512
+	sty $4305
 	lda #$01
 	sta $420b
 	lda charptr
@@ -109,14 +109,14 @@ ptr1
 	lda #$04
 	sta $210b
 	sta charptr
-	ldx #$0000
-	stx $2116
+	ldy #$0000
+	sty $2116
 	jmp msu1loop2
 ptr2
 	stz $210b
 	stz charptr
-	ldx #$4000
-	stx $2116
+	ldy #$4000
+	sty $2116
 	jmp msu1loop2
 
 msu1stop:

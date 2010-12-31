@@ -2,11 +2,11 @@
 
 dispcnt		.byt 0
 
-stddur		.byt 0
-altdur		.byt 0
-altcnt		.byt 0
-curdur		.byt 0
-curcnt		.byt 0
+stddur		.byt 0	; standard picture duration in fields
+altdur		.byt 0	; alternate picture duration in fields
+altcnt		.byt 0	; use alternate picture duration every n frames
+curdur		.byt 0	; current valid duration
+curcnt		.byt 0	; current frame count for picture duration
 numframes	.word 0
 firstframe	.byt 0
 charptr		.byt 0

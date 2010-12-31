@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
   char inpal[768], outpal[512];
 
   FILE *in, *out;
-  int fileno=1;
+  int fileno=0, startframe=0;
   uint16_t numcolors;
   char filename[80];
   out=fopen("out.msu", "wb");
@@ -87,7 +87,14 @@ int main(int argc, char **argv) {
   fwrite(&filename, 5, 1, out); /* write padding for now */
   while(1) {
     sprintf(filename, "%08d.tga", fileno++);
-    if((in=fopen(filename, "rb"))==NULL) break;
+    if((in=fopen(filename, "rb"))==NULL) {
+      if(fileno==1) {
+        startframe = 1;
+        continue;
+      } else {
+        break;
+      }
+    }
     fseek(in, 5, SEEK_SET);
     fread(&numcolors, 2, 1, in);
     fseek(in, 18, SEEK_SET);
@@ -104,6 +111,7 @@ int main(int argc, char **argv) {
     convertpalette(inpal, outpal);
     fwrite(outpal, 512, 1, out);
   }
+  fileno-=startframe;
   numframes_l=fileno&0xff;
   numframes_h=fileno>>8;
   fseek(out, 0, SEEK_SET);

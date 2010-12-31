@@ -6,10 +6,13 @@ spc_upload:
 -	cmp $2140
 	bne -
 
-	; IPL protocol: $2142-3 = target address
+	; IPL portmap outside transfer state:
+	; $2141   = command (transfer / run)
+	; $2142-3 = target address
+	; $2140   = trigger
 	lda @spcaddr
 	sta $2142
-	ldx #$01
+	ldx #$01	; transfer
 	stx $2141
 	ldx #$cc
 	stx $2140
@@ -17,6 +20,9 @@ spc_upload:
 -	cpx $2140
 	bne -
 
+	; IPL portmap inside transfer state:
+	; $2140 = sequence number
+	; $2141 = payload
 	; init counters
 	sep #$20 : .as
 	ldx #$00	; sequence counter
@@ -35,8 +41,8 @@ spc_loop
 spc_end
 	rep #$20 : .al
 	lda @spcexec
-	sta $2142
-	stz $2141	; data = 0
+	sta $2142	; set exec address
+	stz $2141	; command: run
 	ldx $2140
 	inx
 	inx
