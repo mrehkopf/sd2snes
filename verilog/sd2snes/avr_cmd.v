@@ -164,6 +164,8 @@ always @(posedge clk) begin
 				SD_DMA_TGTr <= cmd_data[1:0];
 				SD_DMA_PARTIALr <= cmd_data[2];
 			end
+			4'h8: SD_DMA_TGTr <= 2'b00;
+			4'h9: SD_DMA_TGTr <= cmd_data[1:0];
 //			4'hE:
 			   // select memory unit
       endcase
@@ -283,7 +285,7 @@ always @(posedge clk) begin
 				endcase
       endcase
    end
-   if (SD_DMA_NEXTADDR | (mcu_nextaddr & (cmd_data[7:5] == 3'h4) && (cmd_data[0]) && (spi_byte_cnt > (32'h1+cmd_data[4])))) begin
+   if (SD_DMA_NEXTADDR | (mcu_nextaddr & (cmd_data[7:5] == 3'h4) && (cmd_data[3]) && (spi_byte_cnt > (32'h1+cmd_data[4])))) begin
 		case (SD_DMA_TGTr)
 			2'b00: ADDR_OUT_BUF <= ADDR_OUT_BUF + 1;
 			2'b01: DAC_ADDR_OUT_BUF <= DAC_ADDR_OUT_BUF + 1;

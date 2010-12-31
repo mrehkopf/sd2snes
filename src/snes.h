@@ -32,6 +32,7 @@
 
 uint8_t crc_valid;
 
+void prepare_reset(void);
 void snes_init(void);
 void snes_reset(int state);
 uint8_t get_snes_reset(void);

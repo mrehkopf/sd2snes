@@ -57,8 +57,8 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0put\0d4\0vmode\0mapper\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_PUT, CMD_D4, CMD_VMODE, CMD_MAPPER };
+  "cd\0reset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0saveraw\0put\0d4\0vmode\0mapper\0";
+enum { CMD_CD = 0, CMD_RESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_D4, CMD_VMODE, CMD_MAPPER };
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
@@ -151,7 +151,7 @@ static int8_t parse_wordlist(char *wordlist) {
       cur++;
       c = *ptr;
     } while (c != 0);
-    
+
     if (matched) {
       char *tmp = curchar;
 
@@ -294,6 +294,13 @@ static void cmd_loadrom(void) {
   load_rom((uint8_t*)curchar, address);
   set_mcu_ovr(0);
   snes_reset(0);
+}
+
+static void cmd_saveraw(void) {
+  uint32_t address = parse_unsigned(0,16777216);
+  uint32_t length = parse_unsigned(0,16777216);
+  set_mcu_ovr(0);
+  save_sram((uint8_t*)curchar, length, address);
 }
 
 static void cmd_d4(void) {
@@ -449,6 +456,10 @@ void cli_loop(void) {
 
     case CMD_LOADROM:
       cmd_loadrom();
+      break;
+
+    case CMD_SAVERAW:
+      cmd_saveraw();
       break;
 
     case CMD_D4:

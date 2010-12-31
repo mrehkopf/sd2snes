@@ -3,6 +3,7 @@
 
 // #define DEBUG_SD
 // #define DEBUG_IRQ
+#define DEBUG_MSU1
 
 #define VER                       "0.0.1(NSFW)"
 #define IN_AHBRAM                 __attribute__ ((section(".ahbram")))
@@ -28,7 +29,7 @@
 #define SD_SUPPLY_VOLTAGE         (1L<<21) /* 3.3V - 3.4V */
 #define CONFIG_SD_BLOCKTRANSFER   1
 #define CONFIG_SD_AUTO_RETRIES    10
-// #define SD_CHANGE_VECT		
+// #define SD_CHANGE_VECT
 // #define CONFIG_SD_DATACRC 1
 
 

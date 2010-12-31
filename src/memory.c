@@ -59,7 +59,7 @@ void sram_hexdump(uint32_t addr, uint32_t len) {
 void sram_writebyte(uint8_t val, uint32_t addr) {
   set_mcu_addr(addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x91); /* WRITE */
+  FPGA_TX_BYTE(0x98); /* WRITE */
   FPGA_TX_BYTE(val);
   FPGA_TX_BYTE(0x00); /* dummy */
   FPGA_DESELECT();
@@ -68,7 +68,7 @@ void sram_writebyte(uint8_t val, uint32_t addr) {
 uint8_t sram_readbyte(uint32_t addr) {
   set_mcu_addr(addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x81); /* READ */
+  FPGA_TX_BYTE(0x88); /* READ */
   FPGA_TX_BYTE(0x00); /* dummy */
   uint8_t val = FPGA_TXRX_BYTE(0x00);
   FPGA_DESELECT();
@@ -78,7 +78,7 @@ uint8_t sram_readbyte(uint32_t addr) {
 void sram_writeshort(uint16_t val, uint32_t addr) {
   set_mcu_addr(addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x91); /* WRITE */
+  FPGA_TX_BYTE(0x98); /* WRITE */
   FPGA_TX_BYTE(val&0xff);
   FPGA_TX_BYTE((val>>8)&0xff);
   FPGA_TX_BYTE(0x00); /* dummy */
@@ -88,7 +88,7 @@ void sram_writeshort(uint16_t val, uint32_t addr) {
 void sram_writelong(uint32_t val, uint32_t addr) {
   set_mcu_addr(addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x91); /* WRITE */
+  FPGA_TX_BYTE(0x98); /* WRITE */
   FPGA_TX_BYTE(val&0xff);
   FPGA_TX_BYTE((val>>8)&0xff);
   FPGA_TX_BYTE((val>>16)&0xff);
@@ -100,7 +100,7 @@ void sram_writelong(uint32_t val, uint32_t addr) {
 uint16_t sram_readshort(uint32_t addr) {
   set_mcu_addr(addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x81);
+  FPGA_TX_BYTE(0x88);
   FPGA_TX_BYTE(0x00);
   uint32_t val = FPGA_TXRX_BYTE(0x00);
   val |= ((uint32_t)FPGA_TXRX_BYTE(0x00)<<8);
@@ -111,7 +111,7 @@ uint16_t sram_readshort(uint32_t addr) {
 uint32_t sram_readlong(uint32_t addr) {
   set_mcu_addr(addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x81);
+  FPGA_TX_BYTE(0x88);
   FPGA_TX_BYTE(0x00);
   uint32_t val = FPGA_TXRX_BYTE(0x00);
   val |= ((uint32_t)FPGA_TXRX_BYTE(0x00)<<8);
@@ -124,7 +124,7 @@ uint32_t sram_readlong(uint32_t addr) {
 void sram_readlongblock(uint32_t* buf, uint32_t addr, uint16_t count) {
   set_mcu_addr(addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x81);
+  FPGA_TX_BYTE(0x88);
   FPGA_TX_BYTE(0x00);
   uint16_t i=0;
   while(i<count) {
@@ -142,7 +142,7 @@ void sram_readblock(void* buf, uint32_t addr, uint16_t size) {
   uint8_t* tgt = buf;
   set_mcu_addr(addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x81);	/* READ */
+  FPGA_TX_BYTE(0x88);	/* READ */
   FPGA_TX_BYTE(0x00);	/* dummy */
   while(count--) {
     *(tgt++) = FPGA_TXRX_BYTE(0x00);
@@ -155,7 +155,7 @@ void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
   uint8_t* src = buf;
   set_mcu_addr(addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x91);	/* WRITE */
+  FPGA_TX_BYTE(0x98);	/* WRITE */
   while(count--) {
     FPGA_TX_BYTE(*src++);
   }
@@ -212,7 +212,7 @@ ticks_total=getticks()-ticksstart;
   printf("%u ticks in read, %u ticks in tx, %u ticks total\n", ticks_read, ticks_tx, ticks_total);
   uint32_t rammask;
   uint32_t rommask;
-	
+
   if(filesize > (romprops.romsize_bytes + romprops.offset)) {
     romprops.romsize_bytes <<= 1;
   }
@@ -241,7 +241,7 @@ uint32_t load_sram(uint8_t* filename, uint32_t base_addr) {
     bytes_read = file_read();
     if (file_res || !bytes_read) break;
     FPGA_SELECT();
-    FPGA_TX_BYTE(0x91);
+    FPGA_TX_BYTE(0x98);
     for(int j=0; j<bytes_read; j++) {
       FPGA_TX_BYTE(file_buf[j]);
     }
@@ -260,7 +260,7 @@ uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr) {
   filesize = file_handle.fsize;
   if(file_res) return 0;
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x91);
+  FPGA_TX_BYTE(0x98);
   for(;;) {
     data = rle_file_getc();
     if (file_res || file_status) break;
@@ -277,9 +277,9 @@ uint32_t load_bootrle(uint32_t base_addr) {
   set_mcu_addr(base_addr);
   DWORD filesize = 0;
   rle_mem_init(bootrle, sizeof(bootrle));
-  
+
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x91);
+  FPGA_TX_BYTE(0x98);
   for(;;) {
     data = rle_mem_getc();
     if(rle_state) break;
@@ -304,7 +304,7 @@ void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
   while(count<sram_size) {
     set_mcu_addr(base_addr+count);
     FPGA_SELECT();
-    FPGA_TX_BYTE(0x81); /* read */
+    FPGA_TX_BYTE(0x88); /* read */
     FPGA_TX_BYTE(0x00); /* dummy */
     for(int j=0; j<sizeof(file_buf); j++) {
       file_buf[j] = FPGA_TXRX_BYTE(0x00);
@@ -328,7 +328,7 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
   crc_valid=1;
   set_mcu_addr(base_addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x81);
+  FPGA_TX_BYTE(0x88);
   FPGA_TX_BYTE(0x00);
   for(count=0; count<size; count++) {
     data = FPGA_TXRX_BYTE(0x00);
@@ -375,7 +375,7 @@ uint8_t sram_reliable() {
 void sram_memset(uint32_t base_addr, uint32_t len, uint8_t val) {
   set_mcu_addr(base_addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x91);
+  FPGA_TX_BYTE(0x98);
   for(uint32_t i=0; i<len; i++) {
     FPGA_TX_BYTE(val);
   }

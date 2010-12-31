@@ -47,7 +47,7 @@ reg vol_valid;
 reg[2:0] sysclk_sreg;
 wire sysclk_rising = (sysclk_sreg[2:1] == 2'b01);
 
-reg [16:0] interpol_count;
+reg [25:0] interpol_count;
 reg interpol_overflow;
 
 always @(posedge clkin) begin
@@ -110,12 +110,12 @@ always @(posedge clkin) begin
 	 interpol_overflow <= 0;
 	 interpol_count <= 0;
   end else if(sysclk_rising) begin
-    if(interpol_count > 65437) begin
-	   interpol_count <= interpol_count + 135 - 65573;
+    if(interpol_count > 59378938) begin
+	   interpol_count <= interpol_count + 122500 - 59501439;
       dac_address_r <= dac_address_r + play_r;
 		interpol_overflow <= 1;
 	 end else begin
-		interpol_count <= interpol_count + 135;
+		interpol_count <= interpol_count + 122500;
 		interpol_overflow <= 0;
 	 end
   end

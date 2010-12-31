@@ -37,16 +37,35 @@
 #include "timer.h"
 #include "cli.h"
 #include "fpga.h"
+#include "fpga_spi.h"
 
 uint8_t initloop=1;
 uint32_t saveram_crc, saveram_crc_old;
 extern snes_romprops_t romprops;
 
+void prepare_reset() {
+  set_mcu_ovr(1);
+  snes_reset(1);
+  delay_ms(1);
+  if(romprops.ramsize_bytes && fpga_test() == FPGA_TEST_TOKEN) {
+    writeled(1);
+    save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+    writeled(0);
+  }
+  rdyled(1);
+  readled(1);
+  writeled(1);
+  snes_reset(0);
+  while(get_snes_reset());
+  snes_reset(1);
+  delay_ms(200);
+}
+
 void snes_init() {
   /* put reset level on reset pin */
   BITBAND(SNES_RESET_REG->FIOCLR, SNES_RESET_BIT) = 1;
   /* reset the SNES */
-  snes_reset(1); 
+  snes_reset(1);
 }
 
 /*
@@ -106,7 +125,7 @@ void snes_main_loop() {
       diffcount=0;
       writeled(1);
       save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
-      didnotsave=0;	
+      didnotsave=0;
       writeled(0);
     }
     saveram_crc_old = saveram_crc;

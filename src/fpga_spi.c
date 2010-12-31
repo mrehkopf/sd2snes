@@ -27,7 +27,7 @@
 
 	SPI commands
 
-	cmd	param		function	
+	cmd	param		function
    =============================================
 	0t	bbhhll		set address to 0xbbhhll
 				t = target
@@ -50,12 +50,15 @@
 	60	sssseeee	set SD DMA partial transfer start+end
 				ssss = start offset (msb first)
 				eeee = end offset (msb first)
-	
-	80	-		read with increment (RAM only)
-	81	-		read w/o increment (RAM only)
 
-	90	{xx}*		write xx with increment (RAM only)
-	91	{xx}*		write xx w/o increment (RAM only)
+	8p	-		read (RAM only)
+				p: 0 = no increment after read
+				   1 = increment after read
+
+	9p	{xx}*		write xx
+				p: tt-i
+				tt = target (see above)
+				i = increment (see above)
 
 	E0	ssrr		set MSU-1 status register (=FPGA status byte 2)
 				ss = bits to set in status register (1=set)
@@ -64,17 +67,17 @@
 	E1	-		pause DAC
 	E2	-		resume/play DAC
 	E3	-		reset DAC playback pointer (0)
-	E4	-		reset MSU read pointer (0)
+	E4	hhll		set MSU read pointer
 
 	F0	-		receive test token (to see if FPGA is alive)
-	F1	-		receive status
+	F1	-		receive status (2 bytes)
 
 	F2	-		get MSU data address (32bit, MSB first)
 	F3	-		get MSU audio track no. (16bit, MSB first)
 	F4	-		get MSU volume (8bit)
 
 	FE	-		get SNES master clock frequency (32bit, MSB first)
-	FF	{xx]*		echo (returns the sent data in the next byte)
+	FF	{xx}*		echo (returns the sent data in the next byte)
 */
 
 #include <arm/NXP/LPC17xx/LPC17xx.h>
