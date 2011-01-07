@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Thu 06 Jan 2011 03:40:00 AM CET
+EESchema Schematic File Version 2  date Fri 07 Jan 2011 11:33:19 AM CET
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A3 16535 11700
 Sheet 6 6
 Title "sd2snes Mark II"
-Date "6 jan 2011"
+Date "7 jan 2011"
 Rev "B"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -56,9 +56,9 @@ Comment4 ""
 $EndDescr
 Connection ~ 3750 10950
 Wire Wire Line
-	4000 10950 4000 10850
+	4000 10850 4000 10950
 Wire Wire Line
-	3000 10950 4000 10950
+	4000 10950 3000 10950
 Wire Wire Line
 	12000 9350 10500 9350
 Wire Wire Line
