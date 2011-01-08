@@ -57,6 +57,8 @@ TARGET = $(OBJDIR)/sd2snes
 # List C source files here. (C dependencies are automatically generated.)
 SRC = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c printf.c spi.c fileops.c rtc.c fpga.c fpga_spi.c snes.c smc.c memory.c filetypes.c faulthandler.c sort.c crc32.c cic.c cli.c xmodem.c irq.c rle.c sdnative.c msu1.c
 
+# usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
+
 
 # List Assembler source files here.
 #     Make them always end in a capital .S.  Files ending in a lowercase .s
@@ -65,7 +67,7 @@ SRC = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c printf.c spi.c f
 #     Even though the DOS/Win* filesystem matches both .s and .S the same,
 #     it will preserve the spelling of the filenames, and gcc itself does
 #     care about how the name is spelled on its command-line.
-ASRC = startup.S crctab.S crc.S
+ASRC = startup.S crc.S
 
 
 # Optimization level, can be [0, 1, 2, 3, s].
@@ -256,7 +258,7 @@ $(OBJDIR)/%.sym: $(OBJDIR)/%.elf
 # Link: create ELF output file from object files.
 .SECONDARY : $(TARGET).elf
 .PRECIOUS : $(OBJ)
-$(OBJDIR)/%.elf: $(OBJ)
+$(TARGET).elf : $(OBJ)
 	$(E) "  LINK   $@"
 	$(Q)$(CC) $(ALL_CFLAGS) $^ --output $@ $(LDFLAGS)
 
@@ -282,7 +284,7 @@ $(OBJDIR)/%.i : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h
 	$(CC) -E -mmcu=$(MCU) -I. $(CFLAGS) $< -o $@
 
 # Create the output directory
-$(OBJDIR):
+$(OBJDIR) :
 	$(E) "  MKDIR  $(OBJDIR)"
 	$(Q)mkdir $(OBJDIR)
 
