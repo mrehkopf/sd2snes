@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Fri 07 Jan 2011 11:33:19 AM CET
+EESchema Schematic File Version 2  date Fri 14 Jan 2011 01:12:41 PM CET
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -46,7 +46,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 4 6
 Title "sd2snes Mark II"
-Date "7 jan 2011"
+Date "14 jan 2011"
 Rev "B"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -856,9 +856,11 @@ $Comp
 L USB_MINIB J421
 U 1 1 4BF00175
 P 10100 4700
-F 0 "J421" H 10250 4700 60  0000 C CNN
-F 1 "USB_MINIB" H 10250 4300 60  0000 C CNN
+F 0 "J421" H 10100 5100 60  0000 C CNN
+F 1 "Molex 54819" H 10250 4300 60  0000 C CNN
 F 2 "USB-MINIB-THT" H 10100 4700 60  0001 C CNN
+F 4 "Molex" H 10100 4700 60  0001 C CNN "Manufacturer"
+F 5 "Assmann A-USBB-M5" H 10100 4700 60  0001 C CNN "Value"
 	1    10100 4700
 	1    0    0    -1  
 $EndComp
@@ -899,8 +901,8 @@ $Comp
 L SD_CARD J411
 U 1 1 4BAA6A9C
 P 9650 3250
-F 0 "J411" H 9400 2700 60  0000 C CNN
-F 1 "SD_CARD" H 9650 3750 60  0000 C CNN
+F 0 "J411" H 9350 3750 60  0000 C CNN
+F 1 "Hirose DM1AA" H 9850 2700 60  0000 C CNN
 	1    9650 3250
 	1    0    0    -1  
 $EndComp
