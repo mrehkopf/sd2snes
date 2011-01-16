@@ -1,4 +1,4 @@
-update=Thu 13 Jan 2011 09:19:31 PM CET
+update=Sun 16 Jan 2011 03:15:31 AM CET
 version=1
 last_client=pcbnew
 [general]
@@ -116,3 +116,4 @@ LibName10=dip_sockets
 LibName11=libs/snescart
 LibName12=libs/mypackages
 LibName13=libs/sdcard
+LibName14=libs/hai

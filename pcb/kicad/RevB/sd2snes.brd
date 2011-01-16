@@ -1,4 +1,4 @@
-PCBNEW-BOARD Version 1 date Thu 13 Jan 2011 10:43:16 PM CET
+PCBNEW-BOARD Version 1 date Sun 16 Jan 2011 03:17:52 AM CET
 
 # Created by Pcbnew(2010-12-16 BZR 2663)-testing
 
@@ -20,7 +20,7 @@ $EndGENERAL
 $SHEETDESCR
 Sheet A4 11700 8267
 Title "sd2snes Mark II"
-Date "13 jan 2011"
+Date "16 jan 2011"
 Rev "A"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -11105,7 +11105,7 @@ Po 44000 27540 500 500 75 0
 De 20 0 0 Normal
 $EndTEXTPCB
 $TEXTPCB
-Te "Rev.B / 2011-01-13"
+Te "Rev.B / 2011-01-16"
 Po 44720 26500 500 500 75 0
 De 20 0 0 Normal
 $EndTEXTPCB
