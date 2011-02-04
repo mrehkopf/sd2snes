@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 02 Feb 2011 07:10:00 PM CET
+EESchema Schematic File Version 2  date Fri 04 Feb 2011 01:04:25 PM CET
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -40,13 +40,14 @@ LIBS:cs4344
 LIBS:double_sch_kcom
 LIBS:usb_minib
 LIBS:mic23250
+LIBS:cy62158ev30
 LIBS:sd2snes-cache
 EELAYER 25  0
 EELAYER END
 $Descr A4 11700 8267
 Sheet 1 6
 Title "sd2snes Mark II"
-Date "2 feb 2011"
+Date "4 feb 2011"
 Rev "B"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -57,7 +58,7 @@ $EndDescr
 Wire Notes Line
 	3650 4200 6150 4200
 Text Notes 3300 3250 0    100  ~ 0
-Changes from Rev.A / TODO:\n [x] remove FPGA from JTAG chain\n [x] remove SNES IRQ_DIR+IRQ, replace with IRQ_OE. IRQ is unidirectional cart -> console\n      (replace 1gate w/ transistor)\n [x] disconnect P2.10 from FPGA, using a different GPIO for IRQ / INIT_B\n [x] add pullup to P2.10\n [ ] add JTAG pullups\n [x] add series resistor for CPU_CLK\n [x] add a jumper in PIC MCLR line to MCU\n [x] change PIC to DIP8 type for easier preprogramming\n [x] change "P1" to "P401" in pin description in silk screen\n [x] filter CIC data lines\n [x] rearrange SD card interface/LEDs on MCU\n [ ] RAs for SNES signals?\n [x] reroute/add decoupling capacitors\n [x] filter SNES control signals (RD, WR, PARD, PAWR, CPU_CLK, IRQ)
+Changes from Rev.A / TODO:\n [x] remove FPGA from JTAG chain\n [x] remove SNES IRQ_DIR+IRQ, replace with IRQ_OE. IRQ is unidirectional cart -> console\n      (replace 1gate w/ transistor)\n [x] disconnect P2.10 from FPGA, using a different GPIO for IRQ / INIT_B\n [x] add pullup to P2.10\n [ ] add JTAG pullups\n [x] add series resistor for CPU_CLK\n [x] add a jumper in PIC MCLR line to MCU\n [x] change PIC to DIP8 type for easier preprogramming\n [x] change "P1" to "P401" in pin description in silk screen\n [x] filter CIC data lines\n [x] rearrange SD card interface/LEDs on MCU\n [ ] RAs for SNES signals?\n [x] reroute/add decoupling capacitors\n [x] filter SNES control signals (RD, WR, PARD, PAWR, CPU_CLK, IRQ)\n [x] replace 4Mbit SRAM with much cheaper TSOP-II type\n [ ] add inverse polarity protection
 $Sheet
 S 1250 1250 1700 1250
 U 4B6E16F2

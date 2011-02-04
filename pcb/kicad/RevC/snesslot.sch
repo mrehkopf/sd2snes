@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 02 Feb 2011 07:10:00 PM CET
+EESchema Schematic File Version 2  date Fri 04 Feb 2011 01:04:25 PM CET
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -40,13 +40,14 @@ LIBS:cs4344
 LIBS:double_sch_kcom
 LIBS:usb_minib
 LIBS:mic23250
+LIBS:cy62158ev30
 LIBS:sd2snes-cache
 EELAYER 25  0
 EELAYER END
 $Descr A3 16535 11700
 Sheet 2 6
 Title "sd2snes Mark II"
-Date "2 feb 2011"
+Date "4 feb 2011"
 Rev "B"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -54,6 +55,15 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+$Comp
+L +5VL #PWR17
+U 1 1 4D4BC910
+P 8300 2900
+F 0 "#PWR17" H 8300 3030 20  0001 C CNN
+F 1 "+5VL" H 8300 3000 30  0000 C CNN
+	1    8300 2900
+	1    0    0    -1  
+$EndComp
 Wire Wire Line
 	10100 7600 9800 7600
 Wire Wire Line
@@ -1788,46 +1798,37 @@ F 1 "+5V" H 14000 2250 50  0000 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L +5V #PWR025
-U 1 1 4B6E9D3D
-P 8300 2900
-F 0 "#PWR025" H 8300 2990 20  0001 C CNN
-F 1 "+5V" H 8300 2990 30  0000 C CNN
-	1    8300 2900
-	1    0    0    -1  
-$EndComp
-$Comp
-L GND #PWR026
+L GND #PWR025
 U 1 1 4B6E9C12
 P 14250 5600
-F 0 "#PWR026" H 14250 5600 30  0001 C CNN
+F 0 "#PWR025" H 14250 5600 30  0001 C CNN
 F 1 "GND" H 14250 5530 30  0001 C CNN
 	1    14250 5600
 	-1   0    0    -1  
 $EndComp
 $Comp
-L GND #PWR027
+L GND #PWR026
 U 1 1 4B6E9C04
 P 2350 5600
-F 0 "#PWR027" H 2350 5600 30  0001 C CNN
+F 0 "#PWR026" H 2350 5600 30  0001 C CNN
 F 1 "GND" H 2350 5530 30  0001 C CNN
 	1    2350 5600
 	-1   0    0    -1  
 $EndComp
 $Comp
-L GND #PWR028
+L GND #PWR027
 U 1 1 4B6E9BA6
 P 8300 7700
-F 0 "#PWR028" H 8300 7700 30  0001 C CNN
+F 0 "#PWR027" H 8300 7700 30  0001 C CNN
 F 1 "GND" H 8300 7630 30  0001 C CNN
 	1    8300 7700
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR029
+L GND #PWR028
 U 1 1 4B6E9B44
 P 2350 9300
-F 0 "#PWR029" H 2350 9300 30  0001 C CNN
+F 0 "#PWR028" H 2350 9300 30  0001 C CNN
 F 1 "GND" H 2350 9230 30  0001 C CNN
 	1    2350 9300
 	1    0    0    -1  

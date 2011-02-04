@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Wed 02 Feb 2011 07:10:00 PM CET
+EESchema Schematic File Version 2  date Fri 04 Feb 2011 01:04:25 PM CET
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -40,13 +40,14 @@ LIBS:cs4344
 LIBS:double_sch_kcom
 LIBS:usb_minib
 LIBS:mic23250
+LIBS:cy62158ev30
 LIBS:sd2snes-cache
 EELAYER 25  0
 EELAYER END
 $Descr A3 16535 11700
 Sheet 6 6
 Title "sd2snes Mark II"
-Date "2 feb 2011"
+Date "4 feb 2011"
 Rev "B"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -759,7 +760,7 @@ Text Notes 12800 8150 1    50   ~ 0
 SNES A+B bus
 Text Notes 11800 4500 1    50   ~ 0
 70ns PSRAM bus
-Text Notes 4650 5600 1    50   ~ 0
+Text Notes 4000 5600 1    50   ~ 0
 45ns SRAM bus
 Text Notes 2900 7400 0    50   ~ 0
 SD bus; shared with MCU
@@ -793,63 +794,63 @@ Text GLabel 5650 2100 0    50   Output ~ 0
 DONE
 Text GLabel 5650 1900 0    50   Input ~ 0
 PROG_B
-Text GLabel 5800 7000 0    50   Output ~ 0
-RAM_A8
-Text GLabel 5800 6900 0    50   BiDi ~ 0
-RAM_DQ0
-Text GLabel 5800 6800 0    50   Output ~ 0
-RAM_A6
-Text GLabel 5800 6600 0    50   Output ~ 0
-RAM_A7
-Text GLabel 5800 6500 0    50   Output ~ 0
-RAM_A3
-Text GLabel 5800 6400 0    50   Output ~ 0
-RAM_A4
-Text GLabel 5800 6300 0    50   Output ~ 0
-RAM_/WE
-Text GLabel 5800 6200 0    50   Output ~ 0
-RAM_A1
-Text GLabel 5800 6100 0    50   Output ~ 0
-RAM_A2
 Text GLabel 5800 6000 0    50   Output ~ 0
-RAM_A0
-Text GLabel 5800 5900 0    50   BiDi ~ 0
-RAM_DQ1
-Text GLabel 5800 5800 0    50   BiDi ~ 0
-RAM_DQ4
-Text GLabel 5800 5700 0    50   BiDi ~ 0
-RAM_DQ5
-Text GLabel 5800 5600 0    50   Output ~ 0
-RAM_A5
-Text GLabel 5800 5500 0    50   Output ~ 0
-RAM_A17
-Text GLabel 5800 5400 0    50   BiDi ~ 0
-RAM_DQ6
+RAM_A8
+Text GLabel 5800 4500 0    50   BiDi ~ 0
+RAM_DQ0
+Text GLabel 5800 5900 0    50   Output ~ 0
+RAM_A6
+Text GLabel 5800 6100 0    50   Output ~ 0
+RAM_A7
 Text GLabel 5800 5300 0    50   Output ~ 0
-RAM_A18
-Text GLabel 5800 5200 0    50   BiDi ~ 0
-RAM_DQ7
-Text GLabel 5800 5100 0    50   BiDi ~ 0
-RAM_DQ2
+RAM_A3
+Text GLabel 5800 5500 0    50   Output ~ 0
+RAM_A4
+Text GLabel 5800 6400 0    50   Output ~ 0
+RAM_/WE
 Text GLabel 5800 5000 0    50   Output ~ 0
-RAM_A9
-Text GLabel 5800 4900 0    50   Output ~ 0
-RAM_/OE
+RAM_A1
+Text GLabel 5800 5100 0    50   Output ~ 0
+RAM_A2
 Text GLabel 5800 4800 0    50   Output ~ 0
-RAM_A10
-Text GLabel 5800 4600 0    50   Output ~ 0
-RAM_A11
-Text GLabel 5800 4500 0    50   Output ~ 0
-RAM_A16
-Text GLabel 5800 4400 0    50   Output ~ 0
-RAM_A12
-Text GLabel 5800 4300 0    50   Output ~ 0
-RAM_A15
-Text GLabel 5800 4200 0    50   Output ~ 0
-RAM_A13
+RAM_A0
+Text GLabel 5800 4300 0    50   BiDi ~ 0
+RAM_DQ1
+Text GLabel 5800 4200 0    50   BiDi ~ 0
+RAM_DQ4
+Text GLabel 5800 4400 0    50   BiDi ~ 0
+RAM_DQ5
+Text GLabel 5800 5700 0    50   Output ~ 0
+RAM_A5
+Text GLabel 5800 7000 0    50   Output ~ 0
+RAM_A17
+Text GLabel 5800 4600 0    50   BiDi ~ 0
+RAM_DQ6
+Text GLabel 5800 6600 0    50   Output ~ 0
+RAM_A18
+Text GLabel 5800 4900 0    50   BiDi ~ 0
+RAM_DQ7
 Text GLabel 5800 4100 0    50   BiDi ~ 0
+RAM_DQ2
+Text GLabel 5800 5800 0    50   Output ~ 0
+RAM_A9
+Text GLabel 5800 5400 0    50   Output ~ 0
+RAM_/OE
+Text GLabel 5800 5200 0    50   Output ~ 0
+RAM_A10
+Text GLabel 5800 5600 0    50   Output ~ 0
+RAM_A11
+Text GLabel 5800 6800 0    50   Output ~ 0
+RAM_A16
+Text GLabel 5800 6300 0    50   Output ~ 0
+RAM_A12
+Text GLabel 5800 6900 0    50   Output ~ 0
+RAM_A15
+Text GLabel 5800 6200 0    50   Output ~ 0
+RAM_A13
+Text GLabel 5800 4000 0    50   BiDi ~ 0
 RAM_DQ3
-Text GLabel 5800 4000 0    50   Output ~ 0
+Text GLabel 5800 6500 0    50   Output ~ 0
 RAM_A14
 Text GLabel 5800 3900 0    50   Output ~ 0
 ROM_A5
@@ -1068,73 +1069,73 @@ SNES_REFRESH
 Text GLabel 10900 4550 2    50   Input ~ 0
 SNES_SYS_CLK
 $Comp
-L GND #PWR0104
+L GND #PWR0105
 U 1 1 4BADE94E
 P 5800 2000
-F 0 "#PWR0104" H 5800 2000 30  0001 C CNN
+F 0 "#PWR0105" H 5800 2000 30  0001 C CNN
 F 1 "GND" H 5800 1930 30  0001 C CNN
 	1    5800 2000
 	0    1    1    0   
 $EndComp
 $Comp
-L GND #PWR0105
+L GND #PWR0106
 U 1 1 4BADE8CE
 P 8450 10900
-F 0 "#PWR0105" H 8450 10900 30  0001 C CNN
+F 0 "#PWR0106" H 8450 10900 30  0001 C CNN
 F 1 "GND" H 8450 10830 30  0001 C CNN
 	1    8450 10900
 	1    0    0    -1  
 $EndComp
 $Comp
-L +1.2V #PWR0106
+L +1.2V #PWR0107
 U 1 1 4BADD09D
 P 5650 10200
-F 0 "#PWR0106" H 5650 10340 20  0001 C CNN
+F 0 "#PWR0107" H 5650 10340 20  0001 C CNN
 F 1 "+1.2V" H 5650 10310 30  0000 C CNN
 	1    5650 10200
 	1    0    0    -1  
 $EndComp
 $Comp
-L +2.5V #PWR0107
+L +2.5V #PWR0108
 U 1 1 4BADD090
 P 4100 10200
-F 0 "#PWR0107" H 4100 10150 20  0001 C CNN
+F 0 "#PWR0108" H 4100 10150 20  0001 C CNN
 F 1 "+2.5V" H 4100 10300 30  0000 C CNN
 	1    4100 10200
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR0108
+L GND #PWR0109
 U 1 1 4BADD08B
 P 5650 11100
-F 0 "#PWR0108" H 5650 11100 30  0001 C CNN
+F 0 "#PWR0109" H 5650 11100 30  0001 C CNN
 F 1 "GND" H 5650 11030 30  0001 C CNN
 	1    5650 11100
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR0109
+L GND #PWR0110
 U 1 1 4BADD089
 P 4100 11100
-F 0 "#PWR0109" H 4100 11100 30  0001 C CNN
+F 0 "#PWR0110" H 4100 11100 30  0001 C CNN
 F 1 "GND" H 4100 11030 30  0001 C CNN
 	1    4100 11100
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR0110
+L GND #PWR0111
 U 1 1 4BADD072
 P 650 11100
-F 0 "#PWR0110" H 650 11100 30  0001 C CNN
+F 0 "#PWR0111" H 650 11100 30  0001 C CNN
 F 1 "GND" H 650 11030 30  0001 C CNN
 	1    650  11100
 	1    0    0    -1  
 $EndComp
 $Comp
-L +3.3V #PWR0111
+L +3.3V #PWR0112
 U 1 1 4BADD05C
 P 650 10200
-F 0 "#PWR0111" H 650 10160 30  0001 C CNN
+F 0 "#PWR0112" H 650 10160 30  0001 C CNN
 F 1 "+3.3V" H 650 10310 30  0000 C CNN
 	1    650  10200
 	1    0    0    -1  
@@ -1292,28 +1293,28 @@ $EndComp
 Text Notes 6550 1300 0    50   ~ 0
 JTAG
 $Comp
-L +3.3V #PWR0112
+L +3.3V #PWR0113
 U 1 1 4BAD12D2
 P 7650 800
-F 0 "#PWR0112" H 7650 760 30  0001 C CNN
+F 0 "#PWR0113" H 7650 760 30  0001 C CNN
 F 1 "+3.3V" H 7650 910 30  0000 C CNN
 	1    7650 800 
 	1    0    0    -1  
 $EndComp
 $Comp
-L +2.5V #PWR0113
+L +2.5V #PWR0114
 U 1 1 4BAD12BE
 P 9050 800
-F 0 "#PWR0113" H 9050 750 20  0001 C CNN
+F 0 "#PWR0114" H 9050 750 20  0001 C CNN
 F 1 "+2.5V" H 9050 900 30  0000 C CNN
 	1    9050 800 
 	1    0    0    -1  
 $EndComp
 $Comp
-L +1.2V #PWR0114
+L +1.2V #PWR0115
 U 1 1 4BAD12B4
 P 9650 800
-F 0 "#PWR0114" H 9650 940 20  0001 C CNN
+F 0 "#PWR0115" H 9650 940 20  0001 C CNN
 F 1 "+1.2V" H 9650 910 30  0000 C CNN
 	1    9650 800 
 	1    0    0    -1  

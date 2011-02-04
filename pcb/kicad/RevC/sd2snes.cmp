@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (2010-12-16 BZR 2663)-testing date = Wed 02 Feb 2011 02:20:17 PM CET
+Cmp-Mod V01 Created by CvPCB (2010-12-16 BZR 2663)-testing date = Fri 04 Feb 2011 10:49:48 AM CET
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -649,6 +649,13 @@ TimeStamp = /4B6E16F2/4C7EAD01;
 Reference = Q101;
 ValeurCmp = 2N2222A;
 IdModule  = SOT23EBC;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4D4BC942;
+Reference = Q301;
+ValeurCmp = IRLML2502PBF;
+IdModule  = SOT23GDS;
 EndCmp
 
 BeginCmp
