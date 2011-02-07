@@ -3,11 +3,10 @@
 
 // #define DEBUG_SD
 // #define DEBUG_IRQ
-#define DEBUG_MSU1
+// #define DEBUG_MSU1
 
 #define VER                       "0.0.1(NSFW)"
 #define IN_AHBRAM                 __attribute__ ((section(".ahbram")))
-
 
 #define SD_DT_INT_SETUP()         do {\
                                     BITBAND(LPC_GPIOINT->IO2IntEnR, SD_DT_BIT) = 1;\
@@ -32,13 +31,14 @@
 // #define SD_CHANGE_VECT
 // #define CONFIG_SD_DATACRC 1
 
-
 #define CONFIG_UART_NUM	          3
-#define CONFIG_CPU_FREQUENCY      90315789
+// #define CONFIG_CPU_FREQUENCY      90315789
+#define CONFIG_CPU_FREQUENCY      92000000
+//#define CONFIG_CPU_FREQUENCY      46000000
 #define CONFIG_UART_PCLKDIV       1
-#define CONFIG_UART_TX_BUF_SHIFT  5
+#define CONFIG_UART_TX_BUF_SHIFT  10
 #define CONFIG_UART_BAUDRATE      921600
-#define CONFIG_UART_DEADLOCKABLE
+//#define CONFIG_UART_DEADLOCKABLE
 
 #define SSP_CLK_DIVISOR_FAST 2
 #define SSP_CLK_DIVISOR_SLOW 250
