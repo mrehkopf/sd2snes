@@ -6,6 +6,7 @@
 #include "timer.h"
 #include "clock.h"
 #include "uart.h"
+#include "sdnative.h"
 
 /* bit definitions */
 #define RITINT 0
@@ -13,6 +14,7 @@
 
 #define PCRIT 16
 
+extern volatile int sd_changed;
 volatile tick_t ticks;
 volatile int wokefromrit;
 
@@ -23,6 +25,12 @@ void __attribute__((weak,noinline)) SysTick_Hook(void) {
 /* Systick interrupt handler */
 void SysTick_Handler(void) {
   ticks++;
+  static uint16_t sdch_state = 0;
+  sdch_state = (sdch_state << 1) | SDCARD_DETECT | 0xe000;
+  if((sdch_state == 0xf000) || (sdch_state == 0xefff)) {
+    sd_changed = 1;
+  }
+  sdn_changed();
   SysTick_Hook();
 }
 
