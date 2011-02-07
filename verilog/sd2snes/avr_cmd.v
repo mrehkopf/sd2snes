@@ -71,6 +71,11 @@ module mcu_cmd(
 	 output [13:0] msu_ptr_out,
 	 output msu_reset_out,
 	 
+	 // BS-X
+	 output [7:0] bsx_regs_reset_out,
+	 output [7:0] bsx_regs_set_out,
+	 output bsx_regs_reset_we,
+	 
 	 // SNES sync/clk
  	 input snes_sysclk	 
     );
@@ -101,6 +106,10 @@ reg [5:0] msu_status_set_out_buf;
 reg [5:0] msu_status_reset_out_buf;
 reg msu_status_reset_we_buf;
 reg MSU_RESET_OUT_BUF;
+
+reg [7:0] bsx_regs_set_out_buf;
+reg [7:0] bsx_regs_reset_out_buf;
+reg bsx_regs_reset_we_buf;
 
 reg [31:0] SNES_SYSCLK_FREQ_BUF;
 
@@ -283,6 +292,19 @@ always @(posedge clk) begin
 					32'h4:
 						MSU_RESET_OUT_BUF <= 1'b0;
 				endcase
+			8'he6:
+				case (spi_byte_cnt)
+					32'h2: begin
+						bsx_regs_set_out_buf <= param_data[7:0];
+					end
+					32'h3: begin
+						bsx_regs_reset_out_buf <= param_data[7:0];
+						bsx_regs_reset_we_buf <= 1'b1;
+					end
+					32'h4:
+						bsx_regs_reset_we_buf <= 1'b0;
+				endcase
+				
       endcase
    end
    if (SD_DMA_NEXTADDR | (mcu_nextaddr & (cmd_data[7:5] == 3'h4) && (cmd_data[3]) && (spi_byte_cnt > (32'h1+cmd_data[4])))) begin
@@ -301,9 +323,9 @@ always @(posedge clk) begin
          MCU_DATA_IN_BUF <= 8'hA5;
 		else if (cmd_data[7:0] == 8'hF1)
 			case (spi_byte_cnt[0])
-				1'b1: // buffer status
+				1'b1: // buffer status (1st byte)
 					MCU_DATA_IN_BUF <= {SD_DMA_STATUSr, DAC_STATUSr, MSU_STATUSr[6], 5'b0};
-				1'b0: // control status
+				1'b0: // control status (2nd byte)
 					MCU_DATA_IN_BUF <= {2'b0, MSU_STATUSr[5:0]};
 			endcase
 		else if (cmd_data[7:0] == 8'hF2)
@@ -389,6 +411,11 @@ assign msu_status_reset_out = msu_status_reset_out_buf;
 assign msu_status_set_out = msu_status_set_out_buf;
 assign msu_reset_out = MSU_RESET_OUT_BUF;
 assign msu_ptr_out = MSU_PTR_OUT_BUF;
+
+assign bsx_regs_reset_we = bsx_regs_reset_we_buf;
+assign bsx_regs_reset_out = bsx_regs_reset_out_buf;
+assign bsx_regs_set_out = bsx_regs_set_out_buf;
+
 assign mcu_data_out = SD_DMA_STATUS ? SD_DMA_SRAM_DATA : MCU_DATA_OUT_BUF;
 assign mcu_mapper = MAPPER_BUF;
 assign mcu_sram_size = SRAM_SIZE_BUF;

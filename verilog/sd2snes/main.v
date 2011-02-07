@@ -37,6 +37,7 @@ module main(
 	 input SNES_SYSCLK,
 
    /* SRAM signals */
+	/* Bus 1: PSRAM, 128Mbit, 16bit, 70ns */
     inout [15:0] ROM_DATA,
     output [22:0] ROM_ADDR,
     output ROM_CE,
@@ -44,7 +45,14 @@ module main(
     output ROM_WE,
     output ROM_BHE,
     output ROM_BLE,
-
+   
+	/* Bus 2: SRAM, 4Mbit, 8bit, 45ns */
+    inout [7:0] RAM_DATA,
+	 output [18:0] RAM_ADDR,
+	 output RAM_CE,
+	 output RAM_OE,
+	 output RAM_WE,
+	 
    /* MCU signals */
     input SPI_MOSI,
     inout SPI_MISO,
@@ -96,6 +104,14 @@ wire [7:0] MSU_SNES_DATA_IN;
 wire [7:0] MSU_SNES_DATA_OUT;
 wire [5:0] msu_status_reset_bits;
 wire [5:0] msu_status_set_bits;
+
+wire [14:0] bsx_regs;
+wire [14:0] bsx_regs_in;
+wire [7:0] BSX_SNES_DATA_IN;
+wire [7:0] BSX_SNES_DATA_OUT;
+wire [7:0] bsx_regs_reset_bits;
+wire [7:0] bsx_regs_set_bits;
+
 
 //wire SD_DMA_EN; //SPI_DMA_CTRL;
 
@@ -150,7 +166,22 @@ msu snes_msu (
 	 .msu_address_ext(msu_ptr_addr),
 	 .msu_address_ext_write(msu_addr_reset)
     );
-	 
+
+bsx snes_bsx(.clkin(CLK2),
+             .use_bsx(use_bsx),
+				 .pgm_we(bsx_regs_reset_we),
+				 .snes_addr(SNES_ADDR),
+				 .reg_data_in(BSX_SNES_DATA_IN),
+				 .reg_data_out(BSX_SNES_DATA_OUT),
+				 .reg_oe(SNES_READ),
+				 .reg_we(SNES_WRITE),
+				 .regs_out(bsx_regs),
+				 .reg_reset_bits(bsx_regs_reset_bits),
+				 .reg_set_bits(bsx_regs_set_bits),
+				 .data_ovr(bsx_data_ovr),
+				 .flash_writable(IS_FLASHWR)
+             );
+
 spi snes_spi(.clk(CLK2),
              .MOSI(SPI_MOSI),
              .MISO(SPI_MISO),
@@ -212,7 +243,10 @@ mcu_cmd snes_mcu_cmd(
     .msu_addressrq(msu_addressrq_out),
 	 .msu_trackrq(msu_trackrq_out),
 	 .msu_ptr_out(msu_ptr_addr),
-	 .msu_reset_out(msu_addr_reset)
+	 .msu_reset_out(msu_addr_reset),
+	 .bsx_regs_set_out(bsx_regs_set_bits),
+	 .bsx_regs_reset_out(bsx_regs_reset_bits),
+	 .bsx_regs_reset_we(bsx_regs_reset_we)
 );
 
 // dcm1: dfs 4x
@@ -310,13 +344,17 @@ address snes_addr(
 	 .MODE(MODE),               // MCU(1) or SNES(0) ("bus phase")
     .IS_SAVERAM(IS_SAVERAM),
     .IS_ROM(IS_ROM),
+	 .IS_WRITABLE(IS_WRITABLE),
     .MCU_ADDR(MCU_ADDR),
     .ROM_ADDR0(ROM_ADDR0),
     .SAVERAM_MASK(SAVERAM_MASK),
     .ROM_MASK(ROM_MASK),
 	 //MSU-1
 	 .use_msu(use_msu),
-	 .msu_enable(msu_enable)
+	 .msu_enable(msu_enable),
+	 //BS-X
+	 .use_bsx(use_bsx),
+	 .bsx_regs(bsx_regs)
     );
 
 wire SNES_READ_CYCLEw;
@@ -342,7 +380,10 @@ data snes_data(.CLK(CLK2),
       .ROM_ADDR0(ROM_ADDR0),
 		.MSU_DATA_IN(MSU_SNES_DATA_IN),
 		.MSU_DATA_OUT(MSU_SNES_DATA_OUT),
-		.msu_enable(msu_enable)
+		.BSX_DATA_IN(BSX_SNES_DATA_IN),
+		.BSX_DATA_OUT(BSX_SNES_DATA_OUT),
+		.msu_enable(msu_enable),
+		.bsx_data_ovr(bsx_data_ovr)
       );
       
 parameter MODE_SNES = 1'b0;
@@ -558,7 +599,7 @@ end
 // When in MCU mode, enable SRAM_WE according to MCU programming
 // else enable SRAM_WE according to state&cycle
 assign ROM_WE = !MCU_OVR ? MCU_WRITE
-                          : ((!IS_SAVERAM & !MODE) | ROM_WE_ARRAY[{SNES_WRITE_CYCLE, MCU_WRITE_CYCLE}][STATEIDX]);
+                          : ((!IS_FLASHWR & !IS_WRITABLE & !MODE) | ROM_WE_ARRAY[{SNES_WRITE_CYCLE, MCU_WRITE_CYCLE}][STATEIDX]);
 
 // When in MCU mode, enable SRAM_OE whenever not writing
 // else enable SRAM_OE according to state&cycle
@@ -578,7 +619,8 @@ assign ROM_BLE = !ROM_WE ? !ROM_ADDR0 : 1'b0;
 //assign SRAM_WE = !MCU_ENA ? MCU_WRITE : 1'b1;
 
 //assign SNES_DATABUS_OE = (!IS_SAVERAM & SNES_CS) | (SNES_READ & SNES_WRITE);
-assign SNES_DATABUS_OE = msu_enable ? 1'b0 : ((IS_ROM & SNES_CS) | (!IS_ROM & !IS_SAVERAM) | (SNES_READ & SNES_WRITE));
+assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
+                         bsx_data_ovr ? 1'b0 : ((IS_ROM & SNES_CS) | (!IS_ROM & !IS_SAVERAM & !IS_WRITABLE & !IS_FLASHWR) | (SNES_READ & SNES_WRITE));
 assign SNES_DATABUS_DIR = !SNES_READ ? 1'b1 : 1'b0;
 
 assign SNES_DATA_TO_MEM = SNES_DATA_TO_MEM_ARRAY[SNES_WRITE_CYCLE][STATEIDX];

@@ -60,8 +60,8 @@ dac_buf snes_dac_buf (
 	.addra(pgm_address), // Bus [10 : 0] 
 	.dina(pgm_data), // Bus [7 : 0] 
 	.clkb(clkin),
-	.addrb(dac_address), // Bus [9 : 0] 
-	.doutb(dac_data)); // Bus [15 : 0] 
+	.addrb(dac_address), // Bus [8 : 0] 
+	.doutb(dac_data)); // Bus [31 : 0] 
 
 reg [15:0] cnt;
 reg [15:0] smpcnt;
@@ -72,8 +72,10 @@ reg [15:0] smpshift;
 reg [15:0] smpdata;
 
 assign mclk = cnt[2];   // mclk = clk/8
-assign lrck = cnt[10];	// lrck = mclk/256
-wire sclk = cnt[5];		// sclk = lrck*32
+//assign lrck = cnt[10];	// lrck = mclk/512
+//wire sclk = cnt[5];		// sclk = lrck*32
+assign lrck = cnt[8];	// lrck = mclk/128
+wire sclk = cnt[3];		// sclk = lrck*32
 
 reg [2:0] lrck_sreg;
 reg [2:0] sclk_sreg;
@@ -96,7 +98,7 @@ initial begin
 	smpcnt = 16'b0;
 	lrck_sreg = 2'b11;
 	sclk_sreg = 1'b0;
-	dac_address_r = 11'b0;
+	dac_address_r = 10'b0;
 	vol_valid = 1'b0;
 	vol_latch_reg = 1'b0;
 	vol_reg = 8'h0;

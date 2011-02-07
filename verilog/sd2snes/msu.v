@@ -103,10 +103,9 @@ msu_databuf snes_msu_databuf (
 	.addrb(msu_address), // Bus [13 : 0] 
 	.doutb(msu_data)); // Bus [7 : 0] 
 
-reg [7:0] msu_regs [7:0];
-
-reg [7:0] data_out_r;
+// reg [7:0] data_out_r;
 reg [7:0] data_in_r;
+reg [7:0] data_out_r;
 assign reg_data_out = data_out_r;
 always @(posedge clkin) data_in_r <= reg_data_in;
 
