@@ -210,6 +210,23 @@ ticks_read+=getticks()-tickstmp;
   printf("rom header map: %02x; mapper id: %d\n", romprops.header.map, romprops.mapper_id);
 ticks_total=getticks()-ticksstart;
   printf("%u ticks in read, %u ticks in tx, %u ticks total\n", ticks_read, ticks_tx, ticks_total);
+  if(romprops.mapper_id==3) {
+    printf("attempting to load BSX BIOS /sd2snes/bsxbios.sfc...\n");
+    load_sram((uint8_t*)"/sd2snes/bsxbios.sfc", 0x800000);
+    printf("Type: %02x\n", romprops.header.destcode);
+    set_bsx_regs(0xc0, 0x3f);
+    uint16_t rombase;
+    if(romprops.header.ramsize & 1) {
+      rombase = 0xff00;
+//      set_bsx_regs(0xf6, 0x09);
+    } else {
+      rombase = 0x7f00;
+//      set_bsx_regs(0xf4, 0x0b);
+    }
+    sram_writebyte(0x33, rombase+0xda);
+    sram_writebyte(0x00, rombase+0xd4);
+    sram_writebyte(0xfc, rombase+0xd5);
+  }
   uint32_t rammask;
   uint32_t rommask;
 

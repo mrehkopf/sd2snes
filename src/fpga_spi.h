@@ -72,4 +72,5 @@ uint8_t get_msu_volume(void);
 uint16_t get_msu_track(void);
 uint32_t get_msu_offset(void);
 uint32_t get_snes_sysclk(void);
+void set_bsx_regs(uint8_t set, uint8_t reset);
 #endif

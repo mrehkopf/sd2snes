@@ -60,7 +60,7 @@
 				tt = target (see above)
 				i = increment (see above)
 
-	E0	ssrr		set MSU-1 status register (=FPGA status byte 2)
+	E0	ssrr		set MSU-1 status register (=FPGA status [7:0])
 				ss = bits to set in status register (1=set)
 				rr = bits to reset in status register (1=reset)
 
@@ -69,15 +69,40 @@
 	E3	-		reset DAC playback pointer (0)
 	E4	hhll		set MSU read pointer
 
+	E5	tt{12}		set RTC (SRTC/SPC7110 format)
+	E6	ssrr		set/reset BS-X status register [7:0]
 	F0	-		receive test token (to see if FPGA is alive)
-	F1	-		receive status (2 bytes)
+	F1	-		receive status (16bit, MSB first), see below
 
 	F2	-		get MSU data address (32bit, MSB first)
 	F3	-		get MSU audio track no. (16bit, MSB first)
 	F4	-		get MSU volume (8bit)
 
 	FE	-		get SNES master clock frequency (32bit, MSB first)
+				measured 1x/sec
 	FF	{xx}*		echo (returns the sent data in the next byte)
+
+	FPGA status word:
+	bit	function
+   ==========================================================================
+	 15	SD DMA busy (0=idle, 1=busy)
+	 14	DAC read pointer MSB
+	 13	MSU read pointer MSB
+	 12	[TODO SD DMA CRC status (0=ok, 1=error); valid after bit 15 -> 0]
+	 11	reserved (0)
+	 10	reserved (0)
+	  9	reserved (0)
+	  8	reserved (0)
+	  7	reserved (0)
+	  6	reserved (0)
+	  5	MSU1 Audio request from SNES
+	  4	MSU1 Data request from SNES
+	  3	reserved (0)
+	  2	MSU1 Audio control status: 0=no repeat, 1=repeat
+	  1	MSU1 Audio control status: 0=pause, 1=play
+	  0	MSU1 Audio control request
+
+
 */
 
 #include <arm/NXP/LPC17xx/LPC17xx.h>
@@ -189,7 +214,7 @@ void fpga_sddma(uint8_t tgt, uint8_t partial) {
     test++;
   }
   FPGA_DESELECT();
-  if(test<10)printf("loopy: %ld %02x\n", test, status);
+  if(test<5)printf("loopy: %ld %02x\n", test, status);
   BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 1;
 }
 
@@ -286,3 +311,14 @@ uint32_t get_snes_sysclk() {
   FPGA_DESELECT();
   return result;
 }
+
+void set_bsx_regs(uint8_t set, uint8_t reset) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xe6);
+  FPGA_TX_BYTE(set);
+  FPGA_TX_BYTE(reset);
+  FPGA_TX_BYTE(0x00); /* latch reset */
+  FPGA_DESELECT();
+}
+
+
