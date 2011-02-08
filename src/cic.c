@@ -18,7 +18,7 @@ enum cicstates get_cic_state() {
   uint32_t count;
   uint32_t togglecount = 0;
   uint8_t state, state_old;
- 
+
   state_old = BITBAND(SNES_CIC_STATUS_REG->FIOPIN, SNES_CIC_STATUS_BIT);
 /* this loop samples at ~10MHz */
   for(count=0; count<1000; count++) {

@@ -32,7 +32,7 @@
 
 /*
 WCHAR ff_convert(WCHAR w, UINT dir) {
-  return w;	
+  return w;
 }*/
 
 int newcard;

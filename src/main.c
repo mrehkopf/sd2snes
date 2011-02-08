@@ -26,6 +26,7 @@
 #include "smc.h"
 #include "msu1.h"
 
+#include "usb_hid.h"
 #define EMC0TOGGLE	(3<<4)
 #define MR0R		(1<<1)
 
@@ -46,7 +47,7 @@ int main(void) {
   LPC_GPIO1->FIODIR = 0;
   LPC_GPIO0->FIODIR = BV(16);
 
- /* connect UART3 on P0[25:26] + SSP0 on P0[15:18] SSP1 on P0[6:9] + MAT3.0 on P0[10] */
+ /* connect UART3 on P0[25:26] + SSP0 on P0[15:18] + MAT3.0 on P0[10] */
   LPC_PINCON->PINSEL1 = BV(18) | BV(19) | BV(20) | BV(21) /* UART3 */
                       | BV(3) | BV(5);                    /* SSP0 (FPGA) except SS */
   LPC_PINCON->PINSEL0 = BV(31);                            /* SSP0 */
@@ -70,9 +71,9 @@ int main(void) {
 led_pwm();
   sdn_init();
   printf("\n\nsd2snes mk.2\n============\nfw ver.: " VER "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
+printf("PCONP=%lx\n", LPC_SC->PCONP);
   file_init();
   cic_init(0);
-
 /* setup timer (fpga clk) */
   LPC_TIM3->CTCR=0;
   LPC_TIM3->EMR=EMC0TOGGLE;
@@ -81,7 +82,7 @@ led_pwm();
   LPC_TIM3->TCR=1;
   fpga_init();
   fpga_rompgm();
-
+  sram_writebyte(0, SRAM_CMD_ADDR);
   while(1) {
     set_mcu_ovr(1);
     if(disk_state == DISK_CHANGED) {
@@ -94,8 +95,6 @@ led_pwm();
     set_mapper(0x7);
     set_mcu_ovr(0);
     snes_reset(0);
-    delay_ms(15); /* allow CIC to settle */
-
     while(get_cic_state() == CIC_FAIL) {
       rdyled(0);
       readled(0);
@@ -207,6 +206,7 @@ led_pwm();
     printf("test sram\n");
     while(!sram_reliable());
     printf("ok\n");
+
   //while(1) {
   //  delay_ms(1000);
   //  printf("Estimated SNES master clock: %ld Hz\n", get_snes_sysclk());
@@ -215,7 +215,7 @@ led_pwm();
   //sram_hexdump(SRAM_MENU_ADDR, 0x400);
     while(!cmd) {
       cmd=menu_main_loop();
-  // cmd = 1;
+// cmd = 1;
       printf("cmd: %d\n", cmd);
       sleep_ms(50);
       uart_putc('-');
@@ -223,7 +223,7 @@ led_pwm();
 	case SNES_CMD_LOADROM:
 	  get_selected_name(file_lfn);
 	  set_mcu_ovr(1);
-  // strcpy((char*)file_lfn, "/msu1/msu1vid_ikari_01/msu1vid.sfc");
+// strcpy((char*)file_lfn, "/roms/b/BS Zelda no Densetsu Kodai no Sekiban Dai 1 Hanashi (J).smc");
 	  printf("Selected name: %s\n", file_lfn);
 	  filesize = load_rom(file_lfn, SRAM_ROM_ADDR);
 	  if(romprops.ramsize_bytes) {
