@@ -46,7 +46,7 @@ uint32_t get_fattime(void) {
 
   read_rtc(&time);
   return ((uint32_t)time.tm_year-80) << 25 |
-    ((uint32_t)time.tm_mon+1) << 21 |
+    ((uint32_t)time.tm_mon) << 21 |
     ((uint32_t)time.tm_mday)  << 16 |
     ((uint32_t)time.tm_hour)  << 11 |
     ((uint32_t)time.tm_min)   << 5  |

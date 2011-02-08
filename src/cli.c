@@ -46,6 +46,7 @@
 #include "fpga_spi.h"
 #include "cic.h"
 #include "xmodem.h"
+#include "rtc.h"
 
 #include "cli.h"
 
@@ -57,8 +58,8 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0saveraw\0put\0d4\0vmode\0mapper\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_D4, CMD_VMODE, CMD_MAPPER };
+  "cd\0reset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0saveraw\0put\0d4\0vmode\0mapper\0settime\0time\0";
+enum { CMD_CD = 0, CMD_RESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME };
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
@@ -372,6 +373,33 @@ void cmd_mapper(void) {
   printf("mapper set to %ld\n", mapper);
 }
 
+void cmd_settime(void) {
+  struct tm time;
+  if(strlen(curchar) != 4+2+2 + 2+2+2) {
+    printf("invalid time format (need YYYYMMDDhhmmss)\n");
+  } else {
+    time.tm_sec = atoi(curchar+4+2+2+2+2);
+    curchar[4+2+2+2+2] = 0;
+    time.tm_min = atoi(curchar+4+2+2+2);
+    curchar[4+2+2+2] = 0;
+    time.tm_hour = atoi(curchar+4+2+2);
+    curchar[4+2+2] = 0;
+    time.tm_mday = atoi(curchar+4+2);
+    curchar[4+2] = 0;
+    time.tm_mon = atoi(curchar+4);
+    curchar[4] = 0;
+    time.tm_year = atoi(curchar) - 1900;
+    set_rtc(&time);
+  }
+}
+
+void cmd_time(void) {
+  struct tm time;
+  read_rtc(&time);
+  printf("%04d-%02d-%02d %02d:%02d:%02d\n", time.tm_year+1900, time.tm_mon,
+    time.tm_mday, time.tm_hour, time.tm_min, time.tm_sec);
+}
+
 /* ------------------------------------------------------------------------- */
 /*   CLI interface functions                                                 */
 /* ------------------------------------------------------------------------- */
@@ -476,6 +504,14 @@ void cli_loop(void) {
 
     case CMD_MAPPER:
       cmd_mapper();
+      break;
+
+    case CMD_SETTIME:
+      cmd_settime();
+      break;
+
+    case CMD_TIME:
+      cmd_time();
       break;
     }
   }
