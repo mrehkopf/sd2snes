@@ -112,6 +112,10 @@ wire [7:0] BSX_SNES_DATA_OUT;
 wire [7:0] bsx_regs_reset_bits;
 wire [7:0] bsx_regs_set_bits;
 
+wire [59:0] rtc_data;
+wire [59:0] rtc_data_in;
+wire [7:0] RTC_SNES_DATA_IN;
+wire [7:0] RTC_SNES_DATA_OUT;
 
 //wire SD_DMA_EN; //SPI_DMA_CTRL;
 
@@ -128,8 +132,8 @@ sd_dma snes_sd_dma(.CLK(CLK2),
 						 .SD_DMA_PARTIAL_START(SD_DMA_PARTIAL_START),
 						 .SD_DMA_PARTIAL_END(SD_DMA_PARTIAL_END)
 );
-						 
-dac_test snes_dac_test(.clkin(CLK2),
+
+dac snes_dac(.clkin(CLK2),
                        .sysclk(SNES_SYSCLK),
                        .mclk(DAC_MCLK),
 							  .lrck(DAC_LRCK),
@@ -144,6 +148,13 @@ dac_test snes_dac_test(.clkin(CLK2),
 							  .reset(dac_reset)
 );
 
+rtc snes_rtc (
+    .clkin(CLKIN), 
+    .rtc_data(rtc_data),
+	 .rtc_data_in(rtc_data_in),
+	 .pgm_we(rtc_pgm_we)
+    );
+	 
 msu snes_msu (
     .clkin(CLK2),
 	 .enable(msu_enable),
@@ -179,7 +190,8 @@ bsx snes_bsx(.clkin(CLK2),
 				 .reg_reset_bits(bsx_regs_reset_bits),
 				 .reg_set_bits(bsx_regs_set_bits),
 				 .data_ovr(bsx_data_ovr),
-				 .flash_writable(IS_FLASHWR)
+				 .flash_writable(IS_FLASHWR),
+				 .rtc_data(rtc_data)
              );
 
 spi snes_spi(.clk(CLK2),
@@ -246,7 +258,9 @@ mcu_cmd snes_mcu_cmd(
 	 .msu_reset_out(msu_addr_reset),
 	 .bsx_regs_set_out(bsx_regs_set_bits),
 	 .bsx_regs_reset_out(bsx_regs_reset_bits),
-	 .bsx_regs_reset_we(bsx_regs_reset_we)
+	 .bsx_regs_reset_we(bsx_regs_reset_we),
+	 .rtc_data_out(rtc_data_in),
+	 .rtc_pgm_we(rtc_pgm_we)
 );
 
 // dcm1: dfs 4x

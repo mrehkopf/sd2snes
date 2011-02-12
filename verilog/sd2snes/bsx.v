@@ -32,7 +32,8 @@ module bsx(
     input [14:0] regs_in,
     input use_bsx,
 	 output data_ovr,
-	 output flash_writable
+	 output flash_writable,
+	 input [59:0] rtc_data
     );
 
 wire [3:0] reg_addr = snes_addr[19:16]; // 00-0f:5000-5fff
@@ -54,6 +55,7 @@ wire is_flash_special_address = (flash_addr == 16'h0002
 																|| flash_addr == 16'h2aaa
 																|| flash_addr == 16'h0000
 																|| (flash_addr >= 16'hff00 && flash_addr <= 16'hff13));
+																
 wire flash_ovr = (use_bsx) && (flash_enable & flash_ovr_r) && is_flash_special_address;
 																
 assign flash_writable = (use_bsx) && flash_enable && flash_we_r && !is_flash_special_address;
@@ -83,6 +85,13 @@ reg [7:0] flash_vendor_data[7:0];
 assign regs_out = regs_outr;
 assign reg_data_out = reg_data_outr;
 
+wire [7:0] rtc_sec = rtc_data[3:0] + (rtc_data[7:4] << 3) + (rtc_data[7:4] << 1);
+wire [7:0] rtc_min = rtc_data[11:8] + (rtc_data[15:12] << 3) + (rtc_data[15:12] << 1);
+wire [7:0] rtc_hour = rtc_data[19:16] + (rtc_data[23:20] << 3) + (rtc_data[23:20] << 1);
+wire [7:0] rtc_day = rtc_data[27:24] + (rtc_data[31:28] << 3) + (rtc_data[31:28] << 1);
+wire [7:0] rtc_month = rtc_data[35:32] + (rtc_data[39:36] << 3) + (rtc_data[39:36] << 1);
+wire [7:0] rtc_year1 = rtc_data[43:40] + (rtc_data[47:44] << 3) + (rtc_data[47:44] << 1);
+wire [7:0] rtc_year100 = rtc_data[51:48] + (rtc_data[55:52] << 3) + (rtc_data[55:52] << 1);
 
 initial begin
   regs_tmpr <= 16'b0_000000100000000;
@@ -140,11 +149,11 @@ always @(posedge clkin) begin
 				  6:
 				    reg_data_outr <= 8'h1;
 				  10:
-				    reg_data_outr <= 8'd42;
+				    reg_data_outr <= rtc_sec;
 				  11:
-				    reg_data_outr <= 8'd30;
+				    reg_data_outr <= rtc_min;
 				  12:
-				    reg_data_outr <= 8'd18;
+				    reg_data_outr <= rtc_hour;
 				  default:
 				    reg_data_outr <= 8'h0;
 			   endcase
@@ -180,13 +189,16 @@ always @(posedge clkin) begin
       regs_tmpr[reg_addr] <= reg_data_in[7];
   end else if(reg_we_rising && base_enable) begin
 	 case(base_addr)
-	   5'b10001: begin
+		5'h0f: begin
+		  base_regs[base_addr-1] <= base_regs[base_addr]-(base_regs[base_addr-1] >> 1);
+		  base_regs[base_addr] <= base_regs[base_addr] >> 1;
+		end
+		5'h11: begin
 	     bsx_counter <= 0;
 		  base_regs[base_addr] <= reg_data_in;
 		end
-		5'b01111: begin
-		  base_regs[base_addr-1] <= base_regs[base_addr]-(base_regs[base_addr-1] >> 1);
-		  base_regs[base_addr] <= base_regs[base_addr] >> 1;
+		5'h12: begin
+		  base_regs[8'h10] <= 8'h80;
 		end
 	   default:
         base_regs[base_addr] <= reg_data_in;
