@@ -76,6 +76,10 @@ module mcu_cmd(
 	 output [7:0] bsx_regs_set_out,
 	 output bsx_regs_reset_we,
 	 
+	 // generic RTC
+	 output [55:0] rtc_data_out,
+	 output rtc_pgm_we,
+	 
 	 // SNES sync/clk
  	 input snes_sysclk	 
     );
@@ -110,6 +114,9 @@ reg MSU_RESET_OUT_BUF;
 reg [7:0] bsx_regs_set_out_buf;
 reg [7:0] bsx_regs_reset_out_buf;
 reg bsx_regs_reset_we_buf;
+
+reg [55:0] rtc_data_out_buf;
+reg rtc_pgm_we_buf;
 
 reg [31:0] SNES_SYSCLK_FREQ_BUF;
 
@@ -292,6 +299,27 @@ always @(posedge clk) begin
 					32'h4:
 						MSU_RESET_OUT_BUF <= 1'b0;
 				endcase
+			8'he5:
+			   case (spi_byte_cnt)
+				  32'h2:
+				    rtc_data_out_buf[55:48] <= param_data;
+				  32'h3:
+				    rtc_data_out_buf[47:40] <= param_data;
+				  32'h4:
+				    rtc_data_out_buf[39:32] <= param_data;
+				  32'h5:
+				    rtc_data_out_buf[31:24] <= param_data;
+				  32'h6:
+				    rtc_data_out_buf[23:16] <= param_data;
+				  32'h7:
+				    rtc_data_out_buf[15:8] <= param_data;
+				  32'h8: begin
+				    rtc_data_out_buf[7:0] <= param_data;
+					 rtc_pgm_we_buf <= 1'b1;
+				  end
+				  32'h9:
+				    rtc_pgm_we_buf <= 1'b0;
+				endcase
 			8'he6:
 				case (spi_byte_cnt)
 					32'h2: begin
@@ -415,6 +443,9 @@ assign msu_ptr_out = MSU_PTR_OUT_BUF;
 assign bsx_regs_reset_we = bsx_regs_reset_we_buf;
 assign bsx_regs_reset_out = bsx_regs_reset_out_buf;
 assign bsx_regs_set_out = bsx_regs_set_out_buf;
+
+assign rtc_data_out = rtc_data_out_buf;
+assign rtc_pgm_we = rtc_pgm_we_buf;
 
 assign mcu_data_out = SD_DMA_STATUS ? SD_DMA_SRAM_DATA : MCU_DATA_OUT_BUF;
 assign mcu_mapper = MAPPER_BUF;
