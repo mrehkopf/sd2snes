@@ -6,7 +6,7 @@
 #flash info 0
 
 reset init
-flash write_image erase unlock obj/sd2snes.elf
+flash write_image erase unlock obj/sd2snes_bootldr.elf
 reset run
 shutdown
 

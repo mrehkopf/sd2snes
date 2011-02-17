@@ -2,7 +2,10 @@
 CC = gcc
 CFLAGS = -Wall -Wstrict-prototypes -Werror
 
-all: lpcchksum
+all: lpcchksum genhdr
+
+genhdr: genhdr.o
+	$(CC) $(CFLAGS) $^ --output $@
 
 lpcchksum: lpcchksum.o
 	$(CC) $(CFLAGS) $^ --output $@

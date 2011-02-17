@@ -48,14 +48,14 @@ OBJDIR := obj$(CONFIGSUFFIX)
 FORMAT = binary
 
 # Linker script
-LINKERSCRIPT = lpc1754.ld
+LINKERSCRIPT = lpc1754boot.ld
 
 # Target file name (without extension).
-TARGET = $(OBJDIR)/sd2snes
+TARGET = $(OBJDIR)/sd2snes_bootldr
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c printf.c spi.c fileops.c rtc.c fpga.c fpga_spi.c snes.c smc.c memory.c filetypes.c faulthandler.c sort.c crc32.c cic.c cli.c xmodem.c irq.c rle.c sdnative.c msu1.c
+SRC = timer.c main.c ff.c clock.c uart.c power.c led.c printf.c faulthandler.c crc32.c sdnative.c fileops.c iap.c
 
 # usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
 
@@ -75,7 +75,7 @@ ASRC = startup.S crc.S
 #     (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
 # Use s -mcall-prologues when you really need size...
 #OPT = 2
-OPT = 2
+OPT = s
 
 # Debugging format.
 DEBUG = dwarf-2
@@ -200,8 +200,6 @@ all: build
 build: elf bin hex
 	$(E) "  SIZE   $(TARGET).elf"
 	$(Q)$(ELFSIZE)|grep -v debug
-	cp $(TARGET).bin $(OBJDIR)/firmware.img
-	utils/genhdr $(OBJDIR)/firmware.img SNSD $(CONFIG_FWVER)
 
 elf: $(TARGET).elf
 bin: $(TARGET).bin
@@ -215,16 +213,18 @@ sym: $(TARGET).sym
 #	cp $(TARGET).bin /mbed/hw_LPC1768.bin
 
 
+#	utils/lpcchksum $(TARGET).bin
 program: bin
-	utils/lpcchksum $(TARGET).bin
 	openocd -f openocd-usb.cfg -f lpc1754.cfg -f flash.cfg
-	make -C bootldr program
 
 debug: bin
 	openocd -f openocd-usb.cfg -f lpc1754.cfg
 
 reset:
 	openocd -f openocd-usb.cfg -f lpc1754.cfg -f reset.cfg
+
+erase:
+	openocd -f openocd-usb.cfg -f lpc1754.cfg -f erase.cfg
 
 # Display size of file.
 HEXSIZE = $(SIZE) --target=$(FORMAT) $(TARGET).hex
