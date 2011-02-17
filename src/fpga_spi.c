@@ -69,7 +69,9 @@
 	E3	-		reset DAC playback pointer (0)
 	E4	hhll		set MSU read pointer
 
-	E5	tt{12}		set RTC (SRTC/SPC7110 format)
+	E5	tt{7}		set RTC (SPC7110 format + 1000s of year,
+				         nibbles packed)
+                                eg 0x20111210094816 is 2011-12-10, 9:48:16
 	E6	ssrr		set/reset BS-X status register [7:0]
 	F0	-		receive test token (to see if FPGA is alive)
 	F1	-		receive status (16bit, MSB first), see below
@@ -321,4 +323,16 @@ void set_bsx_regs(uint8_t set, uint8_t reset) {
   FPGA_DESELECT();
 }
 
-
+void set_fpga_time(uint64_t time) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xe5);
+  FPGA_TX_BYTE((time >> 48) & 0xff);
+  FPGA_TX_BYTE((time >> 40) & 0xff);
+  FPGA_TX_BYTE((time >> 32) & 0xff);
+  FPGA_TX_BYTE((time >> 24) & 0xff);
+  FPGA_TX_BYTE((time >> 16) & 0xff);
+  FPGA_TX_BYTE((time >> 8) & 0xff);
+  FPGA_TX_BYTE(time & 0xff);
+  FPGA_TX_BYTE(0x00);
+  FPGA_DESELECT();
+}

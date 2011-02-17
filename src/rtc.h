@@ -59,4 +59,7 @@ void read_rtc(struct tm *time);
 /* Set time from struct tm */
 void set_rtc(struct tm *time);
 
+/* get current time in 60-bit BCD format (WYYYYMMDDHHMMSS) (W=DOW) */
+uint64_t get_bcdtime(void);
+
 #endif

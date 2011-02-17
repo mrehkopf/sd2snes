@@ -211,21 +211,23 @@ ticks_read+=getticks()-tickstmp;
 ticks_total=getticks()-ticksstart;
   printf("%u ticks in read, %u ticks in tx, %u ticks total\n", ticks_read, ticks_tx, ticks_total);
   if(romprops.mapper_id==3) {
+    printf("BSX Flash cart image\n");
     printf("attempting to load BSX BIOS /sd2snes/bsxbios.sfc...\n");
-    load_sram((uint8_t*)"/sd2snes/bsxbios.sfc", 0x800000);
+    load_sram_offload((uint8_t*)"/sd2snes/bsxbios.sfc", 0x800000);
     printf("Type: %02x\n", romprops.header.destcode);
     set_bsx_regs(0xc0, 0x3f);
     uint16_t rombase;
     if(romprops.header.ramsize & 1) {
       rombase = 0xff00;
-//      set_bsx_regs(0xf6, 0x09);
+//      set_bsx_regs(0x36, 0xc9);
     } else {
       rombase = 0x7f00;
-//      set_bsx_regs(0xf4, 0x0b);
+//      set_bsx_regs(0x34, 0xcb);
     }
     sram_writebyte(0x33, rombase+0xda);
     sram_writebyte(0x00, rombase+0xd4);
     sram_writebyte(0xfc, rombase+0xd5);
+    set_fpga_time(0x0020110212180500LL);
   }
   uint32_t rammask;
   uint32_t rommask;
@@ -244,6 +246,23 @@ ticks_total=getticks()-ticksstart;
   set_saveram_mask(rammask);
   set_rom_mask(rommask);
   readled(0);
+  return (uint32_t)filesize;
+}
+
+uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr) {
+  set_mcu_addr(base_addr);
+  UINT bytes_read;
+  DWORD filesize;
+  file_open(filename, FA_READ);
+  filesize = file_handle.fsize;
+  if(file_res) return 0;
+  for(;;) {
+    ff_sd_offload=1;
+    sd_offload_tgt=0;
+    bytes_read = file_read();
+    if (file_res || !bytes_read) break;
+  }
+  file_close();
   return (uint32_t)filesize;
 }
 

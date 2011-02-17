@@ -52,3 +52,25 @@ uint32_t get_fattime(void) {
     ((uint32_t)time.tm_min)   << 5  |
     ((uint32_t)time.tm_sec)   >> 1;
 }
+
+uint64_t get_bcdtime(void) {
+  struct tm time;
+  read_rtc(&time);
+  uint16_t year = time.tm_year + 1900;
+
+  return ((uint64_t)(time.tm_wday % 7) << 56)
+         |((uint64_t)((year / 1000) % 10) << 52)
+         |((uint64_t)((year / 100) % 10) << 48)
+         |((uint64_t)((year / 10) % 10) << 44)
+         |((uint64_t)(year % 10) << 40)
+         |((uint64_t)(time.tm_mon / 10) << 36)
+         |((uint64_t)(time.tm_mon % 10) << 32)
+         |((time.tm_mday / 10) << 28)
+         |((time.tm_mday % 10) << 24)
+         |((time.tm_hour / 10) << 20)
+         |((time.tm_hour % 10) << 16)
+         |((time.tm_min / 10) << 12)
+         |((time.tm_min % 10) << 8)
+         |((time.tm_sec / 10) << 4)
+         |(time.tm_sec % 10);
+}
