@@ -1,4 +1,4 @@
-update=Fri 04 Feb 2011 01:05:39 PM CET
+update=Sat 19 Feb 2011 11:07:40 AM CET
 version=1
 last_client=pcbnew
 [general]
@@ -94,12 +94,12 @@ TxtPcbH=600
 TxtModV=600
 TxtModH=600
 TxtModW=120
-VEgarde=100
+VEgarde=50
 DrawLar=70
 EdgeLar=40
 TxtLar=120
 MSegLar=150
-LastNetListRead=
+LastNetListRead=sd2snes.net
 [pcbnew/libraries]
 LibDir=../../kicad
 LibName1=sockets

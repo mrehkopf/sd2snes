@@ -1,4 +1,4 @@
-# EESchema Netlist Version 1.1 created  Fri 04 Feb 2011 01:04:32 PM CET
+# EESchema Netlist Version 1.1 created  Sun 13 Feb 2011 11:40:21 PM CET
 (
  ( /4B6E16F2/4D115250 SM0805_FIXEDMASK  C128 10p {Lib=C}
   (    1 /SNES_Slot/SNES_EXT_/PARD )
@@ -706,7 +706,7 @@
   (    1 GND )
   (    2 N-000225 )
  )
- ( /4B6EC9C3/4D4BCF29 $noname  Q301 IRLML6401PbF {Lib=MOSFET_P}
+ ( /4B6EC9C3/4D4BCF29 $noname  Q301 IRLML6402PbF {Lib=MOSFET_P}
   (    D +5VL )
   (    G N-000225 )
   (    S +5V )
