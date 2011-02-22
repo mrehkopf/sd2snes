@@ -47,6 +47,7 @@
 #define FLAG_UNSIGNED  64
 #define FLAG_NEGATIVE  128
 
+#ifdef DEBUG_BL
 /* Digits used for conversion */
 static const char hexdigits[] = "0123456789abcdef";
 
@@ -289,3 +290,11 @@ int putchar(int c) {
   uart_putc(c);
   return 0;
 }
+
+#else
+int printf(const char *format, ...) { return 0; }
+int snprintf(char *str, size_t size, const char *format, ...) { return 0; }
+int puts(const char *str) { return 0; }
+#undef putchar
+int putchar(int c) { return 0; }
+#endif

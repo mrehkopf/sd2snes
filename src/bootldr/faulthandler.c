@@ -1,20 +1,22 @@
 #include <arm/NXP/LPC17xx/LPC17xx.h>
+#include "config.h"
 #include "uart.h"
 
 void HardFault_Handler(void) {
-  printf("HFSR: %lx\n", SCB->HFSR);
+  DBG_BL printf("HFSR: %lx\n", SCB->HFSR);
+  uart_putc('H');
   while (1) ;
 }
 
 void MemManage_Handler(void) {
-  printf("MemManage - CFSR: %lx; MMFAR: %lx\n", SCB->CFSR, SCB->MMFAR);
+  DBG_BL printf("MemManage - CFSR: %lx; MMFAR: %lx\n", SCB->CFSR, SCB->MMFAR);
 }
 
 void BusFault_Handler(void) {
-  printf("BusFault - CFSR: %lx; BFAR: %lx\n", SCB->CFSR, SCB->BFAR);
+  DBG_BL printf("BusFault - CFSR: %lx; BFAR: %lx\n", SCB->CFSR, SCB->BFAR);
 }
 
 void UsageFault_Handler(void) {
-  printf("UsageFault - CFSR: %lx; BFAR: %lx\n", SCB->CFSR, SCB->BFAR);
+  DBG_BL printf("UsageFault - CFSR: %lx; BFAR: %lx\n", SCB->CFSR, SCB->BFAR);
 }
 

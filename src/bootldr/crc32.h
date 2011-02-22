@@ -2,7 +2,7 @@
  * \file crc32.h
  * Functions and types for CRC checks.
  *
- * Generated on Sat Sep 25 18:06:37 2010,
+ * Generated on Mon Feb 21 23:03:39 2011,
  * by pycrc v0.7.1, http://www.tty1.net/pycrc/
  * using the configuration:
  *    Width        = 32
@@ -11,13 +11,13 @@
  *    ReflectIn    = True
  *    XorOut       = 0xffffffff
  *    ReflectOut   = True
- *    Algorithm    = table-driven
+ *    Algorithm    = bit-by-bit-fast
  *    Direct       = True
  *****************************************************************************/
 #ifndef __CRC___H__
 #define __CRC___H__
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #ifdef __cplusplus
@@ -27,7 +27,22 @@ extern "C" {
 /**
  * The definition of the used algorithm.
  *****************************************************************************/
-#define CRC_ALGO_TABLE_DRIVEN 1
+#define CRC_ALGO_BIT_BY_BIT_FAST 1
+
+/**
+ * The type of the CRC values.
+ *
+ * This type must be big enough to contain at least 32 bits.
+ *****************************************************************************/
+
+/**
+ * Reflect all bits of a \a data word of \a data_len bytes.
+ *
+ * \param data         The data word to be reflected.
+ * \param data_len     The width of \a data expressed in number of bits.
+ * \return     The reflected data.
+ *****************************************************************************/
+uint32_t crc_reflect(uint32_t data, size_t data_len);
 
 /**
  * Calculate the initial crc value.
@@ -36,7 +51,7 @@ extern "C" {
  *****************************************************************************/
 static inline uint32_t crc_init(void)
 {
-  return 0xffffffff;
+    return 0xffffffff;
 }
 
 /**
@@ -55,9 +70,9 @@ uint32_t crc32_update(uint32_t crc, const unsigned char data);
  * \param crc  The current crc value.
  * \return     The final crc value.
  *****************************************************************************/
-static inline uint32_t crc32_finalize(uint32_t crc)
+static inline uint32_t crc_finalize(uint32_t crc)
 {
-  return crc ^ 0xffffffff;
+    return crc_reflect(crc, 32) ^ 0xffffffff;
 }
 
 

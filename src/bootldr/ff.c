@@ -2145,7 +2145,6 @@ FRESULT f_read (
 	UINT rcnt, cc;
 	BYTE csect, *rbuff = buff;
 
-	if(btr>512) printf("WARNING: read >512 bytes!!\n");
 
 	*br = 0;	/* Initialize byte counter */
 

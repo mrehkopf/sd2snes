@@ -7,8 +7,8 @@
 #ifndef UART_H
 #define UART_H
 
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 #include "config.h"
 
 //#ifdef CONFIG_UART_DEBUG

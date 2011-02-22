@@ -6,6 +6,7 @@
 #include "uart.h"
 #include "fileops.h"
 #include "crc32.h"
+#include "led.h"
 
 uint32_t iap_cmd[5];
 uint32_t iap_res[5];
@@ -14,7 +15,7 @@ uint32_t flash_sig[4];
 IAP iap_entry = (IAP) IAP_LOCATION;
 
 uint32_t calc_flash_crc(uint32_t start, uint32_t len) {
-  printf("calc_flash_crc(%08lx, %08lx) {\n", start, len);
+  DBG_BL printf("calc_flash_crc(%08lx, %08lx) {\n", start, len);
   uint32_t end = start + len;
   if(end > 0x20000) {
     len = 0x1ffff - start;
@@ -26,20 +27,20 @@ uint32_t calc_flash_crc(uint32_t start, uint32_t len) {
     crc = crc32_update(crc, *(const unsigned char*)(s));
     s++;
   }
-  crc ^= 0xffffffff;
-  printf("  crc generated. result=%08lx\n", crc);
-  printf("} //calc_flash_crc\n");
+  crc = crc_finalize(crc);
+  DBG_BL printf("  crc generated. result=%08lx\n", crc);
+  DBG_BL printf("} //calc_flash_crc\n");
   return crc;
 }
 
 void test_iap() {
   iap_cmd[0]=54;
   iap_entry(iap_cmd, iap_res);
-  printf("Part ID=%08lx\n", iap_res[1]);
+  DBG_BL printf("Part ID=%08lx\n", iap_res[1]);
 }
 
 void print_header(sd2snes_fw_header *header) {
-  printf("  magic = %08lx\n  version = %08lx\n  size = %08lx\n  crc = %08lx\n  ~crc = %08lx\n",
+  DBG_BL printf("  magic = %08lx\n  version = %08lx\n  size = %08lx\n  crc = %08lx\n  ~crc = %08lx\n",
          header->magic, header->version, header->size,
          header->crc, header->crcc);
 }
@@ -61,11 +62,11 @@ FLASH_RES check_flash() {
   sd2snes_fw_header *fw_header = (sd2snes_fw_header*) FW_START;
   uint32_t flash_addr = FW_START;
   if(flash_addr != FW_START) {
-    printf("address sanity check failed. expected 0x%08lx, got 0x%08lx.\nSomething is terribly wrong.\nBailing out to avoid bootldr self-corruption.\n", FW_START, flash_addr);
+    DBG_BL printf("address sanity check failed. expected 0x%08lx, got 0x%08lx.\nSomething is terribly wrong.\nBailing out to avoid bootldr self-corruption.\n", FW_START, flash_addr);
     return ERR_HW;
   }
-  printf("Current flash contents:\n");
-  print_header(fw_header);
+  DBG_BL printf("Current flash contents:\n");
+  DBG_BL print_header(fw_header);
   uint32_t crc = calc_flash_crc(flash_addr + 0x100, (fw_header->size & 0x1ffff));
   return check_header(fw_header, crc);
 }
@@ -74,7 +75,6 @@ IAP_RES iap_wrap(uint32_t *iap_cmd, uint32_t *iap_res) {
   NVIC_DisableIRQ(RIT_IRQn);
   NVIC_DisableIRQ(UART_IRQ);
   iap_entry(iap_cmd, iap_res);
-  NVIC_EnableIRQ(RIT_IRQn);
   NVIC_EnableIRQ(UART_IRQ);
   return iap_res[0];
 }
@@ -116,20 +116,21 @@ FLASH_RES flash_file(uint8_t *filename) {
   sd2snes_fw_header file_header;
   UINT bytes_read;
   if(flash_addr != FW_START) {
-    printf("address sanity check failed. expected 0x%08lx, got 0x%08lx.\nSomething is terribly wrong.\nBailing out to avoid bootldr self-corruption.\n", FW_START, flash_addr);
+    DBG_BL printf("address sanity check failed. expected 0x%08lx, got 0x%08lx.\nSomething is terribly wrong.\nBailing out to avoid bootldr self-corruption.\n", FW_START, flash_addr);
     return ERR_HW;
   }
   file_open(filename, FA_READ);
   if(file_res) {
-    printf("file_open: error %d\n", file_res);
+    DBG_BL printf("file_open: error %d\n", file_res);
     return ERR_FS;
   }
-  printf("firmware image found. file size: %ld\n", file_handle.fsize);
-  printf("reading header...\n");
+  DBG_BL printf("firmware image found. file size: %ld\n", file_handle.fsize);
+  DBG_BL printf("reading header...\n");
   f_read(&file_handle, &file_header, 32, &bytes_read);
   print_header(&file_header);
   if(check_flash() || file_header.version != fw_header->version || file_header.version == FW_MAGIC || fw_header->version == FW_MAGIC) {
-    f_lseek(&file_handle, 0x100);
+    uart_putc('F');
+    f_read(&file_handle, file_buf, 0xe0, &bytes_read);
     for(;;) {
       bytes_read = file_read();
       if(file_res || !bytes_read) break;
@@ -137,48 +138,59 @@ FLASH_RES flash_file(uint8_t *filename) {
         file_crc = crc32_update(file_crc, file_buf[count]);
       }
     }
-    file_crc ^= 0xffffffff;
-    printf("file crc=%08lx\n", file_crc);
+    file_crc = crc_finalize(file_crc);
+    DBG_BL printf("file crc=%08lx\n", file_crc);
     if(check_header(&file_header, file_header.crc) != ERR_OK) {
-      printf("Invalid firmware file (header corrupted).\n");
+      DBG_BL printf("Invalid firmware file (header corrupted).\n");
       return ERR_FILEHD;
     }
     if(file_header.crc != file_crc) {
-      printf("Firmware file checksum error.\n");
+      DBG_BL printf("Firmware file checksum error.\n");
       return ERR_FILECHK;
     }
 
     uint32_t res;
 
-    printf("erasing flash...\n");
+    DBG_BL printf("erasing flash...\n");
     if((res = iap_prepare_for_write(FW_START / 0x1000, FLASH_SECTORS)) != CMD_SUCCESS) {
-      printf("error %ld while preparing for erase\n", res);
+      DBG_BL printf("error %ld while preparing for erase\n", res);
       return ERR_FLASHPREP;
     };
     if((res = iap_erase(FW_START / 0x1000, FLASH_SECTORS)) != CMD_SUCCESS) {
-      printf("error %ld while erasing\n", res);
+      DBG_BL printf("error %ld while erasing\n", res);
       return ERR_FLASHERASE;
     }
-    printf("writing... @%08lx\n", flash_addr);
-    f_lseek(&file_handle, 0);
+    DBG_BL printf("writing... @%08lx\n", flash_addr);
+    file_close();
+    file_open(filename, FA_READ);
     uint8_t current_sec;
-
+    uint32_t total_read = 0;
     for(flash_addr = FW_START; flash_addr < 0x00020000; flash_addr += 0x200) {
-      bytes_read = file_read();
+      total_read += (bytes_read = file_read());
       if(file_res || !bytes_read) break;
       current_sec = flash_addr & 0x10000 ? (16 + ((flash_addr >> 15) & 1))
                                          : (flash_addr >> 12);
-      printf("current_sec=%d flash_addr=%08lx\n", current_sec, flash_addr);
+      DBG_BL printf("current_sec=%d flash_addr=%08lx\n", current_sec, flash_addr);
+      uart_putc('.');
+      toggle_rdy_led();
       if(current_sec < (FW_START / 0x1000)) return ERR_FLASH;
       if((res = iap_prepare_for_write(current_sec, current_sec)) != CMD_SUCCESS) {
-        printf("error %ld while preparing sector %d for write\n", res, current_sec);
+        DBG_BL printf("error %ld while preparing sector %d for write\n", res, current_sec);
+        return ERR_FLASH;
       }
       if((res = iap_ram2flash(flash_addr, file_buf, 512)) != CMD_SUCCESS) {
-        printf("error %ld while writing to address %08lx (sector %d)\n", res, flash_addr, current_sec);
+        DBG_BL printf("error %ld while writing to address %08lx (sector %d)\n", res, flash_addr, current_sec);
+        return ERR_FLASH;
       }
     }
+    if(total_read != file_header.size) {
+      DBG_BL printf("wrote less data than expected! (%08lx vs. %08lx)\n", total_read, file_header.size);
+      uart_putc('X');
+      return ERR_FILECHK;
+    }
   } else {
-    printf("flash content is ok, no version mismatch, no forced upgrade. No need to flash\n");
+    uart_putc('n');
+    DBG_BL printf("flash content is ok, no version mismatch, no forced upgrade. No need to flash\n");
   }
   return ERR_OK;
 }

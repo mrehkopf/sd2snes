@@ -44,14 +44,16 @@ int main(void) {
   timer_init();
   uart_init();
   led_init();
+  readled(0);
+  rdyled(0);
+  writeled(0);
  /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
   LPC_PINCON->PINSEL0 |= BV(20) | BV(21);                  /* MAT3.0 (FPGA clock) */
-led_pwm();
   sdn_init();
-  printf("chksum=%08lx\n", *(uint32_t*)28);
-  printf("\n\nsd2snes mk.2 bootloader\nver.: " VER "\ncpu clock: %ld Hz\n", CONFIG_CPU_FREQUENCY);
-printf("PCONP=%lx\n", LPC_SC->PCONP);
+  DBG_BL printf("chksum=%08lx\n", *(uint32_t*)28);
+  DBG_BL printf("\n\nsd2snes mk.2 bootloader\nver.: " VER "\ncpu clock: %ld Hz\n", CONFIG_CPU_FREQUENCY);
+DBG_BL printf("PCONP=%lx\n", LPC_SC->PCONP);
 /* setup timer (fpga clk) */
   LPC_TIM3->CTCR=0;
   LPC_TIM3->EMR=EMC0TOGGLE;
@@ -59,13 +61,21 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
   LPC_TIM3->MR0=1;
   LPC_TIM3->TCR=1;
 
-  test_iap();
   FLASH_RES res = flash_file((uint8_t*)"/sd2snes/firmware.img");
-  printf("flash result = %d\n", res);
+  if(res == ERR_FLASHPREP || res == ERR_FLASHERASE || res == ERR_FLASH) {
+    writeled(1);
+  }
+  if(res == ERR_FILEHD || res == ERR_FILECHK) {
+    readled(1);
+  }
+  DBG_BL printf("flash result = %d\n", res);
   if(res != ERR_OK) {
     if((res = check_flash()) != ERR_OK) {
-      printf("check_flash() failed with error %d, not booting.\n", res);
-      while(1);
+      DBG_BL printf("check_flash() failed with error %d, not booting.\n", res);
+      while(1) {
+        toggle_rdy_led();
+        delay_ms(500);
+      }
     }
   }
   NVIC_DisableIRQ(RIT_IRQn);

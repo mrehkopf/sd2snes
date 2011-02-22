@@ -5,7 +5,15 @@
 // #define DEBUG_IRQ
 // #define DEBUG_MSU1
 
-#define FW_START                  (0x00004000L)
+//#define DEBUG_BL
+#ifdef DEBUG_BL
+#define DBG_BL
+#else
+#define DBG_BL while(0)
+#endif
+
+
+#define FW_START                  (0x00002000L)
 #define FLASH_SECTORS             (17)
 
 #define VER                       "0.0.1(NSFW)"

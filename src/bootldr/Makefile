@@ -55,7 +55,7 @@ TARGET = $(OBJDIR)/sd2snes_bootldr
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = timer.c main.c ff.c clock.c uart.c power.c led.c printf.c faulthandler.c crc32.c sdnative.c fileops.c iap.c
+SRC = timer.c main.c ff.c clock.c uart.c power.c led.c faulthandler.c crc32.c sdnative.c fileops.c iap.c printf.c
 
 # usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
 
@@ -73,7 +73,6 @@ ASRC = startup.S crc.S
 # Optimization level, can be [0, 1, 2, 3, s].
 #     0 = turn off optimization. s = optimize for size.
 #     (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
-# Use s -mcall-prologues when you really need size...
 #OPT = 2
 OPT = s
 
