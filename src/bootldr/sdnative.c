@@ -7,6 +7,7 @@
 #include "uart.h"
 #include "led.h"
 #include "sdnative.h"
+#include "fileops.h"
 #include "bits.h"
 
 #define MAX_CARDS 1
@@ -152,6 +153,24 @@ static uint32_t getbits(void *buffer, uint16_t start, int8_t bits) {
   return result;
 }
 
+static inline void wiggle_slow_pos(uint16_t times) {
+  while(times--) {
+    delay_us(2);
+    BITBAND(SD_CLKREG->FIOSET, SD_CLKPIN) = 1;
+    delay_us(2);
+    BITBAND(SD_CLKREG->FIOCLR, SD_CLKPIN) = 1;
+  }
+}
+
+static inline void wiggle_slow_neg(uint16_t times) {
+  while(times--) {
+    delay_us(2);
+    BITBAND(SD_CLKREG->FIOCLR, SD_CLKPIN) = 1;
+    delay_us(2);
+    BITBAND(SD_CLKREG->FIOSET, SD_CLKPIN) = 1;
+  }
+}
+
 static inline void wiggle_fast_pos(uint16_t times) {
   while(times--) {
     BITBAND(SD_CLKREG->FIOSET, SD_CLKPIN) = 1;
@@ -182,6 +201,77 @@ static inline void wait_busy(void) {
   }
   wiggle_fast_neg(4);
 }
+
+/*
+   send_command_slow
+   send SD command and put response in rsp.
+   returns length of response or 0 if there was no response
+*/
+int send_command_slow(uint8_t* cmd, uint8_t* rsp){
+  uint8_t shift, i=6;
+  int rsplen;
+  uint8_t cmdno = *cmd & 0x3f;
+  wiggle_slow_pos(5);
+  switch(*cmd & 0x3f) {
+    case 0:
+      rsplen = 0;
+      break;
+    case 2:
+    case 9:
+    case 10:
+      rsplen = 17;
+      break;
+    default:
+      rsplen = 6;
+  }
+  /* send command */
+  BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 1;
+
+  while(i--) {
+    shift = 8;
+    do {
+      shift--;
+      uint8_t data = *cmd;
+      *cmd<<=1;
+      if(data&0x80) {
+        BITBAND(SD_CMDREG->FIOSET, SD_CMDPIN) = 1;
+      } else {
+        BITBAND(SD_CMDREG->FIOCLR, SD_CMDPIN) = 1;
+      }
+      wiggle_slow_pos(1);
+    } while (shift);
+    cmd++;
+  }
+
+  wiggle_slow_pos(1);
+  BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 0;
+
+  if(rsplen) {
+    uint16_t timeout=1000;
+    while((BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN)) && --timeout) {
+      wiggle_slow_neg(1);
+    }
+    if(!timeout) {
+      DBG_SD printf("CMD%d timed out\n", cmdno);
+      return 0; /* no response within timeout */
+    }
+
+    i=rsplen;
+    while(i--) {
+      shift = 8;
+      uint8_t data=0;
+      do {
+        shift--;
+        data |= (BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN)) << shift;
+        wiggle_slow_neg(1);
+      } while (shift);
+      *rsp=data;
+      rsp++;
+    }
+  }
+  return rsplen;
+}
+
 
 /*
    send_command_fast
@@ -381,6 +471,28 @@ static inline void make_crc7(uint8_t* cmd) {
   cmd[5]=(cmd[5] << 1) | 1;
 }
 
+int cmd_slow(uint8_t cmd, uint32_t param, uint8_t crc, uint8_t* dat, uint8_t* rsp) {
+  uint8_t cmdbuf[6];
+  cmdbuf[0] = 0x40 | cmd;
+  cmdbuf[1] = param >> 24;
+  cmdbuf[2] = param >> 16;
+  cmdbuf[3] = param >> 8;
+  cmdbuf[4] = param;
+  if(!crc) {
+    make_crc7(cmdbuf);
+  } else {
+    cmdbuf[5] = crc;
+  }
+  return send_command_slow(cmdbuf, rsp);
+}
+
+int acmd_slow(uint8_t cmd, uint32_t param, uint8_t crc, uint8_t* dat, uint8_t* rsp) {
+  if(!(cmd_slow(APP_CMD, rca, 0, NULL, rsp))) {
+    return 0;
+  }
+  return cmd_slow(cmd, param, crc, dat, rsp);
+}
+
 int cmd_fast(uint8_t cmd, uint32_t param, uint8_t crc, uint8_t* dat, uint8_t* rsp) {
   uint8_t cmdbuf[6];
   cmdbuf[0] = 0x40 | cmd;
@@ -416,6 +528,7 @@ void stream_datablock(uint8_t *buf) {
   while(1) {
     datdata = SD_DAT << 4;
     wiggle_fast_neg1();
+
     datdata |= SD_DAT;
     wiggle_fast_neg1();
 
@@ -633,20 +746,20 @@ DRESULT sdn_initialize(BYTE drv) {
   for(rsplen=0; rsplen<2042; rsplen++) {
     if(!(BITBAND(SD_DAT3REG->FIOPIN, SD_DAT3PIN))) {
       DBG_SD printf("card seems to be sending data, attempting deselect\n");
-      cmd_fast(SELECT_CARD, 0, 0, NULL, rsp);
+      cmd_slow(SELECT_CARD, 0, 0, NULL, rsp);
     }
-    wiggle_fast_neg(1);
+    wiggle_slow_neg(1);
   }
   DBG_SD printf("sd_init start\n");
-  cmd_fast(GO_IDLE_STATE, 0, 0x95, NULL, rsp);
+  cmd_slow(GO_IDLE_STATE, 0, 0x95, NULL, rsp);
 
-  if((rsplen=cmd_fast(SEND_IF_COND, 0x000001aa, 0x87, NULL, rsp))) {
+  if((rsplen=cmd_slow(SEND_IF_COND, 0x000001aa, 0x87, NULL, rsp))) {
     DBG_SD printf("CMD8 response:\n");
     DBG_SD uart_trace(rsp, 0, rsplen);
     hcs=1;
   }
   while(1) {
-    if(!(acmd_fast(SD_SEND_OP_COND, (hcs << 30) | 0xfc0000, 0, NULL, rsp))) {
+    if(!(acmd_slow(SD_SEND_OP_COND, (hcs << 30) | 0xfc0000, 0, NULL, rsp))) {
       DBG_SD printf("ACMD41 no response!\n");
     }
     if(rsp[1]&0x80) break;
@@ -654,8 +767,8 @@ DRESULT sdn_initialize(BYTE drv) {
 
   ccs = (rsp[1]>>6) & 1; /* SDHC/XC */
 
-  cmd_fast(ALL_SEND_CID, 0, 0x4d, NULL, rsp);
-  if(cmd_fast(SEND_RELATIVE_ADDR, 0, 0x21, NULL, rsp)) {
+  cmd_slow(ALL_SEND_CID, 0, 0x4d, NULL, rsp);
+  if(cmd_slow(SEND_RELATIVE_ADDR, 0, 0x21, NULL, rsp)) {
     rca=(rsp[1]<<24) | (rsp[2]<<16);
     DBG_SD printf("RCA: %04lx\n", rca>>16);
   } else {
@@ -664,23 +777,23 @@ DRESULT sdn_initialize(BYTE drv) {
   }
 
   /* record CSD for getinfo */
-  cmd_fast(SEND_CSD, rca, 0, NULL, rsp);
+  cmd_slow(SEND_CSD, rca, 0, NULL, rsp);
 
   /* select the card */
-  if(cmd_fast(SELECT_CARD, rca, 0, NULL, rsp)) {
+  if(cmd_slow(SELECT_CARD, rca, 0, NULL, rsp)) {
     DBG_SD printf("card selected!\n");
   } else {
     DBG_SD printf("CMD7 no response!\n");
   }
 
   /* get card status */
-  cmd_fast(SEND_STATUS, rca, 0, NULL, rsp);
+  cmd_slow(SEND_STATUS, rca, 0, NULL, rsp);
 
   /* set bus width */
-  acmd_fast(SD_SET_BUS_WIDTH, 0x2, 0, NULL, rsp);
+  acmd_slow(SD_SET_BUS_WIDTH, 0x2, 0, NULL, rsp);
 
   /* set block length */
-  cmd_fast(SET_BLOCKLEN, 0x200, 0, NULL, rsp);
+  cmd_slow(SET_BLOCKLEN, 0x200, 0, NULL, rsp);
 
   DBG_SD printf("SD init complete. SDHC/XC=%d\n", ccs);
   disk_state = DISK_OK;

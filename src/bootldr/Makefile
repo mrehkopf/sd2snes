@@ -55,7 +55,7 @@ TARGET = $(OBJDIR)/sd2snes_bootldr
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = timer.c main.c ff.c clock.c uart.c power.c led.c faulthandler.c crc32.c sdnative.c fileops.c iap.c printf.c
+SRC = timer.c main.c ff.c clock.c uart.c power.c led.c faulthandler.c crc32.c sdnative.c fileops.c iap.c printf.c crc.c
 
 # usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
 
@@ -67,7 +67,7 @@ SRC = timer.c main.c ff.c clock.c uart.c power.c led.c faulthandler.c crc32.c sd
 #     Even though the DOS/Win* filesystem matches both .s and .S the same,
 #     it will preserve the spelling of the filenames, and gcc itself does
 #     care about how the name is spelled on its command-line.
-ASRC = startup.S crc.S
+ASRC = startup.S
 
 
 # Optimization level, can be [0, 1, 2, 3, s].
