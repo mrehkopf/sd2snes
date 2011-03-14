@@ -114,8 +114,9 @@ wire [7:0] bsx_regs_set_bits;
 
 wire [59:0] rtc_data;
 wire [59:0] rtc_data_in;
-wire [7:0] RTC_SNES_DATA_IN;
-wire [7:0] RTC_SNES_DATA_OUT;
+wire [59:0] srtc_rtc_data_out;
+wire [7:0] SRTC_SNES_DATA_IN;
+wire [7:0] SRTC_SNES_DATA_OUT;
 
 //wire SD_DMA_EN; //SPI_DMA_CTRL;
 
@@ -148,11 +149,28 @@ dac snes_dac(.clkin(CLK2),
 							  .reset(dac_reset)
 );
 
+srtc snes_srtc (
+    .clkin(CLK2),
+    /*XXX*/.reg_addr(srtc_reg_addr), 
+    .addr_in(SNES_ADDR[0]), 
+    .data_in(SRTC_SNES_DATA_IN), 
+    .data_out(SRTC_SNES_DATA_OUT), 
+    .rtc_data_in(rtc_data),
+    .reg_we(SNES_WRITE), 
+    .reg_oe(SNES_READ),
+	 .enable(srtc_enable),
+	 .rtc_data_out(srtc_rtc_data_out),
+	 .rtc_we(srtc_rtc_we),
+	 .reset(srtc_reset)
+    );
+	 
 rtc snes_rtc (
     .clkin(CLKIN), 
     .rtc_data(rtc_data),
 	 .rtc_data_in(rtc_data_in),
-	 .pgm_we(rtc_pgm_we)
+	 .pgm_we(rtc_pgm_we),
+	 .rtc_data_in1(srtc_rtc_data_out),
+	 .we1(srtc_rtc_we)
     );
 	 
 msu snes_msu (
@@ -260,7 +278,8 @@ mcu_cmd snes_mcu_cmd(
 	 .bsx_regs_reset_out(bsx_regs_reset_bits),
 	 .bsx_regs_reset_we(bsx_regs_reset_we),
 	 .rtc_data_out(rtc_data_in),
-	 .rtc_pgm_we(rtc_pgm_we)
+	 .rtc_pgm_we(rtc_pgm_we),
+	 .srtc_reset(srtc_reset)
 );
 
 // dcm1: dfs 4x
@@ -368,7 +387,9 @@ address snes_addr(
 	 .msu_enable(msu_enable),
 	 //BS-X
 	 .use_bsx(use_bsx),
-	 .bsx_regs(bsx_regs)
+	 .bsx_regs(bsx_regs),
+	 //SRTC
+	 .srtc_enable(srtc_enable)
     );
 
 wire SNES_READ_CYCLEw;
@@ -396,8 +417,11 @@ data snes_data(.CLK(CLK2),
 		.MSU_DATA_OUT(MSU_SNES_DATA_OUT),
 		.BSX_DATA_IN(BSX_SNES_DATA_IN),
 		.BSX_DATA_OUT(BSX_SNES_DATA_OUT),
+		.SRTC_DATA_IN(SRTC_SNES_DATA_IN),
+		.SRTC_DATA_OUT(SRTC_SNES_DATA_OUT),
 		.msu_enable(msu_enable),
-		.bsx_data_ovr(bsx_data_ovr)
+		.bsx_data_ovr(bsx_data_ovr),
+		.srtc_enable(srtc_enable)
       );
       
 parameter MODE_SNES = 1'b0;
@@ -515,6 +539,7 @@ always @(posedge CLK2) begin
        end else begin
            case (STATE)
               STATE_0: begin
+                 SNES_WRITE_CYCLE <= SNES_WRITE;
                  STATE <= STATE_1; STATEIDX <= 11;
               end
               STATE_1: begin
@@ -634,7 +659,8 @@ assign ROM_BLE = !ROM_WE ? !ROM_ADDR0 : 1'b0;
 
 //assign SNES_DATABUS_OE = (!IS_SAVERAM & SNES_CS) | (SNES_READ & SNES_WRITE);
 assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
-                         bsx_data_ovr ? 1'b0 : ((IS_ROM & SNES_CS) | (!IS_ROM & !IS_SAVERAM & !IS_WRITABLE & !IS_FLASHWR) | (SNES_READ & SNES_WRITE));
+                         bsx_data_ovr ? 1'b0 : 
+								 srtc_enable ? 1'b0 : ((IS_ROM & SNES_CS) | (!IS_ROM & !IS_SAVERAM & !IS_WRITABLE & !IS_FLASHWR) | (SNES_READ & SNES_WRITE));
 assign SNES_DATABUS_DIR = !SNES_READ ? 1'b1 : 1'b0;
 
 assign SNES_DATA_TO_MEM = SNES_DATA_TO_MEM_ARRAY[SNES_WRITE_CYCLE][STATEIDX];

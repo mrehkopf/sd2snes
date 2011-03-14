@@ -36,6 +36,7 @@ module address(
     input [23:0] ROM_MASK,
 	 input use_msu,
 	 output msu_enable,
+	 output srtc_enable,
     output use_bsx,
 	 input [14:0] bsx_regs
     );
@@ -126,13 +127,13 @@ assign SRAM_ADDR_FULL = (MODE) ? MCU_ADDR
                                           : ({1'b0, !SNES_ADDR[23], SNES_ADDR[21:0]} & ROM_MASK))
                             :(MAPPER == 3'b011) ?
                               (IS_SAVERAM ? 24'hE00000 + {SNES_ADDR[18:16], SNES_ADDR[11:0]}
-                                          : IS_WRITABLE ? (24'h400000 + (SNES_ADDR & 24'h07FFFF))
+                                          : IS_WRITABLE ? (24'h400000 + (SNES_ADDR & 24'h0FFFFF /*7ffff*/))
                                                         : ((bsx_regs[7] && SNES_ADDR[23:21] == 3'b000)
                                                            |(bsx_regs[8] && SNES_ADDR[23:21] == 3'b100))
                                                             ? (24'h800000 + ({1'b0, SNES_ADDR[23:16], SNES_ADDR[14:0]} & 24'h0FFFFF))
                                                             : ((bsx_regs[1] ? 24'h400000 : 24'h000000)
-                                                               + bsx_regs[2] ? ({2'b00, SNES_ADDR[21:0]} & (ROM_MASK >> bsx_regs[1]))
-                                                                             : ({1'b0, SNES_ADDR[23:16], SNES_ADDR[14:0]} & (ROM_MASK >> bsx_regs[1]))))
+                                                               + bsx_regs[2] ? ({2'b00, SNES_ADDR[21:0]} & (ROM_MASK /* >> bsx_regs[1] */))
+                                                                             : ({1'b0, SNES_ADDR[23:16], SNES_ADDR[14:0]} & (ROM_MASK /* >> bsx_regs[1] */))))
                             :(MAPPER == 3'b110) ?
                               (IS_SAVERAM ? 24'hE00000 + ((SNES_ADDR[14:0] - 15'h6000) & SAVERAM_MASK)
                                           : (SNES_ADDR[15] ? ({1'b0, SNES_ADDR[23:16], SNES_ADDR[14:0]})
@@ -150,5 +151,7 @@ assign ROM_ADDR0 = SRAM_ADDR_FULL[0];
 //488888
 assign msu_enable = (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
 assign use_bsx = (MAPPER == 3'b011);
+
+assign srtc_enable = (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h2800));
 
 endmodule

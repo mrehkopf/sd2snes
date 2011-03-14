@@ -80,6 +80,9 @@ module mcu_cmd(
 	 output [55:0] rtc_data_out,
 	 output rtc_pgm_we,
 	 
+	 // S-RTC
+	 output srtc_reset,
+	 
 	 // SNES sync/clk
  	 input snes_sysclk	 
     );
@@ -117,6 +120,8 @@ reg bsx_regs_reset_we_buf;
 
 reg [55:0] rtc_data_out_buf;
 reg rtc_pgm_we_buf;
+
+reg srtc_reset_buf;
 
 reg [31:0] SNES_SYSCLK_FREQ_BUF;
 
@@ -332,7 +337,15 @@ always @(posedge clk) begin
 					32'h4:
 						bsx_regs_reset_we_buf <= 1'b0;
 				endcase
-				
+			8'he7:
+				case (spi_byte_cnt)
+					32'h2: begin
+					   srtc_reset_buf <= 1'b1;
+					end
+					32'h3: begin
+					   srtc_reset_buf <= 1'b0;
+					end
+				endcase
       endcase
    end
    if (SD_DMA_NEXTADDR | (mcu_nextaddr & (cmd_data[7:5] == 3'h4) && (cmd_data[3]) && (spi_byte_cnt > (32'h1+cmd_data[4])))) begin
@@ -446,6 +459,8 @@ assign bsx_regs_set_out = bsx_regs_set_out_buf;
 
 assign rtc_data_out = rtc_data_out_buf;
 assign rtc_pgm_we = rtc_pgm_we_buf;
+
+assign srtc_reset = srtc_reset_buf;
 
 assign mcu_data_out = SD_DMA_STATUS ? SD_DMA_SRAM_DATA : MCU_DATA_OUT_BUF;
 assign mcu_mapper = MAPPER_BUF;

@@ -22,6 +22,8 @@ module rtc (
     input clkin,
 	 input pgm_we,
 	 input [59:0] rtc_data_in,
+	 input we1,
+	 input [59:0] rtc_data_in1,
     output [59:0] rtc_data
     );
 
@@ -32,11 +34,15 @@ reg [1:0] pgm_we_sreg;
 always @(posedge clkin) pgm_we_sreg <= {pgm_we_sreg[0], pgm_we};
 wire pgm_we_rising = (pgm_we_sreg[1:0] == 2'b01);
 
+reg [2:0] we1_sreg;
+always @(posedge clkin) we1_sreg <= {we1_sreg[1:0], we1};
+wire we1_rising = (we1_sreg[2:1] == 2'b01);
+
 reg [31:0] tick_cnt;
 
 always @(posedge clkin) begin
   tick_cnt <= tick_cnt + 1;
-  if(tick_cnt == 23000000) tick_cnt <= 0;
+  if((tick_cnt == 24000000) || pgm_we_rising) tick_cnt <= 0;
 end
 
 assign rtc_data = rtc_data_out_r;
@@ -97,7 +103,7 @@ initial begin
   dom1[10] <= 0; dom10[10] <= 3;
   dom1[11] <= 1; dom10[11] <= 3;  
   month <= 0;
-  rtc_data_r <= 60'h019900101000000;
+  rtc_data_r <= 60'h220110301000000;
   tick_cnt <= 0;
 end
 
@@ -163,6 +169,8 @@ end
 always @(posedge clkin) begin
   if(pgm_we_rising) begin
     rtc_data_r <= rtc_data_in;
+  end else if (we1_rising) begin
+    rtc_data_r <= rtc_data_in1;
   end else begin
     case(rtc_state)
 		  STATE_SEC1: begin
