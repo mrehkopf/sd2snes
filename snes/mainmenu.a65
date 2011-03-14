@@ -1,0 +1,69 @@
+#include "memmap.i65"
+
+mainmenu:
+	php
+	sep #$20 : .as
+	jsr backup_screen
+	lda #^text_mainmenu
+	sta window_tbank
+	ldx #!text_mainmenu
+	stx window_taddr
+	lda @main_win_x
+	sta window_x
+	inc
+	inc
+	sta bar_xl
+	lda @main_win_y
+	sta window_y
+	inc
+	sta bar_yl
+	lda @main_win_w
+	sta window_w
+	sec
+	sbc #$04
+	sta bar_wl
+	lda @main_win_h
+	sta window_h
+	jsr draw_window
+
+	stz mm_tmp
+mm_entloop
+	lda @$912345
+	lda #^main_enttab
+	phb
+	pha
+	plb
+	ldx #!main_enttab
+	lda !1, x
+	sta @print_src
+	lda !2, x
+	sta @print_src+1
+	lda !0, x
+	sta @print_bank
+	lda @mm_tmp
+	asl
+	clc
+	adc @main_win_y
+	inc
+	inc
+	sta @print_y
+	lda @main_win_x
+	inc
+	inc
+	sta @print_x
+	plb
+	jsr hiprint
+	inc mm_tmp
+	lda mm_tmp
+	cmp @main_entries
+	bne mm_entloop
+	plp
+mm_menuloop
+        lda isr_done
+        lsr
+        bcc mm_menuloop
+	jsr printtime
+        stz isr_done
+	bra mm_menuloop
+	jsr restore_screen
+	rts

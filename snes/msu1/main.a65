@@ -5,6 +5,10 @@ GAME_MAIN:
 	stz $4200 ; inhibit IRQs
 	jsr killdma
 	jsr waitblank
+	jsr waitblank
+	jsr waitblank
+	jsr waitblank
+	jsr waitblank
 	jsr snes_init
 	jsr spc_upload
 	lda #$01
@@ -14,10 +18,10 @@ GAME_MAIN:
 	jsr setup_hdma
 	jsr screen_init
 	sep #$20 : .as
-	jsr msu1init
+-	jsr msu1init
 	cli
 	jsr msu1loop
--	wai	  ; idle loop
+	sei
 	bra -
 
 killdma:

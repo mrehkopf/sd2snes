@@ -22,15 +22,10 @@ GAME_MAIN:
 	jsr menu_init
 	jsr tests
 	sep #$20 : .as
--	lda @$C00000
-	lda @$D00000
-	lda @$E00000
-	lda @$F00000
-	lda @$400000
-	lda @$500000
-	lda @$600000
-	lda @$700000
-;	bra -
+	lda @RTC_STATUS
+	beq +
+	jsr time_init
++
 	jsr menuloop
 	cli
 	stz $4200
@@ -130,7 +125,7 @@ setup_gfx:
 ;copy logo tiles
 	ldx #$2000
 	stx $2116
-	DMA0(#$01, #$3740, #^logo, #!logo, #$18)
+	DMA0(#$01, #$4000, #^logo, #!logo, #$18)
 
 ;copy logo tilemap
 	ldx #BG1_TILE_BASE
@@ -380,7 +375,7 @@ fadeloop_start
 	sta hdma_math+17
 	txa
 	dec
-;	sta $2100
+	sta $2100
 	tax
 	bne fadeloop_start
 	stz $2126
@@ -389,7 +384,7 @@ fadeloop_start
 	stz $2130
 	lda #$00
 	sta @hdma_math
-;	stz $2100
+	stz $2100
 -	bra -
 
 fadeloop_end:

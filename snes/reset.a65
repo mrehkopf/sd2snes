@@ -21,11 +21,11 @@ NMI_ROUTINE:
 
 	ldx #BG1_TILE_BASE+32*9
 	stx $2116
-	DMA0(#$01, #36*64, #^BG1_TILE_BUF, #!BG1_TILE_BUF+64*9, #$18)
+	DMA0(#$01, #40*64, #^BG1_TILE_BUF, #!BG1_TILE_BUF+64*9, #$18)
 
 	ldx #BG2_TILE_BASE+32*9
 	stx $2116
-	DMA0(#$01, #36*64, #^BG2_TILE_BUF, #!BG2_TILE_BUF+64*9, #$18)
+	DMA0(#$01, #40*64, #^BG2_TILE_BUF, #!BG2_TILE_BUF+64*9, #$18)
 
 	ldx #BG2_TILE_BASE
 	stx $2116
@@ -68,6 +68,20 @@ lower_half
 	lda #112
 	sta hdma_math
 math_cont
+	lda bar_xl	; get logical cursor X pos
+	asl
+	dec
+	asl		; logical pos * 4
+	sta bar_x	; physical pos = logical pos * 4
+	sta $2126	; window 1 left
+	lda bar_wl	; get logical cursor width
+	asl
+	asl		; pixel width = logical width * 4
+	inc
+	sta bar_w	; = physical width
+	clc
+	adc bar_x	; + X start coord
+	sta $2127	; window 1 right
 	lda #$3e	; ch. 1-5
 	sta @$420c	; trigger HDMA
 	lda #$01

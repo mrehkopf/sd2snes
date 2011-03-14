@@ -35,7 +35,7 @@ print_bg_cont
 	asl ; double the offset for WRAM addressing
 	tay	; zonday
 	plx
-	phy	; offset from tilemap start	
+	phy	; offset from tilemap start
 	stx !print_temp
 	clc
 	adc !print_temp
@@ -48,7 +48,7 @@ print_bg_cont
 print_loop
 	ldx !print_src
 	lda !print_bank
-	pha 
+	pha
 	plb
 	phx	; source addr
 print_loop_inner
@@ -66,7 +66,7 @@ print_loop_inner
 	sta @print_done
 	inx
 	lda !0,x
-	beq print_loop2	
+	beq print_loop2
 	inx
 	lda !0,x
 	beq print_loop2
@@ -83,7 +83,7 @@ print_loop2
 	sta @print_count_tmp
 	lda #$00
 	pha
-	plb	
+	plb
 	rep #$30 : .al : .xl
 	ply	; source addr
 	iny
@@ -174,4 +174,167 @@ loprint_end
 	pha
 	plb
 	rts
-	
+
+backup_screen:
+; MVN: X=source, Y=dest, A=count
+;      imm1=srcbk, imm2=dstbk
+	phb
+	php
+	rep #$30 : .xl : .al
+	ldx #!BG1_TILE_BUF+64*9
+	ldy #!BG1_TILE_BAK+64*9
+	lda #36*64-1
+	mvn ^BG1_TILE_BUF, ^BG1_TILE_BAK
+	ldx #!BG2_TILE_BUF+64*9
+	ldy #!BG2_TILE_BAK+64*9
+	lda #36*64-1
+	mvn ^BG2_TILE_BUF, ^BG2_TILE_BAK
+	plp
+	plb
+	rts
+
+restore_screen:
+; MVN: X=source, Y=dest, A=count
+;      imm1=srcbk, imm2=dstbk
+	phb
+	php
+	rep #$30 : .xl : .al
+	ldx #!BG1_TILE_BAK+64*9
+	ldy #!BG1_TILE_BUF+64*9
+	lda #36*64
+	mvn ^BG1_TILE_BAK, ^BG1_TILE_BUF
+	ldx #!BG2_TILE_BAK+64*9
+	ldy #!BG2_TILE_BUF+64*9
+	lda #36*64
+	mvn ^BG2_TILE_BAK, ^BG2_TILE_BUF
+	plp
+	plb
+	rts
+
+draw_window:
+	phb
+	php
+	sep #$20 : .as
+
+; draw upper border
+; upper left corner
+	lda @window_nw
+	sta stringbuf
+	ldx #!stringbuf
+	inx
+	lda window_w
+	sta window_tmp
+	stz window_tmp+1
+	ldy window_tmp
+	dey
+	dey
+; upper edge
+-
+	lda @window_nh
+	sta !0,x
+	inx
+	dey
+	cpy #$0000
+	bne -
+
+; upper right corner
+	lda @window_ne
+	sta !0,x
+
+; print to text buffer
+	lda #$01
+	sta print_pal
+	lda window_x
+	sta print_x
+	lda window_y
+	sta print_y
+	lda #^stringbuf
+	sta print_bank
+	ldx #!stringbuf
+	stx print_src
+	lda window_w
+	sta print_count
+	jsr hiprint
+
+; print window title
+	inc print_x
+	inc print_x
+	lda window_tbank
+	sta print_bank
+	ldx window_taddr
+	stx print_src
+	jsr hiprint
+	dec print_x
+	dec print_x
+
+; draw left+right borders + space inside window
+	lda #^stringbuf
+	sta print_bank
+	ldx #!stringbuf
+	stx print_src
+	lda @window_wv
+	sta stringbuf
+	ldx #!stringbuf
+	inx
+	lda window_w
+	sta window_tmp
+	stz window_tmp+1
+	ldy window_tmp
+	dey
+	dey
+-
+	lda @space64
+	sta !0,x
+	inx
+	dey
+	cpy #$0000
+	bne -
+
+	lda @window_ev
+	sta !0,x
+
+; print to text buffer multiple times
+	lda window_h
+	sta window_tmp
+	stz window_tmp+1
+	ldy window_tmp
+	dey
+	dey
+-
+	inc print_y
+	phy
+	jsr hiprint
+	ply
+	dey
+	cpy #$0000
+	bne -
+
+; draw lower window border
+; lower left corner
+	lda @window_sw
+	sta stringbuf
+	ldx #!stringbuf
+	inx
+	lda window_w
+	sta window_tmp
+	stz window_tmp+1
+	ldy window_tmp
+	dey
+	dey
+; lower edge
+-
+	lda @window_sh
+	sta !0,x
+	inx
+	dey
+	cpy #$0000
+	bne -
+; lower right corner
+	lda @window_se
+	sta !0,x
+; print to text buffer
+	inc print_y
+	jsr hiprint
+	plp
+	plb
+	rts

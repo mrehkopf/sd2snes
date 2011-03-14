@@ -121,5 +121,6 @@ int main(int argc, char **argv) {
   fwrite(&alt_frameduration, 1, 1, out);
   fwrite(&alt_durfreq, 1, 1, out);
   fclose(out);
+  printf("%d images processed.\n", fileno);
   return 0;
 }

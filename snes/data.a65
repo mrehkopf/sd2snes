@@ -21,14 +21,6 @@ dirlog  .word	0,0,0,0,0,0,0,0,0
 	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-stack	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 ;----------parameters for text output----------
 print_x	.byt 0		;x coordinate
@@ -56,6 +48,7 @@ bar_yl		.byt 0	; logical y position of select bar
 bar_x		.byt 0	; pixel x position of select bar
 bar_y		.byt 0	; pixel y position of select bar
 bar_w		.byt 0	; bar width
+bar_wl		.byt 0	; bar width
 menu_state	.byt 0	; menu state (0=file select)
 menu_dirty	.byt 0	; menu dirty (e.g. after state change or when redraw is needed)
 menu_sel	.word 0 ; selected item #
@@ -67,7 +60,37 @@ fd_fnoff	.word 0  ; offset of filename in file descriptor
 pad1mem		.word 0
 pad1trig	.word 0
 pad1delay	.word 0
+window_x	.byt 0
+window_y	.byt 0
+window_w	.byt 0
+window_h	.byt 0
+window_tmp	.word 0
+window_tbank	.byt 0
+window_taddr	.word 0
+stringbuf	.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.word 0
+;----------dialog specific data
+time_s1		.byt 0
+time_s10	.byt 0
+time_m1		.byt 0
+time_m10	.byt 0
+time_h1		.byt 0
+time_h10	.byt 0
+time_d1		.byt 0
+time_d10	.byt 0
+time_mon	.byt 0
+time_y1		.byt 0
+time_y10	.byt 0
+time_y100	.byt 0
+time_sel	.byt 0
+time_exit	.byt 0
+time_ptr	.byt 0
+time_tmp	.byt 0
+;--
+mm_tmp		.byt 0
 ;----------menu layout/system constants (224/448)
+vidmode		.byt 0  ; 0=224, 1=448
 listdisp	.word 0 ; number of displayable list entries
 textdmasize	.word 0 ; number of bytes to copy each frame
 barstep		.byt 0  ; step size for bar

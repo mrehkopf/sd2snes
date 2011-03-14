@@ -5,15 +5,20 @@
 *= $C0FF00
 
 RESET:
-        sei: clc: xce
+        sei
+        clc
+        xce
+        rep #$20 : .al
+        lda #$1fff
+        tcs
         jmp @GAME_MAIN
 
 NMI_16bit:
         php
-         rep #$30
+         rep #$30 : .al : .xl
          pha: phx: phy: phd: phb
          jsl @NMI_ROUTINE
-         rep #$30
+         rep #$30 : .al : .xl
 int_exit:
          plb: pld: ply: plx: pla
         plp
@@ -21,10 +26,10 @@ int_exit:
 
 IRQ_16bit:
         php
-         rep #$30
+         rep #$30 : .al : .xl
          pha: phx: phy: phd: phb
          jsl @IRQ_ROUTINE
-	 rep #$30
+	 rep #$30 : .al : .xl
          bra int_exit
 
 ;error vectors

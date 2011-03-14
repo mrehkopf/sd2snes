@@ -51,8 +51,6 @@ setup_hdma:
 
 	ldx #185		;Set IRQ trigger to line 185
 	stx $4209		;
-	lda #$21		;V-Count IRQ + Auto Joypad Read
-	sta $4200
 	lda #$0e
 	sta $420c
 	rts

@@ -16,6 +16,10 @@ menu_init:
 	sta cursor_x
 	lda #$09
 	sta cursor_y
+	lda #$01
+	sta bar_xl
+	lda #$3e
+	sta bar_wl
 	ldx #$0000
 	stx dirptr_idx
 	stx menu_sel
@@ -32,6 +36,7 @@ menuloop_s1
 	bcc menuloop_s1
 
 	stz isr_done
+	jsr printtime
 	jsr menu_updates	;update stuff, check keys etc
 	lda menu_dirty		;is there ANY reason to redraw the menu?
 	cmp #$01
@@ -81,7 +86,7 @@ menu_cleanup_loop               ;pad rest of screen with empty lines
 	sta menu_sel
 menu_cleanup_out
 	rts
-	
+
 
 menu_updates:
 ;update selection, scroll etc
@@ -93,7 +98,10 @@ menu_updates:
 	clc
 	adc #$08
 	sta bar_yl
-
+	lda #$3e
+	sta bar_wl
+	lda #$01
+	sta bar_xl
 ;get input
 	jsr read_pad
 	lda #$04
@@ -117,6 +125,9 @@ menu_updates:
 	lda #$80
 	and pad1trig
 	bne key_a
+	lda #$40
+	and pad1trig
+	bne key_x
 	bra menuupd_out
 key_down
 	jsr menu_key_down
@@ -136,6 +147,10 @@ key_b
 key_a
 	jsr menu_key_a
 	bra menuupd_out
+key_x
+	jsr menu_key_x
+	bra menuupd_out
+
 key_select
 	jsr menu_key_select
 	bra menuupd_out
@@ -192,7 +207,7 @@ redraw_filelist_loop
 	bra redraw_filelist_loop
 redraw_filelist_dirend
 	plb
-	dey                        ; recover last valid direntry number 
+	dey                        ; recover last valid direntry number
 	dey                        ; (we had 2x iny of the direntry pointer above,
 	dey                        ;  so account for those too)
 	dey
@@ -227,8 +242,8 @@ print_direntry:
 	ldx dirent_addr
 
 	phb
-	pha	
-	plb	
+	pha
+	plb
 
 	lda @dirent_type
 	cmp #$80
@@ -238,14 +253,25 @@ dirent_is_dir
 	lda #$04	;skip dir tgt
 	sta @fd_fnoff
 	lda #$01	;different color for dirs
-	sta @print_pal
 	bra dirent_type_cont
 dirent_is_file
 	lda #$06	;skip size string
 	sta @fd_fnoff
-	lda #$00	;palette 0 (white)
-	sta @print_pal
+	lda @dirent_type
+	and #$00ff
+	cmp #$0001	;SMC -> palette 0 (white)
+	bne +
+	lda #$0000
+	bra dirent_type_cont
++
+	cmp #$0004	;IPS -> palette 2 (green)
+	bne +
+        lda #$0002
+	bra dirent_type_cont
++
+	lda #$0000	;default -> palette 0
 dirent_type_cont
+	sta @print_pal
 	rep #$20 : .al
 	txa
 	clc
@@ -302,7 +328,7 @@ dirent_type_cont
 dirent_is_file_2
 	lda dirent_bank
 	ldx dirent_addr
-	sta print_bank 
+	sta print_bank
 	stx print_src
 dirent_type_cont_2
 	lda #56
@@ -312,7 +338,7 @@ dirent_type_cont_2
 	jsr hiprint
 
 	rts
-	
+
 menu_key_down:
 	lda listdisp
 	dec
@@ -323,7 +349,7 @@ menu_key_down:
 	lda dirend_onscreen
 	bne down_out
 	rep #$20 : .al
-	lda dirptr_addr	
+	lda dirptr_addr
 	clc
 	adc #$04
 	sta dirptr_addr
@@ -341,7 +367,7 @@ menu_key_down:
 	inc
 	sta menu_sel
 down_out
-	rts 
+	rts
 
 menu_key_up:
 	lda menu_sel
@@ -370,7 +396,7 @@ menuupd_lastcursor
 	rts
 
 ; go back one page
-menu_key_left: 
+menu_key_left:
 	lda #$01            ; must redraw afterwards
 	sta menu_dirty
 	rep #$20 : .al
@@ -453,6 +479,9 @@ select_item:
 	iny
 	iny
 	lda (dirptr_addr), y
+	cmp #$01
+	beq sel_is_file
+	cmp #$04
 	beq sel_is_file
 	cmp #$80
 	beq sel_is_dir
@@ -469,9 +498,10 @@ sel_is_dir
 select_file:
 	; have avr load the rom
 	dey
-	lda (dirptr_addr), y
-	sta @AVR_PARAM+2
 	rep #$20 : .al
+	lda (dirptr_addr), y
+	and #$00ff
+	sta @AVR_PARAM+2
 	dey
 	dey
 	lda (dirptr_addr), y
@@ -481,7 +511,7 @@ select_file:
 	sta @AVR_CMD
 	lda #$00
 	sta @$4200
-	cli
+	sei
 	jsl @wram_fadeloop
 	rts
 
@@ -519,6 +549,9 @@ select_dir: ; y = direntry ptr
 	plb
 	rts
 
+menu_key_x:
+	jsr mainmenu
+	rts
 
 setup_224:
 	php
@@ -547,6 +580,7 @@ setup_224_adjsel
 	sta $2133
 	lda #$08
 	sta hdma_math_selection
+	stz vidmode
 	lda #$01
 	sta menu_dirty
 	lda #^space64
@@ -564,7 +598,7 @@ setup_224_adjsel
 	sta print_y
 	jsr hiprint
 	jsr hiprint
-	
+
 	plp
 	rts
 
@@ -589,6 +623,7 @@ setup_448:
 	lda #$04
 	sta hdma_math_selection
 	lda #$01
+	sta vidmode
 	sta menu_dirty
 	plp
 	rts

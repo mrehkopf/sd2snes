@@ -116,7 +116,6 @@ oam_data_l	.byt 75, 56, 31, $0e
 		.byt 75, 80, 24, $0e
 		.byt 83, 80, 25, $0e
 		.byt 91, 80, 26, $0e
-		
 oam_data_h	.byt 0, 0, 0, 0, 0, 0, 0, 0
 
 space64	.byt $20, $20, $20, $20, $20, $20, $20, $20
@@ -129,3 +128,27 @@ space64	.byt $20, $20, $20, $20, $20, $20, $20, $20
 	.byt $20, $20, $20, $20, $20, $20, $20, $20
 	.byt $00
 text_dirmark	.byt " <dir>", 0
+window_nw	.byt 20
+window_ne	.byt 21
+window_sw	.byt 22
+window_se	.byt 23
+window_nh	.byt 24
+window_sh	.byt 25
+window_wv	.byt 26
+window_ev	.byt 27
+text_clkset	.byt 28,"Please set the clock.", 29,0
+text_buttonB	.byt "Dpad: sel/chg, B: OK", 0
+time_win_x	.byt 18
+time_win_y	.byt 15
+time_win_w	.byt 27
+time_win_h	.byt 7
+main_win_x	.byt 18
+main_win_y	.byt 11
+main_win_w	.byt 27
+main_win_h	.byt 13
+text_mainmenu	.byt 28,"Main Menu", 29, 0
+
+text_mm_time	.byt "Set Clock", 0
+main_entries	.byt 1
+main_enttab	.byt ^text_mm_time, <text_mm_time, >text_mm_time, 1, ^time_init, <time_init, >time_init
+

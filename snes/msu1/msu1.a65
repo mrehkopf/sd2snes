@@ -48,9 +48,27 @@ msu1loop:
 	sta altcnt
 	lda #$01
 	sta curcnt
+ldx #$0000
+stx $1000 ;temp var
 	ldx numframes
 	dex
+        lda #$21                ;V-Count IRQ + Auto Joypad Read
+        sta $4200
 
+lda numframes
+sta @$306000
+lda numframes+1
+sta @$306001
+lda stddur
+sta @$306002
+lda altdur
+sta @$306003
+lda altcnt
+sta @$306004
+lda curdur
+sta @$306005
+lda curcnt
+sta @$306006
 msu1loop2
 	lda isr_flag
 	beq msu1loop2
@@ -60,6 +78,12 @@ msu1loop2
 	bpl +
 	;load half picture
 	lda #$18
+phx
+ldx $1000
+sta @$306100, x
+inx
+stx $1000
+plx
 	sta $4301
 	lda #$09
 	sta $4300
@@ -69,6 +93,12 @@ msu1loop2
 	sta $420b
 +	inc dispcnt	;inc field count
 	lda dispcnt	;and compare with current duration
+phx
+ldx $1000
+sta @$306100, x
+inx
+stx $1000
+plx
 	cmp curdur	;if not reached...
 	bne msu1loop2   ;...wait another field
 
@@ -120,9 +150,8 @@ ptr2
 	jmp msu1loop2
 
 msu1stop:
-	lda #$80
-	sta $2100
-	stz $420c
+;	lda #$80
+;	sta $2100
+;	stz $420c
 	stz MSU_CONTROL
-	- bra -
-
+	rts
