@@ -11,6 +11,8 @@
 
 #include "diskio.h"
 
+#define CRC_ERROR        (0xf000)
+
 /* These functions are weak-aliased to disk_... */
 void    sdn_init(void);
 DSTATUS sdn_status(BYTE drv);

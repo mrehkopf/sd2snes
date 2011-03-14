@@ -20,7 +20,7 @@
 /**
  * Static table used for the table_driven implementation.
  *****************************************************************************/
-static const crc_t crc_table[256] = {
+static const uint16_t crc_table[256] = {
     0x0000, 0xc0c1, 0xc181, 0x0140, 0xc301, 0x03c0, 0x0280, 0xc241,
     0xc601, 0x06c0, 0x0780, 0xc741, 0x0500, 0xc5c1, 0xc481, 0x0440,
     0xcc01, 0x0cc0, 0x0d80, 0xcd41, 0x0f00, 0xcfc1, 0xce81, 0x0e40,
@@ -63,14 +63,11 @@ static const crc_t crc_table[256] = {
  * \param data_len Number of bytes in the \a data buffer.
  * \return         The updated crc value.
  *****************************************************************************/
-crc_t crc16_update(crc_t crc, const unsigned char *data, size_t data_len)
+uint16_t crc16_update(uint16_t crc, const unsigned char data)
 {
   unsigned int tbl_idx;
-  while (data_len--) {
-    tbl_idx = (crc ^ *data) & 0xff;
-    crc = (crc_table[tbl_idx] ^ (crc >> 8)) & 0xffff;
-    data++;
-  }
+  tbl_idx = (crc ^ data) & 0xff;
+  crc = (crc_table[tbl_idx] ^ (crc >> 8)) & 0xffff;
   return crc & 0xffff;
 }
 

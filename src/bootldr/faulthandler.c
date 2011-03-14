@@ -4,7 +4,7 @@
 
 void HardFault_Handler(void) {
   DBG_BL printf("HFSR: %lx\n", SCB->HFSR);
-  uart_putc('H');
+  DBG_UART uart_putc('H');
   while (1) ;
 }
 

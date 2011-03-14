@@ -66,12 +66,13 @@
 #define CARD_SDHC (1<<1)
 
 /*
-    1 DAT3/SS   P0.6
-    2 CMD/DI    P0.9
-    5 Clock     P0.7
-    7 DAT0/DO   P0.8
-    8 DAT1/IRQ  P1.14
-    9 DAT2/NC   P1.15
+                Rev.A    Rev.C
+    1 DAT3/SS   P0.6     P2.3
+    2 CMD/DI    P0.9     P0.9
+    5 Clock     P0.7     P0.7
+    7 DAT0/DO   P0.8     P2.0
+    8 DAT1/IRQ  P1.14    P2.1
+    9 DAT2/NC   P1.15    P2.2
 */
 
 /* SD init procedure
@@ -193,6 +194,42 @@ static inline void wiggle_fast_neg1(void) {
 static inline void wiggle_fast_pos1(void) {
   BITBAND(SD_CLKREG->FIOSET, SD_CLKPIN) = 1;
   BITBAND(SD_CLKREG->FIOCLR, SD_CLKPIN) = 1;
+}
+
+int get_and_check_datacrc(uint8_t *buf) {
+  uint16_t crc0=0, crc1=0, crc2=0, crc3=0;
+  uint16_t sdcrc0=0, sdcrc1=0, sdcrc2=0, sdcrc3=0;
+  uint8_t d0=0, d1=0, d2=0, d3=0;
+  uint8_t datdata;
+  uint16_t datcnt;
+  /* get crcs from card */
+  for (datcnt=0; datcnt < 16; datcnt++) {
+    datdata = SD_DAT;
+    wiggle_fast_neg1();
+    sdcrc0 = ((sdcrc0 << 1) & 0xfffe) | ((datdata >> 3) & 0x0001);
+    sdcrc1 = ((sdcrc1 << 1) & 0xfffe) | ((datdata >> 2) & 0x0001);
+    sdcrc2 = ((sdcrc2 << 1) & 0xfffe) | ((datdata >> 1) & 0x0001);
+    sdcrc3 = ((sdcrc3 << 1) & 0xfffe) | ((datdata >> 0) & 0x0001);
+  }
+  wiggle_fast_neg1();
+  /* calc crcs from data */
+  for (datcnt=0; datcnt < 512; datcnt++) {
+    d0 = ((d0 << 2) & 0xfc) | ((buf[datcnt] >> 6) & 0x02) | ((buf[datcnt] >> 3) & 0x01) ;
+    d1 = ((d1 << 2) & 0xfc) | ((buf[datcnt] >> 5) & 0x02) | ((buf[datcnt] >> 2) & 0x01) ;
+    d2 = ((d2 << 2) & 0xfc) | ((buf[datcnt] >> 4) & 0x02) | ((buf[datcnt] >> 1) & 0x01) ;
+    d3 = ((d3 << 2) & 0xfc) | ((buf[datcnt] >> 3) & 0x02) | ((buf[datcnt] >> 0) & 0x01) ;
+    if((datcnt % 4) == 3) {
+      crc0 = crc_xmodem_update(crc0, d0);
+      crc1 = crc_xmodem_update(crc1, d1);
+      crc2 = crc_xmodem_update(crc2, d2);
+      crc3 = crc_xmodem_update(crc3, d3);
+    }
+  }
+  if((crc0 != sdcrc0) || (crc1 != sdcrc1) || (crc2 != sdcrc2) || (crc3 != sdcrc3)) {
+    DBG_SD printf("CRC mismatch\nSDCRC   CRC\n %04x    %04x\n %04x    %04x\n %04x    %04x\n %04x    %04x\n", sdcrc0, crc0, sdcrc1, crc1, sdcrc2, crc2, sdcrc3, crc3);
+    return 1;
+  }
+  return 0;
 }
 
 static inline void wait_busy(void) {
@@ -446,8 +483,16 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
         }
       }
     }
-    /* just eat the crcs for now */
-    if(dat) wiggle_fast_neg(17);
+    if(dat) {
+#ifdef CONFIG_SD_DATACRC
+      if(get_and_check_datacrc(buf-512)) {
+        return CRC_ERROR;
+      }
+#else
+      /* eat the crcs */
+      wiggle_fast_neg(17);
+#endif
+    }
 
     if(waitbusy) {
       DBG_SD printf("waitbusy after send_cmd\n");
@@ -515,7 +560,7 @@ int acmd_fast(uint8_t cmd, uint32_t param, uint8_t crc, uint8_t* dat, uint8_t* r
   return cmd_fast(cmd, param, crc, dat, rsp);
 }
 
-void stream_datablock(uint8_t *buf) {
+int stream_datablock(uint8_t *buf) {
 //  uint8_t datshift=8;
   int j=512;
   uint8_t datdata=0;
@@ -537,8 +582,13 @@ void stream_datablock(uint8_t *buf) {
     j--;
     if(!j) break;
   }
-  /* eat the crc for now */
+#ifdef CONFIG_SD_DATACRC
+  return get_and_check_datacrc(buf-512);
+#else
+  /* eat the crcs */
   wiggle_fast_neg(17);
+#endif
+  return 0;
 }
 
 void send_datablock(uint8_t *buf) {
@@ -667,7 +717,17 @@ void send_datablock(uint8_t *buf) {
 void read_block(uint32_t address, uint8_t *buf) {
   if(during_blocktrans == TRANS_READ && (last_block == address-1)) {
 //uart_putc('r');
+#ifdef CONFIG_SD_DATACRC
+    int cmd_res;
+    if((cmd_res = stream_datablock(buf)) == CRC_ERROR) {
+      while(cmd_res == CRC_ERROR) {
+        cmd_fast(STOP_TRANSMISSION, 0, 0x61, NULL, rsp);
+        cmd_res = cmd_fast(READ_MULTIPLE_BLOCK, address, 0, buf, rsp);
+      }
+    }
+#else
     stream_datablock(buf);
+#endif
     last_block=address;
   } else {
     if(during_blocktrans) {
@@ -680,7 +740,14 @@ void read_block(uint32_t address, uint8_t *buf) {
     if(!ccs) {
       address <<= 9;
     }
+#ifdef CONFIG_SD_DATACRC
+    while(1) {
+      if(cmd_fast(READ_MULTIPLE_BLOCK, address, 0, buf, rsp) != CRC_ERROR) break;
+      cmd_fast(STOP_TRANSMISSION, 0, 0x61, NULL, rsp);
+    };
+#else
     cmd_fast(READ_MULTIPLE_BLOCK, address, 0, buf, rsp);
+#endif
     during_blocktrans = TRANS_READ;
   }
 }

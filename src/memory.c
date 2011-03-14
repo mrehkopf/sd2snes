@@ -227,7 +227,7 @@ ticks_total=getticks()-ticksstart;
     sram_writebyte(0x33, rombase+0xda);
     sram_writebyte(0x00, rombase+0xd4);
     sram_writebyte(0xfc, rombase+0xd5);
-    set_fpga_time(0x0020110212180500LL);
+    set_fpga_time(0x0220110301180530LL);
   }
   uint32_t rammask;
   uint32_t rommask;
@@ -417,4 +417,34 @@ void sram_memset(uint32_t base_addr, uint32_t len, uint8_t val) {
   }
   FPGA_TX_BYTE(0x00);
   FPGA_DESELECT();
+}
+
+uint64_t sram_gettime(uint32_t base_addr) {
+  set_mcu_addr(base_addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x88);
+  FPGA_TX_BYTE(0x00);
+  uint8_t data;
+  uint64_t result = 0LL;
+  /* 1st nibble is the century - 10 (binary)
+     4th nibble is the month (binary)
+     all other fields are BCD */
+  for(int i=0; i<12; i++) {
+    data = FPGA_TXRX_BYTE(0x00);
+    data &= 0xf;
+    switch(i) {
+      case 0:
+        result = (result << 4) | ((data / 10) + 1);
+        result = (result << 4) | (data % 10);
+        break;
+      case 3:
+        result = (result << 4) | ((data / 10));
+        result = (result << 4) | (data % 10);
+        break;
+      default:
+        result = (result << 4) | data;
+    }
+  }
+  FPGA_DESELECT();
+  return result & 0x00ffffffffffffffLL;
 }

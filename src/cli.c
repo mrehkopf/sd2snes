@@ -388,7 +388,7 @@ void cmd_settime(void) {
     curchar[4+2] = 0;
     time.tm_mon = atoi(curchar+4);
     curchar[4] = 0;
-    time.tm_year = atoi(curchar) - 1900;
+    time.tm_year = atoi(curchar);
     set_rtc(&time);
   }
 }
@@ -396,7 +396,7 @@ void cmd_settime(void) {
 void cmd_time(void) {
   struct tm time;
   read_rtc(&time);
-  printf("%04d-%02d-%02d %02d:%02d:%02d\n", time.tm_year+1900, time.tm_mon,
+  printf("%04d-%02d-%02d %02d:%02d:%02d\n", time.tm_year, time.tm_mon,
     time.tm_mday, time.tm_hour, time.tm_min, time.tm_sec);
 }
 
@@ -513,6 +513,11 @@ void cli_loop(void) {
     case CMD_TIME:
       cmd_time();
       break;
+
+    case CMD_TEST:
+      testbattery();
+      break;
     }
+    
   }
 }

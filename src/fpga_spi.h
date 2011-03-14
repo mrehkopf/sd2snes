@@ -74,5 +74,6 @@ uint32_t get_msu_offset(void);
 uint32_t get_snes_sysclk(void);
 void set_bsx_regs(uint8_t set, uint8_t reset);
 void set_fpga_time(uint64_t time);
+void fpga_reset_srtc_state(void);
 
 #endif

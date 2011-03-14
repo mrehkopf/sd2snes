@@ -25,8 +25,8 @@
 #include "crc.h"
 #include "smc.h"
 #include "msu1.h"
+#include "rtc.h"
 
-#include "usb_hid.h"
 #define EMC0TOGGLE	(3<<4)
 #define MR0R		(1<<1)
 
@@ -37,14 +37,18 @@ int sd_offload_partial = 0;
 uint16_t sd_offload_partial_start = 0;
 uint16_t sd_offload_partial_end = 0;
 
-/* FIXME HACK */
 volatile enum diskstates disk_state;
 extern volatile tick_t ticks;
 extern snes_romprops_t romprops;
+extern volatile int reset_changed;
+
+enum system_states {
+  SYS_RTC_STATUS = 0
+};
 
 int main(void) {
-  LPC_GPIO2->FIODIR = BV(0) | BV(1) | BV(2);
-  LPC_GPIO1->FIODIR = 0;
+  LPC_GPIO2->FIODIR = BV(4) | BV(5);
+  LPC_GPIO1->FIODIR = BV(23);
   LPC_GPIO0->FIODIR = BV(16);
 
  /* connect UART3 on P0[25:26] + SSP0 on P0[15:18] + MAT3.0 on P0[10] */
@@ -54,7 +58,7 @@ int main(void) {
 /*                      | BV(13) | BV(15) | BV(17) | BV(19)  SSP1 (SD) */
 
  /* pull-down CIC data lines */
-  LPC_PINCON->PINMODE3 = BV(18) | BV(19) | BV(20) | BV(21);
+  LPC_PINCON->PINMODE0 = BV(0) | BV(1) | BV(2) | BV(3);
 
   clock_disconnect();
   snes_init();
@@ -72,6 +76,7 @@ led_pwm();
   sdn_init();
   printf("\n\nsd2snes mk.2\n============\nfw ver.: " VER "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
 printf("PCONP=%lx\n", LPC_SC->PCONP);
+
   file_init();
   cic_init(0);
 /* setup timer (fpga clk) */
@@ -197,22 +202,35 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     /* shared mode */
     set_mcu_ovr(0);
 
+    if((rtc_state = rtc_isvalid()) != RTC_OK) {
+      printf("RTC invalid!\n");
+      sram_writebyte(0xff, SRAM_STATUS_ADDR+SYS_RTC_STATUS);
+      set_bcdtime(0x20110401000000LL);
+      set_fpga_time(0x20110401000000LL);
+      invalidate_rtc();
+    } else {
+      printf("RTC valid!\n");
+      sram_writebyte(0x00, SRAM_STATUS_ADDR+SYS_RTC_STATUS);
+      set_fpga_time(get_bcdtime());
+    }
+
     printf("SNES GO!\n");
     snes_reset(1);
     delay_ms(1);
     snes_reset(0);
 
     uint8_t cmd = 0;
+    uint64_t btime = 0;
     uint32_t filesize=0;
     sram_writebyte(32, SRAM_CMD_ADDR);
     printf("test sram\n");
     while(!sram_reliable());
     printf("ok\n");
-
-  //while(1) {
-  //  delay_ms(1000);
-  //  printf("Estimated SNES master clock: %ld Hz\n", get_snes_sysclk());
-  //}
+sram_hexdump(SRAM_DIR_ADDR, 0x300);
+//while(1) {
+//  delay_ms(1000);
+//  printf("Estimated SNES master clock: %ld Hz\n", get_snes_sysclk());
+//}
   //sram_hexdump(SRAM_DB_ADDR, 0x200);
   //sram_hexdump(SRAM_MENU_ADDR, 0x400);
     while(!cmd) {
@@ -241,6 +259,11 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 	  snes_reset(0);
 	  break;
 	case SNES_CMD_SETRTC:
+          /* get time from RAM */
+          btime = sram_gettime(SRAM_PARAM_ADDR);
+          /* set RTC */
+          set_bcdtime(btime);
+          set_fpga_time(btime);
 	  cmd=0; /* stay in loop */
 	  break;
 	default:
@@ -265,6 +288,11 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       sleep_ms(250);
       sram_reliable();
       printf("%s ", get_cic_statename(get_cic_state()));
+      if(reset_changed) {
+        printf("reset\n");
+        reset_changed = 0;
+        fpga_reset_srtc_state();
+      }
       snes_reset_now=get_snes_reset();
       if(snes_reset_now) {
 	if(!snes_reset_prev) {

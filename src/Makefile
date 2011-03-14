@@ -55,7 +55,7 @@ TARGET = $(OBJDIR)/sd2snes
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c printf.c spi.c fileops.c rtc.c fpga.c fpga_spi.c snes.c smc.c memory.c filetypes.c faulthandler.c sort.c crc32.c cic.c cli.c xmodem.c irq.c rle.c sdnative.c msu1.c
+SRC = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c printf.c spi.c fileops.c rtc.c fpga.c fpga_spi.c snes.c smc.c memory.c filetypes.c faulthandler.c sort.c crc32.c cic.c cli.c xmodem.c irq.c rle.c sdnative.c msu1.c crc16.c
 
 # usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
 
@@ -215,12 +215,11 @@ sym: $(TARGET).sym
 #	cp $(TARGET).bin /mbed/hw_LPC1768.bin
 
 
-program: bin
+program: build
 	utils/lpcchksum $(TARGET).bin
 	openocd -f openocd-usb.cfg -f lpc1754.cfg -f flash.cfg
-	make -C bootldr program
 
-debug: bin
+debug: build
 	openocd -f openocd-usb.cfg -f lpc1754.cfg
 
 reset:

@@ -7,6 +7,7 @@
 #include "clock.h"
 #include "uart.h"
 #include "sdnative.h"
+#include "snes.h"
 
 /* bit definitions */
 #define RITINT 0
@@ -15,6 +16,7 @@
 #define PCRIT 16
 
 extern volatile int sd_changed;
+extern volatile int reset_changed;
 volatile tick_t ticks;
 volatile int wokefromrit;
 
@@ -26,9 +28,14 @@ void __attribute__((weak,noinline)) SysTick_Hook(void) {
 void SysTick_Handler(void) {
   ticks++;
   static uint16_t sdch_state = 0;
+  static uint16_t reset_state = 0;
   sdch_state = (sdch_state << 1) | SDCARD_DETECT | 0xe000;
   if((sdch_state == 0xf000) || (sdch_state == 0xefff)) {
     sd_changed = 1;
+  }
+  reset_state = (reset_state << 1) | get_snes_reset() | 0xe000;
+  if((reset_state == 0xf000) || (reset_state == 0xefff)) {
+    reset_changed = 1;
   }
   sdn_changed();
   SysTick_Hook();

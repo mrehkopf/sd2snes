@@ -2183,7 +2183,7 @@ FRESULT f_read (
 					mem_cpy(rbuff + ((fp->fs->winsect - sect) * SS(fp->fs)), fp->fs->win, SS(fp->fs));
 #else
 				if ((fp->flag & FA__DIRTY) && fp->dsect - sect < cc){
-					mem_cpy(rbuff + ((fp->dsect - sect) * SS(fp->fs)), fp->buf, SS(fp->fs)); uart_putc('Y');}
+					mem_cpy(rbuff + ((fp->dsect - sect) * SS(fp->fs)), fp->buf, SS(fp->fs)); }
 #endif
 #endif
 				rcnt = SS(fp->fs) * cc;				/* Number of bytes transferred */

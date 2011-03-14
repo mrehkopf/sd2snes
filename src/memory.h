@@ -38,6 +38,7 @@
 #define SRAM_DIR_ADDR (0xE10000L)
 #define SRAM_CMD_ADDR (0xFF1000L)
 #define SRAM_PARAM_ADDR (0xFF1004L)
+#define SRAM_STATUS_ADDR (0xFF1100L)
 #define SRAM_MENU_SAVE_ADDR (0xFF0000L)
 #define SRAM_SCRATCHPAD (0xFFFF00L)
 #define SRAM_DIRID (0xFFFFF0L)
@@ -61,6 +62,7 @@ void sram_writeblock(void* buf, uint32_t addr, uint16_t size);
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
 uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size);
 uint8_t sram_reliable(void);
-void sram_memset(uint32_t base_adde, uint32_t len, uint8_t val);
+void sram_memset(uint32_t base_addr, uint32_t len, uint8_t val);
+uint64_t sram_gettime(uint32_t base_addr);
 
 #endif

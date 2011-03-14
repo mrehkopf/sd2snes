@@ -11,6 +11,8 @@
 
 #include "diskio.h"
 
+#define CRC_ERROR        (0xf000)
+
 extern int sd_offload;
 
 /* These functions are weak-aliased to disk_... */

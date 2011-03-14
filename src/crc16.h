@@ -30,13 +30,6 @@ extern "C" {
 #define CRC_ALGO_BIT_BY_BIT_FAST 1
 
 /**
- * The type of the CRC values.
- *
- * This type must be big enough to contain at least 16 bits.
- *****************************************************************************/
-typedef uint16_t crc_t;
-
-/**
  * Update the crc value with new data.
  *
  * \param crc      The current crc value.
@@ -44,7 +37,7 @@ typedef uint16_t crc_t;
  * \param data_len Number of bytes in the \a data buffer.
  * \return         The updated crc value.
  *****************************************************************************/
-crc_t crc16_update(crc_t crc, const unsigned char *data, size_t data_len);
+uint16_t crc16_update(uint16_t crc, const unsigned char data);
 
 #ifdef __cplusplus
 }           /* closing brace for extern "C" */

@@ -42,7 +42,7 @@ int main(void) {
   clock_disconnect();
   power_init();
   timer_init();
-  uart_init();
+  DBG_UART uart_init();
   led_init();
   readled(0);
   rdyled(0);

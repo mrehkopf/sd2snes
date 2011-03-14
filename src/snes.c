@@ -43,6 +43,8 @@ uint8_t initloop=1;
 uint32_t saveram_crc, saveram_crc_old;
 extern snes_romprops_t romprops;
 
+volatile int reset_changed;
+
 void prepare_reset() {
   set_mcu_ovr(1);
   snes_reset(1);
@@ -142,7 +144,7 @@ uint8_t menu_main_loop() {
   sram_writebyte(0, SRAM_CMD_ADDR);
   while(!cmd) {
     if(!get_snes_reset()) {
-      while(!sram_reliable())printf("hurr\n");;
+      while(!sram_reliable())printf("hurr\n");
       cmd = sram_readbyte(SRAM_CMD_ADDR);
     }
     if(get_snes_reset()) {
@@ -155,7 +157,8 @@ uint8_t menu_main_loop() {
 }
 
 void get_selected_name(uint8_t* fn) {
-  uint32_t addr = sram_readlong(SRAM_PARAM_ADDR);
+  uint32_t addr;
+  addr = sram_readlong(SRAM_PARAM_ADDR);
   printf("fd addr=%lx\n", addr);
   sram_readblock(fn, addr + 7 + SRAM_MENU_ADDR, 256);
 }

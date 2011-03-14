@@ -26,22 +26,6 @@ loop:
         uxtb    r0, r0          // clear top bits of result
         bx      lr              // return
 
-        
-        /* uint16_t crc_xmodem_block(uint16_t crc, uint8_t *data, uint32_t len) */
-        .global crc_xmodem_block
-        .thumb_func
-crc_xmodem_block:
-        adr     r12, crc_table        // load address of crc table
-blockloop:
-        ldrb.w  r3, [r1], #1          // read data byte
-        eor     r3,  r3, r0, lsr #8   // EOR data byte
-        ldrh    r3, [r12, r3, lsl #1] // load value from CRC table
-        eor     r0,  r3, r0, lsl #8   // update CRC
-        uxth    r0, r0                // clear top bits of result
-        subs    r2, r2, #1            // decrement length
-        bne     blockloop             // loop while length > 0
-        bx      lr                    // return
-
         /* uint16_t crc_xmodem_block(uint16_t crc, uint8_t *data, uint32_t len) */
         .global crc_xmodem_update
         .thumb_func

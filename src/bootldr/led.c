@@ -9,18 +9,27 @@ int led_rdyledstate = 0;
 int led_readledstate = 0;
 int led_writeledstate = 0;
 
+/* LED connections (Rev.C)
+
+   LED    color  IO    PWM
+   ---------------------------
+   ready  green  P2.4  PWM1[5]
+   read   yellow P2.5  PWM1[6]
+   write  red    P1.23 PWM1[4]
+*/
+
 void rdyled(unsigned int state) {
-  BITBAND(LPC_GPIO2->FIODIR, 0) = state;
+  BITBAND(LPC_GPIO2->FIODIR, 4) = state;
   led_rdyledstate = state;
 }
 
 void readled(unsigned int state) {
-  BITBAND(LPC_GPIO2->FIODIR, 1) = state;
+  BITBAND(LPC_GPIO2->FIODIR, 5) = state;
   led_readledstate = state;
 }
 
 void writeled(unsigned int state) {
-  BITBAND(LPC_GPIO2->FIODIR, 2) = state;
+  BITBAND(LPC_GPIO1->FIODIR, 23) = state;
   led_writeledstate = state;
 }
 
@@ -36,7 +45,7 @@ void led_clkout32(uint32_t val) {
 }
 
 void toggle_rdy_led() {
-  rdyled(!led_rdyledstate);
+  rdyled(~led_rdyledstate);
 }
 
 void toggle_read_led() {
@@ -49,21 +58,28 @@ void toggle_write_led() {
 
 void led_panic() {
   while(1) {
-    LPC_GPIO2->FIODIR |= BV(0) | BV(1) | BV(2);
+    LPC_GPIO2->FIODIR |= BV(4) | BV(5);
+    LPC_GPIO1->FIODIR |= BV(23);
     delay_ms(350);
-    LPC_GPIO2->FIODIR &= ~(BV(0) | BV(1) | BV(2));
+    LPC_GPIO2->FIODIR &= ~(BV(4) | BV(5));
+    LPC_GPIO1->FIODIR &= ~BV(23);
     delay_ms(350);
   }
 }
 
 void led_std() {
-  BITBAND(LPC_PINCON->PINSEL4, 1) = 0;
-  BITBAND(LPC_PINCON->PINSEL4, 3) = 0;
-  BITBAND(LPC_PINCON->PINSEL4, 5) = 0;
+  BITBAND(LPC_PINCON->PINSEL4, 9) = 0;
+  BITBAND(LPC_PINCON->PINSEL4, 8) = 0;
 
-  BITBAND(LPC_PINCON->PINSEL4, 0) = 0;
-  BITBAND(LPC_PINCON->PINSEL4, 2) = 0;
-  BITBAND(LPC_PINCON->PINSEL4, 4) = 0;
+  BITBAND(LPC_PINCON->PINSEL4, 11) = 0;
+  BITBAND(LPC_PINCON->PINSEL4, 10) = 0;
+
+  BITBAND(LPC_PINCON->PINSEL3, 15) = 0;
+  BITBAND(LPC_PINCON->PINSEL3, 14) = 0;
+
+  BITBAND(LPC_PWM1->PCR, 12) = 0;
+  BITBAND(LPC_PWM1->PCR, 13) = 0;
+  BITBAND(LPC_PWM1->PCR, 14) = 0;
 }
 
 void led_init() {

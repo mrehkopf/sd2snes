@@ -84,7 +84,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
     this_dir_tgt = SRAM_DIR_ADDR;
     parent_tgt = 0;
     printf("root dir @%lx\n", dir_tgt);
-  }	
+  }
 
   fno.lfsize = 255;
   fno.lfname = (TCHAR*)file_lfn;
@@ -178,6 +178,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
                 strncpy(path+len+1, (char*)fn, sizeof(fs_path)-len);
                 uint16_t pathlen = strlen(path);
                 switch(type) {
+                  case TYPE_IPS:
                   case TYPE_SMC:
 /*                    file_open_by_filinfo(&fno);
                     if(file_res){
@@ -194,7 +195,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
                       db_tgt += 0x00010000;
                       printf("new=%lx\n", db_tgt);
                     }
-                    sram_writelong((db_tgt-SRAM_MENU_ADDR), dir_tgt);
+                    sram_writelong((db_tgt-SRAM_MENU_ADDR) | ((uint32_t)type << 24), dir_tgt);
                     dir_tgt += 4;
                     /* save element:
                         - index of last slash character
@@ -252,7 +253,13 @@ SNES_FTYPE determine_filetype(char* filename) {
      ||(!strcasecmp(ext+1, "FIG"))
     ) {
     return TYPE_SMC;
-  }/* later
+  }
+  if(  (!strcasecmp(ext+1, "IPS"))
+     ||(!strcasecmp(ext+1, "UPS"))
+    ) {
+    return TYPE_IPS;
+  }
+  /* later
   if(!strcasecmp_P(ext+1, PSTR("SRM"))) {
     return TYPE_SRM;
   }

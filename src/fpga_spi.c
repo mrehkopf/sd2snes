@@ -53,10 +53,10 @@
 
 	8p	-		read (RAM only)
 				p: 0 = no increment after read
-				   1 = increment after read
+				   8 = increment after read
 
 	9p	{xx}*		write xx
-				p: tt-i
+				p: i-tt
 				tt = target (see above)
 				i = increment (see above)
 
@@ -73,6 +73,7 @@
 				         nibbles packed)
                                 eg 0x20111210094816 is 2011-12-10, 9:48:16
 	E6	ssrr		set/reset BS-X status register [7:0]
+	E7	-		reset SRTC state
 	F0	-		receive test token (to see if FPGA is alive)
 	F1	-		receive status (16bit, MSB first), see below
 
@@ -333,6 +334,14 @@ void set_fpga_time(uint64_t time) {
   FPGA_TX_BYTE((time >> 16) & 0xff);
   FPGA_TX_BYTE((time >> 8) & 0xff);
   FPGA_TX_BYTE(time & 0xff);
+  FPGA_TX_BYTE(0x00);
+  FPGA_DESELECT();
+}
+
+void fpga_reset_srtc_state() {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xe7);
+  FPGA_TX_BYTE(0x00);
   FPGA_TX_BYTE(0x00);
   FPGA_DESELECT();
 }

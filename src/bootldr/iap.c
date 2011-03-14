@@ -127,9 +127,9 @@ FLASH_RES flash_file(uint8_t *filename) {
   DBG_BL printf("firmware image found. file size: %ld\n", file_handle.fsize);
   DBG_BL printf("reading header...\n");
   f_read(&file_handle, &file_header, 32, &bytes_read);
-  print_header(&file_header);
+  DBG_BL print_header(&file_header);
   if(check_flash() || file_header.version != fw_header->version || file_header.version == FW_MAGIC || fw_header->version == FW_MAGIC) {
-    uart_putc('F');
+    DBG_UART uart_putc('F');
     f_read(&file_handle, file_buf, 0xe0, &bytes_read);
     for(;;) {
       bytes_read = file_read();
@@ -171,7 +171,7 @@ FLASH_RES flash_file(uint8_t *filename) {
       current_sec = flash_addr & 0x10000 ? (16 + ((flash_addr >> 15) & 1))
                                          : (flash_addr >> 12);
       DBG_BL printf("current_sec=%d flash_addr=%08lx\n", current_sec, flash_addr);
-      uart_putc('.');
+      DBG_UART uart_putc('.');
       toggle_rdy_led();
       if(current_sec < (FW_START / 0x1000)) return ERR_FLASH;
       if((res = iap_prepare_for_write(current_sec, current_sec)) != CMD_SUCCESS) {
@@ -185,11 +185,11 @@ FLASH_RES flash_file(uint8_t *filename) {
     }
     if(total_read != file_header.size) {
       DBG_BL printf("wrote less data than expected! (%08lx vs. %08lx)\n", total_read, file_header.size);
-      uart_putc('X');
+      DBG_UART uart_putc('X');
       return ERR_FILECHK;
     }
   } else {
-    uart_putc('n');
+    DBG_UART uart_putc('n');
     DBG_BL printf("flash content is ok, no version mismatch, no forced upgrade. No need to flash\n");
   }
   return ERR_OK;
