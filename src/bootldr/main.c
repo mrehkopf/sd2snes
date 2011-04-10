@@ -37,7 +37,7 @@ int main(void) {
 /*                      | BV(13) | BV(15) | BV(17) | BV(19)  SSP1 (SD) */
 
  /* pull-down CIC data lines */
-  LPC_PINCON->PINMODE3 = BV(18) | BV(19) | BV(20) | BV(21);
+  LPC_PINCON->PINMODE0 = BV(0) | BV(1) | BV(2) | BV(3);
 
   clock_disconnect();
   power_init();

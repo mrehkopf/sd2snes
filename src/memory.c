@@ -212,8 +212,8 @@ ticks_total=getticks()-ticksstart;
   printf("%u ticks in read, %u ticks in tx, %u ticks total\n", ticks_read, ticks_tx, ticks_total);
   if(romprops.mapper_id==3) {
     printf("BSX Flash cart image\n");
-    printf("attempting to load BSX BIOS /sd2snes/bsxbios.sfc...\n");
-    load_sram_offload((uint8_t*)"/sd2snes/bsxbios.sfc", 0x800000);
+    printf("attempting to load BSX BIOS /sd2snes/bsxbios.bin...\n");
+    load_sram_offload((uint8_t*)"/sd2snes/bsxbios.bin", 0x800000);
     printf("Type: %02x\n", romprops.header.destcode);
     set_bsx_regs(0xc0, 0x3f);
     uint16_t rombase;

@@ -99,8 +99,8 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     set_rom_mask(0x3fffff);
     set_mapper(0x7);
     set_mcu_ovr(0);
-    delay_ms(100);
     snes_reset(0);
+    delay_ms(100);
     while(get_cic_state() == CIC_FAIL) {
       rdyled(0);
       readled(0);
@@ -145,7 +145,6 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 
     uint32_t mem_dir_id = sram_readlong(SRAM_DIRID);
     uint32_t mem_magic = sram_readlong(SRAM_SCRATCHPAD);
-    fpga_pgm((uint8_t*)"/main.bit.rle");
     printf("mem_magic=%lx mem_dir_id=%lx saved_dir_id=%lx\n", mem_magic, mem_dir_id, saved_dir_id);
     if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id) || (newcard)) {
       newcard = 0;
@@ -176,19 +175,20 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       } else {
 	printf("saved dir id = %lx\n", saved_dir_id);
 	printf("different card, consistent db, loading db...\n");
-	load_sram_offload((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
-	load_sram_offload((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
+	load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
+	load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
       }
       sram_writelong(curr_dir_id, SRAM_DIRID);
       sram_writelong(0x12345678, SRAM_SCRATCHPAD);
     } else {
       printf("same card, loading db...\n");
-      load_sram_offload((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
-      load_sram_offload((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
+      load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
+      load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
     }
     /* cli_loop(); */
     /* load menu */
 
+    fpga_pgm((uint8_t*)"/sd2snes/fpga_base.bit");
     uart_putc('(');
     load_rom((uint8_t*)"/sd2snes/menu.bin", SRAM_MENU_ADDR);
     /* force memory size + mapper */
