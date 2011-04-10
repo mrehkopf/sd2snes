@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (2010-12-16 BZR 2663)-testing date = Fri 04 Feb 2011 10:49:48 AM CET
+Cmp-Mod V01 Created by CvPCB (2010-12-16 BZR 2663)-testing date = Sun 03 Apr 2011 01:52:34 AM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -652,9 +652,9 @@ IdModule  = SOT23EBC;
 EndCmp
 
 BeginCmp
-TimeStamp = /4B6EC9C3/4D4BC942;
+TimeStamp = /4B6EC9C3/4D4BCF29;
 Reference = Q301;
-ValeurCmp = IRLML2502PBF;
+ValeurCmp = IRLML6402PbF;
 IdModule  = SOT23GDS;
 EndCmp
 
@@ -687,58 +687,9 @@ IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
 BeginCmp
-TimeStamp = /4B6E16F2/4C82A889;
-Reference = R121;
-ValeurCmp = 220;
-IdModule  = SM0805_FIXEDMASK;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6E16F2/4D113BF7;
-Reference = R122;
-ValeurCmp = 220;
-IdModule  = SM0805_FIXEDMASK;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6E16F2/4D113BF4;
-Reference = R123;
-ValeurCmp = 220;
-IdModule  = SM0805_FIXEDMASK;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6E16F2/4D113BF1;
-Reference = R124;
-ValeurCmp = 220;
-IdModule  = SM0805_FIXEDMASK;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6E16F2/4D113BED;
-Reference = R125;
-ValeurCmp = 220;
-IdModule  = SM0805_FIXEDMASK;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6E16F2/4D1151ED;
-Reference = R126;
-ValeurCmp = 220;
-IdModule  = SM0805_FIXEDMASK;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6E16F2/4D1151EA;
-Reference = R127;
-ValeurCmp = 220;
-IdModule  = SM0805_FIXEDMASK;
-EndCmp
-
-BeginCmp
-TimeStamp = /4B6E16F2/4D1151E8;
-Reference = R128;
-ValeurCmp = 220;
+TimeStamp = /4B6EC9C3/4D4BE786;
+Reference = R301;
+ValeurCmp = 20k;
 IdModule  = SM0805_FIXEDMASK;
 EndCmp
 
@@ -880,6 +831,104 @@ TimeStamp = /4BAA6ABD/4BF2FDAC;
 Reference = R513;
 ValeurCmp = 1k;
 IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D9630F0;
+Reference = RA101;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D9630F4;
+Reference = RA102;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D95CDCD;
+Reference = RA103;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D95CDD4;
+Reference = RA104;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D96310E;
+Reference = RA105;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D963115;
+Reference = RA106;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D963117;
+Reference = RA107;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D963119;
+Reference = RA108;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D963103;
+Reference = RA109;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D963107;
+Reference = RA110;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D96310A;
+Reference = RA111;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D96310C;
+Reference = RA112;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D97B45C;
+Reference = RA113;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6E16F2/4D97B45F;
+Reference = RA114;
+ValeurCmp = 220;
+IdModule  = R_PACK_0804;
 EndCmp
 
 BeginCmp

@@ -1,4 +1,4 @@
-update=Sat 19 Feb 2011 11:07:40 AM CET
+update=Fri 01 Apr 2011 10:39:57 PM CEST
 version=1
 last_client=pcbnew
 [general]
@@ -84,9 +84,9 @@ NetIExt=net
 EquName1=devcms
 [pcbnew]
 version=1
-PadDrlX=320
-PadDimH=600
-PadDimV=600
+PadDrlX=0
+PadDimH=197
+PadDimV=197
 BoardThickness=630
 SgPcb45=1
 TxtPcbV=800
@@ -98,7 +98,7 @@ VEgarde=50
 DrawLar=70
 EdgeLar=40
 TxtLar=120
-MSegLar=150
+MSegLar=79
 LastNetListRead=sd2snes.net
 [pcbnew/libraries]
 LibDir=../../kicad
