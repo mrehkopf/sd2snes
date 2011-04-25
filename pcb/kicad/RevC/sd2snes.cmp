@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (2010-12-16 BZR 2663)-testing date = Sun 03 Apr 2011 01:52:34 AM CEST
+Cmp-Mod V01 Created by CvPCB (2010-12-16 BZR 2663)-testing date = Sun 24 Apr 2011 01:27:40 AM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -575,6 +575,13 @@ IdModule  = SOT23EBC;
 EndCmp
 
 BeginCmp
+TimeStamp = /4B6EC9C3/4DB2EA56;
+Reference = FB341;
+ValeurCmp = FILTER;
+IdModule  = SM0805_FIXEDMASK;
+EndCmp
+
+BeginCmp
 TimeStamp = /4B6E16F2/4B6E1766;
 Reference = J101;
 ValeurCmp = SNESCART_EXT;
@@ -593,6 +600,13 @@ TimeStamp = /4B6ED75B/4BF00175;
 Reference = J421;
 ValeurCmp = Molex_54819;
 IdModule  = USB-MINIB-THT;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6EC9C3/4DB35D41;
+Reference = JP341;
+ValeurCmp = JUMPER;
+IdModule  = GS2;
 EndCmp
 
 BeginCmp

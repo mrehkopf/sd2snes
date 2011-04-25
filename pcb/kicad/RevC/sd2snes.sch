@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sun 03 Apr 2011 11:13:38 AM CEST
+EESchema Schematic File Version 2  date Sun 24 Apr 2011 04:09:57 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -47,7 +47,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 1 6
 Title "sd2snes Mark II"
-Date "3 apr 2011"
+Date "23 apr 2011"
 Rev "C"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -58,7 +58,7 @@ $EndDescr
 Wire Notes Line
 	3650 4200 6150 4200
 Text Notes 3300 3250 0    100  ~ 0
-Changes from Rev.A / TODO:\n [x] remove FPGA from JTAG chain\n [x] remove SNES IRQ_DIR+IRQ, replace with IRQ_OE. IRQ is unidirectional cart -> console\n      (replace 1gate w/ transistor)\n [x] disconnect P2.10 from FPGA, using a different GPIO for IRQ / INIT_B\n [x] add pullup to P2.10\n [ ] add JTAG pullups\n [x] add series resistor for CPU_CLK\n [x] add a jumper in PIC MCLR line to MCU\n [x] change PIC to DIP8 type for easier preprogramming\n [x] change "P1" to "P401" in pin description in silk screen\n [x] filter CIC data lines\n [x] rearrange SD card interface/LEDs on MCU\n [ ] RAs for SNES signals?\n [x] reroute/add decoupling capacitors\n [x] filter SNES control signals (RD, WR, PARD, PAWR, CPU_CLK, IRQ)\n [x] replace 4Mbit SRAM with much cheaper TSOP-II type\n [x] add inverse polarity protection
+Changes from Rev.A / TODO:\n [x] remove FPGA from JTAG chain\n [x] remove SNES IRQ_DIR+IRQ, replace with IRQ_OE. IRQ is unidirectional cart -> console\n      (replace 1gate w/ transistor)\n [x] disconnect P2.10 from FPGA, using a different GPIO for IRQ / INIT_B\n [x] add pullup to P2.10\n [ ] add JTAG pullups\n [x] add series resistor for CPU_CLK\n [x] add a jumper in PIC MCLR line to MCU\n [x] change PIC to DIP8 type for easier preprogramming\n [x] change "P1" to "P401" in pin description in silk screen\n [x] filter CIC data lines\n [x] rearrange SD card interface/LEDs on MCU\n [x] RAs for SNES signals?\n [x] reroute/add decoupling capacitors\n [x] filter SNES control signals (RD, WR, PARD, PAWR, CPU_CLK, IRQ)\n [x] replace 4Mbit SRAM with much cheaper TSOP-II type\n [x] add inverse polarity protection\n [ ] separate GND plane for DAC
 $Sheet
 S 1250 1250 1700 1250
 U 4B6E16F2
