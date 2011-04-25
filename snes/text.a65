@@ -183,11 +183,11 @@ backup_screen:
 	rep #$30 : .xl : .al
 	ldx #!BG1_TILE_BUF+64*9
 	ldy #!BG1_TILE_BAK+64*9
-	lda #36*64-1
+	lda @textdmasize
 	mvn ^BG1_TILE_BUF, ^BG1_TILE_BAK
 	ldx #!BG2_TILE_BUF+64*9
 	ldy #!BG2_TILE_BAK+64*9
-	lda #36*64-1
+	lda @textdmasize
 	mvn ^BG2_TILE_BUF, ^BG2_TILE_BAK
 	plp
 	plb
@@ -201,11 +201,11 @@ restore_screen:
 	rep #$30 : .xl : .al
 	ldx #!BG1_TILE_BAK+64*9
 	ldy #!BG1_TILE_BUF+64*9
-	lda #36*64
+	lda @textdmasize
 	mvn ^BG1_TILE_BAK, ^BG1_TILE_BUF
 	ldx #!BG2_TILE_BAK+64*9
 	ldy #!BG2_TILE_BUF+64*9
-	lda #36*64
+	lda @textdmasize
 	mvn ^BG2_TILE_BAK, ^BG2_TILE_BUF
 	plp
 	plb

@@ -1,8 +1,38 @@
 #include "memmap.i65"
+;number of menu entries
+main_entries    .byt 1
+;menu entry data
+main_enttab     ;Set Clock
+		.word !text_mm_time
+                .byt ^text_mm_time
+                .word !time_init-1
+                .byt ^time_init
+                .byt 1, 0
+                ;SuperCIC
+		.word !text_mm_scic
+                .byt ^text_mm_scic
+                .word !time_init
+                .byt ^time_init
+                .byt 1, 0
+                ;Menu vmode
+		.word !text_mm_vmode_menu
+                .byt ^text_mm_vmode_menu
+                .word !time_init
+                .byt ^time_init
+                .byt 1, 0
+                ;Game vmode
+		.word !text_mm_vmode_game
+                .byt ^text_mm_vmode_game
+                .word !time_init
+                .byt ^time_init
+                .byt 1, 0
 
 mainmenu:
 	php
 	sep #$20 : .as
+	stz mm_sel
+mm_redraw
+	stz mm_tmp
 	jsr backup_screen
 	lda #^text_mainmenu
 	sta window_tbank
@@ -10,35 +40,26 @@ mainmenu:
 	stx window_taddr
 	lda @main_win_x
 	sta window_x
-	inc
-	inc
-	sta bar_xl
 	lda @main_win_y
 	sta window_y
-	inc
-	sta bar_yl
 	lda @main_win_w
 	sta window_w
-	sec
-	sbc #$04
-	sta bar_wl
 	lda @main_win_h
 	sta window_h
 	jsr draw_window
-
-	stz mm_tmp
+	jsr mm_do_refresh
+	stz print_pal
+	ldx #!main_enttab
 mm_entloop
-	lda @$912345
 	lda #^main_enttab
 	phb
 	pha
 	plb
-	ldx #!main_enttab
-	lda !1, x
-	sta @print_src
-	lda !2, x
-	sta @print_src+1
 	lda !0, x
+	sta @print_src
+	lda !1, x
+	sta @print_src+1
+	lda !2, x
 	sta @print_bank
 	lda @mm_tmp
 	asl
@@ -52,18 +73,119 @@ mm_entloop
 	inc
 	sta @print_x
 	plb
+	phx
 	jsr hiprint
+	plx
+	inx
+	inx
+	inx
+	inx
+	inx
+	inx
+	inx
+	inx
 	inc mm_tmp
 	lda mm_tmp
 	cmp @main_entries
 	bne mm_entloop
-	plp
+	stz mm_tmp
+	stz mm_refresh
 mm_menuloop
         lda isr_done
         lsr
         bcc mm_menuloop
 	jsr printtime
         stz isr_done
+	lda mm_refresh
+	beq +
+	jsr mm_do_refresh
+	stz mm_refresh
++
+	jsr read_pad
+	lda #$80
+	and pad1trig
+	bne mmkey_a
+	lda #$04
+	and pad1trig+1
+	bne mmkey_down
+	lda #$08
+	and pad1trig+1
+	bne mmkey_up
+	lda #$80
+	and pad1trig+1
+	bne mmkey_b
 	bra mm_menuloop
+mmkey_a
 	jsr restore_screen
+	plp
+	rts
+
+mmkey_b
+	jsr mmkey_b_2
+	jmp mm_redraw
+
+mmkey_down
+	jsr mmkey_down_2
+	bra mm_menuloop
+
+mmkey_up
+	jsr mmkey_up_2
+	bra mm_menuloop
+
+mmkey_down_2
+	lda @main_entries
+	dec
+	cmp mm_sel
+	beq +
+	inc mm_sel
+	inc mm_refresh
++
+	rts
+
+mmkey_up_2
+	lda mm_sel
+	beq +
+	dec mm_sel
+	dec bar_yl
+	dec bar_yl
++
+	rts
+
+mmkey_b_2
+	jsr restore_screen
+	phk			; push return bank for subroutine
+	per mmkey_b_2_return-1	; push return addr for subroutine
+	xba
+	lda #$00
+	xba
+	lda mm_sel
+	asl
+	asl
+	asl
+	tax
+	lda @main_enttab+5, x
+	pha			; push subroutine bank
+	rep #$20 : .al
+	lda @main_enttab+3, x
+	pha			; push subroutine addr
+	sep #$20 : .as
+	rtl			; jump to subroutine
+mmkey_b_2_return
+	rts
+
+mm_do_refresh
+	lda mm_sel
+	asl
+	clc
+	adc @main_win_y
+	inc
+	sta bar_yl
+	lda @main_win_x
+	inc
+	inc
+	sta bar_xl
+	lda @main_win_w
+	sec
+	sbc #$04
+	sta bar_wl
 	rts

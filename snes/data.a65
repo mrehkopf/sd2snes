@@ -89,6 +89,8 @@ time_ptr	.byt 0
 time_tmp	.byt 0
 ;--
 mm_tmp		.byt 0
+mm_sel		.byt 0
+mm_refresh	.byt 0
 ;----------menu layout/system constants (224/448)
 vidmode		.byt 0  ; 0=224, 1=448
 listdisp	.word 0 ; number of displayable list entries

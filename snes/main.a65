@@ -24,7 +24,7 @@ GAME_MAIN:
 	sep #$20 : .as
 	lda @RTC_STATUS
 	beq +
-	jsr time_init
+	jsl time_init
 +
 	jsr menuloop
 	cli

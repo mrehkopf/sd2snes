@@ -3,6 +3,7 @@
 
 GAME_MAIN:
 	sep #$20 : .as
+	sei
 	stz $4200 ; inhibit VBlank NMI
 	jsr killdma
 	lda #$01
@@ -44,12 +45,6 @@ printloop
 	lda #$00
 	sta @print_pal
 	jsr loprint_wram
--	lda @$4212
-	and #$80
-	bne -
--	lda @$4212
-	and #$80
-	beq -
 	rep #$20 : .al
         lda #!BG1_TILE_BASE
         sta $2116
@@ -64,6 +59,12 @@ printloop
 	stx $4302
 	ldx #36*64
 	stx $4305
+-	lda @$4212
+	and #$80
+	bne -
+-	lda @$4212
+	and #$80
+	beq -
 	lda #$01
 	sta $420b
 	bra printloop
@@ -165,9 +166,9 @@ tests:
 	sta $2107		;for BG1
 	lda #$40		;chr base addr:
 	sta $210b		;BG1=0x0000, BG2=0x8000
-	lda #$01		;enable BG1 
+	lda #$01		;enable BG1
 	sta $212c		;BG Main
-	lda #$01		;enable none 
+	lda #$01		;enable none
 	sta $212d		;BG Sub
 	lda #$00
 	sta $2130
@@ -175,7 +176,7 @@ tests:
 	lda #$0f
 	sta $2100		;screen on, full brightness
 	rts
-	
+
 snes_init:
 	sep #$20 : .as		;8-bit accumulator
 	rep #$10 : .xl		;16-bit index
@@ -228,7 +229,7 @@ snes_init:
 	stz $2113		;
 	stz $2114		;
 	stz $2114		;
-	lda #$80		
+	lda #$80
 	sta $2115		;
 	stz $2116		;
 	stz $2117		;

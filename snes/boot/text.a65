@@ -26,7 +26,7 @@ loprint:
 	sta @$2183
 	ldx !print_src
 	lda !print_bank
-	pha 
+	pha
 	plb
 loprint_loop_inner
 	lda !0,x

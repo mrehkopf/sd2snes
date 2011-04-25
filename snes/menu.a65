@@ -44,6 +44,7 @@ menuloop_s1
 	bra menuloop_s1
 menuloop_redraw
 	stz menu_dirty
+	jsr menu_statusbar
 	jsr menu_redraw
 	jsr menu_cleanup	;update phase 2
 	bra menuloop_s1
@@ -565,7 +566,7 @@ setup_224:
 setup_224_adjsel
 	sta menu_sel
 +
-	lda #19*64
+	lda #18*64
 	sta textdmasize
 	lda #$0007
 	sta hdma_scroll+8
@@ -607,7 +608,7 @@ setup_448:
 	rep #$30 : .xl : .al
 	lda #36
 	sta listdisp
-	lda #38*64
+	lda #36*64
 	sta textdmasize
 	lda #$ffc6
 	sta hdma_scroll+8
@@ -628,4 +629,33 @@ setup_448:
 	plp
 	rts
 
+menu_statusbar
+	pha
+	phx
+	php
+	sep #$20 : .as
+	rep #$10 : .xl
+	lda #^text_statusbar_keys
+	sta @print_bank
+	rep #$20 : .al
+	lda #!text_statusbar_keys
+	sta @print_src
+	sep #$20 : .as
+	lda #$00
+	sta @print_pal
+	lda #$02
+	sta @print_x
+	lda #$40
+	sta @print_count
+	lda listdisp
+	clc
+	adc #$0a
+	clc
+	adc vidmode
+	sta @print_y
+	jsr hiprint
+	plp
+	plx
+	pla
+	rts
 

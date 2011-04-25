@@ -128,7 +128,7 @@ timeloop1
 	; restore text area
 	jsr restore_screen
 	plp
-	rts
+	rtl
 
 tkey_b
 	inc time_exit
