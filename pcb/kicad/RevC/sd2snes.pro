@@ -1,11 +1,16 @@
-update=Mon 25 Apr 2011 03:12:00 AM CEST
+update=Mon 25 Apr 2011 03:48:36 AM CEST
 version=1
 last_client=pcbnew
 [general]
 version=1
+[cvpcb]
+version=1
+NetIExt=net
+[cvpcb/libraries]
+EquName1=devcms
 [eeschema]
 version=1
-LibDir=/home/ikari/prj/sd2snes/pcb/kicad
+LibDir=../../kicad
 NetFmt=1
 HPGLSpd=20
 HPGLDm=15
@@ -76,12 +81,6 @@ LibName38=libs/cs4344
 LibName39=libs/double_sch_kcom
 LibName40=libs/usb_minib
 LibName41=libs/mic23250
-LibName42=libs/cy62158ev30
-[cvpcb]
-version=1
-NetIExt=net
-[cvpcb/libraries]
-EquName1=devcms
 [pcbnew]
 version=1
 PadDrlX=0

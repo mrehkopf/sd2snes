@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sun 24 Apr 2011 04:09:57 PM CEST
+EESchema Schematic File Version 2  date Mon 25 Apr 2011 03:49:01 AM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -40,14 +40,13 @@ LIBS:cs4344
 LIBS:double_sch_kcom
 LIBS:usb_minib
 LIBS:mic23250
-LIBS:cy62158ev30
 LIBS:sd2snes-cache
 EELAYER 25  0
 EELAYER END
 $Descr A3 16535 11700
 Sheet 2 6
 Title "sd2snes Mark II"
-Date "23 apr 2011"
+Date "25 apr 2011"
 Rev "C"
 Comp "Maximilian Rehkopf"
 Comment1 ""
