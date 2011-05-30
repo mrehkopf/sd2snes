@@ -38,7 +38,9 @@ module address(
 	 output msu_enable,
 	 output srtc_enable,
     output use_bsx,
-	 input [14:0] bsx_regs
+	 input [14:0] bsx_regs,
+   output dspx_enable,
+   output dspx_a0
     );
 
 wire [1:0] SRAM_BANK;
@@ -153,5 +155,9 @@ assign msu_enable = (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000
 assign use_bsx = (MAPPER == 3'b011);
 
 assign srtc_enable = (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h2800));
+
+// DSP1 1mb lorom: DR=20-3f:8000-bfff; SR=20-3f:c000-ffff
+assign dspx_enable = (MAPPER == 3'b001) && (!SNES_ADDR[22] && SNES_ADDR[21] && (SNES_ADDR[15] == 1'b1));
+assign dspx_a0 = SNES_ADDR[14];
 
 endmodule

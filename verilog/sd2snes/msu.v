@@ -57,8 +57,8 @@ wire msu_address_ext_write_rising = (msu_address_ext_write_sreg[1:0] == 2'b01);
 
 reg [5:0] reg_oe_sreg;
 always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[4:0], reg_oe};
-wire reg_oe_falling = (reg_oe_sreg[5:0] == 6'b100000);
-wire reg_oe_rising = (reg_oe_sreg[5:0] == 6'b000001);
+wire reg_oe_falling = (reg_oe_sreg[3:0] == 4'b1000);
+wire reg_oe_rising = (reg_oe_sreg[3:0] == 4'b0001);
 
 reg [1:0] reg_we_sreg;
 always @(posedge clkin) reg_we_sreg <= {reg_we_sreg[0], reg_we};
