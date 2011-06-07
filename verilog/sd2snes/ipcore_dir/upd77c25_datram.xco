@@ -1,19 +1,46 @@
 ##############################################################
+#
+# Xilinx Core Generator version 13.1
+# Date: Thu Jun  2 00:43:50 2011
+#
 ##############################################################
+#
+#  This file contains the customisation parameters for a
+#  Xilinx CORE Generator IP GUI. It is strongly recommended
+#  that you do not manually alter this file as it may cause
+#  unexpected and unsupported behavior.
+#
 ##############################################################
-SET designentry = Verilog
-SET BusFormat = BusFormatAngleBracketNotRipped
-SET devicefamily = spartan3
+#
+# BEGIN Project Options
+SET addpads = false
+SET asysymbol = true
+SET busformat = BusFormatAngleBracketNotRipped
+SET createndf = false
+SET designentry = Advanced
 SET device = xc3s400
+SET devicefamily = spartan3
+SET flowvendor = Other
+SET formalverification = false
+SET foundationsym = false
+SET implementationfiletype = Ngc
 SET package = pq208
+SET removerpms = false
+SET simulationfiles = Behavioral
 SET speedgrade = -4
-SET FlowVendor = Foundation_ISE
-SET VerilogSim = True
-SET VHDLSim = True
-SELECT Block_Memory_Generator family Xilinx,_Inc. 4.3
+SET verilogsim = true
+SET vhdlsim = true
+# END Project Options
+# BEGIN Select
+SELECT Block_Memory_Generator xilinx.com:ip:blk_mem_gen:6.1
+# END Select
+# BEGIN Parameters
 CSET additional_inputs_for_power_estimation=false
 CSET algorithm=Minimum_Area
 CSET assume_synchronous_clk=false
+CSET axi_id_width=4
+CSET axi_slave_type=Memory_Slave
+CSET axi_type=AXI4_Full
 CSET byte_size=9
 CSET coe_file=no_coe_file_loaded
 CSET collision_warnings=ALL
@@ -26,6 +53,7 @@ CSET enable_a=Always_Enabled
 CSET enable_b=Always_Enabled
 CSET error_injection_type=Single_Bit_Error_Injection
 CSET fill_remaining_memory_locations=false
+CSET interface_type=Native
 CSET load_init_file=false
 CSET memory_type=Single_Port_RAM
 CSET operating_mode_a=WRITE_FIRST
@@ -36,9 +64,9 @@ CSET pipeline_stages=0
 CSET port_a_clock=100
 CSET port_a_enable_rate=100
 CSET port_a_write_rate=50
-CSET port_b_clock=100
-CSET port_b_enable_rate=100
-CSET port_b_write_rate=50
+CSET port_b_clock=0
+CSET port_b_enable_rate=0
+CSET port_b_write_rate=0
 CSET primitive=8kx2
 CSET read_width_a=16
 CSET read_width_b=16
@@ -55,6 +83,7 @@ CSET reset_priority_a=CE
 CSET reset_priority_b=CE
 CSET reset_type=SYNC
 CSET softecc=false
+CSET use_axi_id=false
 CSET use_byte_write_enable=false
 CSET use_error_injection_pins=false
 CSET use_regcea_pin=false
@@ -64,3 +93,9 @@ CSET use_rstb_pin=false
 CSET write_depth_a=256
 CSET write_width_a=16
 CSET write_width_b=16
+# END Parameters
+# BEGIN Extra information
+MISC pkg_timestamp=2011-02-03T22:20:43.000Z
+# END Extra information
+GENERATE
+# CRC: 47f41c0a
