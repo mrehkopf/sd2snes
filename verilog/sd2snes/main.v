@@ -121,6 +121,14 @@ wire [7:0] SRTC_SNES_DATA_OUT;
 wire [7:0] DSPX_SNES_DATA_IN;
 wire [7:0] DSPX_SNES_DATA_OUT;
 
+wire [23:0] dspx_pgm_data;
+wire [10:0] dspx_pgm_addr;
+wire dspx_pgm_we;
+   
+wire [15:0] dspx_dat_data;
+wire [9:0] dspx_dat_addr;
+wire dspx_dat_we;
+
 //wire SD_DMA_EN; //SPI_DMA_CTRL;
 
 sd_dma snes_sd_dma(.CLK(CLK2),
@@ -238,14 +246,14 @@ upd77c25 snes_dspx (
     .nCS(~dspx_enable), 
     .nRD(SNES_READ), 
     .nWR(SNES_WRITE), 
-    .RST(1'b1 /* XXX DSPX_RST*/), 
+    .RST(~dspx_reset), 
     .CLK(CLK2), 
-    .PGM_WR(DSPX_PGM_WR), 
-    .PGM_DI(DSPX_PGM_DI), 
-    .PGM_WR_ADDR(DSPX_PGM_WR_ADDR), 
-    .DAT_WR(DSPX_DAT_WR), 
-    .DAT_DI(DSPX_DAT_DI), 
-    .DAT_WR_ADDR(DSPX_DAT_WR_ADDR)
+    .PGM_WR(dspx_pgm_we),
+    .PGM_DI(dspx_pgm_data), 
+    .PGM_WR_ADDR(dspx_pgm_addr), 
+    .DAT_WR(dspx_dat_we), 
+    .DAT_DI(dspx_dat_data), 
+    .DAT_WR_ADDR(dspx_dat_addr)
     );
     
 mcu_cmd snes_mcu_cmd(
@@ -299,7 +307,14 @@ mcu_cmd snes_mcu_cmd(
 	 .bsx_regs_reset_we(bsx_regs_reset_we),
 	 .rtc_data_out(rtc_data_in),
 	 .rtc_pgm_we(rtc_pgm_we),
-	 .srtc_reset(srtc_reset)
+	 .srtc_reset(srtc_reset),
+   .dspx_pgm_data_out(dspx_pgm_data),
+   .dspx_pgm_addr_out(dspx_pgm_addr),
+   .dspx_pgm_we_out(dspx_pgm_we),
+   .dspx_dat_data_out(dspx_dat_data),
+   .dspx_dat_addr_out(dspx_dat_addr),
+   .dspx_dat_we_out(dspx_dat_we),
+   .dspx_reset_out(dspx_reset)
 );
 
 // dcm1: dfs 4x
@@ -689,7 +704,8 @@ assign ROM_BLE = !ROM_WE ? !ROM_ADDR0 : 1'b0;
 //assign SRAM_WE = !MCU_ENA ? MCU_WRITE : 1'b1;
 
 //assign SNES_DATABUS_OE = (!IS_SAVERAM & SNES_CS) | (SNES_READ & SNES_WRITE);
-assign SNES_DATABUS_OE = msu_enable ? (SNES_READ & SNES_WRITE) :
+assign SNES_DATABUS_OE = dspx_enable ? 1'b0 :
+                         msu_enable ? (SNES_READ & SNES_WRITE) :
                          bsx_data_ovr ? (SNES_READ & SNES_WRITE) : 
 								 srtc_enable ? (SNES_READ & SNES_WRITE) : ((IS_ROM & SNES_CS) | (!IS_ROM & !IS_SAVERAM & !IS_WRITABLE & !IS_FLASHWR) | (SNES_READ & SNES_WRITE));
 assign SNES_DATABUS_DIR = !SNES_READ ? 1'b1 : 1'b0;

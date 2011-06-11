@@ -39,13 +39,21 @@
 
 module upd77c25_datrom(
   clka,
+  wea,
   addra,
-  douta
+  dina,
+  clkb,
+  addrb,
+  doutb
 );
 
 input clka;
+input [0 : 0] wea;
 input [9 : 0] addra;
-output [15 : 0] douta;
+input [15 : 0] dina;
+input clkb;
+input [9 : 0] addrb;
+output [15 : 0] doutb;
 
 // synthesis translate_off
 
@@ -57,7 +65,7 @@ output [15 : 0] douta;
     .C_AXI_SLAVE_TYPE(0),
     .C_AXI_TYPE(1),
     .C_BYTE_SIZE(9),
-    .C_COMMON_CLK(0),
+    .C_COMMON_CLK(1),
     .C_DEFAULT_DATA("0"),
     .C_DISABLE_WARN_BHV_COLL(0),
     .C_DISABLE_WARN_BHV_RANGE(0),
@@ -81,7 +89,7 @@ output [15 : 0] douta;
     .C_INITB_VAL("0"),
     .C_INTERFACE_TYPE(0),
     .C_LOAD_INIT_FILE(1),
-    .C_MEM_TYPE(3),
+    .C_MEM_TYPE(1),
     .C_MUX_PIPELINE_STAGES(0),
     .C_PRIM_TYPE(1),
     .C_READ_DEPTH_A(1024),
@@ -111,21 +119,21 @@ output [15 : 0] douta;
   )
   inst (
     .CLKA(clka),
+    .WEA(wea),
     .ADDRA(addra),
-    .DOUTA(douta),
+    .DINA(dina),
+    .CLKB(clkb),
+    .ADDRB(addrb),
+    .DOUTB(doutb),
     .RSTA(),
     .ENA(),
     .REGCEA(),
-    .WEA(),
-    .DINA(),
-    .CLKB(),
+    .DOUTA(),
     .RSTB(),
     .ENB(),
     .REGCEB(),
     .WEB(),
-    .ADDRB(),
     .DINB(),
-    .DOUTB(),
     .INJECTSBITERR(),
     .INJECTDBITERR(),
     .SBITERR(),

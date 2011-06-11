@@ -13,7 +13,7 @@
 // Dependencies: 
 //
 // Revision: 
-// Revision 0.1 - core fully operational, no firmware download
+// Revision 0.2 - core fully operational, firmware download
 //
 //////////////////////////////////////////////////////////////////////////////////
 module upd77c25(
@@ -78,10 +78,15 @@ wire [10:0] pgm_addra;
 wire [23:0] pgm_dina;
 wire [23:0] pgm_doutb;
 
-pgmrom pgmrom (
-	.clka(CLK),
-	.addra(pc), // Bus [10 : 0] 
-	.douta(pgm_doutb)); // Bus [23 : 0] 
+upd77c25_pgmrom pgmrom (
+  .clka(CLK), // input clka
+  .wea(PGM_WR), // input [0 : 0] wea
+  .addra(PGM_WR_ADDR), // input [10 : 0] addra
+  .dina(PGM_DI), // input [23 : 0] dina
+  .clkb(CLK), // input clkb
+  .addrb(pc), // input [10 : 0] addrb
+  .doutb(pgm_doutb) // output [23 : 0] doutb
+);
 
 wire [23:0] opcode_w = pgm_doutb;
 reg [23:0] opcode;
@@ -100,9 +105,14 @@ wire [15:0] dat_dina;
 wire [15:0] dat_doutb;
 
 upd77c25_datrom datrom (
-	.clka(CLK),
-	.addra(regs_rp), // Bus [9 : 0] 
-	.douta(dat_doutb)); // Bus [15 : 0] 
+  .clka(CLK), // input clka
+  .wea(DAT_WR), // input [0 : 0] wea
+  .addra(DAT_WR_ADDR), // input [9 : 0] addra
+  .dina(DAT_DI), // input [15 : 0] dina
+  .clkb(CLK), // input clkb
+  .addrb(regs_rp), // input [9 : 0] addrb
+  .doutb(dat_doutb) // output [15 : 0] doutb
+);
 
 wire [15:0] ram_douta;
 wire [7:0] ram_addra;
@@ -149,14 +159,14 @@ reg [15:0] idb;
 
 reg [15:0] regs_ab [1:0];
 
-/*assign DR = regs_dr;
+assign DR = regs_dr;
 assign SR = regs_sr;
 assign PC = pc;
 assign A = regs_ab[0];
 assign B = regs_ab[1];
 assign FL_A = {flags_s1[0],flags_s0[0],flags_c[0],flags_z[0],flags_ov1[0],flags_ov0[0]};
 assign FL_B = {flags_s1[1],flags_s0[1],flags_c[1],flags_z[1],flags_ov1[1],flags_ov0[1]};
-*/
+
 
 initial begin
   alu_store = 2'b11;
@@ -186,22 +196,25 @@ always @(posedge CLK) begin
 
 end
 
+reg [5:0] reg_nCS_sreg;
+initial reg_nCS_sreg = 6'b111111;
+always @(posedge CLK) reg_nCS_sreg <= {reg_nCS_sreg[4:0], nCS};
 
 reg [5:0] reg_oe_sreg;
 initial reg_oe_sreg = 6'b111111;
 always @(posedge CLK) reg_oe_sreg <= {reg_oe_sreg[4:0], nRD};
-wire reg_oe_falling = !nCS && (reg_oe_sreg[3:0] == 4'b1110);
+wire reg_oe_falling = !nCS && (reg_oe_sreg[3:0] == 4'b1000);
 
-reg [3:0] reg_we_sreg;
-initial reg_we_sreg = 4'b1111;
-always @(posedge CLK) reg_we_sreg <= {reg_we_sreg[2:0], nWR};
-wire reg_we_rising = !nCS && (reg_we_sreg[3:0] == 4'b0001);
+reg [5:0] reg_we_sreg;
+initial reg_we_sreg = 6'b111111;
+always @(posedge CLK) reg_we_sreg <= {reg_we_sreg[4:0], nWR};
+wire reg_we_rising = !nCS && (reg_we_sreg[5:0] == 6'b000001);
 
 always @(posedge CLK) begin
   if(RST) begin
     if((op_src == 4'b1000 && op[1] == 1'b0 && insn_state == 3'b011)
     || (op_dst == 4'b0110 && op != 2'b10 && insn_state == 3'b011)) regs_sr[SR_RQM] <= 1'b1;
-    else if(reg_we_rising && A0 == 1'b0) begin
+    if((reg_we_rising) && (A0 == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b1) begin
           regs_sr[SR_RQM] <= 1'b0;
@@ -209,9 +222,10 @@ always @(posedge CLK) begin
       end else begin
         regs_sr[SR_RQM] <= 1'b0;
       end
-    end else if(reg_oe_falling) begin
-      case(A0)
-        1'b0: begin
+    end
+    else if(reg_oe_falling && (A0 == 1'b0)) begin
+//      case(A0)
+//        1'b0: begin
           if(!regs_sr[SR_DRC]) begin
             if(regs_sr[SR_DRS] == 1'b1) begin
               regs_sr[SR_RQM] <= 1'b0;
@@ -219,9 +233,9 @@ always @(posedge CLK) begin
           end else begin
             regs_sr[SR_RQM] <= 1'b0;
           end
-        end
-      endcase
-    end 
+//        end
+//      endcase
+    end
   end else begin
     regs_sr[SR_RQM] <= 1'b0;
   end
@@ -229,31 +243,62 @@ end
 
 always @(posedge CLK) begin
   if(RST) begin
-    if(ld_dst == 4'b0110 && insn_state == 3'b011) begin
-      if (op == I_OP || op == I_RT) regs_dr <= idb;
-      else if (op == I_LD) regs_dr <= ld_id;
-    end
-    else if(reg_we_rising && A0 == 1'b0) begin
+    if(reg_we_rising && (A0 == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b0) begin
           regs_sr[SR_DRS] <= 1'b1;
-          regs_dr[7:0] <= DI;
         end else begin
           regs_sr[SR_DRS] <= 1'b0;
-          regs_dr[15:8] <= DI;
         end
-      end else begin
-        regs_dr[7:0] <= DI;
-      end
+      end 
     end else if(reg_oe_falling) begin
       case(A0)
         1'b0: begin
           if(!regs_sr[SR_DRC]) begin
             if(regs_sr[SR_DRS] == 1'b0) begin
               regs_sr[SR_DRS] <= 1'b1;
-              DO <= regs_dr[7:0];
             end else begin
               regs_sr[SR_DRS] <= 1'b0;
+            end
+          end 
+        end
+      endcase
+    end
+  end else begin
+    regs_sr[SR_DRS] <= 1'b0;
+  end
+end
+
+always @(posedge CLK) begin
+  if(RST) begin
+    if(reg_we_rising && (A0 == 1'b0)) begin
+      if(!regs_sr[SR_DRC]) begin
+        if(regs_sr[SR_DRS] == 1'b0) begin
+          regs_dr[7:0] <= DI;
+        end else begin
+          regs_dr[15:8] <= DI;
+        end
+      end else begin
+        regs_dr[7:0] <= DI;
+      end
+    end else if(ld_dst == 4'b0110 && insn_state == 3'b011) begin
+      if (op == I_OP || op == I_RT) regs_dr <= idb;
+      else if (op == I_LD) regs_dr <= ld_id;
+    end
+  end else begin
+    regs_dr <= 16'h0000;
+  end
+end
+
+always @(posedge CLK) begin
+  if(RST) begin
+    if(reg_oe_falling) begin
+      case(A0)
+        1'b0: begin
+          if(!regs_sr[SR_DRC]) begin
+            if(regs_sr[SR_DRS] == 1'b0) begin
+              DO <= regs_dr[7:0];
+            end else begin
               DO <= regs_dr[15:8];
             end
           end else begin
@@ -264,8 +309,6 @@ always @(posedge CLK) begin
       endcase
     end
   end else begin
-    regs_sr[SR_DRS] <= 1'b0;
-    regs_dr <= 16'h0000;
     DO <= 8'h00;
   end
 end
@@ -285,7 +328,7 @@ always @(posedge CLK) begin
         op_rpdcr <= opcode_w[8];
         op_src <= opcode_w[7:4];
         op_dst <= opcode_w[3:0];
-        jp_brch = opcode_w[21:13];
+        jp_brch <= opcode_w[21:13];
         jp_na <= opcode_w[12:2];
 
         ld_id <= opcode_w[21:6];
@@ -579,6 +622,21 @@ always @(posedge CLK) begin
     flags_s1 <= 2'b0;
     regs_tr <= 16'b0;
     regs_trb <= 16'b0;
+    opcode <= 23'b0;
+    op_pselect <= 2'b0;
+    op_alu <= 4'b0;
+    op_asl <= 1'b0;
+    op_dpl <= 2'b0;
+    op_dphm <= 4'b0;
+    op_rpdcr <= 1'b0;
+    op_src <= 4'b0;
+    op_dst <= 4'b0;
+    jp_brch <= 9'b0;
+    jp_na <= 11'b0;
+    ld_id <= 16'b0;
+    ld_dst <= 4'b0;
+    regs_m <= 16'b0;
+    regs_n <= 16'b0;
   end
 end
 

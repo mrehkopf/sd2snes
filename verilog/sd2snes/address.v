@@ -52,7 +52,9 @@ wire [23:0] SRAM_ADDR_FULL;
       000      HiROM
       001      LoROM
       010      ExHiROM (48-64Mbit)
-		011      BS-X
+      011      BS-X
+      100      DSPx (HiROM - 00-0f:6000-7fff)
+      101      DSPx (LoROM - 30-3f:8000-ffff)
       110      brainfuck interleaved 96MBit Star Ocean =)
       111      menu (ROM in upper SRAM)
 */
@@ -66,28 +68,30 @@ assign IS_ROM = ( (MAPPER == 3'b000) ? ((!SNES_ADDR[22] & SNES_ADDR[15])
                                        |(SNES_ADDR[22]))                                         
                 : (MAPPER == 3'b010) ? ((!SNES_ADDR[22] & SNES_ADDR[15])
                                        |(SNES_ADDR[22]))
-					 : (MAPPER == 3'b011) ? ((!SNES_ADDR[22] & SNES_ADDR[15])
-					                        |(SNES_ADDR[22]))
-					 : (MAPPER == 3'b110) ? ((!SNES_ADDR[22] & SNES_ADDR[15])
-					                        |(SNES_ADDR[22]))
+                : (MAPPER == 3'b011) ? ((!SNES_ADDR[22] & SNES_ADDR[15])
+                                       |(SNES_ADDR[22]))
+                : (MAPPER == 3'b100) ? ((!SNES_ADDR[22] & SNES_ADDR[15])
+                                       |(SNES_ADDR[22]))
+                : (MAPPER == 3'b101) ? ((!SNES_ADDR[22] & SNES_ADDR[15])
+                                       |(SNES_ADDR[22]))                
+                : (MAPPER == 3'b110) ? ((!SNES_ADDR[22] & SNES_ADDR[15])
+                                       |(SNES_ADDR[22]))
                 : (MAPPER == 3'b111) ? ((!SNES_ADDR[22] & SNES_ADDR[15])
                                        |(SNES_ADDR[22]))
                 : 1'b0);
 
 
-assign IS_SAVERAM = ((MAPPER == 3'b000 || MAPPER == 3'b010 || MAPPER == 3'b110 || MAPPER == 3'b111) ? (!SNES_ADDR[22]
-                                           & SNES_ADDR[21:20]                                           
+assign IS_SAVERAM = ((MAPPER == 3'b000 || MAPPER == 3'b010 || MAPPER == 3'b100 || MAPPER == 3'b110 || MAPPER == 3'b111) ? (!SNES_ADDR[22]
+                                           & &SNES_ADDR[21:20]                                           
                                            & &SNES_ADDR[14:13]
                                            & !SNES_ADDR[15]
-                                           & SNES_CS
                                            )
 /*                               LoROM:   SRAM @ Bank 0x70-0x7d, 0xf0-0xfd
                                           Offset 0000-7fff TODO: 0000-ffff for
                                           small ROMs */
-                    :(MAPPER == 3'b001) ? (&SNES_ADDR[22:20]
+                    :(MAPPER == 3'b001 || MAPPER == 3'b101) ? (&SNES_ADDR[22:20]
                                            & (SNES_ADDR[19:16] < 4'b1110)
-                                           & !SNES_ADDR[15]
-                                           & !SNES_CS)
+                                           & !SNES_ADDR[15])
 /*										   BS-X: SRAM @ Bank 0x10-0x17
                                        Offset 5000-5fff */													
 						  :(MAPPER == 3'b011) ? ((SNES_ADDR[23:19] == 5'b00010)
@@ -118,10 +122,10 @@ assign IS_WRITABLE = IS_SAVERAM | (
 */
 
 assign SRAM_ADDR_FULL = (MODE) ? MCU_ADDR
-                          : ((MAPPER == 3'b000) ?
+                          : ((MAPPER[1:0] == 2'b00) ?
                               (IS_SAVERAM ? 24'hE00000 + ((SNES_ADDR[14:0] - 15'h6000) & SAVERAM_MASK)
                                           : ({1'b0, SNES_ADDR[22:0]} & ROM_MASK))
-                            :(MAPPER == 3'b001) ? 
+                            :(MAPPER[1:0] == 2'b01) ? 
                               (IS_SAVERAM ? 24'hE00000 + (SNES_ADDR[14:0] & SAVERAM_MASK)
                                           : ({2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]} & ROM_MASK))
                             :(MAPPER == 3'b010) ?
@@ -156,8 +160,20 @@ assign use_bsx = (MAPPER == 3'b011);
 
 assign srtc_enable = (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h2800));
 
-// DSP1 1mb lorom: DR=20-3f:8000-bfff; SR=20-3f:c000-ffff
-assign dspx_enable = (MAPPER == 3'b001) && (!SNES_ADDR[22] && SNES_ADDR[21] && (SNES_ADDR[15] == 1'b1));
-assign dspx_a0 = SNES_ADDR[14];
+// DSP1 LoROM: DR=30-3f:8000-bfff; SR=30-3f:c000-ffff
+//          or DR=60-6f:0000-3fff; SR=60-6f:4000-7fff
+// DSP1 HiROM: DR=00-0f:6000-6fff; SR=00-0f:7000-7fff
+assign dspx_enable =
+  (MAPPER == 3'b101) ? 
+    (ROM_MASK[20] ? 
+      (SNES_ADDR[22] & SNES_ADDR[21] & ~SNES_ADDR[20] & ~SNES_ADDR[15])
+     :(~SNES_ADDR[22] & SNES_ADDR[21] & SNES_ADDR[20] & SNES_ADDR[15])
+    )
+  :(MAPPER == 3'b100) ? 
+   (~SNES_ADDR[22] & ~SNES_ADDR[21] & ~SNES_ADDR[20] & &SNES_ADDR[14:13]/* & CS */)
+  :1'b0;
+assign dspx_a0 = (MAPPER == 3'b101) ? SNES_ADDR[14]
+                :(MAPPER == 3'b100) ? SNES_ADDR[12]
+                :1'b1;
 
 endmodule

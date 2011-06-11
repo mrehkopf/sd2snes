@@ -111,8 +111,8 @@ output [23 : 0] doutb;
     .C_WEB_WIDTH(1),
     .C_WRITE_DEPTH_A(2048),
     .C_WRITE_DEPTH_B(2048),
-    .C_WRITE_MODE_A("NO_CHANGE"),
-    .C_WRITE_MODE_B("NO_CHANGE"),
+    .C_WRITE_MODE_A("WRITE_FIRST"),
+    .C_WRITE_MODE_B("WRITE_FIRST"),
     .C_WRITE_WIDTH_A(24),
     .C_WRITE_WIDTH_B(24),
     .C_XDEVICEFAMILY("spartan3")

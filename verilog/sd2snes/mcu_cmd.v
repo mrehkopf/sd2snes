@@ -82,11 +82,27 @@ module mcu_cmd(
 	 
 	 // S-RTC
 	 output srtc_reset,
-	 
+
+   // uPD77C25
+   output reg [23:0] dspx_pgm_data_out,
+   output reg [10:0] dspx_pgm_addr_out,
+   output reg dspx_pgm_we_out,
+   
+   output reg [15:0] dspx_dat_data_out,
+   output reg [9:0] dspx_dat_addr_out,
+   output reg dspx_dat_we_out,
+   
+   output reg dspx_reset_out,
+   
 	 // SNES sync/clk
  	 input snes_sysclk	 
-    );
+);
 
+initial begin 
+  dspx_pgm_addr_out = 11'b00000000000;
+  dspx_dat_addr_out = 9'b000000000;
+  dspx_reset_out = 1'b1;
+end
 
 wire [31:0] snes_sysclk_freq;
 
@@ -172,6 +188,7 @@ initial begin
 	DAC_VOL_LATCH_BUF = 0;
    spi_dma_nextaddr_r = 0;
 	SD_DMA_ENr = 0;
+	MAPPER_BUF = 1;
 end
 
 // command interpretation
@@ -346,7 +363,41 @@ always @(posedge clk) begin
 					   srtc_reset_buf <= 1'b0;
 					end
 				endcase
+      8'he8: begin// reset DSPx PGM+DAT address
+        case (spi_byte_cnt)
+          32'h2: begin
+            dspx_pgm_addr_out <= 11'b00000000000;
+            dspx_dat_addr_out <= 9'b000000000;
+          end
+        endcase
+      end
+      8'he9:// write DSPx PGM w/ increment
+        case (spi_byte_cnt)
+          32'h2: dspx_pgm_data_out[23:16] <= param_data[7:0];
+          32'h3: dspx_pgm_data_out[15:8] <= param_data[7:0];
+          32'h4: dspx_pgm_data_out[7:0] <= param_data[7:0];
+          32'h5: dspx_pgm_we_out <= 1'b1;
+          32'h6: begin
+            dspx_pgm_we_out <= 1'b0;
+            dspx_pgm_addr_out <= dspx_pgm_addr_out + 1;
+          end
+        endcase
+      8'hea:// write DSPx DAT w/ increment
+        case (spi_byte_cnt)
+          32'h2: dspx_dat_data_out[15:8] <= param_data[7:0];
+          32'h3: dspx_dat_data_out[7:0] <= param_data[7:0];
+          32'h4: dspx_dat_we_out <= 1'b1;
+          32'h5: begin
+            dspx_dat_we_out <= 1'b0;
+            dspx_dat_addr_out <= dspx_dat_addr_out + 1;
+          end
+        endcase
+      8'heb: // put DSPx into reset
+        dspx_reset_out <= 1'b1;
+      8'hec: // release DSPx reset
+        dspx_reset_out <= 1'b0;
       endcase
+      
    end
    if (SD_DMA_NEXTADDR | (mcu_nextaddr & (cmd_data[7:5] == 3'h4) && (cmd_data[3]) && (spi_byte_cnt > (32'h1+cmd_data[4])))) begin
 		case (SD_DMA_TGTr)

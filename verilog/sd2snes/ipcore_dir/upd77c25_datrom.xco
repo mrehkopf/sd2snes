@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 13.1
-# Date: Thu Jun  2 00:42:40 2011
+# Date: Thu Jun  9 10:19:40 2011
 #
 ##############################################################
 #
@@ -37,12 +37,12 @@ SELECT Block_Memory_Generator xilinx.com:ip:blk_mem_gen:6.1
 # BEGIN Parameters
 CSET additional_inputs_for_power_estimation=false
 CSET algorithm=Minimum_Area
-CSET assume_synchronous_clk=false
+CSET assume_synchronous_clk=true
 CSET axi_id_width=4
 CSET axi_slave_type=Memory_Slave
 CSET axi_type=AXI4_Full
 CSET byte_size=9
-CSET coe_file=/home/ikari/prj/sd2snes/verilog/sd2snes/dsp1b_datrom.coe
+CSET coe_file=/home/ikari/prj/sd2snes/verilog/sd2snes/dsp4_dat.coe
 CSET collision_warnings=ALL
 CSET component_name=upd77c25_datrom
 CSET disable_collision_warnings=false
@@ -55,7 +55,7 @@ CSET error_injection_type=Single_Bit_Error_Injection
 CSET fill_remaining_memory_locations=false
 CSET interface_type=Native
 CSET load_init_file=true
-CSET memory_type=Single_Port_ROM
+CSET memory_type=Simple_Dual_Port_RAM
 CSET operating_mode_a=WRITE_FIRST
 CSET operating_mode_b=WRITE_FIRST
 CSET output_reset_value_a=0
@@ -63,9 +63,9 @@ CSET output_reset_value_b=0
 CSET pipeline_stages=0
 CSET port_a_clock=100
 CSET port_a_enable_rate=100
-CSET port_a_write_rate=0
-CSET port_b_clock=0
-CSET port_b_enable_rate=0
+CSET port_a_write_rate=50
+CSET port_b_clock=100
+CSET port_b_enable_rate=100
 CSET port_b_write_rate=0
 CSET primitive=8kx2
 CSET read_width_a=16
@@ -98,4 +98,4 @@ CSET write_width_b=16
 MISC pkg_timestamp=2011-02-03T22:20:43.000Z
 # END Extra information
 GENERATE
-# CRC: d64159b2
+# CRC: 9cef39ed
