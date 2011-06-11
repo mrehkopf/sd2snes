@@ -40,7 +40,7 @@ typedef struct _snes_header {
   uint8_t romsize;      /* 0xD7 */
   uint8_t ramsize;      /* 0xD8 */
   uint8_t destcode;     /* 0xD9 */
-  uint8_t fixed_33;     /* 0xDA */
+  uint8_t licensee;     /* 0xDA */
   uint8_t ver;          /* 0xDB */
   uint16_t cchk;        /* 0xDC */
   uint16_t chk;         /* 0xDE */
@@ -53,6 +53,7 @@ typedef struct _snes_romprops {
   uint32_t expramsize_bytes;  /* ExpRAM size in bytes */
   uint32_t ramsize_bytes;     /* CartRAM size in bytes */
   uint32_t romsize_bytes;     /* ROM size in bytes (rounded up) */
+  const uint8_t* necdsp_fw;   /* NEC DSP ROM filename */
   snes_header_t header;       /* original header from ROM image */
 } snes_romprops_t;
 

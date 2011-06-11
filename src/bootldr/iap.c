@@ -151,6 +151,7 @@ FLASH_RES flash_file(uint8_t *filename) {
 
     uint32_t res;
 
+    writeled(1);
     DBG_BL printf("erasing flash...\n");
     if((res = iap_prepare_for_write(FW_START / 0x1000, FLASH_SECTORS)) != CMD_SUCCESS) {
       DBG_BL printf("error %ld while preparing for erase\n", res);
@@ -172,7 +173,6 @@ FLASH_RES flash_file(uint8_t *filename) {
                                          : (flash_addr >> 12);
       DBG_BL printf("current_sec=%d flash_addr=%08lx\n", current_sec, flash_addr);
       DBG_UART uart_putc('.');
-      toggle_rdy_led();
       if(current_sec < (FW_START / 0x1000)) return ERR_FLASH;
       if((res = iap_prepare_for_write(current_sec, current_sec)) != CMD_SUCCESS) {
         DBG_BL printf("error %ld while preparing sector %d for write\n", res, current_sec);
@@ -188,6 +188,7 @@ FLASH_RES flash_file(uint8_t *filename) {
       DBG_UART uart_putc('X');
       return ERR_FILECHK;
     }
+    writeled(0);
   } else {
     DBG_UART uart_putc('n');
     DBG_BL printf("flash content is ok, no version mismatch, no forced upgrade. No need to flash\n");

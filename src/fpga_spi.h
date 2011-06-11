@@ -75,5 +75,8 @@ uint32_t get_snes_sysclk(void);
 void set_bsx_regs(uint8_t set, uint8_t reset);
 void set_fpga_time(uint64_t time);
 void fpga_reset_srtc_state(void);
-
+void fpga_reset_dspx_addr(void);
+void fpga_write_dspx_pgm(uint32_t data);
+void fpga_write_dspx_dat(uint16_t data);
+void fpga_dspx_reset(uint8_t reset);
 #endif

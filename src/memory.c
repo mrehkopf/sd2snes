@@ -229,6 +229,10 @@ ticks_total=getticks()-ticksstart;
     sram_writebyte(0xfc, rombase+0xd5);
     set_fpga_time(0x0220110301180530LL);
   }
+  if(romprops.mapper_id == 4 || romprops.mapper_id == 5) {
+    printf("DSPx game. Loading firmware image %s...\n", romprops.necdsp_fw);
+    load_dspx(romprops.necdsp_fw);
+  }
   uint32_t rammask;
   uint32_t rommask;
 
@@ -447,4 +451,68 @@ uint64_t sram_gettime(uint32_t base_addr) {
   }
   FPGA_DESELECT();
   return result & 0x00ffffffffffffffLL;
+}
+
+void load_dspx(const uint8_t *filename) {
+  UINT bytes_read;
+  DWORD filesize;
+  uint16_t word_cnt;
+  uint8_t wordsize_cnt = 0;
+  uint16_t sector_remaining = 0;
+  uint16_t sector_cnt = 0;
+  uint16_t pgmsize = 2048;
+  uint16_t datsize = 1024;
+  uint32_t pgmdata = 0;
+  uint16_t datdata = 0;
+  file_open((uint8_t*)filename, FA_READ);
+  filesize = file_handle.fsize;
+  if(file_res) {
+    printf("Could not read %s: error %d\n", filename, file_res);
+    return;
+  }
+
+  fpga_reset_dspx_addr();
+
+  for(word_cnt = 0; word_cnt < pgmsize;) {
+    if(!sector_remaining) {
+      bytes_read = file_read();
+      sector_remaining = bytes_read;
+      sector_cnt = 0;
+    }
+    pgmdata = (pgmdata << 8) | file_buf[sector_cnt];
+    sector_cnt++;
+    wordsize_cnt++;
+    sector_remaining--;
+    if(wordsize_cnt == 3){
+      wordsize_cnt = 0;
+      word_cnt++;
+      fpga_write_dspx_pgm(pgmdata);
+      printf("%06lx ", pgmdata&0xffffff);
+    }
+  }
+
+  wordsize_cnt = 0;
+
+  for(word_cnt = 0; word_cnt < datsize;) {
+    if(!sector_remaining) {
+      bytes_read = file_read();
+      sector_remaining = bytes_read;
+      sector_cnt = 0;
+    }
+    datdata = (datdata << 8) | file_buf[sector_cnt];
+    sector_cnt++;
+    wordsize_cnt++;
+    sector_remaining--;
+    if(wordsize_cnt == 2){
+      wordsize_cnt = 0;
+      word_cnt++;
+      fpga_write_dspx_dat(datdata);
+      printf("%04x ",datdata&0xffff);
+    }
+  }
+
+  fpga_reset_dspx_addr();
+
+  file_close();
+
 }

@@ -74,6 +74,11 @@
                                 eg 0x20111210094816 is 2011-12-10, 9:48:16
 	E6	ssrr		set/reset BS-X status register [7:0]
 	E7	-		reset SRTC state
+	E8	-		reset DSP program and data ROM write pointers
+	E9	hhmmllxxxx	write+incr. DSP program ROM (xxxx=dummy writes)
+	EA	hhllxxxx	write+incr. DSP data ROM (xxxx=dummy writes)
+	EB	-		put DSP into reset
+	EC	-		release DSP from reset
 	F0	-		receive test token (to see if FPGA is alive)
 	F1	-		receive status (16bit, MSB first), see below
 
@@ -342,6 +347,42 @@ void fpga_reset_srtc_state() {
   FPGA_SELECT();
   FPGA_TX_BYTE(0xe7);
   FPGA_TX_BYTE(0x00);
+  FPGA_TX_BYTE(0x00);
+  FPGA_DESELECT();
+}
+
+void fpga_reset_dspx_addr() {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xe8);
+  FPGA_TX_BYTE(0x00);
+  FPGA_TX_BYTE(0x00);
+  FPGA_DESELECT();
+}
+
+void fpga_write_dspx_pgm(uint32_t data) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xe9);
+  FPGA_TX_BYTE((data>>16)&0xff);
+  FPGA_TX_BYTE((data>>8)&0xff);
+  FPGA_TX_BYTE((data)&0xff);
+  FPGA_TX_BYTE(0x00);
+  FPGA_TX_BYTE(0x00);
+  FPGA_DESELECT();
+}
+
+void fpga_write_dspx_dat(uint16_t data) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xea);
+  FPGA_TX_BYTE((data>>8)&0xff);
+  FPGA_TX_BYTE((data)&0xff);
+  FPGA_TX_BYTE(0x00);
+  FPGA_TX_BYTE(0x00);
+  FPGA_DESELECT();
+}
+
+void fpga_dspx_reset(uint8_t reset) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(reset ? 0xeb : 0xec);
   FPGA_TX_BYTE(0x00);
   FPGA_DESELECT();
 }

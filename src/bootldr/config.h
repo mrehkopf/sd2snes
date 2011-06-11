@@ -5,6 +5,8 @@
 // #define DEBUG_IRQ
 // #define DEBUG_MSU1
 
+// #define DEBUG_UART
+
 #ifdef DEBUG_UART
 #define DBG_UART
 #else

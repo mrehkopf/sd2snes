@@ -28,8 +28,15 @@
 #include "config.h"
 #include "uart.h"
 #include "smc.h"
+#include "string.h"
 
 snes_romprops_t romprops;
+
+const uint8_t* DSPFW_1  = (uint8_t*)"/sd2snes/dsp1.bin";
+const uint8_t* DSPFW_1B = (uint8_t*)"/sd2snes/dsp1b.bin";
+const uint8_t* DSPFW_2  = (uint8_t*)"/sd2snes/dsp2.bin";
+const uint8_t* DSPFW_3  = (uint8_t*)"/sd2snes/dsp3.bin";
+const uint8_t* DSPFW_4  = (uint8_t*)"/sd2snes/dsp4.bin";
 
 uint32_t hdr_addr[6] = {0xffb0, 0x101b0, 0x7fb0, 0x81b0, 0x40ffb0, 0x4101b0};
 uint8_t countAllASCII(uint8_t* data, int size) {
@@ -77,7 +84,6 @@ uint8_t checkChksum(uint16_t cchk, uint16_t chk) {
 
 void smc_id(snes_romprops_t* props) {
   uint8_t score, maxscore=1, score_idx=2; /* assume LoROM */
-
   snes_header_t* header = &(props->header);
 
   for(uint8_t num = 0; num < 6; num++) {
@@ -122,7 +128,7 @@ void smc_id(snes_romprops_t* props) {
       const uint8_t n15 = header->map;
       if(n15 == 0x00 || n15 == 0x80 || n15 == 0x84 || n15 == 0x9c
         || n15 == 0xbc || n15 == 0xfc) {
-        if(header->fixed_33 == 0x33 || header->fixed_33 == 0xff) {
+        if(header->licensee == 0x33 || header->licensee == 0xff) {
           props->mapper_id = 0;
 /*XXX do this properly */
           props->ramsize_bytes = 0x8000;
@@ -135,15 +141,44 @@ void smc_id(snes_romprops_t* props) {
     }
   }
   switch(header->map & 0xef) {
+
     case 0x21: /* HiROM */
-      props->mapper_id = 0;
+      if(header->map == 0x31 && (header->carttype == 0x03 || header->carttype == 0x05)) {
+        props->mapper_id = 4; /* DSPx HiROM */
+        props->necdsp_fw = DSPFW_1B;
+      } else {
+        props->mapper_id = 0; /* regular HiROM */
+      }
       break;
+
     case 0x20: /* LoROM */
-      props->mapper_id = 1;
+      if ((header->map == 0x20 && header->carttype == 0x03) ||
+          (header->map == 0x30 && header->carttype == 0x05 && header->licensee != 0xb2)) {
+        props->mapper_id = 5;
+        // Pilotwings uses DSP1 instead of DSP1B
+        if(!memcmp(header->name, "PILOTWINGS", 10)) {
+          props->necdsp_fw = DSPFW_1;
+        } else {
+          props->necdsp_fw = DSPFW_1B;
+        }
+      } else if (header->map == 0x20 && header->carttype == 0x05) {
+        props->mapper_id = 5; /* DSPx LoROM */
+        props->necdsp_fw = DSPFW_2;
+      } else if (header->map == 0x30 && header->carttype == 0x05 && header->licensee == 0xb2) {
+        props->mapper_id = 5; /* DSPx LoROM */
+        props->necdsp_fw = DSPFW_3;
+      } else if (header->map == 0x30 && header->carttype == 0x03) {
+        props->mapper_id = 5; /* DSPx LoROM */
+        props->necdsp_fw = DSPFW_4;
+      } else {
+        props->mapper_id = 1; /* regular LoROM */
+      }
       break;
+
     case 0x25: /* ExHiROM */
       props->mapper_id = 2;
       break;
+
     case 0x22: /* ExLoROM */
       if(file_handle.fsize > 0x400200) {
         props->mapper_id = 6; /* SO96 */
@@ -151,6 +186,7 @@ void smc_id(snes_romprops_t* props) {
         props->mapper_id = 4;
       }
       break;
+
     default: /* invalid/unsupported mapper, use header location */
       switch(score_idx) {
         case 0:
@@ -194,7 +230,7 @@ uint8_t smc_headerscore(snes_header_t* header) {
   score += countAllASCII(header->gamecode, sizeof(header->gamecode));
   score += isFixed(header->fixed_00, sizeof(header->fixed_00), 0x00);
   score += countAllJISX0201(header->name, sizeof(header->name));
-  score += 3*isFixed(&header->fixed_33, sizeof(header->fixed_33), 0x33);
+  score += 3*isFixed(&header->licensee, sizeof(header->licensee), 0x33);
   score += checkChksum(header->cchk, header->chk);
   return score;
 }

@@ -131,7 +131,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     snes_bootprint("           Loading ...          \0");
     if(get_cic_state() == CIC_PAIR) {
       printf("PAIR MODE ENGAGED!\n");
-      cic_pair(CIC_PAL, CIC_NTSC);
+      cic_pair(CIC_NTSC, CIC_NTSC);
     }
     rdyled(1);
     readled(0);
@@ -189,6 +189,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     /* load menu */
 
     fpga_pgm((uint8_t*)"/sd2snes/fpga_base.bit");
+    fpga_dspx_reset(1);
     uart_putc('(');
     load_rom((uint8_t*)"/sd2snes/menu.bin", SRAM_MENU_ADDR);
     /* force memory size + mapper */
@@ -224,7 +225,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     uint32_t filesize=0;
     sram_writebyte(32, SRAM_CMD_ADDR);
     printf("test sram\n");
-    while(!sram_reliable());
+    while(!sram_reliable()) cli_entrycheck();
     printf("ok\n");
 sram_hexdump(SRAM_DIR_ADDR, 0x300);
 //while(1) {
@@ -237,13 +238,14 @@ sram_hexdump(SRAM_DIR_ADDR, 0x300);
       cmd=menu_main_loop();
 // cmd = 1;
       printf("cmd: %d\n", cmd);
-      sleep_ms(50);
+      sleep_ms(500);
       uart_putc('-');
       switch(cmd) {
 	case SNES_CMD_LOADROM:
 	  get_selected_name(file_lfn);
 	  set_mcu_ovr(1);
-// strcpy((char*)file_lfn, "/bs3-1.smc");
+// strcpy((char*)file_lfn, "/mon.smc");
+
 	  printf("Selected name: %s\n", file_lfn);
 	  filesize = load_rom(file_lfn, SRAM_ROM_ADDR);
 	  if(romprops.ramsize_bytes) {
@@ -257,6 +259,7 @@ sram_hexdump(SRAM_DIR_ADDR, 0x300);
 	  snes_reset(1);
 	  delay_ms(10);
 	  snes_reset(0);
+          fpga_dspx_reset(0);
 	  break;
 	case SNES_CMD_SETRTC:
           /* get time from RAM */

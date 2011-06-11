@@ -4,6 +4,7 @@
 #include "bits.h"
 #include "timer.h"
 #include "led.h"
+#include "cli.h"
 
 static uint8_t led_bright[16]={255,253,252,251,249,247,244,239,232,223,210,191,165,127,74,0};
 
@@ -92,6 +93,7 @@ void led_panic() {
     LPC_GPIO2->FIODIR &= ~(BV(4) | BV(5));
     LPC_GPIO1->FIODIR &= ~BV(23);
     delay_ms(350);
+    cli_entrycheck();
   }
 }
 

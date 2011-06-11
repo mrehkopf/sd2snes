@@ -45,7 +45,7 @@ int main(void) {
   DBG_UART uart_init();
   led_init();
   readled(0);
-  rdyled(0);
+  rdyled(1);
   writeled(0);
  /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
@@ -63,9 +63,11 @@ DBG_BL printf("PCONP=%lx\n", LPC_SC->PCONP);
 
   FLASH_RES res = flash_file((uint8_t*)"/sd2snes/firmware.img");
   if(res == ERR_FLASHPREP || res == ERR_FLASHERASE || res == ERR_FLASH) {
+    rdyled(0);
     writeled(1);
   }
   if(res == ERR_FILEHD || res == ERR_FILECHK) {
+    rdyled(0);
     readled(1);
   }
   DBG_BL printf("flash result = %d\n", res);
