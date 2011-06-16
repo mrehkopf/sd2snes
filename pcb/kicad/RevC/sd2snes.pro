@@ -1,4 +1,4 @@
-update=Mon 25 Apr 2011 03:48:36 AM CEST
+update=Fri 17 Jun 2011 01:08:13 AM CEST
 version=1
 last_client=pcbnew
 [general]
@@ -84,8 +84,8 @@ LibName41=libs/mic23250
 [pcbnew]
 version=1
 PadDrlX=0
-PadDimH=197
-PadDimV=197
+PadDimH=79
+PadDimV=690
 BoardThickness=630
 SgPcb45=1
 TxtPcbV=800
@@ -93,11 +93,11 @@ TxtPcbH=600
 TxtModV=600
 TxtModH=600
 TxtModW=120
-VEgarde=50
+VEgarde=40
 DrawLar=70
 EdgeLar=40
 TxtLar=120
-MSegLar=79
+MSegLar=39
 LastNetListRead=sd2snes.net
 [pcbnew/libraries]
 LibDir=../../kicad
@@ -113,3 +113,4 @@ LibName9=led
 LibName10=dip_sockets
 LibName11=libs/mypackages
 LibName12=libs/hai
+LibName13=libs/snescart
