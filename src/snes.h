@@ -30,6 +30,10 @@
 #define SNES_CMD_LOADROM   (1)
 #define SNES_CMD_SETRTC    (2)
 
+#define MENU_ERR_OK		(0)
+#define MENU_ERR_NODSP	(1)
+#define MENU_ERR_NOBSX	(2)
+
 uint8_t crc_valid;
 
 void prepare_reset(void);
@@ -40,4 +44,5 @@ void snes_main_loop(void);
 uint8_t menu_main_loop(void);
 void get_selected_name(uint8_t* lfn);
 void snes_bootprint(void* msg);
+void snes_menu_errmsg(int err, void* msg);
 #endif

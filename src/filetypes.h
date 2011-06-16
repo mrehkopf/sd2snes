@@ -28,6 +28,8 @@
 #define FILETYPES_H
 
 #include "ff.h"
+
+#define SYS_DIR_NAME	((const uint8_t*)"sd2snes")
 typedef enum {
   TYPE_UNKNOWN = 0, /* 0 */
   TYPE_SMC,         /* 1 */

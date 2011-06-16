@@ -27,6 +27,12 @@
 #ifndef SMC_H
 #define SMC_H
 
+#define DSPFW_1 ((const uint8_t*)"/sd2snes/dsp1.bin")
+#define DSPFW_2 ((const uint8_t*)"/sd2snes/dsp2.bin")
+#define DSPFW_3 ((const uint8_t*)"/sd2snes/dsp3.bin")
+#define DSPFW_4 ((const uint8_t*)"/sd2snes/dsp4.bin")
+#define DSPFW_1B ((const uint8_t*)"/sd2snes/dsp1b.bin") 
+
 typedef struct _snes_header {
   uint8_t maker[2];     /* 0xB0 */
   uint8_t gamecode[4];  /* 0xB2 */
@@ -54,6 +60,7 @@ typedef struct _snes_romprops {
   uint32_t ramsize_bytes;     /* CartRAM size in bytes */
   uint32_t romsize_bytes;     /* ROM size in bytes (rounded up) */
   const uint8_t* necdsp_fw;   /* NEC DSP ROM filename */
+  uint8_t has_dspx;           /* DSP[1-4] presence flag */
   snes_header_t header;       /* original header from ROM image */
 } snes_romprops_t;
 

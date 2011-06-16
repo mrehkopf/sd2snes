@@ -43,6 +43,7 @@
 #include "diskio.h"
 #include "snesboot.h"
 
+#include <string.h>
 char* hex = "0123456789ABCDEF";
 
 extern snes_romprops_t romprops;
@@ -163,13 +164,14 @@ void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
   FPGA_DESELECT();
 }
 
-uint32_t load_rom(uint8_t* filename, uint32_t base_addr) {
+uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   UINT bytes_read;
   DWORD filesize;
   UINT count=0;
-  tick_t tickstmp, ticksstart, ticks_read=0, ticks_tx=0, ticks_total=0;
-ticksstart=getticks();
-printf("%s\n", filename);
+  tick_t ticksstart, ticks_total=0;
+  ticksstart=getticks();
+  printf("%s\n", filename);
+  if(flags & LOADROM_WITH_RESET) set_mcu_ovr(1);
   file_open(filename, FA_READ);
   if(file_res) {
     uart_putc('?');
@@ -181,35 +183,20 @@ printf("%s\n", filename);
   set_mcu_addr(base_addr);
   printf("no nervous breakdown beyond this point! or else!\n");
   f_lseek(&file_handle, romprops.offset);
-//  FPGA_DESELECT();
-//  FPGA_SELECT();
-//  FPGA_TX_BYTE(0x91); /* write w/ increment */
   for(;;) {
     ff_sd_offload=1;
     sd_offload_tgt=0;
-tickstmp=getticks();
     bytes_read = file_read();
-ticks_read+=getticks()-tickstmp;
     if (file_res || !bytes_read) break;
     if(!(count++ % 512)) {
-//      toggle_read_led();
-/*    bounce_busy_led(); */
       uart_putc('.');
     }
-//    for(int j=0; j<bytes_read; j++) {
-//      FPGA_TX_BYTE(file_buf[j]);
-//    }
-//tickstmp = getticks();
-//    FPGA_TX_BLOCK(file_buf, 512);
-//ticks_tx+=getticks()-tickstmp;
   }
-//  FPGA_TX_BYTE(0x00); /* dummy tx for increment+write pulse */
-//  FPGA_DESELECT();
   file_close();
   set_mapper(romprops.mapper_id);
   printf("rom header map: %02x; mapper id: %d\n", romprops.header.map, romprops.mapper_id);
-ticks_total=getticks()-ticksstart;
-  printf("%u ticks in read, %u ticks in tx, %u ticks total\n", ticks_read, ticks_tx, ticks_total);
+  ticks_total=getticks()-ticksstart;
+  printf("%u ticks total\n", ticks_total);
   if(romprops.mapper_id==3) {
     printf("BSX Flash cart image\n");
     printf("attempting to load BSX BIOS /sd2snes/bsxbios.bin...\n");
@@ -229,14 +216,20 @@ ticks_total=getticks()-ticksstart;
     sram_writebyte(0xfc, rombase+0xd5);
     set_fpga_time(0x0220110301180530LL);
   }
-  if(romprops.mapper_id == 4 || romprops.mapper_id == 5) {
+  if(romprops.has_dspx) {
     printf("DSPx game. Loading firmware image %s...\n", romprops.necdsp_fw);
     load_dspx(romprops.necdsp_fw);
+    if(file_res && romprops.necdsp_fw == DSPFW_1) {
+      load_dspx(DSPFW_1B);
+    }
+    if(file_res) {
+      snes_menu_errmsg(MENU_ERR_NODSP, (void*)romprops.necdsp_fw);
+    }
   }
   uint32_t rammask;
   uint32_t rommask;
 
-  if(filesize > (romprops.romsize_bytes + romprops.offset)) {
+  while(filesize > (romprops.romsize_bytes + romprops.offset)) {
     romprops.romsize_bytes <<= 1;
   }
 
@@ -250,6 +243,25 @@ ticks_total=getticks()-ticksstart;
   set_saveram_mask(rammask);
   set_rom_mask(rommask);
   readled(0);
+  if(flags & LOADROM_WITH_SRAM) {
+    if(romprops.ramsize_bytes) {
+      strcpy(strrchr((char*)filename, (int)'.'), ".srm");
+      printf("SRM file: %s\n", filename);
+      load_sram(filename, SRAM_SAVE_ADDR);
+    } else {
+      printf("No SRAM\n");
+    }
+  }
+
+  if(flags & LOADROM_WITH_RESET) {
+    set_mcu_ovr(0);
+    fpga_dspx_reset(1);
+    snes_reset(1);
+    delay_ms(10);
+    snes_reset(0);
+    fpga_dspx_reset(0);
+  }
+
   return (uint32_t)filesize;
 }
 
@@ -487,7 +499,6 @@ void load_dspx(const uint8_t *filename) {
       wordsize_cnt = 0;
       word_cnt++;
       fpga_write_dspx_pgm(pgmdata);
-      printf("%06lx ", pgmdata&0xffffff);
     }
   }
 
@@ -507,7 +518,6 @@ void load_dspx(const uint8_t *filename) {
       wordsize_cnt = 0;
       word_cnt++;
       fpga_write_dspx_dat(datdata);
-      printf("%04x ",datdata&0xffff);
     }
   }
 

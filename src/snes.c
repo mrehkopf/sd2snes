@@ -171,3 +171,10 @@ void snes_bootprint(void* msg) {
   delay_ms(30);
   set_mcu_ovr(1);
 }
+
+void snes_menu_errmsg(int err, void* msg) {
+  set_mcu_ovr(1);
+  sram_writeblock(msg, SRAM_CMD_ADDR+1, 64);
+  sram_writebyte(err, SRAM_CMD_ADDR);
+}
+

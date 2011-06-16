@@ -44,7 +44,10 @@
 #define SRAM_DIRID (0xFFFFF0L)
 #define SRAM_RELIABILITY_SCORE (0x100)
 
-uint32_t load_rom(uint8_t* filename, uint32_t base_addr);
+#define LOADROM_WITH_SRAM	(1)
+#define LOADROM_WITH_RESET	(2)
+
+uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags);
 uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr);

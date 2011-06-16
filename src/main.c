@@ -115,7 +115,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     uint8_t card_go = 0;
     while(!card_go) {
       if(disk_status(0) & (STA_NOINIT|STA_NODISK)) {
-	snes_bootprint("            No Card!            \0");
+	snes_bootprint("        No SD Card found!       \0");
 	while(disk_status(0) & (STA_NOINIT|STA_NODISK));
 	delay_ms(200);
       }
@@ -191,7 +191,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     fpga_pgm((uint8_t*)"/sd2snes/fpga_base.bit");
     fpga_dspx_reset(1);
     uart_putc('(');
-    load_rom((uint8_t*)"/sd2snes/menu.bin", SRAM_MENU_ADDR);
+    load_rom((uint8_t*)"/sd2snes/menu.bin", SRAM_MENU_ADDR, 0);
     /* force memory size + mapper */
     set_rom_mask(0x3fffff);
     set_mapper(0x7);
@@ -236,7 +236,6 @@ sram_hexdump(SRAM_DIR_ADDR, 0x300);
   //sram_hexdump(SRAM_MENU_ADDR, 0x400);
     while(!cmd) {
       cmd=menu_main_loop();
-// cmd = 1;
       printf("cmd: %d\n", cmd);
       sleep_ms(500);
       uart_putc('-');
@@ -244,22 +243,8 @@ sram_hexdump(SRAM_DIR_ADDR, 0x300);
 	case SNES_CMD_LOADROM:
 	  get_selected_name(file_lfn);
 	  set_mcu_ovr(1);
-// strcpy((char*)file_lfn, "/mon.smc");
-
 	  printf("Selected name: %s\n", file_lfn);
-	  filesize = load_rom(file_lfn, SRAM_ROM_ADDR);
-	  if(romprops.ramsize_bytes) {
-	    strcpy(strrchr((char*)file_lfn, (int)'.'), ".srm");
-	    printf("SRM file: %s\n", file_lfn);
-	    load_sram(file_lfn, SRAM_SAVE_ADDR);
-	  } else {
-	    printf("No SRAM\n");
-	  }
-	  set_mcu_ovr(0);
-	  snes_reset(1);
-	  delay_ms(10);
-	  snes_reset(0);
-          fpga_dspx_reset(0);
+	  filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET);
 	  break;
 	case SNES_CMD_SETRTC:
           /* get time from RAM */

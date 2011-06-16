@@ -32,12 +32,6 @@
 
 snes_romprops_t romprops;
 
-const uint8_t* DSPFW_1  = (uint8_t*)"/sd2snes/dsp1.bin";
-const uint8_t* DSPFW_1B = (uint8_t*)"/sd2snes/dsp1b.bin";
-const uint8_t* DSPFW_2  = (uint8_t*)"/sd2snes/dsp2.bin";
-const uint8_t* DSPFW_3  = (uint8_t*)"/sd2snes/dsp3.bin";
-const uint8_t* DSPFW_4  = (uint8_t*)"/sd2snes/dsp4.bin";
-
 uint32_t hdr_addr[6] = {0xffb0, 0x101b0, 0x7fb0, 0x81b0, 0x40ffb0, 0x4101b0};
 uint8_t countAllASCII(uint8_t* data, int size) {
   uint8_t res = 0;
@@ -86,6 +80,7 @@ void smc_id(snes_romprops_t* props) {
   uint8_t score, maxscore=1, score_idx=2; /* assume LoROM */
   snes_header_t* header = &(props->header);
 
+  props->has_dspx = 0;
   for(uint8_t num = 0; num < 6; num++) {
     if(!file_readblock(header, hdr_addr[num], sizeof(snes_header_t))
        || file_res) {
@@ -144,6 +139,7 @@ void smc_id(snes_romprops_t* props) {
 
     case 0x21: /* HiROM */
       if(header->map == 0x31 && (header->carttype == 0x03 || header->carttype == 0x05)) {
+        props->has_dspx = 1;
         props->mapper_id = 4; /* DSPx HiROM */
         props->necdsp_fw = DSPFW_1B;
       } else {
@@ -155,6 +151,7 @@ void smc_id(snes_romprops_t* props) {
       if ((header->map == 0x20 && header->carttype == 0x03) ||
           (header->map == 0x30 && header->carttype == 0x05 && header->licensee != 0xb2)) {
         props->mapper_id = 5;
+        props->has_dspx = 1;
         // Pilotwings uses DSP1 instead of DSP1B
         if(!memcmp(header->name, "PILOTWINGS", 10)) {
           props->necdsp_fw = DSPFW_1;
@@ -162,12 +159,15 @@ void smc_id(snes_romprops_t* props) {
           props->necdsp_fw = DSPFW_1B;
         }
       } else if (header->map == 0x20 && header->carttype == 0x05) {
+        props->has_dspx = 1;
         props->mapper_id = 5; /* DSPx LoROM */
         props->necdsp_fw = DSPFW_2;
       } else if (header->map == 0x30 && header->carttype == 0x05 && header->licensee == 0xb2) {
+        props->has_dspx = 1;
         props->mapper_id = 5; /* DSPx LoROM */
         props->necdsp_fw = DSPFW_3;
       } else if (header->map == 0x30 && header->carttype == 0x03) {
+        props->has_dspx = 1;
         props->mapper_id = 5; /* DSPx LoROM */
         props->necdsp_fw = DSPFW_4;
       } else {
@@ -183,7 +183,7 @@ void smc_id(snes_romprops_t* props) {
       if(file_handle.fsize > 0x400200) {
         props->mapper_id = 6; /* SO96 */
       } else {
-        props->mapper_id = 4;
+        props->mapper_id = 1;
       }
       break;
 
@@ -198,7 +198,7 @@ void smc_id(snes_romprops_t* props) {
           if(file_handle.fsize > 0x800200) {
             props->mapper_id = 6; /* SO96 interleaved */
           } else if(file_handle.fsize > 0x400200) {
-            props->mapper_id = 4; /* ExLoROM */
+            props->mapper_id = 1; /* ExLoROM */
           } else {
             props->mapper_id = 1; /* LoROM */
           }
