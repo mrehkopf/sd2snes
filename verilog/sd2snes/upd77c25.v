@@ -18,7 +18,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 module upd77c25(
   input [7:0] DI,
-  output reg [7:0] DO,
+  output [7:0] DO,
   input A0,
   input nCS,
   input nRD,
@@ -44,6 +44,14 @@ module upd77c25(
   output [5:0] FL_B
 );
 	 
+parameter STATE_FETCH = 8'b00000001;
+parameter STATE_LOAD = 8'b00000010;
+parameter STATE_ALU1 = 8'b00000100;
+parameter STATE_ALU2 = 8'b00001000;
+parameter STATE_STORE = 8'b00010000;
+parameter STATE_NEXT = 8'b00100000;
+parameter STATE_IDLE1 = 8'b01000000;
+parameter STATE_IDLE2 = 8'b10000000;
 
 parameter I_OP = 2'b00;
 parameter I_RT = 2'b01;
@@ -63,7 +71,7 @@ reg [1:0] flags_s1;
 
 reg [10:0] pc;        // program counter
 
-reg [2:0] insn_state; // execute state
+reg [7:0] insn_state; // execute state
 
 reg [3:0] regs_dph;
 reg [3:0] regs_dpl;
@@ -123,8 +131,8 @@ upd77c25_datram datram (
 	.dina(ram_dina), // Bus [15 : 0] 
 	.douta(ram_douta)); // Bus [15 : 0] 
 
-assign ram_wea = ((op != I_JP) && op_dst == 4'b1111 && insn_state == 3'b100);
-assign ram_addra = {regs_dph | ((insn_state == 3'b101 && op_dst == 4'b1100) ? 4'b0100 : 4'b0000), regs_dpl};
+assign ram_wea = ((op != I_JP) && op_dst == 4'b1111 && insn_state == STATE_NEXT);
+assign ram_addra = {regs_dph | ((insn_state == STATE_ALU2 && op_dst == 4'b1100) ? 4'b0100 : 4'b0000), regs_dpl};
 reg signed [15:0] regs_k;
 reg signed [15:0] regs_l;
 reg [15:0] regs_trb;
@@ -170,11 +178,11 @@ assign FL_B = {flags_s1[1],flags_s0[1],flags_c[1],flags_z[1],flags_ov1[1],flags_
 
 initial begin
   alu_store = 2'b11;
-  insn_state = 3'b110;
+  insn_state = STATE_IDLE1;
   regs_sp = 4'b0000;
   pc = 11'b0;
   regs_sr = 16'b0;
-  regs_rp = 16'b0;
+  regs_rp = 16'h03ff;
   regs_dph = 4'b0;
   regs_dpl = 4'b0;
   regs_k = 16'b0;
@@ -196,25 +204,31 @@ always @(posedge CLK) begin
 
 end
 
-reg [5:0] reg_nCS_sreg;
-initial reg_nCS_sreg = 6'b111111;
-always @(posedge CLK) reg_nCS_sreg <= {reg_nCS_sreg[4:0], nCS};
+reg [7:0] reg_nCS_sreg;
+initial reg_nCS_sreg = 8'b11111111;
+always @(posedge CLK) reg_nCS_sreg <= {reg_nCS_sreg[6:0], nCS};
 
 reg [5:0] reg_oe_sreg;
 initial reg_oe_sreg = 6'b111111;
 always @(posedge CLK) reg_oe_sreg <= {reg_oe_sreg[4:0], nRD};
-wire reg_oe_falling = !nCS && (reg_oe_sreg[3:0] == 4'b1000);
+wire reg_oe_rising = !reg_nCS_sreg[2] && (reg_oe_sreg[5:0] == 6'b000001);
 
 reg [5:0] reg_we_sreg;
 initial reg_we_sreg = 6'b111111;
 always @(posedge CLK) reg_we_sreg <= {reg_we_sreg[4:0], nWR};
-wire reg_we_rising = !nCS && (reg_we_sreg[5:0] == 6'b000001);
+wire reg_we_rising = !reg_nCS_sreg[2] && (reg_we_sreg[5:0] == 6'b000001);
 
+reg [7:0] A0r;
+initial A0r = 8'b11111111;
+always @(posedge CLK) A0r <= {A0r[6:0], A0};
+
+reg [7:0] last_op;
+initial last_op = 8'h00;
 always @(posedge CLK) begin
   if(RST) begin
-    if((op_src == 4'b1000 && op[1] == 1'b0 && insn_state == 3'b011)
-    || (op_dst == 4'b0110 && op != 2'b10 && insn_state == 3'b011)) regs_sr[SR_RQM] <= 1'b1;
-    if((reg_we_rising) && (A0 == 1'b0)) begin
+    if((op_src == 4'b1000 && op[1] == 1'b0 && insn_state == STATE_STORE)
+    || (op_dst == 4'b0110 && op != 2'b10 && insn_state == STATE_STORE)) regs_sr[SR_RQM] <= 1'b1;
+    else if((reg_we_rising) && (A0r[3] == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b1) begin
           regs_sr[SR_RQM] <= 1'b0;
@@ -223,18 +237,14 @@ always @(posedge CLK) begin
         regs_sr[SR_RQM] <= 1'b0;
       end
     end
-    else if(reg_oe_falling && (A0 == 1'b0)) begin
-//      case(A0)
-//        1'b0: begin
-          if(!regs_sr[SR_DRC]) begin
-            if(regs_sr[SR_DRS] == 1'b1) begin
-              regs_sr[SR_RQM] <= 1'b0;
-            end
-          end else begin
-            regs_sr[SR_RQM] <= 1'b0;
-          end
-//        end
-//      endcase
+    else if(reg_oe_rising && (A0r[3] == 1'b0)) begin
+      if(!regs_sr[SR_DRC]) begin
+        if(regs_sr[SR_DRS] == 1'b1) begin
+          regs_sr[SR_RQM] <= 1'b0;
+        end
+      end else begin
+        regs_sr[SR_RQM] <= 1'b0;
+      end
     end
   end else begin
     regs_sr[SR_RQM] <= 1'b0;
@@ -243,7 +253,7 @@ end
 
 always @(posedge CLK) begin
   if(RST) begin
-    if(reg_we_rising && (A0 == 1'b0)) begin
+    if(reg_we_rising && (A0r[3] == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b0) begin
           regs_sr[SR_DRS] <= 1'b1;
@@ -251,8 +261,8 @@ always @(posedge CLK) begin
           regs_sr[SR_DRS] <= 1'b0;
         end
       end 
-    end else if(reg_oe_falling) begin
-      case(A0)
+    end else if(reg_oe_rising) begin
+      case(A0r[3])
         1'b0: begin
           if(!regs_sr[SR_DRC]) begin
             if(regs_sr[SR_DRS] == 1'b0) begin
@@ -271,7 +281,7 @@ end
 
 always @(posedge CLK) begin
   if(RST) begin
-    if(reg_we_rising && (A0 == 1'b0)) begin
+    if(reg_we_rising && (A0r[3] == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b0) begin
           regs_dr[7:0] <= DI;
@@ -281,7 +291,7 @@ always @(posedge CLK) begin
       end else begin
         regs_dr[7:0] <= DI;
       end
-    end else if(ld_dst == 4'b0110 && insn_state == 3'b011) begin
+    end else if(ld_dst == 4'b0110 && insn_state == STATE_STORE) begin
       if (op == I_OP || op == I_RT) regs_dr <= idb;
       else if (op == I_LD) regs_dr <= ld_id;
     end
@@ -290,34 +300,13 @@ always @(posedge CLK) begin
   end
 end
 
-always @(posedge CLK) begin
-  if(RST) begin
-    if(reg_oe_falling) begin
-      case(A0)
-        1'b0: begin
-          if(!regs_sr[SR_DRC]) begin
-            if(regs_sr[SR_DRS] == 1'b0) begin
-              DO <= regs_dr[7:0];
-            end else begin
-              DO <= regs_dr[15:8];
-            end
-          end else begin
-            DO <= regs_dr[7:0]; // regs_dr[7:0];
-          end
-        end
-        1'b1: DO <= regs_sr[15:8]; // regs_sr[15:8];
-      endcase
-    end
-  end else begin
-    DO <= 8'h00;
-  end
-end
+assign DO = (A0 ? regs_sr[15:8] : (regs_sr[SR_DRC] ? regs_dr[7:0] : (regs_sr[SR_DRS] ? regs_dr[15:8] : regs_dr[7:0])));
 
 always @(posedge CLK) begin
   if(RST) begin
     case(insn_state)
-      3'b000: begin
-        insn_state <= 3'b001;
+      STATE_FETCH: begin
+        insn_state <= STATE_LOAD;
         opcode <= opcode_w;
         op <= opcode_w[23:22];
         op_pselect <= opcode_w[21:20];
@@ -337,8 +326,8 @@ always @(posedge CLK) begin
         regs_m <= {mul_result[31], mul_result[29:15]};
         regs_n <= {mul_result[14:0], 1'b0};
       end
-      3'b001: begin
-        insn_state <= 3'b010;
+      STATE_LOAD: begin
+        insn_state <= STATE_ALU1;
         case(op)
           I_OP, I_RT: begin
             case(op_src)
@@ -360,8 +349,8 @@ always @(posedge CLK) begin
           end
         endcase
       end
-      3'b010: begin
-        insn_state <= 3'b101;
+      STATE_ALU1: begin
+        insn_state <= STATE_ALU2;
         case(op)
           I_OP, I_RT: begin        
             alu_q <= regs_ab[op_asl];
@@ -382,8 +371,30 @@ always @(posedge CLK) begin
           end
         endcase
       end
-      3'b011: begin
-        insn_state <= 3'b100;
+      STATE_ALU2: begin
+        insn_state <= STATE_STORE;
+        if(op[1] == 1'b0) begin
+          case(op_alu)
+            4'b0001: alu_r <= alu_q | alu_p;
+            4'b0010: alu_r <= alu_q & alu_p;
+            4'b0011: alu_r <= alu_q ^ alu_p;
+            4'b0100: alu_r <= alu_q - alu_p;
+            4'b0101: alu_r <= alu_q + alu_p;
+            4'b0110: alu_r <= alu_q - alu_p - flags_c[~op_asl];
+            4'b0111: alu_r <= alu_q + alu_p + flags_c[~op_asl];
+            4'b1000: alu_r <= alu_q - alu_p;
+            4'b1001: alu_r <= alu_q + alu_p;
+            4'b1010: alu_r <= ~alu_q;
+            4'b1011: alu_r <= {alu_q[15], alu_q[15:1]};
+            4'b1100: alu_r <= {alu_q[14:0], flags_c[~op_asl]};
+            4'b1101: alu_r <= {alu_q[13:0], 2'b11};
+            4'b1110: alu_r <= {alu_q[11:0], 4'b1111};
+            4'b1111: alu_r <= {alu_q[7:0], alu_q[15:8]};
+          endcase
+        end
+      end
+      STATE_STORE: begin
+        insn_state <= STATE_NEXT;
         case(op)
           I_OP, I_RT: begin
             case(op_dst)
@@ -534,8 +545,8 @@ always @(posedge CLK) begin
           end
         endcase
       end
-      3'b100: begin
-        insn_state <= 3'b110;
+      STATE_NEXT: begin
+        insn_state <= STATE_IDLE1;
 
         case(op)
           I_OP, I_RT: begin
@@ -569,34 +580,12 @@ always @(posedge CLK) begin
           end
         endcase
       end
-      3'b110: insn_state <= 3'b111;
-      3'b111: insn_state <= 3'b000;
+      STATE_IDLE1: insn_state <= STATE_IDLE2;
+      STATE_IDLE2: insn_state <= STATE_FETCH;
       
-      3'b101: begin
-        insn_state <= 3'b011;
-        if(op[1] == 1'b0) begin
-          case(op_alu)
-            4'b0001: alu_r <= alu_q | alu_p;
-            4'b0010: alu_r <= alu_q & alu_p;
-            4'b0011: alu_r <= alu_q ^ alu_p;
-            4'b0100: alu_r <= alu_q - alu_p;
-            4'b0101: alu_r <= alu_q + alu_p;
-            4'b0110: alu_r <= alu_q - alu_p - flags_c[~op_asl];
-            4'b0111: alu_r <= alu_q + alu_p + flags_c[~op_asl];
-            4'b1000: alu_r <= alu_q - alu_p;
-            4'b1001: alu_r <= alu_q + alu_p;
-            4'b1010: alu_r <= ~alu_q;
-            4'b1011: alu_r <= {alu_q[15], alu_q[15:1]};
-            4'b1100: alu_r <= {alu_q[14:0], flags_c[~op_asl]};
-            4'b1101: alu_r <= {alu_q[13:0], 2'b11};
-            4'b1110: alu_r <= {alu_q[11:0], 4'b1111};
-            4'b1111: alu_r <= {alu_q[7:0], alu_q[15:8]};
-          endcase
-        end
-      end
     endcase
   end else begin
-    insn_state <= 3'b110;
+    insn_state <= STATE_IDLE1;
     pc <= 11'b0;
     regs_sp <= 4'b0000;
     cond_true <= 0;
@@ -607,7 +596,7 @@ always @(posedge CLK) begin
     regs_sr[9] <= 0;
     regs_sr[8] <= 0;
     regs_sr[7] <= 0;
-    regs_rp <= 16'b0;
+    regs_rp <= 16'h03ff;
     regs_dph <= 4'b0;
     regs_dpl <= 4'b0;
     regs_k <= 16'b0;

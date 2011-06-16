@@ -70,10 +70,14 @@ module main(
 	 inout SD_CLK
 	 
    /* debug */
+   ,
+   output p113_out
    //output DCM_IN_STOPPED,
    //output DCM_FX_STOPPED
    //input DCM_RST
     );
+assign p113_out = SNES_READ;
+
 wire [7:0] spi_cmd_data;
 wire [7:0] spi_param_data;
 wire [7:0] spi_input_data;
@@ -633,54 +637,7 @@ always @(posedge CLK2) begin
            endcase
        end
 end
-/*
-always @(posedge CLK2) begin
 
-   case (STATE)   
-      STATE_9: begin
-         STATEIDX <= 9;
-      end
-      
-      STATE_0: begin
-         STATEIDX <= 8;
-      end
-      
-      STATE_1: begin
-         STATEIDX <= 7;
-      end
-      
-      STATE_2: begin
-         STATEIDX <= 6;
-      end
-      
-      STATE_3: begin
-         STATEIDX <= 5;
-      end
-      
-      STATE_4: begin
-         STATEIDX <= 4;
-      end
-      
-      STATE_5: begin
-         STATEIDX <= 3;
-      end
-      
-      STATE_6: begin
-         STATEIDX <= 2;
-      end
-
-      STATE_7: begin
-         STATEIDX <= 1;
-      end
-
-      STATE_8: begin
-         STATEIDX <= 0;
-      end
-      default:
-         STATEIDX <= 9;
-   endcase      
-end
-*/
 // When in MCU mode, enable SRAM_WE according to MCU programming
 // else enable SRAM_WE according to state&cycle
 assign ROM_WE = !MCU_OVR ? MCU_WRITE

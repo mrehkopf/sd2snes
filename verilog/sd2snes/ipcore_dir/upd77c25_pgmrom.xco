@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 13.1
-# Date: Thu Jun  9 08:57:56 2011
+# Date: Sun Jun 12 01:39:49 2011
 #
 ##############################################################
 #
@@ -42,7 +42,7 @@ CSET axi_id_width=4
 CSET axi_slave_type=Memory_Slave
 CSET axi_type=AXI4_Full
 CSET byte_size=9
-CSET coe_file=/home/ikari/prj/sd2snes/verilog/sd2snes/dsp4_pgm.coe
+CSET coe_file=no_coe_file_loaded
 CSET collision_warnings=ALL
 CSET component_name=upd77c25_pgmrom
 CSET disable_collision_warnings=false
@@ -54,7 +54,7 @@ CSET enable_b=Always_Enabled
 CSET error_injection_type=Single_Bit_Error_Injection
 CSET fill_remaining_memory_locations=false
 CSET interface_type=Native
-CSET load_init_file=true
+CSET load_init_file=false
 CSET memory_type=Simple_Dual_Port_RAM
 CSET operating_mode_a=WRITE_FIRST
 CSET operating_mode_b=WRITE_FIRST
@@ -98,4 +98,4 @@ CSET write_width_b=24
 MISC pkg_timestamp=2011-02-03T22:20:43.000Z
 # END Extra information
 GENERATE
-# CRC: 85a39b6f
+# CRC: b11006ad

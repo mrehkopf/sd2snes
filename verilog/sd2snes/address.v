@@ -163,17 +163,22 @@ assign srtc_enable = (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h280
 // DSP1 LoROM: DR=30-3f:8000-bfff; SR=30-3f:c000-ffff
 //          or DR=60-6f:0000-3fff; SR=60-6f:4000-7fff
 // DSP1 HiROM: DR=00-0f:6000-6fff; SR=00-0f:7000-7fff
-assign dspx_enable =
+wire dspx_enable_w =
   (MAPPER == 3'b101) ? 
     (ROM_MASK[20] ? 
       (SNES_ADDR[22] & SNES_ADDR[21] & ~SNES_ADDR[20] & ~SNES_ADDR[15])
      :(~SNES_ADDR[22] & SNES_ADDR[21] & SNES_ADDR[20] & SNES_ADDR[15])
     )
   :(MAPPER == 3'b100) ? 
-   (~SNES_ADDR[22] & ~SNES_ADDR[21] & ~SNES_ADDR[20] & &SNES_ADDR[14:13]/* & CS */)
+   (~SNES_ADDR[22] & ~SNES_ADDR[21] & ~SNES_ADDR[20] & ~SNES_ADDR[15] & &SNES_ADDR[14:13]/* & CS */)
   :1'b0;
 assign dspx_a0 = (MAPPER == 3'b101) ? SNES_ADDR[14]
                 :(MAPPER == 3'b100) ? SNES_ADDR[12]
                 :1'b1;
+
+reg [7:0] dspx_enable_r;
+initial dspx_enable_r = 8'b00000000;
+always @(posedge CLK) dspx_enable_r <= {dspx_enable_r[6:0], dspx_enable_w};
+assign dspx_enable = &dspx_enable_r[5:2];
 
 endmodule
