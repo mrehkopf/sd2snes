@@ -132,7 +132,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
           break;
         }
         fn = *fno.lfname ? fno.lfname : fno.fname;
-        if (*fn == '.') continue;
+        if ((*fn == '.') || !(memcmp(fn, SYS_DIR_NAME, sizeof(SYS_DIR_NAME)))) continue;
         if (fno.fattrib & AM_DIR) {
           numentries++;
           if(pass) {
