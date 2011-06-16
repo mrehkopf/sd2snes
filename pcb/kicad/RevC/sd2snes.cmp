@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (2010-12-16 BZR 2663)-testing date = Sun 24 Apr 2011 01:27:40 AM CEST
+Cmp-Mod V01 Created by CvPCB (2010-12-16 BZR 2663)-testing date = Thu 16 Jun 2011 02:43:51 PM CEST
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -656,6 +656,13 @@ TimeStamp = /4B6ED75B/4C4A0B6F;
 Reference = P403;
 ValeurCmp = CONN_2;
 IdModule  = PIN_ARRAY_2X1;
+EndCmp
+
+BeginCmp
+TimeStamp = /4B6ED75B/4DF9F6C8;
+Reference = P404;
+ValeurCmp = CONN_3X2;
+IdModule  = pin_array_3x2;
 EndCmp
 
 BeginCmp
