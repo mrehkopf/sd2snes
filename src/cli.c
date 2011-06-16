@@ -58,8 +58,8 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0saveraw\0put\0d4\0vmode\0mapper\0settime\0time\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME };
+  "cd\0reset\0sreset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0saveraw\0put\0d4\0vmode\0mapper\0settime\0time\0";
+enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME };
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
@@ -269,14 +269,6 @@ static void cmd_show_directory(void) {
       strlwr((char *)name);
     }
 
-#if 0
-    if (finfo.fattrib & AM_DIR) {
-      printf("DIR ");
-    } else {
-      printf("    ");
-    }
-#endif
-
     printf("%s",name);
 
     /* Directory indicator (Unix-style) */
@@ -290,11 +282,10 @@ static void cmd_show_directory(void) {
 
 static void cmd_loadrom(void) {
   uint32_t address = 0;
-  snes_reset(1);
+  uint8_t flags = LOADROM_WITH_SRAM | LOADROM_WITH_RESET;
   set_mcu_ovr(1);
-  load_rom((uint8_t*)curchar, address);
+  load_rom((uint8_t*)curchar, address, flags);
   set_mcu_ovr(0);
-  snes_reset(0);
 }
 
 static void cmd_saveraw(void) {
@@ -335,22 +326,6 @@ static void cmd_vmode(void) {
   }
 }
 
-#if 0
-  uint8_t *buf = malloc(256);
-
-  if (buf == NULL) {
-    printf("buffer allocation failed!\n");
-    return;
-  }
-
-  for (int i=0;i<256;i++) {
-    buf[i] = i2c_read_register(0xa0, i);
-  }
-
-  uart_trace(buf, 0, 256);
-  free(buf);
-#endif
-
 void cmd_put(void) {
   if(*curchar != 0) {
     file_open((uint8_t*)curchar, FA_CREATE_ALWAYS | FA_WRITE);
@@ -373,6 +348,17 @@ void cmd_mapper(void) {
   printf("mapper set to %ld\n", mapper);
 }
 
+void cmd_sreset(void) {
+  if(*curchar != 0) {
+    int32_t resetstate;
+    resetstate = parse_unsigned(0,1);
+    snes_reset(resetstate);
+  } else {
+    snes_reset(1);
+    delay_ms(20);
+    snes_reset(0);
+  }
+}
 void cmd_settime(void) {
   struct tm time;
   if(strlen(curchar) != 4+2+2 + 2+2+2) {
@@ -471,6 +457,10 @@ void cli_loop(void) {
     break;
     case CMD_RESET:
       cmd_reset();
+      break;
+
+    case CMD_SRESET:
+      cmd_sreset();
       break;
 
     case CMD_DIR:
