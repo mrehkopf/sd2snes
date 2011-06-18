@@ -33,7 +33,7 @@ module upd77c25(
   input DAT_WR,
   input [15:0] DAT_DI,
   input [9:0] DAT_WR_ADDR,
-  
+
   // debug
   output [15:0] DR,
   output [15:0] SR,
@@ -43,7 +43,7 @@ module upd77c25(
   output [5:0] FL_A,
   output [5:0] FL_B
 );
-	 
+
 parameter STATE_FETCH = 8'b00000001;
 parameter STATE_LOAD = 8'b00000010;
 parameter STATE_ALU1 = 8'b00000100;
@@ -125,14 +125,18 @@ upd77c25_datrom datrom (
 wire [15:0] ram_douta;
 wire [7:0] ram_addra;
 upd77c25_datram datram (
-	.clka(CLK),
-	.wea(ram_wea), // Bus [0 : 0] 
-	.addra(ram_addra), // Bus [7 : 0] 
-	.dina(ram_dina), // Bus [15 : 0] 
-	.douta(ram_douta)); // Bus [15 : 0] 
+  .clka(CLK),
+  .wea(ram_wea), // Bus [0 : 0]
+  .addra(ram_addra), // Bus [7 : 0]
+  .dina(ram_dina), // Bus [15 : 0]
+  .douta(ram_douta)); // Bus [15 : 0]
 
 assign ram_wea = ((op != I_JP) && op_dst == 4'b1111 && insn_state == STATE_NEXT);
-assign ram_addra = {regs_dph | ((insn_state == STATE_ALU2 && op_dst == 4'b1100) ? 4'b0100 : 4'b0000), regs_dpl};
+assign ram_addra = {regs_dph | ((insn_state == STATE_ALU2 && op_dst == 4'b1100)
+                                ? 4'b0100
+                                : 4'b0000),
+                    regs_dpl};
+
 reg signed [15:0] regs_k;
 reg signed [15:0] regs_l;
 reg [15:0] regs_trb;
@@ -141,7 +145,6 @@ reg [15:0] regs_dr;
 reg [15:0] regs_sr;
 reg [15:0] regs_si;
 reg [3:0] regs_sp;
-
 
 reg cond_true;
 
@@ -211,12 +214,12 @@ always @(posedge CLK) reg_nCS_sreg <= {reg_nCS_sreg[6:0], nCS};
 reg [5:0] reg_oe_sreg;
 initial reg_oe_sreg = 6'b111111;
 always @(posedge CLK) reg_oe_sreg <= {reg_oe_sreg[4:0], nRD};
-wire reg_oe_rising = !reg_nCS_sreg[2] && (reg_oe_sreg[5:0] == 6'b000001);
+wire reg_oe_rising = !reg_nCS_sreg[4] && (reg_oe_sreg[5:0] == 6'b000001);
 
 reg [5:0] reg_we_sreg;
 initial reg_we_sreg = 6'b111111;
 always @(posedge CLK) reg_we_sreg <= {reg_we_sreg[4:0], nWR};
-wire reg_we_rising = !reg_nCS_sreg[2] && (reg_we_sreg[5:0] == 6'b000001);
+wire reg_we_rising = !reg_nCS_sreg[4] && (reg_we_sreg[5:0] == 6'b000001);
 
 reg [7:0] A0r;
 initial A0r = 8'b11111111;
@@ -260,7 +263,7 @@ always @(posedge CLK) begin
         end else begin
           regs_sr[SR_DRS] <= 1'b0;
         end
-      end 
+      end
     end else if(reg_oe_rising) begin
       case(A0r[3])
         1'b0: begin
@@ -270,7 +273,7 @@ always @(posedge CLK) begin
             end else begin
               regs_sr[SR_DRS] <= 1'b0;
             end
-          end 
+          end
         end
       endcase
     end
@@ -352,7 +355,7 @@ always @(posedge CLK) begin
       STATE_ALU1: begin
         insn_state <= STATE_ALU2;
         case(op)
-          I_OP, I_RT: begin        
+          I_OP, I_RT: begin
             alu_q <= regs_ab[op_asl];
             if(op_alu[3:1] == 3'b100) begin
               alu_p <= 16'h0001;
@@ -428,7 +431,7 @@ always @(posedge CLK) begin
               end
               4'b1100: begin
                 regs_k <= ram_douta;
-                regs_l <= idb;				  
+                regs_l <= idb;
               end
               4'b1101: regs_l <= idb;
               4'b1110: regs_trb <= idb;
@@ -504,7 +507,7 @@ always @(posedge CLK) begin
               4'b1101: regs_l <= ld_id;
               4'b1110: regs_trb <= ld_id;
               4'b1111: ram_dina_r <= ld_id;
-            endcase        
+            endcase
           end
           I_JP: begin
             case(jp_brch)
@@ -563,7 +566,7 @@ always @(posedge CLK) begin
             if(op == I_OP) pc <= pc + 1;
             else begin
               pc <= stack[regs_sp-1];
-              regs_sp <= regs_sp - 1;       
+              regs_sp <= regs_sp - 1;
             end
           end
           I_JP: begin
@@ -582,7 +585,6 @@ always @(posedge CLK) begin
       end
       STATE_IDLE1: insn_state <= STATE_IDLE2;
       STATE_IDLE2: insn_state <= STATE_FETCH;
-      
     endcase
   end else begin
     insn_state <= STATE_IDLE1;

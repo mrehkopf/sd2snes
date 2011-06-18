@@ -19,10 +19,10 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module clk_test(
-    input clk,
-    input sysclk,
-    output [31:0] snes_sysclk_freq
-    );
+  input clk,
+  input sysclk,
+  output [31:0] snes_sysclk_freq
+);
 
 reg [31:0] snes_sysclk_freq_r;
 assign snes_sysclk_freq = snes_sysclk_freq_r;
@@ -44,8 +44,8 @@ always @(posedge clk) begin
     if(sysclk_rising) sysclk_value <= sysclk_value + 1;
   end else begin
     snes_sysclk_freq_r <= sysclk_value;
-	 sysclk_counter <= 0;
-	 sysclk_value <= 0;
+    sysclk_counter <= 0;
+    sysclk_value <= 0;
   end
 end
 

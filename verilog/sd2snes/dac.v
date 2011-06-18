@@ -1,38 +1,38 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    19:26:11 07/23/2010 
-// Design Name: 
-// Module Name:    dac_test 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    19:26:11 07/23/2010
+// Design Name:
+// Module Name:    dac_test
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module dac(
-	 input clkin,
-    input sysclk,
-	 input we,
-	 input[10:0] pgm_address,
-	 input[7:0] pgm_data,
-	 input[7:0] volume,
-	 input vol_latch,
-	 input play,
-	 input reset,
-    output sdout,
-    output lrck,
-    output mclk,
-	 output DAC_STATUS
-    );
+  input clkin,
+  input sysclk,
+  input we,
+  input[10:0] pgm_address,
+  input[7:0] pgm_data,
+  input[7:0] volume,
+  input vol_latch,
+  input play,
+  input reset,
+  output sdout,
+  output lrck,
+  output mclk,
+  output DAC_STATUS
+);
 
 reg[8:0] dac_address_r;
 wire[8:0] dac_address = dac_address_r;
@@ -55,13 +55,13 @@ always @(posedge clkin) begin
 end
 
 dac_buf snes_dac_buf (
-	.clka(clkin),
-	.wea(~we), // Bus [0 : 0] 
-	.addra(pgm_address), // Bus [10 : 0] 
-	.dina(pgm_data), // Bus [7 : 0] 
-	.clkb(clkin),
-	.addrb(dac_address), // Bus [8 : 0] 
-	.doutb(dac_data)); // Bus [31 : 0] 
+  .clka(clkin),
+  .wea(~we), // Bus [0 : 0]
+  .addra(pgm_address), // Bus [10 : 0]
+  .dina(pgm_data), // Bus [7 : 0]
+  .clkb(clkin),
+  .addrb(dac_address), // Bus [8 : 0]
+  .doutb(dac_data)); // Bus [31 : 0]
 
 reg [15:0] cnt;
 reg [15:0] smpcnt;
@@ -71,11 +71,9 @@ wire [15:0] sample2 = {smpcnt[9] ? ~smpcnt[8:0] : smpcnt[8:0], 7'b0};
 reg [15:0] smpshift;
 reg [15:0] smpdata;
 
-assign mclk = cnt[2];   // mclk = clk/8
-//assign lrck = cnt[10];	// lrck = mclk/512
-//wire sclk = cnt[5];		// sclk = lrck*32
-assign lrck = cnt[8];	// lrck = mclk/128
-wire sclk = cnt[3];		// sclk = lrck*32
+assign mclk = cnt[2]; // mclk = clk/8
+assign lrck = cnt[8]; // lrck = mclk/128
+wire sclk = cnt[3];   // sclk = lrck*32
 
 reg [2:0] lrck_sreg;
 reg [2:0] sclk_sreg;
@@ -94,77 +92,77 @@ wire reset_rising = (reset_sreg[1:0] == 2'b01);
 reg play_r;
 
 initial begin
-	cnt = 16'hff00;
-	smpcnt = 16'b0;
-	lrck_sreg = 2'b11;
-	sclk_sreg = 1'b0;
-	dac_address_r = 10'b0;
-	vol_valid = 1'b0;
-	vol_latch_reg = 1'b0;
-	vol_reg = 8'h0;
-	vol_target_reg = 8'hff;
-	samples <= 16'h0;
+  cnt = 16'hff00;
+  smpcnt = 16'b0;
+  lrck_sreg = 2'b11;
+  sclk_sreg = 1'b0;
+  dac_address_r = 10'b0;
+  vol_valid = 1'b0;
+  vol_latch_reg = 1'b0;
+  vol_reg = 8'h0;
+  vol_target_reg = 8'hff;
+  samples <= 16'h0;
 end
 
 always @(posedge clkin) begin
   if(reset_rising) begin
     dac_address_r <= 0;
-	 interpol_overflow <= 0;
-	 interpol_count <= 0;
+    interpol_overflow <= 0;
+    interpol_count <= 0;
   end else if(sysclk_rising) begin
     if(interpol_count > 59378938) begin
-	   interpol_count <= interpol_count + 122500 - 59501439;
+      interpol_count <= interpol_count + 122500 - 59501439;
       dac_address_r <= dac_address_r + play_r;
-		interpol_overflow <= 1;
-	 end else begin
-		interpol_count <= interpol_count + 122500;
-		interpol_overflow <= 0;
-	 end
+      interpol_overflow <= 1;
+    end else begin
+      interpol_count <= interpol_count + 122500;
+      interpol_overflow <= 0;
+    end
   end
 end
 
 always @(posedge clkin) begin
-	cnt <= cnt + 1;
-	lrck_sreg <= {lrck_sreg[1:0], lrck};
-	sclk_sreg <= {sclk_sreg[1:0], sclk};
-	vol_latch_reg <= {vol_latch_reg[0], vol_latch};
-	play_r <= play;
-	reset_sreg <= {reset_sreg[0], reset};
+  cnt <= cnt + 1;
+  lrck_sreg <= {lrck_sreg[1:0], lrck};
+  sclk_sreg <= {sclk_sreg[1:0], sclk};
+  vol_latch_reg <= {vol_latch_reg[0], vol_latch};
+  play_r <= play;
+  reset_sreg <= {reset_sreg[0], reset};
 end
 
 always @(posedge clkin) begin
-	if (vol_latch_rising) begin
-	   vol_valid <= 1'b1;
-	end 
-	else if(vol_valid) begin
-		vol_target_reg <= volume;
-      vol_valid <= 1'b0;
-	end
+  if (vol_latch_rising) begin
+    vol_valid <= 1'b1;
+  end
+  else if(vol_valid) begin
+    vol_target_reg <= volume;
+    vol_valid <= 1'b0;
+  end
 end
 
 // ramp volume only every 4 samples
 always @(posedge clkin) begin
-	if (lrck_rising && &samples[1:0]) begin
-	   if(vol_reg > vol_target_reg)
-			vol_reg <= vol_reg - 1;
-		else if(vol_reg < vol_target_reg)
-			vol_reg <= vol_reg + 1;
-	end
+  if (lrck_rising && &samples[1:0]) begin
+    if(vol_reg > vol_target_reg)
+      vol_reg <= vol_reg - 1;
+    else if(vol_reg < vol_target_reg)
+      vol_reg <= vol_reg + 1;
+  end
 end
 
 always @(posedge clkin) begin
-   if (lrck_rising) begin	// right channel
-		smpshift <= (({16'h0, dac_data[31:16]^16'h8000} * vol_reg) >> 8) ^ 16'h8000;
-		samples <= samples + 1;
-	end else if (lrck_falling) begin		// left channel
-		smpshift <= (({16'h0, dac_data[15:0]^16'h8000} * vol_reg) >> 8) ^ 16'h8000;
-	end else begin
-		if (sclk_rising) begin
-			smpcnt <= smpcnt + 1;
-			sdout_reg <= smpshift[15];
-			smpshift <= {smpshift[14:0], 1'b0};
-		end
-	end
+  if (lrck_rising) begin // right channel
+    smpshift <= (({16'h0, dac_data[31:16]^16'h8000} * vol_reg) >> 8) ^ 16'h8000;
+    samples <= samples + 1;
+  end else if (lrck_falling) begin // left channel
+    smpshift <= (({16'h0, dac_data[15:0]^16'h8000} * vol_reg) >> 8) ^ 16'h8000;
+  end else begin
+    if (sclk_rising) begin
+      smpcnt <= smpcnt + 1;
+      sdout_reg <= smpshift[15];
+      smpshift <= {smpshift[14:0], 1'b0};
+    end
+  end
 end
 
 endmodule

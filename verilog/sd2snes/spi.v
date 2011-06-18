@@ -19,25 +19,23 @@
 //
 
 //////////////////////////////////////////////////////////////////////////////////
-module spi(input clk,
-           input SCK,
-           input MOSI,
-           inout MISO,
-           input SSEL,
-           output cmd_ready,
-           output param_ready,
-           output [7:0] cmd_data,
-           output [7:0] param_data,
-           output endmessage,
-           output startmessage,
-           input [7:0] input_data,
-           output [31:0] byte_cnt,
-           output [2:0] bit_cnt
+module spi(
+  input clk,
+  input SCK,
+  input MOSI,
+  inout MISO,
+  input SSEL,
+  output cmd_ready,
+  output param_ready,
+  output [7:0] cmd_data,
+  output [7:0] param_data,
+  output endmessage,
+  output startmessage,
+  input [7:0] input_data,
+  output [31:0] byte_cnt,
+  output [2:0] bit_cnt
+);
 
-// SD "DMA" extension           
-           /*input sd_dma_sck,
-           input sd_dma_ovr*/);
-           
 reg [7:0] cmd_data_r;
 reg [7:0] param_data_r;
 
@@ -71,40 +69,41 @@ assign bit_cnt = bitcnt;
 
 always @(posedge clk)
 begin
-   if(~SSEL_active) begin
-     bitcnt <= 3'b000;
-   end
-   else if(SCK_risingedge) begin
-      bitcnt <= bitcnt + 3'b001;
-      // shift received data into the register
-      byte_data_received <= {byte_data_received[6:0], MOSI_data};
-   end
+  if(~SSEL_active) begin
+    bitcnt <= 3'b000;
+  end
+  else if(SCK_risingedge) begin
+    bitcnt <= bitcnt + 3'b001;
+    // shift received data into the register
+    byte_data_received <= {byte_data_received[6:0], MOSI_data};
+  end
 end
 
-always @(posedge clk) byte_received <= SSEL_active && SCK_risingedge && (bitcnt==3'b111);
+always @(posedge clk)
+  byte_received <= SSEL_active && SCK_risingedge && (bitcnt==3'b111);
 
 always @(posedge clk) begin
-   if(~SSEL_active)
-      byte_cnt_r <= 16'h0000;    
-   else if(byte_received) begin
-      byte_cnt_r <= byte_cnt_r + 16'h0001;
-   end
+  if(~SSEL_active)
+    byte_cnt_r <= 16'h0000;
+  else if(byte_received) begin
+    byte_cnt_r <= byte_cnt_r + 16'h0001;
+  end
 end
 
 reg [7:0] byte_data_sent;
 
 always @(posedge clk) begin
-   if(SSEL_active) begin
-     if(SSEL_startmessage)
-       byte_data_sent <= 8'h5A;  // dummy byte
-     else
-     if(SCK_fallingedge) begin
-       if(bitcnt==3'b000)
-         byte_data_sent <= input_data; // after that, we send whatever we get
-       else
-         byte_data_sent <= {byte_data_sent[6:0], 1'b0};
-     end
-   end
+  if(SSEL_active) begin
+    if(SSEL_startmessage)
+      byte_data_sent <= 8'h5A;  // dummy byte
+    else
+      if(SCK_fallingedge) begin
+        if(bitcnt==3'b000)
+          byte_data_sent <= input_data; // after that, we send whatever we get
+        else
+          byte_data_sent <= {byte_data_sent[6:0], 1'b0};
+      end
+  end
 end
 
 assign MISO = SSEL_active ? byte_data_sent[7] : 1'bZ;  // send MSB first
@@ -124,18 +123,18 @@ always @(posedge clk) param_ready_r2 = byte_received && byte_cnt_r > 32'h0;
 
 // fill registers
 always @(posedge clk) begin
-   if (SSEL_startmessage)
-      cmd_data_r <= 8'h00;
-   else if(cmd_ready_r2)
-      cmd_data_r <= byte_data_received;
-   else if(param_ready_r2)
-      param_data_r <= byte_data_received;
+  if (SSEL_startmessage)
+    cmd_data_r <= 8'h00;
+  else if(cmd_ready_r2)
+    cmd_data_r <= byte_data_received;
+  else if(param_ready_r2)
+    param_data_r <= byte_data_received;
 end
 
 // delay ready signals by one clock (why did I do this again...)
 always @(posedge clk) begin
-   cmd_ready_r <= cmd_ready_r2;
-   param_ready_r <= param_ready_r2;
+  cmd_ready_r <= cmd_ready_r2;
+  param_ready_r <= param_ready_r2;
 end
 
 endmodule

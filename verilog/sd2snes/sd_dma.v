@@ -19,19 +19,19 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module sd_dma(
-    input [3:0] SD_DAT,
-    inout SD_CLK,
-    input CLK,
-    input SD_DMA_EN,
-	 input SD_DMA_TGT,
-    output SD_DMA_STATUS,
-    output SD_DMA_SRAM_WE,
-    output SD_DMA_NEXTADDR,
-    output [7:0] SD_DMA_SRAM_DATA,
-	 input SD_DMA_PARTIAL,
-	 input [10:0] SD_DMA_PARTIAL_START,
-	 input [10:0] SD_DMA_PARTIAL_END
-    );
+  input [3:0] SD_DAT,
+  inout SD_CLK,
+  input CLK,
+  input SD_DMA_EN,
+  input SD_DMA_TGT,
+  output SD_DMA_STATUS,
+  output SD_DMA_SRAM_WE,
+  output SD_DMA_NEXTADDR,
+  output [7:0] SD_DMA_SRAM_DATA,
+  input SD_DMA_PARTIAL,
+  input [10:0] SD_DMA_PARTIAL_START,
+  input [10:0] SD_DMA_PARTIAL_END
+);
 
 reg [10:0] SD_DMA_STARTr;
 reg [10:0] SD_DMA_ENDr;
@@ -78,9 +78,9 @@ assign SD_CLK = SD_DMA_STATUSr ? SD_CLKr : 1'bZ;
 always @(posedge CLK) begin
   if(SD_DMA_EN_rising) begin
     SD_DMA_STATUSr <= 1'b1;
-	 SD_DMA_STARTr <= (SD_DMA_PARTIALr ? SD_DMA_PARTIAL_START : 11'h0);
-	 SD_DMA_ENDr <= (SD_DMA_PARTIALr ? SD_DMA_PARTIAL_END : 11'd1024);
-  end 
+    SD_DMA_STARTr <= (SD_DMA_PARTIALr ? SD_DMA_PARTIAL_START : 11'h0);
+    SD_DMA_ENDr <= (SD_DMA_PARTIALr ? SD_DMA_PARTIAL_END : 11'd1024);
+  end
   else if (SD_DMA_DONE_rising) SD_DMA_STATUSr <= 1'b0;
 end
 
@@ -91,11 +91,11 @@ end
 
 always @(posedge CLK) begin
   if(SD_DMA_EN_rising || !SD_DMA_STATUSr) begin
-	 clkcnt <= 0;
+    clkcnt <= 0;
   end else begin
-	 if(SD_DMA_STATUSr) begin
-	   clkcnt <= clkcnt + 1;
-	 end
+    if(SD_DMA_STATUSr) begin
+      clkcnt <= clkcnt + 1;
+    end
   end
 end
 
@@ -110,19 +110,19 @@ always @(posedge CLK) begin
   if(SD_DMA_STATUSr) begin
     case(clkcnt[2:0])
       3'h0: begin
-	     SD_DMA_SRAM_WEr <= 1'b1;
-		  SD_DMA_SRAM_DATAr[7:4] <= SD_DAT;
-		  if(cyclecnt>SD_DMA_STARTr && cyclecnt <= SD_DMA_ENDr) SD_DMA_NEXTADDRr <= 1'b1;
-	   end
-	   3'h1:
+        SD_DMA_SRAM_WEr <= 1'b1;
+        SD_DMA_SRAM_DATAr[7:4] <= SD_DAT;
+        if(cyclecnt>SD_DMA_STARTr && cyclecnt <= SD_DMA_ENDr) SD_DMA_NEXTADDRr <= 1'b1;
+      end
+      3'h1:
         SD_DMA_NEXTADDRr <= 1'b0;
-//	 3'h2:
+//  3'h2:
       3'h3:
         if(cyclecnt>=SD_DMA_STARTr && cyclecnt < SD_DMA_ENDr) SD_DMA_SRAM_WEr <= 1'b0;
       3'h4:
         SD_DMA_SRAM_DATAr[3:0] <= SD_DAT;
-//	 3'h5:
-//	 3'h6:
+//  3'h5:
+//  3'h6:
 //  3'h7:
     endcase
   end
