@@ -128,9 +128,10 @@ wire [10:0] dspx_pgm_addr;
 wire dspx_pgm_we;
 
 wire [15:0] dspx_dat_data;
-wire [9:0] dspx_dat_addr;
+wire [10:0] dspx_dat_addr;
 wire dspx_dat_we;
 
+wire [7:0] featurebits;
 //wire SD_DMA_EN; //SPI_DMA_CTRL;
 
 sd_dma snes_sd_dma(
@@ -320,7 +321,8 @@ mcu_cmd snes_mcu_cmd(
   .dspx_dat_data_out(dspx_dat_data),
   .dspx_dat_addr_out(dspx_dat_addr),
   .dspx_dat_we_out(dspx_dat_we),
-  .dspx_reset_out(dspx_reset)
+  .dspx_reset_out(dspx_reset),
+  .featurebits_out(featurebits)
 );
 
 // dcm1: dfs 4x
@@ -370,6 +372,7 @@ wire ROM_SEL;
 address snes_addr(
   .CLK(CLK2),
   .MAPPER(MAPPER),
+  .featurebits(featurebits),
   .SNES_ADDR(SNES_ADDR), // requested address from SNES
   .SNES_CS(SNES_CS),     // "CART" pin from SNES (active low)
   .ROM_ADDR(ROM_ADDR),   // Address to request from SRAM (active low)
@@ -622,7 +625,7 @@ assign ROM_BLE = !ROM_WE ? !ROM_ADDR0 : 1'b0;
 
 //assign SNES_DATABUS_OE = (!IS_SAVERAM & SNES_CS) | (SNES_READ & SNES_WRITE);
 assign SNES_DATABUS_OE = dspx_enable ? 1'b0 :
-                         msu_enable ? (SNES_READ & SNES_WRITE) :
+                         msu_enable ? 1'b0 :
                          bsx_data_ovr ? (SNES_READ & SNES_WRITE) :
                          srtc_enable ? (SNES_READ & SNES_WRITE) :
                          ((IS_ROM & SNES_CS)

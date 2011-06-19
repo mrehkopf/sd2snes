@@ -32,7 +32,7 @@ module upd77c25(
 
   input DAT_WR,
   input [15:0] DAT_DI,
-  input [9:0] DAT_WR_ADDR,
+  input [10:0] DAT_WR_ADDR,
 
   // debug
   output [15:0] DR,
@@ -76,7 +76,7 @@ reg [7:0] insn_state; // execute state
 reg [3:0] regs_dph;
 reg [3:0] regs_dpl;
 
-reg [9:0] regs_rp;
+reg [10:0] regs_rp;
 
 wire [15:0] ram_dina;
 reg [15:0] ram_dina_r;
@@ -118,7 +118,7 @@ upd77c25_datrom datrom (
   .addra(DAT_WR_ADDR), // input [9 : 0] addra
   .dina(DAT_DI), // input [15 : 0] dina
   .clkb(CLK), // input clkb
-  .addrb(regs_rp), // input [9 : 0] addrb
+  .addrb(regs_rp), // input [10 : 0] addrb
   .doutb(dat_doutb) // output [15 : 0] doutb
 );
 
@@ -185,7 +185,7 @@ initial begin
   regs_sp = 4'b0000;
   pc = 11'b0;
   regs_sr = 16'b0;
-  regs_rp = 16'h03ff;
+  regs_rp = 16'h0000;
   regs_dph = 4'b0;
   regs_dpl = 4'b0;
   regs_k = 16'b0;
@@ -598,7 +598,7 @@ always @(posedge CLK) begin
     regs_sr[9] <= 0;
     regs_sr[8] <= 0;
     regs_sr[7] <= 0;
-    regs_rp <= 16'h03ff;
+    regs_rp <= 16'h0000;
     regs_dph <= 4'b0;
     regs_dpl <= 4'b0;
     regs_k <= 16'b0;

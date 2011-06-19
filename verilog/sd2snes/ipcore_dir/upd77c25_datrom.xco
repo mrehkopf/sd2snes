@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 13.1
-# Date: Sun Jun 12 01:42:55 2011
+# Date: Sat Jun 18 13:58:09 2011
 #
 ##############################################################
 #
@@ -37,7 +37,7 @@ SELECT Block_Memory_Generator xilinx.com:ip:blk_mem_gen:6.1
 # BEGIN Parameters
 CSET additional_inputs_for_power_estimation=false
 CSET algorithm=Minimum_Area
-CSET assume_synchronous_clk=false
+CSET assume_synchronous_clk=true
 CSET axi_id_width=4
 CSET axi_slave_type=Memory_Slave
 CSET axi_type=AXI4_Full
@@ -90,7 +90,7 @@ CSET use_regcea_pin=false
 CSET use_regceb_pin=false
 CSET use_rsta_pin=false
 CSET use_rstb_pin=false
-CSET write_depth_a=1024
+CSET write_depth_a=1536
 CSET write_width_a=16
 CSET write_width_b=16
 # END Parameters
@@ -98,4 +98,4 @@ CSET write_width_b=16
 MISC pkg_timestamp=2011-02-03T22:20:43.000Z
 # END Extra information
 GENERATE
-# CRC: 9692711f
+# CRC: 7b2b203b

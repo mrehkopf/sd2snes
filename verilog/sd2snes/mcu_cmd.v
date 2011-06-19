@@ -89,18 +89,21 @@ module mcu_cmd(
   output reg dspx_pgm_we_out,
 
   output reg [15:0] dspx_dat_data_out,
-  output reg [9:0] dspx_dat_addr_out,
+  output reg [10:0] dspx_dat_addr_out,
   output reg dspx_dat_we_out,
 
   output reg dspx_reset_out,
 
+  // feature enable
+  output reg [7:0] featurebits_out,
+  
   // SNES sync/clk
   input snes_sysclk
 );
 
 initial begin
   dspx_pgm_addr_out = 11'b00000000000;
-  dspx_dat_addr_out = 9'b000000000;
+  dspx_dat_addr_out = 10'b0000000000;
   dspx_reset_out = 1'b1;
 end
 
@@ -367,7 +370,7 @@ always @(posedge clk) begin
         case (spi_byte_cnt)
           32'h2: begin
             dspx_pgm_addr_out <= 11'b00000000000;
-            dspx_dat_addr_out <= 9'b000000000;
+            dspx_dat_addr_out <= 10'b0000000000;
           end
         endcase
       end
@@ -396,6 +399,8 @@ always @(posedge clk) begin
         dspx_reset_out <= 1'b1;
       8'hec: // release DSPx reset
         dspx_reset_out <= 1'b0;
+      8'hed:
+        featurebits_out <= param_data[7:0];
     endcase
   end
 
