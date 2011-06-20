@@ -46,7 +46,8 @@ module data(
   input msu_enable,
   input bsx_data_ovr,
   input srtc_enable,
-  input dspx_enable
+  input dspx_enable,
+  input dspx_dp_enable
 );
 
 reg [7:0] SNES_IN_MEM;
@@ -67,6 +68,7 @@ assign SNES_DATA = SNES_READ ? 8'bZ
                        : bsx_data_ovr ? BSX_DATA_OUT
                        : srtc_enable ? SRTC_DATA_OUT
                        : dspx_enable ? DSPX_DATA_OUT
+                       : dspx_dp_enable ? DSPX_DATA_OUT
                        : SNES_OUT_MEM)
                     );
 

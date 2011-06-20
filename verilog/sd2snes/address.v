@@ -41,6 +41,7 @@ module address(
   output use_bsx,
   input [14:0] bsx_regs,
   output dspx_enable,
+  output dspx_dp_enable,
   output dspx_a0
 );
 
@@ -73,8 +74,9 @@ assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
 
 assign IS_SAVERAM = SAVERAM_MASK[0]
                     &(featurebits[FEAT_ST0010]
-                      ?(SNES_ADDR[22:19] == 4'b1101
-                        && SNES_ADDR[15:12] == 4'b0000)
+                      ?((SNES_ADDR[22:19] == 4'b1101)
+                        & &(~SNES_ADDR[15:12])
+                        & SNES_ADDR[11])
                       :((MAPPER == 3'b000
                         || MAPPER == 3'b010
                         || MAPPER == 3'b110
@@ -220,6 +222,10 @@ wire dspx_enable_w =
   ?(SNES_ADDR[22] & SNES_ADDR[21] & ~SNES_ADDR[20] & &(~SNES_ADDR[19:16]) & ~SNES_ADDR[15])
   :1'b0;
 
+wire dspx_dp_enable_w = featurebits[FEAT_ST0010]
+                         &(SNES_ADDR[22:19] == 4'b1101
+                          && SNES_ADDR[15:11] == 5'b00000);
+
 assign dspx_a0 = featurebits[FEAT_DSPX]
                  ?((MAPPER == 3'b001) ? SNES_ADDR[14]
                    :(MAPPER == 3'b000) ? SNES_ADDR[12]
@@ -227,6 +233,11 @@ assign dspx_a0 = featurebits[FEAT_DSPX]
                  :featurebits[FEAT_ST0010]
                  ?SNES_ADDR[0]
                  :1'b1;
+
+reg [7:0] dspx_dp_enable_r;
+initial dspx_dp_enable_r = 8'b00000000;
+always @(posedge CLK) dspx_dp_enable_r <= {dspx_dp_enable_r[6:0], dspx_dp_enable_w};
+assign dspx_dp_enable = &dspx_dp_enable_r[5:2];
 
 reg [7:0] dspx_enable_r;
 initial dspx_enable_r = 8'b00000000;

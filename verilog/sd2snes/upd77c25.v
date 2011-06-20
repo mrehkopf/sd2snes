@@ -34,6 +34,9 @@ module upd77c25(
   input [15:0] DAT_DI,
   input [10:0] DAT_WR_ADDR,
 
+  input DP_nCS,
+  input [10:0] DP_ADDR,
+
   // debug
   output [15:0] DR,
   output [15:0] SR,
@@ -73,6 +76,7 @@ reg [10:0] pc;        // program counter
 
 reg [7:0] insn_state; // execute state
 
+reg [1:0] regs_dpb;
 reg [3:0] regs_dph;
 reg [3:0] regs_dpl;
 
@@ -122,17 +126,48 @@ upd77c25_datrom datrom (
   .doutb(dat_doutb) // output [15 : 0] doutb
 );
 
-wire [15:0] ram_douta;
-wire [7:0] ram_addra;
-upd77c25_datram datram (
-  .clka(CLK),
-  .wea(ram_wea), // Bus [0 : 0]
-  .addra(ram_addra), // Bus [7 : 0]
-  .dina(ram_dina), // Bus [15 : 0]
-  .douta(ram_douta)); // Bus [15 : 0]
+reg [7:0] reg_nCS_sreg;
+initial reg_nCS_sreg = 8'b11111111;
+always @(posedge CLK) reg_nCS_sreg <= {reg_nCS_sreg[6:0], nCS};
 
+reg [5:0] reg_oe_sreg;
+initial reg_oe_sreg = 6'b111111;
+always @(posedge CLK) reg_oe_sreg <= {reg_oe_sreg[4:0], nRD};
+wire reg_oe_rising = !reg_nCS_sreg[4] && (reg_oe_sreg[5:0] == 6'b000001);
+wire reg_oe_falling = (reg_oe_sreg[5:0] == 6'b100000);
+
+reg [7:0] reg_DP_nCS_sreg;
+initial reg_DP_nCS_sreg = 8'b11111111;
+always @(posedge CLK) reg_DP_nCS_sreg <= {reg_DP_nCS_sreg[6:0], DP_nCS};
+
+reg [5:0] reg_we_sreg;
+initial reg_we_sreg = 6'b111111;
+always @(posedge CLK) reg_we_sreg <= {reg_we_sreg[4:0], nWR};
+wire reg_we_rising = !reg_nCS_sreg[4] && (reg_we_sreg[5:0] == 6'b000001);
+wire reg_dp_we_rising = !reg_DP_nCS_sreg[2] && (reg_we_sreg[5:0] == 6'b000011);
+
+wire [15:0] ram_douta;
+wire [9:0] ram_addra;
+reg [7:0] DP_DOr;
+wire [7:0] DP_DO;
+wire [7:0] UPD_DO;
+
+
+upd77c25_datram datram (
+  .clka(CLK), // input clka
+  .wea(ram_wea), // input [0 : 0] wea
+  .addra(ram_addra), // input [9 : 0] addra
+  .dina(ram_dina), // input [15 : 0] dina
+  .douta(ram_douta), // output [15 : 0] douta
+  .clkb(CLK), // input clkb
+  .web(reg_dp_we_rising), // input [0 : 0] web
+  .addrb(DP_ADDR), // input [10 : 0] addrb
+  .dinb(DI), // input [7 : 0] dinb
+  .doutb(DP_DO) // output [7 : 0] doutb
+);
 assign ram_wea = ((op != I_JP) && op_dst == 4'b1111 && insn_state == STATE_NEXT);
-assign ram_addra = {regs_dph | ((insn_state == STATE_ALU2 && op_dst == 4'b1100)
+assign ram_addra = {regs_dpb,
+                    regs_dph | ((insn_state == STATE_ALU2 && op_dst == 4'b1100)
                                 ? 4'b0100
                                 : 4'b0000),
                     regs_dpl};
@@ -186,6 +221,7 @@ initial begin
   pc = 11'b0;
   regs_sr = 16'b0;
   regs_rp = 16'h0000;
+  regs_dpb = 2'b0;
   regs_dph = 4'b0;
   regs_dpl = 4'b0;
   regs_k = 16'b0;
@@ -202,24 +238,6 @@ initial begin
   regs_trb = 16'b0;
   regs_dr = 16'b0;
 end
-
-always @(posedge CLK) begin
-
-end
-
-reg [7:0] reg_nCS_sreg;
-initial reg_nCS_sreg = 8'b11111111;
-always @(posedge CLK) reg_nCS_sreg <= {reg_nCS_sreg[6:0], nCS};
-
-reg [5:0] reg_oe_sreg;
-initial reg_oe_sreg = 6'b111111;
-always @(posedge CLK) reg_oe_sreg <= {reg_oe_sreg[4:0], nRD};
-wire reg_oe_rising = !reg_nCS_sreg[4] && (reg_oe_sreg[5:0] == 6'b000001);
-
-reg [5:0] reg_we_sreg;
-initial reg_we_sreg = 6'b111111;
-always @(posedge CLK) reg_we_sreg <= {reg_we_sreg[4:0], nWR};
-wire reg_we_rising = !reg_nCS_sreg[4] && (reg_we_sreg[5:0] == 6'b000001);
 
 reg [7:0] A0r;
 initial A0r = 8'b11111111;
@@ -303,7 +321,12 @@ always @(posedge CLK) begin
   end
 end
 
-assign DO = (A0 ? regs_sr[15:8] : (regs_sr[SR_DRC] ? regs_dr[7:0] : (regs_sr[SR_DRS] ? regs_dr[15:8] : regs_dr[7:0])));
+always @(posedge CLK) begin
+  if(reg_oe_falling) DP_DOr <= DP_DO;
+end
+
+assign UPD_DO = (A0 ? regs_sr[15:8] : (regs_sr[SR_DRC] ? regs_dr[7:0] : (regs_sr[SR_DRS] ? regs_dr[15:8] : regs_dr[7:0])));
+assign DO = !DP_nCS ? DP_DOr : UPD_DO;
 
 always @(posedge CLK) begin
   if(RST) begin
@@ -338,7 +361,7 @@ always @(posedge CLK) begin
               4'b0001: idb <= regs_ab[0];
               4'b0010: idb <= regs_ab[1];
               4'b0011: idb <= regs_tr;
-              4'b0100: idb <= {regs_dph,regs_dpl};
+              4'b0100: idb <= {regs_dpb,regs_dph,regs_dpl};
               4'b0101: idb <= regs_rp;
               4'b0110: idb <= dat_doutb; // Address: [regs_rp]
               4'b0111: idb <= flags_s1[0] ? 16'h7fff : 16'h8000;
@@ -410,7 +433,7 @@ always @(posedge CLK) begin
                 alu_store <= 2'b01;
               end
               4'b0011: regs_tr <= idb;
-              4'b0100: {regs_dph,regs_dpl} <= idb[7:0];
+              4'b0100: {regs_dpb,regs_dph,regs_dpl} <= idb[9:0];
               4'b0101: regs_rp <= idb;
 //              4'b0110: regs_dr <= idb;
               4'b0111: begin
@@ -481,7 +504,7 @@ always @(posedge CLK) begin
               4'b0001: regs_ab[0] <= ld_id;
               4'b0010: regs_ab[1] <= ld_id;
               4'b0011: regs_tr <= ld_id;
-              4'b0100: {regs_dph,regs_dpl} <= ld_id[7:0];
+              4'b0100: {regs_dpb,regs_dph,regs_dpl} <= ld_id[9:0];
               4'b0101: regs_rp <= ld_id;
 //              4'b0110: regs_dr <= ld_id;
               4'b0111: begin
@@ -599,6 +622,7 @@ always @(posedge CLK) begin
     regs_sr[8] <= 0;
     regs_sr[7] <= 0;
     regs_rp <= 16'h0000;
+    regs_dpb <= 2'b0;
     regs_dph <= 4'b0;
     regs_dpl <= 4'b0;
     regs_k <= 16'b0;

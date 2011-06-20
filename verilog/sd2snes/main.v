@@ -73,8 +73,8 @@ module main(
   ,
   output p113_out
 );
-
-assign p113_out = SNES_READ;
+wire dspx_dp_enable;
+assign p113_out = dspx_dp_enable;
 
 wire [7:0] spi_cmd_data;
 wire [7:0] spi_param_data;
@@ -260,7 +260,9 @@ upd77c25 snes_dspx (
   .PGM_WR_ADDR(dspx_pgm_addr),
   .DAT_WR(dspx_dat_we),
   .DAT_DI(dspx_dat_data),
-  .DAT_WR_ADDR(dspx_dat_addr)
+  .DAT_WR_ADDR(dspx_dat_addr),
+  .DP_nCS(~dspx_dp_enable),
+  .DP_ADDR(SNES_ADDR[10:0])
 );
 
 mcu_cmd snes_mcu_cmd(
@@ -396,6 +398,7 @@ address snes_addr(
   .srtc_enable(srtc_enable),
   //uPD77C25
   .dspx_enable(dspx_enable),
+  .dspx_dp_enable(dspx_dp_enable),
   .dspx_a0(DSPX_A0)
 );
 
@@ -432,7 +435,8 @@ data snes_data(
   .msu_enable(msu_enable),
   .bsx_data_ovr(bsx_data_ovr),
   .srtc_enable(srtc_enable),
-  .dspx_enable(dspx_enable)
+  .dspx_enable(dspx_enable),
+  .dspx_dp_enable(dspx_dp_enable)
 );
 
 parameter MODE_SNES = 1'b0;
@@ -624,7 +628,7 @@ assign ROM_BLE = !ROM_WE ? !ROM_ADDR0 : 1'b0;
 //assign SRAM_WE = !MCU_ENA ? MCU_WRITE : 1'b1;
 
 //assign SNES_DATABUS_OE = (!IS_SAVERAM & SNES_CS) | (SNES_READ & SNES_WRITE);
-assign SNES_DATABUS_OE = dspx_enable ? 1'b0 :
+assign SNES_DATABUS_OE = (dspx_enable | dspx_dp_enable) ? 1'b0 :
                          msu_enable ? 1'b0 :
                          bsx_data_ovr ? (SNES_READ & SNES_WRITE) :
                          srtc_enable ? (SNES_READ & SNES_WRITE) :
