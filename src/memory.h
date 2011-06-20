@@ -52,7 +52,7 @@ uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr);
 uint32_t load_bootrle(uint32_t base_addr);
-void load_dspx(const uint8_t* filename);
+void load_dspx(const uint8_t* filename, uint8_t st0010);
 void sram_hexdump(uint32_t addr, uint32_t len);
 uint8_t sram_readbyte(uint32_t addr);
 uint16_t sram_readshort(uint32_t addr);

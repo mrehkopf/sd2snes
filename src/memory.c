@@ -42,6 +42,7 @@
 #include "rle.h"
 #include "diskio.h"
 #include "snesboot.h"
+#include "msu1.h"
 
 #include <string.h>
 char* hex = "0123456789ABCDEF";
@@ -181,7 +182,6 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   filesize = file_handle.fsize;
   smc_id(&romprops);
   set_mcu_addr(base_addr);
-  printf("no nervous breakdown beyond this point! or else!\n");
   f_lseek(&file_handle, romprops.offset);
   for(;;) {
     ff_sd_offload=1;
@@ -218,9 +218,13 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   if(romprops.has_dspx) {
     printf("DSPx game. Loading firmware image %s...\n", romprops.necdsp_fw);
-    load_dspx(romprops.necdsp_fw);
-    if(file_res && romprops.necdsp_fw == DSPFW_1) {
-      load_dspx(DSPFW_1B);
+    if(romprops.has_st0010) {
+      load_dspx(romprops.necdsp_fw, 1);
+    } else {
+      load_dspx(romprops.necdsp_fw, 0);
+      if(file_res && romprops.necdsp_fw == DSPFW_1) {
+        load_dspx(DSPFW_1B, 0);
+      }
     }
     if(file_res) {
       snes_menu_errmsg(MENU_ERR_NODSP, (void*)romprops.necdsp_fw);
@@ -252,6 +256,17 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       printf("No SRAM\n");
     }
   }
+
+  printf("check MSU...");
+  if(msu1_check(filename)) {
+    romprops.fpga_features |= FEAT_MSU1;
+    romprops.has_msu1 = 1;
+  }
+  printf("done\n");
+
+  romprops.fpga_features |= FEAT_SRTC;
+
+  fpga_set_features(romprops.fpga_features);
 
   if(flags & LOADROM_WITH_RESET) {
     set_mcu_ovr(0);
@@ -465,7 +480,7 @@ uint64_t sram_gettime(uint32_t base_addr) {
   return result & 0x00ffffffffffffffLL;
 }
 
-void load_dspx(const uint8_t *filename) {
+void load_dspx(const uint8_t *filename, uint8_t st0010) {
   UINT bytes_read;
   DWORD filesize;
   uint16_t word_cnt;
@@ -473,9 +488,16 @@ void load_dspx(const uint8_t *filename) {
   uint16_t sector_remaining = 0;
   uint16_t sector_cnt = 0;
   uint16_t pgmsize = 2048;
-  uint16_t datsize = 1024;
+  uint16_t datsize;
   uint32_t pgmdata = 0;
   uint16_t datdata = 0;
+
+  if(st0010) {
+    datsize = 1536;
+  } else {
+    datsize = 1024;
+  }
+
   file_open((uint8_t*)filename, FA_READ);
   filesize = file_handle.fsize;
   if(file_res) {
@@ -503,6 +525,10 @@ void load_dspx(const uint8_t *filename) {
   }
 
   wordsize_cnt = 0;
+  if(st0010) {
+    file_seek(0xc000);
+    sector_remaining = 0;
+  }
 
   for(word_cnt = 0; word_cnt < datsize;) {
     if(!sector_remaining) {

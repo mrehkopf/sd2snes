@@ -79,6 +79,7 @@
 	EA	hhllxxxx	write+incr. DSP data ROM (xxxx=dummy writes)
 	EB	-		put DSP into reset
 	EC	-		release DSP from reset
+	ED	-		set feature enable bits (see below)
 	F0	-		receive test token (to see if FPGA is alive)
 	F1	-		receive status (16bit, MSB first), see below
 
@@ -110,6 +111,17 @@
 	  1	MSU1 Audio control status: 0=pause, 1=play
 	  0	MSU1 Audio control request
 
+	FPGA feature enable bits:
+	bit	function
+   ==========================================================================
+	 7	-
+	 6	-
+	 5	-
+	 4	-
+	 3	enable MSU1 registers
+	 2	enable SRTC registers
+	 1	enable ST0010 mapping
+	 0	enable DSPx mapping
 
 */
 
@@ -386,3 +398,12 @@ void fpga_dspx_reset(uint8_t reset) {
   FPGA_TX_BYTE(0x00);
   FPGA_DESELECT();
 }
+
+void fpga_set_features(uint8_t feat) {
+  printf("set features: %02x\n", feat);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xed);
+  FPGA_TX_BYTE(feat);
+  FPGA_DESELECT();
+}
+

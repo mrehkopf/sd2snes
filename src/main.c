@@ -78,7 +78,7 @@ led_pwm();
 printf("PCONP=%lx\n", LPC_SC->PCONP);
 
   file_init();
-  cic_init(0);
+  cic_init(1);
 /* setup timer (fpga clk) */
   LPC_TIM3->CTCR=0;
   LPC_TIM3->EMR=EMC0TOGGLE;
@@ -237,7 +237,6 @@ sram_hexdump(SRAM_DIR_ADDR, 0x300);
     while(!cmd) {
       cmd=menu_main_loop();
       printf("cmd: %d\n", cmd);
-      sleep_ms(500);
       uart_putc('-');
       switch(cmd) {
 	case SNES_CMD_LOADROM:
@@ -262,8 +261,7 @@ sram_hexdump(SRAM_DIR_ADDR, 0x300);
     }
     printf("cmd was %x, going to snes main loop\n", cmd);
 
-    /* always try MSU1 for now */
-    if(msu1_entrycheck_and_loop()) {
+    if(romprops.has_msu1 && msu1_loop()) {
       prepare_reset();
       continue;
     }

@@ -9,6 +9,7 @@
 
 #define MSU_DAC_BUFSIZE	(2048)
 
-int msu1_entrycheck_and_loop(void);
+int msu1_check(uint8_t*);
+int msu1_loop(void);
 
 #endif

@@ -10,6 +10,10 @@
 #include "msu1.h"
 #include "snes.h"
 #include "timer.h"
+#include "smc.h"
+
+FIL msufile;
+extern snes_romprops_t romprops;
 
 int msu1_check_reset(void) {
   static tick_t rising_ticks;
@@ -27,17 +31,21 @@ int msu1_check_reset(void) {
   return 0;
 }
 
-int msu1_entrycheck_and_loop() {
-/* MSU1 STUFF, GET ME OUTTA HERE */
-  FIL durr;
-// open MSU file
-  strcpy((char*)file_buf, (char*)file_lfn);
+int msu1_check(uint8_t* filename) {
+/* open MSU file */
+  strcpy((char*)file_buf, (char*)filename);
   strcpy(strrchr((char*)file_buf, (int)'.'), ".msu");
   printf("MSU datafile: %s\n", file_buf);
-  if(f_open(&durr, (const TCHAR*)file_buf, FA_READ) != FR_OK) {
+  if(f_open(&msufile, (const TCHAR*)file_buf, FA_READ) != FR_OK) {
     printf("MSU datafile not found\n");
     return 0;
   }
+  romprops.fpga_features |= FEAT_MSU1;
+  return 1;
+}
+
+int msu1_loop() {
+/* it is assumed that the MSU file is already opened by calling msu1_check(). */
   UINT bytes_read = 1024;
   UINT bytes_read2 = 1;
   FRESULT res;
@@ -61,10 +69,10 @@ int msu1_entrycheck_and_loop() {
   msu_reset(0x0);
   ff_sd_offload=1;
   sd_offload_tgt=2;
-  f_lseek(&durr, 0L);
+  f_lseek(&msufile, 0L);
   ff_sd_offload=1;
   sd_offload_tgt=2;
-  f_read(&durr, file_buf, 16384, &bytes_read2);
+  f_read(&msufile, file_buf, 16384, &bytes_read2);
 
   set_dac_addr(dac_addr);
   dac_pause();
@@ -90,7 +98,7 @@ int msu1_entrycheck_and_loop() {
       set_msu_addr(msu_addr);
       sd_offload_tgt=2;
       ff_sd_offload=1;
-      res = f_read(&durr, file_buf, 8192, &bytes_read2);
+      res = f_read(&msufile, file_buf, 8192, &bytes_read2);
       DBG_MSU1 printf("data buffer refilled. res=%d page1=%08lx page2=%08lx\n", res, msu_page1_start, msu_page2_start);
     }
 
@@ -153,12 +161,12 @@ int msu1_entrycheck_and_loop() {
 	set_msu_addr(0x0);
 	sd_offload_tgt=2;
 	ff_sd_offload=1;
-        res = f_lseek(&durr, msu_offset);
+        res = f_lseek(&msufile, msu_offset);
 	DBG_MSU1 printf("seek to %08lx, res = %d\n", msu_offset, res);
 	sd_offload_tgt=2;
 	ff_sd_offload=1;
 
-        res = f_read(&durr, file_buf, 16384, &bytes_read2);
+        res = f_read(&msufile, file_buf, 16384, &bytes_read2);
 	DBG_MSU1 printf("read res = %d\n", res);
 	DBG_MSU1 printf("read %d bytes\n", bytes_read2);
 	msu_reset(0x0);
@@ -172,7 +180,7 @@ int msu1_entrycheck_and_loop() {
 	    set_msu_addr(0x2000);
 	    sd_offload_tgt=2;
 	    ff_sd_offload=1;
-	    f_read(&durr, file_buf, 8192, &bytes_read2);
+	    f_read(&msufile, file_buf, 8192, &bytes_read2);
 	    DBG_MSU1 printf("next page dirty (was: %08lx), loaded page2 (start now: ", msu_page2_start);
 	    msu_page2_start = msu_page1_start + msu_page_size;
 	    DBG_MSU1 printf("%08lx)\n", msu_page2_start);
@@ -184,7 +192,7 @@ int msu1_entrycheck_and_loop() {
 	    set_msu_addr(0x0);
 	    sd_offload_tgt=2;
 	    ff_sd_offload=1;
-	    f_read(&durr, file_buf, 8192, &bytes_read2);
+	    f_read(&msufile, file_buf, 8192, &bytes_read2);
 	    DBG_MSU1 printf("next page dirty (was: %08lx), loaded page1 (start now: ", msu_page1_start);
 	    msu_page1_start = msu_page2_start + msu_page_size;
 	    DBG_MSU1 printf("%08lx)\n", msu_page1_start);
@@ -240,7 +248,7 @@ int msu1_entrycheck_and_loop() {
       bytes_read = MSU_DAC_BUFSIZE;
     }
     if(msu1_check_reset()) {
-      f_close(&durr);
+      f_close(&msufile);
       f_close(&file_handle);
       spi_set_speed(SSP_CLK_DIVISOR_FPGA_SLOW);
       return 1;

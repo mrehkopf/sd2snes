@@ -66,6 +66,10 @@ void file_close() {
   file_res = f_close(&file_handle);
 }
 
+void file_seek(uint32_t offset) {
+  file_res = f_lseek(&file_handle, (DWORD)offset);
+}
+
 UINT file_read() {
   UINT bytes_read;
   file_res = f_read(&file_handle, file_buf, sizeof(file_buf), &bytes_read);

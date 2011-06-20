@@ -48,6 +48,12 @@
 #define FPGA_SPI_FAST()    spi_set_speed(SPI_SPEED_FPGA_FAST)
 #define FPGA_SPI_SLOW()    spi_set_speed(SPI_SPEED_FPGA_SLOW)
 
+#define FEAT_MSU1          (1 << 3)
+#define FEAT_SRTC          (1 << 2)
+#define FEAT_ST0010        (1 << 1)
+#define FEAT_DSPX          (1 << 0)
+
+
 void fpga_spi_init(void);
 uint8_t fpga_test(void);
 uint16_t fpga_status(void);
@@ -79,4 +85,5 @@ void fpga_reset_dspx_addr(void);
 void fpga_write_dspx_pgm(uint32_t data);
 void fpga_write_dspx_dat(uint16_t data);
 void fpga_dspx_reset(uint8_t reset);
+void fpga_set_features(uint8_t feat);
 #endif

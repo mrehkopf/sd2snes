@@ -58,8 +58,8 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0sreset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0saveraw\0put\0d4\0vmode\0mapper\0settime\0time\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME };
+  "cd\0reset\0sreset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0saveraw\0put\0d4\0vmode\0mapper\0settime\0time\0setfeature\0";
+enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE };
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
@@ -386,6 +386,11 @@ void cmd_time(void) {
     time.tm_mday, time.tm_hour, time.tm_min, time.tm_sec);
 }
 
+void cmd_setfeature(void) {
+  uint8_t feat = parse_unsigned(0, 255);
+  fpga_set_features(feat);
+}
+
 /* ------------------------------------------------------------------------- */
 /*   CLI interface functions                                                 */
 /* ------------------------------------------------------------------------- */
@@ -507,7 +512,10 @@ void cli_loop(void) {
     case CMD_TEST:
       testbattery();
       break;
+
+    case CMD_SETFEATURE:
+      cmd_setfeature();
+      break;
     }
-    
   }
 }

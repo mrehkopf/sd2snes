@@ -29,6 +29,7 @@
 #include "uart.h"
 #include "smc.h"
 #include "string.h"
+#include "fpga_spi.h"
 
 snes_romprops_t romprops;
 
@@ -81,6 +82,8 @@ void smc_id(snes_romprops_t* props) {
   snes_header_t* header = &(props->header);
 
   props->has_dspx = 0;
+  props->has_st0010 = 0;
+  props->fpga_features = 0;
   for(uint8_t num = 0; num < 6; num++) {
     if(!file_readblock(header, hdr_addr[num], sizeof(snes_header_t))
        || file_res) {
@@ -138,20 +141,20 @@ void smc_id(snes_romprops_t* props) {
   switch(header->map & 0xef) {
 
     case 0x21: /* HiROM */
+      props->mapper_id = 0;
       if(header->map == 0x31 && (header->carttype == 0x03 || header->carttype == 0x05)) {
         props->has_dspx = 1;
-        props->mapper_id = 4; /* DSPx HiROM */
         props->necdsp_fw = DSPFW_1B;
-      } else {
-        props->mapper_id = 0; /* regular HiROM */
+        props->fpga_features |= FEAT_DSPX;
       }
       break;
 
     case 0x20: /* LoROM */
+      props->mapper_id = 1;
       if ((header->map == 0x20 && header->carttype == 0x03) ||
           (header->map == 0x30 && header->carttype == 0x05 && header->licensee != 0xb2)) {
-        props->mapper_id = 5;
         props->has_dspx = 1;
+        props->fpga_features |= FEAT_DSPX;
         // Pilotwings uses DSP1 instead of DSP1B
         if(!memcmp(header->name, "PILOTWINGS", 10)) {
           props->necdsp_fw = DSPFW_1;
@@ -160,18 +163,22 @@ void smc_id(snes_romprops_t* props) {
         }
       } else if (header->map == 0x20 && header->carttype == 0x05) {
         props->has_dspx = 1;
-        props->mapper_id = 5; /* DSPx LoROM */
         props->necdsp_fw = DSPFW_2;
+        props->fpga_features |= FEAT_DSPX;
       } else if (header->map == 0x30 && header->carttype == 0x05 && header->licensee == 0xb2) {
         props->has_dspx = 1;
-        props->mapper_id = 5; /* DSPx LoROM */
         props->necdsp_fw = DSPFW_3;
+        props->fpga_features |= FEAT_DSPX;
       } else if (header->map == 0x30 && header->carttype == 0x03) {
         props->has_dspx = 1;
-        props->mapper_id = 5; /* DSPx LoROM */
         props->necdsp_fw = DSPFW_4;
-      } else {
-        props->mapper_id = 1; /* regular LoROM */
+        props->fpga_features |= FEAT_DSPX;
+      } else if (header->map == 0x30 && header->carttype == 0xf6 && header->romsize >= 0xa) {
+        props->has_dspx = 1;
+        props->has_st0010 = 1;
+        props->necdsp_fw = DSPFW_ST0010;
+        props->fpga_features |= FEAT_ST0010;
+        header->ramsize = 2;
       }
       break;
 
