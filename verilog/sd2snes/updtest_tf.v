@@ -61,7 +61,8 @@ module updtest;
 		.A0(A0), 
 		.nCS(nCS), 
 		.nRD(nRD), 
-		.nWR(nWR), 
+		.nWR(nWR),
+    .DP_nCS(1'b1),
 		.RST(RST), 
 		.CLK(CLK), 
 		.PGM_WR(PGM_WR), 
@@ -102,7 +103,7 @@ module updtest;
 		nRD = 0;
 		
 		#100 nRD = 1;
-		for (i=0; i < 100; i = i + 1) begin
+		for (i=0; i < 1; i = i + 1) begin
 		  #200 nRD = 0;
 		  #200 nRD = 1;
 		end

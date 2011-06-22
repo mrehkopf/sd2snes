@@ -144,7 +144,8 @@ reg [5:0] reg_we_sreg;
 initial reg_we_sreg = 6'b111111;
 always @(posedge CLK) reg_we_sreg <= {reg_we_sreg[4:0], nWR};
 wire reg_we_rising = !reg_nCS_sreg[4] && (reg_we_sreg[5:0] == 6'b000001);
-wire reg_dp_we_rising = !reg_DP_nCS_sreg[2] && (reg_we_sreg[5:0] == 6'b000011);
+wire reg_dp_we_rising = !reg_DP_nCS_sreg[5] && (reg_we_sreg[1:0] == 2'b01);
+wire reg_we_falling = (reg_we_sreg[1:0] == 2'b10);
 
 wire [15:0] ram_douta;
 wire [9:0] ram_addra;
@@ -152,6 +153,18 @@ reg [7:0] DP_DOr;
 wire [7:0] DP_DO;
 wire [7:0] UPD_DO;
 
+reg ram_web;
+reg [10:0] ram_addrb;
+
+reg [65:0] DP_ADDRr;
+always @(posedge CLK) begin
+  DP_ADDRr <= {DP_ADDRr[54:0], DP_ADDR};
+end
+
+always @(posedge CLK) begin
+  ram_addrb <= DP_ADDR; //r[10:0];
+  ram_web <= ~(nWR | reg_DP_nCS_sreg[0] | reg_DP_nCS_sreg[4]);
+end
 
 upd77c25_datram datram (
   .clka(CLK), // input clka
@@ -160,14 +173,14 @@ upd77c25_datram datram (
   .dina(ram_dina), // input [15 : 0] dina
   .douta(ram_douta), // output [15 : 0] douta
   .clkb(CLK), // input clkb
-  .web(reg_dp_we_rising), // input [0 : 0] web
-  .addrb(DP_ADDR), // input [10 : 0] addrb
+  .web(ram_web), // input [0 : 0] web
+  .addrb(ram_addrb), // input [10 : 0] addrb
   .dinb(DI), // input [7 : 0] dinb
   .doutb(DP_DO) // output [7 : 0] doutb
 );
-assign ram_wea = ((op != I_JP) && op_dst == 4'b1111 && insn_state == STATE_NEXT);
+assign ram_wea = ((op != I_JP) && op_dst == 4'b1111 && insn_state == STATE_IDLE1);
 assign ram_addra = {regs_dpb,
-                    regs_dph | ((insn_state == STATE_ALU2 && op_dst == 4'b1100)
+                    regs_dph | ((insn_state == STATE_ALU1 && op_dst == 4'b1100)
                                 ? 4'b0100
                                 : 4'b0000),
                     regs_dpl};
@@ -333,6 +346,47 @@ always @(posedge CLK) begin
     case(insn_state)
       STATE_FETCH: begin
         insn_state <= STATE_LOAD;
+        if(op == I_OP || op == I_RT) begin
+          if(|op_alu) begin
+            flags_z[op_asl] <= (alu_r == 0);
+            flags_s0[op_asl] <= alu_r[15];
+          end
+          case(op_alu)
+            4'b0001, 4'b0010, 4'b0011, 4'b1010, 4'b1101, 4'b1110, 4'b1111: begin
+              flags_c[op_asl] <= 0;
+              flags_ov0[op_asl] <= 0;
+              flags_ov1[op_asl] <= 0;
+            end
+            4'b0100, 4'b0101, 4'b0110, 4'b0111, 4'b1000, 4'b1001: begin
+              if(op_alu[0]) begin
+                flags_c[op_asl] <= (alu_r < alu_q);
+                flags_ov0[op_asl] <= (alu_q[15] ^ alu_r[15]) & ~(alu_q[15] ^ alu_p[15]);
+                if((alu_q[15] ^ alu_r[15]) & ~(alu_q[15] ^ alu_p[15])) begin
+                  flags_s1[op_asl] <= flags_ov1[op_asl] ^ ~alu_r[15];
+                  flags_ov1[op_asl] <= ~flags_ov1[op_asl];
+                end
+              end else begin
+                flags_c[op_asl] <= (alu_r > alu_q);
+                flags_ov0[op_asl] <= (alu_q[15] ^ alu_r[15]) & (alu_q[15] ^ alu_p[15]);
+                if((alu_q[15] ^ alu_r[15]) & (alu_q[15] ^ alu_p[15])) begin
+                  flags_s1[op_asl] <= flags_ov1[op_asl] ^ ~alu_r[15];
+                  flags_ov1[op_asl] <= ~flags_ov1[op_asl];
+                end
+              end
+            end
+            4'b1011: begin
+              flags_c[op_asl] <= alu_q[0];
+              flags_ov0[op_asl] <= 0;
+              flags_ov1[op_asl] <= 0;
+            end
+            4'b1100: begin
+              flags_c[op_asl] <= alu_q[15];
+              flags_ov0[op_asl] <= 0;
+              flags_ov1[op_asl] <= 0;
+            end
+          endcase
+        end
+
         opcode <= opcode_w;
         op <= opcode_w[23:22];
         op_pselect <= opcode_w[21:20];
@@ -376,7 +430,7 @@ always @(posedge CLK) begin
         endcase
       end
       STATE_ALU1: begin
-        insn_state <= STATE_ALU2;
+        insn_state <= STATE_STORE;
         case(op)
           I_OP, I_RT: begin
             alu_q <= regs_ab[op_asl];
@@ -394,143 +448,6 @@ always @(posedge CLK) begin
                   alu_p <= regs_n;
               endcase
             end
-          end
-        endcase
-      end
-      STATE_ALU2: begin
-        insn_state <= STATE_STORE;
-        if(op[1] == 1'b0) begin
-          case(op_alu)
-            4'b0001: alu_r <= alu_q | alu_p;
-            4'b0010: alu_r <= alu_q & alu_p;
-            4'b0011: alu_r <= alu_q ^ alu_p;
-            4'b0100: alu_r <= alu_q - alu_p;
-            4'b0101: alu_r <= alu_q + alu_p;
-            4'b0110: alu_r <= alu_q - alu_p - flags_c[~op_asl];
-            4'b0111: alu_r <= alu_q + alu_p + flags_c[~op_asl];
-            4'b1000: alu_r <= alu_q - alu_p;
-            4'b1001: alu_r <= alu_q + alu_p;
-            4'b1010: alu_r <= ~alu_q;
-            4'b1011: alu_r <= {alu_q[15], alu_q[15:1]};
-            4'b1100: alu_r <= {alu_q[14:0], flags_c[~op_asl]};
-            4'b1101: alu_r <= {alu_q[13:0], 2'b11};
-            4'b1110: alu_r <= {alu_q[11:0], 4'b1111};
-            4'b1111: alu_r <= {alu_q[7:0], alu_q[15:8]};
-          endcase
-        end
-      end
-      STATE_STORE: begin
-        insn_state <= STATE_NEXT;
-        case(op)
-          I_OP, I_RT: begin
-            case(op_dst)
-              4'b0001: begin
-                regs_ab[0] <= idb;
-                alu_store <= 2'b10;
-              end
-              4'b0010: begin
-                regs_ab[1] <= idb;
-                alu_store <= 2'b01;
-              end
-              4'b0011: regs_tr <= idb;
-              4'b0100: {regs_dpb,regs_dph,regs_dpl} <= idb[9:0];
-              4'b0101: regs_rp <= idb;
-//              4'b0110: regs_dr <= idb;
-              4'b0111: begin
-                regs_sr[14] <= idb[14];
-                regs_sr[13] <= idb[13];
-                regs_sr[11] <= idb[11];
-                regs_sr[SR_DRC] <= idb[10];
-                regs_sr[9] <= idb[9];
-                regs_sr[8] <= idb[8];
-                regs_sr[7] <= idb[7];
-                regs_sr[1] <= idb[1];
-                regs_sr[0] <= idb[0];
-              end
-              4'b1010: regs_k <= idb;
-              4'b1011: begin
-                regs_k <= idb;
-                regs_l <= dat_doutb;
-              end
-              4'b1100: begin
-                regs_k <= ram_douta;
-                regs_l <= idb;
-              end
-              4'b1101: regs_l <= idb;
-              4'b1110: regs_trb <= idb;
-              4'b1111: ram_dina_r <= idb;
-            endcase
-            if(|op_alu) begin
-              flags_z[op_asl] <= (alu_r == 0);
-              flags_s0[op_asl] <= alu_r[15];
-            end
-            case(op_alu)
-              4'b0001, 4'b0010, 4'b0011, 4'b1010, 4'b1101, 4'b1110, 4'b1111: begin
-                flags_c[op_asl] <= 0;
-                flags_ov0[op_asl] <= 0;
-                flags_ov1[op_asl] <= 0;
-              end
-              4'b0100, 4'b0101, 4'b0110, 4'b0111, 4'b1000, 4'b1001: begin
-                if(op_alu[0]) begin
-                  flags_c[op_asl] <= (alu_r < alu_q);
-                  flags_ov0[op_asl] <= (alu_q[15] ^ alu_r[15]) & ~(alu_q[15] ^ alu_p[15]);
-                  if((alu_q[15] ^ alu_r[15]) & ~(alu_q[15] ^ alu_p[15])) begin
-                    flags_s1[op_asl] <= flags_ov1[op_asl] ^ ~alu_r[15];
-                    flags_ov1[op_asl] <= ~flags_ov1[op_asl];
-                  end
-                end else begin
-                  flags_c[op_asl] <= (alu_r > alu_q);
-                  flags_ov0[op_asl] <= (alu_q[15] ^ alu_r[15]) & (alu_q[15] ^ alu_p[15]);
-                  if((alu_q[15] ^ alu_r[15]) & (alu_q[15] ^ alu_p[15])) begin
-                    flags_s1[op_asl] <= flags_ov1[op_asl] ^ ~alu_r[15];
-                    flags_ov1[op_asl] <= ~flags_ov1[op_asl];
-                  end
-                end
-              end
-              4'b1011: begin
-                flags_c[op_asl] <= alu_q[0];
-                flags_ov0[op_asl] <= 0;
-                flags_ov1[op_asl] <= 0;
-              end
-              4'b1100: begin
-                flags_c[op_asl] <= alu_q[15];
-                flags_ov0[op_asl] <= 0;
-                flags_ov1[op_asl] <= 0;
-              end
-            endcase
-          end
-          I_LD: begin
-            case(ld_dst)
-              4'b0001: regs_ab[0] <= ld_id;
-              4'b0010: regs_ab[1] <= ld_id;
-              4'b0011: regs_tr <= ld_id;
-              4'b0100: {regs_dpb,regs_dph,regs_dpl} <= ld_id[9:0];
-              4'b0101: regs_rp <= ld_id;
-//              4'b0110: regs_dr <= ld_id;
-              4'b0111: begin
-                regs_sr[14] <= ld_id[14];
-                regs_sr[13] <= ld_id[13];
-                regs_sr[11] <= ld_id[11];
-                regs_sr[SR_DRC] <= ld_id[10];
-                regs_sr[9] <= ld_id[9];
-                regs_sr[8] <= ld_id[8];
-                regs_sr[7] <= ld_id[7];
-                regs_sr[1] <= ld_id[1];
-                regs_sr[0] <= ld_id[0];
-              end
-              4'b1010: regs_k <= ld_id;
-              4'b1011: begin
-                regs_k <= ld_id;
-                regs_l <= dat_doutb;
-              end
-              4'b1100: begin
-                regs_k <= ram_douta;
-                regs_l <= ld_id;
-              end
-              4'b1101: regs_l <= ld_id;
-              4'b1110: regs_trb <= ld_id;
-              4'b1111: ram_dina_r <= ld_id;
-            endcase
           end
           I_JP: begin
             case(jp_brch)
@@ -571,21 +488,107 @@ always @(posedge CLK) begin
           end
         endcase
       end
-      STATE_NEXT: begin
+//      STATE_ALU2: begin
+        //insn_state <= STATE_STORE;
+//      end
+      STATE_STORE: begin
         insn_state <= STATE_IDLE1;
-
+        if(op[1] == 1'b0) begin
+          case(op_alu)
+            4'b0001: alu_r <= alu_q | alu_p;
+            4'b0010: alu_r <= alu_q & alu_p;
+            4'b0011: alu_r <= alu_q ^ alu_p;
+            4'b0100: alu_r <= alu_q - alu_p;
+            4'b0101: alu_r <= alu_q + alu_p;
+            4'b0110: alu_r <= alu_q - alu_p - flags_c[~op_asl];
+            4'b0111: alu_r <= alu_q + alu_p + flags_c[~op_asl];
+            4'b1000: alu_r <= alu_q - alu_p;
+            4'b1001: alu_r <= alu_q + alu_p;
+            4'b1010: alu_r <= ~alu_q;
+            4'b1011: alu_r <= {alu_q[15], alu_q[15:1]};
+            4'b1100: alu_r <= {alu_q[14:0], flags_c[~op_asl]};
+            4'b1101: alu_r <= {alu_q[13:0], 2'b11};
+            4'b1110: alu_r <= {alu_q[11:0], 4'b1111};
+            4'b1111: alu_r <= {alu_q[7:0], alu_q[15:8]};
+          endcase
+        end
         case(op)
           I_OP, I_RT: begin
-            if(|op_alu && alu_store[op_asl]) regs_ab[op_asl] <= alu_r;
-            alu_store <= 2'b11;
-
-            if(op_rpdcr) regs_rp <= regs_rp - 1;
-            case(op_dpl)
-              2'b01: regs_dpl <= regs_dpl + 1;
-              2'b10: regs_dpl <= regs_dpl - 1;
-              2'b11: regs_dpl <= 4'b0000;
+            case(op_dst)
+              4'b0001: begin
+                regs_ab[0] <= idb;
+                alu_store <= 2'b10;
+              end
+              4'b0010: begin
+                regs_ab[1] <= idb;
+                alu_store <= 2'b01;
+              end
+              4'b0011: regs_tr <= idb;
+              4'b0100: {regs_dpb,regs_dph,regs_dpl} <= idb[9:0];
+              4'b0101: regs_rp <= idb;
+//              4'b0110: regs_dr <= idb;
+              4'b0111: begin
+                regs_sr[14] <= idb[14];
+                regs_sr[13] <= idb[13];
+                regs_sr[11] <= idb[11];
+                regs_sr[SR_DRC] <= idb[10];
+                regs_sr[9] <= idb[9];
+                regs_sr[8] <= idb[8];
+                regs_sr[7] <= idb[7];
+                regs_sr[1] <= idb[1];
+                regs_sr[0] <= idb[0];
+              end
+              4'b1010: regs_k <= idb;
+              4'b1011: begin
+                regs_k <= idb;
+                regs_l <= dat_doutb;
+              end
+              4'b1100: begin
+                regs_k <= ram_douta;
+                regs_l <= idb;
+              end
+              4'b1101: regs_l <= idb;
+              4'b1110: regs_trb <= idb;
+              4'b1111: ram_dina_r <= idb;
             endcase
-            regs_dph <= regs_dph ^ op_dphm;
+          end
+          I_LD: begin
+            case(ld_dst)
+              4'b0001: regs_ab[0] <= ld_id;
+              4'b0010: regs_ab[1] <= ld_id;
+              4'b0011: regs_tr <= ld_id;
+              4'b0100: {regs_dpb,regs_dph,regs_dpl} <= ld_id[9:0];
+              4'b0101: regs_rp <= ld_id;
+//              4'b0110: regs_dr <= ld_id;
+              4'b0111: begin
+                regs_sr[14] <= ld_id[14];
+                regs_sr[13] <= ld_id[13];
+                regs_sr[11] <= ld_id[11];
+                regs_sr[SR_DRC] <= ld_id[10];
+                regs_sr[9] <= ld_id[9];
+                regs_sr[8] <= ld_id[8];
+                regs_sr[7] <= ld_id[7];
+                regs_sr[1] <= ld_id[1];
+                regs_sr[0] <= ld_id[0];
+              end
+              4'b1010: regs_k <= ld_id;
+              4'b1011: begin
+                regs_k <= ld_id;
+                regs_l <= dat_doutb;
+              end
+              4'b1100: begin
+                regs_k <= ram_douta;
+                regs_l <= ld_id;
+              end
+              4'b1101: regs_l <= ld_id;
+              4'b1110: regs_trb <= ld_id;
+              4'b1111: ram_dina_r <= ld_id;
+            endcase
+          end
+        endcase
+        case(op)
+          I_OP, I_RT: begin
+            if(op_rpdcr) regs_rp <= regs_rp - 1;
             if(op == I_OP) pc <= pc + 1;
             else begin
               pc <= stack[regs_sp-1];
@@ -606,8 +609,26 @@ always @(posedge CLK) begin
           end
         endcase
       end
-      STATE_IDLE1: insn_state <= STATE_IDLE2;
-      STATE_IDLE2: insn_state <= STATE_FETCH;
+      
+//      STATE_NEXT: begin
+//        insn_state <= STATE_IDLE1;
+//      end
+      
+      STATE_IDLE1: begin
+        insn_state <= STATE_FETCH;
+        case(op)
+          I_OP, I_RT: begin
+            case(op_dpl)
+              2'b01: regs_dpl <= regs_dpl + 1;
+              2'b10: regs_dpl <= regs_dpl - 1;
+              2'b11: regs_dpl <= 4'b0000;
+            endcase
+            regs_dph <= regs_dph ^ op_dphm;
+            if(|op_alu && alu_store[op_asl]) regs_ab[op_asl] <= alu_r;
+            alu_store <= 2'b11;
+          end
+        endcase
+      end
     endcase
   end else begin
     insn_state <= STATE_IDLE1;

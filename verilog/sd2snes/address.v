@@ -234,14 +234,16 @@ assign dspx_a0 = featurebits[FEAT_DSPX]
                  ?SNES_ADDR[0]
                  :1'b1;
 
-reg [7:0] dspx_dp_enable_r;
-initial dspx_dp_enable_r = 8'b00000000;
-always @(posedge CLK) dspx_dp_enable_r <= {dspx_dp_enable_r[6:0], dspx_dp_enable_w};
-assign dspx_dp_enable = &dspx_dp_enable_r[5:2];
+//reg [7:0] dspx_dp_enable_r;
+//initial dspx_dp_enable_r = 8'b00000000;
+//always @(posedge CLK) dspx_dp_enable_r <= {dspx_dp_enable_r[6:0], dspx_dp_enable_w};
+//assign dspx_dp_enable = &dspx_dp_enable_r[5:2];
+assign dspx_dp_enable = dspx_dp_enable_w;
 
 reg [7:0] dspx_enable_r;
 initial dspx_enable_r = 8'b00000000;
 always @(posedge CLK) dspx_enable_r <= {dspx_enable_r[6:0], dspx_enable_w};
 assign dspx_enable = &dspx_enable_r[5:2];
+
 
 endmodule
