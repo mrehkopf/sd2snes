@@ -55,7 +55,7 @@ TARGET = $(OBJDIR)/sd2snes_bootldr
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = timer.c main.c ff.c clock.c uart.c power.c led.c faulthandler.c crc16.c crc32.c sdnative.c fileops.c iap.c printf.c 
+SRC = timer.c main.c ff.c clock.c uart.c power.c led.c faulthandler.c crc32.c sdnative.c fileops.c iap.c printf.c 
 
 # usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
 

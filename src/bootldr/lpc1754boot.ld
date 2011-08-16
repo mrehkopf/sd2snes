@@ -10,7 +10,7 @@ ENTRY(_start)
 
 MEMORY
 {
-  flash  (rx)  : ORIGIN = 0x00000000, LENGTH = 0x02000
+  flash  (rx)  : ORIGIN = 0x00000000, LENGTH = 0x03000
   ram    (rwx) : ORIGIN = 0x10000000, LENGTH = 0x03fe0 /* leave room for IAP */
   ahbram (rwx) : ORIGIN = 0x2007C000, LENGTH = 0x04000
 }

@@ -1,11 +1,11 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#define DEBUG_BL
 // #define DEBUG_SD
 // #define DEBUG_IRQ
-// #define DEBUG_MSU1
 
-// #define DEBUG_UART
+#define DEBUG_UART
 
 #ifdef DEBUG_UART
 #define DBG_UART
@@ -13,9 +13,13 @@
 #define DBG_UART while(0)
 #endif
 
+#ifdef DEBUG_BL
+#define DBG_BL
+#else
 #define DBG_BL while(0)
+#endif
 
-#define FW_START                  (0x00002000L)
+#define FW_START                  (0x00003000L)
 #define FLASH_SECTORS             (17)
 
 
@@ -52,7 +56,7 @@
 #define CONFIG_UART_PCLKDIV       1
 #define CONFIG_UART_TX_BUF_SHIFT  8
 #define CONFIG_UART_BAUDRATE      921600
-//#define CONFIG_UART_DEADLOCKABLE
+#define CONFIG_UART_DEADLOCKABLE
 
 #define SSP_CLK_DIVISOR_FAST 2
 #define SSP_CLK_DIVISOR_SLOW 250
