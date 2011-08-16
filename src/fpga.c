@@ -87,7 +87,7 @@ void fpga_init() {
 }
 
 int fpga_get_done(void) {
-  return BITBAND(LPC_GPIO0->FIOPIN, 22);
+  return BITBAND(DONEREG->FIOPIN, DONEBIT);
 }
 
 void fpga_postinit() {
