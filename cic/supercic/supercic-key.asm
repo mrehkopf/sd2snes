@@ -39,6 +39,8 @@ processor p12f629
 ;   OK or no lock CIC       | high
 ;   error                   | low
 ;   SuperCIC pair mode      | 148.75kHz / 50% duty cycle
+;   SuperCIC host detected  | scarce spikes (3.3us)
+;    but pair mode disabled |
 ;
 ;   In case lockout fails, the region is switched automatically and
 ;   will be used after the next reset.
@@ -62,6 +64,7 @@ processor p12f629
 ;   0x4d		buffer for eeprom access
 ;   0x4e		loop variable for longwait
 ;   0x4f		loop variable for wait
+;   0x5d		0: SuperCIC pair mode available flag
 ;   0x5e                SuperCIC pair mode detect (phase 1)
 ;   0x5f                SuperCIC pair mode detect (phase 2)
 ; ---------------------------------------------------------------------
@@ -86,7 +89,7 @@ isr
 	clrf	0x5e		; clear pair mode detect
 	clrf	0x5f		; clear pair mode detect
 	bsf	0x5f, 1		;
-	nop
+	clrf	0x5d		; clear pair mode available
 	nop
 	nop
 	bsf	INTCON, 7	; re-enable interrupts (ISR will continue as main)
@@ -248,11 +251,11 @@ loop1
 	movwf	GPIO	; reset GPIO
 	movlw	0x14
 	call	wait
+	btfsc	0x5d, 0 ; pair mode available signal
+	bcf	GPIO, 4 ;
 	nop
 	nop
-	nop
-	nop
-	nop
+	bsf	GPIO, 4 ; 
 	btfsc	GPIO, 0 ; both pins must be low...
 	goto	die
 	btfsc	GPIO, 1 ; ...when no bit transfer takes place
@@ -374,11 +377,13 @@ mangle_key_withoutskip
 	andlw	0xf
 	addlw	0xf
 	movwf	0x20
+
+	btfsc	0x5d, 0 ; pair mode available signal
+	bcf	GPIO, 4
 	nop
 	nop
-	nop
-	nop
-	nop
+	bsf	GPIO, 4
+
 	nop
 	nop
 	nop
@@ -451,6 +456,7 @@ mangle_key_withskip
 	andlw	0xf
 	addlw	0xf
 	movwf	0x20
+;-------pair mode code-------
 	bcf	GPIO, 0
 	movf	GPIO, w
 	btfss	GPIO, 3
@@ -459,9 +465,11 @@ mangle_key_withskip
 	movf	GPIO, w
 	movwf	0x5f
 	bcf	GPIO, 0
-	btfsc	GPIO, 3
-	clrf	0x5e
-	nop
+
+	btfsc	0x5d, 0 ; pair mode available signal
+	bcf	GPIO, 4
+	bsf	GPIO, 4
+;-------end of pair mode code-------
 	btfss	0x20, 4 ; skip if half-byte carry
 	goto mangle_return ; +2 cycles in return
 	movf	0x20, w		; restore w (previously destroyed)
@@ -550,11 +558,13 @@ mangle_lock_withoutskip
 	andlw	0xf
 	addlw	0xf
 	movwf	0x30
+
+	btfsc	0x5d, 0 ; pair mode available signal
+	bcf	GPIO, 4
 	nop
 	nop
-	nop
-	nop
-	nop
+	bsf	GPIO, 4
+
 	nop
 	nop
 	nop
@@ -627,7 +637,7 @@ mangle_lock_withskip
 	andlw	0xf
 	addlw	0xf
 	movwf	0x30
-
+;-------pair mode code-------
 	btfss	0x5e, 1
 	goto	scic_pair_skip1
 	btfsc	0x5f, 1
@@ -641,12 +651,17 @@ scic_pair_skip1
 scic_pair_skip2
 	nop
 	nop
+	nop
+	nop
+	goto scic_pair_skip4
 scic_pair_skip3	
+	bcf	GPIO, 4
+	bsf	0x5d, 0 ; set pair mode available
 	nop
-	nop
-	nop
-	nop
+	bsf	GPIO, 4
  
+scic_pair_skip4
+;-------end of pair mode code-------
 	btfss	0x30, 4 ; skip if half-byte carry
 	goto mangle_return
 	nop
