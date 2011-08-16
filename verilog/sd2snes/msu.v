@@ -72,11 +72,11 @@ always @(posedge clkin) reg_enable_sreg <= {reg_enable_sreg[6:0], enable};
 reg [5:0] reg_oe_sreg;
 always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[4:0], reg_oe};
 //wire reg_oe_falling = (reg_oe_sreg[3:0] == 4'b1000);
-wire reg_oe_rising = reg_enable_sreg[4] && (reg_oe_sreg[1:0] == 2'b01);
+wire reg_oe_rising = reg_enable_sreg[4] && (reg_oe_sreg[5:0] == 6'b000001);
 
 reg [5:0] reg_we_sreg;
 always @(posedge clkin) reg_we_sreg <= {reg_we_sreg[4:0], reg_we};
-wire reg_we_rising = reg_enable_sreg[4] && (reg_we_sreg[1:0] == 2'b01);
+wire reg_we_rising = reg_enable_sreg[4] && (reg_we_sreg[5:0] == 6'b000001);
 
 reg [31:0] addr_out_r;
 assign addr_out = addr_out_r;
