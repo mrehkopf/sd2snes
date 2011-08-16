@@ -27,6 +27,7 @@
 #define SEND_CID               10
 #define STOP_TRANSMISSION      12
 #define SEND_STATUS            13
+#define GO_INACTIVE_STATE      15
 #define SET_BLOCKLEN           16
 #define READ_SINGLE_BLOCK      17
 #define READ_MULTIPLE_BLOCK    18
@@ -198,6 +199,7 @@ static inline void wiggle_fast_pos1(void) {
   BITBAND(SD_CLKREG->FIOSET, SD_CLKPIN) = 1;
   BITBAND(SD_CLKREG->FIOCLR, SD_CLKPIN) = 1;
 }
+
 
 int get_and_check_datacrc(uint8_t *buf) {
   uint16_t crc0=0, crc1=0, crc2=0, crc3=0;
@@ -574,6 +576,12 @@ int acmd_fast(uint8_t cmd, uint32_t param, uint8_t crc, uint8_t* dat, uint8_t* r
   return cmd_fast(cmd, param, crc, dat, rsp);
 }
 
+void sdn_checkinit(BYTE drv) {
+  if(disk_state == DISK_CHANGED) {
+    disk_initialize(drv);
+  }
+}
+
 int stream_datablock(uint8_t *buf) {
 //  uint8_t datshift=8;
   int j=512;
@@ -843,6 +851,8 @@ DRESULT sdn_initialize(BYTE drv) {
     wiggle_slow_neg(1);
   }
   printf("sd_init start\n");
+  BITBAND(SD_DAT3REG->FIODIR, SD_DAT3PIN) = 1;
+  BITBAND(SD_DAT3REG->FIOSET, SD_DAT3PIN) = 1;
   cmd_slow(GO_IDLE_STATE, 0, 0x95, NULL, rsp);
 
   if((rsplen=cmd_slow(SEND_IF_COND, 0x000001aa, 0x87, NULL, rsp))) {
