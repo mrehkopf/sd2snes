@@ -50,7 +50,7 @@ uint8_t SPI_OFFLOAD;
 #define DONEREG  LPC_GPIO0
 
 #define CCLKBIT  (11)
-#define PROGBBIT (10)
+#define PROGBBIT (15)
 #define INITBBIT (9)
 #define DINBIT   (8)
 #define DONEBIT  (22)
