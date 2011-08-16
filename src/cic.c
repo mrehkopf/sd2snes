@@ -4,7 +4,7 @@
 #include "uart.h"
 #include "cic.h"
 
-char *cicstatenames[3] = { "CIC_OK", "CIC_FAIL", "CIC_PAIR" };
+char *cicstatenames[4] = { "CIC_OK", "CIC_FAIL", "CIC_PAIR", "CIC_SCIC" };
 
 void print_cic_state() {
   printf("CIC state: %s\n", get_cic_statename(get_cic_state()));
@@ -21,21 +21,22 @@ enum cicstates get_cic_state() {
 
   state_old = BITBAND(SNES_CIC_STATUS_REG->FIOPIN, SNES_CIC_STATUS_BIT);
 /* this loop samples at ~10MHz */
-  for(count=0; count<1000; count++) {
+  for(count=0; count<CIC_SAMPLECOUNT; count++) {
     state = BITBAND(SNES_CIC_STATUS_REG->FIOPIN, SNES_CIC_STATUS_BIT);
     if(state != state_old) {
       togglecount++;
     }
     state_old = state;
   }
-  if(togglecount > 20) {
-    printf("%ld\n", togglecount);
+  printf("%ld\n", togglecount);
+/* CIC_TOGGLE_THRESH_PAIR > CIC_TOGGLE_THRESH_SCIC */
+  if(togglecount > CIC_TOGGLE_THRESH_PAIR) {
     return CIC_PAIR;
-  }
-  if(state) {
+  } else if(togglecount > CIC_TOGGLE_THRESH_SCIC) {
+    return CIC_SCIC;
+  } else if(state) {
     return CIC_OK;
-  }
-  return CIC_FAIL;
+  } else return CIC_FAIL;
 }
 
 void cic_init(int allow_pairmode) {

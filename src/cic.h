@@ -1,10 +1,14 @@
 #ifndef _CIC_H
 #define _CIC_H
 
+#define CIC_SAMPLECOUNT	(100000)
+#define CIC_TOGGLE_THRESH_PAIR	(2500)
+#define CIC_TOGGLE_THRESH_SCIC	(10)
+
 #include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
 
-enum cicstates { CIC_OK = 0, CIC_FAIL, CIC_PAIR };
+enum cicstates { CIC_OK = 0, CIC_FAIL, CIC_PAIR, CIC_SCIC };
 enum cic_region { CIC_NTSC = 0, CIC_PAL };
 
 void print_cic_state(void);
