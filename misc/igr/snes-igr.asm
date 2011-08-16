@@ -68,6 +68,9 @@
 ;   Reset (normal):      simply resets the console.
 ;   Reset (6s):          resets the console for >5s to enter main menu on
 ;                        PowerPak and sd2snes.
+;                        In SuperCIC mode this actually issues a reset
+;                        "doubleclick" to trigger the SuperCIC's long reset
+;                        function.
 ;
 ;   Region 50Hz/PAL      overrides the region to 50Hz/PAL.
 ;   Region 60Hz/NTSC     overrides the region to 60Hz/NTSC.
