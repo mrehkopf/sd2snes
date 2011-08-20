@@ -117,7 +117,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
         sram_writelong((parent_tgt-SRAM_MENU_ADDR), db_tgt);
         sram_writebyte(0, db_tgt+sizeof(next_subdir_tgt));
         sram_writeblock("../\0", db_tgt+sizeof(next_subdir_tgt)+sizeof(len), 4);
-        sram_writelong((db_tgt-SRAM_MENU_ADDR)|((uint32_t)0x80<<24), dir_tgt);
+        sram_writelong((db_tgt-SRAM_MENU_ADDR)|((uint32_t)0x81<<24), dir_tgt);
         db_tgt += sizeof(next_subdir_tgt)+sizeof(len)+4;
         dir_tgt += 4;
       }
