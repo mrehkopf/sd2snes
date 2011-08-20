@@ -134,39 +134,41 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
         fn = *fno.lfname ? fno.lfname : fno.fname;
         if ((*fn == '.') || !(memcmp(fn, SYS_DIR_NAME, sizeof(SYS_DIR_NAME)))) continue;
         if (fno.fattrib & AM_DIR) {
-          numentries++;
-          if(pass) {
-            path[len]='/';
-            strncpy(path+len+1, (char*)fn, sizeof(fs_path)-len);
-            depth++;
-            if(mkdb) {
-              uint16_t pathlen = strlen(path);
-              /* write element pointer to current dir structure */
-              printf("d=%d Saving %lx to Address %lx  [dir]\n", depth, db_tgt, dir_tgt);
-              sram_writelong((db_tgt-SRAM_MENU_ADDR)|((uint32_t)0x80<<24), dir_tgt);
-              /* save element:
-                 - path name
-                 - pointer to sub dir structure */
-              if((db_tgt&0xffff) > ((0x10000-(sizeof(next_subdir_tgt) + sizeof(len) + pathlen + 2))&0xffff)) {
-                printf("switch! old=%lx ", db_tgt);
-                db_tgt &= 0xffff0000;
-                db_tgt += 0x00010000;
-                printf("new=%lx\n", db_tgt);
+          depth++;
+          if(depth < FS_MAX_DEPTH) {
+            numentries++;
+            if(pass) {
+              path[len]='/';
+              strncpy(path+len+1, (char*)fn, sizeof(fs_path)-len);
+              if(mkdb) {
+                uint16_t pathlen = strlen(path);
+                /* write element pointer to current dir structure */
+                printf("d=%d Saving %lx to Address %lx  [dir]\n", depth, db_tgt, dir_tgt);
+                sram_writelong((db_tgt-SRAM_MENU_ADDR)|((uint32_t)0x80<<24), dir_tgt);
+                /* save element:
+                   - path name
+                   - pointer to sub dir structure */
+                if((db_tgt&0xffff) > ((0x10000-(sizeof(next_subdir_tgt) + sizeof(len) + pathlen + 2))&0xffff)) {
+                  printf("switch! old=%lx ", db_tgt);
+                  db_tgt &= 0xffff0000;
+                  db_tgt += 0x00010000;
+                  printf("new=%lx\n", db_tgt);
+                }
+                printf("    Saving dir descriptor to %lx tgt=%lx, path=%s\n", db_tgt, next_subdir_tgt, path);
+                sram_writelong((next_subdir_tgt-SRAM_MENU_ADDR), db_tgt);
+                sram_writebyte(len+1, db_tgt+sizeof(next_subdir_tgt));
+                sram_writeblock(path, db_tgt+sizeof(next_subdir_tgt)+sizeof(len), pathlen);
+                sram_writeblock("/\0", db_tgt + sizeof(next_subdir_tgt) + sizeof(len) + pathlen, 2);
+                db_tgt += sizeof(next_subdir_tgt) + sizeof(len) + pathlen + 2;
               }
-              printf("    Saving dir descriptor to %lx tgt=%lx, path=%s\n", db_tgt, next_subdir_tgt, path);
-              sram_writelong((next_subdir_tgt-SRAM_MENU_ADDR), db_tgt);
-              sram_writebyte(len+1, db_tgt+sizeof(next_subdir_tgt));
-              sram_writeblock(path, db_tgt+sizeof(next_subdir_tgt)+sizeof(len), pathlen);
-              sram_writeblock("/\0", db_tgt + sizeof(next_subdir_tgt) + sizeof(len) + pathlen, 2);
-              db_tgt += sizeof(next_subdir_tgt) + sizeof(len) + pathlen + 2;
+              parent_tgt = this_dir_tgt;
+              scan_dir(path, mkdb, next_subdir_tgt);
+              dir_tgt += 4;
+              was_empty = 0;
             }
-            parent_tgt = this_dir_tgt;
-            scan_dir(path, mkdb, next_subdir_tgt);
-            dir_tgt += 4;
-            was_empty = 0;
-            depth--;
-            path[len]=0;
           }
+          depth--;
+          path[len]=0;
         } else {
           SNES_FTYPE type = determine_filetype((char*)fn);
           if(type != TYPE_UNKNOWN) {
@@ -188,7 +190,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
                     file_close(); */
 
                     /* write element pointer to current dir structure */
-/*                    printf("d=%d Saving %lX to Address %lX  [file]\n", depth, db_tgt, dir_tgt); */
+                    printf("d=%d Saving %lX to Address %lX  [file %s]\n", depth, db_tgt, dir_tgt, path);
                     if((db_tgt&0xffff) > ((0x10000-(sizeof(len) + pathlen + sizeof(buf)-1 + 1))&0xffff)) {
                       printf("switch! old=%lx ", db_tgt);
                       db_tgt &= 0xffff0000;
