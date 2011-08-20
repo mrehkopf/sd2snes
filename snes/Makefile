@@ -3,7 +3,7 @@ OBJS = header.ips reset.o65 main.o65 font.o65 palette.o65 data.o65 const.o65 log
 all: menu.bin
 
 smc: menu.bin
-	cat menu.bin sd2snes.rom > $@
+	cat menu.bin sd2snes.rom > menu.smc
 menu.bin: $(OBJS)
 	sneslink -fsmc -o $@ $^
 

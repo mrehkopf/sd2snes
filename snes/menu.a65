@@ -25,6 +25,12 @@ menu_init:
 	stx menu_sel
 	lda #$01
 	sta menu_dirty
+	rep #$20 : .al
+	lda #!dirlog
+	sta dirlog_idx
+	sep #$20 : .as
+	lda #^dirlog
+	sta dirlog_idx+2
 	rts
 
 menuloop:
@@ -247,6 +253,7 @@ print_direntry:
 	plb
 
 	lda @dirent_type
+	and #$f0
 	cmp #$80
 	rep #$20 : .al
 	bne dirent_is_file
@@ -319,6 +326,7 @@ dirent_type_cont
 
 	sep #$20 : .as
 	lda dirent_type
+	and #$f0
 	cmp #$80
 	bne dirent_is_file_2
 	lda #^text_dirmark
@@ -486,11 +494,16 @@ select_item:
 	beq sel_is_file
 	cmp #$80
 	beq sel_is_dir
+	cmp #$81
+	beq sel_is_parent
 select_item_cont
 	plb
 	rts
 sel_is_file
 	jsr select_file
+	bra select_item_cont
+sel_is_parent
+	jsr select_parent
 	bra select_item_cont
 sel_is_dir
 	jsr select_dir
@@ -516,7 +529,35 @@ select_file:
 	jsl @wram_fadeloop
 	rts
 
-select_dir: ; y = direntry ptr
+select_dir:
+	tyx
+; save old dir position
+	rep #$20 : .al
+	ldy #$0000
+	lda @dirstart_addr
+	sta [dirlog_idx], y
+	iny
+	iny
+	lda @dirstart_bank
+	sta [dirlog_idx], y
+	iny
+	lda @dirptr_addr
+	sta [dirlog_idx], y
+	iny
+	iny
+	lda @dirptr_bank
+	sta [dirlog_idx], y
+	iny
+	lda @menu_sel
+	sta [dirlog_idx], y
+	lda @dirlog_idx
+	clc
+	adc #$0008
+	sta @dirlog_idx
+	sep #$20 : .as
+;---
+; y = direntry ptr
+	txy
 	dey
 	lda (dirptr_addr), y
 	clc
@@ -548,6 +589,38 @@ select_dir: ; y = direntry ptr
 	lda #$01
 	sta @menu_dirty
 	plb
+	rts
+
+select_parent:
+	rep #$20 : .al
+	lda @dirlog_idx
+	sec
+	sbc #$0008
+	sta @dirlog_idx
+	ldy #$0000
+	lda [dirlog_idx], y ; load dirstart_addr
+	sta @dirstart_addr
+	iny
+	iny
+	sep #$20 : .as
+	lda [dirlog_idx], y ; load dirstart_bank
+	sta @dirstart_bank
+	iny
+	rep #$20 : .al
+	lda [dirlog_idx], y ; load dirptr_addr
+	sta @dirptr_addr
+	iny
+	iny
+	sep #$20 : .as
+	lda [dirlog_idx], y ; load dirptr_bank
+	sta @dirptr_bank
+	iny
+	rep #$20 : .al
+	lda [dirlog_idx], y ; load menu_sel
+	sta @menu_sel
+	sep #$20 : .as
+	lda #$01
+	sta @menu_dirty
 	rts
 
 menu_key_x:

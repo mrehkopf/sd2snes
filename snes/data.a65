@@ -8,19 +8,11 @@ dirend_addr	.word 	0
 dirend_bank	.byt	0
 dirend_idx	.word	0
 dirptr_idx	.word	0
-dirptr_table	.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 dirent_addr	.word 0
 dirent_bank	.byt 0
 dirent_type	.byt 0
 dirend_onscreen	.byt 0
-dirlog_idx	.byt 0
-dirlog  .word	0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+dirlog_idx	.byt 0,0,0 ; long ptr
 
 ;----------parameters for text output----------
 print_x	.byt 0		;x coordinate
@@ -163,6 +155,19 @@ hdma_window	.byt 0
 		.byt 0
 		.byt 0,0
 		.byt 0
+; dirlog format:
+; dirstart_addr	2
+; dirstart_bank	1
+; dirptr_addr	2
+; dirptr_bank	1
+; menu_sel	2
+; total		8 bytes
+dirlog  .word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 infloop		.byt 0,0  ; to be filled w/ 80 FE
 wram_fadeloop	.byt 0
