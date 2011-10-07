@@ -66,7 +66,7 @@ reg byte_received;  // high when a byte has been received
 reg [7:0] byte_data_received;
 
 assign bit_cnt = bitcnt;
-
+/*
 always @(posedge clk)
 begin
   if(~SSEL_active) begin
@@ -78,21 +78,36 @@ begin
     byte_data_received <= {byte_data_received[6:0], MOSI_data};
   end
 end
+*/
 
-always @(posedge clk)
-  byte_received <= SSEL_active && SCK_risingedge && (bitcnt==3'b111);
+always @(posedge SCK) begin
+  if(SSEL) bitcnt <= 3'b000;
+  else begin
+    bitcnt <= bitcnt + 3'b001;
+	 byte_data_received <= {byte_data_received[6:0], MOSI};
+  end
+  if(~SSEL && bitcnt==3'b111) byte_received <= 1'b1;
+  else byte_received <= 1'b0;
+end
+
+//always @(posedge clk)
+//  byte_received <= SSEL_active && SCK_risingedge && (bitcnt==3'b111);
+
+reg [1:0] byte_received_r;
+always @(posedge clk) byte_received_r <= {byte_received_r[0], byte_received};
+wire byte_received_sync = (byte_received_r == 2'b01);
 
 always @(posedge clk) begin
   if(~SSEL_active)
     byte_cnt_r <= 16'h0000;
-  else if(byte_received) begin
+  else if(byte_received_sync) begin
     byte_cnt_r <= byte_cnt_r + 16'h0001;
   end
 end
 
 reg [7:0] byte_data_sent;
 
-always @(posedge clk) begin
+/*always @(posedge clk) begin
   if(SSEL_active) begin
     if(SSEL_startmessage)
       byte_data_sent <= 8'h5A;  // dummy byte
@@ -105,8 +120,17 @@ always @(posedge clk) begin
       end
   end
 end
+*/
+always @(negedge SCK) begin
+  if(~SSEL) begin
+    if(bitcnt==3'b000)
+	   byte_data_sent <= input_data;
+	 else
+	   byte_data_sent <= {byte_data_sent[6:0], 1'b0};
+  end
+end
 
-assign MISO = SSEL_active ? byte_data_sent[7] : 1'bZ;  // send MSB first
+assign MISO = ~SSEL ? input_data[7-bitcnt] /*byte_data_sent[7]*/ : 1'bZ;  // send MSB first
 
 reg cmd_ready_r;
 reg param_ready_r;
@@ -118,8 +142,8 @@ assign cmd_data = cmd_data_r;
 assign param_data = param_data_r;
 assign byte_cnt = byte_cnt_r;
 
-always @(posedge clk) cmd_ready_r2 = byte_received && byte_cnt_r == 32'h0;
-always @(posedge clk) param_ready_r2 = byte_received && byte_cnt_r > 32'h0;
+always @(posedge clk) cmd_ready_r2 = byte_received_sync && byte_cnt_r == 32'h0;
+always @(posedge clk) param_ready_r2 = byte_received_sync && byte_cnt_r > 32'h0;
 
 // fill registers
 always @(posedge clk) begin
