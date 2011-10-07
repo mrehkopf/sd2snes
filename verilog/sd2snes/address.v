@@ -23,16 +23,14 @@ module address(
   input [2:0] MAPPER,       // MCU detected mapper
   input [23:0] SNES_ADDR,   // requested address from SNES
   input SNES_CS,            // "CART" pin from SNES (active low)
-  output [22:0] ROM_ADDR,   // Address to request from SRAM0
+  output [23:0] ROM_ADDR,   // Address to request from SRAM0
   output ROM_SEL,           // enable SRAM0 (active low)
   input MCU_OVR,            // enable MCU master mode (active low)
-  input MODE,               // MCU(1) or SNES(0) ("bus phase")
   output IS_SAVERAM,        // address/CS mapped as SRAM?
   output IS_ROM,            // address mapped as ROM?
   output IS_WRITABLE,       // address somehow mapped as writable area?
   input [23:0] MCU_ADDR,    // allow address to be set externally
   input ADDR_WRITE,
-  output ROM_ADDR0,
   input [23:0] SAVERAM_MASK,
   input [23:0] ROM_MASK,
   input use_msu,
@@ -54,7 +52,7 @@ parameter [2:0]
 
 wire [1:0] SRAM_BANK;
 
-wire [23:0] SRAM_ADDR_FULL;
+wire [23:0] SRAM_SNES_ADDR;
 
 /* currently supported mappers:
    Index     Mapper
@@ -101,6 +99,7 @@ assign IS_SAVERAM = SAVERAM_MASK[0]
                       : 1'b0));
 
 
+/* BS-X has 4 MBits of extra RAM that can be mapped to various places */
 assign IS_WRITABLE = IS_SAVERAM
                      |((MAPPER == 3'b011)
                        ?((bsx_regs[3] && SNES_ADDR[23:20]==4'b0110)
@@ -123,8 +122,7 @@ assign IS_WRITABLE = IS_SAVERAM
     8   1=map BSX cartridge ROM @80-9f:8000-ffff
 */
 
-assign SRAM_ADDR_FULL = (MODE) ? MCU_ADDR
-                        :((MAPPER == 3'b000)
+assign SRAM_SNES_ADDR = ((MAPPER == 3'b000)
                           ?(IS_SAVERAM
                             ? 24'hE00000 + ((SNES_ADDR[14:0] - 15'h6000)
                                             & SAVERAM_MASK)
@@ -188,11 +186,9 @@ assign SRAM_ADDR_FULL = (MODE) ? MCU_ADDR
                             )
                            : 24'b0);
 
-assign ROM_ADDR = SRAM_ADDR_FULL[23:1];
+assign ROM_ADDR = SRAM_SNES_ADDR;
 
 assign ROM_SEL = 1'b0; // (MODE) ? CS_ARRAY[SRAM_BANK] : IS_SAVERAM ? 4'b1000 : CS_ARRAY[SRAM_BANK];
-
-assign ROM_ADDR0 = SRAM_ADDR_FULL[0];
 
 assign msu_enable_w = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
 reg [7:0] msu_enable_r;

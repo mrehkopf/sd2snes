@@ -22,6 +22,7 @@ module data(
   input CLK,
   input SNES_READ,
   input SNES_WRITE,
+  input ROM_WE,
   input MCU_READ,
   input MCU_WRITE,
   inout [7:0] SNES_DATA,
@@ -80,7 +81,7 @@ assign MCU_OUT_DATA = !MCU_OVR ? (FROM_ROM_BYTE)
 assign ROM_DATA[7:0] = ROM_ADDR0
                        ?(!MCU_OVR ? (!MCU_WRITE ? MCU_IN_DATA : 8'bZ)
                                   : (MODE ? (!MCU_WRITE ? MCU_IN_MEM : 8'bZ)
-                                          : (!SNES_WRITE ? SNES_IN_MEM : 8'bZ)
+                                          : (!ROM_WE ? SNES_IN_MEM : 8'bZ)
                                     )
                         )
                        :8'bZ;
@@ -88,7 +89,7 @@ assign ROM_DATA[7:0] = ROM_ADDR0
 assign ROM_DATA[15:8] = ROM_ADDR0 ? 8'bZ
                         :(!MCU_OVR ? (!MCU_WRITE ? MCU_IN_DATA : 8'bZ)
                                    : (MODE ? (!MCU_WRITE ? MCU_IN_MEM : 8'bZ)
-                                           : (!SNES_WRITE ? SNES_IN_MEM : 8'bZ)
+                                           : (!ROM_WE ? SNES_IN_MEM : 8'bZ)
                                      )
                          );
 
