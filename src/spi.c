@@ -81,7 +81,7 @@ uint8_t spi_txrx_byte(uint8_t data) {
   while (BITBAND(SSP_REGS->SR, SSP_RNE))
     (void) SSP_REGS->DR;
 
-  /* Transmit a single dummy byte */
+  /* Transmit a single byte */
   SSP_REGS->DR = data;
 
   /* Wait until answer has been received */

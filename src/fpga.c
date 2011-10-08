@@ -42,12 +42,10 @@
 #include "fpga_spi.h"
 #include "config.h"
 #include "uart.h"
-#include "sdcard.h"
 #include "diskio.h"
 #include "integer.h"
 #include "ff.h"
 #include "fileops.h"
-// XXX #include "fpga_spi.h"
 #include "spi.h"
 #include "led.h"
 #include "timer.h"
@@ -100,8 +98,6 @@ void fpga_pgm(uint8_t* filename) {
   uint8_t data;
   int i;
   tick_t timeout;
-//  UINT bytes_read;
-//  uint16_t j;
   do {
     i=0;
     timeout = getticks() + 100;
@@ -152,8 +148,6 @@ void fpga_rompgm() {
   uint8_t data;
   int i;
   tick_t timeout;
-//  UINT bytes_read;
-//  uint16_t j;
   do {
     i=0;
     timeout = getticks() + 100;

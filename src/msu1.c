@@ -122,7 +122,7 @@ int msu1_loop() {
       msu_track = get_msu_track();
       printf("Audio requested! Track=%d\n", msu_track);
 
-      /* open file */
+      /* open file, fill buffer */
       f_close(&file_handle);
       snprintf(suffix, sizeof(suffix), "-%d.pcm", msu_track);
       strcpy((char*)file_buf, (char*)file_lfn);
@@ -156,7 +156,7 @@ int msu1_loop() {
 	 || (msu_offset >= msu_page2_start + msu_page_size))) {
 	printf("offset %08lx out of range (%08lx-%08lx, %08lx-%08lx), reload\n", msu_offset, msu_page1_start,
 	       msu_page1_start+msu_page_size-1, msu_page2_start, msu_page2_start+msu_page_size-1);
-	/* cache miss */
+	/* "cache miss" */
 	/* fill buffer */
 	set_msu_addr(0x0);
 	sd_offload_tgt=2;
