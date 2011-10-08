@@ -30,12 +30,6 @@
 #include "spi.h"
 #include "uart.h"
 
-#define SSP_TFE 0   // Transmit FIFO empty
-#define SSP_TNF 1   // Transmit FIFO not full
-#define SSP_RNE 2   // Receive FIFO not empty
-#define SSP_RFF 3   // Receive FIFO full
-#define SSP_BSY 4   // Busy
-
 void spi_preinit() {
 
   /* Set clock prescaler to 1:1 */

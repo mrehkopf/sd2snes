@@ -29,6 +29,12 @@
 #ifndef SPI_H
 #define SPI_H
 
+#define SSP_TFE 0   // Transmit FIFO empty
+#define SSP_TNF 1   // Transmit FIFO not full
+#define SSP_RNE 2   // Receive FIFO not empty
+#define SSP_RFF 3   // Receive FIFO full
+#define SSP_BSY 4   // Busy
+
 /* Low speed 400kHz for init, fast speed <=20MHz (MMC limit) */
 typedef enum { SPI_SPEED_FAST, SPI_SPEED_SLOW, SPI_SPEED_FPGA_FAST, SPI_SPEED_FPGA_SLOW } spi_speed_t;
 
