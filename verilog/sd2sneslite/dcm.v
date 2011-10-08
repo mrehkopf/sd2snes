@@ -37,7 +37,7 @@ module my_dcm (
       .CLKFX_DIVIDE(1),   // Can be any integer from 1 to 32
       .CLKFX_MULTIPLY(4), // Can be any integer from 2 to 32
       .CLKIN_DIVIDE_BY_2("FALSE"), // TRUE/FALSE to enable CLKIN divide by two feature
-      .CLKIN_PERIOD(44.289),  // Specify period of input clock
+      .CLKIN_PERIOD(41.667),  // Specify period of input clock
       .CLKOUT_PHASE_SHIFT("NONE"), // Specify phase shift of NONE, FIXED or VARIABLE
       .CLK_FEEDBACK("NONE"),  // Specify clock feedback of NONE, 1X or 2X
       .DESKEW_ADJUST("SYSTEM_SYNCHRONOUS"), // SOURCE_SYNCHRONOUS, SYSTEM_SYNCHRONOUS or
