@@ -62,6 +62,9 @@
 #define SNES_CIC_PAIR_REG         LPC_GPIO1
 #define SNES_CIC_PAIR_BIT         25
 
+#define FPGA_MCU_RDY_REG          LPC_GPIO2
+#define FPGA_MCU_RDY_BIT          9
+
 #define QSORT_MAXELEM             1024
 
 #define SSP_REGS LPC_SSP0

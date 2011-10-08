@@ -29,7 +29,7 @@
    FPGA pin mapping
    ================
    CCLK        P0.11 out
-   PROG_B      P1.10 out
+   PROG_B      P1.15 out
    INIT_B      P2.9  in
    DIN         P2.8  out
    DONE        P0.22 in
