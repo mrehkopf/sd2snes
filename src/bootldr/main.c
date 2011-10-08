@@ -26,9 +26,9 @@ extern volatile tick_t ticks;
 int (*chain)(void) = (void*)(FW_START+0x000001c5);
 
 int main(void) {
-  LPC_GPIO2->FIODIR = BV(0) | BV(1) | BV(2);
+  SNES_CIC_PAIR_REG->FIODIR = BV(SNES_CIC_PAIR_BIT);
   BITBAND(SNES_CIC_PAIR_REG->FIOSET, SNES_CIC_PAIR_BIT) = 1;
-  LPC_GPIO1->FIODIR = BV(25);
+/*  LPC_GPIO2->FIODIR = BV(0) | BV(1) | BV(2); */
   LPC_GPIO0->FIODIR = BV(16);
 
  /* connect UART3 on P0[25:26] + SSP0 on P0[15:18] + MAT3.0 on P0[10] */

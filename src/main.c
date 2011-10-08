@@ -48,7 +48,8 @@ enum system_states {
 
 int main(void) {
   LPC_GPIO2->FIODIR = BV(4) | BV(5);
-  LPC_GPIO1->FIODIR = BV(23);
+  LPC_GPIO1->FIODIR = BV(23) | BV(SNES_CIC_PAIR_BIT);
+  BITBAND(SNES_CIC_PAIR_REG->FIOSET, SNES_CIC_PAIR_BIT) = 1;
   LPC_GPIO0->FIODIR = BV(16);
 
  /* connect UART3 on P0[25:26] + SSP0 on P0[15:18] + MAT3.0 on P0[10] */
