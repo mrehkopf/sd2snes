@@ -58,8 +58,8 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0sreset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0saveraw\0put\0d4\0vmode\0mapper\0settime\0time\0setfeature\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE };
+  "cd\0reset\0sreset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0saveraw\0put\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0";
+enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP };
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
@@ -288,6 +288,11 @@ static void cmd_loadrom(void) {
   set_mcu_ovr(0);
 }
 
+static void cmd_loadraw(void) {
+  uint32_t address = parse_unsigned(0,16777216);
+  load_sram((uint8_t*)curchar, address);
+}
+
 static void cmd_saveraw(void) {
   uint32_t address = parse_unsigned(0,16777216);
   uint32_t length = parse_unsigned(0,16777216);
@@ -391,6 +396,11 @@ void cmd_setfeature(void) {
   fpga_set_features(feat);
 }
 
+void cmd_hexdump(void) {
+  uint32_t offset = parse_unsigned(0, 16777215);
+  uint32_t len = parse_unsigned(0, 16777216);
+  sram_hexdump(offset, len);
+}
 /* ------------------------------------------------------------------------- */
 /*   CLI interface functions                                                 */
 /* ------------------------------------------------------------------------- */
@@ -481,6 +491,10 @@ void cli_loop(void) {
       cmd_loadrom();
       break;
 
+    case CMD_LOADRAW:
+      cmd_loadraw();
+      break;
+
     case CMD_SAVERAW:
       cmd_saveraw();
       break;
@@ -515,6 +529,10 @@ void cli_loop(void) {
 
     case CMD_SETFEATURE:
       cmd_setfeature();
+      break;
+
+    case CMD_HEXDUMP:
+      cmd_hexdump();
       break;
     }
   }
