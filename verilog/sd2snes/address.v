@@ -25,7 +25,6 @@ module address(
   input SNES_CS,            // "CART" pin from SNES (active low)
   output [23:0] ROM_ADDR,   // Address to request from SRAM0
   output ROM_SEL,           // enable SRAM0 (active low)
-  input MCU_OVR,            // enable MCU master mode (active low)
   output IS_SAVERAM,        // address/CS mapped as SRAM?
   output IS_ROM,            // address mapped as ROM?
   output IS_WRITABLE,       // address somehow mapped as writable area?

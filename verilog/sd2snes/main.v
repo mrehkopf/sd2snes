@@ -151,6 +151,8 @@ sd_dma snes_sd_dma(
   .SD_DMA_PARTIAL_END(SD_DMA_PARTIAL_END)
 );
 
+wire SD_DMA_TO_ROM = (SD_DMA_STATUS && (SD_DMA_TGT == 2'b00));
+
 dac snes_dac(
   .clkin(CLK2),
   .sysclk(SNES_SYSCLK),
@@ -377,7 +379,6 @@ address snes_addr(
   .SNES_CS(SNES_CS),     // "CART" pin from SNES (active low)
   .ROM_ADDR(MAPPED_SNES_ADDR),   // Address to request from SRAM (active low)
   .ROM_SEL(ROM_SEL),     // which SRAM unit to access
-  .MCU_OVR(MCU_OVR),     // enable MCU mode (active low)
   .IS_SAVERAM(IS_SAVERAM),
   .IS_ROM(IS_ROM),
   .IS_WRITABLE(IS_WRITABLE),
@@ -497,8 +498,8 @@ end
 
 wire ASSERT_SNES_ADDR = SNES_CPU_CLK & NEED_SNES_ADDRr;
 
-assign ROM_ADDR  = (!MCU_OVR) ? MCU_ADDR[23:1] : (ASSERT_SNES_ADDR) ? MAPPED_SNES_ADDR[23:1] : ROM_ADDRr[23:1];
-assign ROM_ADDR0 = (!MCU_OVR) ? MCU_ADDR[0] : (ASSERT_SNES_ADDR) ? MAPPED_SNES_ADDR[0] : ROM_ADDRr[0];
+assign ROM_ADDR  = (SD_DMA_TO_ROM) ? MCU_ADDR[23:1] : (ASSERT_SNES_ADDR) ? MAPPED_SNES_ADDR[23:1] : ROM_ADDRr[23:1];
+assign ROM_ADDR0 = (SD_DMA_TO_ROM) ? MCU_ADDR[0] : (ASSERT_SNES_ADDR) ? MAPPED_SNES_ADDR[0] : ROM_ADDRr[0];
 
 reg ROM_WEr;
 initial ROM_WEr = 1'b1;
@@ -643,19 +644,19 @@ end
 // wire MCU_WRQ;
 // reg ROM_OEr;
 assign ROM_DATA[7:0] = ROM_ADDR0
-                       ?(!MCU_OVR ? (!MCU_WRITE ? MCU_DOUT : 8'bZ)
-                                  : (!ROM_WE ? ROM_DOUTr : 8'bZ)
+                       ?(SD_DMA_TO_ROM ? (!MCU_WRITE ? MCU_DOUT : 8'bZ)
+                                        : (!ROM_WE ? ROM_DOUTr : 8'bZ)
                         )
                        :8'bZ;
 
 assign ROM_DATA[15:8] = ROM_ADDR0 ? 8'bZ
-                        :(!MCU_OVR ? (!MCU_WRITE ? MCU_DOUT : 8'bZ)
-                                  : (!ROM_WE ? ROM_DOUTr : 8'bZ)
+                        :(SD_DMA_TO_ROM ? (!MCU_WRITE ? MCU_DOUT : 8'bZ)
+                                         : (!ROM_WE ? ROM_DOUTr : 8'bZ)
                          );
                          
 // When in MCU mode, enable SRAM_WE according to MCU programming
 // else enable SRAM_WE according to state&cycle
-assign ROM_WE = !MCU_OVR
+assign ROM_WE = SD_DMA_TO_ROM
                 ?MCU_WRITE
                 :ROM_WEr | (ASSERT_SNES_ADDR & ~snes_wr_cycle); /* & !MODE)
                   | ROM_WE_ARRAY[{SNES_WRITE_CYCLE, MCU_WRITE_CYCLE}][STATEIDX])*/
