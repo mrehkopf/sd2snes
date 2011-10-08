@@ -178,6 +178,7 @@ sram_hexdump(SRAM_MENU_ADDR+0xffc0, 16);
       sram_writelong(curr_dir_id, SRAM_DIRID);
       sram_writelong(0x12345678, SRAM_SCRATCHPAD);
     } else {
+      snes_bootprint("    same card, loading db...     \0");
       printf("same card, loading db...\n");
       load_sram((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
       load_sram((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);

@@ -312,7 +312,10 @@ uint32_t load_sram(uint8_t* filename, uint32_t base_addr) {
   DWORD filesize;
   file_open(filename, FA_READ);
   filesize = file_handle.fsize;
-  if(file_res) return 0;
+  if(file_res) {
+    printf("load_sram: could not open %s, res=%d\n", filename, file_res);
+    return 0;
+  }
   for(;;) {
     bytes_read = file_read();
     if (file_res || !bytes_read) break;
