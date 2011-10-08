@@ -250,8 +250,6 @@ snes_init:
 	stz $420a		;
 	stz $420b		;
 	stz $420c		;
-	lda #$01
-	sta $420d		; FAAAAAST
 	lda #$8f
 	sta $2100		;INIDISP: force blank
 	lda #$03		; 8x8+16x16; name=0; base=3
