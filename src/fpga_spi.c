@@ -135,7 +135,8 @@
 #include "timer.h"
 
 void fpga_spi_init(void) {
-  spi_init(SPI_SPEED_FPGA_FAST);
+  spi_init(SPI_SPEED_FAST);
+  BITBAND(FPGA_MCU_RDY_REG->FIODIR, FPGA_MCU_RDY_BIT) = 0;
 }
 
 void set_msu_addr(uint16_t address) {

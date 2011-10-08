@@ -50,7 +50,6 @@ int msu1_loop() {
   UINT bytes_read2 = 1;
   FRESULT res;
   set_dac_vol(0x00);
-  spi_set_speed(SSP_CLK_DIVISOR_FAST);
   while(fpga_status() & 0x4000);
   uint16_t fpga_status_prev = fpga_status();
   uint16_t fpga_status_now = fpga_status();
@@ -250,7 +249,6 @@ int msu1_loop() {
     if(msu1_check_reset()) {
       f_close(&msufile);
       f_close(&file_handle);
-      spi_set_speed(SSP_CLK_DIVISOR_FPGA_SLOW);
       return 1;
     }
   }

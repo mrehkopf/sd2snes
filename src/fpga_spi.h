@@ -29,6 +29,8 @@
 
 #include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
+#include "spi.h"
+#include "config.h"
 
 #define FPGA_SS_BIT	16
 #define FPGA_SS_REG	LPC_GPIO0
@@ -53,6 +55,7 @@
 #define FEAT_ST0010        (1 << 1)
 #define FEAT_DSPX          (1 << 0)
 
+#define FPGA_WAIT_RDY()    do {while(BITBAND(SSP_REGS->SR, SSP_BSY)); while(!BITBAND(FPGA_MCU_RDY_REG->FIOPIN, FPGA_MCU_RDY_BIT));} while (0)
 
 void fpga_spi_init(void);
 uint8_t fpga_test(void);
