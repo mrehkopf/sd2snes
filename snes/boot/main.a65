@@ -3,6 +3,7 @@
 
 GAME_MAIN:
 	sep #$20 : .as
+	rep #$10 : .xl
 	sei
 	stz $4200 ; inhibit VBlank NMI
 	jsr killdma
@@ -13,6 +14,13 @@ GAME_MAIN:
 	jsr colortest
 	jsr setup_hdma
 	jsr tests
+
+	; clear text buffer
+	ldx #$0041
+	lda #$00
+-	dex
+	sta @MCU_TXT, x
+	bne -
 
 	; copy routines to WRAM
 	lda #^printloop_wram
