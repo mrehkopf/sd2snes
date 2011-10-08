@@ -5,13 +5,8 @@
 #include "ff.h"
 #include "xmodem.h"
 
-#define ASC_ACK	(0x06)
-#define ASC_NAK (0x15)
-#define ASC_SOH (0x01)
-#define ASC_EOT (0x04)
-
 void xmodem_rxfile(FIL* fil) {
-  uint8_t rxbuf[128], sum=0, sender_sum;
+  uint8_t rxbuf[XMODEM_BLKSIZE], sum=0, sender_sum;
   uint8_t blknum, blknum2;
   uint8_t count;
   uint32_t totalbytes = 0;
@@ -26,12 +21,12 @@ void xmodem_rxfile(FIL* fil) {
   do {
     blknum=uart_getc();
     blknum2=uart_getc();
-    for(count=0; count<128; count++) {
+    for(count=0; count<XMODEM_BLKSIZE; count++) {
       sum += rxbuf[count] = uart_getc();
       totalbytes++;
     }
     sender_sum = uart_getc();
-    res=f_write(fil, rxbuf, 128, &written);
+    res=f_write(fil, rxbuf, XMODEM_BLKSIZE, &written);
     totalwritten += written;
     uart_putc(ASC_ACK);
   } while (uart_getc() != ASC_EOT);
