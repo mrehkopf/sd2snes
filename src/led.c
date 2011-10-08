@@ -135,8 +135,8 @@ void led_std() {
 void led_init() {
 /* power is already connected by default */
 /* set PCLK divider to 8 */
-  BITBAND(LPC_SC->PCLKSEL1, 21) = 1;
-  BITBAND(LPC_SC->PCLKSEL1, 20) = 1;
+  BITBAND(LPC_SC->PCLKSEL0, 13) = 1;
+  BITBAND(LPC_SC->PCLKSEL0, 12) = 1;
   LPC_PWM1->MR0 = 255;
   BITBAND(LPC_PWM1->LER, 0) = 1;
   BITBAND(LPC_PWM1->TCR, 0) = 1;
