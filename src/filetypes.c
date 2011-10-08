@@ -190,7 +190,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
                     file_close(); */
 
                     /* write element pointer to current dir structure */
-                    printf("d=%d Saving %lX to Address %lX  [file %s]\n", depth, db_tgt, dir_tgt, path);
+                    DBG_FS printf("d=%d Saving %lX to Address %lX  [file %s]\n", depth, db_tgt, dir_tgt, path);
                     if((db_tgt&0xffff) > ((0x10000-(sizeof(len) + pathlen + sizeof(buf)-1 + 1))&0xffff)) {
                       printf("switch! old=%lx ", db_tgt);
                       db_tgt &= 0xffff0000;

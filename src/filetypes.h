@@ -27,6 +27,12 @@
 #ifndef FILETYPES_H
 #define FILETYPES_H
 
+#ifdef DEBUG_FS
+#define DBG_FS
+#else
+#define DBG_FS while(0)
+#endif
+
 #include "ff.h"
 
 #define FS_MAX_DEPTH	(10)
