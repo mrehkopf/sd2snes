@@ -46,7 +46,6 @@ extern snes_romprops_t romprops;
 volatile int reset_changed;
 
 void prepare_reset() {
-  set_mcu_ovr(1);
   snes_reset(1);
   delay_ms(1);
   if(romprops.ramsize_bytes && fpga_test() == FPGA_TEST_TOKEN) {
@@ -165,15 +164,10 @@ void get_selected_name(uint8_t* fn) {
 }
 
 void snes_bootprint(void* msg) {
-  set_mcu_ovr(1);
   sram_writeblock(msg, SRAM_CMD_ADDR, 33);
-  set_mcu_ovr(0);
-  delay_ms(30);
-  set_mcu_ovr(1);
 }
 
 void snes_menu_errmsg(int err, void* msg) {
-  set_mcu_ovr(1);
   sram_writeblock(msg, SRAM_CMD_ADDR+1, 64);
   sram_writebyte(err, SRAM_CMD_ADDR);
 }

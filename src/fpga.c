@@ -190,17 +190,3 @@ void fpga_rompgm() {
   fpga_postinit();
 }
 
-void set_mcu_ovr(uint8_t val) {
-  if(!val) {
-    /* shared mode */
-    FPGA_SPI_SLOW();
-    SET_MCU_OVR();
-    printf("SPI slow\n");
-  } else {
-    /* mcu exclusive mode */
-    FPGA_SPI_FAST();
-    CLR_MCU_OVR();
-    printf("SPI fast\n");
-  }
-}
-

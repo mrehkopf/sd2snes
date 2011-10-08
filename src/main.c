@@ -90,18 +90,16 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
   fpga_rompgm();
   sram_writebyte(0, SRAM_CMD_ADDR);
   while(1) {
-    set_mcu_ovr(1);
     if(disk_state == DISK_CHANGED) {
       sdn_init();
       newcard = 1;
     }
     load_bootrle(SRAM_MENU_ADDR);
+sram_hexdump(SRAM_MENU_ADDR+0xffc0, 16);
     set_saveram_mask(0x1fff);
     set_rom_mask(0x3fffff);
     set_mapper(0x7);
-    set_mcu_ovr(0);
     snes_reset(0);
-    delay_ms(100);
     while(get_cic_state() == CIC_FAIL) {
       rdyled(0);
       readled(0);
@@ -137,8 +135,6 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     rdyled(1);
     readled(0);
     writeled(0);
-    /* exclusive mode */
-    set_mcu_ovr(1);
 
     *fs_path=0;
     uint32_t saved_dir_id;
@@ -201,9 +197,6 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 
     sram_writebyte(0, SRAM_CMD_ADDR);
 
-    /* shared mode */
-    set_mcu_ovr(0);
-
     if((rtc_state = rtc_isvalid()) != RTC_OK) {
       printf("RTC invalid!\n");
       sram_writebyte(0xff, SRAM_STATUS_ADDR+SYS_RTC_STATUS);
@@ -242,7 +235,6 @@ sram_hexdump(SRAM_DIR_ADDR, 0x300);
       switch(cmd) {
 	case SNES_CMD_LOADROM:
 	  get_selected_name(file_lfn);
-	  set_mcu_ovr(1);
 	  printf("Selected name: %s\n", file_lfn);
 	  filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET);
 	  break;

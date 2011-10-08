@@ -172,7 +172,6 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   tick_t ticksstart, ticks_total=0;
   ticksstart=getticks();
   printf("%s\n", filename);
-  if(flags & LOADROM_WITH_RESET) set_mcu_ovr(1);
   file_open(filename, FA_READ);
   if(file_res) {
     uart_putc('?');
@@ -269,7 +268,6 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   fpga_set_features(romprops.fpga_features);
 
   if(flags & LOADROM_WITH_RESET) {
-    set_mcu_ovr(0);
     fpga_dspx_reset(1);
     snes_reset(1);
     delay_ms(10);

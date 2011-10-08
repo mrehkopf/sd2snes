@@ -283,9 +283,7 @@ static void cmd_show_directory(void) {
 static void cmd_loadrom(void) {
   uint32_t address = 0;
   uint8_t flags = LOADROM_WITH_SRAM | LOADROM_WITH_RESET;
-  set_mcu_ovr(1);
   load_rom((uint8_t*)curchar, address, flags);
-  set_mcu_ovr(0);
 }
 
 static void cmd_loadraw(void) {
@@ -296,7 +294,6 @@ static void cmd_loadraw(void) {
 static void cmd_saveraw(void) {
   uint32_t address = parse_unsigned(0,16777216);
   uint32_t length = parse_unsigned(0,16777216);
-  set_mcu_ovr(0);
   save_sram((uint8_t*)curchar, length, address);
 }
 

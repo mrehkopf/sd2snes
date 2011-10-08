@@ -38,8 +38,6 @@ void fpga_init(void);
 void fpga_postinit(void);
 void fpga_pgm(uint8_t* filename);
 void fpga_rompgm(void);
-void set_mcu_ovr(uint8_t val);
-
 
 uint8_t SPI_OFFLOAD;
 
@@ -67,7 +65,5 @@ SET_FPGA_DIN(data); CCLK();} while (0)
 #define SET_CCLK()			do {BITBAND(LPC_GPIO0->FIOSET, 11) = 1;} while (0)
 #define CLR_CCLK()			do {BITBAND(LPC_GPIO0->FIOCLR, 11) = 1;} while (0)
 #define CCLK()				do {SET_CCLK(); CLR_CCLK();} while (0)
-#define SET_MCU_OVR()			do {BITBAND(LPC_GPIO2->FIOSET, 8) = 1;} while (0)
-#define CLR_MCU_OVR()			do {BITBAND(LPC_GPIO2->FIOCLR, 8) = 1;} while (0)
 #define SET_FPGA_DIN(data)		do {LPC_GPIO2->FIOPIN1 = data;} while (0)
 #endif
