@@ -22,11 +22,8 @@ module address(
   input [23:0] SNES_ADDR,   // requested address from SNES
   input SNES_CS,            // "CART" pin from SNES (active low)
   output [23:0] ROM_ADDR,   // Address to request from SRAM0
-  output ROM_SEL,           // enable SRAM0 (active low)
   output IS_SAVERAM,        // address/CS mapped as SRAM?
   output IS_ROM,            // address mapped as ROM?
-  input [23:0] MCU_ADDR,    // allow address to be set externally
-  input ADDR_WRITE,
   input [23:0] SAVERAM_MASK,
   input [23:0] ROM_MASK
 );
@@ -57,7 +54,5 @@ assign SRAM_SNES_ADDR = (IS_SAVERAM
                          );
 								 
 assign ROM_ADDR = SRAM_SNES_ADDR;
-
-assign ROM_SEL = 1'b0;
 
 endmodule

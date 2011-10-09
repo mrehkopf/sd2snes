@@ -58,20 +58,18 @@ reg [13:0] msu_address_r;
 wire [13:0] msu_address = msu_address_r;
 
 wire [7:0] msu_data;
-reg [7:0] msu_data_r;
 
 reg [1:0] msu_address_ext_write_sreg;
 always @(posedge clkin)
   msu_address_ext_write_sreg <= {msu_address_ext_write_sreg[0], msu_address_ext_write};
 wire msu_address_ext_write_rising = (msu_address_ext_write_sreg[1:0] == 2'b01);
 
-reg [7:0] reg_enable_sreg;
-initial reg_enable_sreg = 8'b11111111;
-always @(posedge clkin) reg_enable_sreg <= {reg_enable_sreg[6:0], enable};
+reg [4:0] reg_enable_sreg;
+initial reg_enable_sreg = 5'b11111;
+always @(posedge clkin) reg_enable_sreg <= {reg_enable_sreg[3:0], enable};
 
 reg [5:0] reg_oe_sreg;
 always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[4:0], reg_oe};
-//wire reg_oe_falling = (reg_oe_sreg[3:0] == 4'b1000);
 wire reg_oe_rising = reg_enable_sreg[4] && (reg_oe_sreg[5:0] == 6'b000001);
 
 reg [5:0] reg_we_sreg;
@@ -122,10 +120,8 @@ msu_databuf snes_msu_databuf (
   .doutb(msu_data)
 ); // Bus [7 : 0]
 
-reg [7:0] data_in_r;
 reg [7:0] data_out_r;
 assign reg_data_out = data_out_r;
-always @(posedge clkin) data_in_r <= reg_data_in;
 
 always @(posedge clkin) begin
   case(reg_addr_r[3])

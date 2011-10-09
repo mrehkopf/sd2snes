@@ -24,8 +24,7 @@ module mcu_cmd(
   input param_ready,
   input [7:0] cmd_data,
   input [7:0] param_data,
-  output [3:0] mcu_mapper,
-  output [3:0] mcu_sram_size,
+  output [2:0] mcu_mapper,
   output mcu_rrq,
   output mcu_write,
   output mcu_wrq,
@@ -36,9 +35,6 @@ module mcu_cmd(
   input [31:0] spi_byte_cnt,
   input [2:0] spi_bit_cnt,
   output [23:0] addr_out,
-  output [3:0] mapper,
-  input endmessage,
-  input startmessage,
   output [23:0] saveram_mask_out,
   output [23:0] rom_mask_out,
 
@@ -50,13 +46,11 @@ module mcu_cmd(
   input SD_DMA_SRAM_WE,
   output [1:0] SD_DMA_TGT,
   output SD_DMA_PARTIAL,
-  output [11:0] SD_DMA_PARTIAL_START,
-  output [11:0] SD_DMA_PARTIAL_END,
+  output [10:0] SD_DMA_PARTIAL_START,
+  output [10:0] SD_DMA_PARTIAL_END,
 
   // DAC
   output [10:0] dac_addr_out,
-//  output [7:0] dac_volume_out,
-//  output dac_volume_latch_out,
   input DAC_STATUS,
   output dac_play_out,
   output dac_reset_out,
@@ -97,7 +91,7 @@ module mcu_cmd(
   output reg dspx_reset_out,
 
   // feature enable
-  output reg [7:0] featurebits_out,
+  output reg [3:0] featurebits_out,
   
   // SNES sync/clk
   input snes_sysclk
@@ -118,10 +112,7 @@ clk_test snes_clk_test (
 );
 
 
-reg [3:0] MAPPER_BUF;
-reg [3:0] SRAM_SIZE_BUF;
-reg MCU_READ_BUF;
-reg MCU_WRITE_BUF;
+reg [2:0] MAPPER_BUF;
 reg [23:0] ADDR_OUT_BUF;
 reg [10:0] DAC_ADDR_OUT_BUF;
 reg [7:0] DAC_VOL_OUT_BUF;
@@ -149,9 +140,6 @@ reg [31:0] SNES_SYSCLK_FREQ_BUF;
 reg [7:0] MCU_DATA_OUT_BUF;
 reg [7:0] MCU_DATA_IN_BUF;
 reg [1:0] mcu_nextaddr_buf;
-reg mcu_nextaddr_r;
-reg SD_DMA_NEXTADDRr;
-always @(posedge clk) SD_DMA_NEXTADDRr <= SD_DMA_NEXTADDR;
 
 wire mcu_nextaddr;
 
@@ -173,14 +161,11 @@ assign SD_DMA_EN = SD_DMA_ENr;
 reg [1:0] SD_DMA_TGTr;
 assign SD_DMA_TGT = SD_DMA_TGTr;
 
-reg [11:0] SD_DMA_PARTIAL_STARTr;
-reg [11:0] SD_DMA_PARTIAL_ENDr;
+reg [10:0] SD_DMA_PARTIAL_STARTr;
+reg [10:0] SD_DMA_PARTIAL_ENDr;
 assign SD_DMA_PARTIAL_START = SD_DMA_PARTIAL_STARTr;
 assign SD_DMA_PARTIAL_END = SD_DMA_PARTIAL_ENDr;
 
-reg [2:0] spi_dma_nextaddr_r;
-
-reg [1:0] SRAM_MASK_IDX;
 reg [23:0] SAVERAM_MASK;
 reg [23:0] ROM_MASK;
 
@@ -190,9 +175,6 @@ initial begin
   ADDR_OUT_BUF = 0;
   DAC_ADDR_OUT_BUF = 0;
   MSU_ADDR_OUT_BUF = 0;
-  DAC_VOL_OUT_BUF = 0;
-  DAC_VOL_LATCH_BUF = 0;
-  spi_dma_nextaddr_r = 0;
   SD_DMA_ENr = 0;
   MAPPER_BUF = 1;
 end
@@ -202,7 +184,7 @@ always @(posedge clk) begin
   if (cmd_ready) begin
     case (cmd_data[7:4])
       4'h3: // select mapper
-        MAPPER_BUF <= cmd_data[3:0];
+        MAPPER_BUF <= cmd_data[2:0];
       4'h4: begin// SD DMA
         SD_DMA_ENr <= 1;
         SD_DMA_TGTr <= cmd_data[1:0];
@@ -235,15 +217,6 @@ always @(posedge clk) begin
         endcase
       8'h4x:
         SD_DMA_ENr <= 1'b0;
-//      8'h5x:
-//        case (spi_byte_cnt)
-//          32'h2:
-//            DAC_VOL_OUT_BUF <= param_data;
-//          32'h3:
-//            DAC_VOL_LATCH_BUF <= 1'b1;
-//          32'h4:
-//            DAC_VOL_LATCH_BUF <= 1'b0;
-//        endcase
       8'h6x:
         case (spi_byte_cnt)
           32'h2:
@@ -369,7 +342,7 @@ always @(posedge clk) begin
       8'hec: // release DSPx reset
         dspx_reset_out <= 1'b0;
       8'hed:
-        featurebits_out <= param_data[7:0];
+        featurebits_out <= param_data[3:0];
     endcase
   end
 end
@@ -479,32 +452,27 @@ always @(posedge clk) begin
   mcu_nextaddr_buf <= {mcu_nextaddr_buf[0], mcu_rq_rdy};
 end
 
-parameter ST_RRQ = 4'b0001;
-parameter ST_WAIT = 4'b0010;
-parameter ST_NEXT = 4'b0100;
-parameter ST_IDLE = 4'b1000;
+parameter ST_RQ = 2'b01;
+parameter ST_IDLE = 2'b10;
 
-reg [3:0] rrq_state;
+reg [1:0] rrq_state;
 initial rrq_state = ST_IDLE;
-reg [2:0] rrq_wait;
 reg mcu_rrq_r;
 
-reg [3:0] wrq_state;
+reg [1:0] wrq_state;
 initial wrq_state = ST_IDLE;
-reg [2:0] wrq_wait;
 reg mcu_wrq_r;
 
 always @(posedge clk) begin
   case(rrq_state)
     ST_IDLE: begin
-	   mcu_nextaddr_r <= 1'b0;
 	   if((param_ready | cmd_ready) && cmd_data[7:4] == 4'h8) begin
 		  mcu_rrq_r <= 1'b1;
-		  rrq_state <= ST_RRQ;
+		  rrq_state <= ST_RQ;
 		end else
 		  rrq_state <= ST_IDLE;
 	 end
-	 ST_RRQ: begin
+	 ST_RQ: begin
 	   mcu_rrq_r <= 1'b0;
 		rrq_state <= ST_IDLE;
 	 end
@@ -514,14 +482,13 @@ end
 always @(posedge clk) begin
   case(wrq_state)
     ST_IDLE: begin
-	   mcu_nextaddr_r <= 1'b0;
 	   if(param_ready && cmd_data[7:4] == 4'h9) begin
 		  mcu_wrq_r <= 1'b1;
-		  wrq_state <= ST_RRQ;
+		  wrq_state <= ST_RQ;
 		end else
 		  wrq_state <= ST_IDLE;
 	 end
-	 ST_RRQ: begin
+	 ST_RQ: begin
 	   mcu_wrq_r <= 1'b0;
 		wrq_state <= ST_IDLE;
 	 end
@@ -543,8 +510,6 @@ assign mcu_write = SD_DMA_STATUS
 assign addr_out = ADDR_OUT_BUF;
 assign dac_addr_out = DAC_ADDR_OUT_BUF;
 assign msu_addr_out = MSU_ADDR_OUT_BUF;
-assign dac_volume_out = DAC_VOL_OUT_BUF;
-assign dac_volume_latch_out = DAC_VOL_LATCH_BUF;
 assign dac_play_out = DAC_PLAY_OUT_BUF;
 assign dac_reset_out = DAC_RESET_OUT_BUF;
 assign msu_status_reset_we = msu_status_reset_we_buf;
@@ -564,7 +529,6 @@ assign srtc_reset = srtc_reset_buf;
 
 assign mcu_data_out = SD_DMA_STATUS ? SD_DMA_SRAM_DATA : MCU_DATA_OUT_BUF;
 assign mcu_mapper = MAPPER_BUF;
-assign mcu_sram_size = SRAM_SIZE_BUF;
 assign rom_mask_out = ROM_MASK;
 assign saveram_mask_out = SAVERAM_MASK;
 

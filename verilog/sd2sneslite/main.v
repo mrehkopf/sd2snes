@@ -88,7 +88,6 @@ wire [2:0] spi_bit_cnt;
 wire [23:0] MCU_ADDR;
 wire [7:0] mcu_data_in;
 wire [7:0] mcu_data_out;
-wire [3:0] MAPPER;
 wire [23:0] SAVERAM_MASK;
 wire [23:0] ROM_MASK;
 
@@ -105,8 +104,6 @@ spi snes_spi(
   .param_ready(spi_param_ready),
   .cmd_data(spi_cmd_data),
   .param_data(spi_param_data),
-  .endmessage(spi_endmessage),
-  .startmessage(spi_startmessage),
   .input_data(spi_input_data),
   .byte_cnt(spi_byte_cnt),
   .bit_cnt(spi_bit_cnt)
@@ -121,7 +118,6 @@ mcu_cmd snes_mcu_cmd(
   .param_ready(spi_param_ready),
   .cmd_data(spi_cmd_data),
   .param_data(spi_param_data),
-  .mcu_sram_size(SRAM_SIZE),
   .mcu_write(MCU_WRITE),
   .mcu_data_in(MCU_DINr),
   .mcu_data_out(MCU_DOUT),
@@ -129,14 +125,14 @@ mcu_cmd snes_mcu_cmd(
   .spi_bit_cnt(spi_bit_cnt),
   .spi_data_out(spi_input_data),
   .addr_out(MCU_ADDR),
-  .endmessage(spi_endmessage),
-  .startmessage(spi_startmessage),
   .saveram_mask_out(SAVERAM_MASK),
   .rom_mask_out(ROM_MASK),
   .mcu_rrq(MCU_RRQ),
   .mcu_wrq(MCU_WRQ),
   .mcu_rq_rdy(MCU_RDY)
 );
+
+wire [7:0] DCM_STATUS;
 
 // dcm1: dfs 4x
 my_dcm snes_dcm(
@@ -177,10 +173,8 @@ address snes_addr(
   .SNES_ADDR(SNES_ADDR), // requested address from SNES
   .SNES_CS(SNES_CS),     // "CART" pin from SNES (active low)
   .ROM_ADDR(MAPPED_SNES_ADDR),   // Address to request from SRAM (active low)
-  .ROM_SEL(ROM_SEL),     // which SRAM unit to access
   .IS_SAVERAM(IS_SAVERAM),
   .IS_ROM(IS_ROM),
-  .MCU_ADDR(MCU_ADDR),
   .SAVERAM_MASK(SAVERAM_MASK),
   .ROM_MASK(ROM_MASK)
 );
@@ -212,7 +206,7 @@ parameter ST_MCU_WR_WAIT2 = 18'b001000000000000000;
 parameter ST_MCU_WR_END   = 18'b010000000000000000;
 
 parameter ROM_RD_WAIT = 4'h4;
-parameter ROM_RD_WAIT_MCU = 4'h5;
+parameter ROM_RD_WAIT_MCU = 4'h6;
 parameter ROM_WR_WAIT1 = 4'h2;
 parameter ROM_WR_WAIT2 = 4'h3;
 parameter ROM_WR_WAIT_MCU = 4'h6;

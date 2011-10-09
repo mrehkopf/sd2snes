@@ -21,7 +21,7 @@
 module rtc (
   input clkin,
   input pgm_we,
-  input [59:0] rtc_data_in,
+  input [55:0] rtc_data_in,
   input we1,
   input [59:0] rtc_data_in1,
   output [59:0] rtc_data
@@ -48,7 +48,6 @@ end
 assign rtc_data = rtc_data_out_r;
 
 reg [21:0] rtc_state;
-reg [21:0] next_state;
 reg carry;
 
 reg [3:0] dom1[11:0];
@@ -89,22 +88,21 @@ parameter [21:0]
 
 initial begin
   rtc_state = STATE_IDLE;
-  next_state = STATE_IDLE;
-  dom1[0] <= 1; dom10[0] <= 3;
-  dom1[1] <= 8; dom10[1] <= 2;
-  dom1[2] <= 1; dom10[2] <= 3;
-  dom1[3] <= 0; dom10[3] <= 3;
-  dom1[4] <= 1; dom10[4] <= 3;
-  dom1[5] <= 0; dom10[5] <= 3;
-  dom1[6] <= 1; dom10[6] <= 3;
-  dom1[7] <= 1; dom10[7] <= 3;
-  dom1[8] <= 0; dom10[8] <= 3;
-  dom1[9] <= 1; dom10[9] <= 3;
-  dom1[10] <= 0; dom10[10] <= 3;
-  dom1[11] <= 1; dom10[11] <= 3;
-  month <= 0;
-  rtc_data_r <= 60'h220110301000000;
-  tick_cnt <= 0;
+  dom1[0] = 1; dom10[0] = 3;
+  dom1[1] = 8; dom10[1] = 2;
+  dom1[2] = 1; dom10[2] = 3;
+  dom1[3] = 0; dom10[3] = 3;
+  dom1[4] = 1; dom10[4] = 3;
+  dom1[5] = 0; dom10[5] = 3;
+  dom1[6] = 1; dom10[6] = 3;
+  dom1[7] = 1; dom10[7] = 3;
+  dom1[8] = 0; dom10[8] = 3;
+  dom1[9] = 1; dom10[9] = 3;
+  dom1[10] = 0; dom10[10] = 3;
+  dom1[11] = 1; dom10[11] = 3;
+  month = 0;
+  rtc_data_r = 60'h220110301000000;
+  tick_cnt = 0;
 end
 
 wire is_leapyear_feb = (month == 1) && (year[1:0] == 2'b00);
@@ -167,7 +165,7 @@ end
 
 always @(posedge clkin) begin
   if(pgm_we_rising) begin
-    rtc_data_r <= rtc_data_in;
+    rtc_data_r[55:0] <= rtc_data_in;
   end else if (we1_rising) begin
     rtc_data_r <= rtc_data_in1;
   end else begin

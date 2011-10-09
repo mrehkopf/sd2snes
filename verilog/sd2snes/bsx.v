@@ -29,11 +29,10 @@ module bsx(
   input [7:0] reg_set_bits,
   output [14:0] regs_out,
   input pgm_we,
-  input [14:0] regs_in,
   input use_bsx,
   output data_ovr,
   output flash_writable,
-  input [59:0] rtc_data
+  input [55:0] rtc_data
 );
 
 wire [3:0] reg_addr = snes_addr[19:16]; // 00-0f:5000-5fff
@@ -42,8 +41,8 @@ wire [15:0] flash_addr = snes_addr[15:0];
 
 reg flash_ovr_r;
 reg flash_we_r;
-reg [16:0] flash_cmd0;
-reg [24:0] flash_cmd5555;
+reg [7:0] flash_cmd0;
+reg [15:0] flash_cmd5555;
 
 wire cart_enable = (use_bsx) && ((snes_addr[23:12] & 12'hf0f) == 12'h005);
 
@@ -70,10 +69,9 @@ assign flash_writable = (use_bsx)
 
 assign data_ovr = cart_enable | base_enable | flash_ovr;
 
-reg [5:0] reg_oe_sreg;
-always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[4:0], reg_oe};
+reg [3:0] reg_oe_sreg;
+always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[2:0], reg_oe};
 wire reg_oe_falling = (reg_oe_sreg[3:0] == 4'b1000);
-wire reg_oe_rising = (reg_oe_sreg[3:0] == 4'b0001);
 
 reg [1:0] reg_we_sreg;
 always @(posedge clkin) reg_we_sreg <= {reg_we_sreg[0], reg_we};
@@ -83,7 +81,7 @@ reg [1:0] pgm_we_sreg;
 always @(posedge clkin) pgm_we_sreg <= {pgm_we_sreg[0], pgm_we};
 wire pgm_we_rising = (pgm_we_sreg[1:0] == 2'b01);
 
-reg [15:0] regs_tmpr;
+reg [14:0] regs_tmpr;
 reg [14:0] regs_outr;
 reg [7:0] reg_data_outr;
 
@@ -98,12 +96,14 @@ wire [7:0] rtc_sec = rtc_data[3:0] + (rtc_data[7:4] << 3) + (rtc_data[7:4] << 1)
 wire [7:0] rtc_min = rtc_data[11:8] + (rtc_data[15:12] << 3) + (rtc_data[15:12] << 1);
 wire [7:0] rtc_hour = rtc_data[19:16] + (rtc_data[23:20] << 3) + (rtc_data[23:20] << 1);
 wire [7:0] rtc_day = rtc_data[27:24] + (rtc_data[31:28] << 3) + (rtc_data[31:28] << 1);
+/* The following signals are currently unused.
+   They are kept in case more Satellaview date registers are discovered. */
 wire [7:0] rtc_month = rtc_data[35:32] + (rtc_data[39:36] << 3) + (rtc_data[39:36] << 1);
 wire [7:0] rtc_year1 = rtc_data[43:40] + (rtc_data[47:44] << 3) + (rtc_data[47:44] << 1);
 wire [7:0] rtc_year100 = rtc_data[51:48] + (rtc_data[55:52] << 3) + (rtc_data[55:52] << 1);
 
 initial begin
-  regs_tmpr <= 16'b0_000000100000000;
+  regs_tmpr <= 15'b000000100000000;
   regs_outr <= 15'b000000100000000;
   bsx_counter <= 0;
   base_regs[8] <= 0;
@@ -193,7 +193,7 @@ always @(posedge clkin) begin
       regs_outr[8:1] <= (regs_outr[8:1] | reg_set_bits[7:0]) & ~reg_reset_bits[7:0];
   end else if(reg_we_rising && cart_enable) begin
     if(reg_addr == 4'he && reg_data_in[7])
-      regs_outr <= regs_tmpr | 16'b0100000000000000;
+      regs_outr <= regs_tmpr | 15'b100000000000000;
     else
       regs_tmpr[reg_addr] <= reg_data_in[7];
   end else if(reg_we_rising && base_enable) begin
@@ -215,13 +215,13 @@ always @(posedge clkin) begin
   end else if(reg_we_rising && flash_enable) begin
     case(flash_addr)
       16'h0000: begin
-        flash_cmd0 <= {flash_cmd0[7:0], reg_data_in};
-        if(flash_cmd0[7:0] == 8'h38 && reg_data_in == 8'hd0)
+        flash_cmd0 <= reg_data_in;
+        if(flash_cmd0 == 8'h38 && reg_data_in == 8'hd0)
           flash_ovr_r <= 1;
       end
       16'h5555: begin
-        flash_cmd5555 <= {flash_cmd5555[15:0], reg_data_in};
-        if(flash_cmd5555[15:0] == 16'haa55) begin
+        flash_cmd5555 <= {flash_cmd5555[7:0], reg_data_in};
+        if(flash_cmd5555 == 16'haa55) begin
           case (reg_data_in)
             8'hf0: begin
               flash_ovr_r <= 0;
@@ -238,7 +238,7 @@ always @(posedge clkin) begin
         end
       end
       16'h2aaa: begin
-        flash_cmd5555 <= {flash_cmd5555[15:0], reg_data_in};
+        flash_cmd5555 <= {flash_cmd5555[7:0], reg_data_in};
       end
    endcase
   end

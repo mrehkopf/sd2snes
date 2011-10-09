@@ -38,13 +38,13 @@ module upd77c25(
   input [10:0] DP_ADDR,
 
   // debug
-  output [15:0] DR,
-  output [15:0] SR,
-  output [10:0] PC,
-  output [15:0] A,
-  output [15:0] B,
-  output [5:0] FL_A,
-  output [5:0] FL_B
+  output [15:0] updDR,
+  output [15:0] updSR,
+  output [10:0] updPC,
+  output [15:0] updA,
+  output [15:0] updB,
+  output [5:0] updFL_A,
+  output [5:0] updFL_B
 );
 
 parameter STATE_FETCH = 8'b00000001;
@@ -86,8 +86,6 @@ wire [15:0] ram_dina;
 reg [15:0] ram_dina_r;
 assign ram_dina = ram_dina_r;
 
-wire [10:0] pgm_addra;
-wire [23:0] pgm_dina;
 wire [23:0] pgm_doutb;
 
 upd77c25_pgmrom pgmrom (
@@ -101,7 +99,6 @@ upd77c25_pgmrom pgmrom (
 );
 
 wire [23:0] opcode_w = pgm_doutb;
-reg [23:0] opcode;
 reg [1:0] op;
 reg [1:0] op_pselect;
 reg [3:0] op_alu;
@@ -112,8 +109,6 @@ reg op_rpdcr;
 reg [3:0] op_src;
 reg [3:0] op_dst;
 
-wire [9:0] dat_addra;
-wire [15:0] dat_dina;
 wire [15:0] dat_doutb;
 
 upd77c25_datrom datrom (
@@ -126,9 +121,9 @@ upd77c25_datrom datrom (
   .doutb(dat_doutb) // output [15 : 0] doutb
 );
 
-reg [7:0] reg_nCS_sreg;
-initial reg_nCS_sreg = 8'b11111111;
-always @(posedge CLK) reg_nCS_sreg <= {reg_nCS_sreg[6:0], nCS};
+reg [4:0] reg_nCS_sreg;
+initial reg_nCS_sreg = 5'b11111;
+always @(posedge CLK) reg_nCS_sreg <= {reg_nCS_sreg[3:0], nCS};
 
 reg [5:0] reg_oe_sreg;
 initial reg_oe_sreg = 6'b111111;
@@ -136,16 +131,14 @@ always @(posedge CLK) reg_oe_sreg <= {reg_oe_sreg[4:0], nRD};
 wire reg_oe_rising = !reg_nCS_sreg[4] && (reg_oe_sreg[5:0] == 6'b000001);
 wire reg_oe_falling = (reg_oe_sreg[5:0] == 6'b100000);
 
-reg [7:0] reg_DP_nCS_sreg;
-initial reg_DP_nCS_sreg = 8'b11111111;
-always @(posedge CLK) reg_DP_nCS_sreg <= {reg_DP_nCS_sreg[6:0], DP_nCS};
+reg [4:0] reg_DP_nCS_sreg;
+initial reg_DP_nCS_sreg = 5'b11111;
+always @(posedge CLK) reg_DP_nCS_sreg <= {reg_DP_nCS_sreg[3:0], DP_nCS};
 
 reg [5:0] reg_we_sreg;
 initial reg_we_sreg = 6'b111111;
 always @(posedge CLK) reg_we_sreg <= {reg_we_sreg[4:0], nWR};
 wire reg_we_rising = !reg_nCS_sreg[4] && (reg_we_sreg[5:0] == 6'b000001);
-wire reg_dp_we_rising = !reg_DP_nCS_sreg[5] && (reg_we_sreg[1:0] == 2'b01);
-wire reg_we_falling = (reg_we_sreg[1:0] == 2'b10);
 
 wire [15:0] ram_douta;
 wire [9:0] ram_addra;
@@ -155,11 +148,6 @@ wire [7:0] UPD_DO;
 
 reg ram_web;
 reg [10:0] ram_addrb;
-
-reg [65:0] DP_ADDRr;
-always @(posedge CLK) begin
-  DP_ADDRr <= {DP_ADDRr[54:0], DP_ADDR};
-end
 
 always @(posedge CLK) begin
   ram_addrb <= DP_ADDR; //r[10:0];
@@ -191,7 +179,6 @@ reg [15:0] regs_trb;
 reg [15:0] regs_tr;
 reg [15:0] regs_dr;
 reg [15:0] regs_sr;
-reg [15:0] regs_si;
 reg [3:0] regs_sp;
 
 reg cond_true;
@@ -212,19 +199,19 @@ reg [15:0] alu_r;
 
 reg [1:0] alu_store;
 
-reg [15:0] stack [15:0];
+reg [10:0] stack [15:0];
 
 reg [15:0] idb;
 
 reg [15:0] regs_ab [1:0];
 
-assign DR = regs_dr;
-assign SR = regs_sr;
-assign PC = pc;
-assign A = regs_ab[0];
-assign B = regs_ab[1];
-assign FL_A = {flags_s1[0],flags_s0[0],flags_c[0],flags_z[0],flags_ov1[0],flags_ov0[0]};
-assign FL_B = {flags_s1[1],flags_s0[1],flags_c[1],flags_z[1],flags_ov1[1],flags_ov0[1]};
+assign updDR = regs_dr;
+assign updSR = regs_sr;
+assign updPC = pc;
+assign updA = regs_ab[0];
+assign updB = regs_ab[1];
+assign updFL_A = {flags_s1[0],flags_s0[0],flags_c[0],flags_z[0],flags_ov1[0],flags_ov0[0]};
+assign updFL_B = {flags_s1[1],flags_s0[1],flags_c[1],flags_z[1],flags_ov1[1],flags_ov0[1]};
 
 
 initial begin
@@ -252,12 +239,10 @@ initial begin
   regs_dr = 16'b0;
 end
 
-reg [7:0] A0r;
-initial A0r = 8'b11111111;
-always @(posedge CLK) A0r <= {A0r[6:0], A0};
+reg [3:0] A0r;
+initial A0r = 4'b1111;
+always @(posedge CLK) A0r <= {A0r[2:0], A0};
 
-reg [7:0] last_op;
-initial last_op = 8'h00;
 always @(posedge CLK) begin
   if(RST) begin
     if((op_src == 4'b1000 && op[1] == 1'b0 && insn_state == STATE_STORE)
@@ -387,7 +372,6 @@ always @(posedge CLK) begin
           endcase
         end
 
-        opcode <= opcode_w;
         op <= opcode_w[23:22];
         op_pselect <= opcode_w[21:20];
         op_alu <= opcode_w[19:16];
@@ -658,7 +642,6 @@ always @(posedge CLK) begin
     flags_s1 <= 2'b0;
     regs_tr <= 16'b0;
     regs_trb <= 16'b0;
-    opcode <= 23'b0;
     op_pselect <= 2'b0;
     op_alu <= 4'b0;
     op_asl <= 1'b0;

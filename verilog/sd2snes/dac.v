@@ -36,7 +36,6 @@ module dac(
 
 reg[8:0] dac_address_r;
 wire[8:0] dac_address = dac_address_r;
-reg dac_nextaddr_r;
 
 wire[31:0] dac_data;
 assign DAC_STATUS = dac_address_r[8];
@@ -48,7 +47,6 @@ reg[2:0] sysclk_sreg;
 wire sysclk_rising = (sysclk_sreg[2:1] == 2'b01);
 
 reg [25:0] interpol_count;
-reg interpol_overflow;
 
 always @(posedge clkin) begin
   sysclk_sreg <= {sysclk_sreg[1:0], sysclk};
@@ -63,13 +61,10 @@ dac_buf snes_dac_buf (
   .addrb(dac_address), // Bus [8 : 0]
   .doutb(dac_data)); // Bus [31 : 0]
 
-reg [15:0] cnt;
+reg [8:0] cnt;
 reg [15:0] smpcnt;
-reg [15:0] samples;
-wire [15:0] sample = {smpcnt[10] ? ~smpcnt[9:0] : smpcnt[9:0], 6'b0};
-wire [15:0] sample2 = {smpcnt[9] ? ~smpcnt[8:0] : smpcnt[8:0], 7'b0};
+reg [1:0] samples;
 reg [15:0] smpshift;
-reg [15:0] smpdata;
 
 assign mclk = cnt[2]; // mclk = clk/8
 assign lrck = cnt[8]; // lrck = mclk/128
@@ -92,7 +87,7 @@ wire reset_rising = (reset_sreg[1:0] == 2'b01);
 reg play_r;
 
 initial begin
-  cnt = 16'hff00;
+  cnt = 9'h100;
   smpcnt = 16'b0;
   lrck_sreg = 2'b11;
   sclk_sreg = 1'b0;
@@ -101,22 +96,19 @@ initial begin
   vol_latch_reg = 1'b0;
   vol_reg = 8'h0;
   vol_target_reg = 8'hff;
-  samples <= 16'h0;
+  samples <= 2'b00;
 end
 
 always @(posedge clkin) begin
   if(reset_rising) begin
     dac_address_r <= 0;
-    interpol_overflow <= 0;
     interpol_count <= 0;
   end else if(sysclk_rising) begin
     if(interpol_count > 59378938) begin
       interpol_count <= interpol_count + 122500 - 59501439;
       dac_address_r <= dac_address_r + play_r;
-      interpol_overflow <= 1;
     end else begin
       interpol_count <= interpol_count + 122500;
-      interpol_overflow <= 0;
     end
   end
 end

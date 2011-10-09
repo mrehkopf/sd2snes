@@ -23,7 +23,6 @@ module sd_dma(
   inout SD_CLK,
   input CLK,
   input SD_DMA_EN,
-  input SD_DMA_TGT,
   output SD_DMA_STATUS,
   output SD_DMA_SRAM_WE,
   output SD_DMA_NEXTADDR,
@@ -39,17 +38,17 @@ reg SD_DMA_PARTIALr;
 always @(posedge CLK) SD_DMA_PARTIALr <= SD_DMA_PARTIAL;
 
 reg SD_DMA_DONEr;
-reg[2:0] SD_DMA_DONEr2;
+reg[1:0] SD_DMA_DONEr2;
 initial begin
-  SD_DMA_DONEr2 = 3'b000;
+  SD_DMA_DONEr2 = 2'b00;
   SD_DMA_DONEr = 1'b0;
 end
-always @(posedge CLK) SD_DMA_DONEr2 <= {SD_DMA_DONEr2[1:0], SD_DMA_DONEr};
+always @(posedge CLK) SD_DMA_DONEr2 <= {SD_DMA_DONEr2[0], SD_DMA_DONEr};
 wire SD_DMA_DONE_rising = (SD_DMA_DONEr2[1:0] == 2'b01);
 
-reg [2:0] SD_DMA_ENr;
-initial SD_DMA_ENr = 3'b000;
-always @(posedge CLK) SD_DMA_ENr <= {SD_DMA_ENr[1:0], SD_DMA_EN};
+reg [1:0] SD_DMA_ENr;
+initial SD_DMA_ENr = 2'b00;
+always @(posedge CLK) SD_DMA_ENr <= {SD_DMA_ENr[0], SD_DMA_EN};
 wire SD_DMA_EN_rising = (SD_DMA_ENr [1:0] == 2'b01);
 
 reg SD_DMA_STATUSr;
@@ -68,9 +67,9 @@ assign SD_DMA_NEXTADDR = (cyclecnt < 1025 && SD_DMA_STATUSr) ? SD_DMA_NEXTADDRr 
 reg[7:0] SD_DMA_SRAM_DATAr;
 assign SD_DMA_SRAM_DATA = SD_DMA_SRAM_DATAr;
 
-// we have 4 internal cycles per SD clock
-reg [12:0] clkcnt;
-initial clkcnt = 13'd0;
+// we have 4 internal cycles per SD clock, 8 per RAM byte write
+reg [2:0] clkcnt;
+initial clkcnt = 3'b000;
 reg SD_CLKr;
 always @(posedge CLK) SD_CLKr <= clkcnt[1];
 assign SD_CLK = SD_DMA_STATUSr ? SD_CLKr : 1'bZ;

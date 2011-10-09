@@ -19,20 +19,16 @@
 //////////////////////////////////////////////////////////////////////////////////
 module address(
   input CLK,
-  input [7:0] featurebits,  // peripheral enable/disable
+  input [3:0] featurebits,  // peripheral enable/disable
   input [2:0] MAPPER,       // MCU detected mapper
   input [23:0] SNES_ADDR,   // requested address from SNES
-  input SNES_CS,            // "CART" pin from SNES (active low)
   output [23:0] ROM_ADDR,   // Address to request from SRAM0
   output ROM_SEL,           // enable SRAM0 (active low)
   output IS_SAVERAM,        // address/CS mapped as SRAM?
   output IS_ROM,            // address mapped as ROM?
   output IS_WRITABLE,       // address somehow mapped as writable area?
-  input [23:0] MCU_ADDR,    // allow address to be set externally
-  input ADDR_WRITE,
   input [23:0] SAVERAM_MASK,
   input [23:0] ROM_MASK,
-  input use_msu,
   output msu_enable,
   output srtc_enable,
   output use_bsx,
@@ -48,8 +44,6 @@ parameter [2:0]
   FEAT_SRTC = 2,
   FEAT_MSU1 = 3
 ;
-
-wire [1:0] SRAM_BANK;
 
 wire [23:0] SRAM_SNES_ADDR;
 
@@ -187,12 +181,12 @@ assign SRAM_SNES_ADDR = ((MAPPER == 3'b000)
 
 assign ROM_ADDR = SRAM_SNES_ADDR;
 
-assign ROM_SEL = 1'b0; // (MODE) ? CS_ARRAY[SRAM_BANK] : IS_SAVERAM ? 4'b1000 : CS_ARRAY[SRAM_BANK];
+assign ROM_SEL = 1'b0;
 
 assign msu_enable_w = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
-reg [7:0] msu_enable_r;
-initial msu_enable_r = 8'b00000000;
-always @(posedge CLK) msu_enable_r <= {msu_enable_r[6:0], msu_enable_w};
+reg [5:0] msu_enable_r;
+initial msu_enable_r = 6'b000000;
+always @(posedge CLK) msu_enable_r <= {msu_enable_r[4:0], msu_enable_w};
 assign msu_enable = &msu_enable_r[5:2];
 
 assign use_bsx = (MAPPER == 3'b011);
@@ -235,9 +229,9 @@ assign dspx_a0 = featurebits[FEAT_DSPX]
 //assign dspx_dp_enable = &dspx_dp_enable_r[5:2];
 assign dspx_dp_enable = dspx_dp_enable_w;
 
-reg [7:0] dspx_enable_r;
-initial dspx_enable_r = 8'b00000000;
-always @(posedge CLK) dspx_enable_r <= {dspx_enable_r[6:0], dspx_enable_w};
+reg [5:0] dspx_enable_r;
+initial dspx_enable_r = 6'b000000;
+always @(posedge CLK) dspx_enable_r <= {dspx_enable_r[4:0], dspx_enable_w};
 assign dspx_enable = &dspx_enable_r[5:2];
 
 

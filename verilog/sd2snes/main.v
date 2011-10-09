@@ -30,10 +30,9 @@ module main(
   inout [7:0] SNES_DATA,
   input SNES_CPU_CLK,
   input SNES_REFRESH,
-  inout SNES_IRQ,
+  output SNES_IRQ,
   output SNES_DATABUS_OE,
   output SNES_DATABUS_DIR,
-  output IRQ_DIR,
   input SNES_SYSCLK,
 
   /* SRAM signals */
@@ -81,9 +80,7 @@ wire [7:0] spi_input_data;
 wire [31:0] spi_byte_cnt;
 wire [2:0] spi_bit_cnt;
 wire [23:0] MCU_ADDR;
-wire [7:0] mcu_data_in;
-wire [7:0] mcu_data_out;
-wire [3:0] MAPPER;
+wire [2:0] MAPPER;
 wire [23:0] SAVERAM_MASK;
 wire [23:0] ROM_MASK;
 wire [7:0] SD_DMA_SRAM_DATA;
@@ -105,16 +102,15 @@ wire [5:0] msu_status_reset_bits;
 wire [5:0] msu_status_set_bits;
 
 wire [14:0] bsx_regs;
-wire [14:0] bsx_regs_in;
 wire [7:0] BSX_SNES_DATA_IN;
 wire [7:0] BSX_SNES_DATA_OUT;
 wire [7:0] bsx_regs_reset_bits;
 wire [7:0] bsx_regs_set_bits;
 
 wire [59:0] rtc_data;
-wire [59:0] rtc_data_in;
+wire [55:0] rtc_data_in;
 wire [59:0] srtc_rtc_data_out;
-wire [7:0] SRTC_SNES_DATA_IN;
+wire [3:0] SRTC_SNES_DATA_IN;
 wire [7:0] SRTC_SNES_DATA_OUT;
 
 wire [7:0] DSPX_SNES_DATA_IN;
@@ -128,13 +124,10 @@ wire [15:0] dspx_dat_data;
 wire [10:0] dspx_dat_addr;
 wire dspx_dat_we;
 
-wire [7:0] featurebits;
+wire [3:0] featurebits;
 
 wire [23:0] MAPPED_SNES_ADDR;
 wire ROM_ADDR0;
-wire [22:0] MAPPED_SNES_ADDR2 = MAPPED_SNES_ADDR[23:1];
-
-//wire SD_DMA_EN; //SPI_DMA_CTRL;
 
 sd_dma snes_sd_dma(
   .CLK(CLK2),
@@ -145,7 +138,6 @@ sd_dma snes_sd_dma(
   .SD_DMA_SRAM_WE(SD_DMA_SRAM_WE),
   .SD_DMA_SRAM_DATA(SD_DMA_SRAM_DATA),
   .SD_DMA_NEXTADDR(SD_DMA_NEXTADDR),
-  .SD_DMA_TGT(SD_DMA_TGT),
   .SD_DMA_PARTIAL(SD_DMA_PARTIAL),
   .SD_DMA_PARTIAL_START(SD_DMA_PARTIAL_START),
   .SD_DMA_PARTIAL_END(SD_DMA_PARTIAL_END)
@@ -171,7 +163,6 @@ dac snes_dac(
 
 srtc snes_srtc (
   .clkin(CLK2),
-  /*XXX*/.reg_addr(srtc_reg_addr),
   .addr_in(SNES_ADDR[0]),
   .data_in(SRTC_SNES_DATA_IN),
   .data_out(SRTC_SNES_DATA_OUT),
@@ -199,7 +190,7 @@ msu snes_msu (
   .pgm_address(msu_write_addr),
   .pgm_data(SD_DMA_SRAM_DATA),
   .pgm_we(SD_DMA_TGT==2'b10 ? SD_DMA_SRAM_WE : 1'b1),
-  .reg_addr(SNES_ADDR),
+  .reg_addr(SNES_ADDR[2:0]),
   .reg_data_in(MSU_SNES_DATA_IN),
   .reg_data_out(MSU_SNES_DATA_OUT),
   .reg_oe(SNES_READ),
@@ -230,7 +221,7 @@ bsx snes_bsx(
   .reg_set_bits(bsx_regs_set_bits),
   .data_ovr(bsx_data_ovr),
   .flash_writable(IS_FLASHWR),
-  .rtc_data(rtc_data)
+  .rtc_data(rtc_data[55:0])
 );
 
 spi snes_spi(
@@ -280,8 +271,6 @@ mcu_cmd snes_mcu_cmd(
   .cmd_data(spi_cmd_data),
   .param_data(spi_param_data),
   .mcu_mapper(MAPPER),
-  .mcu_sram_size(SRAM_SIZE),
-//  .mcu_read(MCU_READ),
   .mcu_write(MCU_WRITE),
   .mcu_data_in(MCU_DINr),
   .mcu_data_out(MCU_DOUT),
@@ -289,8 +278,6 @@ mcu_cmd snes_mcu_cmd(
   .spi_bit_cnt(spi_bit_cnt),
   .spi_data_out(spi_input_data),
   .addr_out(MCU_ADDR),
-  .endmessage(spi_endmessage),
-  .startmessage(spi_startmessage),
   .saveram_mask_out(SAVERAM_MASK),
   .rom_mask_out(ROM_MASK),
   .SD_DMA_EN(SD_DMA_EN),
@@ -337,6 +324,7 @@ mcu_cmd snes_mcu_cmd(
   .mcu_rq_rdy(MCU_RDY)
 );
 
+wire [7:0] DCM_STATUS;
 // dcm1: dfs 4x
 my_dcm snes_dcm(
   .CLKIN(CLKIN),
@@ -350,13 +338,8 @@ assign DCM_RST=0;
 
 reg [5:0] SNES_READr;
 reg [5:0] SNES_WRITEr;
-reg [12:0] SNES_CPU_CLKr;
-reg [5:0] SNES_RWr;
-reg [23:0] SNES_ADDRr;
+reg [5:0] SNES_CPU_CLKr;
 
-wire SNES_RW = (SNES_READ & SNES_WRITE);
-
-wire SNES_RW_start = (SNES_RWr == 6'b111110); // falling edge marks beginning of cycle
 wire SNES_RD_start = (SNES_READr == 6'b111110);
 wire SNES_WR_start = (SNES_WRITEr == 6'b111110);
 wire SNES_cycle_start = (SNES_CPU_CLKr[5:0] == 6'b000001);
@@ -365,28 +348,22 @@ wire SNES_cycle_end = (SNES_CPU_CLKr[5:0] == 6'b111110);
 always @(posedge CLK2) begin
   SNES_READr <= {SNES_READr[4:0], SNES_READ};
   SNES_WRITEr <= {SNES_WRITEr[4:0], SNES_WRITE};
-  SNES_CPU_CLKr <= {SNES_CPU_CLKr[11:0], SNES_CPU_CLK};
-  SNES_RWr <= {SNES_RWr[4:0], SNES_RW};
+  SNES_CPU_CLKr <= {SNES_CPU_CLKr[4:0], SNES_CPU_CLK};
 end
-
-wire ROM_SEL;
 
 address snes_addr(
   .CLK(CLK2),
   .MAPPER(MAPPER),
   .featurebits(featurebits),
   .SNES_ADDR(SNES_ADDR), // requested address from SNES
-  .SNES_CS(SNES_CS),     // "CART" pin from SNES (active low)
   .ROM_ADDR(MAPPED_SNES_ADDR),   // Address to request from SRAM (active low)
   .ROM_SEL(ROM_SEL),     // which SRAM unit to access
   .IS_SAVERAM(IS_SAVERAM),
   .IS_ROM(IS_ROM),
   .IS_WRITABLE(IS_WRITABLE),
-  .MCU_ADDR(MCU_ADDR),
   .SAVERAM_MASK(SAVERAM_MASK),
   .ROM_MASK(ROM_MASK),
   //MSU-1
-  .use_msu(use_msu),
   .msu_enable(msu_enable),
   //BS-X
   .use_bsx(use_bsx),
@@ -398,11 +375,6 @@ address snes_addr(
   .dspx_dp_enable(dspx_dp_enable),
   .dspx_a0(DSPX_A0)
 );
-
-wire SNES_READ_CYCLEw;
-wire SNES_WRITE_CYCLEw;
-wire MCU_READ_CYCLEw;
-wire MCU_WRITE_CYCLEw;
 
 parameter MODE_SNES = 1'b0;
 parameter MODE_MCU = 1'b1;
@@ -426,53 +398,16 @@ parameter ST_MCU_WR_WAIT2 = 18'b001000000000000000;
 parameter ST_MCU_WR_END   = 18'b010000000000000000;
 
 parameter ROM_RD_WAIT = 4'h4;
-parameter ROM_RD_WAIT_MCU = 4'h5;
+parameter ROM_RD_WAIT_MCU = 4'h6;
 parameter ROM_WR_WAIT1 = 4'h2;
 parameter ROM_WR_WAIT2 = 4'h3;
 parameter ROM_WR_WAIT_MCU = 4'h6;
 
 reg [17:0] STATE;
-reg [3:0] STATEIDX;
-
-reg [1:0] CYCLE_RESET;
-reg ROM_WE_MASK;
-reg ROM_OE_MASK;
-
-reg SNES_READ_CYCLE;
-reg SNES_WRITE_CYCLE;
-reg MCU_READ_CYCLE;
-reg MCU_WRITE_CYCLE;
-reg MCU_SPI_WRITEONCE;
-reg MCU_SPI_READONCE;
-reg MCU_SPI_WRITE;
-reg MCU_SPI_READ;
-reg MCU_SPI_ADDR_INCREMENT;
-reg [7:0] MCU_DATA_IN;
-reg [3:0] MAPPER_BUF;
-
-reg SNES_DATABUS_OE_BUF;
-reg SNES_DATABUS_DIR_BUF;
-
-initial begin
-   CYCLE_RESET = 2'b0;
-   STATE = ST_IDLE;
-   STATEIDX = 13;
-   ROM_WE_MASK = 1'b1;
-   ROM_OE_MASK = 1'b1;
-   SNES_READ_CYCLE = 1'b1;
-   SNES_WRITE_CYCLE = 1'b1;
-   MCU_READ_CYCLE = 1'b1;
-   MCU_WRITE_CYCLE = 1'b1;
-end
-
-// falling edge of SNES /RD or /WR marks the beginning of a new cycle
-// SNES READ or WRITE always starts @posedge CLK !!
-// CPU cycle can be 6, 8 or 12 CLKIN cycles so we must satisfy
-// the minimum of 6 SNES cycles to get everything done.
-// we have 24 internal cycles to work with. (CLKIN * 4)
+initial STATE = ST_IDLE;
 
 assign DSPX_SNES_DATA_IN = SNES_DATA;
-assign SRTC_SNES_DATA_IN = SNES_DATA;
+assign SRTC_SNES_DATA_IN = SNES_DATA[3:0];
 assign MSU_SNES_DATA_IN = SNES_DATA;
 assign BSX_SNES_DATA_IN = SNES_DATA;
 
@@ -521,13 +456,6 @@ always @(posedge CLK2) begin
 	 RQ_MCU_RDYr <= 1'b1;
   end
 end
-
-reg [23:0] SNES_ADDRsr[1:0];
-always @(posedge CLK2) begin
-  SNES_ADDRsr[0] <= SNES_ADDR;
-  SNES_ADDRsr[1] <= SNES_ADDRsr[0];
-end
-wire SNES_ADDRchg = (SNES_ADDRsr[0] != SNES_ADDRsr[1]);
 
 reg snes_wr_cycle;
 
@@ -640,9 +568,6 @@ always @(posedge CLK2) begin
   end
 end
 
-// wire MCU_RRQ;
-// wire MCU_WRQ;
-// reg ROM_OEr;
 assign ROM_DATA[7:0] = ROM_ADDR0
                        ?(SD_DMA_TO_ROM ? (!MCU_WRITE ? MCU_DOUT : 8'bZ)
                                         : (!ROM_WE ? ROM_DOUTr : 8'bZ)
@@ -653,26 +578,19 @@ assign ROM_DATA[15:8] = ROM_ADDR0 ? 8'bZ
                         :(SD_DMA_TO_ROM ? (!MCU_WRITE ? MCU_DOUT : 8'bZ)
                                          : (!ROM_WE ? ROM_DOUTr : 8'bZ)
                          );
-                         
-// When in MCU mode, enable SRAM_WE according to MCU programming
-// else enable SRAM_WE according to state&cycle
+
 assign ROM_WE = SD_DMA_TO_ROM
                 ?MCU_WRITE
-                :ROM_WEr | (ASSERT_SNES_ADDR & ~snes_wr_cycle); /* & !MODE)
-                  | ROM_WE_ARRAY[{SNES_WRITE_CYCLE, MCU_WRITE_CYCLE}][STATEIDX])*/
+                :ROM_WEr | (ASSERT_SNES_ADDR & ~snes_wr_cycle);
 
-// When in MCU mode, enable SRAM_OE whenever not writing
-// else enable SRAM_OE according to state&cycle
-assign ROM_OE = 1'b0; //!MCU_OVR
-                //?MCU_READ
-                //:ROM_OE_ARRAY[{SNES_WRITE_CYCLE, MCU_WRITE_CYCLE}][STATEIDX];
+// OE always active. Overridden by WE when needed.
+assign ROM_OE = 1'b0;
 
-assign ROM_CE = 1'b0; // !MCU_OVR ? (MCU_READ & MCU_WRITE) : ROM_SEL;
+assign ROM_CE = 1'b0;
 
 assign ROM_BHE = !ROM_WE ? ROM_ADDR0 : 1'b0;
 assign ROM_BLE = !ROM_WE ? !ROM_ADDR0 : 1'b0;
 
-//assign SNES_DATABUS_OE = (!IS_SAVERAM & SNES_CS) | (SNES_READ & SNES_WRITE);
 assign SNES_DATABUS_OE = (dspx_enable | dspx_dp_enable) ? 1'b0 :
                          msu_enable ? 1'b0 :
                          bsx_data_ovr ? (SNES_READ & SNES_WRITE) :

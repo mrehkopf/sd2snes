@@ -20,9 +20,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 module srtc(
   input clkin,
-  input [4:0] reg_addr,
   input addr_in,
-  input [7:0] data_in,
+  input [3:0] data_in,
   output [7:0] data_out,
   input [59:0] rtc_data_in,
   output [59:0] rtc_data_out,
@@ -33,9 +32,6 @@ module srtc(
   input reset
 );
 
-reg rtc_dirty_r;
-assign rtc_dirty = rtc_dirty_r;
-
 reg [59:0] rtc_data_r;
 reg [59:0] rtc_data_out_r;
 assign rtc_data_out = rtc_data_out_r;
@@ -43,17 +39,14 @@ assign rtc_data_out = rtc_data_out_r;
 reg [3:0] rtc_ptr;
 
 reg [7:0] data_out_r;
-reg [7:0] data_in_r;
 reg [4:0] mode_r;
-reg [3:0] command_r;
 reg rtc_we_r;
 assign rtc_we = rtc_we_r;
 assign data_out = data_out_r;
 
-reg [5:0] reg_oe_sreg;
-always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[4:0], reg_oe};
-wire reg_oe_falling = (reg_oe_sreg[3:0] == 4'b1000);
-wire reg_oe_rising = (reg_oe_sreg[3:0] == 4'b0001);
+reg [3:0] reg_oe_sreg;
+always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[2:0], reg_oe};
+wire reg_oe_falling = (reg_oe_sreg == 4'b1000);
 
 reg [1:0] reg_we_sreg;
 always @(posedge clkin) reg_we_sreg <= {reg_we_sreg[0], reg_we};
@@ -91,7 +84,7 @@ always @(posedge clkin) begin
     case (addr_in)
 //     1'b0: // data register is read only
       1'b1: // control register
-        case (data_in[3:0])
+        case (data_in)
           4'hd: begin
             mode_r <= SRTC_READ;
             rtc_ptr <= 4'hf;
@@ -103,7 +96,7 @@ always @(posedge clkin) begin
           end
           default: begin
             if(mode_r == SRTC_COMMAND) begin
-              case (data_in[3:0])
+              case (data_in)
                 4'h0: begin
                   mode_r <= SRTC_WRITE;
                   rtc_data_out_r <= rtc_data_in;
@@ -119,30 +112,28 @@ always @(posedge clkin) begin
             end else if(mode_r == SRTC_WRITE) begin
               rtc_ptr <= rtc_ptr + 1;
               case(rtc_ptr)
-                0: rtc_data_out_r[3:0] <= data_in[3:0];
-                1: rtc_data_out_r[7:4] <= data_in[3:0];
-                2: rtc_data_out_r[11:8] <= data_in[3:0];
-                3: rtc_data_out_r[15:12] <= data_in[3:0];
-                4: rtc_data_out_r[19:16] <= data_in[3:0];
-                5: rtc_data_out_r[23:20] <= data_in[3:0];
-                6: rtc_data_out_r[27:24] <= data_in[3:0];
-                7: rtc_data_out_r[31:28] <= data_in[3:0];
+                0: rtc_data_out_r[3:0] <= data_in;
+                1: rtc_data_out_r[7:4] <= data_in;
+                2: rtc_data_out_r[11:8] <= data_in;
+                3: rtc_data_out_r[15:12] <= data_in;
+                4: rtc_data_out_r[19:16] <= data_in;
+                5: rtc_data_out_r[23:20] <= data_in;
+                6: rtc_data_out_r[27:24] <= data_in;
+                7: rtc_data_out_r[31:28] <= data_in;
                 8: begin
-                  rtc_data_out_r[35:32] <= (data_in[3:0] < 10)
-                                           ? data_in[3:0]
-                                           : data_in[3:0] - 10;
-                  rtc_data_out_r[39:36] <= data_in[3:0] < 10 ? 0 : 1;
+                  rtc_data_out_r[35:32] <= (data_in < 10)
+                                           ? data_in
+                                           : data_in - 10;
+                  rtc_data_out_r[39:36] <= data_in < 10 ? 0 : 1;
                 end
-                9: rtc_data_out_r[43:40] <= data_in[3:0];
-                10: rtc_data_out_r[47:44] <= data_in[3:0];
+                9: rtc_data_out_r[43:40] <= data_in;
+                10: rtc_data_out_r[47:44] <= data_in;
                 11: begin
-                  rtc_data_out_r[51:48] <= (data_in[3:0] < 10)
-                                           ? data_in[3:0]
-                                           : data_in[3:0] - 10;
-                  rtc_data_out_r[55:52] <= data_in[3:0] < 10 ? 1 : 2;
+                  rtc_data_out_r[51:48] <= (data_in < 10)
+                                           ? data_in
+                                           : data_in - 10;
+                  rtc_data_out_r[55:52] <= data_in < 10 ? 1 : 2;
                 end
-                default:
-                  rtc_dirty_r <= 1;
               endcase
               mode_r <= SRTC_WRITE2;
               we_countdown_r <= 5;
