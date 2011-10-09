@@ -271,6 +271,8 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   if(msu1_check(filename)) {
     romprops.fpga_features |= FEAT_MSU1;
     romprops.has_msu1 = 1;
+  } else {
+    romprops.has_msu1 = 0;
   }
   printf("done\n");
 
