@@ -79,7 +79,7 @@ led_pwm();
 printf("PCONP=%lx\n", LPC_SC->PCONP);
 
   file_init();
-  cic_init(1);
+  cic_init(0);
 /* setup timer (fpga clk) */
   LPC_TIM3->CTCR=0;
   LPC_TIM3->EMR=EMC0TOGGLE;
@@ -95,7 +95,6 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       newcard = 1;
     }
     load_bootrle(SRAM_MENU_ADDR);
-sram_hexdump(SRAM_MENU_ADDR+0xffc0, 16);
     set_saveram_mask(0x1fff);
     set_rom_mask(0x3fffff);
     set_mapper(0x7);
@@ -222,7 +221,6 @@ sram_hexdump(SRAM_MENU_ADDR+0xffc0, 16);
     printf("test sram\n");
     while(!sram_reliable()) cli_entrycheck();
     printf("ok\n");
-sram_hexdump(SRAM_DIR_ADDR, 0x300);
 //while(1) {
 //  delay_ms(1000);
 //  printf("Estimated SNES master clock: %ld Hz\n", get_snes_sysclk());
