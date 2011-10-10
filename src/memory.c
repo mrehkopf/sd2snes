@@ -439,8 +439,8 @@ uint8_t sram_reliable() {
     val=sram_readlong(SRAM_SCRATCHPAD);
     if(val==0x12345678) {
       score++;
-/*  } else {
-      dprintf("i=%d val=%08lX\n", i, val); */
+    } else {
+      printf("i=%d val=%08lX\n", i, val);
     }
   }
   if(score<SRAM_RELIABILITY_SCORE) {
