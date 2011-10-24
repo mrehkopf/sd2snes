@@ -59,6 +59,7 @@ reg [10:0] cyclecnt;
 initial cyclecnt = 11'd0;
 
 reg SD_DMA_SRAM_WEr;
+initial SD_DMA_SRAM_WEr = 1'b1;
 assign SD_DMA_SRAM_WE = (cyclecnt < 1025 && SD_DMA_STATUSr) ? SD_DMA_SRAM_WEr : 1'b1;
 
 reg SD_DMA_NEXTADDRr;
