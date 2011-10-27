@@ -226,18 +226,16 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     sram_writebyte(0xfc, rombase+0xd5);
     set_fpga_time(0x0220110301180530LL);
   }
-  if(romprops.has_dspx) {
-    printf("DSPx game. Loading firmware image %s...\n", romprops.necdsp_fw);
-    if(romprops.has_st0010) {
-      load_dspx(romprops.necdsp_fw, 1);
-    } else {
-      load_dspx(romprops.necdsp_fw, 0);
-      if(file_res && romprops.necdsp_fw == DSPFW_1) {
-        load_dspx(DSPFW_1B, 0);
-      }
+fpga_pgm((uint8_t*)"/sd2snes/cx4.bit");
+  if(romprops.has_dspx || romprops.has_cx4) {
+    printf("DSPx game. Loading firmware image %s...\n", romprops.dsp_fw);
+    load_dspx(romprops.dsp_fw, romprops.fpga_features);
+    /* fallback to DSP1B firmware if DSP1.bin is not present */
+    if(file_res && romprops.dsp_fw == DSPFW_1) {
+      load_dspx(DSPFW_1B, romprops.fpga_features);
     }
     if(file_res) {
-      snes_menu_errmsg(MENU_ERR_NODSP, (void*)romprops.necdsp_fw);
+      snes_menu_errmsg(MENU_ERR_NODSP, (void*)romprops.dsp_fw);
     }
   }
   uint32_t rammask;
@@ -494,22 +492,29 @@ uint64_t sram_gettime(uint32_t base_addr) {
   return result & 0x00ffffffffffffffLL;
 }
 
-void load_dspx(const uint8_t *filename, uint8_t st0010) {
+void load_dspx(const uint8_t *filename, uint8_t coretype) {
   UINT bytes_read;
   DWORD filesize;
   uint16_t word_cnt;
   uint8_t wordsize_cnt = 0;
   uint16_t sector_remaining = 0;
   uint16_t sector_cnt = 0;
-  uint16_t pgmsize = 2048;
-  uint16_t datsize;
+  uint16_t pgmsize = 0;
+  uint16_t datsize = 0;
   uint32_t pgmdata = 0;
   uint16_t datdata = 0;
 
-  if(st0010) {
+  if(coretype & FEAT_ST0010) {
     datsize = 1536;
-  } else {
+    pgmsize = 2048;
+  } else if (coretype & FEAT_DSPX) {
     datsize = 1024;
+    pgmsize = 2048;
+  } else if (coretype & FEAT_CX4) {
+    datsize = 0;
+    pgmsize = 1024; /* Cx4 data ROM */
+  } else {
+    printf("load_dspx: unknown core (%02x)!\n", coretype);
   }
 
   file_open((uint8_t*)filename, FA_READ);
@@ -539,7 +544,7 @@ void load_dspx(const uint8_t *filename, uint8_t st0010) {
   }
 
   wordsize_cnt = 0;
-  if(st0010) {
+  if(coretype & FEAT_ST0010) {
     file_seek(0xc000);
     sector_remaining = 0;
   }

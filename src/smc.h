@@ -33,6 +33,7 @@
 #define DSPFW_4 ((const uint8_t*)"/sd2snes/dsp4.bin")
 #define DSPFW_1B ((const uint8_t*)"/sd2snes/dsp1b.bin")
 #define DSPFW_ST0010 ((const uint8_t*)"/sd2snes/st0010.bin")
+#define CX4FW ((const uint8_t*)"/sd2snes/cx4.bin")
 
 typedef struct _snes_header {
   uint8_t maker[2];     /* 0xB0 */
@@ -60,10 +61,11 @@ typedef struct _snes_romprops {
   uint32_t expramsize_bytes;  /* ExpRAM size in bytes */
   uint32_t ramsize_bytes;     /* CartRAM size in bytes */
   uint32_t romsize_bytes;     /* ROM size in bytes (rounded up) */
-  const uint8_t* necdsp_fw;   /* NEC DSP ROM filename */
+  const uint8_t* dsp_fw;      /* DSP (NEC / Hitachi) ROM filename */
   uint8_t has_dspx;           /* DSP[1-4] presence flag */
   uint8_t has_st0010;         /* st0010 presence flag (additional to dspx)*/
   uint8_t has_msu1;           /* MSU1 presence flag */
+  uint8_t has_cx4;            /* CX4 presence flag */
   uint8_t fpga_features;      /* feature/peripheral enable bits*/
   snes_header_t header;       /* original header from ROM image */
 } snes_romprops_t;

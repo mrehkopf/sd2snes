@@ -106,6 +106,10 @@ wire [7:0] CX4_SNES_DATA_OUT;
 wire [23:0] MAPPED_SNES_ADDR;
 wire ROM_ADDR0;
 
+wire [23:0] cx4_datrom_data;
+wire [9:0] cx4_datrom_addr;
+wire cx4_datrom_we;
+
 sd_dma snes_sd_dma(
   .CLK(CLK2),
   .SD_DAT(SD_DAT),
@@ -226,7 +230,11 @@ mcu_cmd snes_mcu_cmd(
   .mcu_rrq(MCU_RRQ),
   .mcu_wrq(MCU_WRQ),
   .mcu_rq_rdy(MCU_RDY),
-  .use_msu1(use_msu1)
+  .use_msu1(use_msu1),
+  .cx4_datrom_addr_out(cx4_datrom_addr), 
+  .cx4_datrom_data_out(cx4_datrom_data), 
+  .cx4_datrom_we_out(cx4_datrom_we), 
+  .cx4_reset_out(cx4_reset)
 );
 
 wire [7:0] DCM_STATUS;
@@ -285,9 +293,9 @@ cx4 snes_cx4 (
     .nRD(SNES_READ), 
     .nWR(SNES_WRITE), 
     .CLK(CLK2), 
-    .DATROM_DI(DATROM_DI), 
-    .DATROM_WE(DATROM_WE), 
-    .DATROM_ADDR(DATROM_ADDR), 
+    .DATROM_DI(cx4_datrom_data), 
+    .DATROM_WE(cx4_datrom_we), 
+    .DATROM_ADDR(cx4_datrom_addr), 
     .BUS_DI(CX4_DINr), 
     .BUS_ADDR(CX4_ADDR), 
     .BUS_RRQ(CX4_RRQ), 
