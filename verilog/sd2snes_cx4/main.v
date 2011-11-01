@@ -268,6 +268,7 @@ address snes_addr(
   .CLK(CLK2),
   .MAPPER(MAPPER),
   .SNES_ADDR(SNES_ADDR), // requested address from SNES
+  .SNES_CS(SNES_CS),
   .ROM_ADDR(MAPPED_SNES_ADDR),   // Address to request from SRAM (active low)
   .ROM_SEL(ROM_SEL),     // which SRAM unit to access
   .IS_SAVERAM(IS_SAVERAM),
@@ -279,7 +280,8 @@ address snes_addr(
   //MSU-1
   .msu_enable(msu_enable),
   //CX4
-  .cx4_enable(cx4_enable)
+  .cx4_enable(cx4_enable),
+  .cx4_vect_enable(cx4_vect_enable)
 );
 
 reg [7:0] CX4_DINr;
@@ -290,6 +292,7 @@ cx4 snes_cx4 (
     .DO(CX4_SNES_DATA_OUT), 
     .ADDR(SNES_ADDR[12:0]),
     .CS(cx4_enable), 
+    .SNES_VECT_EN(cx4_vect_enable),
     .nRD(SNES_READ), 
     .nWR(SNES_WRITE), 
     .CLK(CLK2), 
@@ -344,9 +347,12 @@ assign CX4_SNES_DATA_IN = SNES_DATA;
 reg [7:0] SNES_DINr;
 reg [7:0] ROM_DOUTr;
 
-assign SNES_DATA = (!SNES_READ) ? (msu_enable ? MSU_SNES_DATA_OUT
+assign SNES_DATA = (!SNES_READ) 
+                    ? (msu_enable ? MSU_SNES_DATA_OUT
 											 :cx4_enable ? CX4_SNES_DATA_OUT
-                                  :SNES_DINr /*(ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8])*/) : 8'bZ;
+                       :(cx4_active & cx4_vect_enable) ? CX4_SNES_DATA_OUT
+                       : SNES_DINr)
+                    : 8'bZ;
 
 reg [3:0] ST_MEM_DELAYr;
 reg MCU_RD_PENDr;
@@ -559,8 +565,8 @@ assign ROM_BLE = !ROM_WE ? !ROM_ADDR0 : 1'b0;
 
 assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
                          cx4_enable ? 1'b0 :
-                         ((IS_ROM & SNES_CS)
-                          |(!IS_ROM & !IS_SAVERAM & !IS_WRITABLE)
+                         (cx4_active & cx4_vect_enable) ? 1'b0 :
+                         ((!IS_ROM & !IS_SAVERAM & !IS_WRITABLE)
                           |(SNES_READ & SNES_WRITE)
                          );
 

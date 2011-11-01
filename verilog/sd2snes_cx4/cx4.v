@@ -23,6 +23,7 @@ module cx4(
   output [7:0] DO,
   input [12:0] ADDR,
   input CS,
+  input SNES_VECT_EN,
   input nRD,
   input nWR,
   input CLK,
@@ -44,7 +45,7 @@ parameter BUSY_CPU   = 2'b10;
 wire datram_enable = CS & (ADDR[11:0] < 12'hc00);
 wire mmio_enable = CS & (ADDR[12:5] == 8'b11111010) & (ADDR[4:0] < 5'b10011);
 wire status_enable = CS & (ADDR[12:5] == 8'b11111010) & (ADDR[4:0] >= 5'b10011);
-wire vector_enable = CS & (ADDR[12:5] == 8'b11111011);
+wire vector_enable = (CS & (ADDR[12:5] == 8'b11111011)) | (cx4_active & SNES_VECT_EN);
 wire gpr_enable = CS & (&(ADDR[12:7]) && ADDR[5:4] != 2'b11);
 wire pgmrom_enable = CS & (ADDR[12:5] == 8'b11110000);
 
