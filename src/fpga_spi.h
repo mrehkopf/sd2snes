@@ -50,6 +50,7 @@
 #define FPGA_SPI_FAST()    spi_set_speed(SPI_SPEED_FPGA_FAST)
 #define FPGA_SPI_SLOW()    spi_set_speed(SPI_SPEED_FPGA_SLOW)
 
+#define FEAT_CX4           (1 << 4)
 #define FEAT_MSU1          (1 << 3)
 #define FEAT_SRTC          (1 << 2)
 #define FEAT_ST0010        (1 << 1)
