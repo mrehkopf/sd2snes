@@ -400,7 +400,7 @@ always @(posedge CLK2) begin
   if(CX4_RRQ) begin
     CX4_RD_PENDr <= 1'b1;
 	  RQ_CX4_RDYr <= 1'b0;
-  end else if(STATE == ST_CX4_RD_END) begin
+  end else if(STATE == ST_CX4_RD_WAIT && ST_MEM_DELAYr == 4'h0) begin
     CX4_RD_PENDr <= 1'b0;
 	  RQ_CX4_RDYr <= 1'b1;
   end
@@ -421,8 +421,7 @@ always @(posedge CLK2) begin
           STATE <= ST_CX4_RD_WAIT;
           ROM_ADDRr <= CX4_ADDR;
           ST_MEM_DELAYr <= ROM_RD_WAIT_CX4;
-        end
-        else if(~cx4_active) begin
+        end else if(~cx4_active && ~ASSERT_SNES_ADDR) begin
 		      if(MCU_RD_PENDr) STATE <= ST_MCU_RD_ADDR;
 		      else if(MCU_WR_PENDr) STATE <= ST_MCU_WR_ADDR;
           else STATE <= ST_IDLE;
@@ -481,10 +480,10 @@ always @(posedge CLK2) begin
 		    if(ST_MEM_DELAYr == 4'h0) begin
 		      STATE <= ST_MCU_RD_WAIT2;
           ST_MEM_DELAYr <= 4'h2;
+          if(ROM_ADDR0) MCU_DINr <= ROM_DATA[7:0];
+          else MCU_DINr <= ROM_DATA[15:8];
 		    end
 		    else STATE <= ST_MCU_RD_WAIT;
-		    if(ROM_ADDR0) MCU_DINr <= ROM_DATA[7:0];
-		    else MCU_DINr <= ROM_DATA[15:8];
       end
 		  ST_MCU_RD_WAIT2: begin
         ST_MEM_DELAYr <= ST_MEM_DELAYr - 4'h1;
@@ -528,7 +527,7 @@ always @(posedge CLK2) begin
 		  end
 		  ST_CX4_RD_WAIT: begin
         ST_MEM_DELAYr <= ST_MEM_DELAYr - 4'h1;
-		    if(ST_MEM_DELAYr == 4'h0) STATE <= ST_CX4_RD_END;
+		    if(ST_MEM_DELAYr == 4'h0) STATE <= ST_IDLE;
 		    else STATE <= ST_CX4_RD_WAIT;
 		    if(ROM_ADDR0) CX4_DINr <= ROM_DATA[7:0];
 		    else CX4_DINr <= ROM_DATA[15:8];
