@@ -191,7 +191,14 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   filesize = file_handle.fsize;
   smc_id(&romprops);
+  file_close();
+  /* reconfigure FPGA if necessary */
+  if(romprops.fpga_conf) {
+    printf("reconfigure FPGA with %s...\n", romprops.fpga_conf);
+    fpga_pgm((uint8_t*)romprops.fpga_conf);
+  }
   set_mcu_addr(base_addr);
+  file_open(filename, FA_READ);
   f_lseek(&file_handle, romprops.offset);
   for(;;) {
     ff_sd_offload=1;
@@ -226,7 +233,6 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     sram_writebyte(0xfc, rombase+0xd5);
     set_fpga_time(0x0220110301180530LL);
   }
-fpga_pgm((uint8_t*)"/sd2snes/cx4.bit");
   if(romprops.has_dspx || romprops.has_cx4) {
     printf("DSPx game. Loading firmware image %s...\n", romprops.dsp_fw);
     load_dspx(romprops.dsp_fw, romprops.fpga_features);

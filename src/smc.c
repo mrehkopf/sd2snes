@@ -85,6 +85,7 @@ void smc_id(snes_romprops_t* props) {
   props->has_st0010 = 0;
   props->has_cx4 = 0;
   props->fpga_features = 0;
+  props->fpga_conf = NULL;
   for(uint8_t num = 0; num < 6; num++) {
     if(!file_readblock(header, hdr_addr[num], sizeof(snes_header_t))
        || file_res) {
@@ -155,6 +156,7 @@ void smc_id(snes_romprops_t* props) {
       if (header->map == 0x20 && header->carttype == 0xf3) {
         props->has_cx4 = 1;
         props->dsp_fw = CX4FW;
+        props->fpga_conf = FPGA_CX4;
         props->fpga_features |= FEAT_CX4;
       }
       else if ((header->map == 0x20 && header->carttype == 0x03) ||
