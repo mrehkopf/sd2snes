@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 13.2
-# Date: Fri Oct 28 08:30:26 2011
+# Date: Sun Oct 30 20:22:20 2011
 #
 ##############################################################
 #
@@ -40,7 +40,7 @@ SELECT Multiplier xilinx.com:ip:mult_gen:11.2
 # END Select
 # BEGIN Parameters
 CSET ccmimp=Distributed_Memory
-CSET clockenable=false
+CSET clockenable=true
 CSET component_name=cx4_mul
 CSET constvalue=129
 CSET internaluser=0
@@ -65,4 +65,4 @@ CSET zerodetect=false
 MISC pkg_timestamp=2011-06-21T06:26:54.000Z
 # END Extra information
 GENERATE
-# CRC: efe4d30e
+# CRC:  4f144c3

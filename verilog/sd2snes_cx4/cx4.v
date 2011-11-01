@@ -89,7 +89,7 @@ reg [14:0] cx4_mmio_pagemem[1:0];
 
 reg [23:0] const [15:0];
 
-reg [14:0] cachetag [1:0]; // 14-0: bank number
+reg [14:0] cachetag [1:0];
 reg  [1:0] cachevalid;
 
 reg [14:0] cache_pgmpage;
