@@ -38,8 +38,8 @@ module address(
 wire [23:0] SRAM_SNES_ADDR;
 
 /* Cx4 mapper:
-	 - LoROM (extended to 00-7d, 80-ff)
-	 - MMIO @ 6000-7fff
+   - LoROM (extended to 00-7d, 80-ff)
+   - MMIO @ 6000-7fff
  */
 
 assign IS_ROM = SNES_ADDR[15] & ~SNES_CS;

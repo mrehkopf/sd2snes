@@ -59,7 +59,7 @@ always @(posedge SCK) begin
   if(SSEL) bitcnt <= 3'b000;
   else begin
     bitcnt <= bitcnt + 3'b001;
-	 byte_data_received <= {byte_data_received[6:0], MOSI};
+    byte_data_received <= {byte_data_received[6:0], MOSI};
   end
   if(~SSEL && bitcnt==3'b111) byte_received <= 1'b1;
   else byte_received <= 1'b0;
