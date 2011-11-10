@@ -71,9 +71,9 @@ assign SD_DMA_SRAM_DATA = SD_DMA_SRAM_DATAr;
 // we have 4 internal cycles per SD clock, 8 per RAM byte write
 reg [2:0] clkcnt;
 initial clkcnt = 3'b000;
-reg SD_CLKr;
-always @(posedge CLK) SD_CLKr <= clkcnt[1];
-assign SD_CLK = SD_DMA_STATUSr ? SD_CLKr : 1'bZ;
+reg [1:0] SD_CLKr;
+always @(posedge CLK) SD_CLKr <= {SD_CLKr[0], clkcnt[1]};
+assign SD_CLK = SD_DMA_STATUSr ? SD_CLKr[1] : 1'bZ;
 
 always @(posedge CLK) begin
   if(SD_DMA_EN_rising) begin

@@ -867,6 +867,9 @@ DRESULT sdn_initialize(BYTE drv) {
     if(rsp[1]&0x80) break;
   }
 
+  BITBAND(SD_DAT3REG->FIODIR, SD_DAT3PIN) = 0;
+  BITBAND(SD_DAT3REG->FIOCLR, SD_DAT3PIN) = 1;
+
   ccs = (rsp[1]>>6) & 1; /* SDHC/XC */
 
   cmd_slow(ALL_SEND_CID, 0, 0x4d, NULL, rsp);
