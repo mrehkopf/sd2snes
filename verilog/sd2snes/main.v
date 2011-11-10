@@ -460,7 +460,7 @@ end
 reg snes_wr_cycle;
 
 always @(posedge CLK2) begin
-  if(SNES_cycle_start) begin
+  if(SNES_cycle_start & ~SNES_WR_start) begin
     STATE <= ST_SNES_RD_ADDR;
   end else if(SNES_WR_start) begin
     STATE <= ST_SNES_WR_ADDR;
@@ -605,6 +605,6 @@ assign SNES_DATABUS_DIR = !SNES_READ ? 1'b1 : 1'b0;
 assign IRQ_DIR = 1'b0;
 assign SNES_IRQ = 1'bZ;
 
-assign p113_out = ROM_WE;
+assign p113_out = 1'b0;
 
 endmodule
