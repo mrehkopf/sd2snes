@@ -146,9 +146,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
               strncpy(path+len+1, (char*)fn, sizeof(fs_path)-len);
               if(mkdb) {
                 uint16_t pathlen = strlen(path);
-                /* write element pointer to current dir structure */
-                printf("d=%d Saving %lx to Address %lx  [dir]\n", depth, db_tgt, dir_tgt);
-                sram_writelong((db_tgt-SRAM_MENU_ADDR)|((uint32_t)0x80<<24), dir_tgt);
+//                printf("d=%d Saving %lx to Address %lx  [dir]\n", depth, db_tgt, dir_tgt);
                 /* save element:
                    - path name
                    - pointer to sub dir structure */
@@ -158,7 +156,12 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
                   db_tgt += 0x00010000;
                   printf("new=%lx\n", db_tgt);
                 }
-                printf("    Saving dir descriptor to %lx tgt=%lx, path=%s\n", db_tgt, next_subdir_tgt, path);
+//                printf("    Saving dir descriptor to %lx tgt=%lx, path=%s\n", db_tgt, next_subdir_tgt, path);
+                /* write element pointer to current dir structure */
+                sram_writelong((db_tgt-SRAM_MENU_ADDR)|((uint32_t)0x80<<24), dir_tgt);
+                /* save element:
+                   - path name
+                   - pointer to sub dir structure */
                 sram_writelong((next_subdir_tgt-SRAM_MENU_ADDR), db_tgt);
                 sram_writebyte(len+1, db_tgt+sizeof(next_subdir_tgt));
                 sram_writeblock(path, db_tgt+sizeof(next_subdir_tgt)+sizeof(len), pathlen);
