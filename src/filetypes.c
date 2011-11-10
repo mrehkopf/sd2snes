@@ -53,7 +53,7 @@ uint16_t scan_flat(const char* path) {
   return numentries;
 }
 
-uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
+uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_tgt) {
   DIR dir;
   FILINFO fno;
   FRESULT res;
@@ -103,7 +103,11 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
         sram_writelong(0L, next_subdir_tgt - 4);
       }
     }
-    res = f_opendir(&dir, (TCHAR*)path);
+    if(fno_param) {
+      res = dir_open_by_filinfo(&dir, fno_param);
+    } else {
+      res = f_opendir(&dir, path);
+    }
     if (res == FR_OK) {
       if(pass && parent_tgt && mkdb) {
         /* write backlink to parent dir
@@ -162,7 +166,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
                 db_tgt += sizeof(next_subdir_tgt) + sizeof(len) + pathlen + 2;
               }
               parent_tgt = this_dir_tgt;
-              scan_dir(path, mkdb, next_subdir_tgt);
+              scan_dir(path, &fno, mkdb, next_subdir_tgt);
               dir_tgt += 4;
               was_empty = 0;
             }

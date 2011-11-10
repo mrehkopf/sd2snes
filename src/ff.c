@@ -2822,6 +2822,46 @@ FRESULT f_readdir (
 }
 
 
+FRESULT l_opendirbycluster (
+  FATFS *fs,
+  DIR *dj,
+  const TCHAR *path,
+  DWORD clust
+)
+{
+  FRESULT res;
+  res = chk_mounted(&path, &fs, 0);
+  DEF_NAMEBUF;
+  INIT_BUF(*dj);
+  dj->sclust = clust;
+  dj->fs = fs;
+  dj->id = fs->id;
+  dj->dir = 0;
+  res = dir_sdi(dj, 0);
+  FREE_BUF();
+  return res;
+}
+
+FRESULT l_openfilebycluster (
+  FATFS *fs,           /* Pointer to file system object */
+  FIL *fp,             /* Pointer to the blank file object */
+  const TCHAR *path,
+  DWORD clust,         /* Cluster number to be opened */
+  DWORD fsize          /* File size to be assumed */
+)
+{
+  chk_mounted(&path, &fs, 0);
+  fp->flag = FA_READ;
+  fp->org_clust = clust;
+  fp->fsize = fsize;
+  fp->fptr = 0;
+  fp->dsect = 0;
+  fp->fs = fs;
+
+  return FR_OK;
+}
+
+
 
 #if _FS_MINIMIZE == 0
 /*-----------------------------------------------------------------------*/
@@ -2853,27 +2893,6 @@ FRESULT f_stat (
 
 	LEAVE_FF(dj.fs, res);
 }
-
-
-FRESULT l_openfilebycluster (
-  FATFS *fs,           /* Pointer to file system object */
-  FIL *fp,             /* Pointer to the blank file object */
-  const TCHAR *path,
-  DWORD clust,         /* Cluster number to be opened */
-  DWORD fsize          /* File size to be assumed */
-)
-{
-  chk_mounted(&path, &fs, 0);
-  fp->flag = FA_READ;
-  fp->org_clust = clust;
-  fp->fsize = fsize;
-  fp->fptr = 0;
-  fp->dsect = 0;
-  fp->fs = fs;
-
-  return FR_OK;
-}
-
 
 #if !_FS_READONLY
 /*-----------------------------------------------------------------------*/

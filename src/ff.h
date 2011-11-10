@@ -398,6 +398,7 @@ typedef enum {
 
 /* Low Level functions */
 FRESULT l_openfilebycluster(FATFS *fs, FIL *fp, const TCHAR *path, DWORD clust, DWORD fsize);   /* Open a file by its start cluster using supplied file size */
+FRESULT l_opendirbycluster (FATFS *fs, DIR *dj, const TCHAR *path, DWORD clust);
 
 /* application level functions */
 FRESULT f_mount (BYTE, FATFS*);						/* Mount/Unmount a logical drive */

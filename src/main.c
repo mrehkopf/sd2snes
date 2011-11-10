@@ -145,7 +145,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id) || (newcard)) {
       newcard = 0;
       /* generate fs footprint (interesting files only) */
-      uint32_t curr_dir_id = scan_dir(fs_path, 0, 0);
+      uint32_t curr_dir_id = scan_dir(fs_path, NULL, 0, 0);
       printf("curr dir id = %lx\n", curr_dir_id);
       /* files changed or no database found? */
       if((get_db_id(&saved_dir_id) != FR_OK)
@@ -154,7 +154,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 	printf("saved dir id = %lx\n", saved_dir_id);
 	printf("rebuilding database...");
 	snes_bootprint("     rebuilding database ...    \0");
-	curr_dir_id = scan_dir(fs_path, 1, 0);
+	curr_dir_id = scan_dir(fs_path, NULL, 1, 0);
 	sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 4);
 	uint32_t endaddr, direndaddr;
 	sram_readblock(&endaddr, SRAM_DB_ADDR+4, 4);

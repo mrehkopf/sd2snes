@@ -41,6 +41,7 @@ enum filestates file_status;
 
 void file_init(void);
 void file_open(uint8_t* filename, BYTE flags);
+FRESULT dir_open_by_filinfo(DIR* dir, FILINFO* fno_param);
 void file_open_by_filinfo(FILINFO* fno);
 void file_close(void);
 void file_seek(uint32_t offset);

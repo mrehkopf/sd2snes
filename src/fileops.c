@@ -47,6 +47,10 @@ void file_reinit(void) {
   file_init();
 }
 
+FRESULT dir_open_by_filinfo(DIR* dir, FILINFO* fno) {
+  return l_opendirbycluster(&fatfs, dir, (TCHAR*)"", fno->clust);
+}
+
 void file_open_by_filinfo(FILINFO* fno) {
   file_res = l_openfilebycluster(&fatfs, &file_handle, (TCHAR*)"", fno->clust, fno->fsize);
 }
