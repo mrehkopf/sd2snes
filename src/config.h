@@ -65,7 +65,7 @@
 #define FPGA_MCU_RDY_REG          LPC_GPIO2
 #define FPGA_MCU_RDY_BIT          9
 
-#define QSORT_MAXELEM             1024
+#define QSORT_MAXELEM             2048
 
 #define SSP_REGS LPC_SSP0
 #define SSP_PCLKREG PCLKSEL1
