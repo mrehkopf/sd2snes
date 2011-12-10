@@ -10,7 +10,7 @@
 #include "uart.h"
 #include "led.h"
 
-static uint8_t uart_lookupratio(float f_fr) {
+/*static uint8_t uart_lookupratio(float f_fr) {
   uint16_t errors[72]={0,67,71,77,83,91,100,111,125,
                        133,143,154,167,182,200,214,222,231,
                        250,267,273,286,300,308,333,357,364,
@@ -45,8 +45,8 @@ static uint8_t uart_lookupratio(float f_fr) {
   }
   return ratios[i_result];
 }
-
-static uint32_t baud2divisor(unsigned int baudrate) {
+*/
+/*static uint32_t baud2divisor(unsigned int baudrate) {
   uint32_t int_ratio;
   uint32_t error;
   uint32_t dl=0;
@@ -73,7 +73,7 @@ static uint32_t baud2divisor(unsigned int baudrate) {
     return ((fract_ratio<<16)&0xff0000) | dl;
   }
 }
-
+*/
 static char txbuf[1 << CONFIG_UART_TX_BUF_SHIFT];
 static volatile unsigned int read_idx,write_idx;
 
@@ -170,7 +170,7 @@ void uart_init(void) {
 
   /* set baud rate - no fractional stuff for now */
   UART_REGS->LCR = BV(7) | 3; // always 8n1
-  div = baud2divisor(CONFIG_UART_BAUDRATE);
+  div = 0x850004; // baud2divisor(CONFIG_UART_BAUDRATE);
 
   UART_REGS->DLL = div & 0xff;
   UART_REGS->DLM = (div >> 8) & 0xff;

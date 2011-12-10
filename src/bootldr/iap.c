@@ -183,7 +183,7 @@ FLASH_RES flash_file(uint8_t *filename) {
         return ERR_FLASH;
       }
     }
-    if(total_read != file_header.size) {
+    if(total_read != (file_header.size + 0x100)) {
       DBG_BL printf("wrote less data than expected! (%08lx vs. %08lx)\n", total_read, file_header.size);
       DBG_UART uart_putc('X');
       return ERR_FILECHK;
