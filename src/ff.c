@@ -2198,7 +2198,6 @@ FRESULT f_read (
 #if !_FS_TINY
 #if !_FS_READONLY
 			if (fp->flag & FA__DIRTY) {				/* Write sector I/O buffer if needed */
-printf("DIRTY!?!\n");
 				if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1) != RES_OK)
 					ABORT(fp->fs, FR_DISK_ERR);
 				fp->flag &= ~FA__DIRTY;
@@ -2222,7 +2221,6 @@ printf("DIRTY!?!\n");
 			mem_cpy(rbuff, &fp->fs->win[fp->fptr % SS(fp->fs)], rcnt);	/* Pick partial sector */
 #else
 			mem_cpy(rbuff, &fp->buf[fp->fptr % SS(fp->fs)], rcnt);	/* Pick partial sector */
-			printf("final mem_cpy, rcnt=%d, rbuff-buff=%d\n", rcnt, (void*)rbuff-buff);
 		} else {
 			sd_offload_partial_start = fp->fptr % SS(fp->fs);
 			sd_offload_partial_end = sd_offload_partial_start + rcnt;
@@ -2376,7 +2374,6 @@ FRESULT f_sync (
 	res = validate(fp->fs, fp->id);		/* Check validity of the object */
 	if (res == FR_OK) {
 		if (fp->flag & FA__WRITTEN) {	/* Has the file been written? */
-printf("DIRTY?!?!?!\n");
 #if !_FS_TINY	/* Write-back dirty buffer */
 			if (fp->flag & FA__DIRTY) {
 				if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1) != RES_OK)

@@ -449,9 +449,11 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
       j=datcnt;
       datshift=8;
       DBG_SD printf("response over, waiting for data...\n");
+      /* wait for data start bit on DAT0 */
       while((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) && --timeout) {
         wiggle_fast_neg1();
       }
+      DBG_SD if(!timeout) printf("timed out!\n");
       wiggle_fast_neg1(); /* eat the start bit */
       if(sd_offload) {
         if(sd_offload_partial) {
@@ -588,9 +590,12 @@ int stream_datablock(uint8_t *buf) {
   uint8_t datdata=0;
   uint32_t timeout=1000000;
 
+  DBG_SD printf("stream_datablock: wait for ready...\n");
   while((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) && --timeout) {
     wiggle_fast_neg1();
   }
+  DBG_SD if(!timeout) printf("timeout!\n");
+
   wiggle_fast_neg1(); /* eat the start bit */
   if(sd_offload) {
     if(sd_offload_partial) {

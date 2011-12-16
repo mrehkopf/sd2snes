@@ -133,6 +133,7 @@
 #include "spi.h"
 #include "fpga_spi.h"
 #include "timer.h"
+#include "sdnative.h"
 
 void fpga_spi_init(void) {
   spi_init(SPI_SPEED_FAST);
@@ -230,10 +231,12 @@ void fpga_sddma(uint8_t tgt, uint8_t partial) {
   FPGA_SELECT();
   FPGA_TX_BYTE(0xF1); /* STATUS */
   FPGA_TX_BYTE(0x00); /* dummy */
+  DBG_SD printf("FPGA DMA request sent, wait for completion...");
   while((status=FPGA_RX_BYTE()) & 0x80) {
     FPGA_RX_BYTE(); /* eat the 2nd status byte */
     test++;
   }
+  DBG_SD printf("...complete\n");
   FPGA_DESELECT();
   if(test<5)printf("loopy: %ld %02x\n", test, status);
   BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 1;
