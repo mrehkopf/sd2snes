@@ -97,9 +97,9 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
       if(next_subdir_tgt > dir_end) {
         dir_end = next_subdir_tgt;
       }
-      printf("path=%s depth=%d ptr=%lx entries=%d parent=%lx next subdir @%lx\n", path, depth, db_tgt, numentries, parent_tgt, next_subdir_tgt);
+//      printf("path=%s depth=%d ptr=%lx entries=%d parent=%lx next subdir @%lx\n", path, depth, db_tgt, numentries, parent_tgt, next_subdir_tgt);
       if(mkdb) {
-        printf("d=%d Saving %lx to Address %lx  [end]\n", depth, 0L, next_subdir_tgt - 4);
+//        printf("d=%d Saving %lx to Address %lx  [end]\n", depth, 0L, next_subdir_tgt - 4);
         sram_writelong(0L, next_subdir_tgt - 4);
       }
     }
@@ -118,6 +118,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
           db_tgt += 0x00010000;
           printf("new=%lx\n", db_tgt);
         }
+//        printf("writing link to parent, %lx to address %lx [../]\n", parent_tgt-SRAM_MENU_ADDR, db_tgt);
         sram_writelong((parent_tgt-SRAM_MENU_ADDR), db_tgt);
         sram_writebyte(0, db_tgt+sizeof(next_subdir_tgt));
         sram_writeblock("../\0", db_tgt+sizeof(next_subdir_tgt)+sizeof(len), 4);
