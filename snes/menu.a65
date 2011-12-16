@@ -188,32 +188,26 @@ redraw_filelist_loop
 	lsr
 	cmp listdisp
 	beq redraw_filelist_last
-	lda dirptr_bank
-	phb
-	pha
-	plb
 	rep #$20 : .al
-	lda (dirptr_addr), y
+	lda [dirptr_addr], y
 	sta @dirent_addr
 	iny
 	iny
 	sep #$20 : .as
-	lda (dirptr_addr), y       ; load fileinfo bank
+	lda [dirptr_addr], y	   ; load fileinfo bank
 	clc
 	adc #$c0                   ; add $C0 for memory map
 	sta @dirent_bank           ; store as current bank
 	cmp #$c0                   ; if bank was 0 -> dirend entry in DB
 	beq redraw_filelist_dirend ; handle dirend
 	iny
-	lda (dirptr_addr), y
+	lda [dirptr_addr], y
 	iny
 	sta @dirent_type
-	plb
 	sty dirptr_idx
 	jsr print_direntry
 	bra redraw_filelist_loop
 redraw_filelist_dirend
-	plb
 	dey                        ; recover last valid direntry number
 	dey                        ; (we had 2x iny of the direntry pointer above,
 	dey                        ;  so account for those too)
@@ -225,15 +219,10 @@ redraw_filelist_dirend
 	sta dirend_onscreen
 	bra redraw_filelist_out
 redraw_filelist_last	;check if next offscreen item is end of dir
-	lda dirptr_bank
-	phb
-	pha
-	plb
 	iny
 	iny
-	lda (dirptr_addr), y
+	lda [dirptr_addr], y
 	beq redraw_filelist_dirend
-	plb
 redraw_filelist_out
 	ldx #$0000
 	stx dirptr_idx
@@ -352,7 +341,7 @@ menu_key_down:
 	lda listdisp
 	dec
 	cmp menu_sel
-	bne +
+	bne down_noscroll
 	lda #$01
 	sta menu_dirty
 	lda dirend_onscreen
@@ -361,10 +350,13 @@ menu_key_down:
 	lda dirptr_addr
 	clc
 	adc #$04
-	sta dirptr_addr
+	bcc +
+	inc dirptr_bank
++	sta dirptr_addr
 	sep #$20 : .as
 	rts
-+	lda dirend_onscreen
+down_noscroll
+	lda dirend_onscreen
 	beq +
 	lda dirend_idx
 	lsr
@@ -380,7 +372,7 @@ down_out
 
 menu_key_up:
 	lda menu_sel
-	bne +
+	bne up_noscroll
 	lda #$01
 	sta menu_dirty
 	rep #$20 : .al
@@ -389,9 +381,12 @@ menu_key_up:
 	beq up_out
 	sec
 	sbc #$04
-	sta dirptr_addr
+	bcs +
+	dec dirptr_bank
++	sta dirptr_addr
 	bra up_out
-+	dec
+up_noscroll
+	dec
 	sta menu_sel
 up_out
 	sep #$20 : .as
@@ -480,14 +475,10 @@ select_item:
 	asl
 	tay
 	sep #$20 : .as
-	lda dirptr_bank
-	phb
-	pha
-	plb
 	iny
 	iny
 	iny
-	lda (dirptr_addr), y
+	lda [dirptr_addr], y
 	cmp #$01
 	beq sel_is_file
 	cmp #$04
@@ -497,7 +488,6 @@ select_item:
 	cmp #$81
 	beq sel_is_parent
 select_item_cont
-	plb
 	rts
 sel_is_file
 	jsr select_file
@@ -513,12 +503,12 @@ select_file:
 	; have avr load the rom
 	dey
 	rep #$20 : .al
-	lda (dirptr_addr), y
+	lda [dirptr_addr], y
 	and #$00ff
 	sta @AVR_PARAM+2
 	dey
 	dey
-	lda (dirptr_addr), y
+	lda [dirptr_addr], y
 	sta @AVR_PARAM
 	sep #$20 : .as
 	lda #$01
@@ -559,14 +549,14 @@ select_dir:
 ; y = direntry ptr
 	txy
 	dey
-	lda (dirptr_addr), y
+	lda [dirptr_addr], y
 	clc
 	adc #$c0
 	sta @dirent_bank
 	dey
 	dey
 	rep #$20 : .al
-	lda (dirptr_addr), y
+	lda [dirptr_addr], y
 	sta @dirent_addr
 	tax
 	sep #$20 : .as
