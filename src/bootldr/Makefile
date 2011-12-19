@@ -213,6 +213,8 @@ sym: $(TARGET).sym
 
 
 #	utils/lpcchksum $(TARGET).bin
+fresh: erase program
+
 program: bin
 	openocd -f openocd-usb.cfg -f lpc1754.cfg -f flash.cfg
 
