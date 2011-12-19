@@ -13,6 +13,9 @@
 #include "smc.h"
 
 FIL msufile;
+DWORD msu_cltbl[CLTBL_SIZE] IN_AHBRAM;
+DWORD pcm_cltbl[CLTBL_SIZE] IN_AHBRAM;
+
 extern snes_romprops_t romprops;
 
 int msu1_check_reset(void) {
@@ -39,6 +42,11 @@ int msu1_check(uint8_t* filename) {
   if(f_open(&msufile, (const TCHAR*)file_buf, FA_READ) != FR_OK) {
     printf("MSU datafile not found\n");
     return 0;
+  }
+  msufile.cltbl = msu_cltbl;
+  msu_cltbl[0] = CLTBL_SIZE;
+  if(f_lseek(&msufile, CREATE_LINKMAP)) {
+    printf("Error creating FF linkmap for MSU file!\n");
   }
   romprops.fpga_features |= FEAT_MSU1;
   return 1;
@@ -128,6 +136,9 @@ int msu1_loop() {
       strcpy(strrchr((char*)file_buf, (int)'.'), suffix);
       printf("filename: %s\n", file_buf);
       f_open(&file_handle, (const TCHAR*)file_buf, FA_READ);
+      file_handle.cltbl = pcm_cltbl;
+      pcm_cltbl[0] = CLTBL_SIZE;
+      f_lseek(&file_handle, CREATE_LINKMAP);
       f_lseek(&file_handle, 4L);
       f_read(&file_handle, &msu_loop_point, 4, &bytes_read);
       printf("loop point: %ld samples\n", msu_loop_point);
