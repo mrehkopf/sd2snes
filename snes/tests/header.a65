@@ -1,0 +1,121 @@
+; This file is part of the snescom-asm demo - a demo of how to build a SNES program.
+; See http://bisqwit.iki.fi/source/snescom.html for details.
+
+; Begin assembling to this address.
+*= $C0F000
+LINETEST:
+	sei
+	clc
+	xce
+-	lda $0000
+	lda $2100
+	sta $2100
+	bra -
+
+*= $C0F100
+IRQTEST:
+	sei
+	clc
+	xce
+	cli
+	sep #$20 : .as
+	rep #$10 : .xl
+	lda #$0f
+	sta $2100
+	lda #$ff
+	sta $4209
+	lda #$ff
+	sta $420a
+	lda #$ff
+	sta $4200
+	lda #$01
+-	sta @$002222
+	bra -
+
+*= $C0F200
+BANKTEST:
+	sei
+	clc
+	xce
+	sep #$20 : .as
+	lda #$01
+	sta @$0055aa
+-	bra -
+
+*= $C0FF00
+
+RESET:
+        sei
+        clc
+        xce
+        rep #$20 : .al
+        lda #$1fff
+        tcs
+	lda #$00
+	sta @$003333
+        jmp @GAME_MAIN
+
+NMI_16bit:
+        php
+         rep #$30 : .al : .xl
+         pha: phx: phy: phd: phb
+         jsl @NMI_ROUTINE
+         rep #$30 : .al : .xl
+int_exit:
+         plb: pld: ply: plx: pla
+        plp
+        rti
+
+IRQ_16bit:
+ABT_8bit: ABT_16bit:
+        php
+         rep #$30 : .al : .xl
+         pha: phx: phy: phd: phb
+         jsl @IRQ_ROUTINE
+	 rep #$30 : .al : .xl
+         bra int_exit
+
+;error vectors
+BRK_8bit: BRK_16bit:
+COP_8bit: COP_16bit:
+IRQ_8bit:
+NMI_8bit:
+        - wai: lda $ABCDEF : bra -
+
+*= $C0FFB0
+        ; Zero the area from $FFB0 - $FFFF
+        ; to ensure that the linker won't get clever
+        ; and fill it with small pieces of code.
+        .word 0,0,0,0, 0,0,0,0
+        .word 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0
+        .word 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0
+
+*= $C0FFB0
+
+.byt "MR"         ;2 bytes - company id
+.byt "TEST"       ;4 bytes - rom id
+
+*= $C0FFC0
+.byt "SD2SNES TESTS        "
+     ;123456789012345678901; - max 21 chars
+
+*= $C0FFD5     .byt $31  ;rom speed
+*= $C0FFD6     .byt $02  ;rom type
+*= $C0FFD7     .byt $06  ;rom size   64 kByte
+*= $C0FFD8     .byt $03  ;sram size  8 kBit
+*= $C0FFD9     .byt $09  ;rom region 4 = Finland
+*= $C0FFDA     .byt $33  ;company id flag
+
+*= $C0FFDC     .word 0,0 ;checksums
+
+*= $C0FFE4     .word COP_16bit
+*= $C0FFE6     .word BRK_16bit
+*= $C0FFE8     .word ABT_16bit
+*= $C0FFEA     .word NMI_16bit
+*= $C0FFEE     .word IRQ_16bit
+*= $C0FFF4     .word COP_8bit
+*= $C0FFF8     .word ABT_8bit
+*= $C0FFFA     .word NMI_8bit
+*= $C0FFFC     .word RESET
+*= $C0FFFE     .word BRK_8bit
+*= $C0FFFE     .word IRQ_8bit

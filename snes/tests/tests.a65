@@ -1,0 +1,564 @@
+GAME_MAIN:
+	sep #$20 : .as
+	stz $4200 ; inhibit VBlank NMI
+	lda #$01
+	sta $420d ; fast cpu
+	jsr killdma
+	jsr waitblank
+	lda #$00
+	sta @$f00000
+	sta @$f00001
+	sta @$f00002
+	sta @$f00003
+	lda #$00
+	sta @$f01fff
+	jsr snes_init
+	jsr video_init
+	jsr linetest
+	jsr batest
+	jsr snes_init
+	jsr video_init
+	jsr copy_memtest
+	jsr irqtest
+	jsl $7e1800
+-	bra -
+
+copy_memtest:
+	rep #$30 : .al : .xl
+	lda #$0300
+	ldx #!memtest
+	ldy #$1800
+	mvn $7e, ^memtest
+	rts
+
+linetest
+	sep #$20 : .as
+	lda #$00
+	pha
+	plb
+-	lda $0000
+        lda $2100
+        sta $21ff
+	lda @$f01fff
+	cmp #$01
+	bne -
+	rts
+
+irqtest:
+	cli
+	sep #$20 : .as
+	rep #$10 : .xl
+	lda #$0f
+	sta $2100
+	lda #$ff
+	sta $4209
+	lda #$ff
+	sta $420a
+	lda #$ff
+	sta $4200
+	sta @$f00000
+	lda #$01
+	sta @$002222
+	rts
+
+batest:
+	sei
+	sep #$20 : .as
+	rep #$10 : .xl
+	lda #$00
+	ldx #$2100
+-	sta !$0, x
+	inx
+	inc
+	bne -
+	lda #$e0
+	pha
+	plb
+	lda #$00
+	ldx #$0000
+-	cmp !$0, x
+	bne batest_fail
+	inx
+	inc
+	bne -
+	lda #$5a
+	sta @$f00002
+	lda #$00
+	pha
+	plb
+	rts
+batest_fail:
+	lda #$ff
+	sta @$f00002
+	lda #$00
+	pha
+	plb
+	rts
+
+memtest:
+; test 4 areas: 00-3f:8000-ffff
+;               40-7d:0000-ffff
+;               80-bf:8000-ffff
+;               80-ff:0000-ffff
+	sep #$20 : .as
+	rep #$10 : .xl
+
+	lda #$01
+	sta @$003333 ; switch to linear memory mode
+	ldx #$8000
+	stx $00
+	ldx #$8000
+	stx $10
+	lda #$00
+	sta $03 ; bank no.
+mem0_writeloop0:
+; switch bank
+	pha
+	plb
+	lda #$01
+	sta @$003333
+-       lda $03
+	clc
+	adc $01
+	clc
+	adc $00
+	sta !$0000, x
+	inx
+	stx $00
+	bne -
+	ldx $10
+	inc $03
+	lda #$00
+	sta @$003333
+	lda $03
+	sta @$f00003
+	cmp #$40
+	bne mem0_writeloop0
+
+	ldx #$0000
+	stx $10
+mem0_writeloop1:
+; switch bank
+        lda #$01
+        sta @$003333
+	lda $03
+	pha
+	plb
+-	lda $03
+	clc
+	adc $01
+	clc
+	adc $00
+	sta !$0000, x
+	inx
+	stx $00
+	bne -
+	ldx $10
+	inc $03
+	lda #$00
+	sta @$003333
+	lda $03
+	sta @$f00003
+	cmp #$7e
+	bne mem0_writeloop1
+
+	ldx #$8000
+	stx $10
+	lda #$80
+	sta $03 ; bank no.
+mem0_writeloop2:
+; switch bank
+        lda #$01
+        sta @$003333
+	lda $03
+	pha
+	plb
+-	lda $03
+	clc
+	adc $01
+	clc
+	adc $00
+	sta !$0000, x
+	inx
+	stx $00
+	bne -
+	ldx $10
+	inc $03
+	lda #$00
+	sta @$003333
+	lda $03
+	sta @$f00003
+	cmp #$c0
+	bne mem0_writeloop2
+	ldx #$0000
+	stx $10
+mem0_writeloop3:
+; switch bank
+        lda #$01
+        sta @$003333
+	lda $03
+	pha
+	plb
+-	lda $03
+	clc
+	adc $01
+	clc
+	adc $00
+	sta !$0000, x
+	inx
+	stx $00
+	bne -
+	ldx $10
+	inc $03
+	lda #$00
+	sta @$003333
+	lda $03
+	sta @$f00003
+	bne mem0_writeloop3
+
+	lda #$00
+	sta @$002121
+	lda #$ff
+	sta @$002122
+	lda #$03
+	sta @$002122
+
+	ldx #$8000
+	stx $00
+	ldx #$8000
+	stx $10
+	lda #$00
+	sta $03 ; bank no.
+mem0_verifyloop0:
+; switch bank
+        lda #$01
+        sta @$f00001
+        lda #$01
+        sta @$003333
+	lda $03
+	pha
+	plb
+-	lda $03
+	clc
+	adc $01
+	clc
+	adc $00
+	cmp !$0000, x
+	bne mem0_fail
+	inx
+	stx $00
+	bne -
+	ldx $10
+	inc $03
+	lda #$00
+	sta @$003333
+	lda $03
+	sta @$f00003
+	cmp #$40
+	bne mem0_verifyloop0
+
+	ldx #$0000
+	stx $10
+mem0_verifyloop1:
+; switch bank
+        lda #$01
+        sta @$003333
+	lda $03
+	pha
+	plb
+-	lda $03
+	clc
+	adc $01
+	clc
+	adc $00
+	cmp !$0000, x
+	bne mem0_fail
+	inx
+	stx $00
+	bne -
+	ldx $10
+	inc $03
+	lda #$00
+	sta @$003333
+	lda $03
+	sta @$f00003
+	cmp #$7e
+	bne mem0_verifyloop1
+
+	ldx #$8000
+	stx $10
+	lda #$80
+	sta $03 ; bank no.
+        bra mem0_verifyloop2
+mem0_fail:
+	lda #$00
+	pha
+	plb
+	sta @$003333
+	rep #$20 : .al
+	lda $00
+	sta @$f00004
+	sep #$20 : .as
+	lda $03
+	sta @$f00006
+	lda #$ff
+	sta @$f00001
+	rtl
+mem0_verifyloop2:
+; switch bank
+        lda #$01
+        sta @$003333
+	lda $03
+	pha
+	plb
+-	lda $03
+	clc
+	adc $01
+	clc
+	adc $00
+	cmp !$0000, x
+	bne mem0_fail
+	inx
+	stx $00
+	bne -
+	ldx $10
+	inc $03
+	lda #$00
+	sta @$003333
+	lda $03
+	sta @$f00003
+	cmp #$c0
+	bne mem0_verifyloop2
+
+	ldx #$0000
+	stx $10
+mem0_verifyloop3:
+; switch bank
+        lda #$01
+        sta @$003333
+	lda $03
+	pha
+	plb
+-	lda $03
+	clc
+	adc $01
+	clc
+	adc $00
+	cmp !$0000, x
+	bne mem0_fail
+	inx
+	stx $00
+	bne -
+	ldx $10
+	inc $03
+	lda #$00
+	sta @$003333
+	lda $03
+	sta @$f00003
+	bne mem0_verifyloop3
+
+	lda #$00
+	sta @$002121
+	lda #$e0
+	sta @$002122
+	lda #$03
+	sta @$002122
+
+	lda #$00
+	pha
+	plb
+	sta @$003333
+	lda #$5a
+	sta @$f00001
+	rtl
+	rtl
+	rtl
+	rtl
+	rtl
+	rtl
+
+killdma:
+	stz $420b
+	stz $420c
+	stz $4310
+	stz $4311
+	stz $4312
+	stz $4313
+	stz $4314
+	stz $4320
+	stz $4321
+	stz $4322
+	stz $4323
+	stz $4324
+	stz $4330
+	stz $4331
+	stz $4332
+	stz $4333
+	stz $4334
+	stz $4340
+	stz $4341
+	stz $4342
+	stz $4343
+	stz $4344
+	stz $4350
+	stz $4351
+	stz $4352
+	stz $4353
+	stz $4354
+	stz $4360
+	stz $4361
+	stz $4362
+	stz $4363
+	stz $4364
+	rts
+
+
+
+
+waitblank:
+-	lda $4212
+	and #$80
+	bne -
+-	lda $4212
+	and #$80
+	beq -
+	rts
+
+video_init:
+	sep #$20 : .as		;8-bit accumulator
+	rep #$10 : .xl		;16-bit index
+	lda #$03		;mode 3, mode 5 via HDMA :D
+	sta $2105
+	lda #$58		;Tilemap addr 0xB000
+	ora #$02		;SC size 32x64
+	sta $2107		;for BG1
+	lda #$50		;Tilemap addr 0xA000
+	ora #$02		;SC size 32x64
+	sta $2108		;for BG2
+	lda #$40		;chr base addr:
+	sta $210b		;BG1=0x0000, BG2=0x8000
+	lda #$01		;cut off leftmost subscreen pixel garbage
+	sta $2126
+	lda #$fe
+	sta $2127
+	lda #$10
+	sta $2130
+	lda #$1f
+	sta $212e
+	sta $212f
+	stz $2121
+	lda #$0f
+	sta $2100		;screen on, full brightness
+	stz $2121
+	lda #$1f		;red background
+	sta $2122
+	stz $2122
+	rts
+
+snes_init:
+	sep #$20 : .as		;8-bit accumulator
+	rep #$10 : .xl		;16-bit index
+	stz $4200		;
+	lda #$ff
+	sta $4201		;
+	stz $4202		;
+	stz $4203		;
+	stz $4204		;
+	stz $4205		;
+	stz $4206		;
+	stz $4207		;
+	stz $4208		;
+	stz $4209		;
+	stz $420a		;
+	stz $420b		;
+	stz $420c		;
+	lda #$8f
+	sta $2100		;INIDISP: force blank
+	lda #$03		; 8x8+16x16; name=0; base=3
+	sta $2101		;
+	stz $2102		;
+	stz $2103		;
+;	stz $2104		; (OAM Data?!)
+;	stz $2104		; (OAM Data?!)
+	stz $2105		;
+	stz $2106		;
+	stz $2107		;
+	stz $2108		;
+	stz $2109		;
+	stz $210a		;
+	stz $210b		;
+	stz $210c		;
+	stz $210d		;
+	stz $210d		;
+	stz $210e		;
+	stz $210e		;
+	stz $210f		;
+	stz $210f		;
+	lda #$05
+	sta $2110		;
+	stz $2110		;
+	stz $2111		;
+	stz $2111		;
+	stz $2112		;
+	stz $2112		;
+	stz $2113		;
+	stz $2113		;
+	stz $2114		;
+	stz $2114		;
+	lda #$80		
+	sta $2115		;
+	stz $2116		;
+	stz $2117		;
+;	stz $2118		;(VRAM Data?!)
+;	stz $2119		;(VRAM Data?!)
+	stz $211a		;
+	stz $211b		;
+	lda #$01
+	sta $211b		;
+	stz $211c		;
+	stz $211c		;
+	stz $211d		;
+	stz $211d		;
+	stz $211e		;
+	sta $211e		;
+	stz $211f		;
+	stz $211f		;
+	stz $2120		;
+	stz $2120		;
+	stz $2121		;
+;	stz $2122		; (CG Data?!)
+;	stz $2122		; (CG Data?!)
+	stz $2123		;
+	stz $2124		;
+	stz $2125		;
+	stz $2126		;
+	stz $2127		;
+	stz $2128		;
+	stz $2129		;
+	stz $212a		;
+	stz $212b		;
+	stz $212c		;
+	stz $212d		;
+	stz $212e		;
+	stz $212f		;
+	lda #$30
+	sta $2130		;
+	stz $2131		;
+	lda #$e0
+	sta $2132		;
+	stz $2133		;
+;clear WRAM lower page
+;        ldx #$0200
+;        stx $2181
+;        lda #$00
+;        sta $2183
+;        DMA0(#$08, #$FF00, #^zero, #!zero, #$80)
+;        ldx #$0000
+;        stx $2181
+;	lda #$00
+;	sta $2183
+;        DMA0(#$08, #$1e0, #^zero, #!zero, #$80)
+
+	rts
+
+
