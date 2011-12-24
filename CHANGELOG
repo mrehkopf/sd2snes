@@ -1,0 +1,13 @@
+v0.1.1
+======
+
+ * initial public release
+
+
+v0.1.1a (bugfix release)
+========================
+
+ * Fixes:
+   - SuperCIC pair mode was erroneously enabled in firmware binary
+   - SNES menu crashed on empty database
+
