@@ -210,11 +210,12 @@ redraw_filelist_loop
 redraw_filelist_dirend
 	dey                        ; recover last valid direntry number
 	dey                        ; (we had 2x iny of the direntry pointer above,
+	beq +
 	dey                        ;  so account for those too)
 	dey
 	dey
 	dey
-	sty dirend_idx             ; dirend_idx <- last valid directory entry.
++	sty dirend_idx             ; dirend_idx <- last valid directory entry.
 	lda #$01                   ; encountered during redraw, so must be on screen
 	sta dirend_onscreen
 	bra redraw_filelist_out
