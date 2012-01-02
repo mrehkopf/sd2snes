@@ -66,6 +66,8 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
   static uint32_t parent_tgt;
   static uint32_t dir_end = 0;
   static uint8_t was_empty = 0;
+  static uint16_t num_files_total = 0;
+  static uint16_t num_dirs_total = 0;
   uint32_t dir_tgt;
   uint16_t numentries;
   uint32_t dirsize;
@@ -91,6 +93,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
   numentries=0;
   for(pass = 0; pass < 2; pass++) {
     if(pass) {
+      num_dirs_total++;
       dirsize = 4*(numentries);
       next_subdir_tgt += dirsize + 4;
       if(parent_tgt) next_subdir_tgt += 4;
@@ -180,6 +183,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
         } else {
           SNES_FTYPE type = determine_filetype((char*)fn);
           if(type != TYPE_UNKNOWN) {
+            num_files_total++;
             numentries++;
             if(pass) {
               if(mkdb) {
@@ -250,6 +254,8 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
 //  printf("db_tgt=%lx dir_end=%lx\n", db_tgt, dir_end);
   sram_writelong(db_tgt, SRAM_DB_ADDR+4);
   sram_writelong(dir_end, SRAM_DB_ADDR+8);
+  sram_writeshort(num_files_total, SRAM_DB_ADDR+12);
+  sram_writeshort(num_dirs_total, SRAM_DB_ADDR+14);
   return crc;
 }
 

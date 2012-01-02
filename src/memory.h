@@ -30,19 +30,20 @@
 #include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "smc.h"
 
-#define SRAM_ROM_ADDR (0x000000L)
-#define SRAM_SAVE_ADDR (0xE00000L)
+#define SRAM_ROM_ADDR           (0x000000L)
+#define SRAM_SAVE_ADDR          (0xE00000L)
 
-#define SRAM_MENU_ADDR (0xE00000L)
-#define SRAM_DB_ADDR (0xE40000L)
-#define SRAM_DIR_ADDR (0xE10000L)
-#define SRAM_CMD_ADDR (0xFF1000L)
-#define SRAM_PARAM_ADDR (0xFF1004L)
-#define SRAM_STATUS_ADDR (0xFF1100L)
-#define SRAM_MENU_SAVE_ADDR (0xFF0000L)
-#define SRAM_SCRATCHPAD (0xFFFF00L)
-#define SRAM_DIRID (0xFFFFF0L)
-#define SRAM_RELIABILITY_SCORE (0x100)
+#define SRAM_MENU_ADDR          (0xE00000L)
+#define SRAM_DB_ADDR            (0xE40000L)
+#define SRAM_DIR_ADDR           (0xE10000L)
+#define SRAM_CMD_ADDR           (0xFF1000L)
+#define SRAM_PARAM_ADDR         (0xFF1004L)
+#define SRAM_STATUS_ADDR        (0xFF1100L)
+#define SRAM_SYSINFO_ADDR       (0xFF1110L)
+#define SRAM_MENU_SAVE_ADDR     (0xFF0000L)
+#define SRAM_SCRATCHPAD         (0xFFFF00L)
+#define SRAM_DIRID              (0xFFFFF0L)
+#define SRAM_RELIABILITY_SCORE  (0x100)
 
 #define LOADROM_WITH_SRAM	(1)
 #define LOADROM_WITH_RESET	(2)

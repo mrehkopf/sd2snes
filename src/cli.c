@@ -134,7 +134,7 @@ static int8_t parse_wordlist(char *wordlist) {
     do {
       // If current word list character is \0: No match found
       if (c == 0) {
-        printf("Unknown word: %s\n",curchar);
+        printf("Unknown word: %s\n(use ? for help)",curchar);
         return -1;
       }
 

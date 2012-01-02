@@ -111,6 +111,7 @@
 uint8_t cmd[6]={0,0,0,0,0,0};
 uint8_t rsp[17];
 uint8_t csd[17];
+uint8_t cid[17];
 uint8_t ccs=0;
 uint32_t rca;
 
@@ -156,6 +157,17 @@ static uint32_t getbits(void *buffer, uint16_t start, int8_t bits) {
     result = result >> -bits;
   }
   return result;
+}
+
+void sdn_checkinit(BYTE drv) {
+  if(disk_state == DISK_CHANGED) {
+    disk_initialize(drv);
+  }
+}
+
+uint8_t* sdn_getcid() {
+  sdn_checkinit(0);
+  return cid;
 }
 
 static inline void wiggle_slow_pos(uint16_t times) {
@@ -578,12 +590,6 @@ int acmd_fast(uint8_t cmd, uint32_t param, uint8_t crc, uint8_t* dat, uint8_t* r
   return cmd_fast(cmd, param, crc, dat, rsp);
 }
 
-void sdn_checkinit(BYTE drv) {
-  if(disk_state == DISK_CHANGED) {
-    disk_initialize(drv);
-  }
-}
-
 int stream_datablock(uint8_t *buf) {
 //  uint8_t datshift=8;
   int j=512;
@@ -887,7 +893,10 @@ DRESULT sdn_initialize(BYTE drv) {
   }
 
   /* record CSD for getinfo */
-  cmd_slow(SEND_CSD, rca, 0, NULL, rsp);
+  cmd_slow(SEND_CSD, rca, 0, NULL, csd);
+
+  /* record CID */
+  cmd_slow(SEND_CID, rca, 0, NULL, cid);
 
   /* select the card */
   if(cmd_slow(SELECT_CARD, rca, 0, NULL, rsp)) {

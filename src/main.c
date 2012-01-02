@@ -26,6 +26,7 @@
 #include "smc.h"
 #include "msu1.h"
 #include "rtc.h"
+#include "sysinfo.h"
 
 #define EMC0TOGGLE	(3<<4)
 #define MR0R		(1<<1)
@@ -208,7 +209,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       sram_writebyte(0x00, SRAM_STATUS_ADDR+SYS_RTC_STATUS);
       set_fpga_time(get_bcdtime());
     }
-
+    sram_memset(SRAM_SYSINFO_ADDR, 13*40, 0x20);
     printf("SNES GO!\n");
     snes_reset(1);
     delay_ms(1);
@@ -243,8 +244,13 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           /* set RTC */
           set_bcdtime(btime);
           set_fpga_time(btime);
-	  cmd=0; /* stay in loop */
+	  cmd=0; /* stay in menu loop */
 	  break;
+        case SNES_CMD_SYSINFO:
+          /* go to sysinfo loop */
+          sysinfo_loop();
+          cmd=0; /* stay in menu loop */
+          break;
 	default:
 	  printf("unknown cmd: %d\n", cmd);
 	  cmd=0; /* unknown cmd: stay in loop */
