@@ -1,12 +1,13 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#include "autoconf.h"
+
 // #define DEBUG_FS
 // #define DEBUG_SD
 // #define DEBUG_IRQ
 // #define DEBUG_MSU1
 
-#define VER                       "0.0.1(NSFW)"
 #define IN_AHBRAM                 __attribute__ ((section(".ahbram")))
 
 #define SD_DT_INT_SETUP()         do {\

@@ -76,7 +76,7 @@ int main(void) {
   LPC_PINCON->PINSEL0 |= BV(20) | BV(21);                  /* MAT3.0 (FPGA clock) */
 led_pwm();
   sdn_init();
-  printf("\n\nsd2snes mk.2\n============\nfw ver.: " VER "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
+  printf("\n\nsd2snes mk.2\n============\nfw ver.: " CONFIG_VERSION "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
 printf("PCONP=%lx\n", LPC_SC->PCONP);
 
   file_init();
@@ -127,6 +127,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       }
       file_close();
     }
+    uart_trace(sdn_getcid(), 0, 17);
     snes_bootprint("           Loading ...          \0");
     if(get_cic_state() == CIC_PAIR) {
       printf("PAIR MODE ENGAGED!\n");
