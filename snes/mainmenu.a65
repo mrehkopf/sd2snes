@@ -1,6 +1,6 @@
 #include "memmap.i65"
 ;number of menu entries
-main_entries    .byt 1
+main_entries    .byt 2
 ;menu entry data
 main_enttab     ;Set Clock
 		.word !text_mm_time
@@ -8,6 +8,11 @@ main_enttab     ;Set Clock
                 .word !time_init-1
                 .byt ^time_init
                 .byt 1, 0
+                ;System Information
+                .word !text_mm_sysinfo
+                .byt ^text_mm_sysinfo
+                .word !show_sysinfo-1
+		.byt ^show_sysinfo
                 ;SuperCIC
 		.word !text_mm_scic
                 .byt ^text_mm_scic

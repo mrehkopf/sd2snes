@@ -20,5 +20,8 @@
 #define AVR_CMD		$307000
 #define AVR_PARAM	$307004
 #define RTC_STATUS	$307100
+#define SYSINFO_BLK	$307110
 
 #define ROOT_DIR	$C10000
+
+#define CMD_SYSINFO	$03

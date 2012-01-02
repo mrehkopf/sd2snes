@@ -1,4 +1,4 @@
-OBJS = header.ips reset.o65 main.o65 font.o65 palette.o65 data.o65 const.o65 logo.o65 logospr.o65 text.o65 dma.o65 menu.o65 pad.o65 time.o65 mainmenu.o65 # gfx.o65 # vars.o65
+OBJS = header.ips reset.o65 main.o65 font.o65 palette.o65 data.o65 const.o65 logo.o65 logospr.o65 text.o65 dma.o65 menu.o65 pad.o65 time.o65 mainmenu.o65 sysinfo.o65 # gfx.o65 # vars.o65
 
 all: menu.bin
 
