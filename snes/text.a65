@@ -1,5 +1,6 @@
 .text
 #include "memmap.i65"
+.byt "===HIPRINT==="
 hiprint:
 	sep #$20 : .as
 	lda print_count
