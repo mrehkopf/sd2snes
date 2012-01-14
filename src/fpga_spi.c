@@ -47,9 +47,15 @@
                                 s: Bit 2 = partial, Bit 1:0 = target
                                 target: see above
 
-	60	sssseeee	set SD DMA partial transfer start+end
-				ssss = start offset (msb first)
-				eeee = end offset (msb first)
+	60	xsssyeee	set SD DMA partial transfer parameters
+				x: 0 = read from sector start (skip until
+				       start offset reached)
+				   8 = assume mid-sector position and read
+				       immediately
+				sss = start offset (msb first)
+				y: 0 = skip rest of SD sector
+				   8 = stop mid-sector if end offset reached
+				eee = end offset (msb first)
 
 	8p	-		read (RAM only)
 				p: 0 = no increment after read
@@ -98,7 +104,7 @@
 	 15	SD DMA busy (0=idle, 1=busy)
 	 14	DAC read pointer MSB
 	 13	MSU read pointer MSB
-	 12	[TODO SD DMA CRC status (0=ok, 1=error); valid after bit 15 -> 0]
+	 12	reserved (0)
 	 11	reserved (0)
 	 10	reserved (0)
 	  9	reserved (0)
@@ -239,7 +245,7 @@ void fpga_sddma(uint8_t tgt, uint8_t partial) {
   }
   DBG_SD printf("...complete\n");
   FPGA_DESELECT();
-  if(test<5)printf("loopy: %ld %02x\n", test, status);
+//  if(test<5)printf("loopy: %ld %02x\n", test, status);
   BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 1;
 }
 

@@ -35,6 +35,8 @@ int i;
 
 int sd_offload = 0, ff_sd_offload = 0, sd_offload_tgt = 0;
 int sd_offload_partial = 0;
+int sd_offload_start_mid = 0;
+int sd_offload_end_mid = 0;
 uint16_t sd_offload_partial_start = 0;
 uint16_t sd_offload_partial_end = 0;
 
