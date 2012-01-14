@@ -35,6 +35,10 @@ module main(
   output SNES_DATABUS_DIR,
   input SNES_SYSCLK,
 
+  input [7:0] SNES_PA,
+  input SNES_PARD,
+  input SNES_PAWR,
+
   /* SRAM signals */
   /* Bus 1: PSRAM, 128Mbit, 16bit, 70ns */
   inout [15:0] ROM_DATA,
@@ -234,7 +238,8 @@ mcu_cmd snes_mcu_cmd(
   .cx4_datrom_addr_out(cx4_datrom_addr), 
   .cx4_datrom_data_out(cx4_datrom_data), 
   .cx4_datrom_we_out(cx4_datrom_we), 
-  .cx4_reset_out(cx4_reset)
+  .cx4_reset_out(cx4_reset),
+  .region_out(mcu_region)
 );
 
 wire [7:0] DCM_STATUS;
@@ -247,16 +252,28 @@ my_dcm snes_dcm(
   .STATUS(DCM_STATUS)
 );
 
+my_dcm snes_dcm2(
+  .CLKIN(SNES_SYSCLK),
+  .CLKFX(SYSCLK2),
+  .RST(DCM_RST)
+);
+
 assign DCM_RST=0;
 
+reg [5:0] SNES_PARDr;
 reg [5:0] SNES_READr;
 reg [5:0] SNES_WRITEr;
 reg [5:0] SNES_CPU_CLKr;
 
+wire SNES_PARD_start = (SNES_PARDr == 6'b111110);
 wire SNES_RD_start = (SNES_READr == 6'b111110);
 wire SNES_WR_start = (SNES_WRITEr == 6'b111110);
 wire SNES_cycle_start = (SNES_CPU_CLKr[5:0] == 6'b000001);
 wire SNES_cycle_end = (SNES_CPU_CLKr[5:0] == 6'b111110);
+
+always @(posedge SYSCLK2) begin
+  SNES_PARDr <= {SNES_PARDr[4:0], SNES_PARD};
+end
 
 always @(posedge CLK2) begin
   SNES_READr <= {SNES_READr[4:0], SNES_READ};
@@ -268,6 +285,7 @@ address snes_addr(
   .CLK(CLK2),
   .MAPPER(MAPPER),
   .SNES_ADDR(SNES_ADDR), // requested address from SNES
+  .SNES_PA(SNES_PA),
   .SNES_CS(SNES_CS),
   .ROM_ADDR(MAPPED_SNES_ADDR),   // Address to request from SRAM (active low)
   .ROM_SEL(ROM_SEL),     // which SRAM unit to access
@@ -281,7 +299,8 @@ address snes_addr(
   .msu_enable(msu_enable),
   //CX4
   .cx4_enable(cx4_enable),
-  .cx4_vect_enable(cx4_vect_enable)
+  .cx4_vect_enable(cx4_vect_enable),
+  .r213f_enable(r213f_enable)
 );
 
 reg [7:0] CX4_DINr;
@@ -347,11 +366,21 @@ assign CX4_SNES_DATA_IN = SNES_DATA;
 reg [7:0] SNES_DINr;
 reg [7:0] ROM_DOUTr;
 
-assign SNES_DATA = (!SNES_READ) 
-                    ? (msu_enable ? MSU_SNES_DATA_OUT
+reg [7:0] r213fr;
+reg r213f_forceread;
+reg [2:0] r213f_delay;
+reg [1:0] r213f_state;
+initial r213fr = 8'h55;
+initial r213f_forceread = 0;
+initial r213f_state = 2'b01;
+initial r213f_delay = 3'b011;
+
+assign SNES_DATA = (r213f_enable & (!SNES_PARD ^ r213f_forceread)) ? r213fr
+                   :(!SNES_READ ^ r213f_forceread)
+                     ? (msu_enable ? MSU_SNES_DATA_OUT
                        :cx4_enable ? CX4_SNES_DATA_OUT
                        :(cx4_active & cx4_vect_enable) ? CX4_SNES_DATA_OUT
-                       : SNES_DINr)
+                       :SNES_DINr)
                     : 8'bZ;
 
 reg [3:0] ST_MEM_DELAYr;
@@ -539,6 +568,21 @@ always @(posedge CLK2) begin
   end
 end
 
+always @(posedge SYSCLK2) begin
+  if(SNES_PARD_start & r213f_enable) begin
+    r213f_forceread <= 1'b1;
+    r213f_delay <= 3'b001;
+    r213f_state <= 2'b10;
+  end else if(r213f_state == 2'b10) begin
+    r213f_delay <= r213f_delay - 1;
+    if(r213f_delay == 3'b000) begin
+      r213f_forceread <= 1'b0;
+      r213f_state <= 2'b01;
+      r213fr <= {SNES_DATA[7:5], mcu_region, SNES_DATA[3:0]};
+    end
+  end
+end
+
 assign ROM_DATA[7:0] = ROM_ADDR0
                        ?(SD_DMA_TO_ROM ? (!MCU_WRITE ? MCU_DOUT : 8'bZ)
                                         : (!ROM_WE ? ROM_DOUTr : 8'bZ)
@@ -565,11 +609,14 @@ assign ROM_BLE = !ROM_WE ? !ROM_ADDR0 : 1'b0;
 assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
                          cx4_enable ? 1'b0 :
                          (cx4_active & cx4_vect_enable) ? 1'b0 :
+                         r213f_enable & !SNES_PARD ? 1'b0 :
                          ((!IS_ROM & !IS_SAVERAM & !IS_WRITABLE)
                           |(SNES_READ & SNES_WRITE)
                          );
 
-assign SNES_DATABUS_DIR = !SNES_READ ? 1'b1 : 1'b0;
+assign SNES_DATABUS_DIR = (!SNES_READ | (!SNES_PARD & r213f_enable))
+                           ? 1'b1 ^ r213f_forceread
+                           : 1'b0;
 
 assign IRQ_DIR = 1'b0;
 assign SNES_IRQ = 1'bZ;

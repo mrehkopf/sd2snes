@@ -21,6 +21,7 @@ module address(
   input CLK,
   input [2:0] MAPPER,       // MCU detected mapper
   input [23:0] SNES_ADDR,   // requested address from SNES
+  input [7:0] SNES_PA,      // peripheral address from SNES
   input SNES_CS,            // SNES ROMSEL signal
   output [23:0] ROM_ADDR,   // Address to request from SRAM0
   output ROM_SEL,           // enable SRAM0 (active low)
@@ -32,7 +33,8 @@ module address(
   input use_msu1,
   output msu_enable,
   output cx4_enable,
-  output cx4_vect_enable
+  output cx4_vect_enable,
+  output r213f_enable
 );
 
 wire [23:0] SRAM_SNES_ADDR;
@@ -64,4 +66,11 @@ always @(posedge CLK) cx4_enable_r <= {cx4_enable_r[4:0], cx4_enable_w};
 assign cx4_enable = &cx4_enable_r[5:2];
 
 assign cx4_vect_enable = &SNES_ADDR[15:5];
+
+wire r213f_enable_w = (SNES_PA == 8'h3f);
+reg [5:0] r213f_enable_r;
+initial r213f_enable_r = 6'b000000;
+always @(posedge CLK) r213f_enable_r <= {r213f_enable_r[4:0], r213f_enable_w};
+assign r213f_enable = &r213f_enable_r[5:2];
+
 endmodule
