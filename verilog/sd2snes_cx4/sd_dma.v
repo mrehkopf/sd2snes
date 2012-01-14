@@ -29,7 +29,9 @@ module sd_dma(
   output [7:0] SD_DMA_SRAM_DATA,
   input SD_DMA_PARTIAL,
   input [10:0] SD_DMA_PARTIAL_START,
-  input [10:0] SD_DMA_PARTIAL_END
+  input [10:0] SD_DMA_PARTIAL_END,
+  input SD_DMA_START_MID_BLOCK,
+  input SD_DMA_END_MID_BLOCK
 );
 
 reg [10:0] SD_DMA_STARTr;
@@ -85,7 +87,9 @@ always @(posedge CLK) begin
 end
 
 always @(posedge CLK) begin
-  if(cyclecnt == 1042) SD_DMA_DONEr <= 1;
+  if(cyclecnt == 1042
+     || ((SD_DMA_END_MID_BLOCK & SD_DMA_PARTIALr) && cyclecnt == SD_DMA_PARTIAL_END))
+    SD_DMA_DONEr <= 1;
   else SD_DMA_DONEr <= 0;
 end
 
@@ -100,8 +104,10 @@ always @(posedge CLK) begin
 end
 
 always @(posedge CLK) begin
-  if(SD_DMA_EN_rising || !SD_DMA_STATUSr) cyclecnt <= 0;
-  else if(clkcnt[1:0] == 2'b11) cyclecnt <= cyclecnt + 1;
+  if(SD_DMA_EN_rising) 
+    cyclecnt <= (SD_DMA_PARTIALr && SD_DMA_START_MID_BLOCK) ? SD_DMA_PARTIAL_START : 0;
+  else if(!SD_DMA_STATUSr) cyclecnt <= 0;
+  else if(clkcnt[1:0] == 2'b10) cyclecnt <= cyclecnt + 1;
 end
 
 // we have 8 clk cycles to complete one RAM write
