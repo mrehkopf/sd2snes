@@ -10,7 +10,7 @@
 #include "uart.h"
 #include "led.h"
 
-static uint8_t uart_lookupratio(float f_fr) {
+/*static uint8_t uart_lookupratio(float f_fr) {
   uint16_t errors[72]={0,67,71,77,83,91,100,111,125,
                        133,143,154,167,182,200,214,222,231,
                        250,267,273,286,300,308,333,357,364,
@@ -45,8 +45,8 @@ static uint8_t uart_lookupratio(float f_fr) {
   }
   return ratios[i_result];
 }
-
-static uint32_t baud2divisor(unsigned int baudrate) {
+*/
+/*static uint32_t baud2divisor(unsigned int baudrate) {
   uint32_t int_ratio;
   uint32_t error;
   uint32_t dl=0;
@@ -73,66 +73,15 @@ static uint32_t baud2divisor(unsigned int baudrate) {
     return ((fract_ratio<<16)&0xff0000) | dl;
   }
 }
-
-static char txbuf[1 << CONFIG_UART_TX_BUF_SHIFT];
+*/
+//static char txbuf[1 << CONFIG_UART_TX_BUF_SHIFT];
 static volatile unsigned int read_idx,write_idx;
-
-void UART_HANDLER(void) {
-  int iir = UART_REGS->IIR;
-  if (!(iir & 1)) {
-    /* Interrupt is pending */
-    switch (iir & 14) {
-#if CONFIG_UART_NUM == 1
-    case 0: /* modem status */
-      (void) UART_REGS->MSR; // dummy read to clear
-      break;
-#endif
-
-    case 2: /* THR empty - send */
-      if (read_idx != write_idx) {
-        int maxchars = 16;
-        while (read_idx != write_idx && --maxchars > 0) {
-          UART_REGS->THR = (unsigned char)txbuf[read_idx];
-          read_idx = (read_idx+1) & (sizeof(txbuf)-1);
-        }
-        if (read_idx == write_idx) {
-          /* buffer empty - turn off THRE interrupt */
-          BITBAND(UART_REGS->IER, 1) = 0;
-        }
-      }
-      break;
-      
-    case 12: /* RX timeout */
-    case  4: /* data received - not implemented yet */
-      (void) UART_REGS->RBR; // dummy read to clear
-      break;
-
-    case 6: /* RX error */
-      (void) UART_REGS->LSR; // dummy read to clear
-
-    default: break;
-    }
-  }
-}
 
 void uart_putc(char c) {
   if (c == '\n')
     uart_putc('\r');
-
-  unsigned int tmp = (write_idx+1) & (sizeof(txbuf)-1) ;
-
-  if (read_idx == write_idx && (BITBAND(UART_REGS->LSR, 5))) {
-    /* buffer empty, THR empty -> send immediately */
-    UART_REGS->THR = (unsigned char)c;
-  } else {
-#ifdef CONFIG_UART_DEADLOCKABLE
-    while (tmp == read_idx) ;
-#endif
-    BITBAND(UART_REGS->IER, 1) = 0; // turn off UART interrupt
-    txbuf[write_idx] = c;
-    write_idx = tmp;
-    BITBAND(UART_REGS->IER, 1) = 1;
-  }
+  while(!(UART_REGS->LSR & (0x20)));
+  UART_REGS->THR = c;
 }
 
 /* Polling version only */
@@ -170,7 +119,7 @@ void uart_init(void) {
 
   /* set baud rate - no fractional stuff for now */
   UART_REGS->LCR = BV(7) | 3; // always 8n1
-  div = baud2divisor(CONFIG_UART_BAUDRATE);
+  div = 0x850004; // baud2divisor(CONFIG_UART_BAUDRATE);
 
   UART_REGS->DLL = div & 0xff;
   UART_REGS->DLM = (div >> 8) & 0xff;
@@ -182,10 +131,6 @@ void uart_init(void) {
 
   /* reset and enable FIFO */
   UART_REGS->FCR = BV(0);
-
-  /* enable transmit interrupt */
-  BITBAND(UART_REGS->IER, 1) = 1;
-  NVIC_EnableIRQ(UART_IRQ);
 
   UART_REGS->THR = '?';
 }

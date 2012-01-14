@@ -13,6 +13,7 @@ enum cic_region { CIC_NTSC = 0, CIC_PAL };
 
 void print_cic_state(void);
 char *get_cic_statename(enum cicstates state);
+char *get_cic_statefriendlyname(enum cicstates state);
 enum cicstates get_cic_state(void);
 void cic_init(int allow_pairmode);
 

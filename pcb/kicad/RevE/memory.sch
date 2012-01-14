@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Fri 29 Jul 2011 09:56:34 PM CEST
+EESchema Schematic File Version 2  date Fri 09 Dec 2011 10:46:05 PM CET
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -47,7 +47,7 @@ $Descr A4 11700 8267
 encoding utf-8
 Sheet 3 6
 Title "sd2snes Mark II"
-Date "24 jul 2011"
+Date "9 dec 2011"
 Rev "C"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -322,7 +322,7 @@ L R R513
 U 1 1 4BF2FDAC
 P 9150 5700
 F 0 "R513" V 9230 5700 50  0000 C CNN
-F 1 "1k" V 9150 5700 50  0000 C CNN
+F 1 "100k" V 9150 5700 50  0000 C CNN
 F 2 "SM0805_FIXEDMASK" H 9150 5700 60  0001 C CNN
 	1    9150 5700
 	1    0    0    -1  

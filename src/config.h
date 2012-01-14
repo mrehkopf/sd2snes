@@ -1,12 +1,13 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#include "autoconf.h"
+
 // #define DEBUG_FS
 // #define DEBUG_SD
 // #define DEBUG_IRQ
 // #define DEBUG_MSU1
 
-#define VER                       "0.0.1(NSFW)"
 #define IN_AHBRAM                 __attribute__ ((section(".ahbram")))
 
 #define SD_DT_INT_SETUP()         do {\
@@ -65,8 +66,8 @@
 #define FPGA_MCU_RDY_REG          LPC_GPIO2
 #define FPGA_MCU_RDY_BIT          9
 
-#define QSORT_MAXELEM             1024
-
+#define QSORT_MAXELEM             2048
+#define CLTBL_SIZE		  100
 #define SSP_REGS LPC_SSP0
 #define SSP_PCLKREG PCLKSEL1
 // 1: PCLKSEL0

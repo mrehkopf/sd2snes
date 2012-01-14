@@ -64,6 +64,7 @@ processor p12f629
 ;   0x4d		buffer for eeprom access
 ;   0x4e		loop variable for longwait
 ;   0x4f		loop variable for wait
+;   0x5c		GPIO buffer variable for pair mode allow
 ;   0x5d		0: SuperCIC pair mode available flag
 ;   0x5e                SuperCIC pair mode detect (phase 1)
 ;   0x5f                SuperCIC pair mode detect (phase 2)
@@ -90,8 +91,8 @@ isr
 	clrf	0x5f		; clear pair mode detect
 	bsf	0x5f, 1		;
 	clrf	0x5d		; clear pair mode available
-	nop
-	nop
+	clrf	0x5c		; clear pair mode allow buffer
+	bsf	0x5c, 3		; assume disallow
 	bsf	INTCON, 7	; re-enable interrupts (ISR will continue as main)
 	goto	main
 init
@@ -296,8 +297,8 @@ swapskip
 ; indirect access, no post increment, etc.
 mangle
 	call	mangle_lock
-	nop
-	nop
+	movf	GPIO, w	; buffer GPIO state
+	movwf	0x5c	; for pair mode "transaction"
 mangle_key
 	movf	0x2f, w
 	movwf	0x20	
@@ -459,7 +460,7 @@ mangle_key_withskip
 ;-------pair mode code-------
 	bcf	GPIO, 0
 	movf	GPIO, w
-	btfss	GPIO, 3
+	btfss	0x5c, 3
 	bsf	GPIO, 0
 	movwf	0x5e
 	movf	GPIO, w
@@ -642,7 +643,7 @@ mangle_lock_withskip
 	goto	scic_pair_skip1
 	btfsc	0x5f, 1
 	goto	scic_pair_skip2
-	btfsc	GPIO, 3
+	btfsc	0x5c, 3
 	goto	scic_pair_skip3
 	goto	supercic_pairmode
 scic_pair_skip1

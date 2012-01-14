@@ -26,6 +26,7 @@
 #include "smc.h"
 #include "msu1.h"
 #include "rtc.h"
+#include "sysinfo.h"
 
 #define EMC0TOGGLE	(3<<4)
 #define MR0R		(1<<1)
@@ -34,6 +35,8 @@ int i;
 
 int sd_offload = 0, ff_sd_offload = 0, sd_offload_tgt = 0;
 int sd_offload_partial = 0;
+int sd_offload_start_mid = 0;
+int sd_offload_end_mid = 0;
 uint16_t sd_offload_partial_start = 0;
 uint16_t sd_offload_partial_end = 0;
 
@@ -75,11 +78,11 @@ int main(void) {
   LPC_PINCON->PINSEL0 |= BV(20) | BV(21);                  /* MAT3.0 (FPGA clock) */
 led_pwm();
   sdn_init();
-  printf("\n\nsd2snes mk.2\n============\nfw ver.: " VER "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
+  printf("\n\nsd2snes mk.2\n============\nfw ver.: " CONFIG_VERSION "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
 printf("PCONP=%lx\n", LPC_SC->PCONP);
 
   file_init();
-  cic_init(1);
+  cic_init(0);
 /* setup timer (fpga clk) */
   LPC_TIM3->CTCR=0;
   LPC_TIM3->EMR=EMC0TOGGLE;
@@ -95,7 +98,6 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       newcard = 1;
     }
     load_bootrle(SRAM_MENU_ADDR);
-sram_hexdump(SRAM_MENU_ADDR+0xffc0, 16);
     set_saveram_mask(0x1fff);
     set_rom_mask(0x3fffff);
     set_mapper(0x7);
@@ -146,7 +148,7 @@ sram_hexdump(SRAM_MENU_ADDR+0xffc0, 16);
     if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id) || (newcard)) {
       newcard = 0;
       /* generate fs footprint (interesting files only) */
-      uint32_t curr_dir_id = scan_dir(fs_path, 0, 0);
+      uint32_t curr_dir_id = scan_dir(fs_path, NULL, 0, 0);
       printf("curr dir id = %lx\n", curr_dir_id);
       /* files changed or no database found? */
       if((get_db_id(&saved_dir_id) != FR_OK)
@@ -155,7 +157,7 @@ sram_hexdump(SRAM_MENU_ADDR+0xffc0, 16);
 	printf("saved dir id = %lx\n", saved_dir_id);
 	printf("rebuilding database...");
 	snes_bootprint("     rebuilding database ...    \0");
-	curr_dir_id = scan_dir(fs_path, 1, 0);
+	curr_dir_id = scan_dir(fs_path, NULL, 1, 0);
 	sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 4);
 	uint32_t endaddr, direndaddr;
 	sram_readblock(&endaddr, SRAM_DB_ADDR+4, 4);
@@ -209,7 +211,7 @@ sram_hexdump(SRAM_MENU_ADDR+0xffc0, 16);
       sram_writebyte(0x00, SRAM_STATUS_ADDR+SYS_RTC_STATUS);
       set_fpga_time(get_bcdtime());
     }
-
+    sram_memset(SRAM_SYSINFO_ADDR, 13*40, 0x20);
     printf("SNES GO!\n");
     snes_reset(1);
     delay_ms(1);
@@ -222,7 +224,6 @@ sram_hexdump(SRAM_MENU_ADDR+0xffc0, 16);
     printf("test sram\n");
     while(!sram_reliable()) cli_entrycheck();
     printf("ok\n");
-sram_hexdump(SRAM_DIR_ADDR, 0x300);
 //while(1) {
 //  delay_ms(1000);
 //  printf("Estimated SNES master clock: %ld Hz\n", get_snes_sysclk());
@@ -245,8 +246,13 @@ sram_hexdump(SRAM_DIR_ADDR, 0x300);
           /* set RTC */
           set_bcdtime(btime);
           set_fpga_time(btime);
-	  cmd=0; /* stay in loop */
+	  cmd=0; /* stay in menu loop */
 	  break;
+        case SNES_CMD_SYSINFO:
+          /* go to sysinfo loop */
+          sysinfo_loop();
+          cmd=0; /* stay in menu loop */
+          break;
 	default:
 	  printf("unknown cmd: %d\n", cmd);
 	  cmd=0; /* unknown cmd: stay in loop */

@@ -1,15 +1,16 @@
+*=$7E0000
 .data
 ;don't anger the stack!
 dirptr_addr	.word	0
-dirptr_bank	.byt	0
+dirptr_bank	.word	0
 dirstart_addr	.word	0
-dirstart_bank	.byt	0
-dirend_addr	.word 	0
-dirend_bank	.byt	0
+dirstart_bank	.word	0
+dirend_addr	.word	0
+dirend_bank	.word	0
 dirend_idx	.word	0
 dirptr_idx	.word	0
-dirent_addr	.word 0
-dirent_bank	.byt 0
+dirent_addr	.word	0
+dirent_bank	.word	0
 dirent_type	.byt 0
 dirend_onscreen	.byt 0
 dirlog_idx	.byt 0,0,0 ; long ptr
@@ -77,6 +78,7 @@ time_y10	.byt 0
 time_y100	.byt 0
 time_sel	.byt 0
 time_exit	.byt 0
+time_cancel	.byt 0
 time_ptr	.byt 0
 time_tmp	.byt 0
 ;--

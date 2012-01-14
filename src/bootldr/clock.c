@@ -14,8 +14,8 @@ void clock_disconnect() {
 
 void clock_init() {
 
-/* set flash access time to 5 clks (80<f<=100MHz) */
-  setFlashAccessTime(5);
+/* set flash access time to 6 clks (safe setting) */
+  setFlashAccessTime(6);
 
 /* setup PLL0 for ~44100*256*8 Hz
    Base clock: 12MHz
@@ -48,8 +48,7 @@ void clock_init() {
  */
   enableMainOsc();
   setClkSrc(CLKSRC_MAINOSC);
-// XXX  setPLL0MultPrediv(429, 19);
-  setPLL0MultPrediv(23, 2);
+  setPLL0MultPrediv(12, 1);
   enablePLL0();
   setCCLKDiv(3);
   connectPLL0();

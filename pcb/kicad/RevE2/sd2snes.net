@@ -1,0 +1,3218 @@
+# EESchema Netlist Version 1.1 created  Mon 26 Dec 2011 09:57:01 PM CET
+(
+ ( /4B6E16F2/4D97B45F $noname  RA114 100 {Lib=R_PACK4}
+  (    1 N-000108 )
+  (    2 N-000145 )
+  (    3 N-000087 )
+  (    4 N-000083 )
+  (    5 SNES_D4 )
+  (    6 SNES_D0 )
+  (    7 SNES_D5 )
+  (    8 SNES_D1 )
+ )
+ ( /4B6E16F2/4D97B45C $noname  RA113 100 {Lib=R_PACK4}
+  (    1 N-000084 )
+  (    2 N-000082 )
+  (    3 N-000076 )
+  (    4 N-000073 )
+  (    5 SNES_D6 )
+  (    6 SNES_D2 )
+  (    7 SNES_D7 )
+  (    8 SNES_D3 )
+ )
+ ( /4B6E16F2/4D963119 $noname  RA108 100 {Lib=R_PACK4}
+  (    1 /SNES_Slot/SNES_EXT_A4 )
+  (    2 /SNES_Slot/SNES_EXT_A18 )
+  (    3 /SNES_Slot/SNES_EXT_A5 )
+  (    4 /SNES_Slot/SNES_EXT_A17 )
+  (    5 N-000037 )
+  (    6 N-000042 )
+  (    7 N-000100 )
+  (    8 N-000095 )
+ )
+ ( /4B6E16F2/4D963117 $noname  RA107 100 {Lib=R_PACK4}
+  (    1 /SNES_Slot/SNES_EXT_A2 )
+  (    2 /SNES_Slot/SNES_EXT_A20 )
+  (    3 /SNES_Slot/SNES_EXT_A3 )
+  (    4 /SNES_Slot/SNES_EXT_A19 )
+  (    5 N-000056 )
+  (    6 N-000053 )
+  (    7 N-000049 )
+  (    8 N-000047 )
+ )
+ ( /4B6E16F2/4D963115 $noname  RA106 100 {Lib=R_PACK4}
+  (    1 /SNES_Slot/SNES_EXT_A0 )
+  (    2 /SNES_Slot/SNES_EXT_A22 )
+  (    3 /SNES_Slot/SNES_EXT_A1 )
+  (    4 /SNES_Slot/SNES_EXT_A21 )
+  (    5 N-000045 )
+  (    6 N-000041 )
+  (    7 N-000040 )
+  (    8 N-000039 )
+ )
+ ( /4B6E16F2/4D96310E $noname  RA105 100 {Lib=R_PACK4}
+  (    1 /SNES_Slot/SNES_EXT_/IRQ )
+  (    2 /SNES_Slot/SNES_EXT_/RD )
+  (    3 /SNES_Slot/SNES_EXT_/ROMSEL )
+  (    4 /SNES_Slot/SNES_EXT_A23 )
+  (    5 N-000038 )
+  (    6 N-000143 )
+  (    7 N-000012 )
+  (    8 N-000147 )
+ )
+ ( /4B6E16F2/4D96310C $noname  RA112 100 {Lib=R_PACK4}
+  (    1 N-000151 )
+  (    2 N-000152 )
+  (    3 N-000153 )
+  (    4 N-000154 )
+  (    5 /SNES_Slot/SNES_EXT_REFRESH )
+  (    6 /SNES_Slot/SNES_EXT_PA7 )
+  (    7 /SNES_Slot/SNES_EXT_PA6 )
+  (    8 /SNES_Slot/SNES_EXT_/PAWR )
+ )
+ ( /4B6E16F2/4D96310A $noname  RA111 100 {Lib=R_PACK4}
+  (    1 /SNES_Slot/SNES_EXT_A10 )
+  (    2 /SNES_Slot/SNES_EXT_A12 )
+  (    3 /SNES_Slot/SNES_EXT_A11 )
+  (    4 /SNES_Slot/SNES_EXT_/PARD )
+  (    5 N-000156 )
+  (    6 N-000157 )
+  (    7 N-000158 )
+  (    8 N-000146 )
+ )
+ ( /4B6E16F2/4D963107 $noname  RA110 100 {Lib=R_PACK4}
+  (    1 /SNES_Slot/SNES_EXT_A8 )
+  (    2 /SNES_Slot/SNES_EXT_A14 )
+  (    3 /SNES_Slot/SNES_EXT_A9 )
+  (    4 /SNES_Slot/SNES_EXT_A13 )
+  (    5 N-000159 )
+  (    6 N-000160 )
+  (    7 N-000161 )
+  (    8 N-000137 )
+ )
+ ( /4B6E16F2/4D963103 $noname  RA109 100 {Lib=R_PACK4}
+  (    1 /SNES_Slot/SNES_EXT_A6 )
+  (    2 /SNES_Slot/SNES_EXT_A16 )
+  (    3 /SNES_Slot/SNES_EXT_A7 )
+  (    4 /SNES_Slot/SNES_EXT_A15 )
+  (    5 N-000127 )
+  (    6 N-000120 )
+  (    7 N-000125 )
+  (    8 N-000050 )
+ )
+ ( /4B6E16F2/4D9630F4 $noname  RA102 100 {Lib=R_PACK4}
+  (    1 /SNES_Slot/SNES_EXT_PA0 )
+  (    2 /SNES_Slot/SNES_EXT_PA1 )
+  (    3 /SNES_Slot/SNES_EXT_/WR )
+  (    4 /SNES_Slot/SNES_EXT_CPU_CLK )
+  (    5 N-000144 )
+  (    6 N-000013 )
+  (    7 N-000106 )
+  (    8 N-000105 )
+ )
+ ( /4B6E16F2/4D9630F0 $noname  RA101 100 {Lib=R_PACK4}
+  (    1 /SNES_Slot/SNES_EXT_PA4 )
+  (    2 /SNES_Slot/SNES_EXT_PA5 )
+  (    3 /SNES_Slot/SNES_EXT_PA2 )
+  (    4 /SNES_Slot/SNES_EXT_PA3 )
+  (    5 N-000104 )
+  (    6 N-000103 )
+  (    7 N-000092 )
+  (    8 N-000102 )
+ )
+ ( /4B6E16F2/4D95CDD4 $noname  RA104 FB {Lib=R_PACK4}
+  (    1 /SNES_Slot/SNES_EXT_D1 )
+  (    2 /SNES_Slot/SNES_EXT_D5 )
+  (    3 /SNES_Slot/SNES_EXT_D0 )
+  (    4 /SNES_Slot/SNES_EXT_D4 )
+  (    5 N-000075 )
+  (    6 N-000072 )
+  (    7 N-000107 )
+  (    8 N-000091 )
+ )
+ ( /4B6E16F2/4D95CDCD $noname  RA103 FB {Lib=R_PACK4}
+  (    1 /SNES_Slot/SNES_EXT_D3 )
+  (    2 /SNES_Slot/SNES_EXT_D7 )
+  (    3 /SNES_Slot/SNES_EXT_D2 )
+  (    4 /SNES_Slot/SNES_EXT_D6 )
+  (    5 N-000086 )
+  (    6 N-000071 )
+  (    7 N-000078 )
+  (    8 N-000074 )
+ )
+ ( /4B6E16F2/4D115250 SM0805_FIXEDMASK  C128 10p {Lib=C}
+  (    1 N-000156 )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4D11524F SM0805_FIXEDMASK  C127 10p {Lib=C}
+  (    1 N-000151 )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4D11524E SM0805_FIXEDMASK  C126 10p {Lib=C}
+  (    1 /SNES_Slot/SNES_EXT_REFRESH )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4D113CAF SM0805_FIXEDMASK  C125 10p {Lib=C}
+  (    1 N-000012 )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4D113CAC SM0805_FIXEDMASK  C124 10p {Lib=C}
+  (    1 N-000013 )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4D113CAA SM0805_FIXEDMASK  C123 10p {Lib=C}
+  (    1 N-000147 )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4D113C9C SM0805_FIXEDMASK  C122 10p {Lib=C}
+  (    1 N-000143 )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4D113C55 SM0805_FIXEDMASK  C121 10p {Lib=C}
+  (    1 N-000144 )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4C7EAF13 $noname  R103 4k7 {Lib=R}
+  (    1 SNES_IRQ_EN )
+  (    2 N-000036 )
+ )
+ ( /4B6E16F2/4C7EAEBF $noname  R102 100k {Lib=R}
+  (    1 N-000036 )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4C7EAD01 $noname  Q101 2N2222A {Lib=NPN}
+  (    1 GND )
+  (    2 N-000036 )
+  (    3 N-000147 )
+ )
+ ( /4B6E16F2/4BFB119A SM0805_FIXEDMASK  C111 100n {Lib=C}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BFB1199 SM0805_FIXEDMASK  C112 100n {Lib=C}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BFB1197 SM0805_FIXEDMASK  C113 100n {Lib=C}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BFB1194 SM0805_FIXEDMASK  C106 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BFB1192 SM0805_FIXEDMASK  C105 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BFB1190 SM0805_FIXEDMASK  C104 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BAE51CA SM0805_FIXEDMASK  R101 270 {Lib=R}
+  (    1 GND )
+  (    2 /SNES_Slot/SNES_EXT_SYS_CLK )
+ )
+ ( /4B6E16F2/4BAD42E2 SM0805_FIXEDMASK  C116 100n {Lib=C}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BAD42E0 SM0805_FIXEDMASK  C115 100n {Lib=C}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BAD42DF SM0805_FIXEDMASK  C114 100n {Lib=C}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BAD42DA SM0805_FIXEDMASK  C103 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BAD42D8 SM0805_FIXEDMASK  C102 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4BAD42D5 SM0805_FIXEDMASK  C101 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E16F2/4B6E1766 SNESCART_EXT  J101 SNESCART_EXT {Lib=SNESCART_EXT}
+  (    1 /SNES_Slot/SNES_EXT_SYS_CLK )
+  (    2 ? )
+  (    3 /SNES_Slot/SNES_EXT_PA6 )
+  (    4 /SNES_Slot/SNES_EXT_/PARD )
+  (    5 GND )
+  (    6 /SNES_Slot/SNES_EXT_A11 )
+  (    7 /SNES_Slot/SNES_EXT_A10 )
+  (    8 /SNES_Slot/SNES_EXT_A9 )
+  (    9 /SNES_Slot/SNES_EXT_A8 )
+  (   10 /SNES_Slot/SNES_EXT_A7 )
+  (   11 /SNES_Slot/SNES_EXT_A6 )
+  (   12 /SNES_Slot/SNES_EXT_A5 )
+  (   13 /SNES_Slot/SNES_EXT_A4 )
+  (   14 /SNES_Slot/SNES_EXT_A3 )
+  (   15 /SNES_Slot/SNES_EXT_A2 )
+  (   16 /SNES_Slot/SNES_EXT_A1 )
+  (   17 /SNES_Slot/SNES_EXT_A0 )
+  (   18 /SNES_Slot/SNES_EXT_/IRQ )
+  (   19 /SNES_Slot/SNES_EXT_D0 )
+  (   20 /SNES_Slot/SNES_EXT_D1 )
+  (   21 /SNES_Slot/SNES_EXT_D2 )
+  (   22 /SNES_Slot/SNES_EXT_D3 )
+  (   23 /SNES_Slot/SNES_EXT_/RD )
+  (   24 EXT_CIC_DATA1 )
+  (   25 CIC_RESET )
+  (   26 SNES_/RESET )
+  (   27 +5VL )
+  (   28 /SNES_Slot/SNES_EXT_PA0 )
+  (   29 /SNES_Slot/SNES_EXT_PA2 )
+  (   30 /SNES_Slot/SNES_EXT_PA4 )
+  (   31 AUDIO_L )
+  (   32 ? )
+  (   33 /SNES_Slot/SNES_EXT_REFRESH )
+  (   34 /SNES_Slot/SNES_EXT_PA7 )
+  (   35 /SNES_Slot/SNES_EXT_/PAWR )
+  (   36 GND )
+  (   37 /SNES_Slot/SNES_EXT_A12 )
+  (   38 /SNES_Slot/SNES_EXT_A13 )
+  (   39 /SNES_Slot/SNES_EXT_A14 )
+  (   40 /SNES_Slot/SNES_EXT_A15 )
+  (   41 /SNES_Slot/SNES_EXT_A16 )
+  (   42 /SNES_Slot/SNES_EXT_A17 )
+  (   43 /SNES_Slot/SNES_EXT_A18 )
+  (   44 /SNES_Slot/SNES_EXT_A19 )
+  (   45 /SNES_Slot/SNES_EXT_A20 )
+  (   46 /SNES_Slot/SNES_EXT_A21 )
+  (   47 /SNES_Slot/SNES_EXT_A22 )
+  (   48 /SNES_Slot/SNES_EXT_A23 )
+  (   49 /SNES_Slot/SNES_EXT_/ROMSEL )
+  (   50 /SNES_Slot/SNES_EXT_D4 )
+  (   51 /SNES_Slot/SNES_EXT_D5 )
+  (   52 /SNES_Slot/SNES_EXT_D6 )
+  (   53 /SNES_Slot/SNES_EXT_D7 )
+  (   54 /SNES_Slot/SNES_EXT_/WR )
+  (   55 EXT_CIC_DATA0 )
+  (   56 CIC_CLK )
+  (   57 /SNES_Slot/SNES_EXT_CPU_CLK )
+  (   58 +5VL )
+  (   59 /SNES_Slot/SNES_EXT_PA1 )
+  (   60 /SNES_Slot/SNES_EXT_PA3 )
+  (   61 /SNES_Slot/SNES_EXT_PA5 )
+  (   62 AUDIO_R )
+ )
+ ( /4B6E16F2/4B6E1748 TSSOP48  U103 74ALVC164245DGG {Lib=74ALVC164245}
+  (    1 GND )
+  (    2 N-000125 )
+  (    3 N-000120 )
+  (    4 GND )
+  (    5 N-000127 )
+  (    6 N-000137 )
+  (    7 +5V )
+  (    8 N-000161 )
+  (    9 N-000160 )
+  (   10 GND )
+  (   11 N-000159 )
+  (   12 N-000146 )
+  (   13 N-000158 )
+  (   14 N-000157 )
+  (   15 GND )
+  (   16 N-000156 )
+  (   17 N-000151 )
+  (   18 +5V )
+  (   19 N-000152 )
+  (   20 N-000153 )
+  (   21 GND )
+  (   22 N-000154 )
+  (   23 /SNES_Slot/SNES_EXT_SYS_CLK )
+  (   24 GND )
+  (   25 GND )
+  (   26 SNES_SYS_CLK )
+  (   27 SNES_REFRESH )
+  (   28 GND )
+  (   29 SNES_PA7 )
+  (   30 SNES_PA6 )
+  (   31 +3.3V )
+  (   32 SNES_/PAWR )
+  (   33 SNES_/PARD )
+  (   34 GND )
+  (   35 SNES_A11 )
+  (   36 SNES_A12 )
+  (   37 SNES_A10 )
+  (   38 SNES_A13 )
+  (   39 GND )
+  (   40 SNES_A9 )
+  (   41 SNES_A14 )
+  (   42 +3.3V )
+  (   43 SNES_A8 )
+  (   44 SNES_A15 )
+  (   45 GND )
+  (   46 SNES_A7 )
+  (   47 SNES_A16 )
+  (   48 GND )
+ )
+ ( /4B6E16F2/4B6E1744 TSSOP48  U102 74ALVC164245DGG {Lib=74ALVC164245}
+  (    1 GND )
+  (    2 N-000012 )
+  (    3 N-000143 )
+  (    4 GND )
+  (    5 N-000038 )
+  (    6 N-000039 )
+  (    7 +5V )
+  (    8 N-000040 )
+  (    9 N-000041 )
+  (   10 GND )
+  (   11 N-000045 )
+  (   12 N-000047 )
+  (   13 N-000049 )
+  (   14 N-000053 )
+  (   15 GND )
+  (   16 N-000056 )
+  (   17 N-000095 )
+  (   18 +5V )
+  (   19 N-000100 )
+  (   20 N-000042 )
+  (   21 GND )
+  (   22 N-000037 )
+  (   23 N-000050 )
+  (   24 GND )
+  (   25 GND )
+  (   26 SNES_A6 )
+  (   27 SNES_A17 )
+  (   28 GND )
+  (   29 SNES_A5 )
+  (   30 SNES_A18 )
+  (   31 +3.3V )
+  (   32 SNES_A4 )
+  (   33 SNES_A19 )
+  (   34 GND )
+  (   35 SNES_A3 )
+  (   36 SNES_A20 )
+  (   37 SNES_A2 )
+  (   38 SNES_A21 )
+  (   39 GND )
+  (   40 SNES_A1 )
+  (   41 SNES_A22 )
+  (   42 +3.3V )
+  (   43 SNES_A0 )
+  (   44 SNES_A23 )
+  (   45 GND )
+  (   46 SNES_/ROMSEL )
+  (   47 SNES_/RD )
+  (   48 GND )
+ )
+ ( /4B6E16F2/4B6E1740 TSSOP48  U101 74ALVC164245DGG {Lib=74ALVC164245}
+  (    1 GND )
+  (    2 N-000102 )
+  (    3 N-000092 )
+  (    4 GND )
+  (    5 N-000103 )
+  (    6 N-000104 )
+  (    7 +5V )
+  (    8 N-000105 )
+  (    9 N-000106 )
+  (   10 GND )
+  (   11 N-000013 )
+  (   12 N-000144 )
+  (   13 N-000074 )
+  (   14 N-000078 )
+  (   15 GND )
+  (   16 N-000071 )
+  (   17 N-000086 )
+  (   18 +5V )
+  (   19 N-000091 )
+  (   20 N-000107 )
+  (   21 GND )
+  (   22 N-000072 )
+  (   23 N-000075 )
+  (   24 DATABUS_DIR )
+  (   25 DATABUS_/OE )
+  (   26 N-000083 )
+  (   27 N-000087 )
+  (   28 GND )
+  (   29 N-000145 )
+  (   30 N-000108 )
+  (   31 +3.3V )
+  (   32 N-000073 )
+  (   33 N-000076 )
+  (   34 GND )
+  (   35 N-000082 )
+  (   36 N-000084 )
+  (   37 SNES_CPU_CLK )
+  (   38 SNES_/WR )
+  (   39 GND )
+  (   40 SNES_PA1 )
+  (   41 SNES_PA0 )
+  (   42 +3.3V )
+  (   43 SNES_PA3 )
+  (   44 SNES_PA2 )
+  (   45 GND )
+  (   46 SNES_PA5 )
+  (   47 SNES_PA4 )
+  (   48 GND )
+ )
+ ( /4BAA6ABD/4D49598F $noname  U511 CY62148EV30-ZSXI {Lib=CY62148EV30-ZSXI}
+  (    1 RAM_A17 )
+  (    2 RAM_A16 )
+  (    3 RAM_A14 )
+  (    4 RAM_A12 )
+  (    5 RAM_A7 )
+  (    6 RAM_A6 )
+  (    7 RAM_A5 )
+  (    8 RAM_A4 )
+  (    9 RAM_A3 )
+  (   10 RAM_A2 )
+  (   11 RAM_A1 )
+  (   12 RAM_A0 )
+  (   13 RAM_DQ0 )
+  (   14 RAM_DQ1 )
+  (   15 RAM_DQ2 )
+  (   16 GND )
+  (   17 RAM_DQ3 )
+  (   18 RAM_DQ4 )
+  (   19 RAM_DQ5 )
+  (   20 RAM_DQ6 )
+  (   21 RAM_DQ7 )
+  (   22 /Memory/RAM_/CE )
+  (   23 RAM_A10 )
+  (   24 RAM_/OE )
+  (   25 RAM_A11 )
+  (   26 RAM_A9 )
+  (   27 RAM_A8 )
+  (   28 RAM_A13 )
+  (   29 RAM_/WE )
+  (   30 RAM_A18 )
+  (   31 RAM_A15 )
+  (   32 /Memory/SRAM_Vcc )
+ )
+ ( /4BAA6ABD/4BF2FDAF SM0805_FIXEDMASK  R511 20k {Lib=R}
+  (    1 /Memory/SRAM_Vcc )
+  (    2 /Memory/RAM_/CE )
+ )
+ ( /4BAA6ABD/4BF2FDAC SM0805_FIXEDMASK  R513 100k {Lib=R}
+  (    1 N-000344 )
+  (    2 GND )
+ )
+ ( /4BAA6ABD/4BF2FDA9 SM0805_FIXEDMASK  R512 4k7 {Lib=R}
+  (    1 N-000344 )
+  (    2 +3.3V )
+ )
+ ( /4BAA6ABD/4BF2FD9F SOT23EBC  Q511 2N2222A {Lib=NPN}
+  (    1 GND )
+  (    2 N-000344 )
+  (    3 /Memory/RAM_/CE )
+ )
+ ( /4BAA6ABD/4BF19DCA SOT23EBC  D511 BAT54C {Lib=DOUBLE_SCH_KCOM2}
+  (    1 +3.3V )
+  (    2 +BATT )
+  (    3 /Memory/SRAM_Vcc )
+ )
+ ( /4BAA6ABD/4BAD3D55 SM0805_FIXEDMASK  C502 100n {Lib=C}
+  (    1 +1.8V )
+  (    2 GND )
+ )
+ ( /4BAA6ABD/4BAD3D53 SM0805_FIXEDMASK  C511 100n {Lib=C}
+  (    1 /Memory/SRAM_Vcc )
+  (    2 GND )
+ )
+ ( /4BAA6ABD/4BAD3D47 SM0805_FIXEDMASK  C501 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4BAA6ABD/4B868602 VFBGA54  U501 MT45W8MW16 {Lib=MT45W8MW16}
+  (   A1 ROM_/LB )
+  (   A2 ROM_/OE )
+  (   A3 ROM_A0 )
+  (   A4 ROM_A1 )
+  (   A5 ROM_A2 )
+  (   A6 GND )
+  (   B1 ROM_DQ8 )
+  (   B2 ROM_/UB )
+  (   B3 ROM_A3 )
+  (   B4 ROM_A4 )
+  (   B5 ROM_/CE )
+  (   B6 ROM_DQ0 )
+  (   C1 ROM_DQ9 )
+  (   C2 ROM_DQ10 )
+  (   C3 ROM_A5 )
+  (   C4 ROM_A6 )
+  (   C5 ROM_DQ1 )
+  (   C6 ROM_DQ2 )
+  (   D1 GND )
+  (   D2 ROM_DQ11 )
+  (   D3 ROM_A17 )
+  (   D4 ROM_A7 )
+  (   D5 ROM_DQ3 )
+  (   D6 +1.8V )
+  (   E1 +3.3V )
+  (   E2 ROM_DQ12 )
+  (   E3 ROM_A21 )
+  (   E4 ROM_A16 )
+  (   E5 ROM_DQ4 )
+  (   E6 GND )
+  (   F1 ROM_DQ14 )
+  (   F2 ROM_DQ13 )
+  (   F3 ROM_A14 )
+  (   F4 ROM_A15 )
+  (   F5 ROM_DQ5 )
+  (   F6 ROM_DQ6 )
+  (   G1 ROM_DQ15 )
+  (   G2 ROM_A19 )
+  (   G3 ROM_A12 )
+  (   G4 ROM_A13 )
+  (   G5 ROM_/WE )
+  (   G6 ROM_DQ7 )
+  (   H1 ROM_A18 )
+  (   H2 ROM_A8 )
+  (   H3 ROM_A9 )
+  (   H4 ROM_A10 )
+  (   H5 ROM_A11 )
+  (   H6 ROM_A20 )
+  (   J1 ? )
+  (   J2 GND )
+  (   J3 GND )
+  (   J4 ROM_A22 )
+ )
+ ( /4B6ED75B/4E2C1796 $noname  JP402 JUMPER {Lib=JUMPER}
+  (    1 GND )
+  (    2 /USEBATT )
+ )
+ ( /4B6ED75B/4DF9F6C8 $noname  P404 CONN_3X2 {Lib=CONN_3X2}
+  (    1 P1_D0 )
+  (    2 P1_CLK )
+  (    3 P_LATCH )
+  (    4 MCU_SPARE )
+  (    5 P2_CLK )
+  (    6 P2_D0 )
+ )
+ ( /4B6ED75B/4C86265B $noname  JP401 JUMPER {Lib=JUMPER}
+  (    1 N-000300 )
+  (    2 CIC_MCLR )
+ )
+ ( /4B6ED75B/4C814430 SM0805_FIXEDMASK  R407 10k {Lib=R}
+  (    1 P2.10 )
+  (    2 +3.3V )
+ )
+ ( /4B6ED75B/4C5608C9 SM0805_FIXEDMASK  R422 33 {Lib=R}
+  (    1 N-000310 )
+  (    2 N-000314 )
+ )
+ ( /4B6ED75B/4C5608C6 SM0805_FIXEDMASK  R421 33 {Lib=R}
+  (    1 N-000315 )
+  (    2 N-000309 )
+ )
+ ( /4B6ED75B/4C4A0B6F PIN_ARRAY_2X1  P403 CONN_2 {Lib=CONN_2}
+  (    1 GND )
+  (    2 N-000313 )
+ )
+ ( /4B6ED75B/4C1286D5 SM0805_FIXEDMASK  C412 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6ED75B/4C0DA78D LED-3MM-FIXED  D403 LED_2mA_1.7V,_red {Lib=LED}
+  (    1 +3.3V )
+  (    2 N-000311 )
+ )
+ ( /4B6ED75B/4C0DA785 SM0805_FIXEDMASK  R403 680 {Lib=R}
+  (    1 N-000323 )
+  (    2 N-000311 )
+ )
+ ( /4B6ED75B/4C0943CA pin_array_7x2  P401 CONN_7X2 {Lib=CONN_7X2}
+  (    1 +3.3V )
+  (    2 +5V )
+  (    3 GND )
+  (    4 P2.10 )
+  (    5 /RESET )
+  (    6 TX3 )
+  (    7 RX3 )
+  (    8 TCK )
+  (    9 /TRST )
+  (   10 TMS )
+  (   11 EXT_TDI )
+  (   12 EXT_TDO )
+  (   13 RX0 )
+  (   14 TX0 )
+ )
+ ( /4B6ED75B/4C063C47 SM0805_FIXEDMASK  C405 100n {Lib=C}
+  (    1 /RESET )
+  (    2 GND )
+ )
+ ( /4B6ED75B/4C063C2F SM0805_FIXEDMASK  R404 10k {Lib=R}
+  (    1 /RESET )
+  (    2 +3.3V )
+ )
+ ( /4B6ED75B/4C01596A SM0805_FIXEDMASK  R423 1.5k {Lib=R}
+  (    1 N-000315 )
+  (    2 USB_SWCONN )
+ )
+ ( /4B6ED75B/4BF850D1 SM0805_FIXEDMASK  R405 100 {Lib=R}
+  (    1 CCLK )
+  (    2 N-000327 )
+ )
+ ( /4B6ED75B/4BF850A9 SM0805_FIXEDMASK  R406 100 {Lib=R}
+  (    1 N-000324 )
+  (    2 PROG_B )
+ )
+ ( /4B6ED75B/4BF847B1 SM0805_FIXEDMASK  R402 680 {Lib=R}
+  (    1 N-000322 )
+  (    2 N-000305 )
+ )
+ ( /4B6ED75B/4BF847A7 SM0805_FIXEDMASK  R401 680 {Lib=R}
+  (    1 N-000294 )
+  (    2 N-000316 )
+ )
+ ( /4B6ED75B/4BF8328D LED-3MM-FIXED  D401 LED_2mA_1.9V,_green {Lib=LED}
+  (    1 +3.3V )
+  (    2 N-000316 )
+ )
+ ( /4B6ED75B/4BF8324A LED-3MM-FIXED  D402 LED_2mA_1.8V,_yellow {Lib=LED}
+  (    1 +3.3V )
+  (    2 N-000305 )
+ )
+ ( /4B6ED75B/4BF6BFE6 SM0805_FIXEDMASK  C404 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6ED75B/4BF6BFE5 SM0805_FIXEDMASK  C403 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6ED75B/4BF6BFE2 SM0805_FIXEDMASK  C402 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6ED75B/4BF6BFE1 SM0805_FIXEDMASK  C401 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6ED75B/4BF6BFBB SM0805_FIXEDMASK  C411 10u {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6ED75B/4BF00175 USB-MINIB-THT  J421 Molex_54819 {Lib=USB_MINIB}
+  (    1 N-000328 )
+  (    2 N-000310 )
+  (    3 N-000315 )
+  (    5 GND )
+  (    6 GND )
+  (    7 GND )
+ )
+ ( /4B6ED75B/4BEFBC73 PIN_ARRAY_2X1  P402 CONN_2 {Lib=CONN_2}
+  (    1 GND )
+  (    2 /RESET )
+ )
+ ( /4B6ED75B/4BAA6A9C $noname  J411 Hirose_DM1AA {Lib=SD_CARD}
+  (    1 SD_DAT3 )
+  (    2 SD_CMD )
+  (    3 GND )
+  (    4 +3.3V )
+  (    5 SD_CLK )
+  (    6 GND )
+  (    7 SD_DAT0 )
+  (    8 SD_DAT1 )
+  (    9 SD_DAT2 )
+  (   DT N-000318 )
+  ( GND1 GND )
+  ( GND2 GND )
+  (   WP N-000295 )
+ )
+ ( /4B6ED75B/4BEECBD1 SM0805_FIXEDMASK  C409 10p {Lib=C}
+  (    1 N-000338 )
+  (    2 GND )
+ )
+ ( /4B6ED75B/4BEECBCD SM0805_FIXEDMASK  C408 10p {Lib=C}
+  (    1 N-000337 )
+  (    2 GND )
+ )
+ ( /4B6ED75B/4BEECBCA SM0805_FIXEDMASK  C407 33p {Lib=C}
+  (    1 N-000340 )
+  (    2 GND )
+ )
+ ( /4B6ED75B/4BEECBC1 SM0805_FIXEDMASK  C406 33p {Lib=C}
+  (    1 N-000339 )
+  (    2 GND )
+ )
+ ( /4B6ED75B/4BC243CB XTAL_SMD_05019  X402 32.768kHz {Lib=CRYSTAL}
+  (    1 N-000337 )
+  (    2 N-000338 )
+ )
+ ( /4B6ED75B/4BC243C8 XTAL_SMD_05032  X401 12MHz {Lib=CRYSTAL}
+  (    1 N-000339 )
+  (    2 N-000340 )
+ )
+ ( /4B6ED75B/4B6F321A LQFP80-.5  U401 LPC1754 {Lib=LPC1754}
+  (    1 EXT_TDO )
+  (    2 EXT_TDI )
+  (    3 TMS )
+  (    4 /TRST )
+  (    5 TCK )
+  (    6 RX3 )
+  (    7 TX3 )
+  (    8 +3.3V )
+  (    9 GND )
+  (   10 +3.3V )
+  (   11 ? )
+  (   12 GND )
+  (   13 N-000337 )
+  (   14 /RESET )
+  (   15 N-000338 )
+  (   16 +BATT )
+  (   17 ? )
+  (   18 N-000328 )
+  (   19 N-000339 )
+  (   20 N-000340 )
+  (   21 +3.3V )
+  (   22 N-000309 )
+  (   23 N-000314 )
+  (   24 GND )
+  (   25 N-000313 )
+  (   26 ? )
+  (   27 ? )
+  (   28 ? )
+  (   29 N-000323 )
+  (   30 DAC_/DEM )
+  (   31 N-000300 )
+  (   32 SNES_/RESET )
+  (   33 GND )
+  (   34 +3.3V )
+  (   35 ? )
+  (   36 CIC_STATUS )
+  (   37 CIC_DATA1 )
+  (   38 CIC_DATA0 )
+  (   39 FPGA_CLK )
+  (   40 N-000327 )
+  (   41 P2.10 )
+  (   42 +3.3V )
+  (   43 GND )
+  (   44 DONE )
+  (   45 MCU_SPI_MOSI )
+  (   46 MCU_SPI_MISO )
+  (   47 MCU_SPI_SCK )
+  (   48 MCU_SPI_SS )
+  (   49 INIT_B+MCU_IRQ )
+  (   50 DIN+MCU_/OVR )
+  (   51 ? )
+  (   52 ? )
+  (   53 N-000322 )
+  (   54 N-000294 )
+  (   55 SD_DAT3 )
+  (   56 +3.3V )
+  (   57 GND )
+  (   58 SD_DAT2 )
+  (   59 SD_DAT1 )
+  (   60 SD_DAT0 )
+  (   61 SD_CMD )
+  (   62 N-000318 )
+  (   63 SD_CLK )
+  (   64 N-000295 )
+  (   65 USB_SWCONN )
+  (   66 GND )
+  (   67 +3.3V )
+  (   68 ? )
+  (   69 N-000324 )
+  (   70 /USEBATT )
+  (   71 P2_D0 )
+  (   72 P2_CLK )
+  (   73 MCU_SPARE )
+  (   74 P_LATCH )
+  (   75 P1_CLK )
+  (   76 P1_D0 )
+  (   77 +3.3V )
+  (   78 GND )
+  (   79 TX0 )
+  (   80 RX0 )
+ )
+ ( /4B6EC9C3/4EF8DF53 $noname  FB342 FILTER {Lib=FILTER}
+  (    1 GND )
+  (    2 AGND )
+ )
+ ( /4B6EC9C3/4EF3B181 SM0805_FIXEDMASK  C304 4.7u {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6EC9C3/4EF3B17C $noname  L302 4.7uH {Lib=INDUCTOR}
+  (    1 /Power_Supply_/_Misc./LX33 )
+  (    2 +3.3V )
+ )
+ ( /4B6EC9C3/4EF3B15E SM0805_FIXEDMASK  C303 4.7u {Lib=C}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /4B6EC9C3/4EF3AFF2 $noname  L301 4.7uH {Lib=INDUCTOR}
+  (    1 /Power_Supply_/_Misc./LX12 )
+  (    2 +1.2V )
+ )
+ ( /4B6EC9C3/4EF3ADA3 $noname  U301 MCP1603T-120I/OS {Lib=MCP1603-SOT23-FIXED}
+  (    1 +5V )
+  (    2 GND )
+  (    3 +5V )
+  (    4 +1.2V )
+  (    5 /Power_Supply_/_Misc./LX12 )
+ )
+ ( /4B6EC9C3/4EF3AD9A $noname  U302 MCP1603T-330I/OS {Lib=MCP1603-SOT23-FIXED}
+  (    1 +5V )
+  (    2 GND )
+  (    3 +5V )
+  (    4 +3.3V )
+  (    5 /Power_Supply_/_Misc./LX33 )
+ )
+ ( /4B6EC9C3/4DB2EA56 $noname  FB341 FILTER {Lib=FILTER}
+  (    1 +3.3V )
+  (    2 +3.3VDAC )
+ )
+ ( /4B6EC9C3/4D4BE786 SM0805_FIXEDMASK  R301 20k {Lib=R}
+  (    1 GND )
+  (    2 N-000275 )
+ )
+ ( /4B6EC9C3/4D4BCF29 $noname  Q301 IRLML6402PbF {Lib=MOSFET_P}
+  (    D +5VL )
+  (    G N-000275 )
+  (    S +5V )
+ )
+ ( /4B6EC9C3/4CA655D4 SM0805_FIXEDMASK  C332 100p {Lib=C}
+  (    1 CIC_DATA0 )
+  (    2 GND )
+ )
+ ( /4B6EC9C3/4CA65597 SM0805_FIXEDMASK  C333 100p {Lib=C}
+  (    1 CIC_DATA1 )
+  (    2 GND )
+ )
+ ( /4B6EC9C3/4CA65577 SM0805_FIXEDMASK  R333 680 {Lib=R}
+  (    1 EXT_CIC_DATA1 )
+  (    2 CIC_DATA1 )
+ )
+ ( /4B6EC9C3/4CA6556E SM0805_FIXEDMASK  R332 680 {Lib=R}
+  (    1 CIC_DATA0 )
+  (    2 EXT_CIC_DATA0 )
+ )
+ ( /4B6EC9C3/4C42D578 SM0805_FIXEDMASK  R331 680 {Lib=R}
+  (    1 N-000284 )
+  (    2 CIC_CLK )
+ )
+ ( /4B6EC9C3/4C17DE31 SM0805_FIXEDMASK  C342 1u {Lib=C}
+  (    1 +3.3VDAC )
+  (    2 AGND )
+ )
+ ( /4B6EC9C3/4C05ACA2 SM0805_FIXEDMASK  C301 4.7u {Lib=C}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /4B6EC9C3/4C05AC9D SM0805_FIXEDMASK  C302 4.7u {Lib=C}
+  (    1 +1.2V )
+  (    2 GND )
+ )
+ ( /4B6EC9C3/4BF98EC6 SM0805_FIXEDMASK  R341 470 {Lib=R}
+  (    1 AUDIO_R )
+  (    2 N-000277 )
+ )
+ ( /4B6EC9C3/4BF98EC4 SM0805_FIXEDMASK  R342 10k {Lib=R}
+  (    1 N-000277 )
+  (    2 AGND )
+ )
+ ( /4B6EC9C3/4BF98EBF SM0805_FIXEDMASK  C349 10n {Lib=C}
+  (    1 AUDIO_L )
+  (    2 AGND )
+ )
+ ( /4B6EC9C3/4BF98EBE SM0805_FIXEDMASK  C346 3.3u {Lib=C}
+  (    1 N-000277 )
+  (    2 N-000286 )
+ )
+ ( /4B6EC9C3/4BF98EBB SM0805_FIXEDMASK  C348 3.3u {Lib=C}
+  (    1 N-000285 )
+  (    2 N-000278 )
+ )
+ ( /4B6EC9C3/4BF98EB9 SM0805_FIXEDMASK  R344 10k {Lib=R}
+  (    1 N-000285 )
+  (    2 AGND )
+ )
+ ( /4B6EC9C3/4BF98EB4 SM0805_FIXEDMASK  R343 470 {Lib=R}
+  (    1 AUDIO_L )
+  (    2 N-000285 )
+ )
+ ( /4B6EC9C3/4BF98E9E SM0805_FIXEDMASK  C347 10n {Lib=C}
+  (    1 AUDIO_R )
+  (    2 AGND )
+ )
+ ( /4B6EC9C3/4BF98AAB SM0805_FIXEDMASK  C345 10u {Lib=C}
+  (    1 N-000281 )
+  (    2 AGND )
+ )
+ ( /4B6EC9C3/4BF98AA5 SM0805_FIXEDMASK  C344 10u {Lib=C}
+  (    1 N-000279 )
+  (    2 AGND )
+ )
+ ( /4B6EC9C3/4BF98AA2 SM0805_FIXEDMASK  C343 100n {Lib=C}
+  (    1 N-000279 )
+  (    2 AGND )
+ )
+ ( /4B6EC9C3/4BAF2EAF BT_KEYSTONE_1059_20MM  BT351 Keystone_1059_/_KZH20PCB {Lib=BATTERY}
+  (    1 +BATT )
+  (    2 GND )
+ )
+ ( /4B6EC9C3/4BADC720 SM0805_FIXEDMASK  C341 100n {Lib=C}
+  (    1 +3.3VDAC )
+  (    2 AGND )
+ )
+ ( /4B6EC9C3/4BAA9331 TSSOP10  U341 CS4344 {Lib=CS4344}
+  (    1 DAC_SDIN )
+  (    2 DAC_/DEM )
+  (    3 DAC_LRCK )
+  (    4 DAC_MCLK )
+  (    5 N-000279 )
+  (    6 N-000281 )
+  (    7 N-000278 )
+  (    8 AGND )
+  (    9 +3.3VDAC )
+  (   10 N-000286 )
+ )
+ ( /4B6EC9C3/4BADC719 SM0805_FIXEDMASK  C331 100n {Lib=C}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /4B6EC9C3/4BABCB68 SM0805_FIXEDMASK  C312 4.7u {Lib=C}
+  (    1 +1.8V )
+  (    2 GND )
+ )
+ ( /4B6EC9C3/4BABCB5C SM0805_FIXEDMASK  C311 4.7u {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6EC9C3/4BABCAD2 SM0805_FIXEDMASK  C322 4.7u {Lib=C}
+  (    1 +2.5V )
+  (    2 GND )
+ )
+ ( /4B6EC9C3/4BABCA9C SM0805_FIXEDMASK  C321 4.7u {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6EC9C3/4BAA92DB SO8N  U331 PIC12F629-I/P {Lib=PIC12F629}
+  (    1 +5V )
+  (    2 N-000284 )
+  (    3 CIC_STATUS )
+  (    4 CIC_MCLR )
+  (    5 CIC_RESET )
+  (    6 CIC_DATA1 )
+  (    7 CIC_DATA0 )
+  (    8 GND )
+ )
+ ( /4B6EC9C3/4B6ED144 SOT23-5  U311 MCP1824-1802E/OT {Lib=MCP1824-SOT23-Fixed}
+  (    1 +3.3V )
+  (    2 GND )
+  (    3 +3.3V )
+  (    4 ? )
+  (    5 +1.8V )
+ )
+ ( /4B6EC9C3/4B6ED134 SOT23-5  U321 MCP1824-2502E/OT {Lib=MCP1824-SOT23-Fixed}
+  (    1 +3.3V )
+  (    2 GND )
+  (    3 +3.3V )
+  (    4 ? )
+  (    5 +2.5V )
+ )
+ ( /4B6E18FC/4D2F566A SM0805_FIXEDMASK  C234 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4D2F497B SM0805_FIXEDMASK  C233 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4D2F4979 SM0805_FIXEDMASK  C232 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4D2F4480 SM0805_FIXEDMASK  C215 100n {Lib=C}
+  (    1 +2.5V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4D2F4344 SM0805_FIXEDMASK  C231 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4D2F4312 SM0805_FIXEDMASK  C209 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4D252B5C SM0805_FIXEDMASK  C214 100n {Lib=C}
+  (    1 +2.5V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4C7FF87E $noname  P113 CONN_1 {Lib=CONN_1}
+  (    1 N-000193 )
+ )
+ ( /4B6E18FC/4BF5A441 SM0805_FIXEDMASK  C224 100n {Lib=C}
+  (    1 +1.2V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BF5A43F SM0805_FIXEDMASK  C223 100n {Lib=C}
+  (    1 +1.2V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE85 SM0805_FIXEDMASK  C222 100n {Lib=C}
+  (    1 +1.2V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE7D SM0805_FIXEDMASK  C221 100n {Lib=C}
+  (    1 +1.2V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE7B SM0805_FIXEDMASK  C213 100n {Lib=C}
+  (    1 +2.5V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE7A SM0805_FIXEDMASK  C212 100n {Lib=C}
+  (    1 +2.5V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE78 SM0805_FIXEDMASK  C211 100n {Lib=C}
+  (    1 +2.5V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE74 SM0805_FIXEDMASK  C210 100n {Lib=C}
+  (    1 +2.5V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE6D SM0805_FIXEDMASK  C208 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE6B SM0805_FIXEDMASK  C207 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE6A SM0805_FIXEDMASK  C206 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE67 SM0805_FIXEDMASK  C205 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE65 SM0805_FIXEDMASK  C204 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE64 SM0805_FIXEDMASK  C203 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE62 SM0805_FIXEDMASK  C202 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4BADCE47 SM0805_FIXEDMASK  C201 100n {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /4B6E18FC/4B6E1931 PQFP208  U201 XC3S400-PQ208 {Lib=XC3S400-PQ208}
+  (    1 GND )
+  (    2 ROM_A12 )
+  (    3 ROM_A18 )
+  (    4 ROM_A19 )
+  (    5 ROM_DQ15 )
+  (    6 +3.3V )
+  (    7 ROM_DQ13 )
+  (    8 GND )
+  (    9 ROM_DQ14 )
+  (   10 ROM_DQ12 )
+  (   11 ROM_A17 )
+  (   12 ROM_DQ11 )
+  (   13 ROM_DQ9 )
+  (   14 GND )
+  (   15 ROM_DQ10 )
+  (   16 ROM_DQ8 )
+  (   17 +2.5V )
+  (   18 ROM_A5 )
+  (   19 RAM_DQ3 )
+  (   20 RAM_DQ2 )
+  (   21 RAM_DQ4 )
+  (   22 RAM_DQ1 )
+  (   23 +3.3V )
+  (   24 RAM_DQ5 )
+  (   25 GND )
+  (   26 RAM_DQ0 )
+  (   27 RAM_DQ6 )
+  (   28 RAM_A0 )
+  (   29 RAM_DQ7 )
+  (   30 GND )
+  (   31 RAM_A1 )
+  (   32 +3.3V )
+  (   33 RAM_A2 )
+  (   34 RAM_A10 )
+  (   35 RAM_A3 )
+  (   36 RAM_/OE )
+  (   37 RAM_A4 )
+  (   38 +2.5V )
+  (   39 RAM_A11 )
+  (   40 RAM_A5 )
+  (   41 GND )
+  (   42 RAM_A9 )
+  (   43 RAM_A6 )
+  (   44 RAM_A8 )
+  (   45 RAM_A7 )
+  (   46 RAM_A13 )
+  (   47 GND )
+  (   48 RAM_A12 )
+  (   49 +3.3V )
+  (   50 RAM_/WE )
+  (   51 RAM_A14 )
+  (   52 RAM_A18 )
+  (   53 GND )
+  (   54 ? )
+  (   55 ? )
+  (   56 ? )
+  (   57 RAM_A16 )
+  (   58 RAM_A15 )
+  (   59 GND )
+  (   60 +3.3V )
+  (   61 RAM_A17 )
+  (   62 SD_DAT2 )
+  (   63 SD_DAT3 )
+  (   64 SD_CLK )
+  (   65 SD_DAT0 )
+  (   66 GND )
+  (   67 SD_CMD )
+  (   68 MCU_SPI_SS )
+  (   69 +2.5V )
+  (   70 +1.2V )
+  (   71 MCU_SPI_SCK )
+  (   72 MCU_SPI_MISO )
+  (   73 +3.3V )
+  (   74 MCU_SPI_MOSI )
+  (   75 GND )
+  (   76 DAC_MCLK )
+  (   77 DAC_LRCK )
+  (   78 DAC_SDIN )
+  (   79 SD_DAT1 )
+  (   80 FPGA_CLK )
+  (   81 SNES_PA4 )
+  (   82 GND )
+  (   83 INIT_B+MCU_IRQ )
+  (   84 +3.3V )
+  (   85 SNES_PA5 )
+  (   86 SNES_PA2 )
+  (   87 SNES_PA3 )
+  (   88 +1.2V )
+  (   89 +2.5V )
+  (   90 SNES_PA0 )
+  (   91 GND )
+  (   92 DIN+MCU_/OVR )
+  (   93 SNES_PA1 )
+  (   94 SNES_/WR )
+  (   95 SNES_CPU_CLK )
+  (   96 SNES_D3 )
+  (   97 SNES_D7 )
+  (   98 +3.3V )
+  (   99 GND )
+  (  100 SNES_D2 )
+  (  101 SNES_D6 )
+  (  102 SNES_D1 )
+  (  103 DONE )
+  (  104 CCLK )
+  (  105 GND )
+  (  106 SNES_D5 )
+  (  107 SNES_D0 )
+  (  108 SNES_D4 )
+  (  109 DATABUS_/OE )
+  (  110 +3.3V )
+  (  111 DATABUS_DIR )
+  (  112 GND )
+  (  113 N-000193 )
+  (  114 SNES_IRQ_EN )
+  (  115 SNES_/RD )
+  (  116 SNES_/ROMSEL )
+  (  117 SNES_A23 )
+  (  118 GND )
+  (  119 SNES_A0 )
+  (  120 SNES_A22 )
+  (  121 +2.5V )
+  (  122 SNES_A1 )
+  (  123 SNES_A21 )
+  (  124 SNES_A2 )
+  (  125 SNES_A20 )
+  (  126 SNES_A3 )
+  (  127 +3.3V )
+  (  128 SNES_A19 )
+  (  129 GND )
+  (  130 SNES_A4 )
+  (  131 SNES_A18 )
+  (  132 SNES_A5 )
+  (  133 SNES_A17 )
+  (  134 GND )
+  (  135 SNES_A6 )
+  (  136 +3.3V )
+  (  137 SNES_A16 )
+  (  138 SNES_A7 )
+  (  139 SNES_A15 )
+  (  140 SNES_A8 )
+  (  141 SNES_A14 )
+  (  142 +2.5V )
+  (  143 SNES_A9 )
+  (  144 SNES_A13 )
+  (  145 GND )
+  (  146 SNES_A10 )
+  (  147 SNES_A12 )
+  (  148 SNES_A11 )
+  (  149 SNES_/PARD )
+  (  150 SNES_/PAWR )
+  (  151 GND )
+  (  152 SNES_PA6 )
+  (  153 +3.3V )
+  (  154 SNES_PA7 )
+  (  155 SNES_REFRESH )
+  (  156 ROM_/LB )
+  (  157 GND )
+  (  158 ? )
+  (  159 ? )
+  (  160 ? )
+  (  161 ROM_/UB )
+  (  162 ROM_/OE )
+  (  163 GND )
+  (  164 +3.3V )
+  (  165 ROM_A3 )
+  (  166 ROM_A0 )
+  (  167 ROM_A7 )
+  (  168 ROM_A1 )
+  (  169 ROM_A4 )
+  (  170 GND )
+  (  171 ROM_A2 )
+  (  172 ROM_/CE )
+  (  173 +2.5V )
+  (  174 +1.2V )
+  (  175 ROM_A6 )
+  (  176 ROM_DQ0 )
+  (  177 +3.3V )
+  (  178 ROM_DQ1 )
+  (  179 GND )
+  (  180 SNES_SYS_CLK )
+  (  181 ROM_DQ2 )
+  (  182 ROM_DQ3 )
+  (  183 ROM_DQ4 )
+  (  184 ROM_A15 )
+  (  185 ROM_DQ6 )
+  (  186 GND )
+  (  187 ROM_DQ5 )
+  (  188 +3.3V )
+  (  189 ROM_DQ7 )
+  (  190 ROM_/WE )
+  (  191 ROM_A20 )
+  (  192 +1.2V )
+  (  193 +2.5V )
+  (  194 ROM_A13 )
+  (  195 GND )
+  (  196 ROM_A11 )
+  (  197 ROM_A10 )
+  (  198 ROM_A22 )
+  (  199 ROM_A16 )
+  (  200 ROM_A14 )
+  (  201 +3.3V )
+  (  202 GND )
+  (  203 ROM_A21 )
+  (  204 ROM_A9 )
+  (  205 ROM_A8 )
+  (  206 GND )
+  (  207 PROG_B )
+  (  208 ? )
+ )
+)
+*
+{ Allowed footprints by component:
+$component C128
+ SM*
+ C?
+ C1-1
+$endlist
+$component C127
+ SM*
+ C?
+ C1-1
+$endlist
+$component C126
+ SM*
+ C?
+ C1-1
+$endlist
+$component C125
+ SM*
+ C?
+ C1-1
+$endlist
+$component C124
+ SM*
+ C?
+ C1-1
+$endlist
+$component C123
+ SM*
+ C?
+ C1-1
+$endlist
+$component C122
+ SM*
+ C?
+ C1-1
+$endlist
+$component C121
+ SM*
+ C?
+ C1-1
+$endlist
+$component R103
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R102
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component C111
+ SM*
+ C?
+ C1-1
+$endlist
+$component C112
+ SM*
+ C?
+ C1-1
+$endlist
+$component C113
+ SM*
+ C?
+ C1-1
+$endlist
+$component C106
+ SM*
+ C?
+ C1-1
+$endlist
+$component C105
+ SM*
+ C?
+ C1-1
+$endlist
+$component C104
+ SM*
+ C?
+ C1-1
+$endlist
+$component R101
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component C116
+ SM*
+ C?
+ C1-1
+$endlist
+$component C115
+ SM*
+ C?
+ C1-1
+$endlist
+$component C114
+ SM*
+ C?
+ C1-1
+$endlist
+$component C103
+ SM*
+ C?
+ C1-1
+$endlist
+$component C102
+ SM*
+ C?
+ C1-1
+$endlist
+$component C101
+ SM*
+ C?
+ C1-1
+$endlist
+$component R511
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R513
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R512
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component C502
+ SM*
+ C?
+ C1-1
+$endlist
+$component C511
+ SM*
+ C?
+ C1-1
+$endlist
+$component C501
+ SM*
+ C?
+ C1-1
+$endlist
+$component R407
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R422
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R421
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component C412
+ SM*
+ C?
+ C1-1
+$endlist
+$component D403
+ LED-3MM
+ LED-5MM
+ LED-10MM
+ LED-0603
+ LED-0805
+ LED-1206
+ LEDV
+$endlist
+$component R403
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component C405
+ SM*
+ C?
+ C1-1
+$endlist
+$component R404
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R423
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R405
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R406
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R402
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R401
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component D401
+ LED-3MM
+ LED-5MM
+ LED-10MM
+ LED-0603
+ LED-0805
+ LED-1206
+ LEDV
+$endlist
+$component D402
+ LED-3MM
+ LED-5MM
+ LED-10MM
+ LED-0603
+ LED-0805
+ LED-1206
+ LEDV
+$endlist
+$component C404
+ SM*
+ C?
+ C1-1
+$endlist
+$component C403
+ SM*
+ C?
+ C1-1
+$endlist
+$component C402
+ SM*
+ C?
+ C1-1
+$endlist
+$component C401
+ SM*
+ C?
+ C1-1
+$endlist
+$component C411
+ SM*
+ C?
+ C1-1
+$endlist
+$component C409
+ SM*
+ C?
+ C1-1
+$endlist
+$component C408
+ SM*
+ C?
+ C1-1
+$endlist
+$component C407
+ SM*
+ C?
+ C1-1
+$endlist
+$component C406
+ SM*
+ C?
+ C1-1
+$endlist
+$component C304
+ SM*
+ C?
+ C1-1
+$endlist
+$component C303
+ SM*
+ C?
+ C1-1
+$endlist
+$component R301
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component C332
+ SM*
+ C?
+ C1-1
+$endlist
+$component C333
+ SM*
+ C?
+ C1-1
+$endlist
+$component R333
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R332
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R331
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component C342
+ SM*
+ C?
+ C1-1
+$endlist
+$component C301
+ SM*
+ C?
+ C1-1
+$endlist
+$component C302
+ SM*
+ C?
+ C1-1
+$endlist
+$component R341
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R342
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component C349
+ SM*
+ C?
+ C1-1
+$endlist
+$component C346
+ SM*
+ C?
+ C1-1
+$endlist
+$component C348
+ SM*
+ C?
+ C1-1
+$endlist
+$component R344
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R343
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component C347
+ SM*
+ C?
+ C1-1
+$endlist
+$component C345
+ SM*
+ C?
+ C1-1
+$endlist
+$component C344
+ SM*
+ C?
+ C1-1
+$endlist
+$component C343
+ SM*
+ C?
+ C1-1
+$endlist
+$component C341
+ SM*
+ C?
+ C1-1
+$endlist
+$component C331
+ SM*
+ C?
+ C1-1
+$endlist
+$component C312
+ SM*
+ C?
+ C1-1
+$endlist
+$component C311
+ SM*
+ C?
+ C1-1
+$endlist
+$component C322
+ SM*
+ C?
+ C1-1
+$endlist
+$component C321
+ SM*
+ C?
+ C1-1
+$endlist
+$component C234
+ SM*
+ C?
+ C1-1
+$endlist
+$component C233
+ SM*
+ C?
+ C1-1
+$endlist
+$component C232
+ SM*
+ C?
+ C1-1
+$endlist
+$component C215
+ SM*
+ C?
+ C1-1
+$endlist
+$component C231
+ SM*
+ C?
+ C1-1
+$endlist
+$component C209
+ SM*
+ C?
+ C1-1
+$endlist
+$component C214
+ SM*
+ C?
+ C1-1
+$endlist
+$component C224
+ SM*
+ C?
+ C1-1
+$endlist
+$component C223
+ SM*
+ C?
+ C1-1
+$endlist
+$component C222
+ SM*
+ C?
+ C1-1
+$endlist
+$component C221
+ SM*
+ C?
+ C1-1
+$endlist
+$component C213
+ SM*
+ C?
+ C1-1
+$endlist
+$component C212
+ SM*
+ C?
+ C1-1
+$endlist
+$component C211
+ SM*
+ C?
+ C1-1
+$endlist
+$component C210
+ SM*
+ C?
+ C1-1
+$endlist
+$component C208
+ SM*
+ C?
+ C1-1
+$endlist
+$component C207
+ SM*
+ C?
+ C1-1
+$endlist
+$component C206
+ SM*
+ C?
+ C1-1
+$endlist
+$component C205
+ SM*
+ C?
+ C1-1
+$endlist
+$component C204
+ SM*
+ C?
+ C1-1
+$endlist
+$component C203
+ SM*
+ C?
+ C1-1
+$endlist
+$component C202
+ SM*
+ C?
+ C1-1
+$endlist
+$component C201
+ SM*
+ C?
+ C1-1
+$endlist
+$endfootprintlist
+}
+{ Pin List by Nets
+Net 1 "GND" "GND"
+ U201 186
+ U201 145
+ U201 195
+ U201 202
+ U201 112
+ U201 163
+ J101 36
+ U201 129
+ U201 179
+ U201 206
+ U201 118
+ U201 157
+ U201 14
+ U201 25
+ U201 75
+ U201 41
+ U201 91
+ C207 2
+ U103 1
+ C222 2
+ C221 2
+ U103 4
+ C213 2
+ C212 2
+ C211 2
+ C210 2
+ C208 2
+ U103 10
+ U201 105
+ C206 2
+ C205 2
+ C204 2
+ U103 21
+ C203 2
+ U201 99
+ U201 134
+ U201 47
+ U201 53
+ U201 59
+ U201 8
+ U201 66
+ U201 170
+ U201 82
+ U201 151
+ U101 21
+ C322 2
+ C321 2
+ BT351 2
+ U102 39
+ C301 2
+ U102 28
+ U102 48
+ C331 2
+ J101 5
+ U101 1
+ U101 4
+ C312 2
+ C311 2
+ U101 10
+ C102 2
+ C101 2
+ C202 2
+ C201 2
+ U201 1
+ C304 2
+ C103 2
+ R301 1
+ U201 30
+ C303 2
+ U301 2
+ C116 2
+ C115 2
+ U302 2
+ C114 2
+ C209 2
+ C214 2
+ C224 2
+ C223 2
+ C231 2
+ C234 2
+ C233 2
+ C232 2
+ C215 2
+ J411 3
+ C123 2
+ C122 2
+ C121 2
+ R102 2
+ C124 2
+ J411 6
+ C409 2
+ Q101 1
+ P402 1
+ P401 3
+ C412 2
+ C126 2
+ P403 1
+ C333 2
+ C405 2
+ C408 2
+ C407 2
+ C128 2
+ C406 2
+ C127 2
+ U401 57
+ C125 2
+ C105 2
+ J411 GND2
+ J411 GND1
+ U401 33
+ U401 43
+ U401 24
+ U401 66
+ U401 9
+ U401 12
+ C501 2
+ C511 2
+ C502 2
+ R101 1
+ U501 J3
+ U501 J2
+ U501 E6
+ U501 A6
+ U501 D1
+ C404 2
+ U511 16
+ C401 2
+ C402 2
+ C403 2
+ U401 78
+ C411 2
+ J421 5
+ J421 6
+ J421 7
+ Q511 1
+ R513 2
+ U103 24
+ U103 34
+ U103 15
+ U103 25
+ U103 45
+ JP402 1
+ U102 24
+ U102 34
+ U102 15
+ U102 25
+ U102 45
+ U101 45
+ FB342 1
+ C302 2
+ U101 28
+ U101 48
+ U101 39
+ C332 2
+ U103 28
+ U103 48
+ U103 39
+ U102 1
+ U331 8
+ U311 2
+ U101 34
+ U321 2
+ U101 15
+ U102 10
+ U102 4
+ U102 21
+ C104 2
+ C106 2
+ C113 2
+ C112 2
+ C111 2
+Net 2 "/SNES Slot/SNES_EXT_SYS_CLK" "SNES_EXT_SYS_CLK"
+ U103 23
+ J101 1
+ R101 2
+Net 3 "/SNES Slot/SNES_EXT_A2" "SNES_EXT_A2"
+ RA107 1
+ J101 15
+Net 4 "/SNES Slot/SNES_EXT_/PAWR" "SNES_EXT_/PAWR"
+ RA112 8
+ J101 35
+Net 5 "/SNES Slot/SNES_EXT_PA6" "SNES_EXT_PA6"
+ RA112 7
+ J101 3
+Net 6 "/SNES Slot/SNES_EXT_PA7" "SNES_EXT_PA7"
+ J101 34
+ RA112 6
+Net 7 "/SNES Slot/SNES_EXT_REFRESH" "SNES_EXT_REFRESH"
+ J101 33
+ RA112 5
+ C126 1
+Net 8 "/SNES Slot/SNES_EXT_D3" "SNES_EXT_D3"
+ J101 22
+ RA103 1
+Net 9 "/SNES Slot/SNES_EXT_D7" "SNES_EXT_D7"
+ J101 53
+ RA103 2
+Net 10 "/SNES Slot/SNES_EXT_D2" "SNES_EXT_D2"
+ J101 21
+ RA103 3
+Net 11 "/SNES Slot/SNES_EXT_D6" "SNES_EXT_D6"
+ J101 52
+ RA103 4
+Net 12 "" ""
+ U102 2
+ C125 1
+ RA105 7
+Net 13 "" ""
+ RA102 6
+ U101 11
+ C124 1
+Net 14 "SNES_IRQ_EN" "SNES_IRQ_EN"
+ U201 114
+ R103 1
+Net 15 "/SNES Slot/SNES_EXT_A6" "SNES_EXT_A6"
+ J101 11
+ RA109 1
+Net 16 "/SNES Slot/SNES_EXT_PA0" "SNES_EXT_PA0"
+ J101 28
+ RA102 1
+Net 17 "/SNES Slot/SNES_EXT_PA1" "SNES_EXT_PA1"
+ RA102 2
+ J101 59
+Net 18 "/SNES Slot/SNES_EXT_/WR" "SNES_EXT_/WR"
+ RA102 3
+ J101 54
+Net 19 "/SNES Slot/SNES_EXT_CPU_CLK" "SNES_EXT_CPU_CLK"
+ J101 57
+ RA102 4
+Net 20 "/SNES Slot/SNES_EXT_PA4" "SNES_EXT_PA4"
+ J101 30
+ RA101 1
+Net 21 "/SNES Slot/SNES_EXT_PA5" "SNES_EXT_PA5"
+ RA101 2
+ J101 61
+Net 22 "/SNES Slot/SNES_EXT_PA2" "SNES_EXT_PA2"
+ J101 29
+ RA101 3
+Net 23 "/SNES Slot/SNES_EXT_PA3" "SNES_EXT_PA3"
+ J101 60
+ RA101 4
+Net 24 "/SNES Slot/SNES_EXT_D1" "SNES_EXT_D1"
+ J101 20
+ RA104 1
+Net 25 "/SNES Slot/SNES_EXT_D5" "SNES_EXT_D5"
+ RA104 2
+ J101 51
+Net 26 "/SNES Slot/SNES_EXT_D0" "SNES_EXT_D0"
+ J101 19
+ RA104 3
+Net 27 "/SNES Slot/SNES_EXT_D4" "SNES_EXT_D4"
+ RA104 4
+ J101 50
+Net 28 "SNES_D4" "SNES_D4"
+ U201 108
+ RA114 5
+Net 29 "SNES_D0" "SNES_D0"
+ U201 107
+ RA114 6
+Net 30 "SNES_D5" "SNES_D5"
+ U201 106
+ RA114 7
+Net 31 "SNES_D1" "SNES_D1"
+ U201 102
+ RA114 8
+Net 32 "SNES_D6" "SNES_D6"
+ U201 101
+ RA113 5
+Net 33 "SNES_D2" "SNES_D2"
+ U201 100
+ RA113 6
+Net 34 "SNES_D7" "SNES_D7"
+ U201 97
+ RA113 7
+Net 35 "SNES_D3" "SNES_D3"
+ U201 96
+ RA113 8
+Net 36 "" ""
+ Q101 2
+ R103 2
+ R102 1
+Net 37 "" ""
+ U102 22
+ RA108 5
+Net 38 "" ""
+ RA105 5
+ U102 5
+Net 39 "" ""
+ RA106 8
+ U102 6
+Net 40 "" ""
+ U102 8
+ RA106 7
+Net 41 "" ""
+ RA106 6
+ U102 9
+Net 42 "" ""
+ RA108 6
+ U102 20
+Net 43 "SNES_A18" "SNES_A18"
+ U201 131
+ U102 30
+Net 44 "SNES_A1" "SNES_A1"
+ U201 122
+ U102 40
+Net 45 "" ""
+ U102 11
+ RA106 5
+Net 46 "SNES_A22" "SNES_A22"
+ U201 120
+ U102 41
+Net 47 "" ""
+ RA107 8
+ U102 12
+Net 48 "SNES_A4" "SNES_A4"
+ U201 130
+ U102 32
+Net 49 "" ""
+ RA107 7
+ U102 13
+Net 50 "" ""
+ U102 23
+ RA109 8
+Net 51 "SNES_A19" "SNES_A19"
+ U102 33
+ U201 128
+Net 52 "SNES_A0" "SNES_A0"
+ U201 119
+ U102 43
+Net 53 "" ""
+ U102 14
+ RA107 6
+Net 54 "SNES_A23" "SNES_A23"
+ U102 44
+ U201 117
+Net 55 "SNES_A3" "SNES_A3"
+ U201 126
+ U102 35
+Net 56 "" ""
+ RA107 5
+ U102 16
+Net 57 "SNES_SYS_CLK" "SNES_SYS_CLK"
+ U201 180
+ U103 26
+Net 58 "SNES_/PAWR" "SNES_/PAWR"
+ U201 150
+ U103 32
+Net 59 "SNES_/PARD" "SNES_/PARD"
+ U103 33
+ U201 149
+Net 60 "SNES_A8" "SNES_A8"
+ U103 43
+ U201 140
+Net 61 "SNES_A15" "SNES_A15"
+ U103 44
+ U201 139
+Net 62 "SNES_A11" "SNES_A11"
+ U103 35
+ U201 148
+Net 63 "SNES_A6" "SNES_A6"
+ U102 26
+ U201 135
+Net 64 "SNES_A12" "SNES_A12"
+ U201 147
+ U103 36
+Net 65 "SNES_A7" "SNES_A7"
+ U103 46
+ U201 138
+Net 66 "SNES_REFRESH" "SNES_REFRESH"
+ U201 155
+ U103 27
+Net 67 "SNES_A10" "SNES_A10"
+ U103 37
+ U201 146
+Net 68 "SNES_A16" "SNES_A16"
+ U201 137
+ U103 47
+Net 69 "SNES_A13" "SNES_A13"
+ U103 38
+ U201 144
+Net 70 "SNES_PA7" "SNES_PA7"
+ U103 29
+ U201 154
+Net 71 "" ""
+ U101 16
+ RA103 6
+Net 72 "" ""
+ RA104 6
+ U101 22
+Net 73 "" ""
+ RA113 4
+ U101 32
+Net 74 "" ""
+ RA103 8
+ U101 13
+Net 75 "" ""
+ U101 23
+ RA104 5
+Net 76 "" ""
+ U101 33
+ RA113 3
+Net 77 "SNES_PA3" "SNES_PA3"
+ U201 87
+ U101 43
+Net 78 "" ""
+ RA103 7
+ U101 14
+Net 79 "DATABUS_DIR" "DATABUS_DIR"
+ U201 111
+ U101 24
+Net 80 "SNES_PA2" "SNES_PA2"
+ U201 86
+ U101 44
+Net 81 "DATABUS_/OE" "DATABUS_/OE"
+ U101 25
+ U201 109
+Net 82 "" ""
+ U101 35
+ RA113 2
+Net 83 "" ""
+ RA114 4
+ U101 26
+Net 84 "" ""
+ RA113 1
+ U101 36
+Net 85 "SNES_PA5" "SNES_PA5"
+ U201 85
+ U101 46
+Net 86 "" ""
+ U101 17
+ RA103 5
+Net 87 "" ""
+ U101 27
+ RA114 3
+Net 88 "SNES_CPU_CLK" "SNES_CPU_CLK"
+ U101 37
+ U201 95
+Net 89 "SNES_PA4" "SNES_PA4"
+ U101 47
+ U201 81
+Net 90 "SNES_/WR" "SNES_/WR"
+ U201 94
+ U101 38
+Net 91 "" ""
+ RA104 8
+ U101 19
+Net 92 "" ""
+ U101 3
+ RA101 7
+Net 93 "SNES_A20" "SNES_A20"
+ U102 36
+ U201 125
+Net 94 "SNES_/ROMSEL" "SNES_/ROMSEL"
+ U102 46
+ U201 116
+Net 95 "" ""
+ RA108 8
+ U102 17
+Net 96 "SNES_A17" "SNES_A17"
+ U102 27
+ U201 133
+Net 97 "SNES_A2" "SNES_A2"
+ U102 37
+ U201 124
+Net 98 "SNES_/RD" "SNES_/RD"
+ U201 115
+ U102 47
+Net 99 "SNES_A21" "SNES_A21"
+ U102 38
+ U201 123
+Net 100 "" ""
+ RA108 7
+ U102 19
+Net 101 "SNES_A5" "SNES_A5"
+ U201 132
+ U102 29
+Net 102 "" ""
+ U101 2
+ RA101 8
+Net 103 "" ""
+ RA101 6
+ U101 5
+Net 104 "" ""
+ U101 6
+ RA101 5
+Net 105 "" ""
+ RA102 8
+ U101 8
+Net 106 "" ""
+ RA102 7
+ U101 9
+Net 107 "" ""
+ RA104 7
+ U101 20
+Net 108 "" ""
+ RA114 1
+ U101 30
+Net 109 "SNES_PA1" "SNES_PA1"
+ U201 93
+ U101 40
+Net 110 "SNES_PA0" "SNES_PA0"
+ U101 41
+ U201 90
+Net 112 "+5V" "+5V"
+ C331 1
+ U101 18
+ U103 7
+ U103 18
+ U102 18
+ C301 1
+ C114 1
+ U301 3
+ C116 1
+ U301 1
+ C111 1
+ C115 1
+ U101 7
+ C112 1
+ C113 1
+ Q301 S
+ U331 1
+ C303 1
+ U302 1
+ U302 3
+ U102 7
+ P401 2
+Net 113 "/SNES Slot/SNES_EXT_A11" "SNES_EXT_A11"
+ RA111 3
+ J101 6
+Net 114 "/SNES Slot/SNES_EXT_A10" "SNES_EXT_A10"
+ J101 7
+ RA111 1
+Net 115 "/SNES Slot/SNES_EXT_A9" "SNES_EXT_A9"
+ RA110 3
+ J101 8
+Net 116 "/SNES Slot/SNES_EXT_A8" "SNES_EXT_A8"
+ J101 9
+ RA110 1
+Net 117 "/SNES Slot/SNES_EXT_A7" "SNES_EXT_A7"
+ J101 10
+ RA109 3
+Net 118 "/SNES Slot/SNES_EXT_A15" "SNES_EXT_A15"
+ RA109 4
+ J101 40
+Net 119 "AUDIO_L" "AUDIO_L"
+ C349 1
+ R343 1
+ J101 31
+Net 120 "" ""
+ U103 3
+ RA109 6
+Net 121 "/SNES Slot/SNES_EXT_A12" "SNES_EXT_A12"
+ RA111 2
+ J101 37
+Net 122 "/SNES Slot/SNES_EXT_/IRQ" "SNES_EXT_/IRQ"
+ J101 18
+ RA105 1
+Net 123 "/SNES Slot/SNES_EXT_A13" "SNES_EXT_A13"
+ J101 38
+ RA110 4
+Net 124 "/SNES Slot/SNES_EXT_A14" "SNES_EXT_A14"
+ J101 39
+ RA110 2
+Net 125 "" ""
+ U103 2
+ RA109 7
+Net 126 "+5VL" "+5VL"
+ J101 27
+ J101 58
+ Q301 D
+Net 127 "" ""
+ RA109 5
+ U103 5
+Net 128 "SNES_PA6" "SNES_PA6"
+ U201 152
+ U103 30
+Net 129 "SNES_A9" "SNES_A9"
+ U201 143
+ U103 40
+Net 130 "SNES_A14" "SNES_A14"
+ U201 141
+ U103 41
+Net 131 "EXT_CIC_DATA1" "EXT_CIC_DATA1"
+ R333 1
+ J101 24
+Net 132 "/SNES Slot/SNES_EXT_A16" "SNES_EXT_A16"
+ RA109 2
+ J101 41
+Net 134 "/SNES Slot/SNES_EXT_A17" "SNES_EXT_A17"
+ J101 42
+ RA108 4
+Net 135 "AUDIO_R" "AUDIO_R"
+ J101 62
+ R341 1
+ C347 1
+Net 136 "/SNES Slot/SNES_EXT_A18" "SNES_EXT_A18"
+ RA108 2
+ J101 43
+Net 137 "" ""
+ U103 6
+ RA110 8
+Net 138 "CIC_RESET" "CIC_RESET"
+ J101 25
+ U331 5
+Net 139 "EXT_CIC_DATA0" "EXT_CIC_DATA0"
+ J101 55
+ R332 2
+Net 140 "SNES_/RESET" "SNES_/RESET"
+ J101 26
+ U401 32
+Net 141 "CIC_CLK" "CIC_CLK"
+ J101 56
+ R331 2
+Net 142 "+3.3V" "+3.3V"
+ R407 2
+ C208 1
+ U103 31
+ C203 1
+ C204 1
+ C205 1
+ C206 1
+ C207 1
+ C202 1
+ C501 1
+ C209 1
+ U102 42
+ U103 42
+ U102 31
+ L302 2
+ U302 4
+ U311 1
+ FB341 1
+ U101 42
+ C304 1
+ C311 1
+ U101 31
+ C321 1
+ C103 1
+ U321 3
+ U321 1
+ U311 3
+ C201 1
+ U201 6
+ C231 1
+ U201 60
+ C232 1
+ C233 1
+ C234 1
+ C102 1
+ C101 1
+ U501 E1
+ U401 77
+ U401 10
+ U401 56
+ U401 34
+ D402 1
+ D401 1
+ U201 32
+ U401 67
+ C404 1
+ U201 23
+ P401 1
+ U201 73
+ J411 4
+ U201 110
+ U201 136
+ C411 1
+ C401 1
+ U201 127
+ U201 177
+ U401 21
+ C402 1
+ U401 42
+ C403 1
+ U401 8
+ U201 84
+ R404 2
+ U201 201
+ D403 1
+ C412 1
+ U201 49
+ U201 98
+ D511 1
+ C106 1
+ R512 2
+ U201 153
+ C104 1
+ C105 1
+ U201 188
+ U201 164
+Net 143 "" ""
+ U102 3
+ RA105 6
+ C122 1
+Net 144 "" ""
+ C121 1
+ U101 12
+ RA102 5
+Net 145 "" ""
+ U101 29
+ RA114 2
+Net 146 "" ""
+ RA111 8
+ U103 12
+Net 147 "" ""
+ Q101 3
+ RA105 8
+ C123 1
+Net 148 "/SNES Slot/SNES_EXT_/RD" "SNES_EXT_/RD"
+ J101 23
+ RA105 2
+Net 149 "/SNES Slot/SNES_EXT_/ROMSEL" "SNES_EXT_/ROMSEL"
+ RA105 3
+ J101 49
+Net 150 "/SNES Slot/SNES_EXT_A23" "SNES_EXT_A23"
+ RA105 4
+ J101 48
+Net 151 "" ""
+ C127 1
+ U103 17
+ RA112 1
+Net 152 "" ""
+ U103 19
+ RA112 2
+Net 153 "" ""
+ RA112 3
+ U103 20
+Net 154 "" ""
+ U103 22
+ RA112 4
+Net 155 "/SNES Slot/SNES_EXT_/PARD" "SNES_EXT_/PARD"
+ J101 4
+ RA111 4
+Net 156 "" ""
+ RA111 5
+ U103 16
+ C128 1
+Net 157 "" ""
+ RA111 6
+ U103 14
+Net 158 "" ""
+ U103 13
+ RA111 7
+Net 159 "" ""
+ RA110 5
+ U103 11
+Net 160 "" ""
+ U103 9
+ RA110 6
+Net 161 "" ""
+ U103 8
+ RA110 7
+Net 162 "/SNES Slot/SNES_EXT_A4" "SNES_EXT_A4"
+ RA108 1
+ J101 13
+Net 163 "/SNES Slot/SNES_EXT_A5" "SNES_EXT_A5"
+ RA108 3
+ J101 12
+Net 164 "/SNES Slot/SNES_EXT_A20" "SNES_EXT_A20"
+ J101 45
+ RA107 2
+Net 165 "/SNES Slot/SNES_EXT_A3" "SNES_EXT_A3"
+ RA107 3
+ J101 14
+Net 166 "/SNES Slot/SNES_EXT_A19" "SNES_EXT_A19"
+ J101 44
+ RA107 4
+Net 167 "/SNES Slot/SNES_EXT_A0" "SNES_EXT_A0"
+ J101 17
+ RA106 1
+Net 168 "/SNES Slot/SNES_EXT_A22" "SNES_EXT_A22"
+ J101 47
+ RA106 2
+Net 169 "/SNES Slot/SNES_EXT_A1" "SNES_EXT_A1"
+ RA106 3
+ J101 16
+Net 170 "/SNES Slot/SNES_EXT_A21" "SNES_EXT_A21"
+ RA106 4
+ J101 46
+Net 171 "ROM_A12" "ROM_A12"
+ U201 2
+ U501 G3
+Net 172 "DONE" "DONE"
+ U201 103
+ U401 44
+Net 173 "SD_DAT3" "SD_DAT3"
+ U401 55
+ U201 63
+ J411 1
+Net 174 "SD_DAT0" "SD_DAT0"
+ U201 65
+ J411 7
+ U401 60
+Net 175 "MCU_SPI_SS" "MCU_SPI_SS"
+ U201 68
+ U401 48
+Net 176 "MCU_SPI_MISO" "MCU_SPI_MISO"
+ U201 72
+ U401 46
+Net 177 "DAC_MCLK" "DAC_MCLK"
+ U201 76
+ U341 4
+Net 178 "DAC_SDIN" "DAC_SDIN"
+ U341 1
+ U201 78
+Net 179 "ROM_/LB" "ROM_/LB"
+ U201 156
+ U501 A1
+Net 180 "DIN+MCU_/OVR" "DIN+MCU_/OVR"
+ U201 92
+ U401 50
+Net 181 "RAM_A1" "RAM_A1"
+ U511 11
+ U201 31
+Net 182 "RAM_/WE" "RAM_/WE"
+ U511 29
+ U201 50
+Net 183 "RAM_A4" "RAM_A4"
+ U201 37
+ U511 8
+Net 184 "RAM_A3" "RAM_A3"
+ U511 9
+ U201 35
+Net 185 "RAM_A7" "RAM_A7"
+ U201 45
+ U511 5
+Net 186 "RAM_A6" "RAM_A6"
+ U511 6
+ U201 43
+Net 187 "RAM_DQ0" "RAM_DQ0"
+ U511 13
+ U201 26
+Net 188 "RAM_A8" "RAM_A8"
+ U201 44
+ U511 27
+Net 189 "PROG_B" "PROG_B"
+ U201 207
+ R406 2
+Net 190 "CCLK" "CCLK"
+ U201 104
+ R405 1
+Net 191 "SD_DAT2" "SD_DAT2"
+ U201 62
+ U401 58
+ J411 9
+Net 192 "SD_DAT1" "SD_DAT1"
+ J411 8
+ U201 79
+ U401 59
+Net 193 "" ""
+ U201 113
+ P113 1
+Net 194 "RAM_DQ2" "RAM_DQ2"
+ U201 20
+ U511 15
+Net 195 "RAM_A10" "RAM_A10"
+ U511 23
+ U201 34
+Net 196 "RAM_A2" "RAM_A2"
+ U511 10
+ U201 33
+Net 197 "RAM_DQ7" "RAM_DQ7"
+ U511 21
+ U201 29
+Net 198 "RAM_A0" "RAM_A0"
+ U511 12
+ U201 28
+Net 199 "RAM_DQ6" "RAM_DQ6"
+ U201 27
+ U511 20
+Net 200 "RAM_DQ5" "RAM_DQ5"
+ U511 19
+ U201 24
+Net 201 "RAM_DQ1" "RAM_DQ1"
+ U201 22
+ U511 14
+Net 202 "RAM_DQ4" "RAM_DQ4"
+ U201 21
+ U511 18
+Net 203 "RAM_/OE" "RAM_/OE"
+ U511 24
+ U201 36
+Net 204 "RAM_DQ3" "RAM_DQ3"
+ U511 17
+ U201 19
+Net 205 "ROM_A5" "ROM_A5"
+ U201 18
+ U501 C3
+Net 206 "ROM_DQ10" "ROM_DQ10"
+ U201 15
+ U501 C2
+Net 207 "ROM_DQ9" "ROM_DQ9"
+ U201 13
+ U501 C1
+Net 208 "ROM_DQ11" "ROM_DQ11"
+ U501 D2
+ U201 12
+Net 209 "ROM_A17" "ROM_A17"
+ U201 11
+ U501 D3
+Net 210 "ROM_DQ12" "ROM_DQ12"
+ U501 E2
+ U201 10
+Net 211 "ROM_DQ14" "ROM_DQ14"
+ U201 9
+ U501 F1
+Net 212 "ROM_DQ13" "ROM_DQ13"
+ U201 7
+ U501 F2
+Net 213 "ROM_DQ15" "ROM_DQ15"
+ U201 5
+ U501 G1
+Net 214 "ROM_A19" "ROM_A19"
+ U501 G2
+ U201 4
+Net 215 "RAM_A18" "RAM_A18"
+ U511 30
+ U201 52
+Net 216 "INIT_B+MCU_IRQ" "INIT_B+MCU_IRQ"
+ U401 49
+ U201 83
+Net 217 "ROM_/UB" "ROM_/UB"
+ U501 B2
+ U201 161
+Net 218 "RAM_A17" "RAM_A17"
+ U201 61
+ U511 1
+Net 219 "RAM_A15" "RAM_A15"
+ U201 58
+ U511 31
+Net 220 "RAM_A16" "RAM_A16"
+ U201 57
+ U511 2
+Net 221 "ROM_A18" "ROM_A18"
+ U201 3
+ U501 H1
+Net 222 "RAM_A14" "RAM_A14"
+ U511 3
+ U201 51
+Net 223 "RAM_A12" "RAM_A12"
+ U201 48
+ U511 4
+Net 224 "RAM_A13" "RAM_A13"
+ U201 46
+ U511 28
+Net 225 "RAM_A9" "RAM_A9"
+ U201 42
+ U511 26
+Net 226 "RAM_A5" "RAM_A5"
+ U201 40
+ U511 7
+Net 227 "RAM_A11" "RAM_A11"
+ U511 25
+ U201 39
+Net 228 "FPGA_CLK" "FPGA_CLK"
+ U201 80
+ U401 39
+Net 229 "DAC_LRCK" "DAC_LRCK"
+ U201 77
+ U341 3
+Net 230 "MCU_SPI_MOSI" "MCU_SPI_MOSI"
+ U201 74
+ U401 45
+Net 231 "MCU_SPI_SCK" "MCU_SPI_SCK"
+ U201 71
+ U401 47
+Net 232 "SD_CMD" "SD_CMD"
+ U401 61
+ U201 67
+ J411 2
+Net 233 "SD_CLK" "SD_CLK"
+ J411 5
+ U201 64
+ U401 63
+Net 234 "ROM_A8" "ROM_A8"
+ U201 205
+ U501 H2
+Net 235 "ROM_A9" "ROM_A9"
+ U201 204
+ U501 H3
+Net 236 "ROM_A21" "ROM_A21"
+ U201 203
+ U501 E3
+Net 237 "ROM_A14" "ROM_A14"
+ U501 F3
+ U201 200
+Net 238 "ROM_A16" "ROM_A16"
+ U201 199
+ U501 E4
+Net 239 "ROM_A22" "ROM_A22"
+ U201 198
+ U501 J4
+Net 240 "ROM_A10" "ROM_A10"
+ U201 197
+ U501 H4
+Net 241 "ROM_DQ8" "ROM_DQ8"
+ U501 B1
+ U201 16
+Net 242 "ROM_A11" "ROM_A11"
+ U501 H5
+ U201 196
+Net 243 "ROM_A13" "ROM_A13"
+ U201 194
+ U501 G4
+Net 244 "ROM_A20" "ROM_A20"
+ U201 191
+ U501 H6
+Net 245 "ROM_/WE" "ROM_/WE"
+ U501 G5
+ U201 190
+Net 246 "ROM_DQ7" "ROM_DQ7"
+ U201 189
+ U501 G6
+Net 247 "ROM_DQ5" "ROM_DQ5"
+ U201 187
+ U501 F5
+Net 248 "ROM_DQ6" "ROM_DQ6"
+ U201 185
+ U501 F6
+Net 249 "ROM_A15" "ROM_A15"
+ U501 F4
+ U201 184
+Net 250 "ROM_DQ4" "ROM_DQ4"
+ U501 E5
+ U201 183
+Net 251 "ROM_DQ3" "ROM_DQ3"
+ U201 182
+ U501 D5
+Net 252 "ROM_DQ2" "ROM_DQ2"
+ U501 C6
+ U201 181
+Net 253 "ROM_DQ1" "ROM_DQ1"
+ U201 178
+ U501 C5
+Net 254 "ROM_DQ0" "ROM_DQ0"
+ U501 B6
+ U201 176
+Net 255 "ROM_A6" "ROM_A6"
+ U501 C4
+ U201 175
+Net 256 "ROM_/CE" "ROM_/CE"
+ U201 172
+ U501 B5
+Net 257 "ROM_A2" "ROM_A2"
+ U501 A5
+ U201 171
+Net 258 "ROM_A4" "ROM_A4"
+ U201 169
+ U501 B4
+Net 259 "ROM_A1" "ROM_A1"
+ U201 168
+ U501 A4
+Net 260 "ROM_A7" "ROM_A7"
+ U201 167
+ U501 D4
+Net 261 "ROM_A0" "ROM_A0"
+ U201 166
+ U501 A3
+Net 262 "ROM_A3" "ROM_A3"
+ U501 B3
+ U201 165
+Net 263 "ROM_/OE" "ROM_/OE"
+ U201 162
+ U501 A2
+Net 264 "+2.5V" "+2.5V"
+ U201 69
+ U321 5
+ C210 1
+ C215 1
+ C211 1
+ C322 1
+ C212 1
+ U201 17
+ U201 121
+ C213 1
+ U201 89
+ U201 38
+ U201 142
+ U201 173
+ U201 193
+ C214 1
+Net 265 "+1.2V" "+1.2V"
+ U201 192
+ C302 1
+ C223 1
+ C224 1
+ U201 174
+ U201 88
+ U301 4
+ L301 2
+ C221 1
+ U201 70
+ C222 1
+Net 273 "+3.3VDAC" "+3.3VDAC"
+ C341 1
+ C342 1
+ U341 9
+ FB341 2
+Net 274 "/Power Supply / Misc./LX12" "LX12"
+ L301 1
+ U301 5
+Net 275 "" ""
+ Q301 G
+ R301 2
+Net 276 "/Power Supply / Misc./LX33" "LX33"
+ U302 5
+ L302 1
+Net 277 "" ""
+ C346 1
+ R341 2
+ R342 1
+Net 278 "" ""
+ U341 7
+ C348 2
+Net 279 "" ""
+ C343 1
+ U341 5
+ C344 1
+Net 280 "AGND" "AGND"
+ C344 2
+ U341 8
+ C345 2
+ C347 2
+ R344 2
+ C349 2
+ R342 2
+ FB342 2
+ C343 2
+ C341 2
+ C342 2
+Net 281 "" ""
+ C345 1
+ U341 6
+Net 282 "+BATT" "+BATT"
+ D511 2
+ BT351 1
+ U401 16
+Net 283 "DAC_/DEM" "DAC_/DEM"
+ U341 2
+ U401 30
+Net 284 "" ""
+ U331 2
+ R331 1
+Net 285 "" ""
+ C348 1
+ R344 1
+ R343 2
+Net 286 "" ""
+ U341 10
+ C346 2
+Net 289 "CIC_DATA0" "CIC_DATA0"
+ U331 7
+ C332 1
+ R332 1
+ U401 38
+Net 290 "CIC_DATA1" "CIC_DATA1"
+ U331 6
+ C333 1
+ U401 37
+ R333 2
+Net 291 "CIC_MCLR" "CIC_MCLR"
+ JP401 2
+ U331 4
+Net 292 "CIC_STATUS" "CIC_STATUS"
+ U401 36
+ U331 3
+Net 293 "+1.8V" "+1.8V"
+ U501 D6
+ C502 1
+ C312 1
+ U311 5
+Net 294 "" ""
+ R401 1
+ U401 54
+Net 295 "" ""
+ J411 WP
+ U401 64
+Net 296 "/USEBATT" "/USEBATT"
+ JP402 2
+ U401 70
+Net 297 "P1_D0" "P1_D0"
+ U401 76
+ P404 1
+Net 298 "P_LATCH" "P_LATCH"
+ U401 74
+ P404 3
+Net 299 "P2_CLK" "P2_CLK"
+ P404 5
+ U401 72
+Net 300 "" ""
+ JP401 1
+ U401 31
+Net 301 "P2_D0" "P2_D0"
+ P404 6
+ U401 71
+Net 302 "P2.10" "P2.10"
+ P401 4
+ R407 1
+ U401 41
+Net 303 "P1_CLK" "P1_CLK"
+ U401 75
+ P404 2
+Net 304 "MCU_SPARE" "MCU_SPARE"
+ P404 4
+ U401 73
+Net 305 "" ""
+ R402 2
+ D402 2
+Net 306 "TX0" "TX0"
+ P401 14
+ U401 79
+Net 307 "TCK" "TCK"
+ U401 5
+ P401 8
+Net 308 "EXT_TDI" "EXT_TDI"
+ P401 11
+ U401 2
+Net 309 "" ""
+ U401 22
+ R421 2
+Net 310 "" ""
+ J421 2
+ R422 1
+Net 311 "" ""
+ D403 2
+ R403 2
+Net 312 "TX3" "TX3"
+ U401 7
+ P401 6
+Net 313 "" ""
+ P403 2
+ U401 25
+Net 314 "" ""
+ U401 23
+ R422 2
+Net 315 "" ""
+ R423 1
+ R421 1
+ J421 3
+Net 316 "" ""
+ R401 2
+ D401 2
+Net 317 "USB_SWCONN" "USB_SWCONN"
+ U401 65
+ R423 2
+Net 318 "" ""
+ U401 62
+ J411 DT
+Net 319 "/RESET" "/RESET"
+ P402 2
+ U401 14
+ R404 1
+ C405 1
+ P401 5
+Net 320 "RX3" "RX3"
+ U401 6
+ P401 7
+Net 321 "/TRST" "/TRST"
+ U401 4
+ P401 9
+Net 322 "" ""
+ R402 1
+ U401 53
+Net 323 "" ""
+ R403 1
+ U401 29
+Net 324 "" ""
+ R406 1
+ U401 69
+Net 325 "RX0" "RX0"
+ P401 13
+ U401 80
+Net 326 "EXT_TDO" "EXT_TDO"
+ P401 12
+ U401 1
+Net 327 "" ""
+ U401 40
+ R405 2
+Net 328 "" ""
+ J421 1
+ U401 18
+Net 329 "TMS" "TMS"
+ P401 10
+ U401 3
+Net 337 "" ""
+ C408 1
+ X402 1
+ U401 13
+Net 338 "" ""
+ U401 15
+ X402 2
+ C409 1
+Net 339 "" ""
+ C406 1
+ U401 19
+ X401 1
+Net 340 "" ""
+ X401 2
+ C407 1
+ U401 20
+Net 343 "/Memory/RAM_/CE" "RAM_/CE"
+ U511 22
+ Q511 3
+ R511 2
+Net 344 "" ""
+ Q511 2
+ R512 1
+ R513 1
+Net 345 "/Memory/SRAM_Vcc" "SRAM_Vcc"
+ D511 3
+ U511 32
+ C511 1
+ R511 1
+}
+#End

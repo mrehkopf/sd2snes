@@ -111,14 +111,16 @@
 uint8_t cmd[6]={0,0,0,0,0,0};
 uint8_t rsp[17];
 uint8_t csd[17];
+uint8_t cid[17];
 uint8_t ccs=0;
 uint32_t rca;
 
-enum trans_state { TRANS_NONE = 0, TRANS_READ, TRANS_WRITE };
+enum trans_state { TRANS_NONE = 0, TRANS_READ, TRANS_WRITE, TRANS_MID };
 enum cmd_state { CMD_RSP = 0, CMD_RSPDAT, CMD_DAT };
 
 int during_blocktrans = TRANS_NONE;
 uint32_t last_block = 0;
+uint16_t last_offset = 0;
 
 volatile int sd_changed;
 
@@ -156,6 +158,17 @@ static uint32_t getbits(void *buffer, uint16_t start, int8_t bits) {
     result = result >> -bits;
   }
   return result;
+}
+
+void sdn_checkinit(BYTE drv) {
+  if(disk_state == DISK_CHANGED) {
+    disk_initialize(drv);
+  }
+}
+
+uint8_t* sdn_getcid() {
+  sdn_checkinit(0);
+  return cid;
 }
 
 static inline void wiggle_slow_pos(uint16_t times) {
@@ -383,7 +396,6 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
       printf("CMD%d timed out\n", cmdno);
       return 0; /* no response within timeout */
     }
-
     i=rsplen;
     uint8_t cmddata=0, datdata=0;
     while(i--) { /* process response */
@@ -448,18 +460,31 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
       state=CMD_DAT;
       j=datcnt;
       datshift=8;
+      timeout=2000000;
       DBG_SD printf("response over, waiting for data...\n");
+      /* wait for data start bit on DAT0 */
       while((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) && --timeout) {
         wiggle_fast_neg1();
       }
+//printf("%ld\n", timeout);
+      DBG_SD if(!timeout) printf("timed out!\n");
       wiggle_fast_neg1(); /* eat the start bit */
       if(sd_offload) {
         if(sd_offload_partial) {
+          if(sd_offload_partial_start != 0) {
+            if(during_blocktrans == TRANS_MID) sd_offload_partial_start |= 0x8000;
+          }
+          if(sd_offload_partial_end != 512) {
+            sd_offload_partial_end |= 0x8000;
+          }
+          DBG_SD printf("new partial %d - %d\n", sd_offload_partial_start, sd_offload_partial_end);
           fpga_set_sddma_range(sd_offload_partial_start, sd_offload_partial_end);
           fpga_sddma(sd_offload_tgt, 1);
-          sd_offload_partial=0;
+//          sd_offload_partial=0;
+          last_offset=sd_offload_partial_end;
         } else {
           fpga_sddma(sd_offload_tgt, 0);
+          last_offset=0;
         }
         state=CMD_RSP;
         return rsplen;
@@ -576,27 +601,31 @@ int acmd_fast(uint8_t cmd, uint32_t param, uint8_t crc, uint8_t* dat, uint8_t* r
   return cmd_fast(cmd, param, crc, dat, rsp);
 }
 
-void sdn_checkinit(BYTE drv) {
-  if(disk_state == DISK_CHANGED) {
-    disk_initialize(drv);
-  }
-}
-
 int stream_datablock(uint8_t *buf) {
 //  uint8_t datshift=8;
   int j=512;
   uint8_t datdata=0;
   uint32_t timeout=1000000;
 
-  while((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) && --timeout) {
-    wiggle_fast_neg1();
+  DBG_SD printf("stream_datablock: wait for ready...\n");
+  if(during_blocktrans != TRANS_MID) {
+    while((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) && --timeout) {
+      wiggle_fast_neg1();
+    }
+    DBG_SD if(!timeout) printf("timeout!\n");
+    wiggle_fast_neg1(); /* eat the start bit */
   }
-  wiggle_fast_neg1(); /* eat the start bit */
   if(sd_offload) {
     if(sd_offload_partial) {
+      if(sd_offload_partial_start != 0) {
+        if(during_blocktrans == TRANS_MID) sd_offload_partial_start |= 0x8000;
+      }
+      if(sd_offload_partial_end != 512) {
+        sd_offload_partial_end |= 0x8000;
+      }
+      DBG_SD printf("str partial %d - %d\n", sd_offload_partial_start, sd_offload_partial_end);
       fpga_set_sddma_range(sd_offload_partial_start, sd_offload_partial_end);
       fpga_sddma(sd_offload_tgt, 1);
-      sd_offload_partial=0;
     } else {
       fpga_sddma(sd_offload_tgt, 0);
     }
@@ -748,6 +777,7 @@ void send_datablock(uint8_t *buf) {
 }
 
 void read_block(uint32_t address, uint8_t *buf) {
+  DBG_SD printf("read_block addr=%08lx last_addr=%08lx  offld=%d/%d offst=%04x offed=%04x last_off=%04x\n", address, last_block, sd_offload, sd_offload_partial, sd_offload_partial_start, sd_offload_partial_end, last_offset);
   if(during_blocktrans == TRANS_READ && (last_block == address-1)) {
 //uart_putc('r');
 #ifdef CONFIG_SD_DATACRC
@@ -761,7 +791,21 @@ void read_block(uint32_t address, uint8_t *buf) {
 #else
     stream_datablock(buf);
 #endif
-    last_block=address;
+    last_block = address;
+    last_offset = sd_offload_partial_end & 0x1ff;
+    if(sd_offload_partial && sd_offload_partial_end != 512) {
+      during_blocktrans = TRANS_MID;
+    }
+    sd_offload_partial = 0;
+  } else if (during_blocktrans == TRANS_MID
+             && last_block == address
+             && last_offset == sd_offload_partial_start
+             && sd_offload_partial) {
+    sd_offload_partial_start |= 0x8000;
+    stream_datablock(buf);
+    during_blocktrans = TRANS_READ;
+    last_offset = sd_offload_partial_end & 0x1ff;
+    sd_offload_partial = 0;
   } else {
     if(during_blocktrans) {
 //      uart_putc('_');
@@ -769,7 +813,8 @@ void read_block(uint32_t address, uint8_t *buf) {
       /* send STOP_TRANSMISSION to end an open READ/WRITE_MULTIPLE_BLOCK */
       cmd_fast(STOP_TRANSMISSION, 0, 0x61, NULL, rsp);
     }
-    last_block=address;
+    during_blocktrans = TRANS_READ;
+    last_block = address;
     if(!ccs) {
       address <<= 9;
     }
@@ -781,8 +826,9 @@ void read_block(uint32_t address, uint8_t *buf) {
 #else
     cmd_fast(READ_MULTIPLE_BLOCK, address, 0, buf, rsp);
 #endif
-    during_blocktrans = TRANS_READ;
+    sd_offload_partial = 0;
   }
+//  printf("trans state = %d\n", during_blocktrans);
 }
 
 void write_block(uint32_t address, uint8_t* buf) {
@@ -867,6 +913,9 @@ DRESULT sdn_initialize(BYTE drv) {
     if(rsp[1]&0x80) break;
   }
 
+  BITBAND(SD_DAT3REG->FIODIR, SD_DAT3PIN) = 0;
+  BITBAND(SD_DAT3REG->FIOCLR, SD_DAT3PIN) = 1;
+
   ccs = (rsp[1]>>6) & 1; /* SDHC/XC */
 
   cmd_slow(ALL_SEND_CID, 0, 0x4d, NULL, rsp);
@@ -879,7 +928,10 @@ DRESULT sdn_initialize(BYTE drv) {
   }
 
   /* record CSD for getinfo */
-  cmd_slow(SEND_CSD, rca, 0, NULL, rsp);
+  cmd_slow(SEND_CSD, rca, 0, NULL, csd);
+
+  /* record CID */
+  cmd_slow(SEND_CID, rca, 0, NULL, cid);
 
   /* select the card */
   if(cmd_slow(SELECT_CARD, rca, 0, NULL, rsp)) {

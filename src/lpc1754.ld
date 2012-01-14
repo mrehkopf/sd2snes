@@ -10,7 +10,7 @@ ENTRY(_start)
 
 MEMORY
 {
-  flash  (rx)  : ORIGIN = 0x00003100, LENGTH = 0x1cf00 /* leave room for bootldr + metadata */
+  flash  (rx)  : ORIGIN = 0x00002100, LENGTH = 0x1df00 /* leave room for bootldr + metadata */
   ram    (rwx) : ORIGIN = 0x10000000, LENGTH = 0x04000
   ahbram (rwx) : ORIGIN = 0x2007C000, LENGTH = 0x04000
 }

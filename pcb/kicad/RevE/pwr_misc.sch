@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Fri 29 Jul 2011 09:56:34 PM CEST
+EESchema Schematic File Version 2  date Fri 09 Dec 2011 10:46:06 PM CET
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -47,7 +47,7 @@ $Descr A4 11700 8267
 encoding utf-8
 Sheet 5 6
 Title "sd2snes Mark II"
-Date "24 jul 2011"
+Date "9 dec 2011"
 Rev "C"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -55,6 +55,8 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+Text Notes 4900 5900 0    50   ~ 0
+Stuff with 0603 ferrite bead
 Wire Wire Line
 	5750 5500 5900 5500
 Wire Wire Line
@@ -334,7 +336,7 @@ L JUMPER JP341
 U 1 1 4DB35D41
 P 5450 5500
 F 0 "JP341" H 5450 5650 60  0000 C CNN
-F 1 "JUMPER" H 5450 5420 40  0000 C CNN
+F 1 "FB 0603" H 5450 5420 40  0000 C CNN
 	1    5450 5500
 	1    0    0    -1  
 $EndComp

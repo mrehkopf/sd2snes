@@ -53,7 +53,7 @@ uint16_t scan_flat(const char* path) {
   return numentries;
 }
 
-uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
+uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_tgt) {
   DIR dir;
   FILINFO fno;
   FRESULT res;
@@ -66,6 +66,8 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
   static uint32_t parent_tgt;
   static uint32_t dir_end = 0;
   static uint8_t was_empty = 0;
+  static uint16_t num_files_total = 0;
+  static uint16_t num_dirs_total = 0;
   uint32_t dir_tgt;
   uint16_t numentries;
   uint32_t dirsize;
@@ -91,19 +93,24 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
   numentries=0;
   for(pass = 0; pass < 2; pass++) {
     if(pass) {
+      num_dirs_total++;
       dirsize = 4*(numentries);
       next_subdir_tgt += dirsize + 4;
       if(parent_tgt) next_subdir_tgt += 4;
       if(next_subdir_tgt > dir_end) {
         dir_end = next_subdir_tgt;
       }
-      printf("path=%s depth=%d ptr=%lx entries=%d parent=%lx next subdir @%lx\n", path, depth, db_tgt, numentries, parent_tgt, next_subdir_tgt);
+//      printf("path=%s depth=%d ptr=%lx entries=%d parent=%lx next subdir @%lx\n", path, depth, db_tgt, numentries, parent_tgt, next_subdir_tgt);
       if(mkdb) {
-        printf("d=%d Saving %lx to Address %lx  [end]\n", depth, 0L, next_subdir_tgt - 4);
+//        printf("d=%d Saving %lx to Address %lx  [end]\n", depth, 0L, next_subdir_tgt - 4);
         sram_writelong(0L, next_subdir_tgt - 4);
       }
     }
-    res = f_opendir(&dir, (TCHAR*)path);
+    if(fno_param) {
+      res = dir_open_by_filinfo(&dir, fno_param);
+    } else {
+      res = f_opendir(&dir, path);
+    }
     if (res == FR_OK) {
       if(pass && parent_tgt && mkdb) {
         /* write backlink to parent dir
@@ -114,6 +121,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
           db_tgt += 0x00010000;
           printf("new=%lx\n", db_tgt);
         }
+//        printf("writing link to parent, %lx to address %lx [../]\n", parent_tgt-SRAM_MENU_ADDR, db_tgt);
         sram_writelong((parent_tgt-SRAM_MENU_ADDR), db_tgt);
         sram_writebyte(0, db_tgt+sizeof(next_subdir_tgt));
         sram_writeblock("../\0", db_tgt+sizeof(next_subdir_tgt)+sizeof(len), 4);
@@ -142,9 +150,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
               strncpy(path+len+1, (char*)fn, sizeof(fs_path)-len);
               if(mkdb) {
                 uint16_t pathlen = strlen(path);
-                /* write element pointer to current dir structure */
-                printf("d=%d Saving %lx to Address %lx  [dir]\n", depth, db_tgt, dir_tgt);
-                sram_writelong((db_tgt-SRAM_MENU_ADDR)|((uint32_t)0x80<<24), dir_tgt);
+//                printf("d=%d Saving %lx to Address %lx  [dir]\n", depth, db_tgt, dir_tgt);
                 /* save element:
                    - path name
                    - pointer to sub dir structure */
@@ -154,7 +160,12 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
                   db_tgt += 0x00010000;
                   printf("new=%lx\n", db_tgt);
                 }
-                printf("    Saving dir descriptor to %lx tgt=%lx, path=%s\n", db_tgt, next_subdir_tgt, path);
+//                printf("    Saving dir descriptor to %lx tgt=%lx, path=%s\n", db_tgt, next_subdir_tgt, path);
+                /* write element pointer to current dir structure */
+                sram_writelong((db_tgt-SRAM_MENU_ADDR)|((uint32_t)0x80<<24), dir_tgt);
+                /* save element:
+                   - path name
+                   - pointer to sub dir structure */
                 sram_writelong((next_subdir_tgt-SRAM_MENU_ADDR), db_tgt);
                 sram_writebyte(len+1, db_tgt+sizeof(next_subdir_tgt));
                 sram_writeblock(path, db_tgt+sizeof(next_subdir_tgt)+sizeof(len), pathlen);
@@ -162,7 +173,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
                 db_tgt += sizeof(next_subdir_tgt) + sizeof(len) + pathlen + 2;
               }
               parent_tgt = this_dir_tgt;
-              scan_dir(path, mkdb, next_subdir_tgt);
+              scan_dir(path, &fno, mkdb, next_subdir_tgt);
               dir_tgt += 4;
               was_empty = 0;
             }
@@ -172,6 +183,7 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
         } else {
           SNES_FTYPE type = determine_filetype((char*)fn);
           if(type != TYPE_UNKNOWN) {
+            num_files_total++;
             numentries++;
             if(pass) {
               if(mkdb) {
@@ -242,6 +254,8 @@ uint32_t scan_dir(char* path, char mkdb, uint32_t this_dir_tgt) {
 //  printf("db_tgt=%lx dir_end=%lx\n", db_tgt, dir_end);
   sram_writelong(db_tgt, SRAM_DB_ADDR+4);
   sram_writelong(dir_end, SRAM_DB_ADDR+8);
+  sram_writeshort(num_files_total, SRAM_DB_ADDR+12);
+  sram_writeshort(num_dirs_total, SRAM_DB_ADDR+14);
   return crc;
 }
 

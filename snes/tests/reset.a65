@@ -1,0 +1,29 @@
+; This file is part of the snescom-asm demo - a demo of how to build a SNES program.
+; See http://bisqwit.iki.fi/source/snescom.html for details.
+
+; NMI - called on VBlank
+NMI_ROUTINE:
+        sep #$20 : .as
+	rep #$10 : .xl
+	lda #$00
+	pha
+	plb
+
+	lda $4210	; ack interrupt
+
+        rtl
+
+; IRQ - called when triggered
+IRQ_ROUTINE:
+        sep #$20 : .as
+        lda $4211  ;Acknowledge irq
+	lda #$00
+	sta @$002121
+	lda #$ff
+	sta @$002122
+	lda #$01
+	sta @$002122
+	lda #$5A
+	sta @$F00000
+	rtl
+

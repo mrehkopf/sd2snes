@@ -2198,7 +2198,6 @@ FRESULT f_read (
 #if !_FS_TINY
 #if !_FS_READONLY
 			if (fp->flag & FA__DIRTY) {				/* Write sector I/O buffer if needed */
-printf("DIRTY!?!\n");
 				if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1) != RES_OK)
 					ABORT(fp->fs, FR_DISK_ERR);
 				fp->flag &= ~FA__DIRTY;
@@ -2222,7 +2221,6 @@ printf("DIRTY!?!\n");
 			mem_cpy(rbuff, &fp->fs->win[fp->fptr % SS(fp->fs)], rcnt);	/* Pick partial sector */
 #else
 			mem_cpy(rbuff, &fp->buf[fp->fptr % SS(fp->fs)], rcnt);	/* Pick partial sector */
-			printf("final mem_cpy, rcnt=%d, rbuff-buff=%d\n", rcnt, (void*)rbuff-buff);
 		} else {
 			sd_offload_partial_start = fp->fptr % SS(fp->fs);
 			sd_offload_partial_end = sd_offload_partial_start + rcnt;
@@ -2376,7 +2374,6 @@ FRESULT f_sync (
 	res = validate(fp->fs, fp->id);		/* Check validity of the object */
 	if (res == FR_OK) {
 		if (fp->flag & FA__WRITTEN) {	/* Has the file been written? */
-printf("DIRTY?!?!?!\n");
 #if !_FS_TINY	/* Write-back dirty buffer */
 			if (fp->flag & FA__DIRTY) {
 				if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1) != RES_OK)
@@ -2642,8 +2639,16 @@ FRESULT f_lseek (
 						fp->flag &= ~FA__DIRTY;
 					}
 #endif
-					if (disk_read(fp->fs->drv, fp->buf, dsc, 1) != RES_OK)
-						ABORT(fp->fs, FR_DISK_ERR);
+					if(!ff_sd_offload) {
+						sd_offload_partial=0;
+						if (disk_read(fp->fs->drv, fp->buf, dsc, 1) != RES_OK)
+							ABORT(fp->fs, FR_DISK_ERR);
+					} else {
+						sd_offload_partial=1;
+						sd_offload_partial_start = fp->fptr % SS(fp->fs);
+					}
+//					if (disk_read(fp->fs->drv, fp->buf, dsc, 1) != RES_OK)
+//						ABORT(fp->fs, FR_DISK_ERR);
 #endif
 					fp->dsect = dsc;
 				}
@@ -2822,6 +2827,46 @@ FRESULT f_readdir (
 }
 
 
+FRESULT l_opendirbycluster (
+  FATFS *fs,
+  DIR *dj,
+  const TCHAR *path,
+  DWORD clust
+)
+{
+  FRESULT res;
+  res = chk_mounted(&path, &fs, 0);
+  DEF_NAMEBUF;
+  INIT_BUF(*dj);
+  dj->sclust = clust;
+  dj->fs = fs;
+  dj->id = fs->id;
+  dj->dir = 0;
+  res = dir_sdi(dj, 0);
+  FREE_BUF();
+  return res;
+}
+
+FRESULT l_openfilebycluster (
+  FATFS *fs,           /* Pointer to file system object */
+  FIL *fp,             /* Pointer to the blank file object */
+  const TCHAR *path,
+  DWORD clust,         /* Cluster number to be opened */
+  DWORD fsize          /* File size to be assumed */
+)
+{
+  chk_mounted(&path, &fs, 0);
+  fp->flag = FA_READ;
+  fp->org_clust = clust;
+  fp->fsize = fsize;
+  fp->fptr = 0;
+  fp->dsect = 0;
+  fp->fs = fs;
+
+  return FR_OK;
+}
+
+
 
 #if _FS_MINIMIZE == 0
 /*-----------------------------------------------------------------------*/
@@ -2853,27 +2898,6 @@ FRESULT f_stat (
 
 	LEAVE_FF(dj.fs, res);
 }
-
-
-FRESULT l_openfilebycluster (
-  FATFS *fs,           /* Pointer to file system object */
-  FIL *fp,             /* Pointer to the blank file object */
-  const TCHAR *path,
-  DWORD clust,         /* Cluster number to be opened */
-  DWORD fsize          /* File size to be assumed */
-)
-{
-  chk_mounted(&path, &fs, 0);
-  fp->flag = FA_READ;
-  fp->org_clust = clust;
-  fp->fsize = fsize;
-  fp->fptr = 0;
-  fp->dsect = 0;
-  fp->fs = fs;
-
-  return FR_OK;
-}
-
 
 #if !_FS_READONLY
 /*-----------------------------------------------------------------------*/

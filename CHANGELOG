@@ -1,0 +1,24 @@
+v0.1.1
+======
+
+ * initial public release
+
+
+v0.1.1a (bugfix release)
+========================
+
+ * Fixes:
+   - SuperCIC pair mode was erroneously enabled in firmware binary
+   - SNES menu crashed on empty database
+
+
+v0.1.2
+======
+
+ * Auto region override (eliminate "This game pak is not designed..." messages)
+ * Improved mapper detection (fixes Batman vs. Joker and many PD ROMs)
+ * Improved data streaming performance
+   (should reduce MSU1 errors with some cards)
+ * A and B buttons swapped in menu to match common key mappings
+ * Fixes:
+   - MSU1: Stop audio playback on end of audio file

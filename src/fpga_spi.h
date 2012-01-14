@@ -50,10 +50,13 @@
 #define FPGA_SPI_FAST()    spi_set_speed(SPI_SPEED_FPGA_FAST)
 #define FPGA_SPI_SLOW()    spi_set_speed(SPI_SPEED_FPGA_SLOW)
 
+#define FEAT_213F          (1 << 4)
 #define FEAT_MSU1          (1 << 3)
 #define FEAT_SRTC          (1 << 2)
 #define FEAT_ST0010        (1 << 1)
 #define FEAT_DSPX          (1 << 0)
+
+#define FEAT_CX4           (1 << 4)
 
 #define FPGA_WAIT_RDY()    do {while(BITBAND(SSP_REGS->SR, SSP_BSY)); while(!BITBAND(FPGA_MCU_RDY_REG->FIOPIN, FPGA_MCU_RDY_BIT));} while (0)
 
@@ -89,4 +92,5 @@ void fpga_write_dspx_pgm(uint32_t data);
 void fpga_write_dspx_dat(uint16_t data);
 void fpga_dspx_reset(uint8_t reset);
 void fpga_set_features(uint8_t feat);
+void fpga_set_213f(uint8_t data);
 #endif

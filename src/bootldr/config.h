@@ -1,7 +1,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#define DEBUG_BL
+//#define DEBUG_BL
 // #define DEBUG_SD
 // #define DEBUG_IRQ
 
@@ -19,7 +19,7 @@
 #define DBG_BL while(0)
 #endif
 
-#define FW_START                  (0x00003000L)
+#define FW_START                  (0x00002000L)
 #define FLASH_SECTORS             (17)
 
 
@@ -51,7 +51,7 @@
 
 #define CONFIG_UART_NUM	          3
 // #define CONFIG_CPU_FREQUENCY      90315789
-#define CONFIG_CPU_FREQUENCY      (92000000L)
+#define CONFIG_CPU_FREQUENCY      (96000000L)
 //#define CONFIG_CPU_FREQUENCY      46000000
 #define CONFIG_UART_PCLKDIV       1
 #define CONFIG_UART_TX_BUF_SHIFT  8

@@ -1,5 +1,6 @@
 .text
 #include "memmap.i65"
+.byt "===HIPRINT==="
 hiprint:
 	sep #$20 : .as
 	lda print_count
@@ -53,7 +54,9 @@ print_loop
 	phx	; source addr
 print_loop_inner
 	lda !0,x
-	asl
+	bne +
+	jmp print_end2
++	asl
 	sta @$2180
 	lda @print_pal
 	asl
@@ -81,6 +84,7 @@ print_loop2
 	lda @print_count
 	dec
 	sta @print_count_tmp
+	beq print_end2
 	lda #$00
 	pha
 	plb
@@ -100,7 +104,9 @@ print_loop2
 	plb
 print_loop2_inner
 	lda !0,x
-	asl
+	bne +
+	jmp print_end
++	asl
 	sta @$2180
 	lda @print_pal
 	asl
@@ -124,6 +130,10 @@ print_loop2_inner
 	beq print_end
 	bmi print_end
 	bra print_loop2_inner
+print_end2 ; clean up the stack (6 bytes)
+	ply
+	ply
+	ply
 print_end
 	lda #$00
 	pha
@@ -157,7 +167,7 @@ loprint:
 	sta $2183
 	ldx !print_src
 	lda !print_bank
-	pha 
+	pha
 	plb
 loprint_loop_inner
 	lda !0,x
@@ -257,16 +267,39 @@ draw_window:
 	jsr hiprint
 
 ; print window title
+	lda print_x
+	pha
 	inc print_x
+	inc print_x
+	lda #^window_tl
+	sta print_bank
+	ldx #!window_tl
+	stx print_src
+	lda #$01
+	sta print_count
+	jsr hiprint
 	inc print_x
 	lda window_tbank
 	sta print_bank
 	ldx window_taddr
 	stx print_src
+	lda window_w
+	sta print_count
 	jsr hiprint
-	dec print_x
-	dec print_x
-
+	lda print_done
+	adc print_x
+	sta print_x
+	lda #^window_tr
+	sta print_bank
+	ldx #!window_tr
+	stx print_src
+	lda #$01
+	sta print_count
+	jsr hiprint
+	lda window_w
+	sta print_count
+	pla
+	sta print_x
 ; draw left+right borders + space inside window
 	lda #^stringbuf
 	sta print_bank

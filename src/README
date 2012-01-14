@@ -1,0 +1,85 @@
+How to build:
+
+a) Build requirements
+ * make
+ * Cortex M3 toolchain
+ * snescom/sneslink
+ * Xilinx FPGA synthesis tool (e.g. ISE WebPack)
+ * PIC assembler
+
+b) Cortex M3 toolchain
+ * obtain the cm3-toolchain builder:
+   git clone http://snowcat.de/toolchain-cm3.git/
+ * build the cm3-toolchain. Some tools, libraries, and headers are required,
+   including but probably not limited to:
+    - libz-dev
+    - libcloog-ppl-dev
+    - texinfo
+    - libmpfr-dev
+    - libgmp3-dev
+    - gawk
+    - bison
+    - recode
+    - flex
+    - libncurses5-dev
+    - libexpat-dev
+    - make
+    - gcc
+   Newer gccs complain when compiling binutils, so you may have to add
+   '--disable-werror' to the compiler options for binutils in the Makefile.
+   The Makefile will install immediately so make sure you can write to the
+   installation directory.
+
+c) snescom/sneslink
+ * http://bisqwit.iki.fi/source/snescom.html
+
+d) ISE WebPack
+ * http://www.xilinx.com/products/design-tools/ise-design-suite/ise-webpack.htm
+
+e) PIC assembler
+ * e.g. GPUTILS, http://gputils.sourceforge.net/
+
+f) general order of operations
+ 1) program the PIC (cic/supercic/supercic-key.asm)
+ 2) build and program the bootloader.
+ 3) build the firmware and copy it to the memory card
+ 4) build the snes menu and copy it to the memory card
+ 5) build and compress the FPGA configuration and copy it to the memory card
+ 6) insert memory card, power on; the bootloader should begin flashing the
+    firmware and boot it
+
+1) Programming the PIC
+Use a PIC assembler + programmer of your choice and program a PIC12F629 with
+cic/supercic/supercic-key.asm. Make sure that the clock source is set to
+EC_OSC and MCLRE is disabled.
+After programming you can solder the PIC to the board and short JP401.
+Open JP401 in case you need to reprogram the PIC on board.
+
+2) Building & programming the bootloader
+The Makefile is prepared for JTAG programming using OpenOCD 0.4 and an FT2232
+based USB-JTAG adapter.
+Connect a JTAG cable to J401 (14-pin header). The pinout is printed on the
+board. cd to src/bootldr and make && make program.
+
+3) Building the firmware
+cd to src/utils and make.
+cd to src/ and make.
+You should obtain a firmware file called obj/firmware.img. Copy this file to
+<sdcard>/sd2snes/firmware.img.
+
+4) Building the SNES menu
+snescom is required.
+cd to snes/ and make.
+Copy the resulting file menu.bin to <sdcard>/sd2snes/menu.bin.
+
+5) Building the FPGA configuration
+Compile the RLE compressor in utils/rle.c:
+ $ gcc -Wall -o rle rle.c
+
+Load verilog/sd2snes/sd2snes.xise in Xilinx ISE (or create your own project).
+Target is a XC3S400-4PQ208.
+Generate the programming file and compress it using utils/rle.c:
+ $ rle main.bit fpga_base.bit
+
+Copy fpga_base.bit to <sdcard>/sd2snes/fpga_base.bit
+

@@ -47,9 +47,15 @@
                                 s: Bit 2 = partial, Bit 1:0 = target
                                 target: see above
 
-	60	sssseeee	set SD DMA partial transfer start+end
-				ssss = start offset (msb first)
-				eeee = end offset (msb first)
+	60	xsssyeee	set SD DMA partial transfer parameters
+				x: 0 = read from sector start (skip until
+				       start offset reached)
+				   8 = assume mid-sector position and read
+				       immediately
+				sss = start offset (msb first)
+				y: 0 = skip rest of SD sector
+				   8 = stop mid-sector if end offset reached
+				eee = end offset (msb first)
 
 	8p	-		read (RAM only)
 				p: 0 = no increment after read
@@ -80,6 +86,7 @@
 	EB	-		put DSP into reset
 	EC	-		release DSP from reset
 	ED	-		set feature enable bits (see below)
+	EE	-		set $213f override value (0=NTSC, 1=PAL)
 	F0	-		receive test token (to see if FPGA is alive)
 	F1	-		receive status (16bit, MSB first), see below
 
@@ -97,7 +104,7 @@
 	 15	SD DMA busy (0=idle, 1=busy)
 	 14	DAC read pointer MSB
 	 13	MSU read pointer MSB
-	 12	[TODO SD DMA CRC status (0=ok, 1=error); valid after bit 15 -> 0]
+	 12	reserved (0)
 	 11	reserved (0)
 	 10	reserved (0)
 	  9	reserved (0)
@@ -117,7 +124,7 @@
 	 7	-
 	 6	-
 	 5	-
-	 4	-
+	 4	enable $213F override
 	 3	enable MSU1 registers
 	 2	enable SRTC registers
 	 1	enable ST0010 mapping
@@ -133,6 +140,7 @@
 #include "spi.h"
 #include "fpga_spi.h"
 #include "timer.h"
+#include "sdnative.h"
 
 void fpga_spi_init(void) {
   spi_init(SPI_SPEED_FAST);
@@ -230,12 +238,14 @@ void fpga_sddma(uint8_t tgt, uint8_t partial) {
   FPGA_SELECT();
   FPGA_TX_BYTE(0xF1); /* STATUS */
   FPGA_TX_BYTE(0x00); /* dummy */
+  DBG_SD printf("FPGA DMA request sent, wait for completion...");
   while((status=FPGA_RX_BYTE()) & 0x80) {
     FPGA_RX_BYTE(); /* eat the 2nd status byte */
     test++;
   }
+  DBG_SD printf("...complete\n");
   FPGA_DESELECT();
-  if(test<5)printf("loopy: %ld %02x\n", test, status);
+//  if(test<5)printf("loopy: %ld %02x\n", test, status);
   BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 1;
 }
 
@@ -405,6 +415,14 @@ void fpga_set_features(uint8_t feat) {
   FPGA_SELECT();
   FPGA_TX_BYTE(0xed);
   FPGA_TX_BYTE(feat);
+  FPGA_DESELECT();
+}
+
+void fpga_set_213f(uint8_t data) {
+  printf("set 213f: %d\n", data);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xee);
+  FPGA_TX_BYTE(data);
   FPGA_DESELECT();
 }
 

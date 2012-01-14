@@ -58,8 +58,8 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0sreset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0saveraw\0put\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP };
+  "cd\0reset\0sreset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0saveraw\0put\0rm\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0";
+enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16 };
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
@@ -76,7 +76,7 @@ static uint8_t skip_spaces(void) {
 }
 
 /* Parse the string in curchar for an integer with bounds [lower,upper] */
-static int32_t parse_unsigned(uint32_t lower, uint32_t upper) {
+static int32_t parse_unsigned(uint32_t lower, uint32_t upper, uint8_t base) {
   char *end;
   uint32_t result;
 
@@ -85,7 +85,7 @@ static int32_t parse_unsigned(uint32_t lower, uint32_t upper) {
     return -2;
   }
 
-  result = strtoul(curchar, &end, 10);
+  result = strtoul(curchar, &end, base);
   if ((*end != ' ' && *end != 0) || errno != 0) {
     printf("Invalid numeric argument\n");
     return -1;
@@ -134,7 +134,7 @@ static int8_t parse_wordlist(char *wordlist) {
     do {
       // If current word list character is \0: No match found
       if (c == 0) {
-        printf("Unknown word: %s\n",curchar);
+        printf("Unknown word: %s\n(use ? for help)",curchar);
         return -1;
       }
 
@@ -287,13 +287,13 @@ static void cmd_loadrom(void) {
 }
 
 static void cmd_loadraw(void) {
-  uint32_t address = parse_unsigned(0,16777216);
+  uint32_t address = parse_unsigned(0,16777216,16);
   load_sram((uint8_t*)curchar, address);
 }
 
 static void cmd_saveraw(void) {
-  uint32_t address = parse_unsigned(0,16777216);
-  uint32_t length = parse_unsigned(0,16777216);
+  uint32_t address = parse_unsigned(0,16777216,16);
+  uint32_t length = parse_unsigned(0,16777216,16);
   save_sram((uint8_t*)curchar, length, address);
 }
 
@@ -303,7 +303,7 @@ static void cmd_d4(void) {
   if(get_cic_state() != CIC_PAIR) {
     printf("not in pair mode\n");
   } else {
-    hz = parse_unsigned(50,60);
+    hz = parse_unsigned(50,60,10);
     if(hz==50) {
       cic_d4(CIC_PAL);
     } else {
@@ -318,7 +318,7 @@ static void cmd_vmode(void) {
   if(get_cic_state() != CIC_PAIR) {
     printf("not in pair mode\n");
   } else {
-    hz = parse_unsigned(50,60);
+    hz = parse_unsigned(50,60,10);
     if(hz==50) {
       cic_videomode(CIC_PAL);
     } else {
@@ -343,9 +343,14 @@ void cmd_put(void) {
   }
 }
 
+void cmd_rm(void) {
+  FRESULT res = f_unlink(curchar);
+  if(res) printf("Error %d removing %s\n", res, curchar);
+}
+
 void cmd_mapper(void) {
   int32_t mapper;
-  mapper = parse_unsigned(0,7);
+  mapper = parse_unsigned(0,7,10);
   set_mapper((uint8_t)mapper & 0x7);
   printf("mapper set to %ld\n", mapper);
 }
@@ -353,7 +358,7 @@ void cmd_mapper(void) {
 void cmd_sreset(void) {
   if(*curchar != 0) {
     int32_t resetstate;
-    resetstate = parse_unsigned(0,1);
+    resetstate = parse_unsigned(0,1,10);
     snes_reset(resetstate);
   } else {
     snes_reset(1);
@@ -389,15 +394,28 @@ void cmd_time(void) {
 }
 
 void cmd_setfeature(void) {
-  uint8_t feat = parse_unsigned(0, 255);
+  uint8_t feat = parse_unsigned(0, 255, 16);
   fpga_set_features(feat);
 }
 
 void cmd_hexdump(void) {
-  uint32_t offset = parse_unsigned(0, 16777215);
-  uint32_t len = parse_unsigned(0, 16777216);
+  uint32_t offset = parse_unsigned(0, 16777215, 16);
+  uint32_t len = parse_unsigned(0, 16777216, 16);
   sram_hexdump(offset, len);
 }
+
+void cmd_w8(void) {
+  uint32_t offset = parse_unsigned(0, 16777215, 16);
+  uint8_t val = parse_unsigned(0, 255, 16);
+  sram_writebyte(val, offset);
+}
+
+void cmd_w16(void) {
+  uint32_t offset = parse_unsigned(0, 16777215, 16);
+  uint16_t val = parse_unsigned(0, 65535, 16);
+  sram_writeshort(val, offset);
+}
+
 /* ------------------------------------------------------------------------- */
 /*   CLI interface functions                                                 */
 /* ------------------------------------------------------------------------- */
@@ -496,6 +514,10 @@ void cli_loop(void) {
       cmd_saveraw();
       break;
 
+    case CMD_RM:
+      cmd_rm();
+      break;
+
     case CMD_D4:
       cmd_d4();
       break;
@@ -531,6 +553,15 @@ void cli_loop(void) {
     case CMD_HEXDUMP:
       cmd_hexdump();
       break;
+
+    case CMD_W8:
+      cmd_w8();
+      break;
+
+    case CMD_W16:
+      cmd_w16();
+      break;
     }
+
   }
 }

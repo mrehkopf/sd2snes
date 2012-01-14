@@ -19,9 +19,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 module address(
   input CLK,
-  input [3:0] featurebits,  // peripheral enable/disable
+  input [7:0] featurebits,  // peripheral enable/disable
   input [2:0] MAPPER,       // MCU detected mapper
   input [23:0] SNES_ADDR,   // requested address from SNES
+  input [7:0] SNES_PA,      // peripheral address from SNES
   output [23:0] ROM_ADDR,   // Address to request from SRAM0
   output ROM_SEL,           // enable SRAM0 (active low)
   output IS_SAVERAM,        // address/CS mapped as SRAM?
@@ -35,14 +36,16 @@ module address(
   input [14:0] bsx_regs,
   output dspx_enable,
   output dspx_dp_enable,
-  output dspx_a0
+  output dspx_a0,
+  output r213f_enable
 );
 
 parameter [2:0]
   FEAT_DSPX = 0,
   FEAT_ST0010 = 1,
   FEAT_SRTC = 2,
-  FEAT_MSU1 = 3
+  FEAT_MSU1 = 3,
+  FEAT_213F = 4
 ;
 
 wire [23:0] SRAM_SNES_ADDR;
@@ -223,10 +226,6 @@ assign dspx_a0 = featurebits[FEAT_DSPX]
                  ?SNES_ADDR[0]
                  :1'b1;
 
-//reg [7:0] dspx_dp_enable_r;
-//initial dspx_dp_enable_r = 8'b00000000;
-//always @(posedge CLK) dspx_dp_enable_r <= {dspx_dp_enable_r[6:0], dspx_dp_enable_w};
-//assign dspx_dp_enable = &dspx_dp_enable_r[5:2];
 assign dspx_dp_enable = dspx_dp_enable_w;
 
 reg [5:0] dspx_enable_r;
@@ -234,5 +233,10 @@ initial dspx_enable_r = 6'b000000;
 always @(posedge CLK) dspx_enable_r <= {dspx_enable_r[4:0], dspx_enable_w};
 assign dspx_enable = &dspx_enable_r[5:2];
 
+wire r213f_enable_w = (SNES_PA == 8'h3f);
+reg [5:0] r213f_enable_r;
+initial r213f_enable_r = 6'b000000;
+always @(posedge CLK) r213f_enable_r <= {r213f_enable_r[4:0], r213f_enable_w};
+assign r213f_enable = &r213f_enable_r[5:2] & featurebits[FEAT_213F];
 
 endmodule
