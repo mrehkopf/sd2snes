@@ -254,6 +254,7 @@ int msu1_loop() {
 	f_read(&file_handle, file_buf, (MSU_DAC_BUFSIZE / 2) - bytes_read, &bytes_read);
       } else {
 	set_msu_status(0x00, 0x02); /* clear play bit */
+	dac_pause();
       }
       bytes_read = MSU_DAC_BUFSIZE;
     }
