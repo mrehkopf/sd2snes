@@ -2639,8 +2639,16 @@ FRESULT f_lseek (
 						fp->flag &= ~FA__DIRTY;
 					}
 #endif
-					if (disk_read(fp->fs->drv, fp->buf, dsc, 1) != RES_OK)
-						ABORT(fp->fs, FR_DISK_ERR);
+					if(!ff_sd_offload) {
+						sd_offload_partial=0;
+						if (disk_read(fp->fs->drv, fp->buf, dsc, 1) != RES_OK)
+							ABORT(fp->fs, FR_DISK_ERR);
+					} else {
+						sd_offload_partial=1;
+						sd_offload_partial_start = fp->fptr % SS(fp->fs);
+					}
+//					if (disk_read(fp->fs->drv, fp->buf, dsc, 1) != RES_OK)
+//						ABORT(fp->fs, FR_DISK_ERR);
 #endif
 					fp->dsect = dsc;
 				}

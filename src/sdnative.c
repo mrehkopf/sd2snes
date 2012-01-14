@@ -800,10 +800,10 @@ void read_block(uint32_t address, uint8_t *buf) {
              && last_block == address
              && last_offset == sd_offload_partial_start
              && sd_offload_partial) {
-    stream_datablock(buf);
-    last_offset = sd_offload_partial_end & 0x1ff;
     sd_offload_partial_start |= 0x8000;
+    stream_datablock(buf);
     during_blocktrans = TRANS_READ;
+    last_offset = sd_offload_partial_end & 0x1ff;
     sd_offload_partial = 0;
   } else {
     if(during_blocktrans) {
@@ -812,6 +812,7 @@ void read_block(uint32_t address, uint8_t *buf) {
       /* send STOP_TRANSMISSION to end an open READ/WRITE_MULTIPLE_BLOCK */
       cmd_fast(STOP_TRANSMISSION, 0, 0x61, NULL, rsp);
     }
+    during_blocktrans = TRANS_READ;
     last_block = address;
     if(!ccs) {
       address <<= 9;
@@ -825,7 +826,6 @@ void read_block(uint32_t address, uint8_t *buf) {
     cmd_fast(READ_MULTIPLE_BLOCK, address, 0, buf, rsp);
 #endif
     sd_offload_partial = 0;
-    during_blocktrans = TRANS_READ;
   }
 //  printf("trans state = %d\n", during_blocktrans);
 }
