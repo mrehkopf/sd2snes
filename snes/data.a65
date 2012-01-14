@@ -78,6 +78,7 @@ time_y10	.byt 0
 time_y100	.byt 0
 time_sel	.byt 0
 time_exit	.byt 0
+time_cancel	.byt 0
 time_ptr	.byt 0
 time_tmp	.byt 0
 ;--

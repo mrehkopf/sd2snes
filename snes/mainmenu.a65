@@ -120,13 +120,13 @@ mm_menuloop
 	and pad1trig+1
 	bne mmkey_b
 	bra mm_menuloop
-mmkey_a
+mmkey_b
 	jsr restore_screen
 	plp
 	rts
 
-mmkey_b
-	jsr mmkey_b_2
+mmkey_a
+	jsr mmkey_a_2
 	jmp mm_redraw
 
 mmkey_down
@@ -156,10 +156,10 @@ mmkey_up_2
 +
 	rts
 
-mmkey_b_2
+mmkey_a_2
 	jsr restore_screen
 	phk			; push return bank for subroutine
-	per mmkey_b_2_return-1	; push return addr for subroutine
+	per mmkey_a_2_return-1	; push return addr for subroutine
 	xba
 	lda #$00
 	xba
@@ -175,7 +175,7 @@ mmkey_b_2
 	pha			; push subroutine addr
 	sep #$20 : .as
 	rtl			; jump to subroutine
-mmkey_b_2_return
+mmkey_a_2_return
 	rts
 
 mm_do_refresh

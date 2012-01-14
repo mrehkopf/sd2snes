@@ -139,7 +139,7 @@ window_ev	.byt 27
 window_tl	.byt 28
 window_tr	.byt 29
 text_clkset	.byt "Please set the clock.", 0
-text_buttonB	.byt "Dpad: sel/chg, B: OK", 0
+text_buttonB	.byt "Dpad: sel/chg, A: OK", 0
 time_win_x	.byt 18
 time_win_y	.byt 15
 time_win_w	.byt 27
@@ -161,4 +161,4 @@ text_mm_scic		.byt "Enable SuperCIC", 0
 text_mm_vmode_menu	.byt "Menu video mode", 0
 text_mm_vmode_game	.byt "Game video mode", 0
 text_mm_sysinfo		.byt "System Information", 0
-text_statusbar_keys	.byt "B:Select A:Back X:Menu", 0
+text_statusbar_keys	.byt "A:Select B:Back X:Menu", 0

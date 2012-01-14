@@ -442,7 +442,7 @@ menu_key_right:
 	sep #$20 : .as
 	rts
 
-menu_key_b:
+menu_key_a:
 	jsr select_item
 	rts
 
@@ -456,15 +456,15 @@ do_setup448
 	jsr setup_448
 	rts
 
-menu_key_a:
+menu_key_b:
 	rep #$20 : .al
 	lda dirstart_addr
-	beq skip_key_a
+	beq skip_key_b
 	sta dirptr_addr
 	lda #$0000
 	sta menu_sel
 	bra select_item
-skip_key_a
+skip_key_b
 	sep #$20 : .as
 	rts
 

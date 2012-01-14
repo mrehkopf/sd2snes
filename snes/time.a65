@@ -2,7 +2,7 @@
 #include "dma.i65"
 
 timebox_data
-        ; string offset, selection width, bcdtime offset, 1s limit, 10s limit
+        ; string offset, selection width, bcdtime offset
 	.byt  0, 4, 9
 	.byt  5, 2, 8
 	.byt  8, 2, 6
@@ -46,6 +46,7 @@ time_init:
 	jsr gettime
 	stz time_sel
 	stz time_exit
+	stz time_cancel
 	lda #^text_buttonB
 	sta print_bank
 	ldx #!text_buttonB
@@ -120,17 +121,29 @@ timeloop1
 	lda #$80
 	and pad1trig+1
 	bne tkey_b
+	lda #$80
+	and pad1trig
+	bne tkey_a
 	; do stuff
 	lda time_exit
-	beq timeloop1
+	bne timesave
 	; set clock
+	lda time_cancel
+	bne timenosave
+	beq timeloop1
+timesave
 	jsr settime
+timenosave
 	; restore text area
 	jsr restore_screen
 	plp
 	rtl
 
 tkey_b
+	inc time_cancel
+	jmp time_update
+
+tkey_a
 	inc time_exit
 	jmp time_update
 
