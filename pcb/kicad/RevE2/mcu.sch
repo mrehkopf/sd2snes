@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Mon 26 Dec 2011 09:56:13 PM CET
+EESchema Schematic File Version 2  date Mon 02 Jan 2012 11:27:18 PM CET
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -40,13 +40,14 @@ LIBS:cs4344
 LIBS:double_sch_kcom
 LIBS:usb_minib
 LIBS:mic23250
+LIBS:sd2snes-cache
 EELAYER 25  0
 EELAYER END
 $Descr A4 11700 8267
 encoding utf-8
 Sheet 4 6
 Title "sd2snes Mark II"
-Date "26 dec 2011"
+Date "2 jan 2012"
 Rev "E2"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -578,7 +579,7 @@ USB_SWCONN
 Text GLabel 2700 4200 0    50   Output ~ 0
 USB_SWCONN
 Text Notes 750  1700 0    50   ~ 0
-or 3000mcd LEDs (10k for R401-403)
+or super bright LEDs (10k for R401-403)\nuse 6.35mm LED spacers
 NoConn ~ 6700 5500
 NoConn ~ 6700 5400
 NoConn ~ 6700 5300

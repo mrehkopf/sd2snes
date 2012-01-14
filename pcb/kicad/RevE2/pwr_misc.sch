@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Mon 26 Dec 2011 09:56:13 PM CET
+EESchema Schematic File Version 2  date Mon 02 Jan 2012 11:27:18 PM CET
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -40,13 +40,14 @@ LIBS:cs4344
 LIBS:double_sch_kcom
 LIBS:usb_minib
 LIBS:mic23250
+LIBS:sd2snes-cache
 EELAYER 25  0
 EELAYER END
 $Descr A4 11700 8267
 encoding utf-8
 Sheet 5 6
 Title "sd2snes Mark II"
-Date "26 dec 2011"
+Date "2 jan 2012"
 Rev "E2"
 Comp "Maximilian Rehkopf"
 Comment1 ""
@@ -79,19 +80,13 @@ Wire Wire Line
 	1750 4250 1750 4050
 Connection ~ 4100 2600
 Wire Wire Line
-	4100 2800 4100 2600
-Wire Wire Line
-	4100 2600 4100 2400
+	4100 2800 4100 2400
 Wire Wire Line
 	3250 2600 3350 2600
 Wire Wire Line
 	1600 3200 1600 3450
 Wire Wire Line
-	1850 2600 1750 2600
-Wire Wire Line
-	1750 2600 1600 2600
-Wire Wire Line
-	1600 2600 1000 2600
+	1850 2600 1000 2600
 Wire Wire Line
 	1000 2600 1000 2400
 Wire Wire Line
@@ -134,17 +129,13 @@ Wire Notes Line
 	4550 500  4550 7750
 Connection ~ 9750 4750
 Wire Wire Line
-	9700 4750 9750 4750
-Wire Wire Line
-	9750 4750 9800 4750
+	9700 4750 9800 4750
 Wire Wire Line
 	9750 5400 9750 5500
 Wire Wire Line
 	9150 5500 9150 5400
 Wire Wire Line
-	9150 4900 9150 4750
-Wire Wire Line
-	9150 4750 9150 4600
+	9150 4900 9150 4600
 Wire Wire Line
 	8300 5000 8300 4750
 Wire Wire Line
@@ -155,9 +146,7 @@ Wire Wire Line
 	10350 3900 10350 3700
 Connection ~ 10350 4400
 Wire Wire Line
-	10350 4500 10350 4400
-Wire Wire Line
-	10350 4400 10350 4300
+	10350 4500 10350 4300
 Connection ~ 10050 3700
 Wire Wire Line
 	9650 3900 9650 3800
@@ -174,9 +163,7 @@ Wire Wire Line
 Wire Wire Line
 	11100 2400 11100 2300
 Wire Wire Line
-	9600 1800 9000 1800
-Wire Wire Line
-	9000 1800 8150 1800
+	9600 1800 8150 1800
 Wire Wire Line
 	6700 2100 6350 2100
 Wire Wire Line
@@ -202,15 +189,9 @@ Wire Wire Line
 Wire Wire Line
 	3950 5300 3950 5500
 Wire Wire Line
-	3950 5500 3500 5500
+	3950 5500 3250 5500
 Wire Wire Line
-	3500 5500 3250 5500
-Wire Wire Line
-	1850 5500 1750 5500
-Wire Wire Line
-	1750 5500 1600 5500
-Wire Wire Line
-	1600 5500 1150 5500
+	1850 5500 1150 5500
 Wire Wire Line
 	1150 5500 1150 5300
 Wire Wire Line
@@ -221,15 +202,9 @@ Connection ~ 1750 5500
 Wire Wire Line
 	1150 6650 1150 6850
 Wire Wire Line
-	1150 6850 1600 6850
+	1150 6850 1850 6850
 Wire Wire Line
-	1600 6850 1750 6850
-Wire Wire Line
-	1750 6850 1850 6850
-Wire Wire Line
-	3250 6850 3500 6850
-Wire Wire Line
-	3500 6850 3950 6850
+	3250 6850 3950 6850
 Wire Wire Line
 	3950 6850 3950 6650
 Wire Wire Line
@@ -248,23 +223,15 @@ Wire Wire Line
 Wire Wire Line
 	6700 1800 6350 1800
 Wire Wire Line
-	8150 1400 9200 1400
-Wire Wire Line
-	9200 1400 9350 1400
-Wire Wire Line
-	9350 1400 9600 1400
+	8150 1400 9600 1400
 Wire Wire Line
 	8150 2100 8600 2100
 Wire Wire Line
 	11100 1900 11100 1800
 Wire Wire Line
-	10150 6350 10150 6450
+	10150 6350 10150 6550
 Wire Wire Line
-	10150 6450 10150 6550
-Wire Wire Line
-	10150 5750 10150 5850
-Wire Wire Line
-	10150 5850 10150 5950
+	10150 5750 10150 5950
 Wire Wire Line
 	6300 7000 6100 7000
 Wire Wire Line
@@ -274,9 +241,7 @@ Wire Wire Line
 Wire Wire Line
 	9650 4300 9650 4500
 Wire Wire Line
-	10350 3700 10050 3700
-Wire Wire Line
-	10050 3700 7250 3700
+	10350 3700 7250 3700
 Wire Wire Line
 	10050 4300 10050 4400
 Wire Wire Line
@@ -288,18 +253,14 @@ Wire Wire Line
 Wire Wire Line
 	9150 4000 9150 4200
 Wire Wire Line
-	7700 4600 7700 4750
-Wire Wire Line
-	7700 4750 7700 4900
+	7700 4600 7700 4900
 Wire Wire Line
 	7750 4750 7700 4750
 Connection ~ 7700 4750
 Wire Wire Line
 	8300 5400 8300 5500
 Wire Wire Line
-	8350 4750 8300 4750
-Wire Wire Line
-	8300 4750 8250 4750
+	8350 4750 8250 4750
 Connection ~ 8300 4750
 Wire Wire Line
 	9200 4750 9150 4750
@@ -362,34 +323,24 @@ Wire Wire Line
 	1600 2800 1600 2600
 Connection ~ 1600 2600
 Wire Wire Line
-	3950 2600 4000 2600
-Wire Wire Line
-	4000 2600 4100 2600
+	3950 2600 4100 2600
 Wire Wire Line
 	1000 3850 1000 4050
 Wire Wire Line
-	1000 4050 1600 4050
-Wire Wire Line
-	1600 4050 1750 4050
-Wire Wire Line
-	1750 4050 1850 4050
+	1000 4050 1850 4050
 Wire Wire Line
 	1600 4050 1600 4250
 Connection ~ 1600 4050
 Wire Wire Line
 	1600 4650 1600 4900
 Wire Wire Line
-	4100 4050 4000 4050
-Wire Wire Line
-	4000 4050 3950 4050
+	3950 4050 4100 4050
 Connection ~ 4100 4050
 Wire Wire Line
 	4000 4250 4000 4050
 Connection ~ 4000 4050
 Wire Wire Line
-	4100 4250 4100 4050
-Wire Wire Line
-	4100 4050 4100 3800
+	4100 4250 4100 3800
 Text Label 3250 4050 0    50   ~ 0
 LX33
 Text Label 3250 2600 0    50   ~ 0

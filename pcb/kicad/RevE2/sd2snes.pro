@@ -1,4 +1,4 @@
-update=Tue 27 Dec 2011 01:22:01 AM CET
+update=Wed 28 Dec 2011 06:55:00 PM CET
 version=1
 last_client=pcbnew
 [general]
@@ -83,9 +83,9 @@ LibName40=libs/usb_minib
 LibName41=libs/mic23250
 [pcbnew]
 version=1
-PadDrlX=400
-PadDimH=660
-PadDimV=660
+PadDrlX=512
+PadDimH=512
+PadDimV=512
 BoardThickness=630
 TxtPcbV=800
 TxtPcbH=600
@@ -111,6 +111,6 @@ LibName8=valves
 LibName9=led
 LibName10=dip_sockets
 LibName11=libs/mypackages
-LibName12=libs/hai
-LibName13=libs/snescart
-LibName14=libs/sdcard
+LibName12=libs/snescart
+LibName13=libs/sdcard
+LibName14=libs/snail
