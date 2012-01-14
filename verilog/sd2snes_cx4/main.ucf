@@ -1,0 +1,606 @@
+NET "CLKIN" TNM_NET = "CLKIN";
+TIMESPEC TS_CLKIN = PERIOD "CLKIN" 24 MHz HIGH 50 %;
+//TIMESPEC TS_CLKIN = PERIOD "CLKIN" 21.5 MHz HIGH 50 %;
+NET "p113_out" IOSTANDARD = LVCMOS33;
+NET "p113_out" LOC = P113;
+
+NET "SNES_SYSCLK" LOC = P180;
+NET "SNES_SYSCLK" IOSTANDARD = LVCMOS33;
+NET "SNES_SYSCLK" TNM_NET = "SNES_SYSCLK";
+TIMESPEC TS_SNES_SYSCLK = PERIOD "SNES_SYSCLK" 21.5 MHz HIGH 50 %;
+
+NET "SPI_SCK" LOC = P71;
+NET "SPI_SCK" CLOCK_DEDICATED_ROUTE = FALSE;
+NET "SPI_SCK" TNM_NET = "SPI_SCK";
+TIMESPEC TS_SPI_SCK = PERIOD "SPI_SCK" 48MHz HIGH 50 %;
+
+NET "SPI_SCK" IOSTANDARD = LVCMOS33;
+NET "SPI_SCK" DRIVE = 8;
+NET "SPI_SCK" PULLUP;
+
+NET "SNES_CS" IOSTANDARD = LVCMOS33;
+NET "SNES_READ" IOSTANDARD = LVCMOS33;
+NET "SNES_WRITE" IOSTANDARD = LVCMOS33;
+NET "SNES_CPU_CLK" IOSTANDARD = LVCMOS33;
+NET "SNES_REFRESH" IOSTANDARD = LVCMOS33;
+
+NET "CLKIN" IOSTANDARD = LVCMOS33;
+//NET "CLKIN" PULLUP;
+NET "SPI_SS" PULLUP;
+//NET "DCM_RST" LOC = P46;
+//NET "DCM_RST" IOSTANDARD = LVCMOS33;
+NET "SNES_DATABUS_DIR" IOSTANDARD = LVCMOS33;
+NET "SNES_DATABUS_OE" IOSTANDARD = LVCMOS33;
+NET "SNES_IRQ" IOSTANDARD = LVCMOS33;
+
+NET "ROM_CE" LOC = P172;
+NET "ROM_CE" IOSTANDARD = LVCMOS33;
+NET "ROM_CE" DRIVE = 8;
+
+NET "SNES_ADDR[0]" LOC = P119;
+NET "SNES_ADDR[10]" LOC = P146;
+NET "SNES_ADDR[11]" LOC = P148;
+NET "SNES_ADDR[12]" LOC = P147;
+NET "SNES_ADDR[13]" LOC = P144;
+NET "SNES_ADDR[14]" LOC = P141;
+NET "SNES_ADDR[15]" LOC = P139;
+NET "SNES_ADDR[16]" LOC = P137;
+NET "SNES_ADDR[17]" LOC = P133;
+NET "SNES_ADDR[18]" LOC = P131;
+NET "SNES_ADDR[19]" LOC = P128;
+NET "SNES_ADDR[1]" LOC = P122;
+NET "SNES_ADDR[20]" LOC = P125;
+NET "SNES_ADDR[21]" LOC = P123;
+NET "SNES_ADDR[22]" LOC = P120;
+NET "SNES_ADDR[23]" LOC = P117;
+NET "SNES_ADDR[2]" LOC = P124;
+NET "SNES_ADDR[3]" LOC = P126;
+NET "SNES_ADDR[4]" LOC = P130;
+NET "SNES_ADDR[5]" LOC = P132;
+NET "SNES_ADDR[6]" LOC = P135;
+NET "SNES_ADDR[7]" LOC = P138;
+NET "SNES_ADDR[8]" LOC = P140;
+NET "SNES_ADDR[9]" LOC = P143;
+NET "SNES_DATA[0]" LOC = P107;
+NET "SNES_DATA[1]" LOC = P102;
+NET "SNES_DATA[2]" LOC = P100;
+NET "SNES_DATA[3]" LOC = P96;
+NET "SNES_DATA[4]" LOC = P108;
+NET "SNES_DATA[5]" LOC = P106;
+NET "SNES_DATA[6]" LOC = P101;
+NET "SNES_DATA[7]" LOC = P97;
+
+
+NET "CLKIN" LOC = P80;
+// NET "RST" LOC = P113;
+NET "MCU_OVR" LOC = P92;
+
+
+NET "MCU_OVR" IOSTANDARD = LVCMOS33;
+NET "MCU_OVR" DRIVE = 8;
+
+NET "MCU_RDY" LOC = P83;
+NET "MCU_RDY" IOSTANDARD = LVCMOS33;
+NET "MCU_RDY" DRIVE = 8;
+
+
+NET "ROM_ADDR[0]" LOC = P166;
+
+
+NET "ROM_ADDR[0]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[0]" DRIVE = 8;
+
+
+NET "ROM_ADDR[10]" LOC = P197;
+
+
+NET "ROM_ADDR[10]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[10]" DRIVE = 8;
+
+
+NET "ROM_ADDR[11]" LOC = P196;
+
+
+NET "ROM_ADDR[11]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[11]" DRIVE = 8;
+
+
+NET "ROM_ADDR[12]" LOC = P2;
+
+
+NET "ROM_ADDR[12]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[12]" DRIVE = 8;
+
+
+NET "ROM_ADDR[13]" LOC = P194;
+
+
+NET "ROM_ADDR[13]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[13]" DRIVE = 8;
+
+
+NET "ROM_ADDR[14]" LOC = P200;
+
+
+NET "ROM_ADDR[14]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[14]" DRIVE = 8;
+
+
+NET "ROM_ADDR[15]" LOC = P184;
+
+
+NET "ROM_ADDR[15]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[15]" DRIVE = 8;
+
+
+NET "ROM_ADDR[16]" LOC = P199;
+
+
+NET "ROM_ADDR[16]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[16]" DRIVE = 8;
+
+
+NET "ROM_ADDR[17]" LOC = P11;
+
+
+NET "ROM_ADDR[17]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[17]" DRIVE = 8;
+
+
+NET "ROM_ADDR[18]" LOC = P3;
+
+
+NET "ROM_ADDR[18]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[18]" DRIVE = 8;
+
+
+NET "ROM_ADDR[19]" LOC = P4;
+
+
+NET "ROM_ADDR[19]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[19]" DRIVE = 8;
+
+
+NET "ROM_ADDR[1]" LOC = P168;
+
+
+NET "ROM_ADDR[1]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[1]" DRIVE = 8;
+
+
+NET "ROM_ADDR[20]" LOC = P191;
+
+
+NET "ROM_ADDR[20]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[20]" DRIVE = 8;
+
+
+NET "ROM_ADDR[21]" LOC = P203;
+
+
+NET "ROM_ADDR[21]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[21]" DRIVE = 8;
+
+
+NET "ROM_ADDR[22]" LOC = P198;
+
+
+NET "ROM_ADDR[22]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[22]" DRIVE = 8;
+
+
+NET "ROM_ADDR[2]" LOC = P171;
+
+
+NET "ROM_ADDR[2]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[2]" DRIVE = 8;
+
+
+NET "ROM_ADDR[3]" LOC = P165;
+
+
+NET "ROM_ADDR[3]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[3]" DRIVE = 8;
+
+
+NET "ROM_ADDR[4]" LOC = P169;
+
+
+NET "ROM_ADDR[4]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[4]" DRIVE = 8;
+
+
+NET "ROM_ADDR[5]" LOC = P18;
+
+
+NET "ROM_ADDR[5]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[5]" DRIVE = 8;
+
+
+NET "ROM_ADDR[6]" LOC = P175;
+
+
+NET "ROM_ADDR[6]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[6]" DRIVE = 8;
+
+
+NET "ROM_ADDR[7]" LOC = P167;
+
+
+NET "ROM_ADDR[7]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[7]" DRIVE = 8;
+
+
+NET "ROM_ADDR[8]" LOC = P205;
+
+
+NET "ROM_ADDR[8]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[8]" DRIVE = 8;
+
+
+NET "ROM_ADDR[9]" LOC = P204;
+
+
+NET "ROM_ADDR[9]" IOSTANDARD = LVCMOS33;
+NET "ROM_ADDR[9]" DRIVE = 8;
+
+
+NET "ROM_BHE" LOC = P161;
+
+
+NET "ROM_BHE" IOSTANDARD = LVCMOS33;
+NET "ROM_BHE" DRIVE = 8;
+
+
+NET "ROM_BLE" LOC = P156;
+
+
+NET "ROM_BLE" IOSTANDARD = LVCMOS33;
+NET "ROM_BLE" DRIVE = 8;
+
+
+NET "ROM_DATA[0]" LOC = P176;
+
+
+NET "ROM_DATA[0]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[0]" DRIVE = 8;
+
+
+NET "ROM_DATA[10]" LOC = P15;
+
+
+NET "ROM_DATA[10]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[10]" DRIVE = 8;
+
+
+NET "ROM_DATA[11]" LOC = P12;
+
+
+NET "ROM_DATA[11]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[11]" DRIVE = 8;
+
+
+NET "ROM_DATA[12]" LOC = P10;
+
+
+NET "ROM_DATA[12]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[12]" DRIVE = 8;
+
+
+NET "ROM_DATA[13]" LOC = P7;
+
+
+NET "ROM_DATA[13]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[13]" DRIVE = 8;
+
+
+NET "ROM_DATA[14]" LOC = P9;
+
+
+NET "ROM_DATA[14]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[14]" DRIVE = 8;
+
+
+NET "ROM_DATA[15]" LOC = P5;
+
+
+NET "ROM_DATA[15]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[15]" DRIVE = 8;
+
+
+NET "ROM_DATA[1]" LOC = P178;
+
+
+NET "ROM_DATA[1]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[1]" DRIVE = 8;
+
+
+NET "ROM_DATA[2]" LOC = P181;
+
+
+NET "ROM_DATA[2]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[2]" DRIVE = 8;
+
+
+NET "ROM_DATA[3]" LOC = P182;
+
+
+NET "ROM_DATA[3]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[3]" DRIVE = 8;
+
+
+NET "ROM_DATA[4]" LOC = P183;
+
+
+NET "ROM_DATA[4]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[4]" DRIVE = 8;
+
+
+NET "ROM_DATA[5]" LOC = P187;
+
+
+NET "ROM_DATA[5]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[5]" DRIVE = 8;
+
+
+NET "ROM_DATA[6]" LOC = P185;
+
+
+NET "ROM_DATA[6]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[6]" DRIVE = 8;
+
+
+NET "ROM_DATA[7]" LOC = P189;
+
+
+NET "ROM_DATA[7]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[7]" DRIVE = 8;
+
+
+NET "ROM_DATA[8]" LOC = P16;
+
+
+NET "ROM_DATA[8]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[8]" DRIVE = 8;
+
+
+NET "ROM_DATA[9]" LOC = P13;
+
+
+NET "ROM_DATA[9]" IOSTANDARD = LVCMOS33;
+NET "ROM_DATA[9]" DRIVE = 8;
+
+
+NET "ROM_OE" LOC = P162;
+
+
+NET "ROM_OE" IOSTANDARD = LVCMOS33;
+NET "ROM_OE" DRIVE = 8;
+
+
+NET "ROM_WE" LOC = P190;
+
+
+NET "ROM_WE" IOSTANDARD = LVCMOS33;
+NET "ROM_WE" DRIVE = 8;
+NET "SNES_ADDR[0]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[0]" DRIVE = 8;
+NET "SNES_ADDR[10]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[10]" DRIVE = 8;
+NET "SNES_ADDR[11]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[11]" DRIVE = 8;
+NET "SNES_ADDR[12]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[12]" DRIVE = 8;
+NET "SNES_ADDR[13]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[13]" DRIVE = 8;
+NET "SNES_ADDR[14]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[14]" DRIVE = 8;
+NET "SNES_ADDR[15]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[15]" DRIVE = 8;
+NET "SNES_ADDR[16]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[16]" DRIVE = 8;
+NET "SNES_ADDR[17]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[17]" DRIVE = 8;
+NET "SNES_ADDR[18]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[18]" DRIVE = 8;
+NET "SNES_ADDR[19]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[19]" DRIVE = 8;
+NET "SNES_ADDR[1]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[1]" DRIVE = 8;
+NET "SNES_ADDR[20]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[20]" DRIVE = 8;
+NET "SNES_ADDR[21]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[21]" DRIVE = 8;
+NET "SNES_ADDR[22]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[22]" DRIVE = 8;
+NET "SNES_ADDR[23]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[23]" DRIVE = 8;
+NET "SNES_ADDR[2]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[2]" DRIVE = 8;
+NET "SNES_ADDR[3]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[3]" DRIVE = 8;
+NET "SNES_ADDR[4]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[4]" DRIVE = 8;
+NET "SNES_ADDR[5]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[5]" DRIVE = 8;
+NET "SNES_ADDR[6]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[6]" DRIVE = 8;
+NET "SNES_ADDR[7]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[7]" DRIVE = 8;
+NET "SNES_ADDR[8]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[8]" DRIVE = 8;
+NET "SNES_ADDR[9]" IOSTANDARD = LVCMOS33;
+NET "SNES_ADDR[9]" DRIVE = 8;
+
+
+NET "SNES_CPU_CLK" LOC = P95;
+NET "SNES_CS" LOC = P116;
+NET "SNES_DATABUS_DIR" LOC = P111;
+NET "SNES_DATABUS_OE" LOC = P109;
+NET "SNES_DATABUS_DIR" DRIVE = 8;
+NET "SNES_DATABUS_OE" DRIVE = 8;
+
+
+NET "SNES_DATA[0]" IOSTANDARD = LVCMOS33;
+NET "SNES_DATA[0]" DRIVE = 8;
+NET "SNES_DATA[1]" IOSTANDARD = LVCMOS33;
+NET "SNES_DATA[1]" DRIVE = 8;
+NET "SNES_DATA[2]" IOSTANDARD = LVCMOS33;
+NET "SNES_DATA[2]" DRIVE = 8;
+NET "SNES_DATA[3]" IOSTANDARD = LVCMOS33;
+NET "SNES_DATA[3]" DRIVE = 8;
+NET "SNES_DATA[4]" IOSTANDARD = LVCMOS33;
+NET "SNES_DATA[4]" DRIVE = 8;
+NET "SNES_DATA[5]" IOSTANDARD = LVCMOS33;
+NET "SNES_DATA[5]" DRIVE = 8;
+NET "SNES_DATA[6]" IOSTANDARD = LVCMOS33;
+NET "SNES_DATA[6]" DRIVE = 8;
+NET "SNES_DATA[7]" IOSTANDARD = LVCMOS33;
+NET "SNES_DATA[7]" DRIVE = 8;
+
+
+NET "SNES_IRQ" LOC = P114;
+NET "SNES_READ" LOC = P115;
+NET "SNES_REFRESH" LOC = P155;
+NET "SNES_WRITE" LOC = P94;
+
+NET "SNES_PA[0]" IOSTANDARD = LVCMOS33;
+NET "SNES_PA[0]" LOC = P90;
+NET "SNES_PA[1]" IOSTANDARD = LVCMOS33;
+NET "SNES_PA[1]" LOC = P93;
+NET "SNES_PA[2]" IOSTANDARD = LVCMOS33;
+NET "SNES_PA[2]" LOC = P86;
+NET "SNES_PA[3]" IOSTANDARD = LVCMOS33;
+NET "SNES_PA[3]" LOC = P87;
+NET "SNES_PA[4]" IOSTANDARD = LVCMOS33;
+NET "SNES_PA[4]" LOC = P81;
+NET "SNES_PA[5]" IOSTANDARD = LVCMOS33;
+NET "SNES_PA[5]" LOC = P85;
+NET "SNES_PA[6]" IOSTANDARD = LVCMOS33;
+NET "SNES_PA[6]" LOC = P152;
+NET "SNES_PA[7]" IOSTANDARD = LVCMOS33;
+NET "SNES_PA[7]" LOC = P154;
+
+NET "SNES_PARD" IOSTANDARD = LVCMOS33;
+NET "SNES_PARD" LOC = P149;
+NET "SNES_PAWR" IOSTANDARD = LVCMOS33;
+NET "SNES_PAWR" LOC = P150;
+
+NET "SPI_MISO" LOC = P72;
+
+
+NET "SPI_MISO" IOSTANDARD = LVCMOS33;
+NET "SPI_MISO" DRIVE = 8;
+
+
+NET "SPI_MOSI" LOC = P74;
+
+
+NET "SPI_MOSI" IOSTANDARD = LVCMOS33;
+NET "SPI_MOSI" DRIVE = 8;
+
+
+NET "SPI_SS" LOC = P68;
+
+
+NET "SPI_SS" IOSTANDARD = LVCMOS33;
+NET "SPI_SS" DRIVE = 8;
+
+
+NET "DAC_LRCK" LOC = P77;
+
+
+NET "DAC_LRCK" IOSTANDARD = LVCMOS33;
+NET "DAC_LRCK" DRIVE = 8;
+
+
+NET "DAC_MCLK" LOC = P76;
+
+
+NET "DAC_MCLK" IOSTANDARD = LVCMOS33;
+NET "DAC_MCLK" DRIVE = 8;
+
+
+NET "DAC_SDOUT" LOC = P78;
+
+
+NET "DAC_SDOUT" IOSTANDARD = LVCMOS33;
+NET "DAC_SDOUT" DRIVE = 8;
+
+# PlanAhead Generated physical constraints 
+NET "SD_CLK" LOC = P64;
+NET "SD_CMD" LOC = P67;
+NET "SD_DAT[0]" LOC = P65;
+NET "SD_DAT[1]" LOC = P79;
+NET "SD_DAT[2]" LOC = P62;
+NET "SD_DAT[3]" LOC = P63;
+
+# PlanAhead Generated IO constraints 
+NET "SD_CLK" IOSTANDARD = LVCMOS33;
+NET "SD_CMD" IOSTANDARD = LVCMOS33;
+NET "SD_DAT[0]" IOSTANDARD = LVCMOS33;
+NET "SD_DAT[1]" IOSTANDARD = LVCMOS33;
+NET "SD_DAT[2]" IOSTANDARD = LVCMOS33;
+NET "SD_DAT[3]" IOSTANDARD = LVCMOS33;
+
+NET "SNES_SYSCLK" LOC = P180;
+NET "SNES_SYSCLK" IOSTANDARD = LVCMOS33;
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/28
+TIMEGRP "msu_track_out_r" = FFS("snes_msu/track_out_r<0>") FFS("snes_msu/track_out_r<1>") FFS("snes_msu/track_out_r<2>") FFS("snes_msu/track_out_r<3>") FFS("snes_msu/track_out_r<4>") FFS("snes_msu/track_out_r<5>") FFS("snes_msu/track_out_r<6>") FFS("snes_msu/track_out_r<7>") FFS("snes_msu/track_out_r<8>") FFS("snes_msu/track_out_r<9>") FFS("snes_msu/track_out_r<10>") FFS("snes_msu/track_out_r<11>") FFS("snes_msu/track_out_r<12>") FFS("snes_msu/track_out_r<13>") FFS("snes_msu/track_out_r<14>") FFS("snes_msu/track_out_r<15>");
+TIMEGRP "msu_addr_r" = FFS("snes_msu/addr_out_r<0>") FFS("snes_msu/addr_out_r<1>") FFS("snes_msu/addr_out_r<2>") FFS("snes_msu/addr_out_r<3>") FFS("snes_msu/addr_out_r<4>") FFS("snes_msu/addr_out_r<5>") FFS("snes_msu/addr_out_r<6>") FFS("snes_msu/addr_out_r<7>") FFS("snes_msu/addr_out_r<8>") FFS("snes_msu/addr_out_r<9>") FFS("snes_msu/addr_out_r<10>") FFS("snes_msu/addr_out_r<11>") FFS("snes_msu/addr_out_r<12>") FFS("snes_msu/addr_out_r<13>") FFS("snes_msu/addr_out_r<14>") FFS("snes_msu/addr_out_r<15>") FFS("snes_msu/addr_out_r<16>") FFS("snes_msu/addr_out_r<17>") FFS("snes_msu/addr_out_r<18>") FFS("snes_msu/addr_out_r<19>") FFS("snes_msu/addr_out_r<20>") FFS("snes_msu/addr_out_r<21>") FFS("snes_msu/addr_out_r<22>") FFS("snes_msu/addr_out_r<23>") FFS("snes_msu/addr_out_r<24>") FFS("snes_msu/addr_out_r<25>") FFS("snes_msu/addr_out_r<26>") FFS("snes_msu/addr_out_r<27>") FFS("snes_msu/addr_out_r<28>") FFS("snes_msu/addr_out_r<29>") FFS("snes_msu/addr_out_r<30>") FFS("snes_msu/addr_out_r<31>");
+TIMEGRP "mcu_cmd_msu_addr_out" = FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<0>") FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<1>") FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<2>") FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<3>") FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<4>") FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<5>") FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<6>") FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<7>") FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<8>") FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<9>") FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<10>") FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<11>") FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<12>") FFS("snes_mcu_cmd/MSU_ADDR_OUT_BUF<13>");
+TIMEGRP "cx4_cache_src_addr" = FFS("snes_cx4/CACHE_SRC_ADDRr<0>") FFS("snes_cx4/CACHE_SRC_ADDRr<1>") FFS("snes_cx4/CACHE_SRC_ADDRr<2>") FFS("snes_cx4/CACHE_SRC_ADDRr<3>") FFS("snes_cx4/CACHE_SRC_ADDRr<4>") FFS("snes_cx4/CACHE_SRC_ADDRr<5>") FFS("snes_cx4/CACHE_SRC_ADDRr<6>") FFS("snes_cx4/CACHE_SRC_ADDRr<7>") FFS("snes_cx4/CACHE_SRC_ADDRr<8>") FFS("snes_cx4/CACHE_SRC_ADDRr<9>") FFS("snes_cx4/CACHE_SRC_ADDRr<10>") FFS("snes_cx4/CACHE_SRC_ADDRr<11>") FFS("snes_cx4/CACHE_SRC_ADDRr<12>") FFS("snes_cx4/CACHE_SRC_ADDRr<13>") FFS("snes_cx4/CACHE_SRC_ADDRr<14>") FFS("snes_cx4/CACHE_SRC_ADDRr<15>") FFS("snes_cx4/CACHE_SRC_ADDRr<16>") FFS("snes_cx4/CACHE_SRC_ADDRr<17>") FFS("snes_cx4/CACHE_SRC_ADDRr<18>") FFS("snes_cx4/CACHE_SRC_ADDRr<19>") FFS("snes_cx4/CACHE_SRC_ADDRr<20>") FFS("snes_cx4/CACHE_SRC_ADDRr<21>") FFS("snes_cx4/CACHE_SRC_ADDRr<22>") FFS("snes_cx4/CACHE_SRC_ADDRr<23>");
+TIMEGRP "cx4_cpu_busaddr" = FFS("snes_cx4/cpu_busaddr<0>") FFS("snes_cx4/cpu_busaddr<1>") FFS("snes_cx4/cpu_busaddr<2>") FFS("snes_cx4/cpu_busaddr<3>") FFS("snes_cx4/cpu_busaddr<4>") FFS("snes_cx4/cpu_busaddr<5>") FFS("snes_cx4/cpu_busaddr<6>") FFS("snes_cx4/cpu_busaddr<7>") FFS("snes_cx4/cpu_busaddr<8>") FFS("snes_cx4/cpu_busaddr<9>") FFS("snes_cx4/cpu_busaddr<10>") FFS("snes_cx4/cpu_busaddr<11>") FFS("snes_cx4/cpu_busaddr<12>") FFS("snes_cx4/cpu_busaddr<13>") FFS("snes_cx4/cpu_busaddr<14>") FFS("snes_cx4/cpu_busaddr<15>") FFS("snes_cx4/cpu_busaddr<16>") FFS("snes_cx4/cpu_busaddr<17>") FFS("snes_cx4/cpu_busaddr<18>") FFS("snes_cx4/cpu_busaddr<19>") FFS("snes_cx4/cpu_busaddr<20>") FFS("snes_cx4/cpu_busaddr<21>") FFS("snes_cx4/cpu_busaddr<22>") FFS("snes_cx4/cpu_busaddr<23>");
+TIMEGRP "cx4_cpu_ramaddr" = FFS("snes_cx4/cpu_ramaddr<0>") FFS("snes_cx4/cpu_ramaddr<1>") FFS("snes_cx4/cpu_ramaddr<2>") FFS("snes_cx4/cpu_ramaddr<3>") FFS("snes_cx4/cpu_ramaddr<4>") FFS("snes_cx4/cpu_ramaddr<5>") FFS("snes_cx4/cpu_ramaddr<6>") FFS("snes_cx4/cpu_ramaddr<7>") FFS("snes_cx4/cpu_ramaddr<8>") FFS("snes_cx4/cpu_ramaddr<9>") FFS("snes_cx4/cpu_ramaddr<10>") FFS("snes_cx4/cpu_ramaddr<11>") FFS("snes_cx4/cpu_ramaddr<12>") FFS("snes_cx4/cpu_ramaddr<13>") FFS("snes_cx4/cpu_ramaddr<14>") FFS("snes_cx4/cpu_ramaddr<15>") FFS("snes_cx4/cpu_ramaddr<16>") FFS("snes_cx4/cpu_ramaddr<17>") FFS("snes_cx4/cpu_ramaddr<18>") FFS("snes_cx4/cpu_ramaddr<19>") FFS("snes_cx4/cpu_ramaddr<20>") FFS("snes_cx4/cpu_ramaddr<21>") FFS("snes_cx4/cpu_ramaddr<22>") FFS("snes_cx4/cpu_ramaddr<23>");
+TIMEGRP "mcu_cmd_dac_addr_out" = FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<10>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<0>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<1>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<2>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<3>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<4>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<5>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<6>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<7>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<8>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<9>");
+TIMEGRP "cx4_cpu_a" = FFS("snes_cx4/cpu_a<0>") FFS("snes_cx4/cpu_a<1>") FFS("snes_cx4/cpu_a<2>") FFS("snes_cx4/cpu_a<3>") FFS("snes_cx4/cpu_a<4>") FFS("snes_cx4/cpu_a<5>") FFS("snes_cx4/cpu_a<6>") FFS("snes_cx4/cpu_a<7>") FFS("snes_cx4/cpu_a<8>") FFS("snes_cx4/cpu_a<9>") FFS("snes_cx4/cpu_a<10>") FFS("snes_cx4/cpu_a<11>") FFS("snes_cx4/cpu_a<12>") FFS("snes_cx4/cpu_a<13>") FFS("snes_cx4/cpu_a<14>") FFS("snes_cx4/cpu_a<15>") FFS("snes_cx4/cpu_a<16>") FFS("snes_cx4/cpu_a<17>") FFS("snes_cx4/cpu_a<18>") FFS("snes_cx4/cpu_a<19>") FFS("snes_cx4/cpu_a<20>") FFS("snes_cx4/cpu_a<21>") FFS("snes_cx4/cpu_a<22>") FFS("snes_cx4/cpu_a<23>");
+TIMEGRP "cx4_pgmrom_addr" = FFS("snes_cx4/cx4_pgmrom_addr<0>") FFS("snes_cx4/cx4_pgmrom_addr<1>") FFS("snes_cx4/cx4_pgmrom_addr<2>") FFS("snes_cx4/cx4_pgmrom_addr<3>") FFS("snes_cx4/cx4_pgmrom_addr<4>") FFS("snes_cx4/cx4_pgmrom_addr<5>") FFS("snes_cx4/cx4_pgmrom_addr<6>") FFS("snes_cx4/cx4_pgmrom_addr<7>") FFS("snes_cx4/cx4_pgmrom_addr<8>") FFS("snes_cx4/cx4_pgmrom_addr<9>");
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/28
+TIMEGRP "cx4_cpu_idb" = FFS("snes_cx4/cpu_idb<0>") FFS("snes_cx4/cpu_idb_1_BRB1") FFS("snes_cx4/cpu_idb_1_BRB3") FFS("snes_cx4/cpu_idb_2_BRB1") FFS("snes_cx4/cpu_idb_2_BRB3") FFS("snes_cx4/cpu_idb_3_BRB1") FFS("snes_cx4/cpu_idb_3_BRB3") FFS("snes_cx4/cpu_idb_4_BRB1") FFS("snes_cx4/cpu_idb_4_BRB3") FFS("snes_cx4/cpu_idb_5_BRB1") FFS("snes_cx4/cpu_idb_5_BRB3") FFS("snes_cx4/cpu_idb_6_BRB0") FFS("snes_cx4/cpu_idb_6_BRB1") FFS("snes_cx4/cpu_idb_6_BRB3") FFS("snes_cx4/cpu_idb_7_BRB0") FFS("snes_cx4/cpu_idb_7_BRB1") FFS("snes_cx4/cpu_idb_7_BRB2") FFS("snes_cx4/cpu_idb_8_BRB0") FFS("snes_cx4/cpu_idb_8_BRB1") FFS("snes_cx4/cpu_idb_8_BRB2") FFS("snes_cx4/cpu_idb_8_BRB3") FFS("snes_cx4/cpu_idb_9_BRB0") FFS("snes_cx4/cpu_idb_9_BRB1") FFS("snes_cx4/cpu_idb_9_BRB2") FFS("snes_cx4/cpu_idb_9_BRB3") FFS("snes_cx4/cpu_idb_10_BRB0") FFS("snes_cx4/cpu_idb_10_BRB1") FFS("snes_cx4/cpu_idb_10_BRB2") FFS("snes_cx4/cpu_idb_10_BRB3") FFS("snes_cx4/cpu_idb_11_BRB0") FFS("snes_cx4/cpu_idb_11_BRB1") FFS("snes_cx4/cpu_idb_11_BRB2") FFS("snes_cx4/cpu_idb_11_BRB3") FFS("snes_cx4/cpu_idb_12_BRB0") FFS("snes_cx4/cpu_idb_12_BRB1") FFS("snes_cx4/cpu_idb_12_BRB2") FFS("snes_cx4/cpu_idb_12_BRB3") FFS("snes_cx4/cpu_idb_13_BRB0") FFS("snes_cx4/cpu_idb_13_BRB1") FFS("snes_cx4/cpu_idb_13_BRB2") FFS("snes_cx4/cpu_idb_13_BRB3") FFS("snes_cx4/cpu_idb_14_BRB0") FFS("snes_cx4/cpu_idb_14_BRB1") FFS("snes_cx4/cpu_idb_14_BRB2") FFS("snes_cx4/cpu_idb_14_BRB3") FFS("snes_cx4/cpu_idb_15_BRB0") FFS("snes_cx4/cpu_idb_15_BRB1") FFS("snes_cx4/cpu_idb_15_BRB2") FFS("snes_cx4/cpu_idb_15_BRB3") FFS("snes_cx4/cpu_idb_16_BRB0") FFS("snes_cx4/cpu_idb_16_BRB1") FFS("snes_cx4/cpu_idb_16_BRB2") FFS("snes_cx4/cpu_idb_16_BRB3") FFS("snes_cx4/cpu_idb_17_BRB0") FFS("snes_cx4/cpu_idb_17_BRB1") FFS("snes_cx4/cpu_idb_17_BRB2") FFS("snes_cx4/cpu_idb_17_BRB3") FFS("snes_cx4/cpu_idb_18_BRB0") FFS("snes_cx4/cpu_idb_18_BRB1") FFS("snes_cx4/cpu_idb_18_BRB2") FFS("snes_cx4/cpu_idb_18_BRB3") FFS("snes_cx4/cpu_idb_19_BRB0") FFS("snes_cx4/cpu_idb_19_BRB1") FFS("snes_cx4/cpu_idb_19_BRB2") FFS("snes_cx4/cpu_idb_19_BRB3") FFS("snes_cx4/cpu_idb_20_BRB0") FFS("snes_cx4/cpu_idb_20_BRB1") FFS("snes_cx4/cpu_idb_20_BRB2") FFS("snes_cx4/cpu_idb_20_BRB3") FFS("snes_cx4/cpu_idb_21_BRB0") FFS("snes_cx4/cpu_idb_21_BRB1") FFS("snes_cx4/cpu_idb_21_BRB2") FFS("snes_cx4/cpu_idb_21_BRB3") FFS("snes_cx4/cpu_idb_22_BRB0") FFS("snes_cx4/cpu_idb_22_BRB1") FFS("snes_cx4/cpu_idb_22_BRB2") FFS("snes_cx4/cpu_idb_22_BRB3") FFS("snes_cx4/cpu_idb_23_BRB0") FFS("snes_cx4/cpu_idb_23_BRB1") FFS("snes_cx4/cpu_idb_23_BRB2") FFS("snes_cx4/cpu_idb_23_BRB3");
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/28
+TIMEGRP "mcu_cmd_param_data" = FFS("snes_spi/param_data_r<0>") FFS("snes_spi/param_data_r<1>") FFS("snes_spi/param_data_r<2>") FFS("snes_spi/param_data_r<3>") FFS("snes_spi/param_data_r<4>") FFS("snes_spi/param_data_r<5>") FFS("snes_spi/param_data_r<6>") FFS("snes_spi/param_data_r<7>") FFS("snes_spi/param_ready_r") FFS("snes_spi/param_ready_r2");
+TIMEGRP "mcu_cmd_ADDR_OUT_BUF" = FFS("snes_mcu_cmd/ADDR_OUT_BUF<0>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<1>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<2>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<3>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<4>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<5>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<6>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<7>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<8>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<9>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<10>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<11>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<12>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<13>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<14>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<15>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<16>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<17>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<18>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<19>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<20>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<21>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<22>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<23>");
+TIMEGRP "mcu_cmd_MCU_DATA_OUT_BUF" = FFS("snes_mcu_cmd/MCU_DATA_OUT_BUF<0>") FFS("snes_mcu_cmd/MCU_DATA_OUT_BUF<1>") FFS("snes_mcu_cmd/MCU_DATA_OUT_BUF<2>") FFS("snes_mcu_cmd/MCU_DATA_OUT_BUF<3>") FFS("snes_mcu_cmd/MCU_DATA_OUT_BUF<4>") FFS("snes_mcu_cmd/MCU_DATA_OUT_BUF<5>") FFS("snes_mcu_cmd/MCU_DATA_OUT_BUF<6>") FFS("snes_mcu_cmd/MCU_DATA_OUT_BUF<7>");
+TIMEGRP "mcu_cmd_MCU_ADDR_OUT_BUF" = FFS("snes_mcu_cmd/ADDR_OUT_BUF<0>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<1>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<2>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<3>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<4>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<5>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<6>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<7>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<8>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<9>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<10>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<11>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<12>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<13>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<14>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<15>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<16>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<17>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<18>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<19>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<20>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<21>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<22>") FFS("snes_mcu_cmd/ADDR_OUT_BUF<23>");
+TIMEGRP "mcu_cmd_MSU_PTR_OUT_BUF" = FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<0>") FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<1>") FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<2>") FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<3>") FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<4>") FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<5>") FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<6>") FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<7>") FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<8>") FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<9>") FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<10>") FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<11>") FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<12>") FFS("snes_mcu_cmd/MSU_PTR_OUT_BUF<13>");
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/28
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/28
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/28
+TIMEGRP "cx4_gpr" = FFS("snes_cx4/gpr_0_0") FFS("snes_cx4/gpr_0_1") FFS("snes_cx4/gpr_0_2") FFS("snes_cx4/gpr_0_3") FFS("snes_cx4/gpr_0_4") FFS("snes_cx4/gpr_0_5") FFS("snes_cx4/gpr_0_6") FFS("snes_cx4/gpr_0_7") FFS("snes_cx4/gpr_1_0") FFS("snes_cx4/gpr_1_1") FFS("snes_cx4/gpr_1_2") FFS("snes_cx4/gpr_1_3") FFS("snes_cx4/gpr_1_4") FFS("snes_cx4/gpr_1_5") FFS("snes_cx4/gpr_1_6") FFS("snes_cx4/gpr_1_7") FFS("snes_cx4/gpr_2_0") FFS("snes_cx4/gpr_2_1") FFS("snes_cx4/gpr_2_2") FFS("snes_cx4/gpr_2_3") FFS("snes_cx4/gpr_2_4") FFS("snes_cx4/gpr_2_5") FFS("snes_cx4/gpr_2_6") FFS("snes_cx4/gpr_2_7") FFS("snes_cx4/gpr_3_0") FFS("snes_cx4/gpr_3_1") FFS("snes_cx4/gpr_3_2") FFS("snes_cx4/gpr_3_3") FFS("snes_cx4/gpr_3_4") FFS("snes_cx4/gpr_3_5") FFS("snes_cx4/gpr_3_6") FFS("snes_cx4/gpr_3_7") FFS("snes_cx4/gpr_4_0") FFS("snes_cx4/gpr_4_1") FFS("snes_cx4/gpr_4_2") FFS("snes_cx4/gpr_4_3") FFS("snes_cx4/gpr_4_4") FFS("snes_cx4/gpr_4_5") FFS("snes_cx4/gpr_4_6") FFS("snes_cx4/gpr_4_7") FFS("snes_cx4/gpr_5_0") FFS("snes_cx4/gpr_5_1") FFS("snes_cx4/gpr_5_2") FFS("snes_cx4/gpr_5_3") FFS("snes_cx4/gpr_5_4") FFS("snes_cx4/gpr_5_5") FFS("snes_cx4/gpr_5_6") FFS("snes_cx4/gpr_5_7") FFS("snes_cx4/gpr_6_0") FFS("snes_cx4/gpr_6_1") FFS("snes_cx4/gpr_6_2") FFS("snes_cx4/gpr_6_3") FFS("snes_cx4/gpr_6_4") FFS("snes_cx4/gpr_6_5") FFS("snes_cx4/gpr_6_6") FFS("snes_cx4/gpr_6_7") FFS("snes_cx4/gpr_7_0") FFS("snes_cx4/gpr_7_1") FFS("snes_cx4/gpr_7_2") FFS("snes_cx4/gpr_7_3") FFS("snes_cx4/gpr_7_4") FFS("snes_cx4/gpr_7_5") FFS("snes_cx4/gpr_7_6") FFS("snes_cx4/gpr_7_7") FFS("snes_cx4/gpr_8_0") FFS("snes_cx4/gpr_8_1") FFS("snes_cx4/gpr_8_2") FFS("snes_cx4/gpr_8_3") FFS("snes_cx4/gpr_8_4") FFS("snes_cx4/gpr_8_5") FFS("snes_cx4/gpr_8_6") FFS("snes_cx4/gpr_8_7") FFS("snes_cx4/gpr_9_0") FFS("snes_cx4/gpr_9_1") FFS("snes_cx4/gpr_9_2") FFS("snes_cx4/gpr_9_3") FFS("snes_cx4/gpr_9_4") FFS("snes_cx4/gpr_9_5") FFS("snes_cx4/gpr_9_6") FFS("snes_cx4/gpr_9_7") FFS("snes_cx4/gpr_10_0") FFS("snes_cx4/gpr_10_1") FFS("snes_cx4/gpr_10_2") FFS("snes_cx4/gpr_10_3") FFS("snes_cx4/gpr_10_4") FFS("snes_cx4/gpr_10_5") FFS("snes_cx4/gpr_10_6") FFS("snes_cx4/gpr_10_7") FFS("snes_cx4/gpr_11_0") FFS("snes_cx4/gpr_11_1") FFS("snes_cx4/gpr_11_2") FFS("snes_cx4/gpr_11_3") FFS("snes_cx4/gpr_11_4") FFS("snes_cx4/gpr_11_5") FFS("snes_cx4/gpr_11_6") FFS("snes_cx4/gpr_11_7") FFS("snes_cx4/gpr_12_0") FFS("snes_cx4/gpr_12_1") FFS("snes_cx4/gpr_12_2") FFS("snes_cx4/gpr_12_3") FFS("snes_cx4/gpr_12_4") FFS("snes_cx4/gpr_12_5") FFS("snes_cx4/gpr_12_6") FFS("snes_cx4/gpr_12_7") FFS("snes_cx4/gpr_13_0") FFS("snes_cx4/gpr_13_1") FFS("snes_cx4/gpr_13_2") FFS("snes_cx4/gpr_13_3") FFS("snes_cx4/gpr_13_4") FFS("snes_cx4/gpr_13_5") FFS("snes_cx4/gpr_13_6") FFS("snes_cx4/gpr_13_7") FFS("snes_cx4/gpr_14_0") FFS("snes_cx4/gpr_14_1") FFS("snes_cx4/gpr_14_2") FFS("snes_cx4/gpr_14_3") FFS("snes_cx4/gpr_14_4") FFS("snes_cx4/gpr_14_5") FFS("snes_cx4/gpr_14_6") FFS("snes_cx4/gpr_14_7") FFS("snes_cx4/gpr_15_0") FFS("snes_cx4/gpr_15_1") FFS("snes_cx4/gpr_15_2") FFS("snes_cx4/gpr_15_3") FFS("snes_cx4/gpr_15_4") FFS("snes_cx4/gpr_15_5") FFS("snes_cx4/gpr_15_6") FFS("snes_cx4/gpr_15_7") FFS("snes_cx4/gpr_16_0") FFS("snes_cx4/gpr_16_1") FFS("snes_cx4/gpr_16_2") FFS("snes_cx4/gpr_16_3") FFS("snes_cx4/gpr_16_4") FFS("snes_cx4/gpr_16_5") FFS("snes_cx4/gpr_16_6") FFS("snes_cx4/gpr_16_7") FFS("snes_cx4/gpr_17_0") FFS("snes_cx4/gpr_17_1") FFS("snes_cx4/gpr_17_2") FFS("snes_cx4/gpr_17_3") FFS("snes_cx4/gpr_17_4") FFS("snes_cx4/gpr_17_5") FFS("snes_cx4/gpr_17_6") FFS("snes_cx4/gpr_17_7") FFS("snes_cx4/gpr_18_0") FFS("snes_cx4/gpr_18_1") FFS("snes_cx4/gpr_18_2") FFS("snes_cx4/gpr_18_3") FFS("snes_cx4/gpr_18_4") FFS("snes_cx4/gpr_18_5") FFS("snes_cx4/gpr_18_6") FFS("snes_cx4/gpr_18_7") FFS("snes_cx4/gpr_19_0") FFS("snes_cx4/gpr_19_1") FFS("snes_cx4/gpr_19_2") FFS("snes_cx4/gpr_19_3") FFS("snes_cx4/gpr_19_4") FFS("snes_cx4/gpr_19_5") FFS("snes_cx4/gpr_19_6") FFS("snes_cx4/gpr_19_7") FFS("snes_cx4/gpr_20_0") FFS("snes_cx4/gpr_20_1") FFS("snes_cx4/gpr_20_2") FFS("snes_cx4/gpr_20_3") FFS("snes_cx4/gpr_20_4") FFS("snes_cx4/gpr_20_5") FFS("snes_cx4/gpr_20_6") FFS("snes_cx4/gpr_20_7") FFS("snes_cx4/gpr_21_0") FFS("snes_cx4/gpr_21_1") FFS("snes_cx4/gpr_21_2") FFS("snes_cx4/gpr_21_3") FFS("snes_cx4/gpr_21_4") FFS("snes_cx4/gpr_21_5") FFS("snes_cx4/gpr_21_6") FFS("snes_cx4/gpr_21_7") FFS("snes_cx4/gpr_22_0") FFS("snes_cx4/gpr_22_1") FFS("snes_cx4/gpr_22_2") FFS("snes_cx4/gpr_22_3") FFS("snes_cx4/gpr_22_4") FFS("snes_cx4/gpr_22_5") FFS("snes_cx4/gpr_22_6") FFS("snes_cx4/gpr_22_7") FFS("snes_cx4/gpr_23_0") FFS("snes_cx4/gpr_23_1") FFS("snes_cx4/gpr_23_2") FFS("snes_cx4/gpr_23_3") FFS("snes_cx4/gpr_23_4") FFS("snes_cx4/gpr_23_5") FFS("snes_cx4/gpr_23_6") FFS("snes_cx4/gpr_23_7") FFS("snes_cx4/gpr_24_0") FFS("snes_cx4/gpr_24_1") FFS("snes_cx4/gpr_24_2") FFS("snes_cx4/gpr_24_3") FFS("snes_cx4/gpr_24_4") FFS("snes_cx4/gpr_24_5") FFS("snes_cx4/gpr_24_6") FFS("snes_cx4/gpr_24_7") FFS("snes_cx4/gpr_25_0") FFS("snes_cx4/gpr_25_1") FFS("snes_cx4/gpr_25_2") FFS("snes_cx4/gpr_25_3") FFS("snes_cx4/gpr_25_4") FFS("snes_cx4/gpr_25_5") FFS("snes_cx4/gpr_25_6") FFS("snes_cx4/gpr_25_7") FFS("snes_cx4/gpr_26_0") FFS("snes_cx4/gpr_26_1") FFS("snes_cx4/gpr_26_2") FFS("snes_cx4/gpr_26_3") FFS("snes_cx4/gpr_26_4") FFS("snes_cx4/gpr_26_5") FFS("snes_cx4/gpr_26_6") FFS("snes_cx4/gpr_26_7") FFS("snes_cx4/gpr_27_0") FFS("snes_cx4/gpr_27_1") FFS("snes_cx4/gpr_27_2") FFS("snes_cx4/gpr_27_3") FFS("snes_cx4/gpr_27_4") FFS("snes_cx4/gpr_27_5") FFS("snes_cx4/gpr_27_6") FFS("snes_cx4/gpr_27_7") FFS("snes_cx4/gpr_28_0") FFS("snes_cx4/gpr_28_1") FFS("snes_cx4/gpr_28_2") FFS("snes_cx4/gpr_28_3") FFS("snes_cx4/gpr_28_4") FFS("snes_cx4/gpr_28_5") FFS("snes_cx4/gpr_28_6") FFS("snes_cx4/gpr_28_7") FFS("snes_cx4/gpr_29_0") FFS("snes_cx4/gpr_29_1") FFS("snes_cx4/gpr_29_2") FFS("snes_cx4/gpr_29_3") FFS("snes_cx4/gpr_29_4") FFS("snes_cx4/gpr_29_5") FFS("snes_cx4/gpr_29_6") FFS("snes_cx4/gpr_29_7") FFS("snes_cx4/gpr_30_0") FFS("snes_cx4/gpr_30_1") FFS("snes_cx4/gpr_30_2") FFS("snes_cx4/gpr_30_3") FFS("snes_cx4/gpr_30_4") FFS("snes_cx4/gpr_30_5") FFS("snes_cx4/gpr_30_6") FFS("snes_cx4/gpr_30_7") FFS("snes_cx4/gpr_31_0") FFS("snes_cx4/gpr_31_1") FFS("snes_cx4/gpr_31_2") FFS("snes_cx4/gpr_31_3") FFS("snes_cx4/gpr_31_4") FFS("snes_cx4/gpr_31_5") FFS("snes_cx4/gpr_31_6") FFS("snes_cx4/gpr_31_7") FFS("snes_cx4/gpr_32_0") FFS("snes_cx4/gpr_32_1") FFS("snes_cx4/gpr_32_2") FFS("snes_cx4/gpr_32_3") FFS("snes_cx4/gpr_32_4") FFS("snes_cx4/gpr_32_5") FFS("snes_cx4/gpr_32_6") FFS("snes_cx4/gpr_32_7") FFS("snes_cx4/gpr_33_0") FFS("snes_cx4/gpr_33_1") FFS("snes_cx4/gpr_33_2") FFS("snes_cx4/gpr_33_3") FFS("snes_cx4/gpr_33_4") FFS("snes_cx4/gpr_33_5") FFS("snes_cx4/gpr_33_6") FFS("snes_cx4/gpr_33_7") FFS("snes_cx4/gpr_34_0") FFS("snes_cx4/gpr_34_1") FFS("snes_cx4/gpr_34_2") FFS("snes_cx4/gpr_34_3") FFS("snes_cx4/gpr_34_4") FFS("snes_cx4/gpr_34_5") FFS("snes_cx4/gpr_34_6") FFS("snes_cx4/gpr_34_7") FFS("snes_cx4/gpr_35_0") FFS("snes_cx4/gpr_35_1") FFS("snes_cx4/gpr_35_2") FFS("snes_cx4/gpr_35_3") FFS("snes_cx4/gpr_35_4") FFS("snes_cx4/gpr_35_5") FFS("snes_cx4/gpr_35_6") FFS("snes_cx4/gpr_35_7") FFS("snes_cx4/gpr_36_0") FFS("snes_cx4/gpr_36_1") FFS("snes_cx4/gpr_36_2") FFS("snes_cx4/gpr_36_3") FFS("snes_cx4/gpr_36_4") FFS("snes_cx4/gpr_36_5") FFS("snes_cx4/gpr_36_6") FFS("snes_cx4/gpr_36_7") FFS("snes_cx4/gpr_37_0") FFS("snes_cx4/gpr_37_1") FFS("snes_cx4/gpr_37_2") FFS("snes_cx4/gpr_37_3") FFS("snes_cx4/gpr_37_4") FFS("snes_cx4/gpr_37_5") FFS("snes_cx4/gpr_37_6") FFS("snes_cx4/gpr_37_7") FFS("snes_cx4/gpr_38_0") FFS("snes_cx4/gpr_38_1") FFS("snes_cx4/gpr_38_2") FFS("snes_cx4/gpr_38_3") FFS("snes_cx4/gpr_38_4") FFS("snes_cx4/gpr_38_5") FFS("snes_cx4/gpr_38_6") FFS("snes_cx4/gpr_38_7") FFS("snes_cx4/gpr_39_0") FFS("snes_cx4/gpr_39_1") FFS("snes_cx4/gpr_39_2") FFS("snes_cx4/gpr_39_3") FFS("snes_cx4/gpr_39_4") FFS("snes_cx4/gpr_39_5") FFS("snes_cx4/gpr_39_6") FFS("snes_cx4/gpr_39_7") FFS("snes_cx4/gpr_40_0") FFS("snes_cx4/gpr_40_1") FFS("snes_cx4/gpr_40_2") FFS("snes_cx4/gpr_40_3") FFS("snes_cx4/gpr_40_4") FFS("snes_cx4/gpr_40_5") FFS("snes_cx4/gpr_40_6") FFS("snes_cx4/gpr_40_7") FFS("snes_cx4/gpr_41_0") FFS("snes_cx4/gpr_41_1") FFS("snes_cx4/gpr_41_2") FFS("snes_cx4/gpr_41_3") FFS("snes_cx4/gpr_41_4") FFS("snes_cx4/gpr_41_5") FFS("snes_cx4/gpr_41_6") FFS("snes_cx4/gpr_41_7") FFS("snes_cx4/gpr_42_0") FFS("snes_cx4/gpr_42_1") FFS("snes_cx4/gpr_42_2") FFS("snes_cx4/gpr_42_3") FFS("snes_cx4/gpr_42_4") FFS("snes_cx4/gpr_42_5") FFS("snes_cx4/gpr_42_6") FFS("snes_cx4/gpr_42_7") FFS("snes_cx4/gpr_43_0") FFS("snes_cx4/gpr_43_1") FFS("snes_cx4/gpr_43_2") FFS("snes_cx4/gpr_43_3") FFS("snes_cx4/gpr_43_4") FFS("snes_cx4/gpr_43_5") FFS("snes_cx4/gpr_43_6") FFS("snes_cx4/gpr_43_7") FFS("snes_cx4/gpr_44_0") FFS("snes_cx4/gpr_44_1") FFS("snes_cx4/gpr_44_2") FFS("snes_cx4/gpr_44_3") FFS("snes_cx4/gpr_44_4") FFS("snes_cx4/gpr_44_5") FFS("snes_cx4/gpr_44_6") FFS("snes_cx4/gpr_44_7") FFS("snes_cx4/gpr_45_0") FFS("snes_cx4/gpr_45_1") FFS("snes_cx4/gpr_45_2") FFS("snes_cx4/gpr_45_3") FFS("snes_cx4/gpr_45_4") FFS("snes_cx4/gpr_45_5") FFS("snes_cx4/gpr_45_6") FFS("snes_cx4/gpr_45_7") FFS("snes_cx4/gpr_46_0") FFS("snes_cx4/gpr_46_1") FFS("snes_cx4/gpr_46_2") FFS("snes_cx4/gpr_46_3") FFS("snes_cx4/gpr_46_4") FFS("snes_cx4/gpr_46_5") FFS("snes_cx4/gpr_46_6") FFS("snes_cx4/gpr_46_7") FFS("snes_cx4/gpr_47_0") FFS("snes_cx4/gpr_47_1") FFS("snes_cx4/gpr_47_2") FFS("snes_cx4/gpr_47_3") FFS("snes_cx4/gpr_47_4") FFS("snes_cx4/gpr_47_5") FFS("snes_cx4/gpr_47_6") FFS("snes_cx4/gpr_47_7");
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+TIMEGRP "DAC" = FFS("snes_dac/dac_address_r<0>") FFS("snes_dac/dac_address_r<1>") FFS("snes_dac/dac_address_r<2>") FFS("snes_dac/dac_address_r<3>") FFS("snes_dac/dac_address_r<4>") FFS("snes_dac/dac_address_r<5>") FFS("snes_dac/dac_address_r<6>") FFS("snes_dac/dac_address_r<7>") FFS("snes_dac/dac_address_r<8>") FFS("snes_dac/lrck_sreg<1>") FFS("snes_dac/lrck_sreg<2>") FFS("snes_dac/Mshreg_lrck_sreg_1") FFS("snes_dac/Mshreg_sclk_sreg_1") FFS("snes_dac/play_r") FFS("snes_dac/reset_sreg<0>") FFS("snes_dac/reset_sreg<1>") FFS("snes_dac/samples<0>") FFS("snes_dac/samples<1>") FFS("snes_dac/sclk_sreg<1>") FFS("snes_dac/sclk_sreg<2>") FFS("snes_dac/sdout_reg") FFS("snes_dac/smpshift<0>") FFS("snes_dac/smpshift<1>") FFS("snes_dac/smpshift<2>") FFS("snes_dac/smpshift<3>") FFS("snes_dac/smpshift<4>") FFS("snes_dac/smpshift<5>") FFS("snes_dac/smpshift<6>") FFS("snes_dac/smpshift<7>") FFS("snes_dac/smpshift<8>") FFS("snes_dac/smpshift<9>") FFS("snes_dac/smpshift<10>") FFS("snes_dac/smpshift<11>") FFS("snes_dac/smpshift<12>") FFS("snes_dac/smpshift<13>") FFS("snes_dac/smpshift<14>") FFS("snes_dac/smpshift_15_BRB0") FFS("snes_dac/smpshift_15_BRB1") FFS("snes_dac/smpshift_15_BRB2") FFS("snes_dac/sysclk_sreg<0>") FFS("snes_dac/sysclk_sreg<1>") FFS("snes_dac/sysclk_sreg<2>") FFS("snes_dac/vol_latch_reg<0>") FFS("snes_dac/vol_latch_reg<1>") FFS("snes_dac/vol_reg<0>") FFS("snes_dac/vol_reg<1>") FFS("snes_dac/vol_reg<2>") FFS("snes_dac/vol_reg<3>") FFS("snes_dac/vol_reg<4>") FFS("snes_dac/vol_reg<5>") FFS("snes_dac/vol_reg<6>") FFS("snes_dac/vol_reg<7>") FFS("snes_dac/vol_target_reg<0>") FFS("snes_dac/vol_target_reg<1>") FFS("snes_dac/vol_target_reg<2>") FFS("snes_dac/vol_target_reg<3>") FFS("snes_dac/vol_target_reg<4>") FFS("snes_dac/vol_target_reg<5>") FFS("snes_dac/vol_target_reg<6>") FFS("snes_dac/vol_target_reg<7>") FFS("snes_dac/vol_valid") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<0>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<1>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<2>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<3>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<4>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<5>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<6>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<7>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<8>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<9>") FFS("snes_mcu_cmd/DAC_ADDR_OUT_BUF<10>") FFS("snes_mcu_cmd/DAC_PLAY_OUT_BUF") FFS("snes_mcu_cmd/DAC_RESET_OUT_BUF") FFS("snes_mcu_cmd/DAC_STATUSr");
+TIMESPEC TS_DAC = FROM "FFS" TO "DAC" TS_CLK21 / 4;
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+TIMESPEC TS_CX4_GPR = FROM "FFS" TO "cx4_gpr" TS_CLK21 / 4;
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+TIMESPEC TS_CX4_CACHE = FROM "FFS" TO "cx4_cache_src_addr" TS_CLK21 / 2;
+TIMESPEC TS_CX4_BUSADDR = FROM "FFS" TO "cx4_cpu_busaddr" TS_CLK21 / 4;
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+TIMESPEC TS_DAC2 = FROM "RAMS" TO "DAC" TS_CLK21 / 4;
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+TIMESPEC TS_CX4_IDB = FROM "cx4_idb_downstrean" TO "FFS" TS_CLK21 / 2;
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+NET "snes_cx4/cpu_idb*" TNM_NET = cx4_idb_downstrean;
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+NET "*cx4*mul*" TNM_NET = CX4_MUL_downstream;
+TIMESPEC TS_CX4_MUL = FROM "CX4_MUL_downstream" TO "cx4_cpu_idb" TS_CLK21 / 2;
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+TIMEGRP "CX4_FL_Z" = FFS("*cx4*fl_z*");
+TIMEGRP "CX4_FL_C" = FFS("*cx4*fl_c*");
+TIMEGRP "CX4_FL_N" = FFS("*cx4*fl_n*");
+TIMEGRP "CX4_MULT" = MULTS("snes_cx4/cx4_mul/sig000000e5") MULTS("snes_cx4/cx4_mul/sig000000e4") MULTS("snes_cx4/cx4_mul/sig000000e3") MULTS("snes_cx4/cx4_mul/sig000000e2") MULTS("snes_cx4/cx4_mul/sig000000ee") MULTS("snes_cx4/cx4_mul/sig000000ed") MULTS("snes_cx4/cx4_mul/sig000000ec") MULTS("snes_cx4/cx4_mul/sig000000eb") MULTS("snes_cx4/cx4_mul/sig000000ea") MULTS("snes_cx4/cx4_mul/sig000000e9") MULTS("snes_cx4/cx4_mul/sig000000e8") MULTS("snes_cx4/cx4_mul/sig000000e7") MULTS("snes_cx4/cx4_mul/sig000000e6") MULTS("snes_cx4/cx4_mul/sig000000e1") MULTS("snes_cx4/cx4_mul/sig000000d8") MULTS("snes_cx4/cx4_mul/sig000000d7") MULTS("snes_cx4/cx4_mul/sig000000d6") MULTS("snes_cx4/cx4_mul/sig000000d5") MULTS("snes_cx4/cx4_mul/sig000000d3") MULTS("snes_cx4/cx4_mul/sig000000d2") MULTS("snes_cx4/cx4_mul/sig000000d1") MULTS("snes_cx4/cx4_mul/sig000000d0") MULTS("snes_cx4/cx4_mul/sig000000cf") MULTS("snes_cx4/cx4_mul/sig000000ce") MULTS("snes_cx4/cx4_mul/sig000000cd") MULTS("snes_cx4/cx4_mul/sig000000cc") MULTS("snes_cx4/cx4_mul/sig000000cb") MULTS("snes_cx4/cx4_mul/sig000000ca") MULTS("snes_cx4/cx4_mul/sig000000e0") MULTS("snes_cx4/cx4_mul/sig000000df") MULTS("snes_cx4/cx4_mul/sig000000de") MULTS("snes_cx4/cx4_mul/sig000000dd") MULTS("snes_cx4/cx4_mul/sig000000dc") MULTS("snes_cx4/cx4_mul/sig000000db") MULTS("snes_cx4/cx4_mul/sig000000da") MULTS("snes_cx4/cx4_mul/sig000000d9") MULTS("snes_cx4/cx4_mul/sig000000d4") MULTS("snes_cx4/cx4_mul/sig000000c9") MULTS("snes_cx4/cx4_mul/sig000000c0") MULTS("snes_cx4/cx4_mul/sig000000bf") MULTS("snes_cx4/cx4_mul/sig000000be") MULTS("snes_cx4/cx4_mul/sig000000bd") MULTS("snes_cx4/cx4_mul/sig000000bb") MULTS("snes_cx4/cx4_mul/sig000000ba") MULTS("snes_cx4/cx4_mul/sig000000b9") MULTS("snes_cx4/cx4_mul/sig000000b8") MULTS("snes_cx4/cx4_mul/sig000000b7") MULTS("snes_cx4/cx4_mul/sig000000b6") MULTS("snes_cx4/cx4_mul/sig000000b5") MULTS("snes_cx4/cx4_mul/sig000000b4") MULTS("snes_cx4/cx4_mul/sig000000b3") MULTS("snes_cx4/cx4_mul/sig000000b2") MULTS("snes_cx4/cx4_mul/sig000000c8") MULTS("snes_cx4/cx4_mul/sig000000c7") MULTS("snes_cx4/cx4_mul/sig000000c6") MULTS("snes_cx4/cx4_mul/sig000000c5") MULTS("snes_cx4/cx4_mul/sig000000c4") MULTS("snes_cx4/cx4_mul/sig000000c3") MULTS("snes_cx4/cx4_mul/sig000000c2") MULTS("snes_cx4/cx4_mul/sig000000c1") MULTS("snes_cx4/cx4_mul/sig000000bc") MULTS("snes_cx4/cx4_mul/sig000000b1") MULTS("snes_cx4/cx4_mul/sig000000a9") MULTS("snes_cx4/cx4_mul/sig000000a8") MULTS("snes_cx4/cx4_mul/sig000000a7") MULTS("snes_cx4/cx4_mul/sig000000a6") MULTS("snes_cx4/cx4_mul/sig000000a5") MULTS("snes_cx4/cx4_mul/sig000000a3") MULTS("snes_cx4/cx4_mul/sig000000a2") MULTS("snes_cx4/cx4_mul/sig000000a1") MULTS("snes_cx4/cx4_mul/sig000000a0") MULTS("snes_cx4/cx4_mul/sig0000009f") MULTS("snes_cx4/cx4_mul/sig0000009e") MULTS("snes_cx4/cx4_mul/sig0000009d") MULTS("snes_cx4/cx4_mul/sig0000009c") MULTS("snes_cx4/cx4_mul/sig0000009b") MULTS("snes_cx4/cx4_mul/sig0000009a") MULTS("snes_cx4/cx4_mul/sig00000098") MULTS("snes_cx4/cx4_mul/sig00000097") MULTS("snes_cx4/cx4_mul/sig00000096") MULTS("snes_cx4/cx4_mul/sig00000095") MULTS("snes_cx4/cx4_mul/sig00000094") MULTS("snes_cx4/cx4_mul/sig00000093") MULTS("snes_cx4/cx4_mul/sig00000092") MULTS("snes_cx4/cx4_mul/sig00000091") MULTS("snes_cx4/cx4_mul/sig00000090") MULTS("snes_cx4/cx4_mul/sig0000008f") MULTS("snes_cx4/cx4_mul/sig000000b0") MULTS("snes_cx4/cx4_mul/sig000000af") MULTS("snes_cx4/cx4_mul/sig000000ae") MULTS("snes_cx4/cx4_mul/sig000000ad") MULTS("snes_cx4/cx4_mul/sig000000ac") MULTS("snes_cx4/cx4_mul/sig000000ab") MULTS("snes_cx4/cx4_mul/sig000000aa") MULTS("snes_cx4/cx4_mul/sig000000a4") MULTS("snes_cx4/cx4_mul/sig00000099") MULTS("snes_cx4/cx4_mul/sig0000008e");
+TIMEGRP "CX4_MUL_FF" = FFS("snes_cx4/cx4_mul/sig00000129") FFS("snes_cx4/cx4_mul/sig00000128") FFS("snes_cx4/cx4_mul/sig00000127") FFS("snes_cx4/cx4_mul/sig00000126") FFS("snes_cx4/cx4_mul/sig00000124") FFS("snes_cx4/cx4_mul/sig00000123") FFS("snes_cx4/cx4_mul/sig00000122") FFS("snes_cx4/cx4_mul/sig00000121") FFS("snes_cx4/cx4_mul/sig00000120") FFS("snes_cx4/cx4_mul/sig0000011f") FFS("snes_cx4/cx4_mul/sig0000011e") FFS("snes_cx4/cx4_mul/sig0000011d") FFS("snes_cx4/cx4_mul/sig0000011c") FFS("snes_cx4/cx4_mul/sig0000011b") FFS("snes_cx4/cx4_mul/sig00000130") FFS("snes_cx4/cx4_mul/sig0000012f") FFS("snes_cx4/cx4_mul/sig0000012e") FFS("snes_cx4/cx4_mul/sig0000012d") FFS("snes_cx4/cx4_mul/sig0000012c") FFS("snes_cx4/cx4_mul/sig0000012b") FFS("snes_cx4/cx4_mul/sig0000012a") FFS("snes_cx4/cx4_mul/sig00000125") FFS("snes_cx4/cx4_mul/sig0000011a") FFS("snes_cx4/cx4_mul/sig00000119") FFS("snes_cx4/cx4_mul/sig00000111") FFS("snes_cx4/cx4_mul/sig00000110") FFS("snes_cx4/cx4_mul/sig0000010f") FFS("snes_cx4/cx4_mul/sig0000010e") FFS("snes_cx4/cx4_mul/sig0000010c") FFS("snes_cx4/cx4_mul/sig0000010b") FFS("snes_cx4/cx4_mul/sig0000010a") FFS("snes_cx4/cx4_mul/sig00000109") FFS("snes_cx4/cx4_mul/sig00000108") FFS("snes_cx4/cx4_mul/sig00000107") FFS("snes_cx4/cx4_mul/sig00000106") FFS("snes_cx4/cx4_mul/sig00000105") FFS("snes_cx4/cx4_mul/sig00000104") FFS("snes_cx4/cx4_mul/sig00000103") FFS("snes_cx4/cx4_mul/sig00000118") FFS("snes_cx4/cx4_mul/sig00000117") FFS("snes_cx4/cx4_mul/sig00000116") FFS("snes_cx4/cx4_mul/sig00000133") FFS("snes_cx4/cx4_mul/sig0000013e") FFS("snes_cx4/cx4_mul/sig0000013d") FFS("snes_cx4/cx4_mul/sig0000013c") FFS("snes_cx4/cx4_mul/sig0000013b") FFS("snes_cx4/cx4_mul/sig0000013a") FFS("snes_cx4/cx4_mul/sig000000fb") FFS("snes_cx4/cx4_mul/sig000000fa") FFS("snes_cx4/cx4_mul/sig000000f9") FFS("snes_cx4/cx4_mul/sig000000f8") FFS("snes_cx4/cx4_mul/sig000000f7") FFS("snes_cx4/cx4_mul/sig000000f6") FFS("snes_cx4/cpu_mul_result<13>") FFS("snes_cx4/cpu_mul_result<12>") FFS("snes_cx4/cpu_mul_result<11>") FFS("snes_cx4/cpu_mul_result<10>") FFS("snes_cx4/cpu_mul_result<9>") FFS("snes_cx4/cpu_mul_result<8>") FFS("snes_cx4/cx4_mul/sig00000115") FFS("snes_cx4/cx4_mul/sig00000114") FFS("snes_cx4/cx4_mul/sig00000113") FFS("snes_cx4/cx4_mul/sig00000112") FFS("snes_cx4/cx4_mul/sig0000010d") FFS("snes_cx4/cx4_mul/sig00000102") FFS("snes_cx4/cx4_mul/sig00000101") FFS("snes_cx4/cx4_mul/sig00000136") FFS("snes_cx4/cx4_mul/sig00000135") FFS("snes_cx4/cx4_mul/sig00000134") FFS("snes_cx4/cx4_mul/sig00000139") FFS("snes_cx4/cx4_mul/sig00000138") FFS("snes_cx4/cx4_mul/sig00000137") FFS("snes_cx4/cx4_mul/sig00000132") FFS("snes_cx4/cx4_mul/sig00000131") FFS("snes_cx4/cx4_mul/sig00000100") FFS("snes_cx4/cx4_mul/sig000000ff") FFS("snes_cx4/cx4_mul/sig000000fe") FFS("snes_cx4/cx4_mul/sig000000fd") FFS("snes_cx4/cx4_mul/sig000000fc") FFS("snes_cx4/cx4_mul/sig000000f5") FFS("snes_cx4/cx4_mul/sig000000f4") FFS("snes_cx4/cx4_mul/sig000000f3") FFS("snes_cx4/cx4_mul/sig000000f2") FFS("snes_cx4/cx4_mul/sig000000f1") FFS("snes_cx4/cx4_mul/sig000000f0") FFS("snes_cx4/cx4_mul/sig000000ef") FFS("snes_cx4/cpu_mul_result<16>") FFS("snes_cx4/cpu_mul_result<15>") FFS("snes_cx4/cpu_mul_result<14>") FFS("snes_cx4/cpu_mul_result<7>") FFS("snes_cx4/cpu_mul_result<6>") FFS("snes_cx4/cpu_mul_result<5>") FFS("snes_cx4/cpu_mul_result<4>") FFS("snes_cx4/cpu_mul_result<3>") FFS("snes_cx4/cpu_mul_result<2>") FFS("snes_cx4/cpu_mul_result<1>") FFS("snes_cx4/cpu_mul_result<0>") FFS("snes_cx4/Mmult__COND_15_Madd_cy<2>11_FRB") FFS("snes_cx4/Mmult__COND_15_Madd_cy<2>11_FRB_1") FFS("snes_cx4/Mmult__COND_15_Madd_cy<3>11_FRB") FFS("snes_cx4/Mmult__COND_15_Madd_cy<3>11_FRB_1") FFS("snes_cx4/Mmult__COND_15_Madd_lut<1>1_FRB") FFS("snes_cx4/Mmult__COND_15_Madd_lut<1>1_FRB_1") FFS("snes_cx4/Mmult__COND_15_Madd_lut<1>1_FRB_2") FFS("snes_cx4/Mmult__COND_15_Madd_lut<2>1_FRB") FFS("snes_cx4/Mmult__COND_15_Madd_lut<3>1_FRB") FFS("snes_cx4/Mmult__COND_15_Madd_lut<3>1_FRB_1");
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+TIMESPEC TS_CX4_MUL2 = FROM "MULTS" TO "cx4_cpu_idb" TS_CLK21 / 2;
+TIMESPEC TS_CX4_FL_Z = FROM "CX4_MUL_downstream" TO "CX4_FL_Z" TS_CLK21 / 2;
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/30
+TIMEGRP "CX4_TMP" = FFS("snes_cx4/cpu_tmp<0>") FFS("snes_cx4/cpu_tmp<1>") FFS("snes_cx4/cpu_tmp<2>") FFS("snes_cx4/cpu_tmp<3>") FFS("snes_cx4/cpu_tmp<4>") FFS("snes_cx4/cpu_tmp<5>") FFS("snes_cx4/cpu_tmp<6>") FFS("snes_cx4/cpu_tmp<7>") FFS("snes_cx4/cpu_tmp<8>") FFS("snes_cx4/cpu_tmp<9>") FFS("snes_cx4/cpu_tmp<10>") FFS("snes_cx4/cpu_tmp<11>") FFS("snes_cx4/cpu_tmp<12>") FFS("snes_cx4/cpu_tmp<13>") FFS("snes_cx4/cpu_tmp<14>") FFS("snes_cx4/cpu_tmp<15>") FFS("snes_cx4/cpu_tmp<16>") FFS("snes_cx4/cpu_tmp<17>") FFS("snes_cx4/cpu_tmp<18>") FFS("snes_cx4/cpu_tmp<19>") FFS("snes_cx4/cpu_tmp<20>") FFS("snes_cx4/cpu_tmp<21>") FFS("snes_cx4/cpu_tmp<22>") FFS("snes_cx4/cpu_tmp<23>") FFS("snes_cx4/cpu_tmp_cmp_eq0005111_FRB");
+TIMESPEC TS_CX4_TMP = FROM "CX4_MUL_downstream" TO "CX4_TMP" TS_CLK21 / 2;
+#Created by Constraints Editor (xc3s400-pq208-4) - 2011/10/31
