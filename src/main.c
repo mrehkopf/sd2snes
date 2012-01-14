@@ -129,7 +129,6 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       }
       file_close();
     }
-    uart_trace(sdn_getcid(), 0, 17);
     snes_bootprint("           Loading ...          \0");
     if(get_cic_state() == CIC_PAIR) {
       printf("PAIR MODE ENGAGED!\n");
