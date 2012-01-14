@@ -80,6 +80,7 @@
 	EB	-		put DSP into reset
 	EC	-		release DSP from reset
 	ED	-		set feature enable bits (see below)
+	EE	-		set $213f override value (0=NTSC, 1=PAL)
 	F0	-		receive test token (to see if FPGA is alive)
 	F1	-		receive status (16bit, MSB first), see below
 
@@ -117,7 +118,7 @@
 	 7	-
 	 6	-
 	 5	-
-	 4	-
+	 4	enable $213F override
 	 3	enable MSU1 registers
 	 2	enable SRTC registers
 	 1	enable ST0010 mapping
@@ -408,6 +409,14 @@ void fpga_set_features(uint8_t feat) {
   FPGA_SELECT();
   FPGA_TX_BYTE(0xed);
   FPGA_TX_BYTE(feat);
+  FPGA_DESELECT();
+}
+
+void fpga_set_213f(uint8_t data) {
+  printf("set 213f: %d\n", data);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xee);
+  FPGA_TX_BYTE(data);
   FPGA_DESELECT();
 }
 

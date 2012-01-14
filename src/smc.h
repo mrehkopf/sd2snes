@@ -66,10 +66,11 @@ typedef struct _snes_romprops {
   const uint8_t* dsp_fw;      /* DSP (NEC / Hitachi) ROM filename */
   const uint8_t* fpga_conf;   /* FPGA config file to load (default: base) */
   uint8_t has_dspx;           /* DSP[1-4] presence flag */
-  uint8_t has_st0010;         /* st0010 presence flag (additional to dspx)*/
+  uint8_t has_st0010;         /* st0010 presence flag (additional to dspx) */
   uint8_t has_msu1;           /* MSU1 presence flag */
   uint8_t has_cx4;            /* CX4 presence flag */
   uint8_t fpga_features;      /* feature/peripheral enable bits*/
+  uint8_t region;             /* game region (derived from destination code) */
   snes_header_t header;       /* original header from ROM image */
 } snes_romprops_t;
 
