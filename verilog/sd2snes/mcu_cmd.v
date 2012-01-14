@@ -91,8 +91,9 @@ module mcu_cmd(
   output reg dspx_reset_out,
 
   // feature enable
-  output reg [3:0] featurebits_out,
+  output reg [7:0] featurebits_out,
   
+  output reg region_out,
   // SNES sync/clk
   input snes_sysclk
 );
@@ -101,6 +102,7 @@ initial begin
   dspx_pgm_addr_out = 11'b00000000000;
   dspx_dat_addr_out = 10'b0000000000;
   dspx_reset_out = 1'b1;
+  region_out = 0;
 end
 
 wire [31:0] snes_sysclk_freq;
@@ -342,7 +344,9 @@ always @(posedge clk) begin
       8'hec: // release DSPx reset
         dspx_reset_out <= 1'b0;
       8'hed:
-        featurebits_out <= param_data[3:0];
+        featurebits_out <= param_data;
+      8'hee:
+        region_out <= param_data[0];
     endcase
   end
 end
