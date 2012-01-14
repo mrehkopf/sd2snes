@@ -1,3 +1,4 @@
+*=$7E0000
 .data
 ;don't anger the stack!
 dirptr_addr	.word	0
