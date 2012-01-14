@@ -777,6 +777,7 @@ void send_datablock(uint8_t *buf) {
 }
 
 void read_block(uint32_t address, uint8_t *buf) {
+  DBG_SD printf("read_block addr=%08lx last_addr=%08lx  offld=%d/%d offst=%04x offed=%04x last_off=%04x\n", address, last_block, sd_offload, sd_offload_partial, sd_offload_partial_start, sd_offload_partial_end, last_offset);
   if(during_blocktrans == TRANS_READ && (last_block == address-1)) {
 //uart_putc('r');
 #ifdef CONFIG_SD_DATACRC
