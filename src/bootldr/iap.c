@@ -72,10 +72,12 @@ FLASH_RES check_flash() {
 }
 
 IAP_RES iap_wrap(uint32_t *iap_cmd, uint32_t *iap_res) {
-  NVIC_DisableIRQ(RIT_IRQn);
-  NVIC_DisableIRQ(UART_IRQ);
+//  NVIC_DisableIRQ(RIT_IRQn);
+//  NVIC_DisableIRQ(UART_IRQ);
+  for(volatile int i=0; i<2048; i++);
   iap_entry(iap_cmd, iap_res);
-  NVIC_EnableIRQ(UART_IRQ);
+  for(volatile int i=0; i<2048; i++);
+//  NVIC_EnableIRQ(UART_IRQ);
   return iap_res[0];
 }
 
@@ -153,12 +155,16 @@ FLASH_RES flash_file(uint8_t *filename) {
 
     writeled(1);
     DBG_BL printf("erasing flash...\n");
+    DBG_UART uart_putc('P');
     if((res = iap_prepare_for_write(FW_START / 0x1000, FLASH_SECTORS)) != CMD_SUCCESS) {
       DBG_BL printf("error %ld while preparing for erase\n", res);
+      DBG_UART uart_putc('X');
       return ERR_FLASHPREP;
     };
+    DBG_UART uart_putc('E');
     if((res = iap_erase(FW_START / 0x1000, FLASH_SECTORS)) != CMD_SUCCESS) {
       DBG_BL printf("error %ld while erasing\n", res);
+      DBG_UART uart_putc('X');
       return ERR_FLASHERASE;
     }
     DBG_BL printf("writing... @%08lx\n", flash_addr);
@@ -174,18 +180,23 @@ FLASH_RES flash_file(uint8_t *filename) {
       DBG_BL printf("current_sec=%d flash_addr=%08lx\n", current_sec, flash_addr);
       DBG_UART uart_putc('.');
       if(current_sec < (FW_START / 0x1000)) return ERR_FLASH;
+      DBG_UART uart_putc(current_sec["0123456789ABCDEFGH"]);
+      DBG_UART uart_putc('p');
       if((res = iap_prepare_for_write(current_sec, current_sec)) != CMD_SUCCESS) {
         DBG_BL printf("error %ld while preparing sector %d for write\n", res, current_sec);
+        DBG_UART uart_putc('X');
         return ERR_FLASH;
       }
+      DBG_UART uart_putc('w');
       if((res = iap_ram2flash(flash_addr, file_buf, 512)) != CMD_SUCCESS) {
         DBG_BL printf("error %ld while writing to address %08lx (sector %d)\n", res, flash_addr, current_sec);
+        DBG_UART uart_putc('X');
         return ERR_FLASH;
       }
     }
     if(total_read != (file_header.size + 0x100)) {
       DBG_BL printf("wrote less data than expected! (%08lx vs. %08lx)\n", total_read, file_header.size);
-      DBG_UART uart_putc('X');
+//      DBG_UART uart_putc('X');
       return ERR_FILECHK;
     }
     writeled(0);
