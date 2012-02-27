@@ -44,7 +44,7 @@ wire [23:0] SRAM_SNES_ADDR;
    - MMIO @ 6000-7fff
  */
 
-assign IS_ROM = SNES_ADDR[15] & ~SNES_CS;
+assign IS_ROM = ~SNES_CS;
 
 assign SRAM_SNES_ADDR = ({2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]}
                                & ROM_MASK);
