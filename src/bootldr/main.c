@@ -23,7 +23,7 @@ int i;
 volatile enum diskstates disk_state;
 extern volatile tick_t ticks;
 
-int (*chain)(void) = (void*)(FW_START+0x000001c5);
+int (*chain)(void);
 
 int main(void) {
   SNES_CIC_PAIR_REG->FIODIR = BV(SNES_CIC_PAIR_BIT);
@@ -86,6 +86,16 @@ DBG_BL printf("PCONP=%lx\n", LPC_SC->PCONP);
   NVIC_DisableIRQ(UART_IRQ);
 
   SCB->VTOR=FW_START+0x00000100;
+  chain = (void*)(*((uint32_t*)(FW_START+0x00000104)));
+  uart_putc("0123456789abcdef"[((uint32_t)chain>>28)&15]);
+  uart_putc("0123456789abcdef"[((uint32_t)chain>>24)&15]);
+  uart_putc("0123456789abcdef"[((uint32_t)chain>>20)&15]);
+  uart_putc("0123456789abcdef"[((uint32_t)chain>>16)&15]);
+  uart_putc("0123456789abcdef"[((uint32_t)chain>>12)&15]);
+  uart_putc("0123456789abcdef"[((uint32_t)chain>>8)&15]);
+  uart_putc("0123456789abcdef"[((uint32_t)chain>>4)&15]);
+  uart_putc("0123456789abcdef"[((uint32_t)chain)&15]);
+  uart_putc('\n');
   chain();
   while(1);
 }

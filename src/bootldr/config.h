@@ -1,7 +1,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-//#define DEBUG_BL
+// #define DEBUG_BL
 // #define DEBUG_SD
 // #define DEBUG_IRQ
 
