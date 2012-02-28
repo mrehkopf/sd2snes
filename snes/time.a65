@@ -710,8 +710,6 @@ printtime:
         lda listdisp
         clc
         adc #$0a
-        clc
-        adc vidmode
         sta print_y
         lda #$2b
         sta print_x

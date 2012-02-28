@@ -39,6 +39,8 @@ NMI_ROUTINE:
 	php
 	txa
 	dec
+	dec
+	dec
 	plp
 	bne small_bar
 	asl
