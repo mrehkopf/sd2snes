@@ -97,15 +97,8 @@ setup_gfx:
 	sta $2183
 	DMA0(#$08, #0, #^zero, #!zero, #$80)
 
-;copy 2bpp font (can be used as 4-bit lores font!)
-	ldx #$4000
-	stx $2116
-	DMA0(#$01, #$2000, #^font2, #!font2, #$18)
-
-;copy 4bpp font
-	ldx #$0000
-	stx $2116
-	DMA0(#$01, #$4000, #^font4, #!font4, #$18)
+;generate fonts
+	jsr genfonts
 
 ;clear BG1 tilemap
 	ldx #BG1_TILE_BASE
@@ -127,23 +120,28 @@ setup_gfx:
 	stx $2116
 	DMA0(#$01, #$4000, #^logo, #!logo, #$18)
 
-;copy logo tilemap
+;generate logo tilemap
 	ldx #BG1_TILE_BASE
 	stx $2116
-	DMA0(#$01, #$280, #^logomap, #!logomap, #$18)
+	ldx #$0100
+-	stx $2118
+	inx
+	cpx #$01e0
+	bne -
+
 
 ;copy sprites tiles
 	ldx #OAM_TILE_BASE
 	stx $2116
-	DMA0(#$01, #$400, #^logospr, #!logospr, #$18)
+	DMA0(#$01, #$500, #^logospr, #!logospr, #$18)
 
 ;set OAM tables
 	ldx #$0000
 	stx $2102
-	DMA0(#$00, #$5C, #^oam_data_l, #!oam_data_l, #$04)
+	DMA0(#$00, #$60, #^oam_data_l, #!oam_data_l, #$04)
 	ldx #$0100
 	stx $2102
-	DMA0(#$00, #$08, #^oam_data_h, #!oam_data_h, #$04)
+	DMA0(#$00, #$09, #^oam_data_h, #!oam_data_h, #$04)
 
 ;set palette
 	stz $2121
@@ -232,7 +230,7 @@ tests:
 	lda #9
 	sta bar_yl
 	rts
-	
+
 snes_init:
 	sep #$20 : .as		;8-bit accumulator
 	rep #$10 : .xl		;16-bit index
@@ -283,7 +281,7 @@ snes_init:
 	stz $2113		;
 	stz $2114		;
 	stz $2114		;
-	lda #$80		
+	lda #$80
 	sta $2115		;
 	stz $2116		;
 	stz $2117		;
@@ -387,3 +385,59 @@ fadeloop_start
 
 fadeloop_end:
 	.byt $ff
+
+genfonts:
+	php
+	rep #$10 : .xl
+	sep #$20 : .as
+
+;clear VRAM font areas
+	ldx #$0000
+	stx $2116
+	DMA0(#$09, #$4000, #^zero, #!zero, #$18)
+
+	ldx #$4000
+	stx $2116
+	DMA0(#$09, #$2000, #^zero, #!zero, #$18)
+
+	sep #$10 : .xs
+	rep #$20 : .al
+
+	stz $2116
+	ldx #$01
+	stx $4300
+	ldx #^font
+	stx $4304
+	lda #!font
+	sta $4302
+	lda #$0010
+	sta $4305
+	ldx #$18
+	stx $4301
+	lda #$0000
+-	sta $2116
+	ldx #$10
+	stx $4305
+	ldx #$01
+	stx $420b
+	clc
+	adc #$20
+	cmp #$2000
+	bne -
+	ldx #^font
+	stx $4304
+	lda #!font
+	sta $4302
+	lda #$4000
+-	sta $2116
+	ldx #$10
+	stx $4305
+	ldx #$01
+	stx $420b
+	clc
+	adc #$10
+	cmp #$5000
+	bne -
+	plp
+	rts
+
