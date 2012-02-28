@@ -86,7 +86,7 @@ time_update
 	lda #$00
 	xba
 	tax
-	lda !timebox_data, x
+	lda @timebox_data, x
 	clc
 	adc #$04
 	adc @time_win_x
@@ -95,10 +95,10 @@ time_update
 	adc #$02
 	sta bar_yl
 	inx
-	lda !timebox_data, x
+	lda @timebox_data, x
 	sta bar_wl
 	inx
-	lda !timebox_data, x
+	lda @timebox_data, x
 	sta time_ptr
 timeloop1
 	lda isr_done
@@ -263,12 +263,12 @@ time_inc_day
 	lda #$00
 	xba
 	tax
-	lda !time_month, x
+	lda @time_month, x
 	cmp time_d10
 	bne time_inc_day_normal
 	inx
 	jsr is_leapyear_feb
-	lda !time_month, x
+	lda @time_month, x
 	dec
 	adc #$00
 	cmp time_d1
@@ -309,13 +309,13 @@ time_adjust_mon
 	xba
 	tax
 	lda time_d10
-	cmp !time_month, x
+	cmp @time_month, x
 	bcs time_mon_adjust
 	rts
 time_mon_adjust
 	php
 	inx
-	lda !time_month, x
+	lda @time_month, x
 	pha
 	jsr is_leapyear_feb	; c=1 -> a leapyear february
 	pla
@@ -327,7 +327,7 @@ time_mon_adjust
 time_mon_doadjust
 	sta time_d1
 	dex
-	lda !time_month, x
+	lda @time_month, x
 	sta time_d10
 +
 	rts
@@ -446,10 +446,10 @@ time_dec_cont
 	asl
 	ldx #$0000
 	tax
-	lda !time_month, x
+	lda @time_month, x
 	sta time_d10
 	inx
-	lda !time_month, x
+	lda @time_month, x
 	pha
 	jsr is_leapyear_feb
 	pla
