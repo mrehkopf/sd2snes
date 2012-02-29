@@ -126,6 +126,9 @@ menu_updates:
 	lda #$80
 	and pad1trig+1
 	bne key_b
+	lda #$10
+	and pad1trig+1
+	bne key_start
 	lda #$20
 	and pad1trig+1
 	bne key_select
@@ -157,9 +160,11 @@ key_a
 key_x
 	jsr menu_key_x
 	bra menuupd_out
-
 key_select
 	jsr menu_key_select
+	bra menuupd_out
+key_start
+	jsr menu_key_start
 	bra menuupd_out
 
 menuupd_out
@@ -447,13 +452,10 @@ menu_key_a:
 	rts
 
 menu_key_select:
-	lda barstep
-	beq do_setup448
-do_setup224
-	jsr setup_224
 	rts
-do_setup448
-	jsr setup_448
+
+menu_key_start:
+	jsr select_last_file
 	rts
 
 menu_key_b:
@@ -514,6 +516,7 @@ select_file:
 	sep #$20 : .as
 	lda #$01
 	sta @AVR_CMD
+select_file_fade:
 	lda #$00
 	sta @$4200
 	sei
@@ -723,3 +726,64 @@ menu_statusbar
 	pla
 	rts
 
+select_last_file:
+	php
+	sep #$20 : .as
+	rep #$10 : .xl
+	lda @LAST_STATUS
+	bne +
+	plp
+	rts
++	jsr backup_screen
+	lda #^text_last
+	sta window_tbank
+	ldx #!text_last
+	stx window_taddr
+	lda @last_win_x
+	sta window_x
+	inc
+	inc
+	sta bar_xl
+	pha
+	lda @last_win_y
+	sta window_y
+	inc
+	sta bar_yl
+	inc
+	pha
+	lda @last_win_w
+	sta window_w
+	lda @last_win_h
+	sta window_h
+	jsr draw_window
+	stz print_pal
+	lda #^LAST_GAME
+	ldx #!LAST_GAME
+	sta print_bank
+	stx print_src
+	stz print_pal
+	pla
+	sta print_y
+	pla
+	sta print_x
+	lda #56
+	sta bar_wl
+	sta print_count
+	jsr hiprint
+-	lda isr_done
+	lsr
+	bcc -
+	jsr printtime
+	jsr read_pad
+	lda #$80
+	and pad1trig+1
+	bne +
+	lda #$10
+	and pad1trig+1
+	beq -
+	lda #$04
+	sta @AVR_CMD
+	jmp select_file_fade
++	jsr restore_screen
+	plp
+	rts
