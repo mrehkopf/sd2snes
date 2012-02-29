@@ -1,6 +1,7 @@
 /* ___INGO___ */
 
 #include <arm/NXP/LPC17xx/LPC17xx.h>
+#include "power.h"
 #include "bits.h"
 #include "config.h"
 #include "timer.h"
@@ -9,11 +10,6 @@
 #include "sdnative.h"
 #include "snes.h"
 
-/* bit definitions */
-#define RITINT 0
-#define RITEN  3
-
-#define PCRIT 16
 
 extern volatile int sd_changed;
 extern volatile int reset_changed;

@@ -8,6 +8,10 @@ typedef unsigned int tick_t;
 extern volatile tick_t ticks;
 #define HZ 100
 
+/* bit definitions */
+#define RITINT 0
+#define RITEN  3
+
 /**
  * getticks - return the current system tick count
  *
