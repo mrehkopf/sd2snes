@@ -23,3 +23,18 @@ v0.1.2
  * A and B buttons swapped in menu to match common key mappings
  * Fixes:
    - MSU1: Stop audio playback on end of audio file
+
+
+v0.1.3
+======
+
+ * Updated logo gfx with new version from klaptra
+ * Updated font to distinguish between 1 and I
+ * Menu layout adjusted to move status line up by 4 scanlines
+ * Run previously loaded game by pressing Start in the menu
+ * Auto-scroll file names that do not fit the screen
+ * SD access time measurement on System Information screen (takes a while!)
+ * Cx4 memory map: mirror ROM to 40-7e/c0-ff (fixes MMX3 Zero patch)
+ * Some FPGA configuration error detection (mainly useful for hardware diag)
+ * Fixes:
+   - FPGA-side SD clock pullup (increases reliability with some cards)
