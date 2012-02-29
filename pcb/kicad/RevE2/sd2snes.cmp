@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPCB (2011-07-02 BZR 2664)-stable date = Mon 26 Dec 2011 09:56:51 PM CET
+Cmp-Mod V01 Created by CvPcb (2012-jan-04)-stable date = Sun 26 Feb 2012 01:11:53 AM CET
 
 BeginCmp
 TimeStamp = /4B6EC9C3/4BAF2EAF;
@@ -865,119 +865,119 @@ BeginCmp
 TimeStamp = /4B6E16F2/4D9630F0;
 Reference = RA101;
 ValeurCmp = 100;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4D9630F4;
 Reference = RA102;
 ValeurCmp = 100;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4D95CDCD;
 Reference = RA103;
 ValeurCmp = FB;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4D95CDD4;
 Reference = RA104;
 ValeurCmp = FB;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4D96310E;
 Reference = RA105;
 ValeurCmp = 100;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4D963115;
 Reference = RA106;
 ValeurCmp = 100;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4D963117;
 Reference = RA107;
 ValeurCmp = 100;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4D963119;
 Reference = RA108;
 ValeurCmp = 100;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4D963103;
 Reference = RA109;
 ValeurCmp = 100;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4D963107;
 Reference = RA110;
 ValeurCmp = 100;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4D96310A;
 Reference = RA111;
 ValeurCmp = 100;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4D96310C;
 Reference = RA112;
 ValeurCmp = 100;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4D97B45C;
 Reference = RA113;
 ValeurCmp = 100;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4D97B45F;
 Reference = RA114;
 ValeurCmp = 100;
-IdModule  = R_PACK_0804;
+IdModule  = R_PACK_0804_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4B6E1740;
 Reference = U101;
 ValeurCmp = 74ALVC164245DGG;
-IdModule  = TSSOP48;
+IdModule  = TSSOP48_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4B6E1744;
 Reference = U102;
 ValeurCmp = 74ALVC164245DGG;
-IdModule  = TSSOP48;
+IdModule  = TSSOP48_LONGPADS;
 EndCmp
 
 BeginCmp
 TimeStamp = /4B6E16F2/4B6E1748;
 Reference = U103;
 ValeurCmp = 74ALVC164245DGG;
-IdModule  = TSSOP48;
+IdModule  = TSSOP48_LONGPADS;
 EndCmp
 
 BeginCmp
@@ -1026,7 +1026,7 @@ BeginCmp
 TimeStamp = /4B6EC9C3/4BAA9331;
 Reference = U341;
 ValeurCmp = CS4344;
-IdModule  = TSSOP10;
+IdModule  = TSSOP10_LONGPADS;
 EndCmp
 
 BeginCmp
