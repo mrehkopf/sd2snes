@@ -5,6 +5,7 @@ hiprint:
 	sep #$20 : .as
 	lda print_count
 	sta print_count_tmp
+	stz print_over
 	rep #$30 : .xl : .al
 	stz print_done
 	lda print_x
@@ -120,21 +121,23 @@ print_loop2_inner
 	inx
 	lda !0,x
 	beq print_end
-	inx
-	lda !0,x
-	beq print_end
 	lda @print_count_tmp
 	dec
 	dec
 	sta @print_count_tmp
 	beq print_end
 	bmi print_end
+	inx
+	lda !0,x
+	beq print_end
 	bra print_loop2_inner
 print_end2 ; clean up the stack (6 bytes)
 	ply
 	ply
 	ply
 print_end
+	lda !0,x
+	sta @print_over
 	lda #$00
 	pha
 	plb

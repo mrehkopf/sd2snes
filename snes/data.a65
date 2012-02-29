@@ -14,6 +14,8 @@ dirent_bank	.word	0
 dirent_type	.byt 0
 dirend_onscreen	.byt 0
 dirlog_idx	.byt 0,0,0 ; long ptr
+direntry_fits_idx
+		.byt 0,0
 
 ;----------parameters for text output----------
 print_x	.byt 0		;x coordinate
@@ -26,7 +28,8 @@ print_pal	.word 0	;palette number for text output
 print_temp	.word 0 ;work variable
 print_count	.byt 0	;how many characters may be printed?
 print_count_tmp .byt 0	;work variable
-print_done	.word 0  ;how many characters were printed?
+print_done	.word 0 ;how many characters were printed?
+print_over	.byt 0  ;was the string printed incompletely?
 ;----------parameters for dma----------
 dma_a_bank	.byt 0
 dma_a_addr	.word 0
@@ -171,5 +174,14 @@ dirlog  .word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
+direntry_fits
+	.byt	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.byt	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+direntry_xscroll_state
+	.word	0
+direntry_xscroll
+	.word	0
+direntry_xscroll_wait
+	.word	0
 infloop		.byt 0,0  ; to be filled w/ 80 FE
 wram_fadeloop	.byt 0

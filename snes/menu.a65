@@ -23,6 +23,8 @@ menu_init:
 	ldx #$0000
 	stx dirptr_idx
 	stx menu_sel
+	stx direntry_xscroll
+	stx direntry_xscroll_state
 	lda #$01
 	sta menu_dirty
 	rep #$20 : .al
@@ -47,6 +49,7 @@ menuloop_s1
 	lda menu_dirty		;is there ANY reason to redraw the menu?
 	cmp #$01
 	beq menuloop_redraw 	;then do
+	jsr scroll_direntry
 	bra menuloop_s1
 menuloop_redraw
 	stz menu_dirty
@@ -184,6 +187,7 @@ menu_redraw_out
 redraw_filelist
 	ldy #$0000
 	sty dirptr_idx
+	sty direntry_fits_idx
 	stz dirend_idx
 	stz dirend_onscreen
 redraw_filelist_loop
@@ -211,6 +215,7 @@ redraw_filelist_loop
 	sta @dirent_type
 	sty dirptr_idx
 	jsr print_direntry
+	inc direntry_fits_idx
 	bra redraw_filelist_loop
 redraw_filelist_dirend
 	dey                        ; recover last valid direntry number
@@ -289,6 +294,8 @@ dirent_type_cont
 	txa
 	clc
 	adc @fd_fnoff
+	clc
+	adc @direntry_xscroll
 	sta @fd_fnoff
 	plb
 
@@ -303,12 +310,14 @@ dirent_type_cont
 	lda dirent_bank
 	sta print_bank
 	jsr hiprint
-
 	lda cursor_x
 	clc
 	adc print_done
 	sta print_x
 
+	lda print_over
+	ldy direntry_fits_idx
+	sta !direntry_fits, y
 	lda #54
 	sec
 	sbc print_done
@@ -344,6 +353,7 @@ dirent_type_cont_2
 	rts
 
 menu_key_down:
+	jsr scroll_direntry_clean
 	lda listdisp
 	dec
 	cmp menu_sel
@@ -377,6 +387,7 @@ down_out
 	rts
 
 menu_key_up:
+	jsr scroll_direntry_clean
 	lda menu_sel
 	bne up_noscroll
 	lda #$01
@@ -399,6 +410,7 @@ up_out
 	rts
 
 menuupd_lastcursor
+	jsr scroll_direntry_clean
 	lda dirend_idx
 	lsr
 	lsr
@@ -407,6 +419,8 @@ menuupd_lastcursor
 
 ; go back one page
 menu_key_left:
+	stz direntry_xscroll
+	stz direntry_xscroll_state
 	lda #$01            ; must redraw afterwards
 	sta menu_dirty
 	rep #$20 : .al
@@ -432,6 +446,8 @@ menu_key_left:
 
 ; go forth one page
 menu_key_right:
+	stz direntry_xscroll
+	stz direntry_xscroll_state
 	sep #$20 : .as
 	lda dirend_onscreen
 	bne menuupd_lastcursor
@@ -787,3 +803,80 @@ select_last_file:
 +	jsr restore_screen
 	plp
 	rts
+
+scroll_direntry_clean:
+	lda #$01
+	sta direntry_xscroll_state
+	stz direntry_xscroll
+	stz direntry_xscroll_wait
+	jsr scroll_direntry
+	stz direntry_xscroll_state
+	stz direntry_xscroll
+	rts
+
+scroll_direntry:
+	ldy menu_sel
+	lda direntry_xscroll_state
+	bne +
+	lda direntry_fits, y
+	bne scroll_direntry_enter
+;	stz direntry_xscroll_state
+	rts
+scroll_direntry_enter
+	lda #$01
+	sta direntry_xscroll_state
+	stz direntry_xscroll_wait
++	lda direntry_xscroll_wait
+	beq +
+	dec direntry_xscroll_wait
+	rts
+
++	lda direntry_xscroll
+	bne scroll_direntry_scrollfast
+	lda #$28
+	bra +
+scroll_direntry_scrollfast
+	lda #$10
++	sta direntry_xscroll_wait
+	tya
+	clc
+	adc #$09
+	sta cursor_y
+	lda #$02
+	sta cursor_x
+	rep #$20 : .al
+	lda menu_sel
+	asl
+	asl
+	tay
+	lda [dirptr_addr], y
+	sta @dirent_addr
+	iny
+	iny
+	sep #$20 : .as
+	lda [dirptr_addr], y	   ; load fileinfo bank
+	clc
+	adc #$c0                   ; add $C0 for memory map
+	sta @dirent_bank           ; store as current bank
+	iny
+	lda [dirptr_addr], y
+	iny
+	sta @dirent_type
+	ldy menu_sel
+	sty direntry_fits_idx
+	phy
+	jsr print_direntry
+	ply
+	lda direntry_fits, y
+	bne +
+	lda #$ff
+	sta direntry_xscroll_state
+	lda #$28
+	sta direntry_xscroll_wait
++	lda direntry_xscroll_state
+	adc direntry_xscroll
+	sta direntry_xscroll
+	bne +
+	lda #$01
+	sta direntry_xscroll_state
++	rts
