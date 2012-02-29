@@ -389,7 +389,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
   BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 0;
 
   if(rsplen) {
-    uint32_t timeout=2000000;
+    uint32_t timeout=200000;
     /* wait for response */
     while((BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN)) && --timeout) {
       wiggle_fast_neg1();
