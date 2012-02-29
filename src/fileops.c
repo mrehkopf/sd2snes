@@ -55,7 +55,7 @@ void file_open_by_filinfo(FILINFO* fno) {
   file_res = l_openfilebycluster(&fatfs, &file_handle, (TCHAR*)"", fno->clust, fno->fsize);
 }
 
-void file_open(uint8_t* filename, BYTE flags) {
+void file_open(const uint8_t* filename, BYTE flags) {
   if (disk_state == DISK_CHANGED) {
     file_reinit();
     newcard = 1;

@@ -27,6 +27,7 @@
 #include "msu1.h"
 #include "rtc.h"
 #include "sysinfo.h"
+#include "cfg.h"
 
 #define EMC0TOGGLE	(3<<4)
 #define MR0R		(1<<1)
@@ -45,8 +46,11 @@ extern volatile tick_t ticks;
 extern snes_romprops_t romprops;
 extern volatile int reset_changed;
 
+extern volatile cfg_t CFG;
+
 enum system_states {
-  SYS_RTC_STATUS = 0
+  SYS_RTC_STATUS = 0,
+  SYS_LAST_STATUS = 1
 };
 
 int main(void) {
@@ -138,6 +142,11 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     readled(0);
     writeled(0);
 
+    cfg_load();
+    cfg_save();
+    sram_writebyte(cfg_is_last_game_valid(), SRAM_STATUS_ADDR+SYS_LAST_STATUS);
+    cfg_get_last_game(file_lfn);
+    sram_writeblock(strrchr((const char*)file_lfn, '/')+1, SRAM_LASTGAME_ADDR, 256);
     *fs_path=0;
     uint32_t saved_dir_id;
     get_db_id(&saved_dir_id);
@@ -238,6 +247,9 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 	case SNES_CMD_LOADROM:
 	  get_selected_name(file_lfn);
 	  printf("Selected name: %s\n", file_lfn);
+          cfg_save_last_game(file_lfn);
+          cfg_set_last_game_valid(1);
+          cfg_save();
 	  filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET);
 	  break;
 	case SNES_CMD_SETRTC:
@@ -252,6 +264,11 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           /* go to sysinfo loop */
           sysinfo_loop();
           cmd=0; /* stay in menu loop */
+          break;
+        case SNES_CMD_LOADLAST:
+          cfg_get_last_game(file_lfn);
+          printf("Selected name: %s\n", file_lfn);
+          filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET);
           break;
 	default:
 	  printf("unknown cmd: %d\n", cmd);

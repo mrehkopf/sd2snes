@@ -30,6 +30,7 @@
 #define SNES_CMD_LOADROM   (1)
 #define SNES_CMD_SETRTC    (2)
 #define SNES_CMD_SYSINFO   (3)
+#define SNES_CMD_LOADLAST  (4)
 
 #define MENU_ERR_OK		(0)
 #define MENU_ERR_NODSP	(1)

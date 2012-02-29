@@ -40,7 +40,7 @@ uint16_t file_block_off, file_block_max;
 enum filestates file_status;
 
 void file_init(void);
-void file_open(uint8_t* filename, BYTE flags);
+void file_open(const uint8_t* filename, BYTE flags);
 FRESULT dir_open_by_filinfo(DIR* dir, FILINFO* fno_param);
 void file_open_by_filinfo(FILINFO* fno);
 void file_close(void);
