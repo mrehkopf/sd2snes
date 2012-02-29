@@ -86,6 +86,6 @@ sysinfo_printloop:
 	jmp sysinfo_printloop
 +	plp
 	jsr restore_screen
-	lda #$ff
+	lda #$00
 	sta @AVR_CMD
 	rtl
