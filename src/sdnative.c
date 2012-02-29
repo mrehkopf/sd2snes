@@ -362,7 +362,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
     default:
       rsplen = 6;
   }
-  if(dat && (buf==NULL)) {
+  if(dat && (buf==NULL) && !sd_offload) {
     printf("send_command_fast error: buf is null but data transfer expected.\n");
     return 0;
   }
