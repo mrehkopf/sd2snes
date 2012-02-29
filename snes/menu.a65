@@ -686,32 +686,6 @@ setup_224_adjsel
 	plp
 	rts
 
-setup_448:
-	php
-	rep #$30 : .xl : .al
-	lda #36
-	sta listdisp
-	lda #36*64
-	sta textdmasize
-	lda #$ffc6
-	sta hdma_scroll+8
-	sep #$20 : .as
-	lda #$c6
-	sta $2110
-	lda #$ff
-	sta $2110
-	lda #$01
-	sta barstep
-	ora #$08
-	sta $2133
-	lda #$04
-	sta hdma_math_selection
-	lda #$01
-	sta vidmode
-	sta menu_dirty
-	plp
-	rts
-
 menu_statusbar
 	pha
 	phx
