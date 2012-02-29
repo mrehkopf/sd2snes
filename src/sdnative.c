@@ -12,6 +12,7 @@
 #include "fileops.h"
 #include "bits.h"
 #include "fpga_spi.h"
+#include "memory.h"
 
 #define MAX_CARDS 1
 
@@ -112,6 +113,7 @@ uint8_t cmd[6]={0,0,0,0,0,0};
 uint8_t rsp[17];
 uint8_t csd[17];
 uint8_t cid[17];
+diskinfo0_t di;
 uint8_t ccs=0;
 uint32_t rca;
 
@@ -929,6 +931,7 @@ DRESULT sdn_initialize(BYTE drv) {
 
   /* record CSD for getinfo */
   cmd_slow(SEND_CSD, rca, 0, NULL, csd);
+  sdn_getinfo(drv, 0, &di);
 
   /* record CID */
   cmd_slow(SEND_CID, rca, 0, NULL, cid);
@@ -1054,6 +1057,58 @@ void sdn_changed() {
       disk_state = DISK_REMOVED;
     }
     sd_changed = 0;
+  }
+}
+
+/* measure sd access time */
+void sdn_gettacc(uint32_t *tacc_max, uint32_t *tacc_avg) {
+  uint32_t sec1 = 0;
+  uint32_t sec2 = 0;
+  uint32_t time, time_max = 0;
+  uint32_t time_avg = 0LL;
+  uint32_t numread = 16384;
+  int i;
+  int sec_step = di.sectorcount / numread - 1;
+  if(disk_state == DISK_REMOVED) return;
+  sdn_checkinit(0);
+  for (i=0; i < 128; i++) {
+    sd_offload_tgt=2;
+    sd_offload=1;
+    sdn_read(0, NULL, 0, 1);
+    sd_offload_tgt=2;
+    sd_offload=1;
+    sdn_read(0, NULL, i*sec_step, 1);
+  }
+  for (i=0; i < numread && sram_readbyte(SRAM_CMD_ADDR) != 0x00 && disk_state != DISK_REMOVED; i++) {
+  /* reset timer */
+    LPC_RIT->RICTRL = 0;
+    sd_offload_tgt=2;
+    sd_offload=1;
+    sdn_read(0, NULL, sec1, 2);
+    sec1 += 2;
+  /* start timer */
+    LPC_RIT->RICOUNTER = 0;
+    LPC_RIT->RICTRL = BV(RITEN);
+    sd_offload_tgt=2;
+    sd_offload=1;
+    sdn_read(0, NULL, sec2, 1);
+  /* read timer */
+    time = LPC_RIT->RICOUNTER;
+/*    sd_offload_tgt=2;
+    sd_offload=1;
+    sdn_read(0, NULL, sec2, 15);*/
+    time_avg += time/16;
+    if(time > time_max) {
+      time_max = time;
+    }
+    sec2 += sec_step;
+  }
+  time_avg = time_avg / (i+1) * 16;
+  sd_offload=0;
+  LPC_RIT->RICTRL = 0;
+  if(disk_state != DISK_REMOVED) {
+    *tacc_max = time_max/(CONFIG_CPU_FREQUENCY / 1000000)-114;
+    *tacc_avg = time_avg/(CONFIG_CPU_FREQUENCY / 1000000)-114;
   }
 }
 

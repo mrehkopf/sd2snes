@@ -25,6 +25,6 @@ DRESULT sdn_getinfo(BYTE drv, BYTE page, void *buffer);
 
 void    sdn_changed(void);
 uint8_t* sdn_getcid(void);
-
+void    sdn_gettacc(uint32_t *tacc_max, uint32_t *tacc_avg);
 #endif
 

@@ -17,6 +17,8 @@
 
 extern volatile int sd_changed;
 extern volatile int reset_changed;
+extern volatile int reset_pressed;
+
 volatile tick_t ticks;
 volatile int wokefromrit;
 
@@ -35,6 +37,7 @@ void SysTick_Handler(void) {
   }
   reset_state = (reset_state << 1) | get_snes_reset() | 0xe000;
   if((reset_state == 0xf000) || (reset_state == 0xefff)) {
+    reset_pressed = (reset_state == 0xf000);
     reset_changed = 1;
   }
   sdn_changed();

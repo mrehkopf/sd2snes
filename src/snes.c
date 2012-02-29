@@ -44,6 +44,7 @@ uint32_t saveram_crc, saveram_crc_old;
 extern snes_romprops_t romprops;
 
 volatile int reset_changed;
+volatile int reset_pressed;
 
 void prepare_reset() {
   snes_reset(1);
