@@ -100,7 +100,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
       if(next_subdir_tgt > dir_end) {
         dir_end = next_subdir_tgt;
       }
-//      printf("path=%s depth=%d ptr=%lx entries=%d parent=%lx next subdir @%lx\n", path, depth, db_tgt, numentries, parent_tgt, next_subdir_tgt);
+      DBG_FS printf("path=%s depth=%d ptr=%lx entries=%d parent=%lx next subdir @%lx\n", path, depth, db_tgt, numentries, parent_tgt, next_subdir_tgt);
       if(mkdb) {
 //        printf("d=%d Saving %lx to Address %lx  [end]\n", depth, 0L, next_subdir_tgt - 4);
         sram_writelong(0L, next_subdir_tgt - 4);
@@ -251,7 +251,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
       }
     } else uart_putc(0x30+res);
   }
-//  printf("db_tgt=%lx dir_end=%lx\n", db_tgt, dir_end);
+  DBG_FS printf("db_tgt=%lx dir_end=%lx\n", db_tgt, dir_end);
   sram_writelong(db_tgt, SRAM_DB_ADDR+4);
   sram_writelong(dir_end, SRAM_DB_ADDR+8);
   sram_writeshort(num_files_total, SRAM_DB_ADDR+12);

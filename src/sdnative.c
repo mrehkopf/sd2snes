@@ -466,8 +466,8 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
       while((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) && --timeout) {
         wiggle_fast_neg1();
       }
-//printf("%ld\n", timeout);
-      DBG_SD if(!timeout) printf("timed out!\n");
+// printf("%ld\n", timeout);
+      if(!timeout) printf("timed out!\n");
       wiggle_fast_neg1(); /* eat the start bit */
       if(sd_offload) {
         if(sd_offload_partial) {
