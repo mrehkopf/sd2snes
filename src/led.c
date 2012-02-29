@@ -86,13 +86,16 @@ void toggle_write_led() {
 }
 
 void led_panic() {
+  led_std();
   while(1) {
-    LPC_GPIO2->FIODIR |= BV(4) | BV(5);
-    LPC_GPIO1->FIODIR |= BV(23);
-    delay_ms(350);
-    LPC_GPIO2->FIODIR &= ~(BV(4) | BV(5));
-    LPC_GPIO1->FIODIR &= ~BV(23);
-    delay_ms(350);
+    rdyled(1);
+    readled(1);
+    writeled(1);
+    delay_ms(100);
+    rdyled(0);
+    readled(0);
+    writeled(0);
+    delay_ms(100);
     cli_entrycheck();
   }
 }

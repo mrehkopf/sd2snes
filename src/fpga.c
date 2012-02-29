@@ -102,6 +102,10 @@ void fpga_pgm(uint8_t* filename) {
     i=0;
     timeout = getticks() + 100;
     fpga_set_prog_b(0);
+if(BITBAND(PROGBREG->FIOPIN, PROGBBIT)) {
+  printf("PROGB is stuck high!\n");
+  led_panic();
+}
     uart_putc('P');
     fpga_set_prog_b(1);
     while(!fpga_get_initb()){
@@ -110,6 +114,10 @@ void fpga_pgm(uint8_t* filename) {
         led_panic();
       }
     };
+    if(fpga_get_done()) {
+      printf("DONE is stuck high!\n");
+      led_panic();
+    }
     LPC_GPIO2->FIOMASK1 = ~(BV(0));
     uart_putc('p');
 
@@ -160,6 +168,10 @@ void fpga_rompgm() {
         led_panic();
       }
     };
+    if(fpga_get_done()) {
+      printf("DONE is stuck high!\n");
+      led_panic();
+    }
     LPC_GPIO2->FIOMASK1 = ~(BV(0));
     uart_putc('p');
 
