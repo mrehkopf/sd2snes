@@ -475,6 +475,8 @@ menu_key_start:
 	rts
 
 menu_key_b:
+	stz direntry_xscroll
+	stz direntry_xscroll_state
 	rep #$20 : .al
 	lda dirstart_addr
 	beq skip_key_b
