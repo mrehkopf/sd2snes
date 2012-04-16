@@ -119,7 +119,7 @@ void uart_init(void) {
 
   /* set baud rate - no fractional stuff for now */
   UART_REGS->LCR = BV(7) | 3; // always 8n1
-  div = 0x850004; // baud2divisor(CONFIG_UART_BAUDRATE);
+  div = 0xF80022; //0x850004; // baud2divisor(CONFIG_UART_BAUDRATE);
 
   UART_REGS->DLL = div & 0xff;
   UART_REGS->DLM = (div >> 8) & 0xff;
