@@ -32,7 +32,10 @@ module bsx(
   input use_bsx,
   output data_ovr,
   output flash_writable,
-  input [55:0] rtc_data
+  input [59:0] rtc_data,
+  output [9:0] bs_page_out, // support only page 0000-03ff
+  output bs_page_enable,
+  output [8:0] bs_page_offset
 );
 
 wire [3:0] reg_addr = snes_addr[19:16]; // 00-0f:5000-5fff
@@ -67,11 +70,40 @@ assign flash_writable = (use_bsx)
                         && flash_we_r
                         && !is_flash_special_address;
 
-assign data_ovr = cart_enable | base_enable | flash_ovr;
+assign data_ovr = (cart_enable | base_enable | flash_ovr) & ~bs_page_enable;
+
+
+reg [9:0] bs_page0;
+reg [9:0] bs_page1;
+
+reg [8:0] bs_page0_offset;
+reg [8:0] bs_page1_offset;
+reg [4:0] bs_stb0_offset;
+reg [4:0] bs_stb1_offset;
+
+wire bs_sta0_en = base_addr == 5'h0a;
+wire bs_stb0_en = base_addr == 5'h0b;
+wire bs_page0_en = base_addr == 5'h0c;
+
+wire bs_sta1_en = base_addr == 5'h10;
+wire bs_stb1_en = base_addr == 5'h11;
+wire bs_page1_en = base_addr == 5'h12;
+
+assign bs_page_enable = base_enable & ((|bs_page0 & (bs_page0_en | bs_sta0_en | bs_stb0_en))
+                                      |(|bs_page1 & (bs_page1_en | bs_sta1_en | bs_stb1_en)));
+
+assign bs_page_out = (bs_page0_en | bs_sta0_en | bs_stb0_en) ? bs_page0 : bs_page1;
+
+assign bs_page_offset = bs_sta0_en ? 9'h032
+                        : bs_stb0_en ? (9'h034 + bs_stb0_offset)
+								: bs_sta1_en ? 9'h032
+								: bs_stb1_en ? (9'h034 + bs_stb1_offset)
+								: (9'h048 + (bs_page0_en ? bs_page0_offset : bs_page1_offset));
 
 reg [3:0] reg_oe_sreg;
 always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[2:0], reg_oe};
 wire reg_oe_falling = (reg_oe_sreg[3:0] == 4'b1000);
+wire reg_oe_rising = (reg_oe_sreg[3:0] == 4'b0001);
 
 reg [1:0] reg_we_sreg;
 always @(posedge clkin) reg_we_sreg <= {reg_we_sreg[0], reg_we};
@@ -96,40 +128,40 @@ wire [7:0] rtc_sec = rtc_data[3:0] + (rtc_data[7:4] << 3) + (rtc_data[7:4] << 1)
 wire [7:0] rtc_min = rtc_data[11:8] + (rtc_data[15:12] << 3) + (rtc_data[15:12] << 1);
 wire [7:0] rtc_hour = rtc_data[19:16] + (rtc_data[23:20] << 3) + (rtc_data[23:20] << 1);
 wire [7:0] rtc_day = rtc_data[27:24] + (rtc_data[31:28] << 3) + (rtc_data[31:28] << 1);
-/* The following signals are currently unused.
-   They are kept in case more Satellaview date registers are discovered. */
 wire [7:0] rtc_month = rtc_data[35:32] + (rtc_data[39:36] << 3) + (rtc_data[39:36] << 1);
+wire [7:0] rtc_dow = {4'b0,rtc_data[59:56]};
 wire [7:0] rtc_year1 = rtc_data[43:40] + (rtc_data[47:44] << 3) + (rtc_data[47:44] << 1);
 wire [7:0] rtc_year100 = rtc_data[51:48] + (rtc_data[55:52] << 3) + (rtc_data[55:52] << 1);
+wire [15:0] rtc_year = (rtc_year100 << 6) + (rtc_year100 << 5) + (rtc_year100 << 2) + rtc_year1;
 
 initial begin
   regs_tmpr <= 15'b000000100000000;
   regs_outr <= 15'b000000100000000;
   bsx_counter <= 0;
-  base_regs[8] <= 0;
-  base_regs[9] <= 0;
-  base_regs[10] <= 0;
-  base_regs[11] <= 8'h9f;
-  base_regs[12] <= 8'h10;
-  base_regs[13] <= 8'h9f;
-  base_regs[14] <= 0;
-  base_regs[15] <= 0;
-  base_regs[16] <= 0;
-  base_regs[17] <= 8'h9f;
-  base_regs[18] <= 8'h01;
-  base_regs[19] <= 8'h9f;
-  base_regs[20] <= 0;
-  base_regs[21] <= 0;
-  base_regs[22] <= 8'h02;
-  base_regs[23] <= 8'hff;
-  base_regs[24] <= 8'h80;
-  base_regs[25] <= 8'h01;
-  base_regs[26] <= 0;
-  base_regs[27] <= 0;
-  base_regs[28] <= 0;
-  base_regs[29] <= 0;
-  base_regs[30] <= 0;
-  base_regs[31] <= 0;
+  base_regs[5'h08] <= 0;
+  base_regs[5'h09] <= 0;
+  base_regs[5'h0a] <= 8'h01;
+  base_regs[5'h0b] <= 0;
+  base_regs[5'h0c] <= 0;
+  base_regs[5'h0d] <= 0;
+  base_regs[5'h0e] <= 0;
+  base_regs[5'h0f] <= 0;
+  base_regs[5'h10] <= 8'h01;
+  base_regs[5'h11] <= 0;
+  base_regs[5'h12] <= 0;
+  base_regs[5'h13] <= 0;
+  base_regs[5'h14] <= 0;
+  base_regs[5'h15] <= 0;
+  base_regs[5'h16] <= 0;
+  base_regs[5'h17] <= 0;
+  base_regs[5'h18] <= 0;
+  base_regs[5'h19] <= 0;
+  base_regs[5'h1a] <= 0;
+  base_regs[5'h1b] <= 0;
+  base_regs[5'h1c] <= 0;
+  base_regs[5'h1d] <= 0;
+  base_regs[5'h1e] <= 0;
+  base_regs[5'h1f] <= 0;
   flash_vendor_data[3'h0] <= 8'h4d;
   flash_vendor_data[3'h1] <= 8'h00;
   flash_vendor_data[3'h2] <= 8'h50;
@@ -140,39 +172,54 @@ initial begin
   flash_vendor_data[3'h7] <= 8'h00;
   flash_ovr_r <= 1'b0;
   flash_we_r <= 1'b0;
+  bs_page0 <= 10'h0;
+  bs_page1 <= 10'h0;
+  bs_page0_offset <= 9'h0;
+  bs_page1_offset <= 9'h0;
+  bs_stb0_offset <= 5'h00;
+  bs_stb1_offset <= 5'h00;
 end
 
 
 always @(posedge clkin) begin
+  if(reg_oe_rising) begin
+    if(base_enable) begin
+	   case(base_addr)
+		  5'h0b: bs_stb0_offset <= bs_stb0_offset + 1;
+		  5'h0c: bs_page0_offset <= bs_page0_offset + 1; 
+		  5'h11: bs_stb1_offset <= bs_stb1_offset + 1;
+		  5'h12: bs_page1_offset <= bs_page1_offset + 1;
+		endcase
+	 end
+  end
   if(reg_oe_falling) begin
     if(cart_enable)
       reg_data_outr <= {regs_outr[reg_addr], 7'b0};
     else if(base_enable) begin
       case(base_addr)
-        5'b10010: begin
-          if(bsx_counter < 18) begin
-            bsx_counter <= bsx_counter + 1;
-            case (bsx_counter)
-              5:
-                reg_data_outr <= 8'h1;
-              6:
-                reg_data_outr <= 8'h1;
-              10:
-                reg_data_outr <= rtc_sec;
-              11:
-                reg_data_outr <= rtc_min;
-              12:
-                reg_data_outr <= rtc_hour;
-              default:
-                reg_data_outr <= 8'h0;
-            endcase
-          end else begin
-            reg_data_outr <= 8'h0;
-            bsx_counter <= 0;
-          end
+		  5'h0b, 5'h11: begin
+		    base_regs[base_addr+5'h02] <= base_regs[base_addr+5'h02] | reg_data_in;
+		  end
+        5'h0c, 5'h12: begin
+          case (bs_page1_offset)
+            4: reg_data_outr <= 8'h3;
+            5: reg_data_outr <= 8'h1;
+            6: reg_data_outr <= 8'h1;
+            10: reg_data_outr <= rtc_sec;
+            11: reg_data_outr <= rtc_min;
+            12: reg_data_outr <= rtc_hour;
+				13: reg_data_outr <= rtc_dow;
+				14: reg_data_outr <= rtc_day;
+				15: reg_data_outr <= rtc_month;
+				16: reg_data_outr <= rtc_year[7:0];
+				17: reg_data_outr <= rtc_year[15:8];
+            default: reg_data_outr <= 8'h0;
+          endcase
         end
-        5'b10011:
-          reg_data_outr <= base_regs[base_addr] & 8'h3f;
+        5'h0d, 5'h13: begin
+          reg_data_outr <= base_regs[base_addr];
+			 base_regs[base_addr] <= 8'h00;
+        end
         default:
           reg_data_outr <= base_regs[base_addr];
       endcase
@@ -190,7 +237,7 @@ always @(posedge clkin) begin
     end
   end else if(pgm_we_rising) begin
     regs_tmpr[8:1] <= (regs_tmpr[8:1] | reg_set_bits[7:0]) & ~reg_reset_bits[7:0];
-      regs_outr[8:1] <= (regs_outr[8:1] | reg_set_bits[7:0]) & ~reg_reset_bits[7:0];
+    regs_outr[8:1] <= (regs_outr[8:1] | reg_set_bits[7:0]) & ~reg_reset_bits[7:0];
   end else if(reg_we_rising && cart_enable) begin
     if(reg_addr == 4'he && reg_data_in[7])
       regs_outr <= regs_tmpr | 15'b100000000000000;
@@ -198,16 +245,27 @@ always @(posedge clkin) begin
       regs_tmpr[reg_addr] <= reg_data_in[7];
   end else if(reg_we_rising && base_enable) begin
     case(base_addr)
-      5'h0f: begin
-        base_regs[base_addr-1] <= base_regs[base_addr]-(base_regs[base_addr-1] >> 1);
-        base_regs[base_addr] <= base_regs[base_addr] >> 1;
+		5'h09: begin
+		  base_regs[8'h09] <= reg_data_in;
+		  bs_page0 <= {reg_data_in[1:0], base_regs[8'h08]};
+		  bs_page0_offset <= 9'h00;
+		end
+		5'h0b: begin
+		  bs_stb0_offset <= 5'h00;
+		end
+      5'h0c: begin
+        bs_page0_offset <= 9'h00;
+      end
+		5'h0f: begin
+		  base_regs[8'h0f] <= reg_data_in;
+		  bs_page1 <= {reg_data_in[1:0], base_regs[8'h0e]};
+		  bs_page1_offset <= 9'h00;
       end
       5'h11: begin
-        bsx_counter <= 0;
-        base_regs[base_addr] <= reg_data_in;
+		  bs_stb1_offset <= 5'h00;
       end
       5'h12: begin
-        base_regs[8'h10] <= 8'h80;
+        bs_page1_offset <= 9'h00;
       end
       default:
         base_regs[base_addr] <= reg_data_in;

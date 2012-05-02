@@ -37,7 +37,10 @@ module address(
   output dspx_enable,
   output dspx_dp_enable,
   output dspx_a0,
-  output r213f_enable
+  output r213f_enable,
+  input [8:0] bs_page_offset,
+  input [9:0] bs_page,
+  input bs_page_enable
 );
 
 parameter [2:0]
@@ -141,7 +144,9 @@ assign SRAM_SNES_ADDR = ((MAPPER == 3'b000)
                             ? 24'hE00000 + {SNES_ADDR[18:16], SNES_ADDR[11:0]}
                             : IS_WRITABLE
                               ? (24'h400000 + (SNES_ADDR & 24'h07FFFF))
-                              : ((bsx_regs[7] && SNES_ADDR[23:21] == 3'b000)
+                            : bs_page_enable
+									   ? (24'h900000 + {bs_page,bs_page_offset})
+								    :((bsx_regs[7] && SNES_ADDR[23:21] == 3'b000)
                                  |(bsx_regs[8] && SNES_ADDR[23:21] == 3'b100))
                                  ?(24'h800000
                                    + ({1'b0, SNES_ADDR[23:16], SNES_ADDR[14:0]}

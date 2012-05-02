@@ -133,6 +133,10 @@ wire [7:0] featurebits;
 wire [23:0] MAPPED_SNES_ADDR;
 wire ROM_ADDR0;
 
+wire [9:0] bs_page;
+wire [8:0] bs_page_offset;
+wire bs_page_enable;
+
 sd_dma snes_sd_dma(
   .CLK(CLK2),
   .SD_DAT(SD_DAT),
@@ -227,7 +231,11 @@ bsx snes_bsx(
   .reg_set_bits(bsx_regs_set_bits),
   .data_ovr(bsx_data_ovr),
   .flash_writable(IS_FLASHWR),
-  .rtc_data(rtc_data[55:0])
+  .rtc_data(rtc_data[59:0]),
+  .bs_page_out(bs_page), // support only page 0000-03ff
+  .bs_page_enable(bs_page_enable),
+  .bs_page_offset(bs_page_offset)
+
 );
 
 spi snes_spi(
@@ -390,6 +398,9 @@ address snes_addr(
   //BS-X
   .use_bsx(use_bsx),
   .bsx_regs(bsx_regs),
+  .bs_page_offset(bs_page_offset),
+  .bs_page(bs_page),
+  .bs_page_enable(bs_page_enable),
   //SRTC
   .srtc_enable(srtc_enable),
   //uPD77C25
@@ -429,13 +440,13 @@ parameter ROM_WR_WAIT_MCU = 4'h6;
 reg [17:0] STATE;
 initial STATE = ST_IDLE;
 
+reg [7:0] SNES_DINr;
+reg [7:0] ROM_DOUTr;
+
 assign DSPX_SNES_DATA_IN = SNES_DATA;
 assign SRTC_SNES_DATA_IN = SNES_DATA[3:0];
 assign MSU_SNES_DATA_IN = SNES_DATA;
-assign BSX_SNES_DATA_IN = SNES_DATA;
-
-reg [7:0] SNES_DINr;
-reg [7:0] ROM_DOUTr;
+assign BSX_SNES_DATA_IN = bs_page_enable ? SNES_DINr : SNES_DATA;
 
 reg [7:0] r213fr;
 reg r213f_forceread;
@@ -645,6 +656,7 @@ assign SNES_DATABUS_OE = (dspx_enable | dspx_dp_enable) ? 1'b0 :
                          msu_enable ? 1'b0 :
                          bsx_data_ovr ? (SNES_READ & SNES_WRITE) :
                          srtc_enable ? (SNES_READ & SNES_WRITE) :
+								 bs_page_enable ? (SNES_READ) :
                          r213f_enable & !SNES_PARD ? 1'b0 :
                          ((IS_ROM & SNES_CS)
                           |(!IS_ROM & !IS_SAVERAM & !IS_WRITABLE & !IS_FLASHWR)
