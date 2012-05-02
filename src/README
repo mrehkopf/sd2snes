@@ -25,6 +25,7 @@ b) Cortex M3 toolchain
     - libexpat-dev
     - make
     - gcc
+   Package names may differ for your distribution.
    Newer gccs complain when compiling binutils, so you may have to add
    '--disable-werror' to the compiler options for binutils in the Makefile.
    The Makefile will install immediately so make sure you can write to the
