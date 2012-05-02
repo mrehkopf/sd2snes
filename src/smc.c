@@ -94,6 +94,7 @@ void smc_id(snes_romprops_t* props) {
           props->romsize_bytes = 0x100000;
           props->expramsize_bytes = 0;
           props->mapper_id = 3; /* BS-X Memory Map */
+          props->region = 0; /* BS-X only existed in Japan */
           return;
         }
       }
