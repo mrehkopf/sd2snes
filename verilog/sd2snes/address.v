@@ -79,7 +79,7 @@ assign IS_SAVERAM = SAVERAM_MASK[0]
                         || MAPPER == 3'b110
                         || MAPPER == 3'b111)
                       ? (!SNES_ADDR[22]
-                         & &SNES_ADDR[21:20]
+                         & SNES_ADDR[21]
                          & &SNES_ADDR[14:13]
                          & !SNES_ADDR[15]
                         )
