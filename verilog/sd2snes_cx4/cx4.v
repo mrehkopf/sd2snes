@@ -431,7 +431,7 @@ end
 /***************************
  =========== CPU ===========
  ***************************/
-reg [4:0] CPU_STATE;
+reg [5:0] CPU_STATE;
 reg [2:0] cpu_sp;
 initial cpu_sp = 3'b000;
 wire [15:0] cpu_op_w;
@@ -451,16 +451,19 @@ reg [23:0] cpu_dummy;
 reg [23:0] cpu_tmp;
 
 reg [23:0] cpu_sa;  // tmp register for shifted accumulator
+reg [7:0] cpu_wait;
+initial cpu_wait = 8'h00;
 
 wire [9:0] cx4_datrom_addr = cpu_a[9:0];
 wire [23:0] cx4_datrom_do;
 wire [7:0] cx4_datram_do;
 
-parameter ST_CPU_IDLE = 5'b00001;
-parameter ST_CPU_0    = 5'b00010;
-parameter ST_CPU_1    = 5'b00100;
-parameter ST_CPU_2    = 5'b01000;
-parameter ST_CPU_3    = 5'b10000;
+parameter ST_CPU_IDLE = 6'b000001;
+parameter ST_CPU_0    = 6'b000010;
+parameter ST_CPU_1    = 6'b000100;
+parameter ST_CPU_2    = 6'b001000;
+parameter ST_CPU_3    = 6'b010000;
+parameter ST_CPU_4    = 6'b100000;
 
 initial CPU_STATE = ST_CPU_IDLE;
 
@@ -636,7 +639,7 @@ always @(posedge CLK) begin
           cpu_sp <= cpu_sp - 1;
         end
         OP_WAI: if(BUS_RDY) cpu_pc <= cpu_pc + 1;
-        OP_BUS: begin 
+        OP_BUS: begin
           cpu_bus_rq <= 1'b0;
           cpu_pc <= cpu_pc + 1;
         end
@@ -710,7 +713,6 @@ always @(posedge CLK) begin
       endcase
     end
     ST_CPU_3: begin
-      CPU_STATE <= ST_CPU_0;
       case(op)
         OP_BUS: cpu_busaddr <= cpu_busaddr + 1;
         OP_WRRAM: cx4_cpu_datram_we <= 1'b0;
@@ -747,6 +749,21 @@ always @(posedge CLK) begin
         end
       endcase
       cpu_op <= cpu_op_w;
+		casex(cpu_op_w[15:11])
+        5'b00x01, 5'b00x10, 5'b00100, 5'b00111: begin
+		    cpu_wait <= 8'h08;
+	       CPU_STATE <= ST_CPU_4;
+		  end
+        5'b01000: begin
+		    cpu_wait <= 8'h04;
+	       CPU_STATE <= ST_CPU_4;
+		  end
+		  default: begin
+		    cpu_wait <= 8'h00;
+	       CPU_STATE <= ST_CPU_0;
+		  end
+		endcase
+		
       casex(cpu_op_w[15:11])
         5'b00000: op <= OP_NOP;
 
@@ -790,6 +807,11 @@ always @(posedge CLK) begin
       op_param <= cpu_op_w[7:0];
       op_sa <= cpu_op_w[9:8];
     end
+    ST_CPU_4: begin
+	   cpu_wait <= cpu_wait - 1;
+	   if(cpu_wait) CPU_STATE <= ST_CPU_4;
+		else CPU_STATE <= ST_CPU_0;
+	 end
   endcase
 end
 
