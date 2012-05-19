@@ -754,8 +754,16 @@ always @(posedge CLK) begin
 		    cpu_wait <= 8'h08;
 	       CPU_STATE <= ST_CPU_4;
 		  end
+        5'b01110, 5'b01101, 5'b11101: begin
+		    cpu_wait <= 8'h03;
+	       CPU_STATE <= ST_CPU_4;
+		  end
+        5'b10011: begin
+		    cpu_wait <= 8'h03;
+	       CPU_STATE <= ST_CPU_4;
+		  end
         5'b01000: begin
-		    cpu_wait <= 8'h04;
+		    cpu_wait <= 8'h13;
 	       CPU_STATE <= ST_CPU_4;
 		  end
 		  default: begin
