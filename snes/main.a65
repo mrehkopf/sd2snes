@@ -11,6 +11,35 @@ GAME_MAIN:
 	sta @AVR_PARAM+2
 	sep #$20 : .as
 	stz $4200 ; inhibit VBlank NMI
+
+	rep #$20 : .al
+	lda @warm_signature	; Was CMD_RESET issued before reset?
+	cmp #$fa50		; If yes, then perform warm boot procedure
+	bne coldboot
+	lda #$0000
+	sta @warm_signature
+	lda @saved_sp		; Restore previous stack pointer
+	tcs
+	sep #$20 : .as
+
+	jsr killdma		; The following initialization processes must not touch memory
+	jsr waitblank		; structures used by the main menu !
+	jsr snes_init
+	lda #$01
+	sta $420d 		; fast cpu
+	jsr setup_gfx
+	jsr colortest
+	jsr setup_hdma
+	jsr tests
+
+	jmp @set_bank		; Set bios bank, just to be sure
+set_bank:
+	plp			; Restore processor state
+	rts			; Jump to the routine which called the sub-routine issuing CMD_RESET
+
+coldboot:							; Regular, cold-start init
+	sep #$20 : .as
+
 	jsr killdma
 	jsr waitblank
 	jsr snes_init
@@ -70,12 +99,15 @@ killdma:
 
 
 waitblank:
+	php
+	sep #$30 : .as : .xs
 -	lda $4212
 	and #$80
 	bne -
 -	lda $4212
 	and #$80
 	beq -
+	plp
 	rts
 
 colortest:
@@ -225,6 +257,7 @@ tests:
 	sta $212e
 	sta $212f
 	stz $2121
+	jsr waitblank
 	lda #$0f
 	sta $2100		;screen on, full brightness
 	lda #9

@@ -168,4 +168,24 @@ text_mm_vmode_game	.byt "Game video mode", 0
 text_mm_sysinfo		.byt "System Information", 0
 text_statusbar_keys	.byt "A:Select B:Back X:Menu", 0
 text_last		.byt "Run previous ROM: Press Start again to confirm", 0
+text_system		.byt "PPU1 Rev.: x  PPU2 Rev.: y  CPU Rev.: z",0
 
+
+text_spcplay		.byt "SPC Music Player", 0
+spcplay_win_x		.byt 15
+spcplay_win_y		.byt 15
+spcplay_win_w		.byt 33
+spcplay_win_h		.byt 5
+
+text_spcload		.byt "Loading SPC data to SPC700...", 0
+text_spcstarta		.byt "**** Now playing SPC tune ****", 0
+text_spcstartb		.byt "Name:  ",0
+text_spcstartc		.byt "Song:  ",0
+text_spcstartd		.byt "Artist:",0
+
+spcstart_win_x		.byt 10
+spcstart_win_y		.byt 13
+spcstart_win_w		.byt 44
+spcstart_win_h		.byt 9
+
+text_spcid		.byt "SNES-SPC700"

@@ -6,6 +6,11 @@
 /* These must be defined as constants, because they're used
  * in calculation that is sent to PPU as parameters */
 
+#define APUIO0		$2140
+#define APUIO1		$2141
+#define APUIO2		$2142
+#define APUIO3		$2143
+
 #define BG1_TILE_BASE	$5800
 #define BG2_TILE_BASE	$5000
 
@@ -27,3 +32,9 @@
 #define ROOT_DIR	$C10000
 
 #define CMD_SYSINFO	$03
+#define CMD_LOADSPC	$05
+#define CMD_RESET	$06
+
+#define SPC_DATA	$DD0000
+#define SPC_HEADER	$DE0000
+#define SPC_DSP_REGS	$DE0100

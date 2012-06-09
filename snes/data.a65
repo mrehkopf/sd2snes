@@ -183,5 +183,10 @@ direntry_xscroll
 	.word	0
 direntry_xscroll_wait
 	.word	0
-infloop		.byt 0,0  ; to be filled w/ 80 FE
+infloop	.byt 0,0  ; to be filled w/ 80 FE
+;------------------------
+saved_sp
+	.word 0
+warm_signature
+	.word 0
 wram_fadeloop	.byt 0

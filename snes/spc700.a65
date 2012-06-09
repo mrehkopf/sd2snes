@@ -1,0 +1,61 @@
+; All SPC700 routines in SPC700 machine code
+; SPC loader & transfer routines by Shay Green <gblargg@gmail.com>
+
+loader				; .org $0002
+	.byt $F8,$21		;	mov x,@loader_data
+	.byt $BD		;	mov sp,x
+	.byt $CD,$22		;	mov x,#@loader_data+1
+
+	; Push PC and PSW from SPC header
+	.byt $BF		;	mov a,(x)+
+	.byt $2D		;	push a
+	.byt $BF		;	mov a,(x)+
+	.byt $2D		;	push a
+	.byt $BF		;	mov a,(x)+
+	.byt $2D		;	push a
+
+	; Set FLG to $60 rather than value from SPC
+	.byt $E8,$60		;	mov a,#$60
+	.byt $D4,$6C		;	mov FLG+x,a
+
+	; Restore DSP registers
+	.byt $8D,$00		;	mov y,#0
+	.byt $BF		; next:	mov a,(x)+
+	.byt $CB,$F2		;	mov $F2,y
+	.byt $C4,$F3		;	mov $F3,a
+	.byt $FC		;	inc y
+	.byt $10,-8		;	bpl next
+
+	.byt $8F,$6C,$F2	;	mov $F2,#FLG	; set for later
+
+	; Rerun loader
+	.byt $5F,$C0,$FF	;	jmp $FFC0
+
+;---------------------------------------
+
+transfer			; .org $0002
+
+	.byt $CD,$FE		; mov x,#$FE		; transfer 254 pages
+
+	; Transfer four-byte chunks
+	.byt $8D,$3F		; page: mov y,#$3F
+	.byt $E4,$F4		; quad: mov a,$F4
+	.byt $D6,$00,$02	; mov0: mov !$0200+y,a
+	.byt $E4,$F5		;	mov a,$F5
+	.byt $D6,$40,$02	; mov1: mov !$0240+y,a
+	.byt $E4,$F6		;	mov a,$F6
+	.byt $D6,$80,$02	; mov2: mov !$0280+y,a
+	.byt $E4,$F7		;	mov a,$F7	; tell S-CPU we're ready for more
+	.byt $CB,$F7		;	mov $F7,Y
+	.byt $D6,$C0,$02	; mov3: mov !$02C0+y,a
+	.byt $DC 		;	dec y
+	.byt $10,-25		;	bpl quad
+	; Increment MSBs of addresses
+	.byt $AB,$0A		;	inc mov0+2
+	.byt $AB,$0F		;	inc mov1+2
+	.byt $AB,$14		;	inc mov2+2
+	.byt $AB,$1B		;	inc mov3+2
+	.byt $1D    		;	dec x
+	.byt $D0,-38		;	bne page
+	; Rerun loader
+	.byt $5F,$C0,$FF	;	jmp $FFC0

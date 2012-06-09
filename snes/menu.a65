@@ -272,6 +272,10 @@ dirent_is_file
 	lda #$0000
 	bra dirent_type_cont
 +
+	cmp #$0003  ;SPC -> palette 2
+	bne +
+	lda #$0002
+	bra dirent_type_cont
 	cmp #$0004	;IPS -> palette 2 (green)
 	bne +
         lda #$0002
@@ -502,6 +506,8 @@ select_item:
 	lda [dirptr_addr], y
 	cmp #$01
 	beq sel_is_file
+	cmp #$03
+	beq sel_is_spc
 	cmp #$04
 	beq sel_is_file
 	cmp #$80
@@ -518,6 +524,9 @@ sel_is_parent
 	bra select_item_cont
 sel_is_dir
 	jsr select_dir
+	bra select_item_cont
+sel_is_spc
+	jsr select_spc
 	bra select_item_cont
 
 select_file:
@@ -633,6 +642,27 @@ select_parent:
 	sep #$20 : .as
 	lda #$01
 	sta @menu_dirty
+	rts
+
+select_spc:
+	dey
+	rep #$20 : .al
+	lda [dirptr_addr], y
+	and #$00ff
+	sta @AVR_PARAM+2
+	dey
+	dey
+	lda [dirptr_addr], y
+	sta @AVR_PARAM
+	sep #$20 : .as
+	lda #CMD_LOADSPC
+	sta @AVR_CMD
+wait_spc:
+	lda @AVR_CMD
+	cmp #$00
+	bne wait_spc
+	jsr spcplayer
+	jsr restore_screen
 	rts
 
 menu_key_x:
