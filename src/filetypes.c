@@ -194,6 +194,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
                 switch(type) {
                   case TYPE_IPS:
                   case TYPE_SMC:
+                  case TYPE_SPC:
 /*                    file_open_by_filinfo(&fno);
                     if(file_res){
                       printf("ZOMG NOOOO %d\n", file_res);
@@ -271,18 +272,14 @@ SNES_FTYPE determine_filetype(char* filename) {
     ) {
     return TYPE_SMC;
   }
-  if(  (!strcasecmp(ext+1, "IPS"))
+/*  if(  (!strcasecmp(ext+1, "IPS"))
      ||(!strcasecmp(ext+1, "UPS"))
     ) {
     return TYPE_IPS;
-  }
-  /* later
-  if(!strcasecmp_P(ext+1, PSTR("SRM"))) {
-    return TYPE_SRM;
-  }
-  if(!strcasecmp_P(ext+1, PSTR("SPC"))) {
-    return TYPE_SPC;
   }*/
+  if(!strcasecmp(ext+1, "SPC")) {
+    return TYPE_SPC;
+  }
   return TYPE_UNKNOWN;
 }
 

@@ -265,6 +265,21 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           sysinfo_loop();
           cmd=0; /* stay in menu loop */
           break;
+        case SNES_CMD_LOADSPC:
+          /* load SPC file */
+          get_selected_name(file_lfn);
+          printf("Selected name: %s\n", file_lfn);
+          filesize = load_spc(file_lfn, SRAM_SPC_DATA_ADDR, SRAM_SPC_HEADER_ADDR);
+          cmd=0; /* stay in menu loop */
+          break;
+        case SNES_CMD_RESET:
+          /* process RESET request from SNES */
+          printf("RESET requested by SNES\n");
+          snes_reset(1);
+          sleep_ms(1);
+          snes_reset(0);
+          cmd=0; /* stay in menu loop */
+          break;
         case SNES_CMD_LOADLAST:
           cfg_get_last_game(file_lfn);
           printf("Selected name: %s\n", file_lfn);

@@ -299,6 +299,71 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   return (uint32_t)filesize;
 }
 
+uint32_t load_spc(uint8_t* filename, uint32_t spc_data_addr, uint32_t spc_header_addr) {
+  DWORD filesize;
+  UINT bytes_read;
+  uint8_t data;
+  UINT j;
+
+  printf("%s\n", filename);
+
+  file_open(filename, FA_READ); /* Open SPC file */
+  if(file_res) return 0;
+  filesize = file_handle.fsize;
+  if (filesize < 65920) { /*  At this point, we care about filesize only */
+    file_close();         /* since SNES decides if it is an SPC file */
+    sram_writebyte(0, spc_header_addr);	/* If file is too small, destroy previous SPC header */
+    return 0;
+  }
+
+  set_mcu_addr(spc_data_addr);
+  f_lseek(&file_handle, 0x100L); /* Load 64K data segment */
+
+  for(;;) {
+    bytes_read = file_read();
+    if (file_res || !bytes_read) break;
+    FPGA_SELECT();
+    FPGA_TX_BYTE(0x98);
+    for(j=0; j<bytes_read; j++) {
+      FPGA_TX_BYTE(file_buf[j]);
+      FPGA_WAIT_RDY();
+    }
+    FPGA_DESELECT();
+  }
+
+  file_close();
+  file_open(filename, FA_READ); /* Reopen SPC file to reset file_getc state*/
+
+  set_mcu_addr(spc_header_addr);
+  f_lseek(&file_handle, 0x0L); /* Load 256 bytes header */
+
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x98);
+  for (j = 0; j < 256; j++) {
+    data = file_getc();
+    FPGA_TX_BYTE(data);
+    FPGA_WAIT_RDY();
+  }
+  FPGA_DESELECT();
+
+  file_close();
+  file_open(filename, FA_READ); /* Reopen SPC file to reset file_getc state*/
+
+  set_mcu_addr(spc_header_addr+0x100);
+  f_lseek(&file_handle, 0x10100L); /* Load 128 DSP registers */
+
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x98);
+  for (j = 0; j < 128; j++) {
+    data = file_getc();
+    FPGA_TX_BYTE(data);
+    FPGA_WAIT_RDY();
+  }
+  FPGA_DESELECT();
+  file_close(); /* Done ! */
+  return (uint32_t)filesize;
+}
+
 uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr) {
   set_mcu_addr(base_addr);
   UINT bytes_read;

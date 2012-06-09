@@ -34,14 +34,18 @@
 #define SRAM_SAVE_ADDR          (0xE00000L)
 
 #define SRAM_MENU_ADDR          (0xE00000L)
-#define SRAM_DB_ADDR            (0xE40000L)
 #define SRAM_DIR_ADDR           (0xE10000L)
+#define SRAM_DB_ADDR            (0xE40000L)
+
+#define SRAM_SPC_DATA_ADDR      (0xFD0000L)
+#define SRAM_SPC_HEADER_ADDR    (0xFE0000L)
+
+#define SRAM_MENU_SAVE_ADDR     (0xFF0000L)
 #define SRAM_CMD_ADDR           (0xFF1000L)
 #define SRAM_PARAM_ADDR         (0xFF1004L)
 #define SRAM_STATUS_ADDR        (0xFF1100L)
 #define SRAM_SYSINFO_ADDR       (0xFF1200L)
 #define SRAM_LASTGAME_ADDR      (0xFF1420L)
-#define SRAM_MENU_SAVE_ADDR     (0xFF0000L)
 #define SRAM_SCRATCHPAD         (0xFFFF00L)
 #define SRAM_DIRID              (0xFFFFF0L)
 #define SRAM_RELIABILITY_SCORE  (0x100)
@@ -50,6 +54,7 @@
 #define LOADROM_WITH_RESET	(2)
 
 uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags);
+uint32_t load_spc(uint8_t* filename, uint32_t spc_data_addr, uint32_t spc_header_addr);
 uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr);

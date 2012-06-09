@@ -31,10 +31,12 @@
 #define SNES_CMD_SETRTC    (2)
 #define SNES_CMD_SYSINFO   (3)
 #define SNES_CMD_LOADLAST  (4)
+#define SNES_CMD_LOADSPC   (5)
+#define SNES_CMD_RESET     (6)
 
-#define MENU_ERR_OK		(0)
-#define MENU_ERR_NODSP	(1)
-#define MENU_ERR_NOBSX	(2)
+#define MENU_ERR_OK     (0)
+#define MENU_ERR_NODSP  (1)
+#define MENU_ERR_NOBSX  (2)
 
 uint8_t crc_valid;
 
