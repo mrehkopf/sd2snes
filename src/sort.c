@@ -50,6 +50,10 @@ int sort_cmp_elem(const void* elem1, const void* elem2) {
   if (!(el1 & 0x80000000) && (el2 & 0x80000000)) {
     return 1;
   }
+
+  if (*sort_str1 == '.') return -1;
+  if (*sort_str2 == '.') return 1;
+
 /*  
   uint16_t cmp_i;
   for(cmp_i=0; cmp_i<8 && sort_long1[cmp_i] == sort_long2[cmp_i]; cmp_i++);
