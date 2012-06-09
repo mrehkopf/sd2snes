@@ -36,7 +36,7 @@
 #include "ff.h"
 
 #define FS_MAX_DEPTH	(10)
-#define SYS_DIR_NAME	((const uint8_t*)"sd2snes")
+#define SYS_DIR_NAME	((const char*)"sd2snes")
 typedef enum {
   TYPE_UNKNOWN = 0, /* 0 */
   TYPE_SMC,         /* 1 */
