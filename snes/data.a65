@@ -189,4 +189,7 @@ saved_sp
 	.word 0
 warm_signature
 	.word 0
+snes_system_config
+	.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
 wram_fadeloop	.byt 0
