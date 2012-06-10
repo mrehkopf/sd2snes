@@ -31,11 +31,11 @@
 #include "smc.h"
 
 #define SRAM_ROM_ADDR           (0x000000L)
-#define SRAM_SAVE_ADDR          (0xE00000L)
+#define SRAM_SAVE_ADDR          (0xC00000L)
 
-#define SRAM_MENU_ADDR          (0xE00000L)
-#define SRAM_DIR_ADDR           (0xE10000L)
-#define SRAM_DB_ADDR            (0xE40000L)
+#define SRAM_MENU_ADDR          (0xC00000L)
+#define SRAM_DIR_ADDR           (0xC10000L)
+#define SRAM_DB_ADDR            (0xC80000L)
 
 #define SRAM_SPC_DATA_ADDR      (0xFD0000L)
 #define SRAM_SPC_HEADER_ADDR    (0xFE0000L)
