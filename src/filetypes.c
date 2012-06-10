@@ -76,6 +76,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
   char *size_units[3] = {" ", "k", "M"};
   uint32_t entry_fsize;
   uint8_t entry_unit_idx;
+  uint16_t entrycnt;
 
   dir_tgt = this_dir_tgt;
   if(depth==0) {
@@ -130,7 +131,8 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
         dir_tgt += 4;
       }
       len = strlen((char*)path);
-      for (;;) {
+      /* scan at most DIR_FILE_MAX entries per directory */
+      for(entrycnt=0; entrycnt < DIR_FILE_MAX; entrycnt++) {
 //        toggle_read_led();
         res = f_readdir(&dir, &fno);
         if (res != FR_OK || fno.fname[0] == 0) {
