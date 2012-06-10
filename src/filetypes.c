@@ -93,7 +93,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
   fno.lfsize = 255;
   fno.lfname = (TCHAR*)file_lfn;
   numentries=0;
-  for(pass = 0; pass < 2; pass++) {
+  for(pass = 0; pass < (mkdb ? 2 : 1); pass++) {
     if(pass) {
       dirsize = 4*(numentries);
       if(((next_subdir_tgt + dirsize + 8) & 0xff0000) > (next_subdir_tgt & 0xff0000)) {
@@ -157,7 +157,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
           depth++;
           if(depth < FS_MAX_DEPTH) {
             numentries++;
-            if(pass) {
+            if(pass && mkdb) {
               path[len]='/';
               strncpy(path+len+1, (char*)fn, sizeof(fs_path)-len);
               uint16_t pathlen = 0;
@@ -195,6 +195,10 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
               }
               dir_tgt += 4;
               was_empty = 0;
+            } else if(!mkdb) {
+              path[len]='/';
+              strncpy(path+len+1, (char*)fn, sizeof(fs_path)-len);
+              scan_dir(path, &fno, mkdb, next_subdir_tgt);
             }
           }
           depth--;
