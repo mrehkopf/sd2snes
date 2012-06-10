@@ -158,9 +158,16 @@ spcplayer:
 	jsr hiprint
 
 	lda #$fe
-	ldx #$00b1
+	ldx #$00b0
+        sta longptr+2
 	sta print_bank
-	stx print_src
+        stx longptr
+        ldy #$00
+        lda [longptr], y
+        cmp #$41
+        bpl +
+        inx
++	stx print_src
 	stz print_pal
 	lda #32
 	sta print_count

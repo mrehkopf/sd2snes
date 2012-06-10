@@ -16,7 +16,7 @@ dirend_onscreen	.byt 0
 dirlog_idx	.byt 0,0,0 ; long ptr
 direntry_fits_idx
 		.byt 0,0
-
+longptr		.byt 0,0,0 ; general purpose long ptr
 ;----------parameters for text output----------
 print_x	.byt 0		;x coordinate
 	.byt 0
