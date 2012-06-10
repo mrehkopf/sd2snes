@@ -69,6 +69,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
   static uint16_t num_files_total = 0;
   static uint16_t num_dirs_total = 0;
   uint32_t dir_tgt;
+  uint32_t switched_dir_tgt = 0;
   uint16_t numentries;
   uint32_t dirsize;
   uint8_t pass = 0;
@@ -95,6 +96,15 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
   for(pass = 0; pass < 2; pass++) {
     if(pass) {
       dirsize = 4*(numentries);
+      if(((next_subdir_tgt + dirsize + 8) & 0xff0000) > (next_subdir_tgt & 0xff0000)) {
+        printf("switchdir! old=%lX ", next_subdir_tgt + dirsize + 4);
+        next_subdir_tgt &= 0xffff0000;
+        next_subdir_tgt += 0x00010004;
+        printf("new=%lx\n", next_subdir_tgt);
+        dir_tgt &= 0xffff0000;
+        dir_tgt += 0x00010004;
+      }
+      switched_dir_tgt = dir_tgt;
       next_subdir_tgt += dirsize + 4;
       if(parent_tgt) next_subdir_tgt += 4;
       if(next_subdir_tgt > dir_end) {
@@ -150,9 +160,11 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
             if(pass) {
               path[len]='/';
               strncpy(path+len+1, (char*)fn, sizeof(fs_path)-len);
+              uint16_t pathlen = 0;
+              uint32_t old_db_tgt = 0;
               if(mkdb) {
-                uint16_t pathlen = strlen(path);
-//                printf("d=%d Saving %lx to Address %lx  [dir]\n", depth, db_tgt, dir_tgt);
+                pathlen = strlen(path);
+                DBG_FS printf("d=%d Saving %lx to Address %lx  [dir]\n", depth, db_tgt, dir_tgt);
                 /* save element:
                    - path name
                    - pointer to sub dir structure */
@@ -162,20 +174,25 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
                   db_tgt += 0x00010000;
                   printf("new=%lx\n", db_tgt);
                 }
-//                printf("    Saving dir descriptor to %lx tgt=%lx, path=%s\n", db_tgt, next_subdir_tgt, path);
                 /* write element pointer to current dir structure */
                 sram_writelong((db_tgt-SRAM_MENU_ADDR)|((uint32_t)0x80<<24), dir_tgt);
                 /* save element:
                    - path name
-                   - pointer to sub dir structure */
-                sram_writelong((next_subdir_tgt-SRAM_MENU_ADDR), db_tgt);
-                sram_writebyte(len+1, db_tgt+sizeof(next_subdir_tgt));
-                sram_writeblock(path, db_tgt+sizeof(next_subdir_tgt)+sizeof(len), pathlen);
-                sram_writeblock("/\0", db_tgt + sizeof(next_subdir_tgt) + sizeof(len) + pathlen, 2);
+                   - pointer to sub dir structure
+                   moved below */
+                old_db_tgt = db_tgt;
                 db_tgt += sizeof(next_subdir_tgt) + sizeof(len) + pathlen + 2;
               }
               parent_tgt = this_dir_tgt;
-              scan_dir(path, &fno, mkdb, next_subdir_tgt);
+              /* scan subdir before writing current dir element to account for bank switches */
+              uint32_t corrected_subdir_tgt = scan_dir(path, &fno, mkdb, next_subdir_tgt);
+              if(mkdb) {
+                DBG_FS printf("    Saving dir descriptor to %lx tgt=%lx, path=%s\n", old_db_tgt, corrected_subdir_tgt, path);
+                sram_writelong((corrected_subdir_tgt-SRAM_MENU_ADDR), old_db_tgt);
+                sram_writebyte(len+1, old_db_tgt+sizeof(next_subdir_tgt));
+                sram_writeblock(path, old_db_tgt+sizeof(next_subdir_tgt)+sizeof(len), pathlen);
+                sram_writeblock("/\0", old_db_tgt + sizeof(next_subdir_tgt) + sizeof(len) + pathlen, 2);
+              }
               dir_tgt += 4;
               was_empty = 0;
             }
@@ -259,7 +276,8 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
   sram_writelong(dir_end, SRAM_DB_ADDR+8);
   sram_writeshort(num_files_total, SRAM_DB_ADDR+12);
   sram_writeshort(num_dirs_total, SRAM_DB_ADDR+14);
-  return crc;
+  if(depth==0) return crc;
+  else return switched_dir_tgt;
 }
 
 
