@@ -35,6 +35,6 @@
 #define CMD_LOADSPC	$05
 #define CMD_RESET	$06
 
-#define SPC_DATA	$DD0000
-#define SPC_HEADER	$DE0000
-#define SPC_DSP_REGS	$DE0100
+#define SPC_DATA	$FD0000
+#define SPC_HEADER	$FE0000
+#define SPC_DSP_REGS	$FE0100

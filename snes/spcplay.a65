@@ -103,7 +103,7 @@ spcplayer:
 	sta print_x
 	jsr hiprint
 
-	lda #$de
+	lda #$fe
 	ldx #$004e
 	sta print_bank
 	stx print_src
@@ -130,7 +130,7 @@ spcplayer:
 	sta print_x
 	jsr hiprint
 
-	lda #$de
+	lda #$fe
 	ldx #$002e
 	sta print_bank
 	stx print_src
@@ -157,7 +157,7 @@ spcplayer:
 	sta print_x
 	jsr hiprint
 
-	lda #$de
+	lda #$fe
 	ldx #$00b1
 	sta print_bank
 	stx print_src
