@@ -361,6 +361,18 @@ uint32_t load_spc(uint8_t* filename, uint32_t spc_data_addr, uint32_t spc_header
   }
   FPGA_DESELECT();
   file_close(); /* Done ! */
+
+  /* clear echo buffer to avoid artifacts */
+  uint8_t esa = sram_readbyte(spc_header_addr+0x100+0x6d);
+  uint8_t edl = sram_readbyte(spc_header_addr+0x100+0x7d);
+  uint8_t flg = sram_readbyte(spc_header_addr+0x100+0x6c);
+  if(!(flg & 0x20) && (edl & 0x0f)) {
+    int echo_start = esa << 8;
+    int echo_length = (edl & 0x0f) << 11;
+    printf("clearing echo buffer %04x-%04x...\n", echo_start, echo_start+echo_length-1);
+    sram_memset(spc_data_addr+echo_start, echo_length, 0);
+  }
+
   return (uint32_t)filesize;
 }
 
