@@ -276,7 +276,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           /* process RESET request from SNES */
           printf("RESET requested by SNES\n");
           snes_reset(1);
-          sleep_ms(1);
+          sleep_ms(10);
           snes_reset(0);
           cmd=0; /* stay in menu loop */
           break;
