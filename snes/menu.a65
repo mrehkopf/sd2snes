@@ -606,6 +606,8 @@ select_dir:
 	sta @dirstart_addr
 	lda #$0000
 	sta @menu_sel
+	sta @direntry_xscroll
+	sta @direntry_xscroll_state
 	sep #$20 : .as
 	lda #$01
 	sta @menu_dirty
