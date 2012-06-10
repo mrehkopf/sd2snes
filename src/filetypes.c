@@ -31,7 +31,7 @@
 #include "ff.h"
 #include "smc.h"
 #include "fileops.h"
-#include "crc32.h"
+#include "crc.h"
 #include "memory.h"
 #include "led.h"
 #include "sort.h"
@@ -60,7 +60,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
   uint8_t len;
   TCHAR* fn;
   static unsigned char depth = 0;
-  static uint32_t crc;
+  static uint32_t crc, fncrc;
   static uint32_t db_tgt;
   static uint32_t next_subdir_tgt;
   static uint32_t parent_tgt;
@@ -237,19 +237,19 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
                   default:
                    break;
                 }
-                path[len]=0;
+                path[len] = 0;
 /*              printf("%s ", path);
                 _delay_ms(30); */
               }
             } else {
               TCHAR* fn2 = fn;
+              fncrc = 0;
               while(*fn2 != 0) {
-                crc += crc32_update(crc, *((unsigned char*)fn2++));
+                fncrc += crc_xmodem_update(fncrc, *((unsigned char*)fn2++));
               }
+              crc += fncrc;
             }
           }
-/*        printf("%s/%s\n", path, fn);
-          _delay_ms(50); */
         }
       }
     } else uart_putc(0x30+res);
