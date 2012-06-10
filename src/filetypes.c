@@ -93,7 +93,6 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
   numentries=0;
   for(pass = 0; pass < 2; pass++) {
     if(pass) {
-      num_dirs_total++;
       dirsize = 4*(numentries);
       next_subdir_tgt += dirsize + 4;
       if(parent_tgt) next_subdir_tgt += 4;
@@ -102,6 +101,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
       }
       DBG_FS printf("path=%s depth=%d ptr=%lx entries=%d parent=%lx next subdir @%lx\n", path, depth, db_tgt, numentries, parent_tgt, next_subdir_tgt);
       if(mkdb) {
+        num_dirs_total++;
 //        printf("d=%d Saving %lx to Address %lx  [end]\n", depth, 0L, next_subdir_tgt - 4);
         sram_writelong(0L, next_subdir_tgt - 4);
       }
@@ -183,10 +183,10 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
         } else {
           SNES_FTYPE type = determine_filetype((char*)fn);
           if(type != TYPE_UNKNOWN) {
-            num_files_total++;
             numentries++;
             if(pass) {
               if(mkdb) {
+                num_files_total++;
 /*                snes_romprops_t romprops; */
                 path[len]='/';
                 strncpy(path+len+1, (char*)fn, sizeof(fs_path)-len);
