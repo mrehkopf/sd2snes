@@ -218,13 +218,6 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
                   case TYPE_IPS:
                   case TYPE_SMC:
                   case TYPE_SPC:
-/*                    file_open_by_filinfo(&fno);
-                    if(file_res){
-                      printf("ZOMG NOOOO %d\n", file_res);
-                    }
-                    smc_id(&romprops);
-                    file_close(); */
-
                     /* write element pointer to current dir structure */
                     DBG_FS printf("d=%d Saving %lX to Address %lX  [file %s]\n", depth, db_tgt, dir_tgt, path);
                     if((db_tgt&0xffff) > ((0x10000-(sizeof(len) + pathlen + sizeof(buf)-1 + 1))&0xffff)) {
