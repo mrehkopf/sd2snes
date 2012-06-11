@@ -54,13 +54,14 @@ int sort_cmp_elem(const void* elem1, const void* elem2) {
   if (*sort_str1 == '.') return -1;
   if (*sort_str2 == '.') return 1;
 
-/*  
-  uint16_t cmp_i;
-  for(cmp_i=0; cmp_i<8 && sort_long1[cmp_i] == sort_long2[cmp_i]; cmp_i++);
-  if(cmp_i==8) {
-    return 0;
+  /* Do not compare trailing slashes of directory names */
+  if ((el1 & 0x80000000) && (el2 & 0x80000000)) {
+    char *str1_slash = strrchr(sort_str1, '/');
+    char *str2_slash = strrchr(sort_str2, '/');
+    if(str1_slash != NULL) *str1_slash = 0;
+    if(str2_slash != NULL) *str2_slash = 0;
   }
-  return sort_long1[cmp_i]-sort_long2[cmp_i]; */
+
   return strcasecmp(sort_str1, sort_str2);
 }
 
