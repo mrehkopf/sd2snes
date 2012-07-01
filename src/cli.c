@@ -58,8 +58,8 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0sreset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0saveraw\0put\0rm\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16 };
+  "cd\0reset\0sreset\0dir\0ls\0test\0resume\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0";
+enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_RESUME, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16 };
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
@@ -349,6 +349,11 @@ void cmd_rm(void) {
   if(res) printf("Error %d removing %s\n", res, curchar);
 }
 
+void cmd_mkdir(void) {
+  FRESULT res = f_mkdir(curchar);
+  if(res) printf("Error %d creating directory %s\n", res, curchar);
+}
+
 void cmd_mapper(void) {
   int32_t mapper;
   mapper = parse_unsigned(0,7,10);
@@ -517,6 +522,10 @@ void cli_loop(void) {
 
     case CMD_RM:
       cmd_rm();
+      break;
+
+    case CMD_MKDIR:
+      cmd_mkdir();
       break;
 
     case CMD_D4:
