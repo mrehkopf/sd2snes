@@ -290,9 +290,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
 
   if(flags & LOADROM_WITH_RESET) {
     fpga_dspx_reset(1);
-    snes_reset(1);
-    delay_ms(10);
-    snes_reset(0);
+    snes_reset_pulse();
     fpga_dspx_reset(0);
   }
 

@@ -38,10 +38,13 @@
 #define MENU_ERR_NODSP  (1)
 #define MENU_ERR_NOBSX  (2)
 
+#define SNES_RESET_PULSELEN_MS	(1)
+
 uint8_t crc_valid;
 
 void prepare_reset(void);
 void snes_init(void);
+void snes_reset_pulse(void);
 void snes_reset(int state);
 uint8_t get_snes_reset(void);
 void snes_main_loop(void);

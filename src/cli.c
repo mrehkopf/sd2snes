@@ -367,9 +367,7 @@ void cmd_sreset(void) {
     resetstate = parse_unsigned(0,1,10);
     snes_reset(resetstate);
   } else {
-    snes_reset(1);
-    delay_ms(20);
-    snes_reset(0);
+    snes_reset_pulse();
   }
 }
 void cmd_settime(void) {

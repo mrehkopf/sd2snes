@@ -48,7 +48,7 @@ volatile int reset_pressed;
 
 void prepare_reset() {
   snes_reset(1);
-  delay_ms(1);
+  delay_ms(SNES_RESET_PULSELEN_MS);
   if(romprops.ramsize_bytes && fpga_test() == FPGA_TEST_TOKEN) {
     writeled(1);
     save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
@@ -69,6 +69,12 @@ void snes_init() {
   BITBAND(SNES_RESET_REG->FIOCLR, SNES_RESET_BIT) = 1;
   /* reset the SNES */
   snes_reset(1);
+}
+
+void snes_reset_pulse() {
+  snes_reset(1);
+  delay_ms(SNES_RESET_PULSELEN_MS);
+  snes_reset(0);
 }
 
 /*

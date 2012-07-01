@@ -223,13 +223,14 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     sram_memset(SRAM_SYSINFO_ADDR, 13*40, 0x20);
     printf("SNES GO!\n");
     snes_reset(1);
-    delay_ms(1);
+    fpga_reset_srtc_state();
+    delay_ms(SNES_RESET_PULSELEN_MS);
+    sram_writebyte(32, SRAM_CMD_ADDR);
     snes_reset(0);
 
     uint8_t cmd = 0;
     uint64_t btime = 0;
     uint32_t filesize=0;
-    sram_writebyte(32, SRAM_CMD_ADDR);
     printf("test sram\n");
     while(!sram_reliable()) cli_entrycheck();
     printf("ok\n");
@@ -275,9 +276,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
         case SNES_CMD_RESET:
           /* process RESET request from SNES */
           printf("RESET requested by SNES\n");
-          snes_reset(1);
-          sleep_ms(10);
-          snes_reset(0);
+          snes_reset_pulse();
           cmd=0; /* stay in menu loop */
           break;
         case SNES_CMD_LOADLAST:
