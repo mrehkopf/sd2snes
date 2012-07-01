@@ -857,9 +857,37 @@ void write_block(uint32_t address, uint8_t* buf) {
   }
 }
 
+/* send STOP_TRANSMISSION after multiple block write
+ * and reset during_blocktrans status */
+
+void flush_write(void) {
+  cmd_fast(STOP_TRANSMISSION, 0, 0x61, NULL, rsp);
+  wait_busy();
+  during_blocktrans = TRANS_NONE;
+}
+
 //
 // Public functions
 //
+
+DRESULT sdn_ioctl(BYTE drv, BYTE cmd, void *buffer) {
+  DRESULT res;
+  if(drv >= MAX_CARDS) {
+    res = STA_NOINIT|STA_NODISK;
+  } else {
+    switch(cmd) {
+      case CTRL_SYNC:
+        flush_write();
+        res = RES_OK;
+        break;
+
+      default:
+        res = RES_PARERR;
+    }
+  }
+  return res;
+}
+DRESULT disk_ioctl(BYTE drv, BYTE cmd, void *buffer) __attribute__ ((weak, alias("sdn_ioctl")));
 
 DRESULT sdn_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
   uint8_t sec;
@@ -876,7 +904,7 @@ DRESULT sdn_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
 }
 DRESULT disk_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sdn_read")));
 
-DRESULT sdn_initialize(BYTE drv) {
+DSTATUS sdn_initialize(BYTE drv) {
 
   uint8_t rsp[17]; /* space for response */
   int rsplen;
