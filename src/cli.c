@@ -294,7 +294,8 @@ static void cmd_loadraw(void) {
 static void cmd_saveraw(void) {
   uint32_t address = parse_unsigned(0,16777216,16);
   uint32_t length = parse_unsigned(0,16777216,16);
-  save_sram((uint8_t*)curchar, length, address);
+  if(address != -1 && length != -1)
+    save_sram((uint8_t*)curchar, length, address);
 }
 
 static void cmd_d4(void) {
