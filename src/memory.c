@@ -199,6 +199,8 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   set_mcu_addr(base_addr);
   file_open(filename, FA_READ);
+  ff_sd_offload=1;
+  sd_offload_tgt=0;
   f_lseek(&file_handle, romprops.offset);
   for(;;) {
     ff_sd_offload=1;
