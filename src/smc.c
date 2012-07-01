@@ -189,9 +189,11 @@ void smc_id(snes_romprops_t* props) {
   if(header->romsize == 0 || header->romsize > 13) {
     props->romsize_bytes = 1024;
     header->romsize = 0;
-    while(props->romsize_bytes < file_handle.fsize-1) {
-      header->romsize++;
-      props->romsize_bytes <<= 1;
+    if(file_handle.fsize >= 1024) {
+      while(props->romsize_bytes < file_handle.fsize-1) {
+        header->romsize++;
+        props->romsize_bytes <<= 1;
+      }
     }
   }
   props->ramsize_bytes = (uint32_t)1024 << header->ramsize;
