@@ -214,8 +214,8 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     if((rtc_state = rtc_isvalid()) != RTC_OK) {
       printf("RTC invalid!\n");
       sram_writebyte(0xff, SRAM_STATUS_ADDR+SYS_RTC_STATUS);
-      set_bcdtime(0x20110401000000LL);
-      set_fpga_time(0x20110401000000LL);
+      set_bcdtime(0x20120701000000LL);
+      set_fpga_time(0x20120701000000LL);
       invalidate_rtc();
     } else {
       printf("RTC valid!\n");
