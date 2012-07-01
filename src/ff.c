@@ -3644,6 +3644,7 @@ TCHAR* f_gets (
 		*p++ = c;
 		n++;
 		if (c == '\n') break;		/* Break on EOL */
+		if (c == 0) break;		/* Break on NUL */
 	}
 	*p = 0;
 	return n ? buff : 0;			/* When no data read (eof or error), return with error. */
