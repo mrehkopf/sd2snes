@@ -42,7 +42,7 @@ typedef enum { SPI_SPEED_FAST, SPI_SPEED_SLOW, SPI_SPEED_FPGA_FAST, SPI_SPEED_FP
 void spi_preinit(void);
 
 /* Initialize SPI interface */
-void spi_init(spi_speed_t speed);
+void spi_init(void);
 
 /* Transmit a single byte */
 void spi_tx_byte(uint8_t data);
@@ -58,9 +58,6 @@ uint8_t spi_rx_byte(void);
 
 /* Receive a data block */
 void spi_rx_block(void *data, unsigned int length);
-
-/* Switch speed of SPI interface */
-void spi_set_speed(spi_speed_t speed);
 
 /* wait for SPI TX FIFO to become empty */
 void spi_tx_sync(void);

@@ -47,9 +47,6 @@
 #define FPGA_TX_BLOCK(x,y) spi_tx_block(x,y)
 #define FPGA_RX_BLOCK(x,y) spi_rx_block(x,y)
 
-#define FPGA_SPI_FAST()    spi_set_speed(SPI_SPEED_FPGA_FAST)
-#define FPGA_SPI_SLOW()    spi_set_speed(SPI_SPEED_FPGA_SLOW)
-
 #define FEAT_213F          (1 << 4)
 #define FEAT_MSU1          (1 << 3)
 #define FEAT_SRTC          (1 << 2)

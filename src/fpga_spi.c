@@ -143,7 +143,7 @@
 #include "sdnative.h"
 
 void fpga_spi_init(void) {
-  spi_init(SPI_SPEED_FAST);
+  spi_init();
   BITBAND(FPGA_MCU_RDY_REG->FIODIR, FPGA_MCU_RDY_BIT) = 0;
 }
 

@@ -36,21 +36,13 @@ void spi_preinit() {
   BITBAND(LPC_SC->SSP_PCLKREG, SSP_PCLKBIT) = 1;
 }
 
-void spi_init(spi_speed_t speed) {
+void spi_init() {
 
   /* configure data format - 8 bits, SPI, CPOL=0, CPHA=0, 1 clock per bit */
   SSP_REGS->CR0 = (8-1);
 
   /* set clock prescaler */
-  if (speed == SPI_SPEED_FAST) {
-    SSP_REGS->CPSR = SSP_CLK_DIVISOR_FAST;
-  } else if (speed == SPI_SPEED_SLOW) {
-    SSP_REGS->CPSR = SSP_CLK_DIVISOR_SLOW;
-  } else if (speed == SPI_SPEED_FPGA_FAST) {
-    SSP_REGS->CPSR = SSP_CLK_DIVISOR_FPGA_FAST;
-  } else {
-    SSP_REGS->CPSR = SSP_CLK_DIVISOR_FPGA_SLOW;
-  }
+  SSP_REGS->CPSR = SSP_CLK_DIVISOR;
 
   /* Enable SSP */
   SSP_REGS->CR1 = BV(1);
@@ -188,26 +180,4 @@ void spi_rx_block(void *ptr, unsigned int length) {
     /* Disable RX FIFO DMA */
     SSP_REGS->DMACR = 0;
   }
-}
-
-void spi_set_speed(spi_speed_t speed) {
-  /* Wait until TX fifo is empty */
-  while (!BITBAND(SSP_REGS->SR, 0)) ;
-
-  /* Disable SSP (FIXME: Is this required?) */
-  SSP_REGS->CR1 = 0;
-
-  /* Change clock divisor */
-  if (speed == SPI_SPEED_FAST) {
-    SSP_REGS->CPSR = SSP_CLK_DIVISOR_FAST;
-  } else if (speed == SPI_SPEED_SLOW) {
-    SSP_REGS->CPSR = SSP_CLK_DIVISOR_SLOW;
-  } else if (speed == SPI_SPEED_FPGA_FAST) {
-    SSP_REGS->CPSR = SSP_CLK_DIVISOR_FPGA_FAST;
-  } else {
-    SSP_REGS->CPSR = SSP_CLK_DIVISOR_FPGA_SLOW;
-  }
-
-  /* Enable SSP */
-  SSP_REGS->CR1 = BV(1);
 }
