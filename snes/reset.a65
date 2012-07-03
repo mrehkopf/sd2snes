@@ -84,9 +84,8 @@ math_cont
 	clc
 	adc bar_x	; + X start coord
 	sta $2127	; window 1 right
-	lda #$3e	; ch. 1-5
-	sta @$420c	; trigger HDMA
-	lda #$01
+;	lda #$3e	; ch. 1-5
+;	sta @$420c	; trigger HDMA
 
 	lda cur_bright
 	cmp tgt_bright

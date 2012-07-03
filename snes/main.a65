@@ -51,9 +51,11 @@ coldboot:							; Regular, cold-start init
 	sta $420d ; fast cpu
 	jsr setup_gfx
 	jsr colortest
-	jsr setup_hdma
 	jsr menu_init
 	jsr tests
+	jsr setup_hdma
+	jsr screen_on
+
 	sep #$20 : .as
 	lda @RTC_STATUS
 	beq +
@@ -197,6 +199,7 @@ setup_gfx:
 ;set palette
 	stz $2121
 	DMA0(#$00, #$200, #^palette, #!palette, #$22)
+	stz $2121
 
 ;copy hdma tables so we can work "without" the cartridge
 ;palette
@@ -275,11 +278,8 @@ tests:
 	lda #$1f
 	sta $212e
 	sta $212f
-	stz $2121
-	jsr waitblank
-	lda #$0f
-	sta $2100		;screen on, full brightness
-	lda #9
+;	stz $2121
+	lda #8
 	sta bar_yl
 	stz cur_bright
 	stz tgt_bright

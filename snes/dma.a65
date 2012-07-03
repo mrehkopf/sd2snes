@@ -67,8 +67,11 @@ setup_hdma:
 	sty $4352
 	sta $4354
 
-;	lda #$06
-;	sta $420c		;enable HDMA ch. 1+2
+	lda #$3a
+	sta $420c		;enable HDMA ch. 1+3+4+5
+	jsr waitblank
+	lda #$3e
+	sta $420c		;enable HDMA ch. 2 too
 	lda #$81		;VBlank NMI + Auto Joypad Read
 	sta $4200		;enable V-BLANK NMI
 	rts
