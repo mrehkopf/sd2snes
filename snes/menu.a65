@@ -882,6 +882,7 @@ scroll_direntry_scrollfast
 	lda #$28
 	sta direntry_xscroll_wait
 +	lda direntry_xscroll_state
+	clc
 	adc direntry_xscroll
 	sta direntry_xscroll
 	bne +
