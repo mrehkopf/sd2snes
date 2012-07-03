@@ -1,13 +1,22 @@
+#define hash #
+#define f(x) x
+#define imm(a) f(hash)a
+
 #define DMA0(mode, len, a_bank, a_addr, b_reg)\
-	lda mode \
-: 	sta dma_mode \
+	php \
+:	sep imm($20) : .as \
+:	rep imm($10) : .xl \
+:	lda mode \
+: 	sta $4300 \
 :	ldx a_addr \
 :	lda a_bank \
-:	stx dma_a_addr \
-:	sta dma_a_bank \
+:	stx $4302 \
+:	sta $4304 \
 :	ldx len \
-:	stx dma_len \
+:	stx $4305 \
 :	lda b_reg \
-:	sta dma_b_reg \
-:	jsr dma0
+:	sta $4301 \
+:	lda imm($01) \
+:	sta $420b \
+:	plp
 
