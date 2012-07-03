@@ -4,11 +4,11 @@
 GAME_MAIN:
 	sep #$20 : .as
 	lda #$00
-	sta @AVR_CMD
+	sta @MCU_CMD		; clear MCU command register
 	rep #$20 : .al
 	lda #$0000
-	sta @AVR_PARAM
-	sta @AVR_PARAM+2
+	sta @MCU_PARAM		; clear MCU command parameters
+	sta @MCU_PARAM+2
 	sep #$20 : .as
 	stz $4200 ; inhibit VBlank NMI
 

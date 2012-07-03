@@ -680,31 +680,31 @@ is_leapyear_400th
 
 settime
 	lda time_y100
-	sta @AVR_PARAM
+	sta @MCU_PARAM
 	lda time_y10
-	sta @AVR_PARAM+1
+	sta @MCU_PARAM+1
 	lda time_y1
-	sta @AVR_PARAM+2
+	sta @MCU_PARAM+2
 	lda time_mon
-	sta @AVR_PARAM+3
+	sta @MCU_PARAM+3
 	lda time_d10
-	sta @AVR_PARAM+4
+	sta @MCU_PARAM+4
 	lda time_d1
-	sta @AVR_PARAM+5
+	sta @MCU_PARAM+5
 	lda time_h10
-	sta @AVR_PARAM+6
+	sta @MCU_PARAM+6
 	lda time_h1
-	sta @AVR_PARAM+7
+	sta @MCU_PARAM+7
 	lda time_m10
-	sta @AVR_PARAM+8
+	sta @MCU_PARAM+8
 	lda time_m1
-	sta @AVR_PARAM+9
+	sta @MCU_PARAM+9
 	lda time_s10
-	sta @AVR_PARAM+10
+	sta @MCU_PARAM+10
 	lda time_s1
-	sta @AVR_PARAM+11
+	sta @MCU_PARAM+11
 	lda #$02 ; set clock
-	sta @AVR_CMD
+	sta @MCU_CMD
 	rts
 
 printtime:

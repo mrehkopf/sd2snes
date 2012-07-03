@@ -47,7 +47,7 @@ sysinfo_printloop:
 	sep #$20 : .as
 	rep #$10 : .xl
 	lda #CMD_SYSINFO
-	sta @AVR_CMD
+	sta @MCU_CMD
 	lda #^SYSINFO_BLK
 	ldx #!SYSINFO_BLK
 	sta print_bank
@@ -130,5 +130,5 @@ sysinfo_printloop:
 +	plp
 	jsr restore_screen
 	lda #$00
-	sta @AVR_CMD
+	sta @MCU_CMD
 	rtl

@@ -201,7 +201,7 @@ spc_key_b:
 	sei		; Blank screen & issue CMD_RESET command to Microcontroller...
 	stz $2100	; ...this is required, because there is no other way to stop S-SMP & S-DSP
 	lda #CMD_RESET
-	sta @AVR_CMD
+	sta @MCU_CMD
 -
 	bra -		; At this point, the SNES waits for an external reset from the Microcontroller
 

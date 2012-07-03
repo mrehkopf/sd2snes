@@ -530,19 +530,19 @@ sel_is_spc
 	bra select_item_cont
 
 select_file:
-	; have avr load the rom
+	; have MCU load the rom
 	dey
 	rep #$20 : .al
 	lda [dirptr_addr], y
 	and #$00ff
-	sta @AVR_PARAM+2
+	sta @MCU_PARAM+2
 	dey
 	dey
 	lda [dirptr_addr], y
-	sta @AVR_PARAM
+	sta @MCU_PARAM
 	sep #$20 : .as
 	lda #$01
-	sta @AVR_CMD
+	sta @MCU_CMD
 select_file_fade:
 	lda #$00
 	sta @$4200
@@ -651,16 +651,16 @@ select_spc:
 	rep #$20 : .al
 	lda [dirptr_addr], y
 	and #$00ff
-	sta @AVR_PARAM+2
+	sta @MCU_PARAM+2
 	dey
 	dey
 	lda [dirptr_addr], y
-	sta @AVR_PARAM
+	sta @MCU_PARAM
 	sep #$20 : .as
 	lda #CMD_LOADSPC
-	sta @AVR_CMD
+	sta @MCU_CMD
 wait_spc:
-	lda @AVR_CMD
+	lda @MCU_CMD
 	cmp #$00
 	bne wait_spc
 	jsr spcplayer
@@ -806,7 +806,7 @@ select_last_file:
 	and pad1trig+1
 	beq -
 	lda #$04
-	sta @AVR_CMD
+	sta @MCU_CMD
 	jmp select_file_fade
 +	jsr restore_screen
 	plp
