@@ -363,7 +363,7 @@ inner_transfer_loop:
 ;---------------------------------------
 upload_low_ram:
 
-; ---- Upload $0002-$00EF
+; ---- Upload $0002-$00EF using IPL
 
 	ldy #$0002
 	jsr spc_begin_upload
@@ -379,7 +379,8 @@ upload_low_ram:
 ;---------------------------------------
 ; Executes final restoration code
 restore_final:
-	jsr start_exec_io
+	jsr start_exec_io ; prepare execution from I/O registers
+
 	stz $420d	; SPC700 I/O code requires SLOW timing
 
 ; ---- Restore first two bytes of RAM
