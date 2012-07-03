@@ -499,6 +499,8 @@ time_dec_y1_normal
 	rts
 
 gettime
+	php
+	sep #$20 : .as
 	lda #$0d
 	sta $2801
 	lda $2800
@@ -526,6 +528,7 @@ gettime
 	sta time_y10
 	lda $2800
 	sta time_y100
+	plp
 	rts
 
 rendertime
