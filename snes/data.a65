@@ -26,8 +26,8 @@ print_src	.word 0	;source data address
 print_bank	.byt 0	;source data bank
 print_pal	.word 0	;palette number for text output
 print_temp	.word 0 ;work variable
-print_count	.byt 0	;how many characters may be printed?
-print_count_tmp .byt 0	;work variable
+print_ptr	.byt 0,0,0 ;read pointer
+print_count	.word 0	;how many characters may be printed?
 print_done	.word 0 ;how many characters were printed?
 print_over	.byt 0  ;was the string printed incompletely?
 ;----------parameters for dma----------

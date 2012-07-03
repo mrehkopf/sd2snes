@@ -138,11 +138,11 @@ setup_gfx:
 	stz $420b
 	stz $420c
 ;clear tilemap buffers
-	ldx #$0000
+	ldx #$8000
 	stx $2181
-	lda #$01
+	lda #$00
 	sta $2183
-	DMA0(#$08, #0, #^zero, #!zero, #$80)
+	DMA0(#$08, #$8000, #^zero, #!zero, #$80)
 
 ;generate fonts
 	jsr genfonts

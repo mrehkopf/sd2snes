@@ -1,146 +1,95 @@
 .text
 #include "memmap.i65"
 .byt "===HIPRINT==="
+; input:
+; print_count
+; print_x
+; print_y
+; print_src
+; print_bank
+; print_pal
+;
+; output:
+; print_done (# of chars printed)
+; print_over (char after print_count)
+
 hiprint:
+	php
 	sep #$20 : .as
-	lda print_count
-	sta print_count_tmp
-	stz print_over
-	rep #$30 : .xl : .al
-	stz print_done
-	lda print_x
-	and #$00ff
-	lsr
-	bcs print_bg1
-	ldx #!BG1_TILE_BUF ; for 2nd loop
-	phx
-	ldx #!BG2_TILE_BUF ; for 1st loop
-	phx
-	bra print_bg_cont
-print_bg1
-	ldx #!BG2_TILE_BUF+2 ; for 2nd loop
-	phx
-	ldx #!BG1_TILE_BUF ; for 1st loop da whoop
-	phx
-	bra print_bg_cont
-print_bg_cont
-	sta !print_temp
-	lda !print_y
-	and #$00ff
-	asl
-	asl
-	asl
-	asl
-	asl
-	clc
-	adc !print_temp
-	asl ; double the offset for WRAM addressing
-	tay	; zonday
-	plx
-	phy	; offset from tilemap start
-	stx !print_temp
-	clc
-	adc !print_temp
-; we need to transfer to WRAM and from there to VRAM via DMA during VBLANK
-; because VRAM can only be accessed during VBLANK and forced blanking.
-	sta $2181
-	sep #$20 : .as
-	lda #$7f ;we really only need bit 0. full bank given for clarity
-	sta $2183
-print_loop
-	ldx !print_src
-	lda !print_bank
-	pha
-	plb
-	phx	; source addr
-print_loop_inner
-	lda !0,x
-	bne +
-	jmp print_end2
-+	asl
-	sta @$2180
-	lda @print_pal
-	asl
-	asl
-	adc #$00
-	ora #$20
-	sta @$2180
-	lda @print_done
-	inc
-	sta @print_done
-	inx
-	lda !0,x
-	beq print_loop2
-	inx
-	lda !0,x
-	beq print_loop2
-	lda @print_count_tmp
-	dec
-	dec
-	sta @print_count_tmp
-	beq print_loop2
-	bmi print_loop2
-	bra print_loop_inner
-print_loop2
-	lda @print_count
-	dec
-	sta @print_count_tmp
-	beq print_end2
-	lda #$00
+	rep #$10 : .xl
+	ldx print_src
+	stx print_ptr
+	lda print_bank
+	sta print_ptr+2
+	phb
+	lda #$7e
 	pha
 	plb
 	rep #$30 : .al : .xl
-	ply	; source addr
-	iny
-	pla	; offset from tilemap start
-	plx	; other tilemap addr
-	stx !print_temp
+	lda print_pal
+	and #$00ff
+	xba
+	asl
+	asl
+	ora #$2000
+	sta print_temp
+	lda print_count
+	and #$00ff
+	beq hiprint_end
+	tay
+	lda print_x
+	and #$00ff
+	sta print_x
+	lda print_y
+	and #$00ff
+	asl
+	asl
+	asl
+	asl
+	asl
+	asl
 	clc
-	adc !print_temp ; tilemap+offset
-	sta $2181
-	tyx
+	adc print_x
+	and #$fffe
+	tax
+	lda print_x
+	lsr
+	bcs hiprint_bg1
+hiprint_bg2
+	lda [print_ptr]
+	and #$00ff
+	beq hiprint_end
+	inc print_ptr
+	asl
+	ora print_temp
+	sta !BG2_TILE_BUF, x
+	dey
+	beq hiprint_end
+hiprint_bg1
+	lda [print_ptr]
+	and #$00ff
+	beq hiprint_end
+	inc print_ptr
+	asl
+	ora print_temp
+	sta !BG1_TILE_BUF, x
+	inx
+	inx
+	dey
+	beq hiprint_end
+	bra hiprint_bg2
+hiprint_end
+	plb
 	sep #$20 : .as
-	lda print_bank
-	pha
-	plb
-print_loop2_inner
-	lda !0,x
-	bne +
-	jmp print_end
-+	asl
-	sta @$2180
-	lda @print_pal
-	asl
-	asl
-	adc #$00
-	ora #$20
-	sta @$2180
-	lda @print_done
+	lda [print_ptr]
+	sta print_over
+	tya
+	sec
+	sbc print_count
+	eor #$ff
 	inc
-	sta @print_done
-	inx
-	lda !0,x
-	beq print_end
-	lda @print_count_tmp
-	dec
-	dec
-	sta @print_count_tmp
-	beq print_end
-	bmi print_end
-	inx
-	lda !0,x
-	beq print_end
-	bra print_loop2_inner
-print_end2 ; clean up the stack (6 bytes)
-	ply
-	ply
-	ply
-print_end
-	lda !0,x
-	sta @print_over
-	lda #$00
-	pha
-	plb
+	sta print_done
+	plp
 	rts
 
 
@@ -290,6 +239,7 @@ draw_window:
 	sta print_count
 	jsr hiprint
 	lda print_done
+	clc
 	adc print_x
 	sta print_x
 	lda #^window_tr
