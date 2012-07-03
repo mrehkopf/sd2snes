@@ -29,8 +29,12 @@ GAME_MAIN:
 	sta $420d 		; fast cpu
 	jsr setup_gfx
 	jsr colortest
-	jsr setup_hdma
 	jsr tests
+	jsr setup_hdma
+	lda #$0f
+	sta cur_bright
+	sta tgt_bright
+	sta $2100
 
 	jmp @set_bank		; Set bios bank, just to be sure
 set_bank:
@@ -277,6 +281,14 @@ tests:
 	sta $2100		;screen on, full brightness
 	lda #9
 	sta bar_yl
+	stz cur_bright
+	stz tgt_bright
+	rts
+
+screen_on:
+	stz $2100		;screen on, 0% brightness
+	lda #$0f
+	sta tgt_bright
 	rts
 
 snes_init:
@@ -387,7 +399,7 @@ snes_init:
 
 fadeloop:
 	sep #$30 : .as : .xs
-	ldx #$0f
+	ldx cur_bright
 	and #$00
 	pha
 	plb

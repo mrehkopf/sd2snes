@@ -184,6 +184,11 @@ direntry_xscroll
 direntry_xscroll_wait
 	.word	0
 infloop	.byt 0,0  ; to be filled w/ 80 FE
+tgt_bright
+	.byt 0
+cur_bright
+	.byt 0
+
 ;------------------------
 saved_sp
 	.word 0

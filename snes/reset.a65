@@ -87,6 +87,27 @@ math_cont
 	lda #$3e	; ch. 1-5
 	sta @$420c	; trigger HDMA
 	lda #$01
+
+	lda cur_bright
+	cmp tgt_bright
+	beq +
+	bpl bright_down
+bright_up
+	inc
+	sta cur_bright
+	lda $2100
+	and #$f0
+	ora cur_bright
+	sta $2100
+	bra +
+bright_down
+	dec
+	sta cur_bright
+	lda $2100
+	and #$f0
+	ora cur_bright
+	sta $2100
++	lda #$01
 	sta isr_done
         rtl
 
