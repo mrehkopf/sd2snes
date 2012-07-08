@@ -31,6 +31,7 @@ module dac(
   output sdout,
   output lrck,
   output mclk,
+  output sclk,
   output DAC_STATUS
 );
 
@@ -68,14 +69,15 @@ reg [15:0] smpshift;
 
 assign mclk = cnt[2]; // mclk = clk/8
 assign lrck = cnt[8]; // lrck = mclk/128
-wire sclk = cnt[3];   // sclk = lrck*32
+assign sclk = cnt[3]; // sclk = lrck*32
 
 reg [2:0] lrck_sreg;
 reg [2:0] sclk_sreg;
-wire lrck_rising = ({lrck_sreg[2:1]} == 2'b01);
-wire lrck_falling = ({lrck_sreg[2:1]} == 2'b10);
+wire lrck_rising = (lrck_sreg[1:0] == 2'b01);
+wire lrck_falling = (lrck_sreg[1:0] == 2'b10);
 
-wire sclk_rising = ({sclk_sreg[2:1]} == 2'b01);
+wire sclk_rising = (sclk_sreg[1:0] == 2'b01);
+wire sclk_falling = (sclk_sreg[1:0] == 2'b10);
 
 wire vol_latch_rising = (vol_latch_reg[1:0] == 2'b01);
 reg sdout_reg;
@@ -143,15 +145,15 @@ always @(posedge clkin) begin
 end
 
 always @(posedge clkin) begin
-  if (lrck_rising) begin // right channel
-    smpshift <= (({16'h0, dac_data[31:16]^16'h8000} * vol_reg) >> 8) ^ 16'h8000;
-    samples <= samples + 1;
-  end else if (lrck_falling) begin // left channel
-    smpshift <= (({16'h0, dac_data[15:0]^16'h8000} * vol_reg) >> 8) ^ 16'h8000;
-  end else begin
-    if (sclk_rising) begin
-      smpcnt <= smpcnt + 1;
-      sdout_reg <= smpshift[15];
+  if (sclk_falling) begin
+    smpcnt <= smpcnt + 1;
+    sdout_reg <= smpshift[15];
+    if (lrck_rising) begin // right channel
+      smpshift <= (({16'h0, dac_data[31:16]^16'h8000} * vol_reg) >> 8) ^ 16'h8000;
+      samples <= samples + 1;
+    end else if (lrck_falling) begin // left channel
+      smpshift <= (({16'h0, dac_data[15:0]^16'h8000} * vol_reg) >> 8) ^ 16'h8000;
+    end else begin
       smpshift <= {smpshift[14:0], 1'b0};
     end
   end
