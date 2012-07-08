@@ -199,7 +199,6 @@ void set_mapper(uint8_t val) {
 uint8_t fpga_test() {
   FPGA_SELECT();
   FPGA_TX_BYTE(0xF0); /* TEST */
-  FPGA_TX_BYTE(0x00); /* dummy */
   uint8_t result = FPGA_RX_BYTE();
   FPGA_DESELECT();
   return result;
@@ -208,7 +207,6 @@ uint8_t fpga_test() {
 uint16_t fpga_status() {
   FPGA_SELECT();
   FPGA_TX_BYTE(0xF1); /* STATUS */
-  FPGA_TX_BYTE(0x00); /* dummy */
   uint16_t result = (FPGA_RX_BYTE()) << 8;
   result |= FPGA_RX_BYTE();
   FPGA_DESELECT();
@@ -237,12 +235,12 @@ void fpga_sddma(uint8_t tgt, uint8_t partial) {
   FPGA_DESELECT();
   FPGA_SELECT();
   FPGA_TX_BYTE(0xF1); /* STATUS */
-  FPGA_TX_BYTE(0x00); /* dummy */
   DBG_SD printf("FPGA DMA request sent, wait for completion...");
   while((status=FPGA_RX_BYTE()) & 0x80) {
     FPGA_RX_BYTE(); /* eat the 2nd status byte */
     test++;
   }
+
   DBG_SD printf("...complete\n");
   FPGA_DESELECT();
 //  if(test<5)printf("loopy: %ld %02x\n", test, status);
@@ -302,7 +300,6 @@ void set_msu_status(uint8_t set, uint8_t reset) {
 uint8_t get_msu_volume() {
   FPGA_SELECT();
   FPGA_TX_BYTE(0xF4); /* MSU_VOLUME */
-  FPGA_TX_BYTE(0x00); /* dummy */
   uint8_t result = FPGA_RX_BYTE();
   FPGA_DESELECT();
   return result;
@@ -311,7 +308,6 @@ uint8_t get_msu_volume() {
 uint16_t get_msu_track() {
   FPGA_SELECT();
   FPGA_TX_BYTE(0xF3); /* MSU_TRACK */
-  FPGA_TX_BYTE(0x00); /* dummy */
   uint16_t result = (FPGA_RX_BYTE()) << 8;
   result |= FPGA_RX_BYTE();
   FPGA_DESELECT();
@@ -321,7 +317,6 @@ uint16_t get_msu_track() {
 uint32_t get_msu_offset() {
   FPGA_SELECT();
   FPGA_TX_BYTE(0xF2); /* MSU_OFFSET */
-  FPGA_TX_BYTE(0x00); /* dummy */
   uint32_t result = (FPGA_RX_BYTE()) << 24;
   result |= (FPGA_RX_BYTE()) << 16;
   result |= (FPGA_RX_BYTE()) << 8;
@@ -333,8 +328,7 @@ uint32_t get_msu_offset() {
 uint32_t get_snes_sysclk() {
   FPGA_SELECT();
   FPGA_TX_BYTE(0xFE); /* GET_SYSCLK */
-  FPGA_TX_BYTE(0x00); /* dummy */
-  FPGA_TX_BYTE(0x00); /* dummy */
+  FPGA_TX_BYTE(0x00); /* dummy (copy current sysclk count to register) */
   uint32_t result = (FPGA_RX_BYTE()) << 24;
   result |= (FPGA_RX_BYTE()) << 16;
   result |= (FPGA_RX_BYTE()) << 8;
