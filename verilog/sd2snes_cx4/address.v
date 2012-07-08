@@ -56,16 +56,10 @@ assign ROM_ADDR = SRAM_SNES_ADDR;
 assign ROM_SEL = 1'b0;
 
 wire msu_enable_w = use_msu1 & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
-reg [5:0] msu_enable_r;
-initial msu_enable_r = 6'b000000;
-always @(posedge CLK) msu_enable_r <= {msu_enable_r[4:0], msu_enable_w};
-assign msu_enable = &msu_enable_r[5:2];
+assign msu_enable = msu_enable_w;
 
 wire cx4_enable_w = (!SNES_ADDR[22] && (SNES_ADDR[15:13] == 3'b011));
-reg [5:0] cx4_enable_r;
-initial cx4_enable_r = 6'b000000;
-always @(posedge CLK) cx4_enable_r <= {cx4_enable_r[4:0], cx4_enable_w};
-assign cx4_enable = &cx4_enable_r[5:2];
+assign cx4_enable = cx4_enable_w;
 
 assign cx4_vect_enable = &SNES_ADDR[15:5];
 

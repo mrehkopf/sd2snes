@@ -23,7 +23,7 @@ module main(
   input CLKIN,
 
   /* SNES signals */
-  input [23:0] SNES_ADDR,
+  input [23:0] SNES_ADDR_IN,
   input SNES_READ,
   input SNES_WRITE,
   input SNES_CS,
@@ -38,7 +38,7 @@ module main(
   input [7:0] SNES_PA,
   input SNES_PARD,
   input SNES_PAWR,
-
+  
   /* SRAM signals */
   /* Bus 1: PSRAM, 128Mbit, 16bit, 70ns */
   inout [15:0] ROM_DATA,
@@ -76,6 +76,16 @@ module main(
   /* debug */
   output p113_out
 );
+
+wire CLK2;
+
+reg [23:0] SNES_ADDR_r [2:0];
+always @(posedge CLK2) begin
+  SNES_ADDR_r[2] <= SNES_ADDR_r[1];
+  SNES_ADDR_r[1] <= SNES_ADDR_r[0];
+  SNES_ADDR_r[0] <= SNES_ADDR_IN;
+end
+wire [23:0] SNES_ADDR = SNES_ADDR_r[2] & SNES_ADDR_r[1];
 
 wire [7:0] spi_cmd_data;
 wire [7:0] spi_param_data;

@@ -23,7 +23,7 @@ module main(
   input CLKIN,
 
   /* SNES signals */
-  input [23:0] SNES_ADDR,
+  input [23:0] SNES_ADDR_IN,
   input SNES_READ,
   input SNES_WRITE,
   input SNES_CS,
@@ -73,12 +73,19 @@ module main(
   output p113_out
 );
 
-assign DAC_MCLK = 1'b0;
-assign DAC_LRCK = 1'b0;
-assign DAC_SDOUT = 1'b0;
+assign DAC_MCLK = 0;
+assign DAC_LRCK = 0;
+assign DAC_SDOUT = 0;
 
-assign SD_CMD = 1'bZ;
-assign SD_CLK = 1'bZ;
+wire CLK2;
+
+reg [23:0] SNES_ADDR_r [2:0];
+always @(posedge CLK2) begin
+  SNES_ADDR_r[2] <= SNES_ADDR_r[1];
+  SNES_ADDR_r[1] <= SNES_ADDR_r[0];
+  SNES_ADDR_r[0] <= SNES_ADDR_IN;
+end
+wire [23:0] SNES_ADDR = SNES_ADDR_r[2] & SNES_ADDR_r[1];
 
 wire [7:0] spi_cmd_data;
 wire [7:0] spi_param_data;

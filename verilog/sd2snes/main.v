@@ -23,7 +23,7 @@ module main(
   input CLKIN,
 
   /* SNES signals */
-  input [23:0] SNES_ADDR,
+  input [23:0] SNES_ADDR_IN,
   input SNES_READ,
   input SNES_WRITE,
   input SNES_CS,
@@ -76,6 +76,17 @@ module main(
   /* debug */
   output p113_out
 );
+
+wire CLK2;
+
+reg [23:0] SNES_ADDR_r [2:0];
+always @(posedge CLK2) begin
+  SNES_ADDR_r[2] <= SNES_ADDR_r[1];
+  SNES_ADDR_r[1] <= SNES_ADDR_r[0];
+  SNES_ADDR_r[0] <= SNES_ADDR_IN;
+end
+wire [23:0] SNES_ADDR = SNES_ADDR_r[2] & SNES_ADDR_r[1];
+
 wire dspx_dp_enable;
 
 wire [7:0] spi_cmd_data;
@@ -639,28 +650,38 @@ always @(posedge CLK2) begin
   end
 end
 
+reg ROM_WE_1;
+reg MCU_WRITE_1;
+
+always @(posedge CLK2) begin
+  ROM_WE_1 <= ROM_WE;
+  MCU_WRITE_1<= MCU_WRITE;
+end
+
 assign ROM_DATA[7:0] = ROM_ADDR0
-                       ?(SD_DMA_TO_ROM ? (!MCU_WRITE ? MCU_DOUT : 8'bZ)
-                                        : (!ROM_WE ? ROM_DOUTr : 8'bZ)
+                       ?(SD_DMA_TO_ROM ? (!MCU_WRITE_1 ? MCU_DOUT : 8'bZ)
+							                   /*: ((~SNES_WRITE & (IS_WRITABLE | IS_FLASHWR)) ? SNES_DATA */
+                                        : (ROM_DOUT_ENr ? ROM_DOUTr : 8'bZ) //)
                         )
                        :8'bZ;
 
 assign ROM_DATA[15:8] = ROM_ADDR0 ? 8'bZ
-                        :(SD_DMA_TO_ROM ? (!MCU_WRITE ? MCU_DOUT : 8'bZ)
-                                         : (!ROM_WE ? ROM_DOUTr : 8'bZ)
+                        :(SD_DMA_TO_ROM ? (!MCU_WRITE_1 ? MCU_DOUT : 8'bZ)
+								                 /*:  ((~SNES_WRITE & (IS_WRITABLE | IS_FLASHWR)) ? SNES_DATA */
+                                         : (ROM_DOUT_ENr ? ROM_DOUTr : 8'bZ) //)
                          );
 
 assign ROM_WE = SD_DMA_TO_ROM
                 ?MCU_WRITE
-                :ROM_WEr | (ASSERT_SNES_ADDR & ~snes_wr_cycle);
+                :/*(SNES_FAKE_CLK & (IS_WRITABLE | IS_FLASHWR)) ? SNES_WRITE :*/ ROM_WEr;
 
 // OE always active. Overridden by WE when needed.
 assign ROM_OE = 1'b0;
 
 assign ROM_CE = 1'b0;
 
-assign ROM_BHE = !ROM_WE ? ROM_ADDR0 : 1'b0;
-assign ROM_BLE = !ROM_WE ? !ROM_ADDR0 : 1'b0;
+assign ROM_BHE = /*(~SD_DMA_TO_ROM & ~ROM_WE & ~ROM_SA) ?*/ ROM_ADDR0 /*: 1'b0*/;
+assign ROM_BLE = /*(~SD_DMA_TO_ROM & ~ROM_WE & ~ROM_SA) ?*/ !ROM_ADDR0 /*: 1'b0*/;
 
 assign SNES_DATABUS_OE = (dspx_enable | dspx_dp_enable) ? 1'b0 :
                          msu_enable ? 1'b0 :

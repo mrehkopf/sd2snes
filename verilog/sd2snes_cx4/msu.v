@@ -138,7 +138,7 @@ end
 
 always @(posedge clkin) begin
   if(reg_we_rising) begin
-    case(reg_addr_r[3])
+    case(reg_addr_r[1])
       3'h0: addr_out_r[7:0] <= reg_data_in;
       3'h1: addr_out_r[15:8] <= reg_data_in;
       3'h2: addr_out_r[23:16] <= reg_data_in;
