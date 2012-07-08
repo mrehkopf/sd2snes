@@ -38,3 +38,37 @@ v0.1.3
  * Some FPGA configuration error detection (mainly useful for hardware diag)
  * Fixes:
    - FPGA-side SD clock pullup (increases reliability with some cards)
+
+
+v0.1.4
+======
+
+ * SPC Player (thanks to necronomfive/blargg)
+ * System Information screen now shows CPU/PPU revision (thanks to necronomfive)
+ * Satellaview: basic data transmission packet support (makes some more games boot)
+ * Number of supported files increased to 50000 per card / 16380 per directory
+ * Slight speedup of menu text rendering
+ * Reduce load time of menu
+ * Adjust Cx4 timing to be more faithful
+   (Mega Man now defeats the boss in attract mode in Mega Man X2)
+ * adapt ROM mirroring size to file size if header information is invalid
+   (fixes Super Noah's Ark 3D, possibly others)
+ * MSU1 interface changes suggested by byuu:
+   - Data offset 0 and audio track 0 are automatically requested on reset.
+     This causes the busy flags to become 0 shortly after reset/startup.
+   - $2000 bit 3 is now "audio error", becomes valid after "audio busy" -> 0
+     set when an error occurred while preparing playback of the requested audio track
+ * Fixes:
+   - fix empty save files on FAT16 / incorrect free cluster count on FAT32
+   - correct directory sorting (force parent directory at top of list)
+   - fix text corruption when entering a directory with a scrollable name
+   - fix files/dirs count in system information
+   - make 'sd2snes' directory hiding case-insensitive
+   - improve DAC I²S timing
+   - fix occasional palette corruption in menu
+   - fix SD clock glitch on ROM loading (occasional glitches/crashes)
+   - fix memory write timing on ROM loading (occasional glitches/crashes)
+   - fix SPI timing (ROMs not loading; System Information not working)
+   - properly synchronize SNES control signals (occasional glitches/crashes)
+   - fix floating IRQ output (occasional glitches/slowdowns)
+
