@@ -304,7 +304,11 @@ address snes_addr(
   //CX4
   .cx4_enable(cx4_enable),
   .cx4_vect_enable(cx4_vect_enable),
-  .r213f_enable(r213f_enable)
+  //region
+  .r213f_enable(r213f_enable),
+  //CMD Interface
+  .snescmd_rd_enable(snescmd_rd_enable),
+  .snescmd_wr_enable(snescmd_wr_enable)
 );
 
 reg [7:0] CX4_DINr;
@@ -379,13 +383,15 @@ initial r213f_forceread = 0;
 initial r213f_state = 2'b01;
 initial r213f_delay = 3'b011;
 
-assign SNES_DATA = (r213f_enable & (!SNES_PARD ^ r213f_forceread)) ? r213fr
-                   :(!SNES_READ ^ r213f_forceread)
-                     ? (msu_enable ? MSU_SNES_DATA_OUT
-                       :cx4_enable ? CX4_SNES_DATA_OUT
-                       :(cx4_active & cx4_vect_enable) ? CX4_SNES_DATA_OUT
-                       :SNES_DINr)
-                    : 8'bZ;
+reg[7:0] snescmd_regs[15:0];
+
+assign SNES_DATA = (snescmd_rd_enable & ~SNES_PARD) ? snescmd_regs[SNES_ADDR[3:0]]
+                   :(r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
+                   :(~SNES_READ ^ (r213f_forceread & r213f_enable & ~SNES_PARD))
+                                ? (msu_enable ? MSU_SNES_DATA_OUT
+                                  :cx4_enable ? CX4_SNES_DATA_OUT
+											 :(cx4_active & cx4_vect_enable) ? CX4_SNES_DATA_OUT
+                                  :SNES_DOUTr /*(ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8])*/) : 8'bZ;
 
 reg [3:0] ST_MEM_DELAYr;
 reg MCU_RD_PENDr;

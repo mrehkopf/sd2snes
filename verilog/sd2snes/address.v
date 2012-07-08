@@ -38,6 +38,8 @@ module address(
   output dspx_dp_enable,
   output dspx_a0,
   output r213f_enable,
+  output snescmd_rd_enable,
+  output snescmd_wr_enable,
   input [8:0] bs_page_offset,
   input [9:0] bs_page,
   input bs_page_enable
@@ -243,5 +245,17 @@ reg [5:0] r213f_enable_r;
 initial r213f_enable_r = 6'b000000;
 always @(posedge CLK) r213f_enable_r <= {r213f_enable_r[4:0], r213f_enable_w};
 assign r213f_enable = &r213f_enable_r[5:2] & featurebits[FEAT_213F];
+
+wire snescmd_rd_enable_w = (SNES_PA[7:4] == 4'b1111);
+//reg [5:0] snescmd_rd_enable_r;
+//initial snescmd_rd_enable_r = 6'b000000;
+//always @(posedge CLK) snescmd_rd_enable_r <= {snescmd_rd_enable_r[4:0], snescmd_rd_enable_w};
+assign snescmd_rd_enable = snescmd_rd_enable_w /*&snescmd_rd_enable_r[5:1]*/;
+
+assign snescmd_wr_enable_w = (SNES_ADDR[23:4] == 20'hccccc);
+//reg [5:0] snescmd_wr_enable_r;
+//initial snescmd_wr_enable_r = 6'b000000;
+//always @(posedge CLK) snescmd_wr_enable_r <= {snescmd_wr_enable_r[4:0], snescmd_wr_enable_w};
+assign snescmd_wr_enable = snescmd_wr_enable_w /*&snescmd_wr_enable_r[5:1]*/;
 
 endmodule

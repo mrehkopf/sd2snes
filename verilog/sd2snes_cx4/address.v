@@ -34,7 +34,9 @@ module address(
   output msu_enable,
   output cx4_enable,
   output cx4_vect_enable,
-  output r213f_enable
+  output r213f_enable,
+  output snescmd_rd_enable,
+  output snescmd_wr_enable
 );
 
 wire [23:0] SRAM_SNES_ADDR;
@@ -68,9 +70,12 @@ assign cx4_enable = &cx4_enable_r[5:2];
 assign cx4_vect_enable = &SNES_ADDR[15:5];
 
 wire r213f_enable_w = (SNES_PA == 8'h3f);
-reg [5:0] r213f_enable_r;
-initial r213f_enable_r = 6'b000000;
-always @(posedge CLK) r213f_enable_r <= {r213f_enable_r[4:0], r213f_enable_w};
-assign r213f_enable = &r213f_enable_r[5:2];
+assign r213f_enable = r213f_enable_w;
+
+wire snescmd_rd_enable_w = (SNES_PA[7:4] == 4'b1111);
+assign snescmd_rd_enable = snescmd_rd_enable_w;
+
+wire snescmd_wr_enable_w = (SNES_ADDR[23:4] == 20'hccccc);
+assign snescmd_wr_enable = snescmd_wr_enable_w;
 
 endmodule

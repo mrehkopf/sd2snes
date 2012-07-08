@@ -407,7 +407,9 @@ address snes_addr(
   .dspx_enable(dspx_enable),
   .dspx_dp_enable(dspx_dp_enable),
   .dspx_a0(DSPX_A0),
-  .r213f_enable(r213f_enable)
+  .r213f_enable(r213f_enable),
+  .snescmd_rd_enable(snescmd_rd_enable),
+  .snescmd_wr_enable(snescmd_wr_enable)
 );
 
 parameter MODE_SNES = 1'b0;
@@ -457,9 +459,11 @@ initial r213f_forceread = 0;
 initial r213f_state = 2'b01;
 initial r213f_delay = 3'b011;
 
+reg[7:0] snescmd_regs[15:0];
 
-assign SNES_DATA = (r213f_enable & (!SNES_PARD ^ r213f_forceread)) ? r213fr
-                   :(!SNES_READ ^ r213f_forceread)
+assign SNES_DATA = (snescmd_rd_enable & ~SNES_PARD) ? snescmd_regs[SNES_ADDR[3:0]]
+                   :(r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
+                   :(~SNES_READ ^ (r213f_forceread & r213f_enable & ~SNES_PARD))
                                 ? (srtc_enable ? SRTC_SNES_DATA_OUT
                                   :dspx_enable ? DSPX_SNES_DATA_OUT
                                   :dspx_dp_enable ? DSPX_SNES_DATA_OUT
@@ -626,6 +630,12 @@ always @(posedge SYSCLK2) begin
       r213f_state <= 2'b01;
       r213fr <= {SNES_DATA[7:5], mcu_region, SNES_DATA[3:0]};
     end
+  end
+end
+
+always @(posedge CLK2) begin
+  if(SNES_WR_end & snescmd_wr_enable) begin
+    snescmd_regs[SNES_ADDR[3:0]] <= SNES_DATA;
   end
 end
 
