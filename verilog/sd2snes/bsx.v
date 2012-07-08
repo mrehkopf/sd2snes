@@ -102,12 +102,12 @@ assign bs_page_offset = bs_sta0_en ? 9'h032
 
 reg [3:0] reg_oe_sreg;
 always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[2:0], reg_oe};
-wire reg_oe_falling = (reg_oe_sreg[3:0] == 4'b1000);
-wire reg_oe_rising = (reg_oe_sreg[3:0] == 4'b0001);
+wire reg_oe_falling = (reg_oe_sreg[3:1] == 3'b100);
+wire reg_oe_rising = (reg_oe_sreg[3:1] == 3'b001);
 
-reg [1:0] reg_we_sreg;
-always @(posedge clkin) reg_we_sreg <= {reg_we_sreg[0], reg_we};
-wire reg_we_rising = (reg_we_sreg[1:0] == 2'b01);
+reg [2:0] reg_we_sreg;
+always @(posedge clkin) reg_we_sreg <= {reg_we_sreg[1:0], reg_we};
+wire reg_we_rising = (reg_we_sreg[2:1] == 2'b01);
 
 reg [1:0] pgm_we_sreg;
 always @(posedge clkin) pgm_we_sreg <= {pgm_we_sreg[0], pgm_we};

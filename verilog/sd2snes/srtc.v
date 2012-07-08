@@ -44,13 +44,14 @@ reg rtc_we_r;
 assign rtc_we = rtc_we_r;
 assign data_out = data_out_r;
 
-reg [3:0] reg_oe_sreg;
-always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[2:0], reg_oe};
-wire reg_oe_falling = (reg_oe_sreg == 4'b1000);
+reg [5:0] reg_oe_sreg;
+always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[4:0], reg_oe};
+wire reg_oe_falling = (reg_oe_sreg[5:1] == 5'b11110);
+wire reg_oe_rising = (reg_oe_sreg[5:1] == 5'b00001);
 
-reg [1:0] reg_we_sreg;
-always @(posedge clkin) reg_we_sreg <= {reg_we_sreg[0], reg_we};
-wire reg_we_rising = (reg_we_sreg[1:0] == 2'b01);
+reg [5:0] reg_we_sreg;
+always @(posedge clkin) reg_we_sreg <= {reg_we_sreg[4:0], reg_we};
+wire reg_we_rising = (reg_we_sreg[5:1] == 5'b00001);
 
 reg [1:0] reset_sreg;
 always @(posedge clkin) reset_sreg <= {reset_sreg[0], reset};

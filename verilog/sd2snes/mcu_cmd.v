@@ -462,7 +462,7 @@ end
 
 // nextaddr pulse generation
 always @(posedge clk) begin
-  mcu_nextaddr_buf <= {mcu_nextaddr_buf[0], mcu_rq_rdy};
+  mcu_nextaddr_buf <= {mcu_nextaddr_buf[1:0], mcu_rq_rdy};
 end
 
 parameter ST_RQ = 2'b01;

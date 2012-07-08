@@ -56,13 +56,15 @@ wire status_reset_en = (status_reset_we_r == 2'b01);
 
 reg [13:0] msu_address_r;
 wire [13:0] msu_address = msu_address_r;
+initial msu_address_r = 13'b0;
 
 wire [7:0] msu_data;
+reg [7:0] msu_data_r;
 
-reg [1:0] msu_address_ext_write_sreg;
+reg [2:0] msu_address_ext_write_sreg;
 always @(posedge clkin)
-  msu_address_ext_write_sreg <= {msu_address_ext_write_sreg[0], msu_address_ext_write};
-wire msu_address_ext_write_rising = (msu_address_ext_write_sreg[1:0] == 2'b01);
+  msu_address_ext_write_sreg <= {msu_address_ext_write_sreg[1:0], msu_address_ext_write};
+wire msu_address_ext_write_rising = (msu_address_ext_write_sreg[2:1] == 2'b01);
 
 reg [4:0] reg_enable_sreg;
 initial reg_enable_sreg = 5'b11111;
@@ -70,11 +72,12 @@ always @(posedge clkin) reg_enable_sreg <= {reg_enable_sreg[3:0], enable};
 
 reg [5:0] reg_oe_sreg;
 always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[4:0], reg_oe};
-wire reg_oe_rising = reg_enable_sreg[4] && (reg_oe_sreg[5:0] == 6'b000001);
+wire reg_oe_rising = reg_enable_sreg[4] && (reg_oe_sreg[5:1] == 5'b00001);
+wire reg_oe_falling = reg_enable_sreg[1] && (reg_oe_sreg[5:1] == 5'b11110);
 
 reg [5:0] reg_we_sreg;
 always @(posedge clkin) reg_we_sreg <= {reg_we_sreg[4:0], reg_we};
-wire reg_we_rising = reg_enable_sreg[4] && (reg_we_sreg[5:0] == 6'b000001);
+wire reg_we_rising = reg_enable_sreg[4] && (reg_we_sreg[5:1] == 5'b00001);
 
 reg [31:0] addr_out_r;
 assign addr_out = addr_out_r;

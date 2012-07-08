@@ -37,9 +37,17 @@ module spi(
 reg [7:0] cmd_data_r;
 reg [7:0] param_data_r;
 
-reg [1:0] SSELr;  always @(posedge clk) SSELr <= {SSELr[0], SSEL};
+reg [2:0] SSELr;
+reg [2:0] SSELSCKr;
+
+always @(posedge clk) SSELr <= {SSELr[1:0], SSEL};
+always @(posedge SCK) SSELSCKr <= {SSELSCKr[1:0], SSEL};
+
+wire SSEL_inactive = SSELr[1];
 wire SSEL_active = ~SSELr[1];  // SSEL is active low
-wire SSEL_startmessage = (SSELr[1:0]==2'b10);  // message starts at falling edge
+wire SSEL_startmessage = (SSELr[2:1]==2'b10);  // message starts at falling edge
+wire SSEL_endmessage = (SSELr[2:1]==2'b01);  // message stops at rising edge
+assign endmessage = SSEL_endmessage;
 assign startmessage = SSEL_startmessage;
 
 // bit count for one SPI byte + byte count for the message

@@ -152,28 +152,36 @@ my_dcm snes_dcm(
 
 assign DCM_RST=0;
 
-reg [5:0] SNES_READr;
-reg [5:0] SNES_WRITEr;
-reg [12:0] SNES_CPU_CLKr;
-reg [5:0] SNES_RWr;
-reg [23:0] SNES_ADDRr;
+reg [7:0] SNES_PARDr;
+reg [7:0] SNES_PAWRr;
+reg [7:0] SNES_READr;
+reg [7:0] SNES_WRITEr;
+reg [7:0] SNES_CPU_CLKr;
 
-wire SNES_RW = (SNES_READ & SNES_WRITE);
+wire SNES_FAKE_CLK = &SNES_CPU_CLKr[2:1];
+//wire SNES_FAKE_CLK = ~(SNES_READ & SNES_WRITE);
 
-wire SNES_RW_start = (SNES_RWr == 6'b111110); // falling edge marks beginning of cycle
-wire SNES_RD_start = (SNES_READr == 6'b111110);
-wire SNES_WR_start = (SNES_WRITEr == 6'b111110);
-wire SNES_cycle_start = (SNES_CPU_CLKr[5:0] == 6'b000001);
-wire SNES_cycle_end = (SNES_CPU_CLKr[5:0] == 6'b111110);
+reg SNES_DEADr;
+initial SNES_DEADr = 0;
+
+wire SNES_PARD_start = (SNES_PARDr[7:1] == 7'b1111110);
+wire SNES_PAWR_start = (SNES_PAWRr[7:1] == 7'b0000001);
+wire SNES_RD_start = (SNES_READr[7:1] == 7'b1111110);
+wire SNES_WR_start = (SNES_WRITEr[7:1] == 7'b1111110);
+wire SNES_WR_end = (SNES_WRITEr[7:1] == 7'b0000001);
+wire SNES_cycle_start = ((SNES_CPU_CLKr[7:2] & SNES_CPU_CLKr[6:1]) == 6'b000001);
+wire SNES_cycle_end = ((SNES_CPU_CLKr[7:2] & SNES_CPU_CLKr[6:1]) == 6'b111110);
 
 always @(posedge CLK2) begin
-  SNES_READr <= {SNES_READr[4:0], SNES_READ};
-  SNES_WRITEr <= {SNES_WRITEr[4:0], SNES_WRITE};
-  SNES_CPU_CLKr <= {SNES_CPU_CLKr[11:0], SNES_CPU_CLK};
-  SNES_RWr <= {SNES_RWr[4:0], SNES_RW};
+  SNES_PARDr <= {SNES_PARDr[6:0], SNES_PARD};
 end
 
-wire ROM_SEL;
+always @(posedge CLK2) begin
+  SNES_PAWRr <= {SNES_PAWRr[6:0], SNES_PAWR};
+  SNES_READr <= {SNES_READr[6:0], SNES_READ};
+  SNES_WRITEr <= {SNES_WRITEr[6:0], SNES_WRITE};
+  SNES_CPU_CLKr <= {SNES_CPU_CLKr[6:0], SNES_CPU_CLK};
+end
 
 address snes_addr(
   .CLK(CLK2),

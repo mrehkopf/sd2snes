@@ -128,8 +128,8 @@ always @(posedge CLK) reg_nCS_sreg <= {reg_nCS_sreg[3:0], nCS};
 reg [5:0] reg_oe_sreg;
 initial reg_oe_sreg = 6'b111111;
 always @(posedge CLK) reg_oe_sreg <= {reg_oe_sreg[4:0], nRD};
-wire reg_oe_rising = !reg_nCS_sreg[4] && (reg_oe_sreg[5:0] == 6'b000001);
-wire reg_oe_falling = (reg_oe_sreg[5:0] == 6'b100000);
+wire reg_oe_rising = !reg_nCS_sreg[4] && (reg_oe_sreg[5:1] == 5'b00001);
+wire reg_oe_falling = (reg_oe_sreg[5:1] == 5'b10000);
 
 reg [4:0] reg_DP_nCS_sreg;
 initial reg_DP_nCS_sreg = 5'b11111;
@@ -138,7 +138,7 @@ always @(posedge CLK) reg_DP_nCS_sreg <= {reg_DP_nCS_sreg[3:0], DP_nCS};
 reg [5:0] reg_we_sreg;
 initial reg_we_sreg = 6'b111111;
 always @(posedge CLK) reg_we_sreg <= {reg_we_sreg[4:0], nWR};
-wire reg_we_rising = !reg_nCS_sreg[4] && (reg_we_sreg[5:0] == 6'b000001);
+wire reg_we_rising = !reg_nCS_sreg[4] && (reg_we_sreg[5:1] == 5'b00001);
 
 wire [15:0] ram_douta;
 wire [9:0] ram_addra;
