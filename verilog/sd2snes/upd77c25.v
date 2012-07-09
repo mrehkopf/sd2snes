@@ -98,6 +98,9 @@ upd77c25_pgmrom pgmrom (
   .doutb(pgm_doutb) // output [23 : 0] doutb
 );
 
+reg [7:0] DIr;
+always @(posedge CLK) if(~nWR) DIr <= DI;
+
 wire [23:0] opcode_w = pgm_doutb;
 reg [1:0] op;
 reg [1:0] op_pselect;
@@ -303,12 +306,12 @@ always @(posedge CLK) begin
     if(reg_we_rising && (A0r[3] == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b0) begin
-          regs_dr[7:0] <= DI;
+          regs_dr[7:0] <= DIr;
         end else begin
-          regs_dr[15:8] <= DI;
+          regs_dr[15:8] <= DIr;
         end
       end else begin
-        regs_dr[7:0] <= DI;
+        regs_dr[7:0] <= DIr;
       end
     end else if(ld_dst == 4'b0110 && insn_state == STATE_STORE) begin
       if (op == I_OP || op == I_RT) regs_dr <= idb;
