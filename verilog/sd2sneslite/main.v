@@ -35,6 +35,10 @@ module main(
   output SNES_DATABUS_DIR,
   input SNES_SYSCLK,
 
+  input [7:0] SNES_PA,
+  input SNES_PARD,
+  input SNES_PAWR,
+  
   /* SRAM signals */
   /* Bus 1: PSRAM, 128Mbit, 16bit, 70ns */
   inout [15:0] ROM_DATA,
@@ -93,8 +97,6 @@ wire [7:0] spi_input_data;
 wire [31:0] spi_byte_cnt;
 wire [2:0] spi_bit_cnt;
 wire [23:0] MCU_ADDR;
-wire [7:0] mcu_data_in;
-wire [7:0] mcu_data_out;
 wire [23:0] SAVERAM_MASK;
 wire [23:0] ROM_MASK;
 
@@ -125,7 +127,6 @@ mcu_cmd snes_mcu_cmd(
   .param_ready(spi_param_ready),
   .cmd_data(spi_cmd_data),
   .param_data(spi_param_data),
-  .mcu_write(MCU_WRITE),
   .mcu_data_in(MCU_DINr),
   .mcu_data_out(MCU_DOUT),
   .spi_byte_cnt(spi_byte_cnt),
@@ -140,7 +141,6 @@ mcu_cmd snes_mcu_cmd(
 );
 
 wire [7:0] DCM_STATUS;
-
 // dcm1: dfs 4x
 my_dcm snes_dcm(
   .CLKIN(CLKIN),
@@ -194,11 +194,6 @@ address snes_addr(
   .ROM_MASK(ROM_MASK)
 );
 
-wire SNES_READ_CYCLEw;
-wire SNES_WRITE_CYCLEw;
-wire MCU_READ_CYCLEw;
-wire MCU_WRITE_CYCLEw;
-
 parameter MODE_SNES = 1'b0;
 parameter MODE_MCU = 1'b1;
 
@@ -220,23 +215,24 @@ parameter ST_MCU_WR_WAIT  = 18'b000100000000000000;
 parameter ST_MCU_WR_WAIT2 = 18'b001000000000000000;
 parameter ST_MCU_WR_END   = 18'b010000000000000000;
 
-parameter ROM_RD_WAIT = 4'h4;
+parameter ROM_RD_WAIT = 4'h0;
 parameter ROM_RD_WAIT_MCU = 4'h6;
+parameter ROM_WR_WAIT = 4'h4;
 parameter ROM_WR_WAIT1 = 4'h2;
-parameter ROM_WR_WAIT2 = 4'h3;
-parameter ROM_WR_WAIT_MCU = 4'h6;
+parameter ROM_WR_WAIT2 = 4'h1;
+parameter ROM_WR_WAIT_MCU = 4'h5;
+
+parameter SNES_DEAD_TIMEOUT = 17'd88000; // 1ms
 
 reg [17:0] STATE;
 initial STATE = ST_IDLE;
 
-reg [1:0] CYCLE_RESET;
-reg ROM_WE_MASK;
-reg ROM_OE_MASK;
-
 reg [7:0] SNES_DINr;
+reg [7:0] SNES_DOUTr;
 reg [7:0] ROM_DOUTr;
 
-assign SNES_DATA = (!SNES_READ) ? SNES_DINr : 8'bZ;
+assign SNES_DATA = ~SNES_READ ? SNES_DOUTr
+						 : 8'bZ;
 
 reg [3:0] ST_MEM_DELAYr;
 reg MCU_RD_PENDr;

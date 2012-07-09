@@ -334,6 +334,7 @@ always @(posedge CLK) begin
         CACHE_ST <= ST_CACHE_START;
         cache_pgmpage <= cx4_mmio_pgmpage;
         cache_cachepage <= cx4_mmio_cachepage;
+		  cx4_busy[BUSY_CACHE] <= 1'b1;
       end else if(cpu_cache_en
          & (~cachevalid[~cpu_page]
             | |(cachetag[~cpu_page] ^ cpu_p))) begin
