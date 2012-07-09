@@ -71,27 +71,37 @@ parameter SRTC_COMMAND = 5'b00100;
 parameter SRTC_WRITE = 5'b01000;
 parameter SRTC_WRITE2 = 5'b10000;
 
+reg [3:0] data_in_r;
+
+reg [3:0] addr_in_r;
+always @(posedge clkin) addr_in_r <= {addr_in_r[2:0], addr_in};
+
+assign srtc_reg_we_rising = reg_we_rising;
+assign srtc_state = mode_r;
+assign srtc_rtc_ptr = rtc_ptr;
+assign srtc_we_sreg = reg_we_sreg;
+
 initial begin
   rtc_we_r = 0;
-  mode_r <= SRTC_READ;
-  rtc_ptr <= 4'hf;
+  mode_r = SRTC_READ;
+  rtc_ptr = 4'hf;
+  data_out_r = 8'h00;
+end
+
+//always @(posedge clkin) data_in_r <= data_in;
+always @(posedge clkin) begin
+  if(~reg_we) data_in_r <= data_in;
 end
 
 always @(posedge clkin) begin
   if(reset_rising) begin
     mode_r <= SRTC_READ;
     rtc_ptr <= 4'hf;
-  end else if(mode_r == SRTC_WRITE2) begin
-    we_countdown_r <= we_countdown_r - 1;
-    if (we_countdown_r == 3'b000) begin
-      mode_r <= SRTC_WRITE;
-      rtc_we_r <= 0;
-    end
   end else if(reg_we_rising && enable) begin
-    case (addr_in)
+    case (addr_in_r[0])
 //     1'b0: // data register is read only
       1'b1: // control register
-        case (data_in)
+        case (data_in_r)
           4'hd: begin
             mode_r <= SRTC_READ;
             rtc_ptr <= 4'hf;
@@ -99,11 +109,9 @@ always @(posedge clkin) begin
           4'he: begin
             mode_r <= SRTC_COMMAND;
           end
-          4'hf: begin
-          end
           default: begin
             if(mode_r == SRTC_COMMAND) begin
-              case (data_in)
+              case (data_in_r)
                 4'h0: begin
                   mode_r <= SRTC_WRITE;
                   rtc_data_out_r <= rtc_data_in;
@@ -119,38 +127,38 @@ always @(posedge clkin) begin
             end else if(mode_r == SRTC_WRITE) begin
               rtc_ptr <= rtc_ptr + 1;
               case(rtc_ptr)
-                0: rtc_data_out_r[3:0] <= data_in;
-                1: rtc_data_out_r[7:4] <= data_in;
-                2: rtc_data_out_r[11:8] <= data_in;
-                3: rtc_data_out_r[15:12] <= data_in;
-                4: rtc_data_out_r[19:16] <= data_in;
-                5: rtc_data_out_r[23:20] <= data_in;
-                6: rtc_data_out_r[27:24] <= data_in;
-                7: rtc_data_out_r[31:28] <= data_in;
+                0: rtc_data_out_r[3:0] <= data_in_r;
+                1: rtc_data_out_r[7:4] <= data_in_r;
+                2: rtc_data_out_r[11:8] <= data_in_r;
+                3: rtc_data_out_r[15:12] <= data_in_r;
+                4: rtc_data_out_r[19:16] <= data_in_r;
+                5: rtc_data_out_r[23:20] <= data_in_r;
+                6: rtc_data_out_r[27:24] <= data_in_r;
+                7: rtc_data_out_r[31:28] <= data_in_r;
                 8: begin
-                  rtc_data_out_r[35:32] <= (data_in < 10)
-                                           ? data_in
-                                           : data_in - 10;
-                  rtc_data_out_r[39:36] <= data_in < 10 ? 0 : 1;
+                  rtc_data_out_r[35:32] <= (data_in_r < 10)
+                                           ? data_in_r
+                                           : data_in_r - 10;
+                  rtc_data_out_r[39:36] <= data_in_r < 10 ? 0 : 1;
                 end
-                9: rtc_data_out_r[43:40] <= data_in;
-                10: rtc_data_out_r[47:44] <= data_in;
+                9: rtc_data_out_r[43:40] <= data_in_r;
+                10: rtc_data_out_r[47:44] <= data_in_r;
                 11: begin
-                  rtc_data_out_r[51:48] <= (data_in < 10)
-                                           ? data_in
-                                           : data_in - 10;
-                  rtc_data_out_r[55:52] <= data_in < 10 ? 1 : 2;
+                  rtc_data_out_r[51:48] <= (data_in_r < 10)
+                                           ? data_in_r
+                                           : data_in_r - 10;
+                  rtc_data_out_r[55:52] <= data_in_r < 10 ? 1 : 2;
                 end
               endcase
               mode_r <= SRTC_WRITE2;
-              we_countdown_r <= 5;
+              we_countdown_r <= 4;
               rtc_we_r <= 1;
             end
           end
         endcase
     endcase
   end else if(reg_oe_falling && enable) begin
-    case (addr_in)
+    case (addr_in_r[0])
       1'b0: // read data register
       if(mode_r == SRTC_READ) begin
         case(rtc_ptr)
@@ -171,18 +179,25 @@ always @(posedge clkin) begin
                             + (rtc_data_r[55:52] << 1)
                             + (rtc_data_r[55:52] << 3) - 10;
           12: data_out_r <= rtc_data_r[59:56];
+//			 14: mode_r <= SRTC_IDLE;
           15: begin
             rtc_data_r <= rtc_data_in;
             data_out_r <= 8'h0f;
           end
-        default: data_out_r <= 8'h0f;
-      endcase
+          default: data_out_r <= 8'h0f;
+        endcase
         rtc_ptr <= rtc_ptr == 13 ? 15 : rtc_ptr + 1;
       end else begin
         data_out_r <= 8'h00;
       end
 //      1'b1: // control register is write only
     endcase
+  end else if(mode_r == SRTC_WRITE2) begin
+    we_countdown_r <= we_countdown_r - 1;
+    if (we_countdown_r == 3'b000) begin
+      mode_r <= SRTC_WRITE;
+      rtc_we_r <= 0;
+    end
   end
 end
 
