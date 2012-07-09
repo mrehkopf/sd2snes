@@ -135,7 +135,7 @@ void snes_main_loop() {
       writeled(1);
       save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
       didnotsave=0;
-      writeled(0);
+      writeled(1);
     }
     saveram_crc_old = saveram_crc;
   }
