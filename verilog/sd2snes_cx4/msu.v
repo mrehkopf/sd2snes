@@ -38,7 +38,13 @@ module msu(
   input [5:0] status_set_bits,
   input status_reset_we,
   input [13:0] msu_address_ext,
-  input msu_address_ext_write
+  input msu_address_ext_write,
+  
+  output DBG_msu_reg_oe_rising,
+  output DBG_msu_reg_oe_falling,
+  output DBG_msu_reg_we_rising,
+  output [13:0] DBG_msu_address,
+  output DBG_msu_address_ext_write_rising
 );
 
 reg [2:0] reg_addr_r [3:0];
@@ -96,13 +102,26 @@ reg audio_busy_r;
 reg data_start_r;
 reg data_busy_r;
 reg ctrl_start_r;
+reg audio_error_r;
 reg [1:0] audio_ctrl_r;
 reg [1:0] audio_status_r;
 
 initial begin
-  audio_busy_r <= 1'b1;
-  data_busy_r <= 1'b1;
+  audio_busy_r = 1'b1;
+  data_busy_r = 1'b1;
+  audio_error_r = 1'b0;
+  volume_r = 8'h00;
+  addr_out_r = 32'h00000000;
+  track_out_r = 16'h0000;
+  data_start_r = 1'b0;
+  audio_start_r = 1'b0;
 end
+
+assign DBG_msu_address = msu_address;
+assign DBG_msu_reg_oe_rising = reg_oe_rising;
+assign DBG_msu_reg_oe_falling = reg_oe_falling;
+assign DBG_msu_reg_we_rising = reg_we_rising;
+assign DBG_msu_address_ext_write_rising = msu_address_ext_write_rising;
 
 assign status_out = {msu_address_r[13], // 6
                      audio_start_r,     // 5

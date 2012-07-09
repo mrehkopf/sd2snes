@@ -607,44 +607,109 @@ always @(posedge SYSCLK2) begin
   end
 end
 
+always @(posedge CLK2) begin
+  if(SNES_WR_end & snescmd_wr_enable) begin
+    snescmd_regs[SNES_ADDR[3:0]] <= SNES_DATA;
+  end
+end
+
+reg ROM_WE_1;
+reg MCU_WRITE_1;
+
+always @(posedge CLK2) begin
+  ROM_WE_1 <= ROM_WE;
+  MCU_WRITE_1<= MCU_WRITE;
+end
+
 assign ROM_DATA[7:0] = ROM_ADDR0
-                       ?(SD_DMA_TO_ROM ? (!MCU_WRITE ? MCU_DOUT : 8'bZ)
-                                        : (!ROM_WE ? ROM_DOUTr : 8'bZ)
+                       ?(SD_DMA_TO_ROM ? (!MCU_WRITE_1 ? MCU_DOUT : 8'bZ)
+							                   /*: ((~SNES_WRITE & (IS_WRITABLE | IS_FLASHWR)) ? SNES_DATA */
+                                        : (ROM_DOUT_ENr ? ROM_DOUTr : 8'bZ) //)
                         )
                        :8'bZ;
 
 assign ROM_DATA[15:8] = ROM_ADDR0 ? 8'bZ
-                        :(SD_DMA_TO_ROM ? (!MCU_WRITE ? MCU_DOUT : 8'bZ)
-                                         : (!ROM_WE ? ROM_DOUTr : 8'bZ)
+                        :(SD_DMA_TO_ROM ? (!MCU_WRITE_1 ? MCU_DOUT : 8'bZ)
+								                 /*:  ((~SNES_WRITE & (IS_WRITABLE | IS_FLASHWR)) ? SNES_DATA */
+                                         : (ROM_DOUT_ENr ? ROM_DOUTr : 8'bZ) //)
                          );
 
 assign ROM_WE = SD_DMA_TO_ROM
                 ?MCU_WRITE
-                :ROM_WEr | (ASSERT_SNES_ADDR & ~snes_wr_cycle);
+                :/*(SNES_FAKE_CLK & (IS_WRITABLE | IS_FLASHWR)) ? SNES_WRITE :*/ ROM_WEr;
 
 // OE always active. Overridden by WE when needed.
 assign ROM_OE = 1'b0;
 
 assign ROM_CE = 1'b0;
 
-assign ROM_BHE = !ROM_WE ? ROM_ADDR0 : 1'b0;
-assign ROM_BLE = !ROM_WE ? !ROM_ADDR0 : 1'b0;
+assign ROM_BHE = /*(~SD_DMA_TO_ROM & ~ROM_WE & ~ROM_SA) ?*/ ROM_ADDR0 /*: 1'b0*/;
+assign ROM_BLE = /*(~SD_DMA_TO_ROM & ~ROM_WE & ~ROM_SA) ?*/ !ROM_ADDR0 /*: 1'b0*/;
 
 assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
                          cx4_enable ? 1'b0 :
-                         (cx4_active & cx4_vect_enable) ? 1'b0 :
+								 (cx4_active & cx4_vect_enable) ? 1'b0 :
                          r213f_enable & !SNES_PARD ? 1'b0 :
-                         ((!IS_ROM & !IS_SAVERAM & !IS_WRITABLE)
-                          |(SNES_READ & SNES_WRITE)
+								 (snescmd_wr_enable | snescmd_rd_enable) & !SNES_PARD ? 1'b0 :
+                         ((IS_ROM & SNES_CS)
+                          |(!IS_ROM & !IS_SAVERAM & !IS_WRITABLE)
+                          |(SNES_READr[0] & SNES_WRITEr[0])
                          );
 
-assign SNES_DATABUS_DIR = (!SNES_READ | (!SNES_PARD & r213f_enable))
-                           ? 1'b1 ^ r213f_forceread
+assign SNES_DATABUS_DIR = (!SNES_READr[0] | (!SNES_PARD & (r213f_enable | snescmd_rd_enable)))
+                           ? 1'b1 ^ (r213f_forceread & r213f_enable & ~SNES_PARD)
                            : 1'b0;
 
-assign IRQ_DIR = 1'b0;
-assign SNES_IRQ = 1'bZ;
+assign SNES_IRQ = 1'b0;
 
 assign p113_out = 1'b0;
+
+/*
+wire [35:0] CONTROL0;
+
+icon icon (
+    .CONTROL0(CONTROL0) // INOUT BUS [35:0]
+);
+
+ila ila (
+    .CONTROL(CONTROL0), // INOUT BUS [35:0]
+    .CLK(CLK2), // IN
+    .TRIG0(SNES_ADDR), // IN BUS [23:0]
+    .TRIG1(SNES_DATA), // IN BUS [7:0]
+    .TRIG2({SNES_READ, SNES_WRITE, SNES_CPU_CLK, SNES_cycle_start, SNES_cycle_end, SNES_DEADr, MCU_RRQ, MCU_WRQ, MCU_RDY, cx4_active, ROM_WE, ROM_DOUT_ENr, ROM_SA, CX4_RRQ, CX4_RDY, ROM_CA}), // IN BUS [15:0]
+    .TRIG3(ROM_ADDRr), // IN BUS [23:0]
+    .TRIG4(CX4_ADDRr), // IN BUS [23:0]
+    .TRIG5(ROM_DATA), // IN BUS [15:0]
+    .TRIG6(CX4_DINr), // IN BUS [7:0]
+    .TRIG7(STATE) // IN BUS [21:0]
+);*/
+/*
+ila ila (
+    .CONTROL(CONTROL0), // INOUT BUS [35:0]
+    .CLK(CLK2), // IN
+    .TRIG0(SNES_ADDR), // IN BUS [23:0]
+    .TRIG1(SNES_DATA), // IN BUS [7:0]
+    .TRIG2({SNES_READ, SNES_WRITE, SNES_CPU_CLK, SNES_cycle_start, SNES_cycle_end, SNES_DEADr, MCU_RRQ, MCU_WRQ, MCU_RDY, ROM_WEr, ROM_WE, ROM_DOUT_ENr, ROM_SA, DBG_mcu_nextaddr, SNES_DATABUS_DIR, SNES_DATABUS_OE}),	 // IN BUS [15:0]
+    .TRIG3({bsx_data_ovr, SPI_SCK, SPI_MISO, SPI_MOSI, spi_cmd_ready, spi_param_ready, spi_input_data, SD_DAT}), // IN BUS [17:0]
+    .TRIG4(ROM_ADDRr), // IN BUS [23:0]
+    .TRIG5(ROM_DATA), // IN BUS [15:0]
+    .TRIG6(MCU_DINr), // IN BUS [7:0]
+	 .TRIG7(spi_byte_cnt[3:0])
+);
+*/
+/*
+ila_srtc ila (
+    .CONTROL(CONTROL0), // INOUT BUS [35:0]
+    .CLK(CLK2), // IN
+    .TRIG0(SD_DMA_DBG_cyclecnt), // IN BUS [23:0]
+    .TRIG1(SD_DMA_SRAM_DATA), // IN BUS [7:0]
+    .TRIG2({SPI_SCK, SPI_MOSI, SPI_MISO, spi_cmd_ready, SD_DMA_SRAM_WE, SD_DMA_EN, SD_CLK, SD_DAT, SD_DMA_NEXTADDR, SD_DMA_STATUS, 3'b000}),	 // IN BUS [15:0]
+    .TRIG3({spi_cmd_data, spi_param_data}), // IN BUS [17:0]
+    .TRIG4(ROM_ADDRr), // IN BUS [23:0]
+    .TRIG5(ROM_DATA), // IN BUS [15:0]
+    .TRIG6(MCU_DINr), // IN BUS [7:0]
+	 .TRIG7(ST_MEM_DELAYr)
+);
+*/
 
 endmodule

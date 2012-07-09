@@ -29,7 +29,13 @@ module srtc(
   input reg_oe,
   input enable,
   output rtc_we,
-  input reset
+  input reset,
+  
+  /* DEBUG */
+  output [4:0] srtc_state,
+  output srtc_reg_we_rising,
+  output [3:0] srtc_rtc_ptr,
+  output [5:0] srtc_we_sreg
 );
 
 reg [59:0] rtc_data_r;

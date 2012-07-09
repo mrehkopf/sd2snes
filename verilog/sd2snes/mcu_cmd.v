@@ -97,7 +97,10 @@ module mcu_cmd(
   
   output reg region_out,
   // SNES sync/clk
-  input snes_sysclk
+  input snes_sysclk,
+  
+  // debug
+  output DBG_mcu_nextaddr
 );
 
 initial begin
@@ -545,4 +548,5 @@ assign mcu_mapper = MAPPER_BUF;
 assign rom_mask_out = ROM_MASK;
 assign saveram_mask_out = SAVERAM_MASK;
 
+assign DBG_mcu_nextaddr = mcu_nextaddr;
 endmodule

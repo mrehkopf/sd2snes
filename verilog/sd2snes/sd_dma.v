@@ -31,7 +31,10 @@ module sd_dma(
   input [10:0] SD_DMA_PARTIAL_START,
   input [10:0] SD_DMA_PARTIAL_END,
   input SD_DMA_START_MID_BLOCK,
-  input SD_DMA_END_MID_BLOCK
+  input SD_DMA_END_MID_BLOCK,
+  
+  output [10:0] DBG_cyclecnt,
+  output [2:0] DBG_clkcnt
 );
 
 reg [10:0] SD_DMA_STARTr;
