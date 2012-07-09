@@ -143,12 +143,13 @@ reg [55:0] rtc_data_out_buf;
 reg rtc_pgm_we_buf;
 
 reg srtc_reset_buf;
+initial srtc_reset_buf = 0;
 
 reg [31:0] SNES_SYSCLK_FREQ_BUF;
 
 reg [7:0] MCU_DATA_OUT_BUF;
 reg [7:0] MCU_DATA_IN_BUF;
-reg [1:0] mcu_nextaddr_buf;
+reg [2:0] mcu_nextaddr_buf;
 
 wire mcu_nextaddr;
 
@@ -413,9 +414,9 @@ end
 
 // value fetch during last SPI bit
 always @(posedge clk) begin
-  if (cmd_data[7:4] == 4'h8 && mcu_nextaddr_buf == 2'b01)
+  if (cmd_data[7:4] == 4'h8 && mcu_nextaddr)
     MCU_DATA_IN_BUF <= mcu_data_in;
-  else if (spi_bit_cnt == 3'h7) begin
+  else if (cmd_ready | param_ready /* bit_cnt == 7 */) begin
     if (cmd_data[7:0] == 8'hF0)
       MCU_DATA_IN_BUF <= 8'hA5;
     else if (cmd_data[7:0] == 8'hF1)

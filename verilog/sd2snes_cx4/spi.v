@@ -39,15 +39,27 @@ module spi(
 reg [7:0] cmd_data_r;
 reg [7:0] param_data_r;
 
-reg [1:0] SSELr;  always @(posedge clk) SSELr <= {SSELr[0], SSEL};
+reg [2:0] SSELr;
+reg [2:0] SSELSCKr;
+
+always @(posedge clk) SSELr <= {SSELr[1:0], SSEL};
+always @(posedge SCK) SSELSCKr <= {SSELSCKr[1:0], SSEL};
+
+wire SSEL_inactive = SSELr[1];
 wire SSEL_active = ~SSELr[1];  // SSEL is active low
-wire SSEL_startmessage = (SSELr[1:0]==2'b10);  // message starts at falling edge
-wire SSEL_endmessage = (SSELr[1:0]==2'b01);  // message stops at rising edge
+wire SSEL_startmessage = (SSELr[2:1]==2'b10);  // message starts at falling edge
+wire SSEL_endmessage = (SSELr[2:1]==2'b01);  // message stops at rising edge
 assign endmessage = SSEL_endmessage;
 assign startmessage = SSEL_startmessage;
 
 // bit count for one SPI byte + byte count for the message
 reg [2:0] bitcnt;
+initial bitcnt = 3'b000;
+wire bitcnt_msb = bitcnt[2];
+reg [2:0] bitcnt_wrap_r;
+always @(posedge clk) bitcnt_wrap_r <= {bitcnt_wrap_r[1:0], bitcnt_msb};
+wire byte_received_sync = (bitcnt_wrap_r[2:1] == 2'b10);
+
 reg [31:0] byte_cnt_r;
 
 reg byte_received;  // high when a byte has been received
@@ -56,23 +68,26 @@ reg [7:0] byte_data_received;
 assign bit_cnt = bitcnt;
 
 always @(posedge SCK) begin
-  if(SSEL) bitcnt <= 3'b000;
-  else begin
-    bitcnt <= bitcnt + 3'b001;
-    byte_data_received <= {byte_data_received[6:0], MOSI};
+  if(SSELSCKr[1]) bitcnt <= 3'b000;
+  else bitcnt <= bitcnt + 3'b001;
+end
+
+always @(posedge SCK) begin
+  if(~SSELSCKr[1]) begin
+	 byte_data_received <= {byte_data_received[6:0], MOSI};
   end
-  if(~SSEL && bitcnt==3'b111) byte_received <= 1'b1;
+  if(~SSELSCKr[1] && bitcnt==3'b111) byte_received <= 1'b1;
   else byte_received <= 1'b0;
 end
 
-reg [1:0] byte_received_r;
-always @(posedge clk) byte_received_r <= {byte_received_r[0], byte_received};
-wire byte_received_sync = (byte_received_r == 2'b01);
+//reg [2:0] byte_received_r;
+//always @(posedge clk) byte_received_r <= {byte_received_r[1:0], byte_received};
+//wire byte_received_sync = (byte_received_r[2:1] == 2'b01);
 
 always @(posedge clk) begin
-  if(~SSEL_active)
+  if(SSEL_inactive) begin
     byte_cnt_r <= 16'h0000;
-  else if(byte_received_sync) begin
+  end else if(byte_received_sync) begin
     byte_cnt_r <= byte_cnt_r + 16'h0001;
   end
 end
