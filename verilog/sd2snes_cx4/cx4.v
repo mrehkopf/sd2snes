@@ -752,21 +752,21 @@ always @(posedge CLK) begin
       cpu_op <= cpu_op_w;
 		casex(cpu_op_w[15:11])
         5'b00x01, 5'b00x10, 5'b00100, 5'b00111: begin
-		    cpu_wait <= 8'h08;
+		    cpu_wait <= 8'h07;
 	       CPU_STATE <= ST_CPU_4;
 		  end
         5'b01110, 5'b01101, 5'b11101: begin
 		    cpu_wait <= 8'h03;
 	       CPU_STATE <= ST_CPU_4;
 		  end
-        5'b10011: begin
-		    cpu_wait <= 8'h03;
+        /*5'b10011: begin
+		    cpu_wait <= 8'h02;
 	       CPU_STATE <= ST_CPU_4;
 		  end
         5'b01000: begin
-		    cpu_wait <= 8'h13;
+		    cpu_wait <= 8'h0e;
 	       CPU_STATE <= ST_CPU_4;
-		  end
+		  end*/
 		  default: begin
 		    cpu_wait <= 8'h00;
 	       CPU_STATE <= ST_CPU_0;
