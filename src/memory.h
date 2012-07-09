@@ -31,7 +31,7 @@
 #include "smc.h"
 
 #define SRAM_ROM_ADDR           (0x000000L)
-#define SRAM_SAVE_ADDR          (0xC00000L)
+#define SRAM_SAVE_ADDR          (0xE00000L)
 
 #define SRAM_MENU_ADDR          (0xC00000L)
 #define SRAM_DIR_ADDR           (0xC10000L)
