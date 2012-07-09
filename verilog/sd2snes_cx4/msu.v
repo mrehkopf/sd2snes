@@ -146,8 +146,8 @@ reg [7:0] data_out_r;
 assign reg_data_out = data_out_r;
 
 always @(posedge clkin) begin
-  case(reg_addr_r[3])
-    3'h0: data_out_r <= {data_busy_r, audio_busy_r, audio_status_r, 4'b0001};
+  case(reg_addr_r[1])
+    3'h0: data_out_r <= {data_busy_r, audio_busy_r, audio_status_r, audio_error_r, 3'b001};
     3'h1: data_out_r <= msu_data;
     3'h2: data_out_r <= 8'h53;
     3'h3: data_out_r <= 8'h2d;
@@ -195,7 +195,7 @@ always @(posedge clkin) begin
     data_busy_r <= (data_busy_r | status_set_bits[4]) & ~status_reset_bits[4];
     if(status_reset_bits[4]) data_start_r <= 1'b0;
 
-//    volume_start_r <= (volume_start_r | status_set_bits[3]) & ~status_reset_bits[3];
+    audio_error_r <= (audio_error_r | status_set_bits[3]) & ~status_reset_bits[3];
 
     audio_status_r <= (audio_status_r | status_set_bits[2:1]) & ~status_reset_bits[2:1];
 

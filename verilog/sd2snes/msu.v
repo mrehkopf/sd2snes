@@ -195,7 +195,7 @@ always @(posedge clkin) begin
     data_busy_r <= (data_busy_r | status_set_bits[4]) & ~status_reset_bits[4];
     if(status_reset_bits[4]) data_start_r <= 1'b0;
 
-//    volume_start_r <= (volume_start_r | status_set_bits[3]) & ~status_reset_bits[3];
+    audio_error_r <= (audio_error_r | status_set_bits[3]) & ~status_reset_bits[3];
 
     audio_status_r <= (audio_status_r | status_set_bits[2:1]) & ~status_reset_bits[2:1];
 
