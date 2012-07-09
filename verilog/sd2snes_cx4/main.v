@@ -617,10 +617,10 @@ always @(posedge CLK2) begin
   endcase
 end
 
-always @(posedge SYSCLK2) begin
-  if(SNES_PARD_start & r213f_enable) begin
-    r213f_forceread <= 1'b1;
-    r213f_delay <= 3'b001;
+always @(posedge CLK2) begin
+  if(SNES_cycle_end) r213f_forceread <= 1'b1;
+  else if(SNES_PARD_start & r213f_enable) begin
+    r213f_delay <= 3'b000;
     r213f_state <= 2'b10;
   end else if(r213f_state == 2'b10) begin
     r213f_delay <= r213f_delay - 1;
