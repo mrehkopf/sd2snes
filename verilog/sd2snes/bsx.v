@@ -182,24 +182,25 @@ end
 
 
 always @(posedge clkin) begin
-  if(reg_oe_rising) begin
-    if(base_enable) begin
-	   case(base_addr)
-		  5'h0b: bs_stb0_offset <= bs_stb0_offset + 1;
-		  5'h0c: bs_page0_offset <= bs_page0_offset + 1; 
-		  5'h11: bs_stb1_offset <= bs_stb1_offset + 1;
-		  5'h12: bs_page1_offset <= bs_page1_offset + 1;
-		endcase
-	 end
-  end
+  if(reg_oe_rising && base_enable) begin
+    case(base_addr)
+	   5'h0b: begin
+		  bs_stb0_offset <= bs_stb0_offset + 1;
+		  base_regs[5'h0d] <= base_regs[5'h0d] | reg_data_in;
+		end
+		5'h0c: bs_page0_offset <= bs_page0_offset + 1; 
+		5'h11: begin
+		  bs_stb1_offset <= bs_stb1_offset + 1;
+  		  base_regs[5'h13] <= base_regs[5'h13] | reg_data_in;
+		end
+		5'h12: bs_page1_offset <= bs_page1_offset + 1;
+	 endcase
+  end else 
   if(reg_oe_falling) begin
     if(cart_enable)
       reg_data_outr <= {regs_outr[reg_addr], 7'b0};
     else if(base_enable) begin
       case(base_addr)
-		  5'h0b, 5'h11: begin
-		    base_regs[base_addr+5'h02] <= base_regs[base_addr+5'h02] | reg_data_in;
-		  end
         5'h0c, 5'h12: begin
           case (bs_page1_offset)
             4: reg_data_outr <= 8'h3;

@@ -463,7 +463,7 @@ reg [7:0] ROM_DOUTr;
 assign DSPX_SNES_DATA_IN = SNES_DATA;
 assign SRTC_SNES_DATA_IN = SNES_DATA[3:0];
 assign MSU_SNES_DATA_IN = SNES_DATA;
-assign BSX_SNES_DATA_IN = bs_page_enable ? SNES_DINr : SNES_DATA;
+assign BSX_SNES_DATA_IN = SNES_DATA;
 
 reg [7:0] r213fr;
 reg r213f_forceread;
