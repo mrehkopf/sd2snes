@@ -105,7 +105,6 @@ wire [10:0] SD_DMA_PARTIAL_START;
 wire [10:0] SD_DMA_PARTIAL_END;
 
 wire [10:0] dac_addr;
-//wire [7:0] dac_volume;
 wire [7:0] msu_volumerq_out;
 wire [6:0] msu_status_out;
 wire [31:0] msu_addressrq_out;
@@ -249,9 +248,9 @@ mcu_cmd snes_mcu_cmd(
   .mcu_wrq(MCU_WRQ),
   .mcu_rq_rdy(MCU_RDY),
   .use_msu1(use_msu1),
-  .cx4_datrom_addr_out(cx4_datrom_addr), 
-  .cx4_datrom_data_out(cx4_datrom_data), 
-  .cx4_datrom_we_out(cx4_datrom_we), 
+  .cx4_datrom_addr_out(cx4_datrom_addr),
+  .cx4_datrom_data_out(cx4_datrom_data),
+  .cx4_datrom_we_out(cx4_datrom_we),
   .cx4_reset_out(cx4_reset),
   .region_out(mcu_region)
 );
@@ -331,9 +330,9 @@ wire [23:0] CX4_ADDR;
 cx4 snes_cx4 (
     .DI(CX4_SNES_DATA_IN), 
     .DO(CX4_SNES_DATA_OUT), 
-    .ADDR(SNES_ADDR[12:0]),
+    .ADDR(SNES_ADDR[12:0]), 
     .CS(cx4_enable), 
-    .SNES_VECT_EN(cx4_vect_enable),
+    .SNES_VECT_EN(cx4_vect_enable), 
     .nRD(SNES_READ), 
     .nWR(SNES_WRITE), 
     .CLK(CLK2), 
@@ -343,10 +342,10 @@ cx4 snes_cx4 (
     .BUS_DI(CX4_DINr), 
     .BUS_ADDR(CX4_ADDR), 
     .BUS_RRQ(CX4_RRQ), 
-    .BUS_RDY(CX4_RDY),
+    .BUS_RDY(CX4_RDY), 
     .cx4_active(cx4_active)
     );
-   
+	 
 parameter MODE_SNES = 1'b0;
 parameter MODE_MCU = 1'b1;
 

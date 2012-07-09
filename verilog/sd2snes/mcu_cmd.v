@@ -201,7 +201,7 @@ always @(posedge clk) begin
         SD_DMA_PARTIALr <= cmd_data[2];
       end
       4'h8: SD_DMA_TGTr <= 2'b00;
-      4'h9: SD_DMA_TGTr <= cmd_data[1:0]; // not implemented
+      4'h9: SD_DMA_TGTr <= 2'b00; // cmd_data[1:0]; // not implemented
 //      4'hE:
 //      select memory unit
     endcase
