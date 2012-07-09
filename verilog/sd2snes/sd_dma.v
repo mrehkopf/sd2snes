@@ -77,7 +77,11 @@ assign SD_DMA_SRAM_DATA = SD_DMA_SRAM_DATAr;
 reg [2:0] clkcnt;
 initial clkcnt = 3'b000;
 reg [1:0] SD_CLKr;
-always @(posedge CLK) SD_CLKr <= {SD_CLKr[0], clkcnt[1]};
+initial SD_CLKr = 3'b111;
+always @(posedge CLK)
+  if(SD_DMA_EN_rising) SD_CLKr <= 3'b111;
+  else SD_CLKr <= {SD_CLKr[0], clkcnt[1]};
+
 assign SD_CLK = SD_DMA_STATUSr ? SD_CLKr[1] : 1'bZ;
 
 always @(posedge CLK) begin
@@ -119,20 +123,20 @@ always @(posedge CLK) begin
   if(SD_DMA_STATUSr) begin
     case(clkcnt[2:0])
       3'h0: begin
-        SD_DMA_SRAM_WEr <= 1'b1;
         SD_DMA_SRAM_DATAr[7:4] <= SD_DAT;
         if(cyclecnt>SD_DMA_STARTr && cyclecnt <= SD_DMA_ENDr) SD_DMA_NEXTADDRr <= 1'b1;
       end
-      3'h1:
+      3'h1: begin
         SD_DMA_NEXTADDRr <= 1'b0;
-//  3'h2:
-      3'h3:
-        if(cyclecnt>=SD_DMA_STARTr && cyclecnt < SD_DMA_ENDr) SD_DMA_SRAM_WEr <= 1'b0;
+		end
+      3'h2: if(cyclecnt>=SD_DMA_STARTr && cyclecnt < SD_DMA_ENDr) SD_DMA_SRAM_WEr <= 1'b0;
+//  3'h3:
       3'h4:
         SD_DMA_SRAM_DATAr[3:0] <= SD_DAT;
 //  3'h5:
 //  3'h6:
-//  3'h7:
+      3'h7:
+		  SD_DMA_SRAM_WEr <= 1'b1;
     endcase
   end
 end
