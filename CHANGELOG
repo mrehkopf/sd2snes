@@ -43,9 +43,9 @@ v0.1.3
 v0.1.4
 ======
 
- * SPC Player (thanks to necronomfive/blargg)
- * System Information screen now shows CPU/PPU revision (thanks to necronomfive)
- * Satellaview: basic data transmission packet support (makes some more games boot)
+ * SPC Player (contributed by necronomfive/blargg)
+ * System Information screen now shows CPU/PPU revision (contributed by necronomfive)
+ * Satellaview: basic data transmission packet support (makes some more games boot, thanks to LuigiBlood for assistance and sample data packets)
  * Number of supported files increased to 50000 per card / 16380 per directory
  * Slight speedup of menu text rendering
  * Reduce load time of menu
@@ -58,6 +58,7 @@ v0.1.4
      This causes the busy flags to become 0 shortly after reset/startup.
    - $2000 bit 3 is now "audio error", becomes valid after "audio busy" -> 0
      set when an error occurred while preparing playback of the requested audio track
+ * write LED stays on when SRAM content changes constantly
  * Fixes:
    - fix empty save files on FAT16 / incorrect free cluster count on FAT32
    - correct directory sorting (force parent directory at top of list)
