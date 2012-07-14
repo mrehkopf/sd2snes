@@ -42,7 +42,6 @@ menuloop_s1
 	lda isr_done
 	lsr
 	bcc menuloop_s1
-
 	stz isr_done
 	jsr printtime
 	jsr menu_updates	;update stuff, check keys etc
@@ -541,12 +540,12 @@ select_file:
 	lda [dirptr_addr], y
 	sta @MCU_PARAM
 	sep #$20 : .as
-	lda #$01
-	sta @MCU_CMD
-select_file_fade:
 	lda #$00
 	sta @$4200
 	sei
+	lda #$01
+	sta @MCU_CMD
+select_file_fade:
 	jsl @wram_fadeloop
 	rts
 
