@@ -73,3 +73,9 @@ v0.1.4
    - properly synchronize SNES control signals (occasional glitches/crashes)
    - fix floating IRQ output (occasional glitches/slowdowns)
 
+
+v0.1.4a (bugfix release)
+========================
+
+ * Fix DMA initialization in the menu (could cause sprite corruption in some games)
+
