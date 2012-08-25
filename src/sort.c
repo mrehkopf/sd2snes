@@ -15,7 +15,7 @@
 */
 
 uint32_t stat_getstring = 0;
-static char sort_str1[21], sort_str2[21];
+static char sort_str1[SORT_STRLEN+1], sort_str2[SORT_STRLEN+1];
 uint32_t ptrcache[QSORT_MAXELEM] IN_AHBRAM;
 
 /* get element from pointer table in external RAM*/
@@ -71,13 +71,12 @@ void sort_getstring_for_dirent(char *ptr, uint32_t addr) {
   if(addr & 0x80000000) {
     /* is directory link, name offset 4 */
     leaf_offset = sram_readbyte(addr + 4 + SRAM_MENU_ADDR);
-    sram_readblock(ptr, addr + 5 + leaf_offset + SRAM_MENU_ADDR, 20);
+    sram_readstrn(ptr, addr + 5 + leaf_offset + SRAM_MENU_ADDR, SORT_STRLEN);
   } else {
     /* is file link, name offset 6 */
     leaf_offset = sram_readbyte(addr + 6 + SRAM_MENU_ADDR);
-    sram_readblock(ptr, addr + 7 + leaf_offset + SRAM_MENU_ADDR, 20);
+    sram_readstrn(ptr, addr + 7 + leaf_offset + SRAM_MENU_ADDR, SORT_STRLEN);
   }
-  ptr[20]=0;
 }
 
 void sort_heapify(uint32_t addr, unsigned int i, unsigned int heapsize)

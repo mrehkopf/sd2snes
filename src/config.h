@@ -64,6 +64,7 @@
 #define FPGA_MCU_RDY_BIT          9
 
 #define QSORT_MAXELEM             2048
+#define SORT_STRLEN               256
 #define CLTBL_SIZE		  100
 
 #define DIR_FILE_MAX              16380
