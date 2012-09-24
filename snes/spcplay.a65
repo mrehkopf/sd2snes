@@ -261,7 +261,19 @@ upload_dsp_regs:
 
 	ldx #$0000
 -
+; initialize FLG and KON ($6c/$4c) to avoid artifacts
+	cpx #$4C
+	bne +
+	lda #$00
+	bra upload_skip_load
++
+	cpx #$6C
+	bne +
+	lda #$E0
+	bra upload_skip_load
++
 	lda @SPC_DSP_REGS,x
+upload_skip_load
 	jsr spc_upload_byte
 	inx
 	cpx #128
@@ -438,6 +450,14 @@ restore_final:
 	jsr exec_instr
 	ldx #$f3C4	; MOV $f3,A -> $f2 has been set-up before by SPC700 loader
 	jsr exec_instr
+
+; ---- wait a bit (the newer S-APU takes its time to ramp up the volume)
+	lda #$10
+-	pha
+	jsr waitblank
+	pla
+	dec
+	bne -
 
 ; ---- Restore DSP KON register
 
