@@ -135,8 +135,8 @@ wire [7:0] rtc_year100 = rtc_data[51:48] + (rtc_data[55:52] << 3) + (rtc_data[55
 wire [15:0] rtc_year = (rtc_year100 << 6) + (rtc_year100 << 5) + (rtc_year100 << 2) + rtc_year1;
 
 initial begin
-  regs_tmpr <= 15'b000000100000000;
-  regs_outr <= 15'b000000100000000;
+  regs_tmpr <= 15'b000101111101100;
+  regs_outr <= 15'b000101111101100;
   bsx_counter <= 0;
   base_regs[5'h08] <= 0;
   base_regs[5'h09] <= 0;
@@ -213,7 +213,7 @@ always @(posedge clkin) begin
 				14: reg_data_outr <= rtc_day;
 				15: reg_data_outr <= rtc_month;
 				16: reg_data_outr <= rtc_year[7:0];
-				17: reg_data_outr <= rtc_year[15:8];
+				17: reg_data_outr <= rtc_hour;
             default: reg_data_outr <= 8'h0;
           endcase
         end
@@ -240,8 +240,8 @@ always @(posedge clkin) begin
     regs_tmpr[8:1] <= (regs_tmpr[8:1] | reg_set_bits[7:0]) & ~reg_reset_bits[7:0];
     regs_outr[8:1] <= (regs_outr[8:1] | reg_set_bits[7:0]) & ~reg_reset_bits[7:0];
   end else if(reg_we_rising && cart_enable) begin
-    if(reg_addr == 4'he && reg_data_in[7])
-      regs_outr <= regs_tmpr | 15'b100000000000000;
+    if(reg_addr == 4'he)
+      regs_outr <= regs_tmpr;
     else
       regs_tmpr[reg_addr] <= reg_data_in[7];
   end else if(reg_we_rising && base_enable) begin
