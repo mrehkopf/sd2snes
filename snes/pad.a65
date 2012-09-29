@@ -4,7 +4,15 @@ read_pad:
 read_pad1
 	ldx pad1mem 	;byetUDLRaxlriiii
 	lda $4218
-	ora $421a
+	and #$000f
+	bne +
+	lda $4218
++	sta pad1mem
+	lda $421a
+	and #$000f
+	bne +
+	lda $421a
++	ora pad1mem
 	sta pad1mem
 	and #$0f00
 	bne read_pad1_count
