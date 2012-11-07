@@ -57,6 +57,44 @@
 
 #define FPGA_WAIT_RDY()    do {while(BITBAND(SSP_REGS->SR, SSP_BSY)); while(!BITBAND(FPGA_MCU_RDY_REG->FIOPIN, FPGA_MCU_RDY_BIT));} while (0)
 
+/* command parameters */
+#define FPGA_MEM_AUTOINC        (0x8)
+#define FPGA_SDDMA_PARTIAL      (0x4)
+#define FPGA_TGT_MEM      (0x0)
+#define FPGA_TGT_DACBUF   (0x1)
+#define FPGA_TGT_MSUBUF   (0x2)
+
+/* commands */
+#define FPGA_CMD_SETADDR        (0x00)
+#define FPGA_CMD_SETROMMASK     (0x10)
+#define FPGA_CMD_SETRAMMASK     (0x20)
+#define FPGA_CMD_SETMAPPER(x)   (0x30 | (x & 15))
+#define FPGA_CMD_SDDMA          (0x40)
+#define FPGA_CMD_SDDMA_RANGE    (0x60)
+#define FPGA_CMD_READMEM        (0x80)
+#define FPGA_CMD_WRITEMEM       (0x90)
+#define FPGA_CMD_MSUSETBITS     (0xe0)
+#define FPGA_CMD_DACPAUSE       (0xe1)
+#define FPGA_CMD_DACPLAY        (0xe2)
+#define FPGA_CMD_DACRESETPTR    (0xe3)
+#define FPGA_CMD_MSUSETPTR      (0xe4)
+#define FPGA_CMD_RTCSET         (0xe5)
+#define FPGA_CMD_BSXSETBITS     (0xe6)
+#define FPGA_CMD_SRTCRESET      (0xe7)
+#define FPGA_CMD_DSPRESETPTR    (0xe8)
+#define FPGA_CMD_DSPWRITEPGM    (0xe9)
+#define FPGA_CMD_DSPWRITEDAT    (0xea)
+#define FPGA_CMD_DSPRESET       (0xeb)
+#define FPGA_CMD_DSPUNRESET     (0xec)
+#define FPGA_CMD_SETFEATURE     (0xed)
+#define FPGA_CMD_SET213F        (0xee)
+#define FPGA_CMD_TEST           (0xf0)
+#define FPGA_CMD_GETSTATUS      (0xf1)
+#define FPGA_CMD_MSUGETADDR     (0xf2)
+#define FPGA_CMD_MSUGETTRACK    (0xf3)
+#define FPGA_CMD_GETSYSCLK      (0xfe)
+#define FPGA_CMD_ECHO           (0xff)
+
 void fpga_spi_init(void);
 uint8_t fpga_test(void);
 uint16_t fpga_status(void);
@@ -65,7 +103,6 @@ void spi_sd(void);
 void spi_none(void);
 void set_mcu_addr(uint32_t);
 void set_dac_addr(uint16_t);
-void set_dac_vol(uint8_t);
 void dac_play(void);
 void dac_pause(void);
 void dac_reset(void);
@@ -77,7 +114,6 @@ void set_rom_mask(uint32_t);
 void set_mapper(uint8_t val);
 void fpga_sddma(uint8_t tgt, uint8_t partial);
 void fpga_set_sddma_range(uint16_t start, uint16_t end);
-uint8_t get_msu_volume(void);
 uint16_t get_msu_track(void);
 uint32_t get_msu_offset(void);
 uint32_t get_snes_sysclk(void);

@@ -161,7 +161,6 @@ int msu1_check(uint8_t* filename) {
 
 int msu1_loop() {
 /* it is assumed that the MSU file is already opened by calling msu1_check(). */
-  set_dac_vol(0x00);
   while(fpga_status() & 0x4000);
   uint16_t dac_addr = 0;
   uint16_t msu_addr = 0;
