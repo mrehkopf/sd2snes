@@ -27,7 +27,7 @@ void clock_init() {
    -> FPGA freq = 11289473.7Hz
    First, disable and disconnect PLL0.
 */
-//  clock_disconnect();
+  clock_disconnect();
 
 /* PLL is disabled and disconnected. setup PCLK NOW as it cannot be changed
    reliably with PLL0 connected.
@@ -74,7 +74,7 @@ void disablePLL0() {
 }
 
 void connectPLL0() {
-  while(!(LPC_SC->PLL0STAT&PLOCK0));
+  while(!(LPC_SC->PLL0STAT & PLOCK0));
   LPC_SC->PLL0CON |= PLLC0;
   PLL0feed();
 }

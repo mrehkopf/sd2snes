@@ -88,7 +88,9 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
   file_init();
   cic_init(0);
 /* setup timer (fpga clk) */
+  LPC_TIM3->TCR=2;
   LPC_TIM3->CTCR=0;
+  LPC_TIM3->PR=0;
   LPC_TIM3->EMR=EMC0TOGGLE;
   LPC_TIM3->MCR=MR0R;
   LPC_TIM3->MR0=1;

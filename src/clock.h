@@ -74,6 +74,4 @@ void disableMainOsc(void);
 void PLL0feed(void);
 
 void setClkSrc(uint8_t src);
-
-
 #endif

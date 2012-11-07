@@ -57,9 +57,17 @@ void timer_init(void) {
   /* clear RIT mask */
   LPC_RIT->RIMASK = 0; /*xffffffff;*/
 
-  /* PCLK = CCLK */
+  /* PCLK_RIT = CCLK */
+  BITBAND(LPC_SC->PCLKSEL1, 27) = 0;
   BITBAND(LPC_SC->PCLKSEL1, 26) = 1;
+
+  /* PCLK_TIMER3 = CCLK/4 */
+  BITBAND(LPC_SC->PCLKSEL1, 15) = 0;
+  BITBAND(LPC_SC->PCLKSEL1, 14) = 0;
+
+  /* enable timer 3 */
   BITBAND(LPC_SC->PCLKSEL1, PCLK_TIMER3) = 1;
+
   /* enable SysTick */
   SysTick_Config((SysTick->CALIB & SysTick_CALIB_TENMS_Msk));
 }
