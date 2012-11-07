@@ -473,10 +473,10 @@ parameter ST_MCU_WR_WAIT  = 18'b000100000000000000;
 parameter ST_MCU_WR_WAIT2 = 18'b001000000000000000;
 parameter ST_MCU_WR_END   = 18'b010000000000000000;
 
-parameter ROM_RD_WAIT = 4'h0;
+parameter ROM_RD_WAIT = 4'h1;
 parameter ROM_RD_WAIT_MCU = 4'h6;
 parameter ROM_WR_WAIT = 4'h4;
-parameter ROM_WR_WAIT1 = 4'h2;
+parameter ROM_WR_WAIT1 = 4'h3;
 parameter ROM_WR_WAIT2 = 4'h1;
 parameter ROM_WR_WAIT_MCU = 4'h5;
 
@@ -582,14 +582,12 @@ always @(posedge CLK2) begin
 		ROM_DOUT_ENr <= 1'b0;
 	   if(SNES_cycle_start & ~SNES_WRITE) begin
 		  STATE <= ST_SNES_WR_ADDR;
-		  if(IS_SAVERAM | IS_WRITABLE | IS_FLASHWR) begin
+		  if(IS_WRITABLE | (IS_FLASHWR & ~bsx_tristate)) begin
 		    ROM_WEr <= 1'b0;
-          ROM_DOUT_ENr <= 1'b1;
         end
 		end else if(SNES_cycle_start) begin
-//		  STATE <= ST_SNES_RD_ADDR;		  
-        STATE <= ST_SNES_RD_END;
-        SNES_DOUTr <= (ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8]);
+		  STATE <= ST_SNES_RD_ADDR;		  
+//        STATE <= ST_SNES_RD_END;
 		end else if(SNES_DEADr & MCU_RD_PENDr) begin
 		  STATE <= ST_MCU_RD_ADDR;
 		end else if(SNES_DEADr & MCU_WR_PENDr) begin
@@ -602,12 +600,15 @@ always @(posedge CLK2) begin
 	 end
 	 ST_SNES_RD_WAIT: begin
 	   ST_MEM_DELAYr <= ST_MEM_DELAYr - 1;
-//		if(ST_MEM_DELAYr == 0) begin
-//		end
-//		else STATE <= ST_SNES_RD_WAIT;
+		if(ST_MEM_DELAYr == 0) begin
+		  STATE <= ST_SNES_RD_END;
+		  SNES_DOUTr <= (ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8]);
+		end
+		else STATE <= ST_SNES_RD_WAIT;
 	 end
 	 
 	 ST_SNES_WR_ADDR: begin
+      ROM_DOUT_ENr <= 1'b1;
 	   ST_MEM_DELAYr <= ROM_WR_WAIT1;
 	   STATE <= ST_SNES_WR_WAIT1;
 	 end
@@ -625,11 +626,12 @@ always @(posedge CLK2) begin
 		if(ST_MEM_DELAYr == 0) begin
         STATE <= ST_SNES_WR_END;
 		  ROM_WEr <= 1'b1;
+        ROM_DOUT_ENr <= 1'b0;		
 		end
 		else STATE <= ST_SNES_WR_WAIT2;
     end
 	 ST_SNES_RD_END, ST_SNES_WR_END: begin
-	   ROM_DOUT_ENr <= 1'b0;		
+//	   ROM_DOUT_ENr <= 1'b0;		
       if(MCU_RD_PENDr) begin
         STATE <= ST_MCU_RD_ADDR;
       end else if(MCU_WR_PENDr) begin
@@ -658,18 +660,18 @@ always @(posedge CLK2) begin
       ROM_SAr <= 1'b0;
 	   ST_MEM_DELAYr <= ROM_WR_WAIT_MCU;
 		STATE <= ST_MCU_WR_WAIT;
-		ROM_DOUT_ENr <= 1'b1;
 		ROM_WEr <= 1'b0;
 	 end
 	 ST_MCU_WR_WAIT: begin
 	   ST_MEM_DELAYr <= ST_MEM_DELAYr - 1;
+		ROM_DOUT_ENr <= 1'b1;
 		if(ST_MEM_DELAYr == 0) begin
 		  ROM_WEr <= 1'b1;
 		  STATE <= ST_MCU_WR_END;
 		end
 		else STATE <= ST_MCU_WR_WAIT;	 
 	 end
-	 ST_MCU_WR_END: begin
+ 	 ST_MCU_WR_END: begin
 		ROM_DOUT_ENr <= 1'b0;
 	   STATE <= ST_IDLE;
 	 end
