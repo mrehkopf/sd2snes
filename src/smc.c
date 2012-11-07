@@ -200,7 +200,7 @@ void smc_id(snes_romprops_t* props) {
   props->romsize_bytes = (uint32_t)1024 << header->romsize;
   props->expramsize_bytes = (uint32_t)1024 << header->expramsize;
 /*dprintf("ramsize_bytes: %ld\n", props->ramsize_bytes); */
-  if(props->ramsize_bytes > 32768 || props->ramsize_bytes < 2048) {
+  if(props->ramsize_bytes < 2048) {
     props->ramsize_bytes = 0;
   }
   props->region = (header->destcode <= 1 || header->destcode >= 13) ? 0 : 1;
