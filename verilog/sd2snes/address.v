@@ -33,6 +33,7 @@ module address(
   output msu_enable,
   output srtc_enable,
   output use_bsx,
+  output bsx_tristate,
   input [14:0] bsx_regs,
   output dspx_enable,
   output dspx_dp_enable,
@@ -114,6 +115,14 @@ wire BSX_IS_PSRAM = BSX_PSRAM_LOHI
 wire BSX_IS_CARTROM = ((bsx_regs[7] & (SNES_ADDR[23:22] == 2'b00))
                       |(bsx_regs[8] & (SNES_ADDR[23:22] == 2'b10)))
 							 & SNES_ADDR[15];
+
+wire BSX_HOLE_LOHI = (bsx_regs[9] & ~SNES_ADDR[23]) | (bsx_regs[10] & SNES_ADDR[23]);
+
+wire BSX_IS_HOLE = BSX_HOLE_LOHI
+                   & (bsx_regs[2] ? (SNES_ADDR[21:20] == {bsx_regs[11], 1'b0})
+                                  : (SNES_ADDR[22:21] == {bsx_regs[11], 1'b0}));
+
+assign bsx_tristate = (MAPPER == 3'b011) & ~BSX_IS_CARTROM & ~BSX_IS_PSRAM & BSX_IS_HOLE;
 
 assign IS_WRITABLE = IS_SAVERAM
                      |((MAPPER == 3'b011)

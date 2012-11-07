@@ -440,6 +440,7 @@ address snes_addr(
   .bs_page_offset(bs_page_offset),
   .bs_page(bs_page),
   .bs_page_enable(bs_page_enable),
+  .bsx_tristate(bsx_tristate),
   //SRTC
   .srtc_enable(srtc_enable),
   //uPD77C25
@@ -739,6 +740,7 @@ assign SNES_DATABUS_OE = (dspx_enable | dspx_dp_enable) ? 1'b0 :
                          ((IS_ROM & SNES_CS)
                           |(!IS_ROM & !IS_SAVERAM & !IS_WRITABLE & !IS_FLASHWR)
                           |(SNES_READr[0] & SNES_WRITEr[0])
+                          | bsx_tristate
                          );
 
 assign SNES_DATABUS_DIR = (!SNES_READr[0] | (!SNES_PARD & (r213f_enable | snescmd_rd_enable)))
