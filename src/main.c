@@ -294,6 +294,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 	  break;
       }
     }
+    printf("loaded %lu bytes\n", filesize);
     printf("cmd was %x, going to snes main loop\n", cmd);
 
     if(romprops.has_msu1 && msu1_loop()) {
