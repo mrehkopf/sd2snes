@@ -65,7 +65,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
   static uint32_t next_subdir_tgt;
   static uint32_t parent_tgt;
   static uint32_t dir_end = 0;
-  static uint8_t was_empty = 0;
+/*  static uint8_t was_empty = 0;*/
   static uint16_t num_files_total = 0;
   static uint16_t num_dirs_total = 0;
   uint32_t dir_tgt;
@@ -147,7 +147,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
         res = f_readdir(&dir, &fno);
         if (res != FR_OK || fno.fname[0] == 0) {
           if(pass) {
-            if(!numentries) was_empty=1;
+/*            if(!numentries) was_empty=1;*/
           }
           break;
         }
@@ -194,7 +194,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
                 sram_writeblock("/\0", old_db_tgt + sizeof(next_subdir_tgt) + sizeof(len) + pathlen, 2);
               }
               dir_tgt += 4;
-              was_empty = 0;
+/*              was_empty = 0;*/
             } else if(!mkdb) {
               path[len]='/';
               strncpy(path+len+1, (char*)fn, sizeof(fs_path)-len);
