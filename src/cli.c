@@ -269,7 +269,7 @@ static void cmd_show_directory(void) {
       strlwr((char *)name);
     }
 
-    printf("%s",name);
+    printf("%s [%s] (%ld)",finfo.lfname, finfo.fname, finfo.fsize);
 
     /* Directory indicator (Unix-style) */
     if (finfo.fattrib & AM_DIR)

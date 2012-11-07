@@ -123,7 +123,7 @@ void snes_main_loop() {
       samecount++;
     }
     if(diffcount>=1 && samecount==5) {
-      printf("SaveRAM CRC: 0x%04lx; saving\n", saveram_crc);
+      printf("SaveRAM CRC: 0x%04lx; saving %s\n", saveram_crc, file_lfn);
       writeled(1);
       save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
       writeled(0);
