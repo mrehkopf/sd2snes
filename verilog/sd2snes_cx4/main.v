@@ -370,13 +370,13 @@ parameter ST_CX4_RD_ADDR  = 21'b000100000000000000000;
 parameter ST_CX4_RD_WAIT  = 21'b001000000000000000000;
 parameter ST_CX4_RD_END   = 21'b010000000000000000000;
 
-parameter ROM_RD_WAIT = 4'h0;
+parameter ROM_RD_WAIT = 4'h1;
 parameter ROM_RD_WAIT_MCU = 4'h6;
 parameter ROM_WR_WAIT = 4'h4;
-parameter ROM_WR_WAIT1 = 4'h2;
+parameter ROM_WR_WAIT1 = 4'h3;
 parameter ROM_WR_WAIT2 = 4'h1;
 parameter ROM_WR_WAIT_MCU = 4'h5;
-parameter ROM_RD_WAIT_CX4 = 4'h6;
+parameter ROM_RD_WAIT_CX4 = 4'h7;
 
 parameter SNES_DEAD_TIMEOUT = 17'd88000; // 1ms
 
@@ -510,9 +510,8 @@ always @(posedge CLK2) begin
           ROM_DOUT_ENr <= 1'b1;
         end
 		end else if(SNES_cycle_start) begin
-//		  STATE <= ST_SNES_RD_ADDR;		  
-        STATE <= ST_SNES_RD_END;
-        SNES_DOUTr <= (ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8]);
+		  STATE <= ST_SNES_RD_ADDR;		  
+//        STATE <= ST_SNES_RD_END;
 		end else if(SNES_DEADr & MCU_RD_PENDr) begin
 		  STATE <= ST_MCU_RD_ADDR;
 		end else if(SNES_DEADr & MCU_WR_PENDr) begin
@@ -525,12 +524,15 @@ always @(posedge CLK2) begin
 	 end
 	 ST_SNES_RD_WAIT: begin
 	   ST_MEM_DELAYr <= ST_MEM_DELAYr - 1;
-//		if(ST_MEM_DELAYr == 0) begin
-//		end
-//		else STATE <= ST_SNES_RD_WAIT;
+           if(ST_MEM_DELAYr == 0) begin
+             STATE <= ST_SNES_RD_END;
+             SNES_DOUTr <= (ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8]);
+           end
+           else STATE <= ST_SNES_RD_WAIT;
 	 end
 	 
 	 ST_SNES_WR_ADDR: begin
+           ROM_DOUT_ENr <= 1'b1;
 	   ST_MEM_DELAYr <= ROM_WR_WAIT1;
 	   STATE <= ST_SNES_WR_WAIT1;
 	 end
@@ -546,19 +548,19 @@ always @(posedge CLK2) begin
 	 ST_SNES_WR_WAIT2: begin
 	   ST_MEM_DELAYr <= ST_MEM_DELAYr - 1;
 		if(ST_MEM_DELAYr == 0) begin
-        STATE <= ST_SNES_WR_END;
-		  ROM_WEr <= 1'b1;
+                  STATE <= ST_SNES_WR_END;
+                  ROM_WEr <= 1'b1;
 		end
 		else STATE <= ST_SNES_WR_WAIT2;
-    end
-	 ST_SNES_RD_END, ST_SNES_WR_END: begin
-	   ROM_DOUT_ENr <= 1'b0;		
-      if(MCU_RD_PENDr) begin
-        STATE <= ST_MCU_RD_ADDR;
-      end else if(MCU_WR_PENDr) begin
-        STATE <= ST_MCU_WR_ADDR;
-      end else STATE <= ST_IDLE;
-    end
+         end
+         ST_SNES_RD_END, ST_SNES_WR_END: begin
+//         ROM_DOUT_ENr <= 1'b0;
+           if(MCU_RD_PENDr) begin
+             STATE <= ST_MCU_RD_ADDR;
+           end else if(MCU_WR_PENDr) begin
+             STATE <= ST_MCU_WR_ADDR;
+           end else STATE <= ST_IDLE;
+         end
     ST_MCU_RD_ADDR: begin
       ROM_SAr <= 1'b0;
 		ST_MEM_DELAYr <= ROM_RD_WAIT_MCU;
@@ -581,12 +583,12 @@ always @(posedge CLK2) begin
       ROM_SAr <= 1'b0;
 	   ST_MEM_DELAYr <= ROM_WR_WAIT_MCU;
 		STATE <= ST_MCU_WR_WAIT;
-		ROM_DOUT_ENr <= 1'b1;
 		ROM_WEr <= 1'b0;
 	 end
 	 ST_MCU_WR_WAIT: begin
-	   ST_MEM_DELAYr <= ST_MEM_DELAYr - 1;
-		if(ST_MEM_DELAYr == 0) begin
+           ST_MEM_DELAYr <= ST_MEM_DELAYr - 1;
+           ROM_DOUT_ENr <= 1'b1;
+           if(ST_MEM_DELAYr == 0) begin
 		  ROM_WEr <= 1'b1;
 		  STATE <= ST_MCU_WR_END;
 		end
@@ -604,13 +606,13 @@ always @(posedge CLK2) begin
 	 ST_CX4_RD_WAIT: begin
 	   ST_MEM_DELAYr <= ST_MEM_DELAYr - 1;
 		if(ST_MEM_DELAYr == 0) begin
+                  CX4_DINr <= CX4_ADDRr[0] ? ROM_DATA[7:0] : ROM_DATA[15:8];
 		  STATE <= ST_CX4_RD_END;
 		end
 		else STATE <= ST_CX4_RD_WAIT;
 	 end
 	 ST_CX4_RD_END: begin
 	   ROM_CAr <= 1'b0;
-	   CX4_DINr <= CX4_ADDRr[0] ? ROM_DATA[7:0] : ROM_DATA[15:8];
 	   STATE <= ST_IDLE;
 	 end
 	 
