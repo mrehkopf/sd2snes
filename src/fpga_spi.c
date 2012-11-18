@@ -226,7 +226,7 @@ void fpga_set_sddma_range(uint16_t start, uint16_t end) {
 void fpga_sddma(uint8_t tgt, uint8_t partial) {
   BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 0;
   FPGA_SELECT();
-  FPGA_TX_BYTE(FPGA_CMD_SDDMA | (tgt & 3) | partial ? FPGA_SDDMA_PARTIAL : 0);
+  FPGA_TX_BYTE(FPGA_CMD_SDDMA | (tgt & 3) | (partial ? FPGA_SDDMA_PARTIAL : 0));
   FPGA_TX_BYTE(0x00); /* dummy for falling DMA_EN edge */
   FPGA_DESELECT();
   FPGA_SELECT();
