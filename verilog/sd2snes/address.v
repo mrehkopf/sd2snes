@@ -145,19 +145,20 @@ wire [23:0] BSX_ADDR = bsx_regs[2] ? {1'b0, SNES_ADDR[22:0]}
 
 assign SRAM_SNES_ADDR = ((MAPPER == 3'b000)
                           ?(IS_SAVERAM
-                            ? 24'hE00000 + ({SNES_ADDR[20:16], SNES_ADDR[14:0]}
+                            ? 24'hE00000 + ({SNES_ADDR[20:16], SNES_ADDR[12:0]}
                                             & SAVERAM_MASK)
                             : ({1'b0, SNES_ADDR[22:0]} & ROM_MASK))
 
                           :(MAPPER == 3'b001)
                           ?(IS_SAVERAM
-                            ? 24'hE00000 + ({SNES_ADDR[20:16], SNES_ADDR[14:0]} & SAVERAM_MASK)
+                            ? 24'hE00000 + ({SNES_ADDR[20:16], SNES_ADDR[14:0]}
+                                            & SAVERAM_MASK)
                             : ({2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]}
                                & ROM_MASK))
 
                           :(MAPPER == 3'b010)
                           ?(IS_SAVERAM
-                            ? 24'hE00000 + ({SNES_ADDR[20:16], SNES_ADDR[14:0]}
+                            ? 24'hE00000 + ({SNES_ADDR[20:16], SNES_ADDR[12:0]}
                                             & SAVERAM_MASK)
                             : ({1'b0, !SNES_ADDR[23], SNES_ADDR[21:0]}
                                & ROM_MASK))
