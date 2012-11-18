@@ -79,3 +79,18 @@ v0.1.4a (bugfix release)
 
  * Fix DMA initialization in the menu (could cause sprite corruption in some games)
 
+
+v0.1.5
+======
+
+ * Sort directories by entire file name instead of first 20 characters only
+ * Correctly map SRAM larger than 8192 bytes (HiROM) / 32768 bytes (LoROM)
+   (fixes Dezaemon, Ongaku Tsukuuru - Kanadeeru)
+ * SPC player: fix soft fade-in (first note cut off) on S-APU consoles
+   (1CHIP / some Jr.)
+ * More accurate BS-X memory map
+ * Ignore input from non-standard controllers (Super Scope, Mouse etc.)
+ * Fixes:
+   - minor memory access timing tweaks
+     (should help with occasional glitches on some systems)
+
