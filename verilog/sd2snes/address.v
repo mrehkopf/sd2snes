@@ -106,11 +106,13 @@ wire [2:0] BSX_PSRAM_BANK = {bsx_regs[2], bsx_regs[6], bsx_regs[5]};
 wire [23:0] BSX_CHKADDR = bsx_regs[2] ? SNES_ADDR : {SNES_ADDR[23], 1'b0, SNES_ADDR[22:16], SNES_ADDR[14:0]};
 wire BSX_PSRAM_LOHI = (bsx_regs[3] & ~SNES_ADDR[23]) | (bsx_regs[4] & SNES_ADDR[23]);
 wire BSX_IS_PSRAM = BSX_PSRAM_LOHI
-                    & (( (BSX_CHKADDR[22:20] == BSX_PSRAM_BANK)
-						      &(~SNES_ADDR[15] | ~bsx_regs[2]))
-						     | (bsx_regs[2]
-							      ? (SNES_ADDR[22:21] == 2'b01 & SNES_ADDR[15:13] == 3'b011)
-						         : &SNES_ADDR[22:20]));
+                     & (( (BSX_CHKADDR[22:20] == BSX_PSRAM_BANK)
+                         &(SNES_ADDR[15] | bsx_regs[2])
+                         &(~(SNES_ADDR[19] & bsx_regs[2])))
+                       | (bsx_regs[2]
+                          ? (SNES_ADDR[22:21] == 2'b01 & SNES_ADDR[15:13] == 3'b011)
+                          : (&SNES_ADDR[22:20] & ~SNES_ADDR[15]))
+                       );
 
 wire BSX_IS_CARTROM = ((bsx_regs[7] & (SNES_ADDR[23:22] == 2'b00))
                       |(bsx_regs[8] & (SNES_ADDR[23:22] == 2'b10)))
@@ -165,13 +167,13 @@ assign SRAM_SNES_ADDR = ((MAPPER == 3'b000)
                           :(MAPPER == 3'b011)
                           ?(  IS_SAVERAM
                               ? 24'hE00000 + {SNES_ADDR[18:16], SNES_ADDR[11:0]}
-									 : BSX_IS_CARTROM
-									   ? (24'h800000 + ({SNES_ADDR[22:16], SNES_ADDR[14:0]} & 24'h0fffff))
-                            : BSX_IS_PSRAM
+                              : BSX_IS_CARTROM
+                              ? (24'h800000 + ({SNES_ADDR[22:16], SNES_ADDR[14:0]} & 24'h0fffff))
+                              : BSX_IS_PSRAM
                               ? (24'h400000 + (BSX_ADDR & 24'h07FFFF))
-                            : bs_page_enable
-									   ? (24'h900000 + {bs_page,bs_page_offset})
-								    : BSX_ADDR & ROM_MASK
+                              : bs_page_enable
+                              ? (24'h900000 + {bs_page,bs_page_offset})
+                              : (BSX_ADDR & 24'h0fffff)
                            )
                            :(MAPPER == 3'b110)
                            ?(IS_SAVERAM
