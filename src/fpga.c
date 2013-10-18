@@ -98,37 +98,43 @@ void fpga_pgm(uint8_t* filename) {
   uint8_t data;
   int i;
   tick_t timeout;
+  /* open configware file */
+  file_open(filename, FA_READ);
+  if(file_res) {
+    uart_putc('?');
+    uart_putc(0x30+file_res);
+    return;
+  }
+
   do {
     i=0;
-    timeout = getticks() + 100;
+    timeout = getticks() + 1;
     fpga_set_prog_b(0);
-if(BITBAND(PROGBREG->FIOPIN, PROGBBIT)) {
-  printf("PROGB is stuck high!\n");
-  led_panic();
-}
+    while(BITBAND(PROGBREG->FIOPIN, PROGBBIT)) {
+      if(getticks() > timeout) {
+        printf("PROGB is stuck high!\n");
+        led_panic(LED_PANIC_FPGA_PROGB_STUCK);
+      }
+    }
+    timeout = getticks() + 100;
     uart_putc('P');
     fpga_set_prog_b(1);
     while(!fpga_get_initb()){
       if(getticks() > timeout) {
         printf("no response from FPGA trying to initiate configuration!\n");
-        led_panic();
+        led_panic(LED_PANIC_FPGA_NO_INITB);
       }
     };
-    if(fpga_get_done()) {
-      printf("DONE is stuck high!\n");
-      led_panic();
+    timeout = getticks() + 100;
+    while(fpga_get_done()) {
+      if(getticks() > timeout) {
+        printf("DONE is stuck high!\n");
+        led_panic(LED_PANIC_FPGA_DONE_STUCK);
+      }
     }
     LPC_GPIO2->FIOMASK1 = ~(BV(0));
     uart_putc('p');
 
-
-    /* open configware file */
-    file_open(filename, FA_READ);
-    if(file_res) {
-      uart_putc('?');
-      uart_putc(0x30+file_res);
-      return;
-    }
     uart_putc('C');
 
     for (;;) {
@@ -144,7 +150,7 @@ if(BITBAND(PROGBREG->FIOPIN, PROGBBIT)) {
   } while (!fpga_get_done() && retries--);
   if(!fpga_get_done()) {
     printf("FPGA failed to configure after %d tries.\n", MAXRETRIES);
-    led_panic();
+    led_panic(LED_PANIC_FPGA_NOCONF);
   }
   printf("FPGA configured\n");
   fpga_postinit();
@@ -165,12 +171,15 @@ void fpga_rompgm() {
     while(!fpga_get_initb()){
       if(getticks() > timeout) {
         printf("no response from FPGA trying to initiate configuration!\n");
-        led_panic();
+        led_panic(LED_PANIC_FPGA_NO_INITB);
       }
     };
-    if(fpga_get_done()) {
-      printf("DONE is stuck high!\n");
-      led_panic();
+    timeout = getticks() + 100;
+    while(fpga_get_done()) {
+      if(getticks() > timeout) {
+        printf("DONE is stuck high!\n");
+        led_panic(LED_PANIC_FPGA_DONE_STUCK);
+      }
     }
     LPC_GPIO2->FIOMASK1 = ~(BV(0));
     uart_putc('p');
@@ -190,7 +199,7 @@ void fpga_rompgm() {
   } while (!fpga_get_done() && retries--);
   if(!fpga_get_done()) {
     printf("FPGA failed to configure after %d tries.\n", MAXRETRIES);
-    led_panic();
+    led_panic(LED_PANIC_FPGA_NOCONF);
   }
   printf("FPGA configured\n");
   fpga_postinit();

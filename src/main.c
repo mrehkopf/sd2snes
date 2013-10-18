@@ -344,7 +344,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     }
     /* fpga test fail: panic */
     if(fpga_test() != FPGA_TEST_TOKEN){
-      led_panic();
+      led_panic(LED_PANIC_FPGA_DEAD);
     }
     /* else reset */
   }

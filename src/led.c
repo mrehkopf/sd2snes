@@ -85,12 +85,12 @@ void toggle_write_led() {
   writeled(~led_writeledstate);
 }
 
-void led_panic() {
+void led_panic(uint8_t led_states) {
   led_std();
   while(1) {
-    rdyled(1);
-    readled(1);
-    writeled(1);
+    rdyled((led_states >> 2) & 1);
+    readled((led_states >> 1) & 1);
+    writeled(led_states & 1);
     delay_ms(100);
     rdyled(0);
     readled(0);
