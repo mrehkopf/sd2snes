@@ -31,7 +31,7 @@
 
 enum filestates { FILE_OK=0, FILE_ERR, FILE_EOF };
 
-BYTE file_buf[512];
+BYTE file_buf[512] __attribute__((aligned(4)));
 FATFS fatfs;
 FIL file_handle;
 FRESULT file_res;

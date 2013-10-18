@@ -189,7 +189,7 @@ FLASH_RES flash_file(uint8_t *filename) {
       }
       DBG_UART uart_putc('w');
       if((res = iap_ram2flash(flash_addr, file_buf, 512)) != CMD_SUCCESS) {
-        DBG_BL printf("error %ld while writing to address %08lx (sector %d)\n", res, flash_addr, current_sec);
+        DBG_BL printf("error %ld while writing from %08lX to address %08lx (sector %d)\n", res, (uint32_t)file_buf, flash_addr, current_sec);
         DBG_UART uart_putc('X');
         return ERR_FLASH;
       }
