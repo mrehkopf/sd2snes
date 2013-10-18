@@ -21,6 +21,6 @@ void power_init() {
                 | BV(PCRTC)
                 | BV(PCGPIO)
                 | BV(PCPWM1)
-//                 | BV(PCUSB)
+                | BV(PCUSB)
   ;
 }

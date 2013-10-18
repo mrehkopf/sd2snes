@@ -52,6 +52,15 @@ void clock_init() {
   enablePLL0();
   setCCLKDiv(6);
   connectPLL0();
+
+
+/* configure PLL1 for USB operation */
+  disconnectPLL1();
+  disablePLL1();
+  LPC_SC->PLL1CFG = 0x23;
+  enablePLL1();
+  connectPLL1();
+
 }
 
 void setFlashAccessTime(uint8_t clocks) {
@@ -84,6 +93,32 @@ void disconnectPLL0() {
   PLL0feed();
 }
 
+void setPLL1MultPrediv(uint16_t mult, uint8_t prediv) {
+  LPC_SC->PLL1CFG=PLL_MULT(mult) | PLL_PREDIV(prediv);
+  PLL1feed();
+}
+
+void enablePLL1() {
+  LPC_SC->PLL1CON |= PLLE1;
+  PLL1feed();
+}
+
+void disablePLL1() {
+  LPC_SC->PLL1CON &= ~PLLE1;
+  PLL1feed();
+}
+
+void connectPLL1() {
+  while(!(LPC_SC->PLL1STAT & PLOCK1));
+  LPC_SC->PLL1CON |= PLLC1;
+  PLL1feed();
+}
+
+void disconnectPLL1() {
+  LPC_SC->PLL1CON &= ~PLLC1;
+  PLL1feed();
+}
+
 void setCCLKDiv(uint8_t div) {
   LPC_SC->CCLKCFG=CCLK_DIV(div);
 }
@@ -100,6 +135,11 @@ void disableMainOsc() {
 void PLL0feed() {
   LPC_SC->PLL0FEED=0xaa;
   LPC_SC->PLL0FEED=0x55;
+}
+
+void PLL1feed() {
+  LPC_SC->PLL1FEED=0xaa;
+  LPC_SC->PLL1FEED=0x55;
 }
 
 void setClkSrc(uint8_t src) {

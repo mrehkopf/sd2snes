@@ -8,6 +8,9 @@
 #define PLLE0           (1<<0)
 #define PLLC0           (1<<1)
 #define PLOCK0          (1<<26)
+#define PLLE1           (1<<0)
+#define PLLC1           (1<<1)
+#define PLOCK1          (1<<10)
 #define OSCEN           (1<<5)
 #define OSCSTAT         (1<<6)
 #define FLASHTIM(x)     (((x-1)<<12)|0x3A)
@@ -56,22 +59,24 @@ void clock_init(void);
 void setFlashAccessTime(uint8_t clocks);
 
 void setPLL0MultPrediv(uint16_t mult, uint8_t prediv);
-
 void enablePLL0(void);
-
 void disablePLL0(void);
-
 void connectPLL0(void);
-
 void disconnectPLL0(void);
+void PLL0feed(void);
+
+void setPLL1MultPrediv(uint16_t mult, uint8_t prediv);
+void enablePLL1(void);
+void disablePLL1(void);
+void connectPLL1(void);
+void disconnectPLL1(void);
+void PLL1feed(void);
 
 void setCCLKDiv(uint8_t div);
 
 void enableMainOsc(void);
 
 void disableMainOsc(void);
-
-void PLL0feed(void);
 
 void setClkSrc(uint8_t src);
 #endif

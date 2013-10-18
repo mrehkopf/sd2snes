@@ -96,4 +96,7 @@
 
 #define SD_DAT (LPC_GPIO2->FIOPIN0)
 
+#define USB_CONNREG LPC_GPIO4
+#define USB_CONNBIT 28
+
 #endif
