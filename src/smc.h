@@ -84,6 +84,7 @@ typedef struct _snes_romprops {
   uint8_t has_cx4;            /* CX4 presence flag */
   uint8_t fpga_features;      /* feature/peripheral enable bits*/
   uint8_t region;             /* game region (derived from destination code) */
+  uint32_t load_address;      /* where to load the ROM image */
   snes_header_t header;       /* original header from ROM image */
 } snes_romprops_t;
 

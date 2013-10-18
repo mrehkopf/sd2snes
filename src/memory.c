@@ -210,7 +210,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     printf("reconfigure FPGA with %s...\n", romprops.fpga_conf);
     fpga_pgm((uint8_t*)romprops.fpga_conf);
   }
-  set_mcu_addr(base_addr);
+  set_mcu_addr(base_addr + romprops.load_address);
   file_open(filename, FA_READ);
   ff_sd_offload=1;
   sd_offload_tgt=0;

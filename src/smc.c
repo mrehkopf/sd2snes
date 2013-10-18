@@ -59,6 +59,7 @@ void smc_id(snes_romprops_t* props) {
   uint8_t score, maxscore=1, score_idx=2; /* assume LoROM */
   snes_header_t* header = &(props->header);
 
+  props->load_address = 0;
   props->has_dspx = 0;
   props->has_st0010 = 0;
   props->has_cx4 = 0;
@@ -95,6 +96,14 @@ void smc_id(snes_romprops_t* props) {
           props->expramsize_bytes = 0;
           props->mapper_id = 3; /* BS-X Memory Map */
           props->region = 0; /* BS-X only existed in Japan */
+          uint8_t alloc = header->name[0x10];
+          if(alloc) {
+            while(!(alloc & 0x01)) {
+              props->load_address += 0x20000;
+              alloc >>= 1;
+            }
+          }
+          printf("load address: %lx\n", props->load_address);
           return;
         }
       }
