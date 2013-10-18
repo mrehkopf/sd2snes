@@ -17,6 +17,7 @@ b) Cortex M3 toolchain
     - texinfo
     - libmpfr-dev
     - libgmp3-dev
+    - libmpc-dev
     - gawk
     - bison
     - recode
