@@ -21,15 +21,15 @@ GAME_MAIN:
 	tcs
 	sep #$20 : .as
 
-	jsr killdma		; The following initialization processes must not touch memory
-	jsr waitblank		; structures used by the main menu !
+;	jsr killdma		; The following initialization processes must not touch memory
+	jsr waitblank		; structures used by the file selector !
 	jsr snes_init
 	cli
 	lda #$01
 	sta $420d 		; fast cpu
 	jsr setup_gfx
 	jsr colortest
-	jsr tests
+	jsr video_init
 	jsr setup_hdma
 	lda #$0f
 	sta cur_bright
@@ -43,15 +43,15 @@ set_bank:
 
 coldboot:							; Regular, cold-start init
 	sep #$20 : .as
-	jsr killdma
+;	jsr killdma
 	jsr waitblank
 	jsr snes_init
 	lda #$01
 	sta $420d ; fast cpu
 	jsr setup_gfx
 	jsr colortest
-	jsr menu_init
-	jsr tests
+	jsr filesel_init
+	jsr video_init
 	jsr setup_hdma
 	jsr screen_on
 
@@ -60,7 +60,7 @@ coldboot:							; Regular, cold-start init
 	beq +
 	jsl time_init
 +
-	jsr menuloop
+	jsr fileselloop
 	cli
 	stz $4200
 	jmp @infloop	;infinite loop in WRAM
@@ -138,6 +138,30 @@ killdma:
 	stz $4359
 	stz $435a
 	stz $435b
+	stz $4360
+	stz $4361
+	stz $4362
+	stz $4363
+	stz $4364
+	stz $4365
+	stz $4366
+	stz $4367
+	stz $4368
+	stz $4369
+	stz $436a
+	stz $436b
+	stz $4370
+	stz $4371
+	stz $4372
+	stz $4373
+	stz $4374
+	stz $4375
+	stz $4376
+	stz $4377
+	stz $4378
+	stz $4379
+	stz $437a
+	stz $437b
 
 	stz $420b
 	stz $420c
@@ -190,7 +214,7 @@ setup_gfx:
 ;clear OAM tables
 	ldx #$0000
 	stx $2102
-	DMA0(#$08, #$544, #^zero, #!zero, #$04)
+	DMA0(#$08, #$220, #^zero, #!zero, #$04)
 
 ;copy logo tiles
 	ldx #$2000
@@ -273,7 +297,7 @@ setup_gfx:
 	DMA0(#$00, #$6C, #^fadeloop, #!fadeloop, #$80);
 	rts
 
-tests:
+video_init:
 	sep #$20 : .as		;8-bit accumulator
 	rep #$10 : .xl		;16-bit index
 	lda #$03		;mode 3, mode 5 via HDMA

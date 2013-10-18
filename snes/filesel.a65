@@ -1,7 +1,7 @@
 #include "memmap.i65"
 #include "dma.i65"
 
-menu_init:
+filesel_init:
 	sep #$20 : .as
 	rep #$10 : .xl
 	lda #^ROOT_DIR
@@ -10,7 +10,7 @@ menu_init:
 	stx dirptr_addr
 	sta dirstart_bank
 	stx dirstart_addr
-	stz menu_state
+	stz filesel_state
 	stz dirend_onscreen
 	lda #$02
 	sta cursor_x
@@ -22,11 +22,11 @@ menu_init:
 	sta bar_wl
 	ldx #$0000
 	stx dirptr_idx
-	stx menu_sel
+	stx filesel_sel
 	stx direntry_xscroll
 	stx direntry_xscroll_state
 	lda #$01
-	sta menu_dirty
+	sta filesel_dirty
 	rep #$20 : .al
 	lda #!dirlog
 	sta dirlog_idx
@@ -35,39 +35,39 @@ menu_init:
 	sta dirlog_idx+2
 	rts
 
-menuloop:
-menuloop_s1
+fileselloop:
+fileselloop_s1
 	sep #$20 : .as
 	rep #$10 : .xl
 	lda isr_done
 	lsr
-	bcc menuloop_s1
+	bcc fileselloop_s1
 	stz isr_done
 	jsr printtime
-	jsr menu_updates	;update stuff, check keys etc
-	lda menu_dirty		;is there ANY reason to redraw the menu?
+	jsr filesel_updates	;update stuff, check keys etc
+	lda filesel_dirty		;is there ANY reason to redraw the menu?
 	cmp #$01
-	beq menuloop_redraw 	;then do
+	beq fileselloop_redraw 	;then do
 	jsr scroll_direntry
-	bra menuloop_s1
-menuloop_redraw
-	stz menu_dirty
-	jsr menu_statusbar
-	jsr menu_redraw
-	jsr menu_cleanup	;update phase 2
-	bra menuloop_s1
+	bra fileselloop_s1
+fileselloop_redraw
+	stz filesel_dirty
+	jsr filesel_statusbar
+	jsr filesel_redraw
+	jsr filesel_cleanup	;update phase 2
+	bra fileselloop_s1
 	rts
 
-menu_cleanup:
+filesel_cleanup:
 	sep #$20 : .as
 	rep #$10 : .xl
 	lda dirend_onscreen     ;end of file list on screen?
-	beq menu_cleanup_out    ;
+	beq filesel_cleanup_out    ;
 	lda dirend_idx
 	lsr
 	lsr
 	pha
-menu_cleanup_loop               ;pad rest of screen with empty lines
+filesel_cleanup_loop               ;pad rest of screen with empty lines
 	cmp listdisp            ;end of screen reached?
 	beq +                   ;then leave
 	pha
@@ -86,24 +86,24 @@ menu_cleanup_loop               ;pad rest of screen with empty lines
 	jsr hiprint
 	pla
 	inc
-	bra menu_cleanup_loop
+	bra filesel_cleanup_loop
 +
 	pla
-	cmp menu_sel
-	beq menu_cleanup_out
-	bpl menu_cleanup_out
-	sta menu_sel
-menu_cleanup_out
+	cmp filesel_sel
+	beq filesel_cleanup_out
+	bpl filesel_cleanup_out
+	sta filesel_sel
+filesel_cleanup_out
 	rts
 
 
-menu_updates:
+filesel_updates:
 ;update selection, scroll etc
-	lda menu_sel
+	lda filesel_sel
 	asl
 	asl
 	sta dirptr_idx
-	lda menu_sel
+	lda filesel_sel
 	clc
 	adc #$08
 	sta bar_yl
@@ -140,47 +140,47 @@ menu_updates:
 	lda #$40
 	and pad1trig
 	bne key_x
-	bra menuupd_out
+	bra fileselupd_out
 key_down
-	jsr menu_key_down
-	bra menuupd_out
+	jsr filesel_key_down
+	bra fileselupd_out
 key_up
-	jsr menu_key_up
-	bra menuupd_out
+	jsr filesel_key_up
+	bra fileselupd_out
 key_right
-	jsr menu_key_right
-	bra menuupd_out
+	jsr filesel_key_right
+	bra fileselupd_out
 key_left
-	jsr menu_key_left
-	bra menuupd_out
+	jsr filesel_key_left
+	bra fileselupd_out
 key_b
-	jsr menu_key_b
-	bra menuupd_out
+	jsr filesel_key_b
+	bra fileselupd_out
 key_a
-	jsr menu_key_a
-	bra menuupd_out
+	jsr filesel_key_a
+	bra fileselupd_out
 key_x
-	jsr menu_key_x
-	bra menuupd_out
+	jsr filesel_key_x
+	bra fileselupd_out
 key_select
-	jsr menu_key_select
-	bra menuupd_out
+	jsr filesel_key_select
+	bra fileselupd_out
 key_start
-	jsr menu_key_start
-	bra menuupd_out
+	jsr filesel_key_start
+	bra fileselupd_out
 
-menuupd_out
+fileselupd_out
 	lda #$09
 	sta cursor_y
 	rts
 
 
-menu_redraw:
-	lda menu_state
+filesel_redraw:
+	lda filesel_state
 	beq redraw_filelist
 ;	cmp 1
 ;	beq redraw_main
-menu_redraw_out
+filesel_redraw_out
 	rts
 
 redraw_filelist
@@ -236,7 +236,7 @@ redraw_filelist_last	;check if next offscreen item is end of dir
 redraw_filelist_out
 	ldx #$0000
 	stx dirptr_idx
-	brl menu_redraw_out
+	brl filesel_redraw_out
 
 print_direntry:
         lda cursor_y
@@ -355,14 +355,14 @@ dirent_type_cont_2
 
 	rts
 
-menu_key_down:
+filesel_key_down:
 	jsr scroll_direntry_clean
 	lda listdisp
 	dec
-	cmp menu_sel
+	cmp filesel_sel
 	bne down_noscroll
 	lda #$01
-	sta menu_dirty
+	sta filesel_dirty
 	lda dirend_onscreen
 	bne down_out
 	rep #$20 : .al
@@ -380,21 +380,21 @@ down_noscroll
 	lda dirend_idx
 	lsr
 	lsr
-	cmp menu_sel
-	beq menuupd_lastcursor
-	bcc menuupd_lastcursor
-+	lda menu_sel
+	cmp filesel_sel
+	beq fileselupd_lastcursor
+	bcc fileselupd_lastcursor
++	lda filesel_sel
 	inc
-	sta menu_sel
+	sta filesel_sel
 down_out
 	rts
 
-menu_key_up:
+filesel_key_up:
 	jsr scroll_direntry_clean
-	lda menu_sel
+	lda filesel_sel
 	bne up_noscroll
 	lda #$01
-	sta menu_dirty
+	sta filesel_dirty
 	rep #$20 : .al
 	lda dirptr_addr
 	cmp dirstart_addr
@@ -407,25 +407,25 @@ menu_key_up:
 	bra up_out
 up_noscroll
 	dec
-	sta menu_sel
+	sta filesel_sel
 up_out
 	sep #$20 : .as
 	rts
 
-menuupd_lastcursor
+fileselupd_lastcursor
 	jsr scroll_direntry_clean
 	lda dirend_idx
 	lsr
 	lsr
-	sta menu_sel
+	sta filesel_sel
 	rts
 
 ; go back one page
-menu_key_left:
+filesel_key_left:
 	stz direntry_xscroll
 	stz direntry_xscroll_state
 	lda #$01            ; must redraw afterwards
-	sta menu_dirty
+	sta filesel_dirty
 	rep #$20 : .al
 	lda dirptr_addr     ; get current direntry pointer
 	beq +               ; special case: if 0, we are at the first entry in memory
@@ -444,18 +444,18 @@ menu_key_left:
 	sep #$20 : .as
 	rts
 +	lda dirstart_addr   ; reset pointer to start of directory
-	stz menu_sel        ; reset the selection cursor too
+	stz filesel_sel        ; reset the selection cursor too
 	bra -
 
 ; go forth one page
-menu_key_right:
+filesel_key_right:
 	stz direntry_xscroll
 	stz direntry_xscroll_state
 	sep #$20 : .as
 	lda dirend_onscreen
-	bne menuupd_lastcursor
+	bne fileselupd_lastcursor
 	lda #$01
-	sta menu_dirty
+	sta filesel_dirty
 	rep #$20 : .al
 	lda listdisp
 	asl
@@ -466,18 +466,18 @@ menu_key_right:
 	sep #$20 : .as
 	rts
 
-menu_key_a:
+filesel_key_a:
 	jsr select_item
 	rts
 
-menu_key_select:
+filesel_key_select:
 	rts
 
-menu_key_start:
+filesel_key_start:
 	jsr select_last_file
 	rts
 
-menu_key_b:
+filesel_key_b:
 	stz direntry_xscroll
 	stz direntry_xscroll_state
 	rep #$20 : .al
@@ -485,7 +485,7 @@ menu_key_b:
 	beq skip_key_b
 	sta dirptr_addr
 	lda #$0000
-	sta menu_sel
+	sta filesel_sel
 	bra select_item
 skip_key_b
 	sep #$20 : .as
@@ -493,7 +493,7 @@ skip_key_b
 
 select_item:
 	rep #$20 : .al
-	lda menu_sel
+	lda filesel_sel
 	and #$00ff
 	asl
 	asl
@@ -568,7 +568,7 @@ select_dir:
 	lda @dirptr_bank
 	sta [dirlog_idx], y
 	iny
-	lda @menu_sel
+	lda @filesel_sel
 	sta [dirlog_idx], y
 	lda @dirlog_idx
 	clc
@@ -604,12 +604,12 @@ select_dir:
 	sta @dirptr_addr
 	sta @dirstart_addr
 	lda #$0000
-	sta @menu_sel
+	sta @filesel_sel
 	sta @direntry_xscroll
 	sta @direntry_xscroll_state
 	sep #$20 : .as
 	lda #$01
-	sta @menu_dirty
+	sta @filesel_dirty
 	plb
 	rts
 
@@ -638,11 +638,11 @@ select_parent:
 	sta @dirptr_bank
 	iny
 	rep #$20 : .al
-	lda [dirlog_idx], y ; load menu_sel
-	sta @menu_sel
+	lda [dirlog_idx], y ; load filesel_sel
+	sta @filesel_sel
 	sep #$20 : .as
 	lda #$01
-	sta @menu_dirty
+	sta @filesel_dirty
 	rts
 
 select_spc:
@@ -666,7 +666,7 @@ wait_spc:
 	jsr restore_screen
 	rts
 
-menu_key_x:
+filesel_key_x:
 	jsr mainmenu
 	rts
 
@@ -676,11 +676,11 @@ setup_224:
 	lda #18
 	sta listdisp
 	dec
-	cmp menu_sel
+	cmp filesel_sel
 	bmi setup_224_adjsel
 	bra +
 setup_224_adjsel
-	sta menu_sel
+	sta filesel_sel
 +
 	lda #18*64
 	sta textdmasize
@@ -699,7 +699,7 @@ setup_224_adjsel
 	sta hdma_math_selection
 	stz vidmode
 	lda #$01
-	sta menu_dirty
+	sta filesel_dirty
 	lda #^space64
 	ldx #!space64
 	sta print_bank
@@ -719,7 +719,7 @@ setup_224_adjsel
 	plp
 	rts
 
-menu_statusbar
+filesel_statusbar
 	pha
 	phx
 	php
@@ -822,7 +822,7 @@ scroll_direntry_clean:
 	rts
 
 scroll_direntry:
-	ldy menu_sel
+	ldy filesel_sel
 	lda direntry_xscroll_state
 	bne +
 	lda direntry_fits, y
@@ -852,7 +852,7 @@ scroll_direntry_scrollfast
 	lda #$02
 	sta cursor_x
 	rep #$20 : .al
-	lda menu_sel
+	lda filesel_sel
 	asl
 	asl
 	tay
@@ -869,7 +869,7 @@ scroll_direntry_scrollfast
 	lda [dirptr_addr], y
 	iny
 	sta @dirent_type
-	ldy menu_sel
+	ldy filesel_sel
 	sty direntry_fits_idx
 	phy
 	jsr print_direntry

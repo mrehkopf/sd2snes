@@ -80,15 +80,12 @@ mm_entloop
 	plb
 	phx
 	jsr hiprint
-	plx
-	inx
-	inx
-	inx
-	inx
-	inx
-	inx
-	inx
-	inx
+	rep #$20 : .al
+	pla
+	clc
+	adc #$08
+	tax
+	sep #$20 : .as
 	inc mm_tmp
 	lda mm_tmp
 	cmp @main_entries
