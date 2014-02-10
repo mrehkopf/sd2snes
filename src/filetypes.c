@@ -152,7 +152,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
           break;
         }
         fn = *fno.lfname ? fno.lfname : fno.fname;
-        if ((*fn == '.') || !(strncasecmp(fn, SYS_DIR_NAME, strlen(SYS_DIR_NAME)+1))) continue;
+        if ((*fn == '.') || (fno.fattrib & (AM_HID | AM_SYS)) || !(strncasecmp(fn, SYS_DIR_NAME, strlen(SYS_DIR_NAME)+1))) continue;
         if (fno.fattrib & AM_DIR) {
           depth++;
           if(depth < FS_MAX_DEPTH) {
