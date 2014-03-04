@@ -27,12 +27,15 @@
 #ifndef SNES_H
 #define SNES_H
 
-#define SNES_CMD_LOADROM   (1)
-#define SNES_CMD_SETRTC    (2)
-#define SNES_CMD_SYSINFO   (3)
-#define SNES_CMD_LOADLAST  (4)
-#define SNES_CMD_LOADSPC   (5)
-#define SNES_CMD_RESET     (6)
+#define SNES_CMD_LOADROM          (1)
+#define SNES_CMD_SETRTC           (2)
+#define SNES_CMD_SYSINFO          (3)
+#define SNES_CMD_LOADLAST         (4)
+#define SNES_CMD_LOADSPC          (5)
+#define SNES_CMD_RESET            (6)
+#define SNES_CMD_SET_ALLOW_PAIR   (7)
+#define SNES_CMD_SET_VIDMODE_GAME (8)
+#define SNES_CMD_SET_VIDMODE_MENU (9)
 
 #define MENU_ERR_OK     (0)
 #define MENU_ERR_NODSP  (1)
@@ -52,4 +55,6 @@ uint8_t menu_main_loop(void);
 void get_selected_name(uint8_t* lfn);
 void snes_bootprint(void* msg);
 void snes_menu_errmsg(int err, void* msg);
+uint8_t snes_get_last_game_index(void);
+
 #endif

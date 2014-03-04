@@ -146,9 +146,8 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 
     cfg_load();
     cfg_save();
-    sram_writebyte(cfg_is_last_game_valid(), SRAM_STATUS_ADDR+SYS_LAST_STATUS);
-    cfg_get_last_game(file_lfn);
-    sram_writeblock(strrchr((const char*)file_lfn, '/')+1, SRAM_LASTGAME_ADDR, 256);
+    sram_writebyte(cfg_get_num_recent_games(), SRAM_STATUS_ADDR+SYS_LAST_STATUS);
+    cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
     *fs_path=0;
     uint32_t saved_dir_id;
     get_db_id(&saved_dir_id);
@@ -252,8 +251,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 	case SNES_CMD_LOADROM:
 	  get_selected_name(file_lfn);
 	  printf("Selected name: %s\n", file_lfn);
-          cfg_save_last_game(file_lfn);
-          cfg_set_last_game_valid(1);
+          cfg_add_last_game(file_lfn);
           cfg_save();
 	  filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET);
 	  break;
@@ -284,9 +282,12 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           cmd=0; /* stay in menu loop */
           break;
         case SNES_CMD_LOADLAST:
-          cfg_get_last_game(file_lfn);
+          cfg_get_last_game(file_lfn, sram_readbyte(SRAM_PARAM_ADDR));
           printf("Selected name: %s\n", file_lfn);
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET);
+          break;
+        case SNES_CMD_SET_ALLOW_PAIR:
+          cfg_set_pair_mode_allowed(sram_readbyte(SRAM_PARAM_ADDR));
           break;
 	default:
 	  printf("unknown cmd: %d\n", cmd);

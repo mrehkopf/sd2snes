@@ -179,3 +179,7 @@ void snes_menu_errmsg(int err, void* msg) {
   sram_writebyte(err, SRAM_CMD_ADDR);
 }
 
+uint8_t snes_get_last_game_index() {
+	return sram_readbyte(SRAM_PARAM_ADDR);
+}
+
