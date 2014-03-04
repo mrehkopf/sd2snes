@@ -754,10 +754,13 @@ select_last_file:
 	sep #$20 : .as
 	rep #$10 : .xl
 	lda @LAST_STATUS
+	sta num_recent_games
+	sta listsel_max
+	stz recent_sel
 	bne +
 	plp
 	rts
-+	jsr backup_screen
++       jsr backup_screen
 	lda #^text_last
 	sta window_tbank
 	ldx #!text_last
@@ -766,17 +769,19 @@ select_last_file:
 	sta window_x
 	inc
 	inc
-	sta bar_xl
 	pha
 	lda @last_win_y
 	sta window_y
 	inc
-	sta bar_yl
 	inc
 	pha
 	lda @last_win_w
 	sta window_w
 	lda @last_win_h
+	sta window_h
+	lda @LAST_STATUS
+	clc
+	adc window_h
 	sta window_h
 	jsr draw_window
 	stz print_pal
@@ -789,21 +794,23 @@ select_last_file:
 	sta print_y
 	pla
 	sta print_x
-	lda #56
-	sta bar_wl
+-	lda #56
 	sta print_count
 	jsr hiprint
--	lda isr_done
-	lsr
-	bcc -
-	jsr printtime
-	jsr read_pad
-	lda #$80
-	and pad1trig+1
-	bne +
-	lda #$10
-	and pad1trig+1
-	beq -
+	inc print_src+1
+	inc print_y
+	dec num_recent_games
+	bne -
+	lda #$01
+	sta listsel_step
+	jsr menu_select
+	cmp #$ff
+	beq +
+	sta @MCU_PARAM
+	sep #$20 : .as
+	lda #$00
+	sta @$4200
+	sei
 	lda #$04
 	sta @MCU_CMD
 	jmp select_file_fade
