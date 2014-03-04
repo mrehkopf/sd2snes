@@ -98,6 +98,9 @@ barstep		.byt 0  ; step size for bar
 testvar		.word 0,0,0,0
 ;menu system
 menu_stack	.word 0,0,0,0,0,0,0,0
+listsel_sel	.byt 0
+listsel_step	.byt 0
+listsel_max	.byt 0
 ;----------hdma tables in WRAM (must be stable when cartridge is cut off)
 hdma_pal	.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
