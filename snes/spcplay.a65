@@ -185,8 +185,7 @@ spc_playloop:
 	stz isr_done
 
 	jsr read_pad
-	lda #$80
-	and pad1trig+1
+	lda pad_b
 	bne spc_key_b
 	bra spc_playloop
 

@@ -196,6 +196,19 @@ tgt_bright
 	.byt 0
 cur_bright
 	.byt 0
+;-- pad
+pad_b		.byt 0
+pad_y		.byt 0
+pad_select	.byt 0
+pad_start	.byt 0
+pad_up		.byt 0
+pad_down	.byt 0
+pad_left	.byt 0
+pad_right	.byt 0
+pad_a		.byt 0
+pad_x		.byt 0
+pad_l		.byt 0
+pad_r		.byt 0
 
 ;------------------------
 saved_sp

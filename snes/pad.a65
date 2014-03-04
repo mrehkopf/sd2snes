@@ -1,6 +1,13 @@
 read_pad:
 	php
 	rep #$30 : .xl : .al
+	stz pad_b	; (including y)
+	stz pad_select	; (including start)
+	stz pad_up	; (including down)
+	stz pad_left	; (including right)
+	stz pad_a	; (including x)
+	stz pad_l	; (including r)
+
 read_pad1
 	ldx pad1mem 	;byetUDLRaxlriiii
 	lda $4218
@@ -31,6 +38,33 @@ read_pad1_cont1
 read_pad1_cont2
 ;lda $4218
 ;sta pad1trig
+	lda pad1trig
+	sep #$20 : .as
+	rol
+	rol pad_a
+	rol
+	rol pad_x
+	rol
+	rol pad_l
+	rol
+	rol pad_r
+	xba
+	rol
+	rol pad_b
+	rol
+	rol pad_y
+	rol
+	rol pad_select
+	rol
+	rol pad_start
+	rol
+	rol pad_up
+	rol
+	rol pad_down
+	rol
+	rol pad_left
+	rol
+	rol pad_right
 	plp
 	rts
 

@@ -113,32 +113,23 @@ filesel_updates:
 	sta bar_xl
 ;get input
 	jsr read_pad
-	lda #$04
-	and pad1trig+1
+	lda pad_down
 	bne key_down
-	lda #$08
-	and pad1trig+1
+	lda pad_up
 	bne key_up
-	lda #$01
-	and pad1trig+1
+	lda pad_right
 	bne key_right
-	lda #$02
-	and pad1trig+1
+	lda pad_left
 	bne key_left
-	lda #$80
-	and pad1trig+1
+	lda pad_b
 	bne key_b
-	lda #$10
-	and pad1trig+1
+	lda pad_start 
 	bne key_start
-	lda #$20
-	and pad1trig+1
+	lda pad_select
 	bne key_select
-	lda #$80
-	and pad1trig
+	lda pad_a
 	bne key_a
-	lda #$40
-	and pad1trig
+	lda pad_x 
 	bne key_x
 	bra fileselupd_out
 key_down

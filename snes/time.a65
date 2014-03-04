@@ -106,23 +106,17 @@ timeloop1
 	bcc timeloop1
 	stz isr_done
 	jsr read_pad
-        lda #$01
-        and pad1trig+1
-        bne tkey_right
-        lda #$02
-        and pad1trig+1
-        bne tkey_left
-        lda #$04
-        and pad1trig+1
-        bne tkey_down
-        lda #$08
-        and pad1trig+1
-        bne tkey_up
-	lda #$80
-	and pad1trig+1
+	lda pad_right
+	bne tkey_right
+	lda pad_left
+	bne tkey_left
+	lda pad_down
+	bne tkey_down
+	lda pad_up
+	bne tkey_up
+	lda pad_b
 	bne tkey_b
-	lda #$80
-	and pad1trig
+	lda pad_a
 	bne tkey_a
 	; do stuff
 	lda time_exit

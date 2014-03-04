@@ -112,11 +112,8 @@ sysinfo_printloop:
 	bcc -
 	jsr printtime
 	jsr read_pad
-	lda #$80
-	and pad1trig
-	bne +
-	lda #$80
-	and pad1trig+1
+	lda pad_b
+	ora pad_a
 	bne +
 	lda @sysinfo_win_x
 	inc
