@@ -63,6 +63,7 @@ void smc_id(snes_romprops_t* props) {
   props->has_dspx = 0;
   props->has_st0010 = 0;
   props->has_cx4 = 0;
+  props->has_obc1 = 0;
   props->fpga_features = 0;
   props->fpga_conf = NULL;
   for(uint8_t num = 0; num < 6; num++) {
@@ -80,7 +81,6 @@ void smc_id(snes_romprops_t* props) {
   }
 
   /* restore the chosen one */
-/*dprintf("winner is %d\n", score_idx); */
   file_readblock(header, hdr_addr[score_idx], sizeof(snes_header_t));
 
   if(header->name[0x13] == 0x00 || header->name[0x13] == 0xff) {
@@ -156,6 +156,10 @@ void smc_id(snes_romprops_t* props) {
         props->dsp_fw = DSPFW_ST0010;
         props->fpga_features |= FEAT_ST0010;
         header->ramsize = 2;
+      } else if (header->map == 0x30 && header->carttype == 0x25) {
+        props->has_obc1 = 1;
+        props->fpga_conf = FPGA_OBC1;
+        props->fpga_features |= FEAT_OBC1;
       }
       break;
 

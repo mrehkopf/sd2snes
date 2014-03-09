@@ -36,6 +36,7 @@
 #define CX4FW ((const uint8_t*)"/sd2snes/cx4.bin")
 
 #define FPGA_CX4 ((const uint8_t*)"/sd2snes/fpga_cx4.bit")
+#define FPGA_OBC1 ((const uint8_t*)"/sd2snes/fpga_obc1.bit")
 
 typedef struct _snes_header {
   uint8_t maker[2];     /* 0xB0 */
@@ -82,6 +83,7 @@ typedef struct _snes_romprops {
   uint8_t has_st0010;         /* st0010 presence flag (additional to dspx) */
   uint8_t has_msu1;           /* MSU1 presence flag */
   uint8_t has_cx4;            /* CX4 presence flag */
+  uint8_t has_obc1;           /* OBC1 presence flag */
   uint8_t fpga_features;      /* feature/peripheral enable bits*/
   uint8_t region;             /* game region (derived from destination code) */
   uint32_t load_address;      /* where to load the ROM image */
