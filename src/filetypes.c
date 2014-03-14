@@ -286,6 +286,7 @@ SNES_FTYPE determine_filetype(char* filename) {
      ||(!strcasecmp(ext+1, "SFC"))
      ||(!strcasecmp(ext+1, "FIG"))
      ||(!strcasecmp(ext+1, "BS"))
+     ||(!strcasecmp(ext+1, "ST"))
     ) {
     return TYPE_SMC;
   }

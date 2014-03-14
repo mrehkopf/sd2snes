@@ -34,6 +34,7 @@
 snes_romprops_t romprops;
 
 uint32_t hdr_addr[6] = {0xffb0, 0x101b0, 0x7fb0, 0x81b0, 0x40ffb0, 0x4101b0};
+uint8_t stID[15];
 
 uint8_t isFixed(uint8_t* data, int size, uint8_t value) {
   uint8_t res = 1;
@@ -66,6 +67,25 @@ void smc_id(snes_romprops_t* props) {
   props->has_obc1 = 0;
   props->fpga_features = 0;
   props->fpga_conf = NULL;
+  props->isST = 0;
+
+
+  /* Check for Sufami Turbo header
+   * Sufami Turbo Roms have no offset for the header
+   * And start always with the ASCII string "BANDAI SFC-ADX"
+  */
+  file_readblock(stID, 0, 15);
+  if (!memcmp(stID,"BANDAI SFC-ADX", 14)) {
+      /* Sufami Turbo ROM */
+      printf("Sufami Turbo ROM detected");
+      props->isST = 1;
+      props->region = 0; /* Like BS-X the ST is japan only */
+      props->romsize_bytes = 0x100000;
+      props->ramsize_bytes = 0x2000;
+      props->mapper_id = 77;
+      return;
+  }
+
   for(uint8_t num = 0; num < 6; num++) {
     score = smc_headerscore(hdr_addr[num], header);
     printf("%d: offset = %lX; score = %d\n", num, hdr_addr[num], score); // */

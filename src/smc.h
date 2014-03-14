@@ -37,6 +37,7 @@
 
 #define FPGA_CX4 ((const uint8_t*)"/sd2snes/fpga_cx4.bit")
 #define FPGA_OBC1 ((const uint8_t*)"/sd2snes/fpga_obc1.bit")
+#define ST_BASE ((const uint8_t*)"/sd2snes/stbase.smc")
 
 typedef struct _snes_header {
   uint8_t maker[2];     /* 0xB0 */
@@ -87,6 +88,7 @@ typedef struct _snes_romprops {
   uint8_t fpga_features;      /* feature/peripheral enable bits*/
   uint8_t region;             /* game region (derived from destination code) */
   uint32_t load_address;      /* where to load the ROM image */
+  uint8_t isST;				  /* Sufami turbo flag */
   snes_header_t header;       /* original header from ROM image */
 } snes_romprops_t;
 

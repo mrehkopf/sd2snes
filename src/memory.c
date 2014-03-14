@@ -250,6 +250,14 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     sram_writebyte(0xfc, rombase+0xd5);
     set_fpga_time(0x0220110301180530LL);
   }
+
+  if (romprops.isST)
+  {
+      printf("Sufamit Turbo rom");
+      // Now we do some magic :D
+
+  }
+
   if(romprops.has_dspx || romprops.has_cx4) {
     printf("DSPx game. Loading firmware image %s...\n", romprops.dsp_fw);
     load_dspx(romprops.dsp_fw, romprops.fpga_features);
