@@ -62,7 +62,8 @@ wire [23:0] SRAM_SNES_ADDR;
       001      LoROM
       010      ExHiROM (48-64Mbit)
       011      BS-X
-      110      brainfuck interleaved 96MBit Star Ocean =)
+      101		Sufami Turbo
+		110      brainfuck interleaved 96MBit Star Ocean =)
       111      menu (ROM in upper SRAM)
 */
 

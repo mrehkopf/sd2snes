@@ -82,7 +82,7 @@ void smc_id(snes_romprops_t* props) {
       props->region = 0; /* Like BS-X the ST is japan only */
       props->romsize_bytes = 0x100000;
       props->ramsize_bytes = 0x2000;
-      props->mapper_id = 77;
+      props->mapper_id = 5;
       return;
   }
 
