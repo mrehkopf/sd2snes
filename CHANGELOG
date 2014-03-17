@@ -94,3 +94,18 @@ v0.1.5
    - minor memory access timing tweaks
      (should help with occasional glitches on some systems)
 
+v0.1.6
+======
+
+ * OBC1 support (Metal Combat: Falcon's Revenge works)
+ * menu now displays the 10 most recently played games instead of one
+ * hidden and system files are now ignored in the file browser
+ * some minor internal changes for convenience of development
+ * Fixes:
+   - partial-size BS dumps should now load correctly
+   - fixed a PSRAM mapping bug in the new BS-X mapping logic that caused
+     graphical corruption on some games (notably Treasure Conflix garbled
+     sprites)
+   - SRAM mapping for LoROM <=16Mbits now uses the entire bank instead of
+   - 0000-7fff only. Fixes saving in some games, e.g. Ys III Wanderers from Ys
+
