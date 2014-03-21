@@ -240,10 +240,10 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     set_bsx_regs(0xc0, 0x3f);
     uint16_t rombase;
     if(romprops.header.ramsize & 1) {
-      rombase = 0xff00;
+      rombase = romprops.load_address + 0xff00;
 //      set_bsx_regs(0x36, 0xc9);
     } else {
-      rombase = 0x7f00;
+      rombase = romprops.load_address + 0x7f00;
 //      set_bsx_regs(0x34, 0xcb);
     }
     sram_writebyte(0x33, rombase+0xda);
