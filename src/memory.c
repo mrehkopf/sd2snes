@@ -48,6 +48,7 @@
 char* hex = "0123456789ABCDEF";
 
 extern snes_romprops_t romprops;
+extern uint32_t saveram_crc_old;
 
 void sram_hexdump(uint32_t addr, uint32_t len) {
   static uint8_t buf[16];
@@ -280,9 +281,11 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   readled(0);
   if(flags & LOADROM_WITH_SRAM) {
     if(romprops.ramsize_bytes) {
+      sram_memset(SRAM_SAVE_ADDR, romprops.ramsize_bytes, 0);
       strcpy(strrchr((char*)filename, (int)'.'), ".srm");
       printf("SRM file: %s\n", filename);
       load_sram(filename, SRAM_SAVE_ADDR);
+      saveram_crc_old = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
     } else {
       printf("No SRAM\n");
     }

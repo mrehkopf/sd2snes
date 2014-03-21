@@ -39,7 +39,6 @@
 #include "fpga.h"
 #include "fpga_spi.h"
 
-uint8_t initloop=1;
 uint32_t saveram_crc, saveram_crc_old;
 extern snes_romprops_t romprops;
 
@@ -103,10 +102,6 @@ uint32_t diffcount = 0, samecount = 0, didnotsave = 0;
 uint8_t sram_valid = 0;
 void snes_main_loop() {
   if(!romprops.ramsize_bytes)return;
-  if(initloop) {
-    saveram_crc_old = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
-    initloop=0;
-  }
   saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
   sram_valid = sram_reliable();
   if(crc_valid && sram_valid) {
