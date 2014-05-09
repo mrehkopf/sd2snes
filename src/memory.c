@@ -1,33 +1,35 @@
 /* sd2snes - SD card based universal cartridge for the SNES
-   Copyright (C) 2009-2010 Maximilian Rehkopf <otakon@gmx.net>
-   AVR firmware portion
+Copyright (C) 2009-2010 Maximilian Rehkopf <otakon@gmx.net>
+AVR firmware portion
 
-   Inspired by and based on code from sd2iec, written by Ingo Korb et al.
-   See sdcard.c|h, config.h.
+Inspired by and based on code from sd2iec, written by Ingo Korb et al.
+See sdcard.c|h, config.h.
 
-   FAT file system access based on code by ChaN, Jim Brain, Ingo Korb,
-   see ff.c|h.
+FAT file system access based on code by ChaN, Jim Brain, Ingo Korb,
+see ff.c|h.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; version 2 of the License only.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; version 2 of the License only.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-   memory.c: RAM operations
+memory.c: RAM operations
 */
 
 
 #include "config.h"
 #include "uart.h"
 #include "fpga.h"
+#include "cfg.h"
+#include "cic.h"
 #include "crc.h"
 #include "crc32.h"
 #include "ff.h"
@@ -49,6 +51,7 @@ char* hex = "0123456789ABCDEF";
 
 extern snes_romprops_t romprops;
 extern uint32_t saveram_crc_old;
+extern cfg_t CFG;
 
 void sram_hexdump(uint32_t addr, uint32_t len) {
   static uint8_t buf[16];
@@ -241,10 +244,10 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     uint16_t rombase;
     if(romprops.header.ramsize & 1) {
       rombase = romprops.load_address + 0xff00;
-//      set_bsx_regs(0x36, 0xc9);
+// set_bsx_regs(0x36, 0xc9);
     } else {
       rombase = romprops.load_address + 0x7f00;
-//      set_bsx_regs(0x34, 0xcb);
+// set_bsx_regs(0x34, 0xcb);
     }
     sram_writebyte(0x33, rombase+0xda);
     sram_writebyte(0x00, rombase+0xd4);
@@ -301,10 +304,19 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   printf("done\n");
 
   romprops.fpga_features |= FEAT_SRTC;
-  romprops.fpga_features |= FEAT_213F;
+  if(cfg_is_r213f_override_enabled())
+    romprops.fpga_features |= FEAT_213F; /* e.g. for general consoles */
+  else
+    romprops.fpga_features &= 0xEF; /* only for consoles with $213f-D4-Region-Patching (e.g. U16) */
 
   fpga_set_213f(romprops.region);
   fpga_set_features(romprops.fpga_features);
+
+  if(get_cic_state() == CIC_PAIR)
+    if(filename != (uint8_t*)"/sd2snes/menu.bin") {
+      cic_videomode(CFG.vidmode_game);
+      cic_d4(romprops.region);
+    }
 
   if(flags & LOADROM_WITH_RESET) {
     fpga_dspx_reset(1);
@@ -326,8 +338,8 @@ uint32_t load_spc(uint8_t* filename, uint32_t spc_data_addr, uint32_t spc_header
   file_open(filename, FA_READ); /* Open SPC file */
   if(file_res) return 0;
   filesize = file_handle.fsize;
-  if (filesize < 65920) { /*  At this point, we care about filesize only */
-    file_close();         /* since SNES decides if it is an SPC file */
+  if (filesize < 65920) { /* At this point, we care about filesize only */
+    file_close(); /* since SNES decides if it is an SPC file */
     sram_writebyte(0, spc_header_addr);	/* If file is too small, destroy previous SPC header */
     return 0;
   }
@@ -528,13 +540,13 @@ uint8_t sram_reliable() {
   uint32_t val;
   uint8_t result = 0;
 /*while(score<SRAM_RELIABILITY_SCORE) {
-    if(sram_readlong(SRAM_SCRATCHPAD)==val) {
-      score++;
-    } else {
-      set_pwr_led(0);
-      score=0;
-    }
-  } */
+if(sram_readlong(SRAM_SCRATCHPAD)==val) {
+score++;
+} else {
+set_pwr_led(0);
+score=0;
+}
+} */
   for(uint16_t i = 0; i < SRAM_RELIABILITY_SCORE; i++) {
     val=sram_readlong(SRAM_SCRATCHPAD);
     if(val==0x12345678) {
@@ -545,7 +557,7 @@ uint8_t sram_reliable() {
   }
   if(score<SRAM_RELIABILITY_SCORE) {
     result = 0;
-/*  dprintf("score=%d\n", score); */
+/* dprintf("score=%d\n", score); */
   } else {
     result = 1;
   }
@@ -571,8 +583,8 @@ uint64_t sram_gettime(uint32_t base_addr) {
   uint8_t data;
   uint64_t result = 0LL;
   /* 1st nibble is the century - 10 (binary)
-     4th nibble is the month (binary)
-     all other fields are BCD */
+4th nibble is the month (binary)
+all other fields are BCD */
   for(int i=0; i<12; i++) {
     FPGA_WAIT_RDY();
     data = FPGA_RX_BYTE();
