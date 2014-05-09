@@ -438,7 +438,9 @@ time_dec_cont
 	lda time_mon
 	dec
 	asl
-	ldx #$0000
+	xba
+	lda #$00
+	xba
 	tax
 	lda @time_month, x
 	sta time_d10
