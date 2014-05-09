@@ -11,7 +11,7 @@ cfg_t CFG = {
   .num_recent_games = 0,
   .vidmode_menu = VIDMODE_AUTO,
   .vidmode_game = VIDMODE_AUTO,
-  .pair_mode_allowed = 0,
+  .pair_mode_allowed = 1,
   .bsx_use_systime = 0,
   .bsx_time = 0x0619970301180530LL,
   .r213f_override = 0
@@ -100,4 +100,11 @@ void cfg_set_pair_mode_allowed(uint8_t allowed) {
 }
 uint8_t cfg_is_pair_mode_allowed() {
   return CFG.pair_mode_allowed;
+}
+
+void cfg_set_r213f_override(uint8_t enable) {
+  CFG.r213f_override = enable;
+}
+uint8_t cfg_is_r213f_override_enabled() {
+  return CFG.r213f_override;
 }

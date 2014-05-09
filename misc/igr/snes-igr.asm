@@ -87,6 +87,13 @@
 ; -----------------------------------------------------------------------
 ; relocatable code
 PROG CODE
+
+calibrate_osccal
+        bsf STATUS, RP0 ;Bank 1
+        call 3FFh ;Get the cal value
+;        movlw 0xfc ; load '11111100' to set the OSCCAL to maximum
+        movwf OSCCAL ;Calibrate
+        bcf STATUS, RP0 ;Bank 0
 start
         banksel PORTA
         clrf    PORTA
@@ -141,6 +148,10 @@ waitforlatch_l	; wait for "latch" to become low
 	clrf	0x21
 	clrf	0x22
 	bcf	STATUS, C	; clear carry
+
+dl1_init ; first data is read on the first falling edge
+	btfsc   PORTA, 2 ; wait for "clk" to become low
+	goto    dl1_init
 dl1
 	movf	PORTA, w		;read data bit
 	rlf	0x20, f		;shift

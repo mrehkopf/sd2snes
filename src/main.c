@@ -86,7 +86,7 @@ led_pwm();
 printf("PCONP=%lx\n", LPC_SC->PCONP);
 
   file_init();
-  cic_init(0);
+  cic_init(cfg_is_pair_mode_allowed());
 /* setup timer (fpga clk) */
   LPC_TIM3->TCR=2;
   LPC_TIM3->CTCR=0;
@@ -138,7 +138,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     snes_bootprint("           Loading ...          \0");
     if(get_cic_state() == CIC_PAIR) {
       printf("PAIR MODE ENGAGED!\n");
-      cic_pair(CIC_NTSC, CIC_NTSC);
+      cic_pair(CFG.vidmode_menu, CFG.vidmode_menu);
     }
     rdyled(1);
     readled(0);
@@ -294,6 +294,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 	  cmd=0; /* unknown cmd: stay in loop */
 	  break;
       }
+
     }
     printf("loaded %lu bytes\n", filesize);
     printf("cmd was %x, going to snes main loop\n", cmd);
@@ -305,11 +306,10 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     }
 
     cmd=0;
-    uint8_t snes_reset_prev=0, snes_reset_now=0, snes_reset_state=0;
-    uint16_t reset_count=0;
+	// uint8_t snes_res;
     while(fpga_test() == FPGA_TEST_TOKEN) {
       cli_entrycheck();
-      sleep_ms(250);
+//	  sleep_ms(250);
       sram_reliable();
       printf("%s ", get_cic_statename(get_cic_state()));
       if(reset_changed) {
@@ -317,31 +317,15 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
         reset_changed = 0;
         fpga_reset_srtc_state();
       }
-      snes_reset_now=get_snes_reset();
-      if(snes_reset_now) {
-	if(!snes_reset_prev) {
-	  printf("RESET BUTTON DOWN\n");
-	  snes_reset_state=1;
-	  reset_count=0;
-	}
-      } else {
-	if(snes_reset_prev) {
-	  printf("RESET BUTTON UP\n");
-	  snes_reset_state=0;
-	}
-      }
-      if(snes_reset_state) {
-	reset_count++;
-      } else {
-	sram_reliable();
-	snes_main_loop();
-      }
-      if(reset_count>4) {
-	reset_count=0;
-        prepare_reset();
-	break;
-      }
-      snes_reset_prev = snes_reset_now;
+	  
+	  if(get_snes_reset_state() == SNES_RESET_LONG) {
+		prepare_reset();
+		break;
+	  } else {
+		sram_reliable();
+		snes_main_loop();
+	  }
+	  
     }
     /* fpga test fail: panic */
     if(fpga_test() != FPGA_TEST_TOKEN){
