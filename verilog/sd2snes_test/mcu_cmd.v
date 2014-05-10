@@ -1,21 +1,21 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    21:57:50 08/25/2009 
-// Design Name: 
-// Module Name:    mcu_cmd 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    21:57:50 08/25/2009
+// Design Name:
+// Module Name:    mcu_cmd
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module mcu_cmd(
@@ -38,7 +38,7 @@ module mcu_cmd(
   output [23:0] saveram_mask_out,
   output [23:0] rom_mask_out,
   output reg ramsel_out,
-  
+
   // SD "DMA" extension
   output SD_DMA_EN,
   input SD_DMA_STATUS,
@@ -93,9 +93,9 @@ module mcu_cmd(
 
   // feature enable
   output reg [3:0] featurebits_out,
-  
+
   // SNES control signal/clock freqs
-  
+
   input [31:0] snes_cpuclk_freq,
   input [31:0] snes_sysclk_freq,
   input [31:0] snes_read_freq,
@@ -104,12 +104,12 @@ module mcu_cmd(
   input [31:0] snes_pawr_freq,
   input [31:0] snes_refresh_freq,
   input [31:0] snes_romsel_freq,
-  
+
   output reg [12:0] mcu_bram_addr,
   input [7:0] mcu_bram_data_in,
   output reg [7:0] mcu_bram_data_out,
   output reg mcu_bram_we
-  
+
 );
 
 initial begin
@@ -340,43 +340,42 @@ end
 always @(posedge clk) begin
   if(param_ready && cmd_data[7:4] == 4'h0)  begin
     case (cmd_data[1:0])
-	 2'b01: begin
-		case (spi_byte_cnt)
-		  32'h2: begin
-			 DAC_ADDR_OUT_BUF[10:8] <= param_data[2:0];
-			 DAC_ADDR_OUT_BUF[7:0] <= 8'b0;
-		  end
-		  32'h3:
-			 DAC_ADDR_OUT_BUF[7:0] <= param_data;
-		endcase
-	 end
-	 2'b10: begin
-		case (spi_byte_cnt)
-		  32'h2: begin
-			 MSU_ADDR_OUT_BUF[13:8] <= param_data[5:0];
-			 MSU_ADDR_OUT_BUF[7:0] <= 8'b0;
-		  end
-		  32'h3:
-			 MSU_ADDR_OUT_BUF[7:0] <= param_data;
-		endcase
-	 end
-	 default:
-		case (spi_byte_cnt)
-		  32'h2: begin
-			 ADDR_OUT_BUF[23:16] <= param_data;
-			 ADDR_OUT_BUF[15:0] <= 16'b0;
-		  end
-		  32'h3:
-			 ADDR_OUT_BUF[15:8] <= param_data;
-		  32'h4:
-			 ADDR_OUT_BUF[7:0] <= param_data;
-		endcase
-	 endcase
+      2'b01: begin
+        case (spi_byte_cnt)
+          32'h2: begin
+            DAC_ADDR_OUT_BUF[10:8] <= param_data[2:0];
+            DAC_ADDR_OUT_BUF[7:0] <= 8'b0;
+          end
+          32'h3:
+            DAC_ADDR_OUT_BUF[7:0] <= param_data;
+        endcase
+      end
+      2'b10: begin
+        case (spi_byte_cnt)
+          32'h2: begin
+            MSU_ADDR_OUT_BUF[13:8] <= param_data[5:0];
+            MSU_ADDR_OUT_BUF[7:0] <= 8'b0;
+          end
+          32'h3:
+            MSU_ADDR_OUT_BUF[7:0] <= param_data;
+        endcase
+      end
+      default:
+        case (spi_byte_cnt)
+          32'h2: begin
+            ADDR_OUT_BUF[23:16] <= param_data;
+            ADDR_OUT_BUF[15:0] <= 16'b0;
+          end
+          32'h3:
+            ADDR_OUT_BUF[15:8] <= param_data;
+          32'h4:
+            ADDR_OUT_BUF[7:0] <= param_data;
+        endcase
+    endcase
   end else if (SD_DMA_NEXTADDR | (mcu_nextaddr & (cmd_data[7:5] == 3'h4)
-                         && (cmd_data[3])
-                         && (spi_byte_cnt >= (32'h1+cmd_data[4])))
-     )
-  begin
+                               && (cmd_data[3])
+                               && (spi_byte_cnt >= (32'h1+cmd_data[4])))
+  ) begin
     case (SD_DMA_TGTr)
       2'b00: ADDR_OUT_BUF <= ADDR_OUT_BUF + 1;
       2'b01: DAC_ADDR_OUT_BUF <= DAC_ADDR_OUT_BUF + 1;
@@ -387,9 +386,9 @@ end
 
 // value fetch during last SPI bit
 always @(posedge clk) begin
-  if (cmd_data[7:4] == 4'h8 && mcu_nextaddr_buf == 2'b01)
+  if (cmd_data[7:4] == 4'h8 && mcu_nextaddr)
     MCU_DATA_IN_BUF <= mcu_data_in;
-  else if (spi_bit_cnt == 3'h7) begin
+  else if (cmd_ready | param_ready) begin
     if (cmd_data[7:0] == 8'hF0)
       MCU_DATA_IN_BUF <= 8'hA5;
     else if (cmd_data[7:0] == 8'hF1)
@@ -549,32 +548,32 @@ reg mcu_wrq_r;
 always @(posedge clk) begin
   case(rrq_state)
     ST_IDLE: begin
-	   if((param_ready | cmd_ready) && cmd_data[7:4] == 4'h8) begin
-		  mcu_rrq_r <= 1'b1;
-		  rrq_state <= ST_RQ;
-		end else
-		  rrq_state <= ST_IDLE;
-	 end
-	 ST_RQ: begin
-	   mcu_rrq_r <= 1'b0;
-		rrq_state <= ST_IDLE;
-	 end
+      if((param_ready | cmd_ready) && cmd_data[7:4] == 4'h8) begin
+        mcu_rrq_r <= 1'b1;
+        rrq_state <= ST_RQ;
+      end else
+        rrq_state <= ST_IDLE;
+    end
+    ST_RQ: begin
+      mcu_rrq_r <= 1'b0;
+      rrq_state <= ST_IDLE;
+    end
   endcase
 end
 
 always @(posedge clk) begin
   case(wrq_state)
     ST_IDLE: begin
-	   if(param_ready && cmd_data[7:4] == 4'h9) begin
-		  mcu_wrq_r <= 1'b1;
-		  wrq_state <= ST_RQ;
-		end else
-		  wrq_state <= ST_IDLE;
-	 end
-	 ST_RQ: begin
-	   mcu_wrq_r <= 1'b0;
-		wrq_state <= ST_IDLE;
-	 end
+      if(param_ready && cmd_data[7:4] == 4'h9) begin
+        mcu_wrq_r <= 1'b1;
+        wrq_state <= ST_RQ;
+      end else
+        wrq_state <= ST_IDLE;
+    end
+    ST_RQ: begin
+      mcu_wrq_r <= 1'b0;
+      wrq_state <= ST_IDLE;
+    end
   endcase
 end
 
@@ -585,8 +584,8 @@ assign mcu_rrq = mcu_rrq_r;
 assign mcu_wrq = mcu_wrq_r;
 assign mcu_write = SD_DMA_STATUS
                    ?(SD_DMA_TGTr == 2'b00
-                     ?SD_DMA_SRAM_WE
-                     :1'b1
+                     ? SD_DMA_SRAM_WE
+                     : 1'b1
                     )
                    : 1'b1;
 

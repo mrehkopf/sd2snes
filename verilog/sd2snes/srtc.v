@@ -1,21 +1,21 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    13:33:14 02/09/2011 
-// Design Name: 
-// Module Name:    srtc 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    13:33:14 02/09/2011
+// Design Name:
+// Module Name:    srtc
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module srtc(
@@ -30,7 +30,7 @@ module srtc(
   input enable,
   output rtc_we,
   input reset,
-  
+
   /* DEBUG */
   output [4:0] srtc_state,
   output srtc_reg_we_rising,
@@ -179,7 +179,7 @@ always @(posedge clkin) begin
                             + (rtc_data_r[55:52] << 1)
                             + (rtc_data_r[55:52] << 3) - 10;
           12: data_out_r <= rtc_data_r[59:56];
-//			 14: mode_r <= SRTC_IDLE;
+//       14: mode_r <= SRTC_IDLE;
           15: begin
             rtc_data_r <= rtc_data_in;
             data_out_r <= 8'h0f;

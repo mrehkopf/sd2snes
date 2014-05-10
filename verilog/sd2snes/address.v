@@ -2,19 +2,19 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Company: Rehkopf
 // Engineer: Rehkopf
-// 
-// Create Date:    01:13:46 05/09/2009 
-// Design Name: 
-// Module Name:    address 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
+//
+// Create Date:    01:13:46 05/09/2009
+// Design Name:
+// Module Name:    address
+// Project Name:
+// Target Devices:
+// Tool versions:
 // Description: Address logic w/ SaveRAM masking
 //
-// Dependencies: 
+// Dependencies:
 //
-// Revision: 
-// Additional Comments: 
+// Revision:
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module address(
@@ -116,7 +116,7 @@ wire BSX_IS_PSRAM = BSX_PSRAM_LOHI
 
 wire BSX_IS_CARTROM = ((bsx_regs[7] & (SNES_ADDR[23:22] == 2'b00))
                       |(bsx_regs[8] & (SNES_ADDR[23:22] == 2'b10)))
-							 & SNES_ADDR[15];
+                      & SNES_ADDR[15];
 
 wire BSX_HOLE_LOHI = (bsx_regs[9] & ~SNES_ADDR[23]) | (bsx_regs[10] & SNES_ADDR[23]);
 
@@ -201,25 +201,14 @@ assign ROM_ADDR = SRAM_SNES_ADDR;
 
 assign ROM_SEL = 1'b0;
 
-assign msu_enable_w = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
-//reg [5:0] msu_enable_r;
-//initial msu_enable_r = 6'b000000;
-//always @(posedge CLK) msu_enable_r <= {msu_enable_r[4:0], msu_enable_w};
-assign msu_enable = msu_enable_w /*&msu_enable_r[5:2]*/;
-
+assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
 assign use_bsx = (MAPPER == 3'b011);
-
-assign srtc_enable_w = (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h2800));
-//reg [5:0] srtc_enable_r;
-//initial srtc_enable_r = 6'b000000;
-//always @(posedge CLK) srtc_enable_r <= {srtc_enable_r[4:0], srtc_enable_w};
-assign srtc_enable = srtc_enable_w /*&srtc_enable_r[3:0]*/ & featurebits[FEAT_SRTC];
-
+assign srtc_enable = featurebits[FEAT_SRTC] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h2800));
 
 // DSP1 LoROM: DR=30-3f:8000-bfff; SR=30-3f:c000-ffff
 //          or DR=60-6f:0000-3fff; SR=60-6f:4000-7fff
 // DSP1 HiROM: DR=00-0f:6000-6fff; SR=00-0f:7000-7fff
-wire dspx_enable_w =
+assign dspx_enable =
   featurebits[FEAT_DSPX]
   ?((MAPPER == 3'b001)
     ?(ROM_MASK[20]
@@ -234,41 +223,22 @@ wire dspx_enable_w =
   ?(SNES_ADDR[22] & SNES_ADDR[21] & ~SNES_ADDR[20] & &(~SNES_ADDR[19:16]) & ~SNES_ADDR[15])
   :1'b0;
 
-wire dspx_dp_enable_w = featurebits[FEAT_ST0010]
-                         &(SNES_ADDR[22:19] == 4'b1101
-                          && SNES_ADDR[15:11] == 5'b00000);
+assign dspx_dp_enable = featurebits[FEAT_ST0010]
+                      &(SNES_ADDR[22:19] == 4'b1101
+                     && SNES_ADDR[15:11] == 5'b00000);
 
 assign dspx_a0 = featurebits[FEAT_DSPX]
                  ?((MAPPER == 3'b001) ? SNES_ADDR[14]
                    :(MAPPER == 3'b000) ? SNES_ADDR[12]
                    :1'b1)
-                 :featurebits[FEAT_ST0010]
-                 ?SNES_ADDR[0]
-                 :1'b1;
+                 : featurebits[FEAT_ST0010]
+                 ? SNES_ADDR[0]
+                 : 1'b1;
 
-assign dspx_dp_enable = dspx_dp_enable_w;
+assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 
-//reg [5:0] dspx_enable_r;
-//initial dspx_enable_r = 6'b000000;
-//always @(posedge CLK) dspx_enable_r <= {dspx_enable_r[4:0], dspx_enable_w};
-assign dspx_enable = dspx_enable_w /*&dspx_enable_r[5:1]*/;
+assign snescmd_rd_enable = (SNES_PA[7:4] == 4'b1110);
 
-wire r213f_enable_w = (SNES_PA == 8'h3f);
-//reg [5:0] r213f_enable_r;
-//initial r213f_enable_r = 6'b000000;
-//always @(posedge CLK) r213f_enable_r <= {r213f_enable_r[4:0], r213f_enable_w};
-assign r213f_enable = r213f_enable_w /*&r213f_enable_r[5:2]*/ & featurebits[FEAT_213F];
-
-wire snescmd_rd_enable_w = (SNES_PA[7:4] == 4'b1110);
-//reg [5:0] snescmd_rd_enable_r;
-//initial snescmd_rd_enable_r = 6'b000000;
-//always @(posedge CLK) snescmd_rd_enable_r <= {snescmd_rd_enable_r[4:0], snescmd_rd_enable_w};
-assign snescmd_rd_enable = snescmd_rd_enable_w /*&snescmd_rd_enable_r[5:1]*/;
-
-assign snescmd_wr_enable_w = (SNES_ADDR[23:4] == 20'hccccc);
-//reg [5:0] snescmd_wr_enable_r;
-//initial snescmd_wr_enable_r = 6'b000000;
-//always @(posedge CLK) snescmd_wr_enable_r <= {snescmd_wr_enable_r[4:0], snescmd_wr_enable_w};
-assign snescmd_wr_enable = snescmd_wr_enable_w /*&snescmd_wr_enable_r[5:1]*/;
+assign snescmd_wr_enable = (SNES_ADDR[23:4] == 20'hccccc);
 
 endmodule

@@ -1,19 +1,19 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    21:16:09 07/10/2009 
-// Design Name: 
-// Module Name:    spi 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    21:16:09 07/10/2009
+// Design Name:
+// Module Name:    spi
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
 //
@@ -70,7 +70,7 @@ end
 
 always @(posedge SCK) begin
   if(~SSELSCKr[1]) begin
-	 byte_data_received <= {byte_data_received[6:0], MOSI};
+    byte_data_received <= {byte_data_received[6:0], MOSI};
   end
   if(~SSELSCKr[1] && bitcnt==3'b111) byte_received <= 1'b1;
   else byte_received <= 1'b0;

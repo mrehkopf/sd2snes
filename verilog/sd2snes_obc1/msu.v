@@ -1,21 +1,21 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    14:55:04 12/14/2010 
-// Design Name: 
-// Module Name:    msu 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    14:55:04 12/14/2010
+// Design Name:
+// Module Name:    msu
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module msu(
@@ -39,7 +39,7 @@ module msu(
   input status_reset_we,
   input [13:0] msu_address_ext,
   input msu_address_ext_write,
-  
+
   output DBG_msu_reg_oe_rising,
   output DBG_msu_reg_oe_falling,
   output DBG_msu_reg_we_rising,
@@ -191,14 +191,10 @@ always @(posedge clkin) begin
   end else if (status_reset_en) begin
     audio_busy_r <= (audio_busy_r | status_set_bits[5]) & ~status_reset_bits[5];
     if(status_reset_bits[5]) audio_start_r <= 1'b0;
-
     data_busy_r <= (data_busy_r | status_set_bits[4]) & ~status_reset_bits[4];
     if(status_reset_bits[4]) data_start_r <= 1'b0;
-
     audio_error_r <= (audio_error_r | status_set_bits[3]) & ~status_reset_bits[3];
-
     audio_status_r <= (audio_status_r | status_set_bits[2:1]) & ~status_reset_bits[2:1];
-
     ctrl_start_r <= (ctrl_start_r | status_set_bits[0]) & ~status_reset_bits[0];
   end else begin
     volume_start_r <= 1'b0;

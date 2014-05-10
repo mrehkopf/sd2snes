@@ -1,21 +1,21 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    02:43:54 02/06/2011 
-// Design Name: 
-// Module Name:    bsx 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    02:43:54 02/06/2011
+// Design Name:
+// Module Name:    bsx
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module bsx(
@@ -95,10 +95,10 @@ assign bs_page_enable = base_enable & ((|bs_page0 & (bs_page0_en | bs_sta0_en | 
 assign bs_page_out = (bs_page0_en | bs_sta0_en | bs_stb0_en) ? bs_page0 : bs_page1;
 
 assign bs_page_offset = bs_sta0_en ? 9'h032
-                        : bs_stb0_en ? (9'h034 + bs_stb0_offset)
-								: bs_sta1_en ? 9'h032
-								: bs_stb1_en ? (9'h034 + bs_stb1_offset)
-								: (9'h048 + (bs_page0_en ? bs_page0_offset : bs_page1_offset));
+                      : bs_stb0_en ? (9'h034 + bs_stb0_offset)
+                      : bs_sta1_en ? 9'h032
+                      : bs_stb1_en ? (9'h034 + bs_stb1_offset)
+                      : (9'h048 + (bs_page0_en ? bs_page0_offset : bs_page1_offset));
 
 reg [3:0] reg_oe_sreg;
 always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[2:0], reg_oe};
@@ -184,18 +184,18 @@ end
 always @(posedge clkin) begin
   if(reg_oe_rising && base_enable) begin
     case(base_addr)
-	   5'h0b: begin
-		  bs_stb0_offset <= bs_stb0_offset + 1;
-		  base_regs[5'h0d] <= base_regs[5'h0d] | reg_data_in;
-		end
-		5'h0c: bs_page0_offset <= bs_page0_offset + 1; 
-		5'h11: begin
-		  bs_stb1_offset <= bs_stb1_offset + 1;
-  		  base_regs[5'h13] <= base_regs[5'h13] | reg_data_in;
-		end
-		5'h12: bs_page1_offset <= bs_page1_offset + 1;
-	 endcase
-  end else 
+      5'h0b: begin
+        bs_stb0_offset <= bs_stb0_offset + 1;
+        base_regs[5'h0d] <= base_regs[5'h0d] | reg_data_in;
+      end
+      5'h0c: bs_page0_offset <= bs_page0_offset + 1;
+      5'h11: begin
+        bs_stb1_offset <= bs_stb1_offset + 1;
+        base_regs[5'h13] <= base_regs[5'h13] | reg_data_in;
+      end
+      5'h12: bs_page1_offset <= bs_page1_offset + 1;
+    endcase
+  end else
   if(reg_oe_falling) begin
     if(cart_enable)
       reg_data_outr <= {regs_outr[reg_addr], 7'b0};
@@ -209,17 +209,17 @@ always @(posedge clkin) begin
             10: reg_data_outr <= rtc_sec;
             11: reg_data_outr <= rtc_min;
             12: reg_data_outr <= rtc_hour;
-				13: reg_data_outr <= rtc_dow;
-				14: reg_data_outr <= rtc_day;
-				15: reg_data_outr <= rtc_month;
-				16: reg_data_outr <= rtc_year[7:0];
-				17: reg_data_outr <= rtc_hour;
+            13: reg_data_outr <= rtc_dow;
+            14: reg_data_outr <= rtc_day;
+            15: reg_data_outr <= rtc_month;
+            16: reg_data_outr <= rtc_year[7:0];
+            17: reg_data_outr <= rtc_hour;
             default: reg_data_outr <= 8'h0;
           endcase
         end
         5'h0d, 5'h13: begin
           reg_data_outr <= base_regs[base_addr];
-			 base_regs[base_addr] <= 8'h00;
+          base_regs[base_addr] <= 8'h00;
         end
         default:
           reg_data_outr <= base_regs[base_addr];
@@ -246,24 +246,24 @@ always @(posedge clkin) begin
       regs_tmpr[reg_addr] <= reg_data_in[7];
   end else if(reg_we_rising && base_enable) begin
     case(base_addr)
-		5'h09: begin
-		  base_regs[8'h09] <= reg_data_in;
-		  bs_page0 <= {reg_data_in[1:0], base_regs[8'h08]};
-		  bs_page0_offset <= 9'h00;
-		end
-		5'h0b: begin
-		  bs_stb0_offset <= 5'h00;
-		end
+      5'h09: begin
+        base_regs[8'h09] <= reg_data_in;
+        bs_page0 <= {reg_data_in[1:0], base_regs[8'h08]};
+        bs_page0_offset <= 9'h00;
+      end
+      5'h0b: begin
+        bs_stb0_offset <= 5'h00;
+      end
       5'h0c: begin
         bs_page0_offset <= 9'h00;
       end
-		5'h0f: begin
-		  base_regs[8'h0f] <= reg_data_in;
-		  bs_page1 <= {reg_data_in[1:0], base_regs[8'h0e]};
-		  bs_page1_offset <= 9'h00;
+      5'h0f: begin
+        base_regs[8'h0f] <= reg_data_in;
+        bs_page1 <= {reg_data_in[1:0], base_regs[8'h0e]};
+        bs_page1_offset <= 9'h00;
       end
       5'h11: begin
-		  bs_stb1_offset <= 5'h00;
+        bs_stb1_offset <= 5'h00;
       end
       5'h12: begin
         bs_page1_offset <= 9'h00;
@@ -299,7 +299,7 @@ always @(posedge clkin) begin
       16'h2aaa: begin
         flash_cmd5555 <= {flash_cmd5555[7:0], reg_data_in};
       end
-   endcase
+    endcase
   end
 end
 

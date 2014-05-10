@@ -1,21 +1,21 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    21:57:50 08/25/2009 
-// Design Name: 
-// Module Name:    mcu_cmd 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    21:57:50 08/25/2009
+// Design Name:
+// Module Name:    mcu_cmd
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module mcu_cmd(
@@ -85,21 +85,20 @@ end
 always @(posedge clk) begin
   if(param_ready && cmd_data[7:4] == 4'h0)  begin
     case (spi_byte_cnt)
-	   32'h2: begin
-		  ADDR_OUT_BUF[23:16] <= param_data;
-		  ADDR_OUT_BUF[15:0] <= 16'b0;
-		end
-	   32'h3:
-		  ADDR_OUT_BUF[15:8] <= param_data;
-		32'h4:
-		  ADDR_OUT_BUF[7:0] <= param_data;
+      32'h2: begin
+        ADDR_OUT_BUF[23:16] <= param_data;
+        ADDR_OUT_BUF[15:0] <= 16'b0;
+      end
+      32'h3:
+        ADDR_OUT_BUF[15:8] <= param_data;
+      32'h4:
+        ADDR_OUT_BUF[7:0] <= param_data;
     endcase
   end else if ((mcu_nextaddr & (cmd_data[7:5] == 3'h4)
-                         && (cmd_data[3])
-                         && (spi_byte_cnt >= (32'h1+cmd_data[4])))
-     )
-  begin
-      ADDR_OUT_BUF <= ADDR_OUT_BUF + 1;
+               && (cmd_data[3])
+               && (spi_byte_cnt >= (32'h1+cmd_data[4])))
+              ) begin
+    ADDR_OUT_BUF <= ADDR_OUT_BUF + 1;
   end
 end
 
@@ -134,32 +133,32 @@ reg mcu_wrq_r;
 always @(posedge clk) begin
   case(rrq_state)
     ST_IDLE: begin
-	   if((param_ready | cmd_ready) && cmd_data[7:4] == 4'h8) begin
-		  mcu_rrq_r <= 1'b1;
-		  rrq_state <= ST_RQ;
-		end else
-		  rrq_state <= ST_IDLE;
-	 end
-	 ST_RQ: begin
-	   mcu_rrq_r <= 1'b0;
-		rrq_state <= ST_IDLE;
-	 end
+      if((param_ready | cmd_ready) && cmd_data[7:4] == 4'h8) begin
+        mcu_rrq_r <= 1'b1;
+        rrq_state <= ST_RQ;
+      end else
+        rrq_state <= ST_IDLE;
+    end
+    ST_RQ: begin
+      mcu_rrq_r <= 1'b0;
+      rrq_state <= ST_IDLE;
+    end
   endcase
 end
 
 always @(posedge clk) begin
   case(wrq_state)
     ST_IDLE: begin
-	   if(param_ready && cmd_data[7:4] == 4'h9) begin
-		  mcu_wrq_r <= 1'b1;
-		  wrq_state <= ST_RQ;
-		end else
-		  wrq_state <= ST_IDLE;
-	 end
-	 ST_RQ: begin
-	   mcu_wrq_r <= 1'b0;
-		wrq_state <= ST_IDLE;
-	 end
+      if(param_ready && cmd_data[7:4] == 4'h9) begin
+        mcu_wrq_r <= 1'b1;
+        wrq_state <= ST_RQ;
+      end else
+        wrq_state <= ST_IDLE;
+    end
+    ST_RQ: begin
+      mcu_wrq_r <= 1'b0;
+      wrq_state <= ST_IDLE;
+    end
   endcase
 end
 

@@ -1,21 +1,21 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    22:40:46 12/20/2010 
-// Design Name: 
-// Module Name:    clk_test 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    22:40:46 12/20/2010
+// Design Name:
+// Module Name:    clk_test
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module clk_test(
@@ -86,7 +86,7 @@ always @(posedge clk) refresh_sreg <= {refresh_sreg[0], refresh};
 wire refresh_rising = (refresh_sreg == 2'b01);
 
 always @(posedge clk) begin
-  if(sysclk_counter < 96000000) begin
+  if(sysclk_counter < 88000000) begin
     sysclk_counter <= sysclk_counter + 1;
     if(sysclk_rising) sysclk_value <= sysclk_value + 1;
     if(read_rising) read_value <= read_value + 1;

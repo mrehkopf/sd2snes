@@ -1,18 +1,18 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Engineer: ikari
-// 
-// Create Date:    17:09:03 01/16/2011 
-// Design Name: 
-// Module Name:    upd77c25 
+//
+// Create Date:    17:09:03 01/16/2011
+// Design Name:
+// Module Name:    upd77c25
 // Project Name: sd2snes
 // Target Devices: xc3s400
 // Tool versions: ISE 13.1
 // Description: NEC uPD77C25 core (for SNES DSP1-4)
 //
-// Dependencies: 
+// Dependencies:
 //
-// Revision: 
+// Revision:
 // Revision 0.2 - core fully operational, firmware download
 //
 //////////////////////////////////////////////////////////////////////////////////
@@ -476,7 +476,7 @@ always @(posedge CLK) begin
         endcase
       end
 //      STATE_ALU2: begin
-        //insn_state <= STATE_STORE;
+//        insn_state <= STATE_STORE;
 //      end
       STATE_STORE: begin
         insn_state <= STATE_IDLE1;
@@ -596,11 +596,11 @@ always @(posedge CLK) begin
           end
         endcase
       end
-      
+
 //      STATE_NEXT: begin
 //        insn_state <= STATE_IDLE1;
 //      end
-      
+
       STATE_IDLE1: begin
         insn_state <= STATE_FETCH;
         case(op)

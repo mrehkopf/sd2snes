@@ -2,20 +2,20 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Company: Rehkopf
 // Engineer: Rehkopf
-// 
-// Create Date:    01:13:46 05/09/2009 
-// Design Name: 
-// Module Name:    main 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
+//
+// Create Date:    01:13:46 05/09/2009
+// Design Name:
+// Module Name:    main
+// Project Name:
+// Target Devices:
+// Tool versions:
 // Description: Master Control FSM
 //
 // Dependencies: address
 //
-// Revision: 
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module main(
@@ -38,7 +38,7 @@ module main(
   input [7:0] SNES_PA,
   input SNES_PARD,
   input SNES_PAWR,
-  
+
   /* SRAM signals */
   /* Bus 1: PSRAM, 128Mbit, 16bit, 70ns */
   inout [15:0] ROM_DATA,
@@ -62,7 +62,7 @@ module main(
   inout SPI_SCK,
   input MCU_OVR,
   output MCU_RDY,
-  
+
   output DAC_MCLK,
   output DAC_LRCK,
   output DAC_SDOUT,
@@ -243,20 +243,20 @@ my_dcm snes_dcm(
 
 assign DCM_RST=0;
 
-reg [5:0] SNES_READr;
-reg [5:0] SNES_WRITEr;
-reg [5:0] SNES_CPU_CLKr;
+reg [7:0] SNES_READr;
+reg [7:0] SNES_WRITEr;
+reg [7:0] SNES_CPU_CLKr;
 
-wire SNES_RD_start = (SNES_READr == 6'b111110);
-wire SNES_WR_start = (SNES_WRITEr == 6'b111110);
-wire SNES_WR_rising = (SNES_WRITEr == 6'b000001);
-wire SNES_cycle_start = (SNES_CPU_CLKr[5:0] == 6'b000001);
-wire SNES_cycle_end = (SNES_CPU_CLKr[5:0] == 6'b111110);
+wire SNES_RD_start = (SNES_READr[7:1] == 7'b1111110);
+wire SNES_WR_start = (SNES_WRITEr[7:1] == 7'b1111110);
+wire SNES_WR_rising = (SNES_WRITEr[7:1] == 7'b0000001);
+wire SNES_cycle_start = (SNES_CPU_CLKr[7:1] == 7'b0000001);
+wire SNES_cycle_end = (SNES_CPU_CLKr[7:1] == 7'b1111110);
 
 always @(posedge CLK2) begin
-  SNES_READr <= {SNES_READr[4:0], SNES_READ};
-  SNES_WRITEr <= {SNES_WRITEr[4:0], SNES_WRITE};
-  SNES_CPU_CLKr <= {SNES_CPU_CLKr[4:0], SNES_CPU_CLK};
+  SNES_READr <= {SNES_READr[6:0], SNES_READ};
+  SNES_WRITEr <= {SNES_WRITEr[6:0], SNES_WRITE};
+  SNES_CPU_CLKr <= {SNES_CPU_CLKr[6:0], SNES_CPU_CLK};
 end
 
 reg [7:0] ram0_bank;
@@ -323,6 +323,7 @@ reg [1:0] SNES_PAWR_start_r;
 always @(posedge CLK2) SNES_PAWR_start_r <= {SNES_PAWR_start_r[0], SNES_PAWR};
 wire SNES_PAWR_start = (SNES_PAWR_start_r == 2'b01);
 wire [7:0] PA_data_out;
+/* BRAM to store PA reads/writes */
 PA test_PA (
   .clka(CLK2), // input clka
   .wea(SNES_PAWR_start), // input [0 : 0] wea
@@ -425,7 +426,7 @@ always @(posedge CLK2) begin
     STATE <= ST_SNES_WR_ADDR;
   end else begin
     case(STATE)
-	    ST_IDLE: begin
+      ST_IDLE: begin
         if(ram0_enable) ROM_ADDRr <= ram0_addr;
         if(ram1_enable) RAM_ADDRr <= ram1_addr;
         if(MCU_RD_PENDr) STATE <= ST_MCU_RD_ADDR;
@@ -473,7 +474,7 @@ always @(posedge CLK2) begin
         ST_MEM_DELAYr <= ROM_WR_WAIT2;
         STATE <= ST_SNES_WR_WAIT2;
       end
-        ST_SNES_WR_WAIT2: begin
+      ST_SNES_WR_WAIT2: begin
         ST_MEM_DELAYr <= ST_MEM_DELAYr - 4'h1;
         if(ST_MEM_DELAYr == 4'h0) STATE <= ST_SNES_WR_END;
         else STATE <= ST_SNES_WR_WAIT2;
@@ -562,8 +563,8 @@ assign ROM_DATA[15:8] = ROM_ADDR0 ? 8'bZ
 assign RAM_DATA = !RAM_WE ? RAM_DOUTr : 8'bZ;
 
 assign ROM_WE = SD_DMA_TO_ROM
-                ?MCU_WRITE
-                :ROM_WEr | (ASSERT_SNES_ADDR & ~(snes_wr_cycle & ram0_enable));
+                ? MCU_WRITE
+                : ROM_WEr | (ASSERT_SNES_ADDR & ~(snes_wr_cycle & ram0_enable));
 
 assign RAM_WE = RAM_WEr | (ASSERT_SNES_ADDR & ~(snes_wr_cycle & ram1_enable));
 

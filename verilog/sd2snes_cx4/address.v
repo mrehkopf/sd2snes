@@ -2,19 +2,19 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Company: Rehkopf
 // Engineer: Rehkopf
-// 
-// Create Date:    01:13:46 05/09/2009 
-// Design Name: 
-// Module Name:    address 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
+//
+// Create Date:    01:13:46 05/09/2009
+// Design Name:
+// Module Name:    address
+// Project Name:
+// Target Devices:
+// Tool versions:
 // Description: Address logic w/ SaveRAM masking
 //
-// Dependencies: 
+// Dependencies:
 //
-// Revision: 
-// Additional Comments: 
+// Revision:
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module address(
@@ -49,7 +49,7 @@ wire [23:0] SRAM_SNES_ADDR;
 assign IS_ROM = ~SNES_CS;
 
 assign SRAM_SNES_ADDR = ({2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]}
-                               & ROM_MASK);
+                         & ROM_MASK);
 
 assign ROM_ADDR = SRAM_SNES_ADDR;
 

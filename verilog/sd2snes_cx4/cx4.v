@@ -1,21 +1,21 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    23:14:37 10/13/2011 
-// Design Name: 
-// Module Name:    cx4 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    23:14:37 10/13/2011
+// Design Name:
+// Module Name:    cx4
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module cx4(
@@ -80,7 +80,7 @@ reg        cx4_mmio_r1f52;
 assign cx4_active = |cx4_busy;
 /* 0x1f60 - 0x1f7f: reset vectors */
 reg  [7:0] vector [31:0];
-/* 0x1f80 - 0x1faf (0x1fc0 - 0x1fef): general purpose register file 
+/* 0x1f80 - 0x1faf (0x1fc0 - 0x1fef): general purpose register file
    SNES: 8 bits / CX4: 24 bits */
 reg  [7:0] gpr [47:0];
 wire [47:0] cpu_mul_result;
@@ -107,7 +107,7 @@ initial begin
   cpu_cache_cachepage = 1'b0;
   cpu_cache_done = 1'b0;
   cachetag[0] = 14'h0000;
-  cachetag[1] = 14'h0000;  
+  cachetag[1] = 14'h0000;
   cachevalid = 2'b00;
   cx4_busy = 3'b000;
   cx4_mmio_pgmoff = 24'h000000;
@@ -288,7 +288,7 @@ always @(posedge CLK) begin
     cpu_go_en_r <= 1'b0;
   end
 end
-  
+
 always @(posedge CLK) begin
   if(VECTOR_WR_EN) vector[ADDR[4:0]] <= DIr;
 end
@@ -328,13 +328,13 @@ initial cache_count = 20'b0;
 always @(posedge CLK) begin
   case(CACHE_ST)
     ST_CACHE_IDLE: begin
-      if(CACHE_TRIG_EN 
+      if(CACHE_TRIG_EN
          & (~cachevalid[cx4_mmio_cachepage]
             | |(cachetag[cx4_mmio_cachepage] ^ cx4_mmio_pgmpage))) begin
         CACHE_ST <= ST_CACHE_START;
         cache_pgmpage <= cx4_mmio_pgmpage;
         cache_cachepage <= cx4_mmio_cachepage;
-		  cx4_busy[BUSY_CACHE] <= 1'b1;
+      cx4_busy[BUSY_CACHE] <= 1'b1;
       end else if(cpu_cache_en
          & (~cachevalid[~cpu_page]
             | |(cachetag[~cpu_page] ^ cpu_p))) begin
@@ -525,7 +525,7 @@ always @(posedge CLK) begin
       end
       else CPU_STATE <= ST_CPU_IDLE;
     end
-    ST_CPU_0: begin // Phase 0: 
+    ST_CPU_0: begin // Phase 0:
       cpu_cache_en <= 1'b0;
       if(op == OP_HLT) begin
         CPU_STATE <= ST_CPU_IDLE;
@@ -659,7 +659,7 @@ always @(posedge CLK) begin
           endcase
         end
         OP_ST, OP_SWP: begin
-          casex(op_param)                                    
+          casex(op_param)
             8'h01: cpu_acch <= cpu_idb;
             8'h02: cpu_accl <= cpu_idb;
             8'h08: cpu_romdata <= cpu_idb;
@@ -750,29 +750,29 @@ always @(posedge CLK) begin
         end
       endcase
       cpu_op <= cpu_op_w;
-		casex(cpu_op_w[15:11])
+      casex(cpu_op_w[15:11])
         5'b00x01, 5'b00x10, 5'b00100, 5'b00111: begin
-		    cpu_wait <= 8'h07;
-	       CPU_STATE <= ST_CPU_4;
-		  end
+        cpu_wait <= 8'h07;
+        CPU_STATE <= ST_CPU_4;
+      end
         5'b01110, 5'b01101, 5'b11101: begin
-		    cpu_wait <= 8'h03;
-	       CPU_STATE <= ST_CPU_4;
-		  end
+        cpu_wait <= 8'h03;
+        CPU_STATE <= ST_CPU_4;
+      end
         /*5'b10011: begin
-		    cpu_wait <= 8'h02;
-	       CPU_STATE <= ST_CPU_4;
-		  end
+        cpu_wait <= 8'h02;
+         CPU_STATE <= ST_CPU_4;
+      end
         5'b01000: begin
-		    cpu_wait <= 8'h0e;
-	       CPU_STATE <= ST_CPU_4;
-		  end*/
-		  default: begin
-		    cpu_wait <= 8'h00;
-	       CPU_STATE <= ST_CPU_0;
-		  end
-		endcase
-		
+        cpu_wait <= 8'h0e;
+         CPU_STATE <= ST_CPU_4;
+      end*/
+        default: begin
+          cpu_wait <= 8'h00;
+          CPU_STATE <= ST_CPU_0;
+        end
+      endcase
+
       casex(cpu_op_w[15:11])
         5'b00000: op <= OP_NOP;
 
@@ -804,10 +804,10 @@ always @(posedge CLK) begin
         5'b11010: op <= OP_ALU;
         5'b11011: op <= OP_ALU;
         5'b10011: op <= OP_MUL;
-        
+
         5'b00011: op <= OP_WAI;
         5'b01000: op <= OP_BUS;
-        
+
         5'b11111: op <= OP_HLT;
       endcase
       op_imm <= cpu_op_w[10];
@@ -817,10 +817,10 @@ always @(posedge CLK) begin
       op_sa <= cpu_op_w[9:8];
     end
     ST_CPU_4: begin
-	   cpu_wait <= cpu_wait - 1;
-	   if(cpu_wait) CPU_STATE <= ST_CPU_4;
-		else CPU_STATE <= ST_CPU_0;
-	 end
+      cpu_wait <= cpu_wait - 1;
+      if(cpu_wait) CPU_STATE <= ST_CPU_4;
+      else CPU_STATE <= ST_CPU_0;
+    end
   endcase
 end
 
@@ -841,7 +841,7 @@ always @(posedge CLK) begin
     case(BUSRD_STATE)
       ST_BUSRD_IDLE: begin
         if(cpu_bus_rq2) begin
-         BUSRD_STATE <= ST_BUSRD_WAIT;
+          BUSRD_STATE <= ST_BUSRD_WAIT;
         end
       end
       ST_BUSRD_WAIT: begin

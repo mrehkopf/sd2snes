@@ -1,32 +1,32 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    22:14:09 03/08/2014 
-// Design Name: 
-// Module Name:    obc1 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    22:14:09 03/08/2014
+// Design Name:
+// Module Name:    obc1
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module obc1(
-    input clk,
-	 input enable,
-    input [7:0] data_in,
-    output [7:0] data_out,
-    input [12:0] addr_in,
-    input reg_oe,
-    input reg_we
-    );
+  input clk,
+  input enable,
+  input [7:0] data_in,
+  output [7:0] data_out,
+  input [12:0] addr_in,
+  input reg_oe,
+  input reg_we
+);
 
 reg [7:0] obc1_regs [7:0];
 
@@ -67,13 +67,14 @@ obc_upper oam_high (
   .clkb(clk), // input clkb
   .web(snes_high_we), // input [0 : 0] web
   .addrb(addr_in[5:0]), // input [5 : 0] addrb
-  .dinb(data_in), 
+  .dinb(data_in),
   .doutb(high_doutb) // output [7 : 0] doutb
 );
 
-assign data_out = reg_en ? obc1_regs[addr_in[2:0]] :
-                  low_en ? low_douta :
-						high_en ? high_doutb : 8'h77;
+assign data_out = reg_en ? obc1_regs[addr_in[2:0]]
+                  : low_en ? low_douta
+                  : high_en ? high_doutb
+                  : 8'h77;
 
 always @(posedge clk) begin
   if(reg_en & ~reg_we) begin

@@ -2,19 +2,19 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Company: Rehkopf
 // Engineer: Rehkopf
-// 
-// Create Date:    01:13:46 05/09/2009 
-// Design Name: 
-// Module Name:    address 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
+//
+// Create Date:    01:13:46 05/09/2009
+// Design Name:
+// Module Name:    address
+// Project Name:
+// Target Devices:
+// Tool versions:
 // Description: Address logic w/ SaveRAM masking
 //
-// Dependencies: 
+// Dependencies:
 //
-// Revision: 
-// Additional Comments: 
+// Revision:
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module address(

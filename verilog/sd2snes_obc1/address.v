@@ -2,19 +2,19 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Company: Rehkopf
 // Engineer: Rehkopf
-// 
-// Create Date:    01:13:46 05/09/2009 
-// Design Name: 
-// Module Name:    address 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
+//
+// Create Date:    01:13:46 05/09/2009
+// Design Name:
+// Module Name:    address
+// Project Name:
+// Target Devices:
+// Tool versions:
 // Description: Address logic w/ SaveRAM masking
 //
-// Dependencies: 
+// Dependencies:
 //
-// Revision: 
-// Additional Comments: 
+// Revision:
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module address(
@@ -60,7 +60,7 @@ assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
 
 assign IS_SAVERAM = SAVERAM_MASK[0]
                     &(((MAPPER == 3'b000
-                        || MAPPER == 3'b010)
+                     || MAPPER == 3'b010)
                       ? (!SNES_ADDR[22]
                          & SNES_ADDR[21]
                          & &SNES_ADDR[14:13]
@@ -83,49 +83,29 @@ assign SRAM_SNES_ADDR = ((MAPPER == 3'b000)
                                             & SAVERAM_MASK)
                             : ({1'b0, SNES_ADDR[22:0]} & ROM_MASK))
 
-                          :(MAPPER == 3'b001)
+                        :(MAPPER == 3'b001)
                           ?(IS_SAVERAM
                             ? 24'hE00000 + ({SNES_ADDR[20:16], SNES_ADDR[14:0]}
                                             & SAVERAM_MASK)
                             : ({2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]}
                                & ROM_MASK))
 
-                          :(MAPPER == 3'b010)
+                        :(MAPPER == 3'b010)
                           ?(IS_SAVERAM
                             ? 24'hE00000 + ({SNES_ADDR[20:16], SNES_ADDR[12:0]}
                                             & SAVERAM_MASK)
                             : ({1'b0, !SNES_ADDR[23], SNES_ADDR[21:0]}
                                & ROM_MASK))
-                           : 24'b0);
+                        : 24'b0);
 
 assign ROM_ADDR = SRAM_SNES_ADDR;
 
 assign ROM_SEL = 1'b0;
 
-assign msu_enable_w = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
-//reg [5:0] msu_enable_r;
-//initial msu_enable_r = 6'b000000;
-//always @(posedge CLK) msu_enable_r <= {msu_enable_r[4:0], msu_enable_w};
-assign msu_enable = msu_enable_w /*&msu_enable_r[5:2]*/;
-
-wire r213f_enable_w = (SNES_PA == 8'h3f);
-//reg [5:0] r213f_enable_r;
-//initial r213f_enable_r = 6'b000000;
-//always @(posedge CLK) r213f_enable_r <= {r213f_enable_r[4:0], r213f_enable_w};
-assign r213f_enable = r213f_enable_w /*&r213f_enable_r[5:2]*/ & featurebits[FEAT_213F];
-
-wire snescmd_rd_enable_w = (SNES_PA[7:4] == 4'b1110);
-//reg [5:0] snescmd_rd_enable_r;
-//initial snescmd_rd_enable_r = 6'b000000;
-//always @(posedge CLK) snescmd_rd_enable_r <= {snescmd_rd_enable_r[4:0], snescmd_rd_enable_w};
-assign snescmd_rd_enable = snescmd_rd_enable_w /*&snescmd_rd_enable_r[5:1]*/;
-
-assign snescmd_wr_enable_w = (SNES_ADDR[23:4] == 20'hccccc);
-//reg [5:0] snescmd_wr_enable_r;
-//initial snescmd_wr_enable_r = 6'b000000;
-//always @(posedge CLK) snescmd_wr_enable_r <= {snescmd_wr_enable_r[4:0], snescmd_wr_enable_w};
-assign snescmd_wr_enable = snescmd_wr_enable_w /*&snescmd_wr_enable_r[5:1]*/;
-
+assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
+assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
+assign snescmd_rd_enable = (SNES_PA[7:4] == 4'b1110);
+assign snescmd_wr_enable = (SNES_ADDR[23:4] == 20'hccccc);
 assign obc1_enable = featurebits[FEAT_OBC1] & (~SNES_ADDR[22]) & (SNES_ADDR[15:11] == 5'b01111);
 
 endmodule
