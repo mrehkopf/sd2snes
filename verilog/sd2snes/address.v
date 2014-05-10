@@ -259,7 +259,7 @@ wire r213f_enable_w = (SNES_PA == 8'h3f);
 //always @(posedge CLK) r213f_enable_r <= {r213f_enable_r[4:0], r213f_enable_w};
 assign r213f_enable = r213f_enable_w /*&r213f_enable_r[5:2]*/ & featurebits[FEAT_213F];
 
-wire snescmd_rd_enable_w = (SNES_PA[7:4] == 4'b1111);
+wire snescmd_rd_enable_w = (SNES_PA[7:4] == 4'b1110);
 //reg [5:0] snescmd_rd_enable_r;
 //initial snescmd_rd_enable_r = 6'b000000;
 //always @(posedge CLK) snescmd_rd_enable_r <= {snescmd_rd_enable_r[4:0], snescmd_rd_enable_w};
