@@ -1,29 +1,28 @@
 /*******************************************************************************
-*     This file is owned and controlled by Xilinx and must be used             *
-*     solely for design, simulation, implementation and creation of            *
-*     design files limited to Xilinx devices or technologies. Use              *
-*     with non-Xilinx devices or technologies is expressly prohibited          *
-*     and immediately terminates your license.                                 *
+*     This file is owned and controlled by Xilinx and must be used solely      *
+*     for design, simulation, implementation and creation of design files      *
+*     limited to Xilinx devices or technologies. Use with non-Xilinx           *
+*     devices or technologies is expressly prohibited and immediately          *
+*     terminates your license.                                                 *
 *                                                                              *
-*     XILINX IS PROVIDING THIS DESIGN, CODE, OR INFORMATION "AS IS"            *
-*     SOLELY FOR USE IN DEVELOPING PROGRAMS AND SOLUTIONS FOR                  *
-*     XILINX DEVICES.  BY PROVIDING THIS DESIGN, CODE, OR INFORMATION          *
-*     AS ONE POSSIBLE IMPLEMENTATION OF THIS FEATURE, APPLICATION              *
-*     OR STANDARD, XILINX IS MAKING NO REPRESENTATION THAT THIS                *
-*     IMPLEMENTATION IS FREE FROM ANY CLAIMS OF INFRINGEMENT,                  *
-*     AND YOU ARE RESPONSIBLE FOR OBTAINING ANY RIGHTS YOU MAY REQUIRE         *
-*     FOR YOUR IMPLEMENTATION.  XILINX EXPRESSLY DISCLAIMS ANY                 *
-*     WARRANTY WHATSOEVER WITH RESPECT TO THE ADEQUACY OF THE                  *
+*     XILINX IS PROVIDING THIS DESIGN, CODE, OR INFORMATION "AS IS" SOLELY     *
+*     FOR USE IN DEVELOPING PROGRAMS AND SOLUTIONS FOR XILINX DEVICES.  BY     *
+*     PROVIDING THIS DESIGN, CODE, OR INFORMATION AS ONE POSSIBLE              *
+*     IMPLEMENTATION OF THIS FEATURE, APPLICATION OR STANDARD, XILINX IS       *
+*     MAKING NO REPRESENTATION THAT THIS IMPLEMENTATION IS FREE FROM ANY       *
+*     CLAIMS OF INFRINGEMENT, AND YOU ARE RESPONSIBLE FOR OBTAINING ANY        *
+*     RIGHTS YOU MAY REQUIRE FOR YOUR IMPLEMENTATION.  XILINX EXPRESSLY        *
+*     DISCLAIMS ANY WARRANTY WHATSOEVER WITH RESPECT TO THE ADEQUACY OF THE    *
 *     IMPLEMENTATION, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OR           *
 *     REPRESENTATIONS THAT THIS IMPLEMENTATION IS FREE FROM CLAIMS OF          *
-*     INFRINGEMENT, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS          *
-*     FOR A PARTICULAR PURPOSE.                                                *
+*     INFRINGEMENT, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A    *
+*     PARTICULAR PURPOSE.                                                      *
 *                                                                              *
-*     Xilinx products are not intended for use in life support                 *
-*     appliances, devices, or systems. Use in such applications are            *
-*     expressly prohibited.                                                    *
+*     Xilinx products are not intended for use in life support appliances,     *
+*     devices, or systems.  Use in such applications are expressly             *
+*     prohibited.                                                              *
 *                                                                              *
-*     (c) Copyright 1995-2011 Xilinx, Inc.                                     *
+*     (c) Copyright 1995-2014 Xilinx, Inc.                                     *
 *     All rights reserved.                                                     *
 *******************************************************************************/
 // You must compile the wrapper file upd77c25_datram.v when simulating
@@ -63,7 +62,7 @@ output [7 : 0] doutb;
 
 // synthesis translate_off
 
-  BLK_MEM_GEN_V6_1 #(
+  BLK_MEM_GEN_V7_3 #(
     .C_ADDRA_WIDTH(10),
     .C_ADDRB_WIDTH(11),
     .C_ALGORITHM(1),
@@ -75,6 +74,7 @@ output [7 : 0] doutb;
     .C_DEFAULT_DATA("0"),
     .C_DISABLE_WARN_BHV_COLL(0),
     .C_DISABLE_WARN_BHV_RANGE(0),
+    .C_ENABLE_32BIT_ADDRESS(0),
     .C_FAMILY("spartan3"),
     .C_HAS_AXI_ID(0),
     .C_HAS_ENA(0),
@@ -90,6 +90,7 @@ output [7 : 0] doutb;
     .C_HAS_RSTB(0),
     .C_HAS_SOFTECC_INPUT_REGS_A(0),
     .C_HAS_SOFTECC_OUTPUT_REGS_B(0),
+    .C_INIT_FILE("BlankString"),
     .C_INIT_FILE_NAME("no_coe_file_loaded"),
     .C_INITA_VAL("0"),
     .C_INITB_VAL("0"),
@@ -108,6 +109,7 @@ output [7 : 0] doutb;
     .C_RSTRAM_A(0),
     .C_RSTRAM_B(0),
     .C_SIM_COLLISION_CHECK("ALL"),
+    .C_USE_BRAM_BLOCK(0),
     .C_USE_BYTE_WEA(0),
     .C_USE_BYTE_WEB(0),
     .C_USE_DEFAULT_DATA(0),
