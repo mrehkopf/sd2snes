@@ -218,6 +218,9 @@ void smc_id(snes_romprops_t* props) {
   }
   props->region = (header->destcode <= 1 || header->destcode >= 13) ? 0 : 1;
 
+  if(header->carttype == 0x55) {
+    props->fpga_features |= FEAT_SRTC;
+  }
 /*dprintf("ramsize_bytes: %ld\n", props->ramsize_bytes); */
 }
 

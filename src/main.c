@@ -207,6 +207,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     /* force memory size + mapper */
     set_rom_mask(0x3fffff);
     set_mapper(0x7);
+    fpga_set_features(0x04);
     uart_putc(')');
     uart_putcrlf();
 

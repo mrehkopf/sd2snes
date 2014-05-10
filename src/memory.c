@@ -300,7 +300,6 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   printf("done\n");
 
-  romprops.fpga_features |= FEAT_SRTC;
   romprops.fpga_features |= FEAT_213F;
 
   fpga_set_213f(romprops.region);
