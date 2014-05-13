@@ -11,10 +11,10 @@ cfg_t CFG = {
   .num_recent_games = 0,
   .vidmode_menu = VIDMODE_AUTO,
   .vidmode_game = VIDMODE_AUTO,
-  .pair_mode_allowed = 1,
+  .pair_mode_allowed = 0,
   .bsx_use_systime = 0,
   .bsx_time = 0x0619970301180530LL,
-  .r213f_override = 0
+  .r213f_override = 1
 };
 
 int cfg_save() {
@@ -38,7 +38,7 @@ int cfg_load() {
 }
 
 int cfg_add_last_game(uint8_t *fn) {
-  int err = 0, index, index2;
+  int err = 0, index, index2, found = 0, foundindex = 0, written = 0;
   TCHAR fntmp[10][256];
   file_open(LAST_FILE, FA_READ);
   for(index = 0; index < 10; index++) {
@@ -47,23 +47,29 @@ int cfg_add_last_game(uint8_t *fn) {
       break; /* last entry found */
     }
     if(!strncasecmp((TCHAR*)fn, fntmp[index], 255)) {
-      index=-1; /* file already in list, do not add */
-      break;
+      found = 1; /* file already in list */
+      foundindex = index;
     }
   }
   file_close();
-  if(index != -1) {
-    file_open(LAST_FILE, FA_CREATE_ALWAYS | FA_WRITE);
-    err = f_puts((const TCHAR*)fn, &file_handle);
-    err = f_putc(0, &file_handle);
-    if(index > 9) index = 9; /* truncate oldest entry */
-    for(index2 = 0; index2 < index; index2++) {
-      err = f_puts(fntmp[index2], &file_handle);
-      err = f_putc(0, &file_handle);
+  file_open(LAST_FILE, FA_CREATE_ALWAYS | FA_WRITE);
+  /* always put new entry on top of list */
+  err = f_puts((const TCHAR*)fn, &file_handle);
+  err = f_putc(0, &file_handle);
+  written++;
+  if(index > 9 + found) index = 9 + found; /* truncate oldest entry */
+  /* allow number of destination entries to be the same as source in case
+* we're only moving a previous entry to top */
+  for(index2 = 0; index2 < index; index2++) {
+    if(found && (index2 == foundindex)){
+      continue; /* omit found entry here to prevent dupe */
     }
-    file_close();
-    cfg_set_num_recent_games(index + 1);
+    err = f_puts(fntmp[index2], &file_handle);
+    err = f_putc(0, &file_handle);
+    written++;
   }
+  file_close();
+  cfg_set_num_recent_games(written);
   return err;
 }
 

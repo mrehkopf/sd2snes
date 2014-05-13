@@ -284,6 +284,8 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
         case SNES_CMD_LOADLAST:
           cfg_get_last_game(file_lfn, sram_readbyte(SRAM_PARAM_ADDR));
           printf("Selected name: %s\n", file_lfn);
+          cfg_add_last_game(file_lfn);
+          cfg_save();
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET);
           break;
         case SNES_CMD_SET_ALLOW_PAIR:

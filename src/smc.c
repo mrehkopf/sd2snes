@@ -218,6 +218,10 @@ void smc_id(snes_romprops_t* props) {
   }
   props->region = (header->destcode <= 1 || header->destcode >= 13) ? 0 : 1;
 
+  if(header->carttype == 0x55) {
+    props->fpga_features |= FEAT_SRTC;
+  }
+
 /*dprintf("ramsize_bytes: %ld\n", props->ramsize_bytes); */
 }
 
@@ -246,10 +250,10 @@ uint8_t smc_headerscore(uint32_t addr, snes_header_t* header) {
   if(header->ramsize < 0x08) score++;
   if(header->destcode < 0x0e) score++;
 
-  if((addr-header_offset) == 0x007fc0 && mapper == 0x20) score += 2;
-  if((addr-header_offset) == 0x00ffc0 && mapper == 0x21) score += 2;
-  if((addr-header_offset) == 0x007fc0 && mapper == 0x22) score += 2;
-  if((addr-header_offset) == 0x40ffc0 && mapper == 0x25) score += 2;
+  if((addr-header_offset) == 0x007fb0 && mapper == 0x20) score += 2;
+  if((addr-header_offset) == 0x00ffb0 && mapper == 0x21) score += 2;
+  if((addr-header_offset) == 0x007fb0 && mapper == 0x22) score += 2;
+  if((addr-header_offset) == 0x40ffb0 && mapper == 0x25) score += 2;
 
   file_readblock(&reset_inst, file_addr, 1);
   switch(reset_inst) {

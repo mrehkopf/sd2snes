@@ -68,7 +68,7 @@ NMI_8bit:
      ;123456789012345678901; - max 21 chars
 
 *= $C0FFD5     .byt $31  ;rom speed
-*= $C0FFD6     .byt $02  ;rom type
+*= $C0FFD6     .byt $55  ;rom type
 *= $C0FFD7     .byt $06  ;rom size   64 kByte
 *= $C0FFD8     .byt $03  ;sram size  8 kBit
 *= $C0FFD9     .byt $09  ;rom region 4 = Finland

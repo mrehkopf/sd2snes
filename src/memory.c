@@ -303,11 +303,10 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   printf("done\n");
 
-  romprops.fpga_features |= FEAT_SRTC;
   if(cfg_is_r213f_override_enabled())
     romprops.fpga_features |= FEAT_213F; /* e.g. for general consoles */
-  else
-    romprops.fpga_features &= 0xEF; /* only for consoles with $213f-D4-Region-Patching (e.g. U16) */
+//  else
+//    romprops.fpga_features &= 0xEF; /* only for consoles with $213f-D4-Region-Patching (e.g. U16) */
 
   fpga_set_213f(romprops.region);
   fpga_set_features(romprops.fpga_features);
