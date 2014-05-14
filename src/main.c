@@ -29,8 +29,8 @@
 #include "sysinfo.h"
 #include "cfg.h"
 
-#define EMC0TOGGLE	(3<<4)
-#define MR0R		(1<<1)
+#define EMC0TOGGLE        (3<<4)
+#define MR0R              (1<<1)
 
 int i;
 
@@ -122,16 +122,16 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     uint8_t card_go = 0;
     while(!card_go) {
       if(disk_status(0) & (STA_NOINIT|STA_NODISK)) {
-	snes_bootprint("        No SD Card found!       \0");
-	while(disk_status(0) & (STA_NOINIT|STA_NODISK));
-	delay_ms(200);
+        snes_bootprint("        No SD Card found!       \0");
+        while(disk_status(0) & (STA_NOINIT|STA_NODISK));
+        delay_ms(200);
       }
       file_open((uint8_t*)"/sd2snes/menu.bin", FA_READ);
       if(file_status != FILE_OK) {
-	snes_bootprint("  /sd2snes/menu.bin not found!  \0");
-	while(disk_status(0) == RES_OK);
+        snes_bootprint("  /sd2snes/menu.bin not found!  \0");
+        while(disk_status(0) == RES_OK);
       } else {
-	card_go = 1;
+        card_go = 1;
       }
       file_close();
     }
@@ -162,32 +162,32 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       printf("curr dir id = %lx\n", curr_dir_id);
       /* files changed or no database found? */
       if((get_db_id(&saved_dir_id) != FR_OK)
-	|| saved_dir_id != curr_dir_id) {
-	/* rebuild database */
-	printf("saved dir id = %lx\n", saved_dir_id);
-	printf("rebuilding database...");
-	snes_bootprint("     rebuilding database ...    \0");
-	curr_dir_id = scan_dir(fs_path, NULL, 1, 0);
-	sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 4);
-	uint32_t endaddr, direndaddr;
-	sram_readblock(&endaddr, SRAM_DB_ADDR+4, 4);
-	sram_readblock(&direndaddr, SRAM_DB_ADDR+8, 4);
-	printf("%lx %lx\n", endaddr, direndaddr);
-	printf("sorting database...");
-	snes_bootprint("       sorting database ...     \0");
-	sort_all_dir(direndaddr);
-	printf("done\n");
-	snes_bootprint("        saving database ...     \0");
-	save_sram((uint8_t*)"/sd2snes/sd2snes.db", endaddr-SRAM_DB_ADDR, SRAM_DB_ADDR);
-	save_sram((uint8_t*)"/sd2snes/sd2snes.dir", direndaddr-(SRAM_DIR_ADDR), SRAM_DIR_ADDR);
+        || saved_dir_id != curr_dir_id) {
+        /* rebuild database */
+        printf("saved dir id = %lx\n", saved_dir_id);
+        printf("rebuilding database...");
+        snes_bootprint("     rebuilding database ...    \0");
+        curr_dir_id = scan_dir(fs_path, NULL, 1, 0);
+        sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 4);
+        uint32_t endaddr, direndaddr;
+        sram_readblock(&endaddr, SRAM_DB_ADDR+4, 4);
+        sram_readblock(&direndaddr, SRAM_DB_ADDR+8, 4);
+        printf("%lx %lx\n", endaddr, direndaddr);
+        printf("sorting database...");
+        snes_bootprint("       sorting database ...     \0");
+        sort_all_dir(direndaddr);
+        printf("done\n");
+        snes_bootprint("        saving database ...     \0");
+        save_sram((uint8_t*)"/sd2snes/sd2snes.db", endaddr-SRAM_DB_ADDR, SRAM_DB_ADDR);
+        save_sram((uint8_t*)"/sd2snes/sd2snes.dir", direndaddr-(SRAM_DIR_ADDR), SRAM_DIR_ADDR);
         fpga_pgm((uint8_t*)"/sd2snes/fpga_base.bit");
-	printf("done\n");
+        printf("done\n");
       } else {
-	printf("saved dir id = %lx\n", saved_dir_id);
-	printf("different card, consistent db, loading db...\n");
+        printf("saved dir id = %lx\n", saved_dir_id);
+        printf("different card, consistent db, loading db...\n");
         fpga_pgm((uint8_t*)"/sd2snes/fpga_base.bit");
-	load_sram_offload((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
-	load_sram_offload((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
+        load_sram_offload((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
+        load_sram_offload((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
       }
       sram_writelong(curr_dir_id, SRAM_DIRID);
       sram_writelong(0x12345678, SRAM_SCRATCHPAD);
@@ -248,21 +248,21 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       printf("cmd: %d\n", cmd);
       uart_putc('-');
       switch(cmd) {
-	case SNES_CMD_LOADROM:
-	  get_selected_name(file_lfn);
-	  printf("Selected name: %s\n", file_lfn);
+        case SNES_CMD_LOADROM:
+          get_selected_name(file_lfn);
+          printf("Selected name: %s\n", file_lfn);
           cfg_add_last_game(file_lfn);
           cfg_save();
-	  filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET);
-	  break;
-	case SNES_CMD_SETRTC:
+          filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET);
+          break;
+        case SNES_CMD_SETRTC:
           /* get time from RAM */
           btime = sram_gettime(SRAM_PARAM_ADDR);
           /* set RTC */
           set_bcdtime(btime);
           set_fpga_time(btime);
-	  cmd=0; /* stay in menu loop */
-	  break;
+          cmd=0; /* stay in menu loop */
+          break;
         case SNES_CMD_SYSINFO:
           /* go to sysinfo loop */
           sysinfo_loop();
@@ -291,10 +291,10 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
         case SNES_CMD_SET_ALLOW_PAIR:
           cfg_set_pair_mode_allowed(sram_readbyte(SRAM_PARAM_ADDR));
           break;
-	default:
-	  printf("unknown cmd: %d\n", cmd);
-	  cmd=0; /* unknown cmd: stay in loop */
-	  break;
+        default:
+          printf("unknown cmd: %d\n", cmd);
+          cmd=0; /* unknown cmd: stay in loop */
+          break;
       }
 
     }
@@ -308,10 +308,10 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     }
 
     cmd=0;
-	// uint8_t snes_res;
+// uint8_t snes_res;
     while(fpga_test() == FPGA_TEST_TOKEN) {
       cli_entrycheck();
-//	  sleep_ms(250);
+//        sleep_ms(250);
       sram_reliable();
       printf("%s ", get_cic_statename(get_cic_state()));
       if(reset_changed) {
@@ -319,15 +319,13 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
         reset_changed = 0;
         fpga_reset_srtc_state();
       }
-	  
-	  if(get_snes_reset_state() == SNES_RESET_LONG) {
-		prepare_reset();
-		break;
-	  } else {
-		sram_reliable();
-		snes_main_loop();
-	  }
-	  
+      if(get_snes_reset_state() == SNES_RESET_LONG) {
+        prepare_reset();
+        break;
+      } else {
+        sram_reliable();
+        snes_main_loop();
+      }
     }
     /* fpga test fail: panic */
     if(fpga_test() != FPGA_TEST_TOKEN){

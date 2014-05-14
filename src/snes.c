@@ -110,7 +110,7 @@ uint8_t get_snes_reset_state(void) {
     rising_ticks = getticks();
 //  } else if(!resbutton && resbutton_prev && pushes > 0) { /* button released */
   } else if(!resbutton && resbutton_prev) { /* button released */
-	result = SNES_RESET_SHORT;
+    result = SNES_RESET_SHORT;
   }
 
   tick_t rising_ticks_tmp = getticks();
@@ -121,10 +121,10 @@ uint8_t get_snes_reset_state(void) {
   }
 
   if(rising_ticks_tmp > rising_ticks + 59) /* reset push counter after 600ms (user's time to place a double reset */
-	pushes = 0;
+    pushes = 0;
 
   if(resbutton && rising_ticks_tmp > rising_ticks + 99) /* a (normal) long reset detected */
-	result = SNES_RESET_LONG;
+    result = SNES_RESET_LONG;
 
   resbutton_prev = resbutton;
   return result;
@@ -211,6 +211,6 @@ void snes_menu_errmsg(int err, void* msg) {
 }
 
 uint8_t snes_get_last_game_index() {
-	return sram_readbyte(SRAM_PARAM_ADDR);
+  return sram_readbyte(SRAM_PARAM_ADDR);
 }
 

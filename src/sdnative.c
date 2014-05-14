@@ -403,7 +403,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
     while(i--) { /* process response */
       cmdshift = 8;
       do {
-	if(dat) {
+        if(dat) {
           if(!(BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))) {
             printf("data start during response\n");
             j=datcnt;

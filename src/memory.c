@@ -159,7 +159,7 @@ void sram_readblock(void* buf, uint32_t addr, uint16_t size) {
   uint8_t* tgt = buf;
   set_mcu_addr(addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x88);	/* READ */
+  FPGA_TX_BYTE(0x88);   /* READ */
   while(count--) {
     FPGA_WAIT_RDY();
     *(tgt++) = FPGA_RX_BYTE();
@@ -172,7 +172,7 @@ void sram_readstrn(void* buf, uint32_t addr, uint16_t size) {
   uint8_t* tgt = buf;
   set_mcu_addr(addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x88);	/* READ */
+  FPGA_TX_BYTE(0x88);   /* READ */
   while(count--) {
     FPGA_WAIT_RDY();
     if(!(*(tgt++) = FPGA_RX_BYTE())) break;
@@ -185,7 +185,7 @@ void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
   uint8_t* src = buf;
   set_mcu_addr(addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x98);	/* WRITE */
+  FPGA_TX_BYTE(0x98);   /* WRITE */
   while(count--) {
     FPGA_TX_BYTE(*src++);
     FPGA_WAIT_RDY();
@@ -339,7 +339,7 @@ uint32_t load_spc(uint8_t* filename, uint32_t spc_data_addr, uint32_t spc_header
   filesize = file_handle.fsize;
   if (filesize < 65920) { /* At this point, we care about filesize only */
     file_close(); /* since SNES decides if it is an SPC file */
-    sram_writebyte(0, spc_header_addr);	/* If file is too small, destroy previous SPC header */
+    sram_writebyte(0, spc_header_addr); /* If file is too small, destroy previous SPC header */
     return 0;
   }
 
