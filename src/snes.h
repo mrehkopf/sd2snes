@@ -40,8 +40,13 @@
 #define MENU_ERR_OK     (0)
 #define MENU_ERR_NODSP  (1)
 #define MENU_ERR_NOBSX  (2)
+#define MENU_ERR_NOIMPL (3)
 
 #define SNES_RESET_PULSELEN_MS	(1)
+
+#define SNES_BOOL_TRUE  (1)
+#define SNES_BOOL_FALSE (0)
+#define SNES_BOOL_UNDEF (255)
 
 enum snes_reset_state { SNES_RESET_NONE = 0, SNES_RESET_SHORT, SNES_RESET_LONG };
 
