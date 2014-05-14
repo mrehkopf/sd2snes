@@ -27,8 +27,6 @@ uint32_t msu_page_size = 0x2000;
 uint16_t fpga_status_prev;
 uint16_t fpga_status_now;
 
-enum msu_reset_state { MSU_RESET_NONE = 0, MSU_RESET_SHORT, MSU_RESET_LONG };
-
 void prepare_audio_track(uint16_t msu_track) {
   /* open file, fill buffer */
   char suffix[11];
@@ -118,29 +116,6 @@ void prepare_data(uint32_t msu_offset) {
   set_msu_status(0x00, 0x10);
 }
 
-int msu1_check_reset(void) {
-  static tick_t rising_ticks;
-
-  static uint8_t resbutton=0, resbutton_prev=0;
-  int result = MSU_RESET_NONE;
-  resbutton = get_snes_reset();
-  if(resbutton && !resbutton_prev) { /* push */
-    rising_ticks = getticks();
-  } else if(resbutton && resbutton_prev) { /* hold */
-    if(getticks() > rising_ticks + 99) {
-      result = MSU_RESET_LONG;
-    }
-  } else if(!resbutton && resbutton_prev) { /* release */
-    if(getticks() < rising_ticks + 99) {
-      result = MSU_RESET_SHORT;
-    }
-  } else {
-    result = MSU_RESET_NONE;
-  }
-  resbutton_prev = resbutton;
-  return result;
-}
-
 int msu1_check(uint8_t* filename) {
 /* open MSU file */
   strcpy((char*)file_buf, (char*)filename);
@@ -196,7 +171,7 @@ int msu1_loop() {
   prepare_audio_track(0);
   prepare_data(0);
 /* audio_start, data_start, 0, audio_ctrl[1:0], ctrl_start */
-  while((msu_res = msu1_check_reset()) == MSU_RESET_NONE){
+  while((msu_res = get_snes_reset_state()) == SNES_RESET_NONE){
     cli_entrycheck();
     fpga_status_now = fpga_status();
 
@@ -289,7 +264,7 @@ int msu1_loop() {
   }
   f_close(&file_handle);
   DBG_MSU1 printf("Reset ");
-  if(msu_res == MSU_RESET_LONG) {
+  if(msu_res == SNES_RESET_LONG) {
     f_close(&msufile);
     DBG_MSU1 printf("to menu\n");
     return 1;

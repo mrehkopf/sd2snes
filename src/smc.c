@@ -221,7 +221,6 @@ void smc_id(snes_romprops_t* props) {
   if(header->carttype == 0x55) {
     props->fpga_features |= FEAT_SRTC;
   }
-/*dprintf("ramsize_bytes: %ld\n", props->ramsize_bytes); */
 }
 
 uint8_t smc_headerscore(uint32_t addr, snes_header_t* header) {

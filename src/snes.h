@@ -27,21 +27,23 @@
 #ifndef SNES_H
 #define SNES_H
 
-#define SNES_CMD_LOADROM          (1)
-#define SNES_CMD_SETRTC           (2)
-#define SNES_CMD_SYSINFO          (3)
-#define SNES_CMD_LOADLAST         (4)
-#define SNES_CMD_LOADSPC          (5)
-#define SNES_CMD_RESET            (6)
-#define SNES_CMD_SET_ALLOW_PAIR   (7)
-#define SNES_CMD_SET_VIDMODE_GAME (8)
-#define SNES_CMD_SET_VIDMODE_MENU (9)
+#define SNES_CMD_LOADROM           (1)
+#define SNES_CMD_SETRTC            (2)
+#define SNES_CMD_SYSINFO           (3)
+#define SNES_CMD_LOADLAST          (4)
+#define SNES_CMD_LOADSPC           (5)
+#define SNES_CMD_RESET             (6)
+#define SNES_CMD_SET_ALLOW_PAIR    (7)
+#define SNES_CMD_SET_VIDMODE_GAME  (8)
+#define SNES_CMD_SET_VIDMODE_MENU  (9)
 
 #define MENU_ERR_OK     (0)
 #define MENU_ERR_NODSP  (1)
 #define MENU_ERR_NOBSX  (2)
 
 #define SNES_RESET_PULSELEN_MS	(1)
+
+enum snes_reset_state { SNES_RESET_NONE = 0, SNES_RESET_SHORT, SNES_RESET_LONG };
 
 uint8_t crc_valid;
 
@@ -50,6 +52,7 @@ void snes_init(void);
 void snes_reset_pulse(void);
 void snes_reset(int state);
 uint8_t get_snes_reset(void);
+uint8_t get_snes_reset_state(void);
 void snes_main_loop(void);
 uint8_t menu_main_loop(void);
 void get_selected_name(uint8_t* lfn);
