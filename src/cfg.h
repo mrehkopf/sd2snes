@@ -40,4 +40,7 @@ uint8_t cfg_get_num_recent_games(void);
 void cfg_set_pair_mode_allowed(uint8_t);
 uint8_t cfg_is_pair_mode_allowed(void);
 
+void cfg_set_r213f_override(uint8_t);
+uint8_t cfg_is_r213f_override_enabled(void);
+
 #endif
