@@ -107,5 +107,5 @@ v0.1.6
      graphical corruption on some games (notably Treasure Conflix garbled
      sprites)
    - SRAM mapping for LoROM <=16Mbits now uses the entire bank instead of
-   - 0000-7fff only. Fixes saving in some games, e.g. Ys III Wanderers from Ys
+     0000-7fff only. Fixes saving in some games, e.g. Ys III Wanderers from Ys
 
