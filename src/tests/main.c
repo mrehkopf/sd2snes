@@ -89,15 +89,15 @@ led_pwm();
   LPC_TIM3->TCR=1;
   fpga_init();
 
-  char *testnames[11] = { "SD      ", "USB     ", "RTC     ", "CIC     ",
-                          "FPGA    ", "RAM     ", "CLK     ", "DAC     ",
-                          "SNES IRQ", "SNES RAM", "SNES PA "};
+  char *testnames[12] = { "SD      ", "USB     ", "RTC     ", "CIC     ",
+                          "FPGA    ", "RAM     ", "SD DMA  ", "CLK     ",
+                          "DAC     ", "SNES IRQ", "SNES RAM", "SNES PA "};
 
   char *teststate_names [3] = { "no run", "\x1b[32;1mPassed\x1b[m", "\x1b[31;1mFAILED\x1b[m" };
 
-  int testresults[11] = { NO_RUN, NO_RUN, NO_RUN, NO_RUN, NO_RUN,
+  int testresults[12] = { NO_RUN, NO_RUN, NO_RUN, NO_RUN, NO_RUN,
                           NO_RUN, NO_RUN, NO_RUN, NO_RUN, NO_RUN,
-                          NO_RUN };
+                          NO_RUN, NO_RUN };
 
   testresults[TEST_SD] = test_sd();
 //testresults[TEST_USB] = test_usb();
@@ -106,6 +106,7 @@ led_pwm();
   testresults[TEST_CIC] = test_cic();
   testresults[TEST_FPGA] = test_fpga();
   testresults[TEST_RAM] = test_mem();
+  testresults[TEST_SDDMA] = test_sddma();
   printf("Loading SNES test ROM\n=====================\n");
   load_rom((uint8_t*)"/sd2snes/test.bin", 0, LOADROM_WITH_RESET);
   printf("\n\n\n");
@@ -155,7 +156,7 @@ led_pwm();
   printf("\n\nTEST SUMMARY\n============\n\n");
   printf("Test      Result\n----------------\n");
   int testcount;
-  for(testcount=0; testcount < 11; testcount++) {
+  for(testcount=0; testcount < 12; testcount++) {
     printf("%s  %s\n", testnames[testcount], teststate_names[testresults[testcount]]);
   }
   cli_loop();
