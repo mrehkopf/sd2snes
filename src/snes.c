@@ -97,34 +97,42 @@ uint8_t get_snes_reset() {
 uint8_t get_snes_reset_state(void) {
 
   static tick_t rising_ticks;
+  tick_t rising_ticks_tmp = getticks();
 
   static uint8_t resbutton=0, resbutton_prev=0;
-  static uint8_t pushes=0;
+  static uint8_t pushes=0, reset_short_flag=0;
 
   uint8_t result=SNES_RESET_NONE;
 
+  snes_reset(0); // release sd2snes-reset (just in case it was a reset detected before)
+  delay_ms(SNES_RESET_PULSELEN_MS);
   resbutton = get_snes_reset();
+
+  if(rising_ticks_tmp > rising_ticks + 22) {/* reset push counter after 230ms (time for igr's double reset) */
+    pushes = 0;
+    reset_short_flag = 0;
+  }
 
   if(resbutton && !resbutton_prev) { /* push, reset tick-timer */
     pushes++;
     rising_ticks = getticks();
-//  } else if(!resbutton && resbutton_prev && pushes > 0) { /* button released */
   } else if(!resbutton && resbutton_prev) { /* button released */
     result = SNES_RESET_SHORT;
+    reset_short_flag = 1;
   }
 
-  tick_t rising_ticks_tmp = getticks();
-
-  if(pushes == 2 && rising_ticks_tmp > rising_ticks + 39) { /* we had a second push but no further pushes after 400ms of the last push */
-    result = SNES_RESET_LONG;                               /* -> initiate long reset */
-    pushes = 0;
+  if(pushes == 2) {/* we had a second push  -> initiate long reset */
+    result = SNES_RESET_LONG;
+    reset_short_flag = 0;
   }
-
-  if(rising_ticks_tmp > rising_ticks + 59) /* reset push counter after 600ms (user's time to place a double reset */
-    pushes = 0;
 
   if(resbutton && rising_ticks_tmp > rising_ticks + 99) /* a (normal) long reset detected */
     result = SNES_RESET_LONG;
+
+  if(reset_short_flag) {
+    snes_reset(1);
+    delay_ms(SNES_RESET_PULSELEN_MS);
+  }
 
   resbutton_prev = resbutton;
   return result;
