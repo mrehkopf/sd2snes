@@ -1,0 +1,41 @@
+# Mac OS X README amendments
+These instructions pertain to SD2SNES development on OS X, as a complement to the main README.
+
+## Building the Cortex M3 toolchain
+
+ * Obtain the cm3-toolchain builder fork with OS X support:
+   git clone https://github.com/protomouse/toolchain-cm3.git
+
+ * Brew dependencies
+   brew install gmp4 mpfr2 libmpc08 ppl011 cloog-ppl015 recode gawk
+
+ * Ensure writable /opt (may need to re-login!)
+   sudo /usr/bin/dscl . -append /groups/wheel GroupMembership <youruser>
+   sudo chmod g+ws /opt
+
+ * make
+
+ * Amend PATH for new shells
+   sudo sh -c "echo /opt/arm-none-eabi-4.6.2/bin > /etc/paths.d/toolchain-cm3"
+
+## Building snescom/sneslink
+
+Apply the following patch before building:
+curl https://gist.githubusercontent.com/protomouse/31335db2fe5c11978faf/raw/snescom-disasm-missing-cstdlib.diff | patch -p1
+
+## TIPS
+
+1) Programming the PIC
+PICkit 2 compatible programmers have known OS X support:
+ * git clone https://github.com/protomouse/pk2cmd.git
+ * cd pk2cmd/pk2cmd/pk2cmd
+ * make mac105 install
+
+gputils is available from Homebrew or as a binary package.
+
+2) Building & programming the bootloader
+You'll need the FT2232 OS X driver from here: http://www.ftdichip.com/Drivers/D2XX.htm
+as well as OpenOCD from Homebrew: brew install open-ocd
+
+5) Building the FPGA configuration
+Xilinx </3 Apple :'(. Use Windows or Linux.
