@@ -12,6 +12,7 @@ GAME_MAIN:
 	sep #$20 : .as
 	stz $4200 ; inhibit VBlank NMI
 	rep #$20 : .al
+  stz dbg_ptr
 	lda @warm_signature	; Was CMD_RESET issued before reset?
 	cmp #$fa50		; If yes, then perform warm boot procedure
 	bne coldboot
@@ -295,6 +296,9 @@ setup_gfx:
 	stx $2181
 	sta $2183
 	DMA0(#$00, #$6C, #^fadeloop, #!fadeloop, #$80);
+;initialize window stack
+  ldx #$ffff
+  stx window_stack_head
 	rts
 
 video_init:

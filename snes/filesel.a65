@@ -654,7 +654,6 @@ wait_spc:
 	cmp #$00
 	bne wait_spc
 	jsr spcplayer
-	jsr restore_screen
 	rts
 
 filesel_key_x:
@@ -751,8 +750,7 @@ select_last_file:
 	bne +
 	plp
 	rts
-+       jsr backup_screen
-	lda #^text_last
++	lda #^text_last
 	sta window_tbank
 	ldx #!text_last
 	stx window_taddr
@@ -774,6 +772,7 @@ select_last_file:
 	clc
 	adc window_h
 	sta window_h
+  jsr push_window
 	jsr draw_window
 	stz print_pal
 	lda #^LAST_GAME
@@ -805,7 +804,7 @@ select_last_file:
 	lda #$04
 	sta @MCU_CMD
 	jmp select_file_fade
-+	jsr restore_screen
++	jsr pop_window
 	plp
 	rts
 

@@ -27,8 +27,6 @@ time_month
 time_init:
 	php
 	sep #$20 : .as
-	; save text area
-	jsr backup_screen
 	; draw window + current time setting
 	lda #^text_clkset
 	sta window_tbank
@@ -42,6 +40,7 @@ time_init:
 	sta window_y
 	lda @time_win_h
 	sta window_h
+  jsr push_window
 	jsr draw_window
 	jsr gettime
 	stz time_sel
@@ -129,7 +128,7 @@ timesave
 	jsr settime
 timenosave
 	; restore text area
-	jsr restore_screen
+	jsr pop_window
 	plp
 	rtl
 

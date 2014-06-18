@@ -38,7 +38,6 @@ mainmenu:
 	stz mm_sel
 mm_redraw
 	stz mm_tmp
-	jsr backup_screen
 	lda #^text_mainmenu
 	sta window_tbank
 	ldx #!text_mainmenu
@@ -51,6 +50,7 @@ mm_redraw
 	sta window_w
 	lda @main_win_h
 	sta window_h
+  jsr push_window
 	jsr draw_window
 	jsr mm_do_refresh
 	stz print_pal
@@ -114,7 +114,7 @@ mm_menuloop
 	bne mmkey_b
 	bra mm_menuloop
 mmkey_b
-	jsr restore_screen
+  jsr pop_window
 	plp
 	rts
 
@@ -150,7 +150,6 @@ mmkey_up_2
 	rts
 
 mmkey_a_2
-	jsr restore_screen
 	phk			; push return bank for subroutine
 	per mmkey_a_2_return-1	; push return addr for subroutine
 	xba

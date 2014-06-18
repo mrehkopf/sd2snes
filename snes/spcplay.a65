@@ -25,7 +25,6 @@ spcplayer:
 	dec bar_xl
 	stz bar_yl
 	dec bar_yl
-	jsr backup_screen
 
 	lda #^text_spcplay	; Loading window
 	sta window_tbank
