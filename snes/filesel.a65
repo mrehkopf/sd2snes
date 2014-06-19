@@ -242,19 +242,17 @@ print_direntry:
 	pha
 	plb
 
+  rep #$20 : .al
+	lda #$06	;skip size string
+	sta @fd_fnoff
 	lda @dirent_type
 	and #$f0
 	cmp #$80
-	rep #$20 : .al
 	bne dirent_is_file
 dirent_is_dir
-	lda #$04	;skip dir tgt
-	sta @fd_fnoff
 	lda #$01	;different color for dirs
 	bra dirent_type_cont
 dirent_is_file
-	lda #$06	;skip size string
-	sta @fd_fnoff
 	lda @dirent_type
 	and #$00ff
 	cmp #$0001	;SMC -> palette 0 (white)
@@ -275,16 +273,6 @@ dirent_is_file
 dirent_type_cont
 	sta @print_pal
 	rep #$20 : .al
-	txa
-	clc
-	adc @fd_fnoff
-	tax
-	sep #$20 : .as
-	lda !0, x	;load offset of leaf (file) name
-	inc
-	rep #$20 : .al
-	and #$00ff	;kill hi byte
-	sta @fd_fnoff
 	txa
 	clc
 	adc @fd_fnoff

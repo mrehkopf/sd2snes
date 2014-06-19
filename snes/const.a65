@@ -196,3 +196,5 @@ loading_win_h   .byt 5
 
 
 text_spcid		.byt "SNES-SPC700"
+
+rootdir       .byt "/", 0
