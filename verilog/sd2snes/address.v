@@ -39,8 +39,7 @@ module address(
   output dspx_dp_enable,
   output dspx_a0,
   output r213f_enable,
-  output snescmd_rd_enable,
-  output snescmd_wr_enable,
+  output snescmd_enable,
   input [8:0] bs_page_offset,
   input [9:0] bs_page,
   input bs_page_enable
@@ -237,8 +236,6 @@ assign dspx_a0 = featurebits[FEAT_DSPX]
 
 assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 
-assign snescmd_rd_enable = (SNES_PA[7:4] == 4'b1110);
-
-assign snescmd_wr_enable = (SNES_ADDR[23:4] == 20'hccccc);
+assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:8]} == 9'b0_00101010);
 
 endmodule

@@ -151,6 +151,10 @@ wire DBG_msu_reg_we_rising;
 wire [2:0] SD_DMA_DBG_clkcnt;
 wire [10:0] SD_DMA_DBG_cyclecnt;
 
+wire [7:0] snescmd_addr_mcu;
+wire [7:0] snescmd_data_out_mcu;
+wire [7:0] snescmd_data_in_mcu;
+
 sd_dma snes_sd_dma(
   .CLK(CLK2),
   .SD_DAT(SD_DAT),
@@ -364,6 +368,10 @@ mcu_cmd snes_mcu_cmd(
   .mcu_wrq(MCU_WRQ),
   .mcu_rq_rdy(MCU_RDY),
   .region_out(mcu_region),
+  .snescmd_addr_out(snescmd_addr_mcu),
+  .snescmd_we_out(snescmd_we_mcu),
+  .snescmd_data_out(snescmd_data_out_mcu),
+  .snescmd_data_in(snescmd_data_in_mcu),
   .DBG_mcu_nextaddr(DBG_mcu_nextaddr)
 );
 
@@ -406,8 +414,7 @@ address snes_addr(
   .dspx_dp_enable(dspx_dp_enable),
   .dspx_a0(DSPX_A0),
   .r213f_enable(r213f_enable),
-  .snescmd_rd_enable(snescmd_rd_enable),
-  .snescmd_wr_enable(snescmd_wr_enable)
+  .snescmd_enable(snescmd_enable)
 );
 
 assign DCM_RST=0;
@@ -452,6 +459,8 @@ assign SRTC_SNES_DATA_IN = SNES_DATA[3:0];
 assign MSU_SNES_DATA_IN = SNES_DATA;
 assign BSX_SNES_DATA_IN = SNES_DATA;
 
+wire [7:0] snescmd_dout;
+
 reg [7:0] r213fr;
 reg r213f_forceread;
 reg [2:0] r213f_delay;
@@ -468,6 +477,7 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
                                   :dspx_dp_enable ? DSPX_SNES_DATA_OUT
                                   :msu_enable ? MSU_SNES_DATA_OUT
                                   :bsx_data_ovr ? BSX_SNES_DATA_OUT
+                                  :snescmd_enable ? snescmd_dout
                                   :(ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8])
                                   ) : 8'bZ;
 
@@ -606,9 +616,9 @@ assign SNES_DATABUS_OE = (dspx_enable | dspx_dp_enable) ? 1'b0 :
                          msu_enable ? 1'b0 :
                          bsx_data_ovr ? (SNES_READ & SNES_WRITE) :
                          srtc_enable ? (SNES_READ & SNES_WRITE) :
+                         snescmd_enable ? (SNES_READ & SNES_WRITE) :
                          bs_page_enable ? (SNES_READ) :
                          r213f_enable & !SNES_PARD ? 1'b0 :
-                         (snescmd_wr_enable | snescmd_rd_enable) & !SNES_PARD ? 1'b0 :
                          ((IS_ROM & SNES_CS)
                           |(!IS_ROM & !IS_SAVERAM & !IS_WRITABLE & !IS_FLASHWR)
                           |(SNES_READ & SNES_WRITE)
@@ -623,8 +633,18 @@ assign SNES_IRQ = 1'b0;
 
 assign p113_out = 1'b0;
 
-/*
-wire [35:0] CONTROL0;
+snescmd_buf snescmd (
+  .clka(CLK2), // input clka
+  .wea(SNES_WR_end & snescmd_enable), // input [0 : 0] wea
+  .addra(SNES_ADDR[7:0]), // input [7 : 0] addra
+  .dina(SNES_DATA), // input [7 : 0] dina
+  .douta(snescmd_dout), // output [7 : 0] douta
+  .clkb(CLK2), // input clkb
+  .web(snescmd_we_mcu), // input [0 : 0] web
+  .addrb(snescmd_addr_mcu), // input [7 : 0] addrb
+  .dinb(snescmd_data_out_mcu), // input [7 : 0] dinb
+  .doutb(snescmd_data_in_mcu) // output [7 : 0] doutb
+);
 
 icon icon (
     .CONTROL0(CONTROL0) // INOUT BUS [35:0]
