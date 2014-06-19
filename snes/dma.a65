@@ -2,17 +2,6 @@
 setup_hdma:
 	sep #$20 : .as
 	rep #$10 : .xl
-	stz $420b
-	stz $420c
-
-	lda #$02		;A to B; direct; 2x single reg
-	sta $4320		;we use ch. 2 for color data
-	lda #$22		;2122 = CG RAM
-	sta $4321		;dest: CG RAM
-	lda #^hdma_pal
-	ldy #!hdma_pal
-	sty $4322
-	sta $4324
 
 	lda #$00		;A to B; direct; 1x single reg
 	sta $4310		;ch. 1 for color address
@@ -22,6 +11,15 @@ setup_hdma:
 	ldy #!hdma_cg_addr
 	sty $4312
 	sta $4314
+
+	lda #$02		;A to B; direct; 2x single reg
+	sta $4320		;we use ch. 2 for color data
+	lda #$22		;2122 = CG RAM
+	sta $4321		;dest: CG RAM
+	lda #^hdma_pal
+	ldy #!hdma_pal
+	sty $4322
+	sta $4324
 
 	lda #$00		;A to B; direct; 1x single reg
 	sta $4330		;ch. 3 for mode switch
@@ -50,13 +48,9 @@ setup_hdma:
 	sty $4352
 	sta $4354
 
-	lda #$3a
-	sta $420c		;enable HDMA ch. 1+3+4+5
 	jsr waitblank
 	lda #$3e
-	sta $420c		;enable HDMA ch. 2 too
+  sta $420c		;enable HDMA ch. 1-5
 	lda #$81		;VBlank NMI + Auto Joypad Read
 	sta $4200		;enable V-BLANK NMI
 	rts
-
-
