@@ -87,7 +87,6 @@ time_tmp	.byt 0
 ;--
 mm_tmp		.byt 0
 mm_sel		.byt 0
-mm_refresh	.byt 0
 ;--
 num_recent_games .byt 0
 recent_sel      .byt 0

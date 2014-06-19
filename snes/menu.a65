@@ -15,12 +15,12 @@
 menu_select:
 	php
 	sep #$20 : rep #$10 : .as : .xl
-	lda bar_wl
-	pha
-	lda bar_yl
-	pha
-	lda bar_xl
-	pha
+  stz listsel_sel
+  bra +
+menu_select_noinit:
+	php
+	sep #$20 : rep #$10 : .as : .xl
++
 	lda window_x
 	inc
 	inc
@@ -29,10 +29,16 @@ menu_select:
 	sec
 	sbc #$04
 	sta bar_wl
+  lda listsel_sel
+  sta $211b
+  stz $211b
+  lda listsel_step
+  sta $211c
 	lda window_y
 	inc
+  clc
+  adc $2134
 	sta bar_yl
-	stz listsel_sel
 
 menu_select_loop1
 	lda isr_done
@@ -70,17 +76,11 @@ menu_select_down
 	sta bar_yl
 	bra menu_select_loop1
 menu_select_item
-	ldx listsel_sel
+	lda listsel_sel
 	bra menu_select_exit
 menu_select_none
-	ldx #$ffff
+	lda #$ff
 menu_select_exit
-	pla
-	sta bar_xl
-	pla
-	sta bar_yl
-	pla
-	sta bar_wl
-	txa
 	plp
 	rts
+
