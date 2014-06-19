@@ -188,4 +188,11 @@ spcstart_win_y		.byt 13
 spcstart_win_w		.byt 44
 spcstart_win_h		.byt 9
 
+text_loading    .byt "Loading...", 0
+loading_win_x   .byt 24
+loading_win_y   .byt 15
+loading_win_w   .byt 14
+loading_win_h   .byt 5
+
+
 text_spcid		.byt "SNES-SPC700"
