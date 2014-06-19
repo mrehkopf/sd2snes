@@ -6,7 +6,6 @@ GAME_MAIN:
 	rep #$10 : .xl
 	sei
 	stz $4200 ; inhibit VBlank NMI
-	jsr killdma
 	lda #$01
 	sta $420d ; fast cpu
 	jsr snes_init
