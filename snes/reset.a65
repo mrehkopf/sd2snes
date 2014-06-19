@@ -16,9 +16,6 @@ NMI_ROUTINE:
 	lda #$00
 	pha
 	plb
-
-        lda $4210	; ack interrupt
-
 	ldx #BG1_TILE_BASE+32*9
 	stx $2116
 	DMA0(#$01, #40*64, #^BG1_TILE_BUF, #!BG1_TILE_BUF+64*9, #$18)
@@ -33,25 +30,11 @@ NMI_ROUTINE:
 
 	lda bar_yl
 	asl
+  dec
 	asl
-	tax
-	lda barstep
-	php
-	txa
-	dec
-	dec
-	dec
-	plp
-	bne small_bar
-	asl
-	bra normal_bar
-small_bar
-	clc
-	adc #31
-normal_bar
+  dec
+  asl
 	sta bar_y
-
-	lda bar_y
 	cmp #224
 	bne +
 	lda #1
