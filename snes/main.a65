@@ -3,15 +3,15 @@
 
 GAME_MAIN:
 	sep #$20 : .as
+	stz $4200 ; inhibit VBlank NMI
+  lda #$01
+  sta $420d
 	lda #$00
 	sta @MCU_CMD		; clear MCU command register
 	rep #$20 : .al
 	lda #$0000
 	sta @MCU_PARAM		; clear MCU command parameters
 	sta @MCU_PARAM+2
-	sep #$20 : .as
-	stz $4200 ; inhibit VBlank NMI
-	rep #$20 : .al
   stz dbg_ptr
 	lda @warm_signature	; Was CMD_RESET issued before reset?
 	cmp #$fa50		; If yes, then perform warm boot procedure
@@ -21,13 +21,10 @@ GAME_MAIN:
 	lda @saved_sp		; Restore previous stack pointer
 	tcs
 	sep #$20 : .as
-
-;	jsr killdma		; The following initialization processes must not touch memory
-	jsr waitblank		; structures used by the file selector !
+; The following initialization processes must not touch memory
+; structures used by the file selector !
+	jsr waitblank
 	jsr snes_init
-	cli
-	lda #$01
-	sta $420d 		; fast cpu
 	jsr setup_gfx
   jsr store_wram_routines
 	jsr colortest
@@ -45,11 +42,8 @@ set_bank:
 
 coldboot:							; Regular, cold-start init
 	sep #$20 : .as
-;	jsr killdma
 	jsr waitblank
 	jsr snes_init
-	lda #$01
-	sta $420d ; fast cpu
 	jsr setup_gfx
   jsr store_wram_routines
 	jsr colortest
@@ -265,7 +259,6 @@ snes_init:
 	stz $420a		;
 	stz $420b		;
 	stz $420c		;
-	stz $420d		;
 	lda #$8f
 	sta $2100		;INIDISP: force blank
 	lda #$03		; 8x8+16x16; name=0; base=3
