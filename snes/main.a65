@@ -180,20 +180,67 @@ setup_gfx:
 	sta $2183
 	DMA0(#$00, #19, #^hdma_math_src, #!hdma_math_src, #$80);
 
-;copy infinite loop to WRAM
-	lda #$80
-	sta infloop
-	lda #$fe
-	sta infloop+1
-	lda #^wram_fadeloop
-	ldx #!wram_fadeloop
-	stx $2181
-	sta $2183
-	DMA0(#$00, #$6C, #^fadeloop, #!fadeloop, #$80);
 ;initialize window stack
   ldx #$ffff
   stx window_stack_head
 	rts
+
+genfonts:
+	php
+	rep #$10 : .xl
+	sep #$20 : .as
+
+;clear VRAM font areas
+	ldx #$0000
+	stx $2116
+	DMA0(#$09, #$4000, #^zero, #!zero, #$18)
+
+	ldx #$4000
+	stx $2116
+	DMA0(#$09, #$2000, #^zero, #!zero, #$18)
+
+	sep #$10 : .xs
+	rep #$20 : .al
+
+	stz $2116
+	stz $2117
+	ldx #$01
+	stx $4300
+	ldx #^font
+	stx $4304
+	lda #!font
+	sta $4302
+	lda #$0010
+	sta $4305
+	ldx #$18
+	stx $4301
+	lda #$0000
+-	sta $2116
+	ldx #$10
+	stx $4305
+	ldx #$01
+	stx $420b
+	clc
+	adc #$20
+	cmp #$2000
+	bne -
+	ldx #^font
+	stx $4304
+	lda #!font
+	sta $4302
+	lda #$4000
+-	sta $2116
+	ldx #$10
+	stx $4305
+	ldx #$01
+	stx $420b
+	clc
+	adc #$10
+	cmp #$5000
+	bne -
+	plp
+	rts
+
 
 video_init:
 	sep #$20 : .as		;8-bit accumulator
