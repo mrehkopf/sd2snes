@@ -29,6 +29,7 @@ GAME_MAIN:
 	lda #$01
 	sta $420d 		; fast cpu
 	jsr setup_gfx
+  jsr store_wram_routines
 	jsr colortest
 	jsr video_init
 	jsr setup_hdma
@@ -50,6 +51,7 @@ coldboot:							; Regular, cold-start init
 	lda #$01
 	sta $420d ; fast cpu
 	jsr setup_gfx
+  jsr store_wram_routines
 	jsr colortest
 	jsr filesel_init
 	jsr video_init
@@ -62,7 +64,7 @@ coldboot:							; Regular, cold-start init
 	jsl time_init
 +
 	jsr fileselloop
-	cli
+	sei
 	stz $4200
 	jmp @infloop	;infinite loop in WRAM
 
@@ -441,121 +443,208 @@ snes_init:
 	lda #$e0
 	sta $2132		;
 	stz $2133		;
-;clear WRAM lower page
-;        ldx #$0200
-;        stx $2181
-;        lda #$00
-;        sta $2183
-;        DMA0(#$08, #$FF00, #^zero, #!zero, #$80)
-;        ldx #$0000
-;        stx $2181
-;	lda #$00
-;	sta $2183
-;        DMA0(#$08, #$1e0, #^zero, #!zero, #$80)
+  rts
 
+clear_vram:
+  php
+  sep #$20 : .as
+  rep #$10 : .xl
+  lda $2100
+  pha
+  lda #$80
+  sta $2100
+  sta $2115
+  ldx #$8000
+  ldy #$0000
+  stx $2116
+- sty $2118
+  dex
+  bne -
+  pla
+  sta $2100
+  plp
 	rts
 
+.byt "fadeloop"
+; *=$002a10
+; acknowledge ready for ROM load
+; wait for ACK
+; fade screen
+; acknowledge WRAM init done (send RESET)
 fadeloop:
 	sep #$30 : .as : .xs
-	ldx cur_bright
-	and #$00
-	pha
+	phk
 	plb
-	lda #$7f
-	sta hdma_math_selection+2
-	lda #$30
-	sta hdma_math_selection+1
-	lda #$bf
-	sta hdma_math+1
-	sta hdma_math+4
-	sta hdma_math+16
-	lda #$e0
-	sta hdma_math+2
-	sta hdma_math+5
-	sta hdma_math+17
+  stz $4200
+  sei
+	sta MCU_CMD
+	ldx cur_bright
 fadeloop_start
 	lda $4212
-	and #$80
-	bne fadeloop_start
+	asl
+	bcs fadeloop_start
 -	lda $4212
-	and #$80
-	bne +
-	bra -
-+	lda hdma_math+2
-	inc
-	inc
-	sta hdma_math+2
-	sta hdma_math+5
-	sta hdma_math+17
-	txa
-	dec
-	sta $2100
-	tax
-	bne fadeloop_start
+	asl
+	bcc -
+  dex
+  dex
+	stx $2100
+	bpl fadeloop_start
 	stz $2126
 	stz $212e
 	stz $2131
 	stz $2130
-	lda #$00
-	sta @hdma_math
-	stz $2100
--	bra -
+  lda #$80
+	sta $2100
+  lda #$00
+  sta $2a00
+  stz $420c
+; DMA fill WRAM banks
+  rep #$10 : .xl
+  stz $2183
+  ldx #$0000
+  stx $2181
+  stx $4305
+  lda #$55
+  sta $2aff ; WRAM fill value
+  ldx #$8008
+  stx $4300
+  ldx #$2aff
+  stx $4302
+  stz $4304
+  lda #$01
+; fill bank $7e
+  sta $420b
+; fill bank $7f
+  sta $420b
+  lda #CMD_RESET
+  sta MCU_CMD
+- bra -
+.byt "fadeloop_end"
 
-fadeloop_end:
-	.byt $ff
+; *=$002a80
+nmihook:
+  php
+  phb
+  sep #$20 : .as
+  rep #$10 : .xl
+  pha
+  phx
+  phk
+  plb
+; ack IRQ
+  lda $4211
+; controller query
+- ldx $4218
+  cpx #$02b0 ; left+L+R+A
+  bne +
+  bra -
+  lda #CMD_RESET
+  sta MCU_CMD
+; arbitrary code area
++ lda #$cc
+  sta $2a08
+  plx
+  pla
+  plb
+  plp
+  jmp ($2a0e)
+.byt "bram_end"
+; stores routines in WRAM (including payload for block ram copy)
+store_wram_routines:
+; copy wram_routine_src
+; copy store_blockram_routine
+; copy fadeloop
+  php
+  rep #$30 : .xl : .al
+  lda #$007f
+  ldx #!wram_routine_src
+  ldy #!WRAM_ROUTINE
+  phb
+  mvn $7e, $c0
+  lda #$007f
+  ldx #!store_blockram_routine_src
+  ldy #!WRAM_STORE_BLOCKRAM_ROUTINE
+  mvn $7e, $c0
+  lda #$007f
+  ldx #!fadeloop
+  ldy #!WRAM_FADELOOP
+  mvn $7e, $c0
+  lda #$007f
+  ldx #!nmihook
+  ldy #!WRAM_NMIHOOK
+  mvn $7e, $c0
+  plb
+  plp
+  rts
 
-genfonts:
-	php
-	rep #$10 : .xl
-	sep #$20 : .as
+; *=$7ef080
+store_blockram_routine_src:
+  php
+  sep #$20 : .as
+  rep #$10 : .xl
+	lda #$80
+	sta infloop
+	lda #$fe
+	sta infloop+1
+  rep #$20 : .al
+  lda #$007f
+  ldx #!WRAM_FADELOOP
+  ldy #!BRAM_ROUTINE
+  phb
+  mvn $00, $7e
+  ldx #!WRAM_NMIHOOK
+  ldy #!BRAM_NMIHOOK
+  lda #$007f
+  mvn $00, $7e
+  plb
+  plp
+  rtl
 
-;clear VRAM font areas
-	ldx #$0000
-	stx $2116
-	DMA0(#$09, #$4000, #^zero, #!zero, #$18)
+; *=$7ef000
+wram_routine_src:
+  php
+  sep #$20 : .as
+  rep #$10 : .xl
+; acknowledge ready for FPGA reconf
+  lda #CMD_FPGA_RECONF
+  sta @MCU_CMD
+; wait for ACK (reconf done or not necessary)
+- lda @SNES_CMD
+  cmp #$55
+  bne -
+; install fade loop in block RAM after FPGA reconf
+; must reside in WRAM prior to copying! ROM not available
+  jsl @WRAM_STORE_BLOCKRAM_ROUTINE
+  jsl @BRAM_ROUTINE
+  plp
+  rtl
 
-	ldx #$4000
-	stx $2116
-	DMA0(#$09, #$2000, #^zero, #!zero, #$18)
+game_handshake:
+  php
+  sep #$20 : .as
+  pha
+  jsr hide_cursor
+  jsr draw_loading_window
+; send initial request to MCU
+  pla
+  sta @MCU_CMD
+; wait for ACK/NACK with error (noimpl warning etc.)
+- lda @SNES_CMD
+  cmp #$55
+  beq +
+  cmp #$aa
+  beq game_handshake_error
+  bra -
++ lda #$55
+  sta @MCU_CMD
+; jump to WRAM
+  jsl @WRAM_ROUTINE
+  plp
+  rts
 
-	sep #$10 : .xs
-	rep #$20 : .al
-
-	stz $2116
-	ldx #$01
-	stx $4300
-	ldx #^font
-	stx $4304
-	lda #!font
-	sta $4302
-	lda #$0010
-	sta $4305
-	ldx #$18
-	stx $4301
-	lda #$0000
--	sta $2116
-	ldx #$10
-	stx $4305
-	ldx #$01
-	stx $420b
-	clc
-	adc #$20
-	cmp #$2000
-	bne -
-	ldx #^font
-	stx $4304
-	lda #!font
-	sta $4302
-	lda #$4000
--	sta $2116
-	ldx #$10
-	stx $4305
-	ldx #$01
-	stx $420b
-	clc
-	adc #$10
-	cmp #$5000
-	bne -
-	plp
-	rts
-
+game_handshake_error:
+; TODO display meaningful error message
+  jsr pop_window
+  plp
+  rts

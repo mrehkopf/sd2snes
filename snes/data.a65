@@ -216,8 +216,6 @@ warm_signature
 	.word 0
 snes_system_config
 	.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-
-wram_fadeloop	.byt 0
 window_stack_head .word 0
 dbg_ptr .word 0
 fade_speed .byt 0

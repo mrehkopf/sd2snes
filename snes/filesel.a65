@@ -519,13 +519,8 @@ select_file:
 	lda [dirptr_addr], y
 	sta @MCU_PARAM
 	sep #$20 : .as
-	lda #$00
-	sta @$4200
-	sei
-	lda #$01
-	sta @MCU_CMD
-select_file_fade:
-	jsl @wram_fadeloop
+	lda #CMD_LOADROM
+  jsr game_handshake
 	rts
 
 select_dir:
@@ -782,16 +777,12 @@ select_last_file:
 	lda #$01
 	sta listsel_step
 	jsr menu_select
+	sta @MCU_PARAM
 	cmp #$ff
 	beq +
-	sta @MCU_PARAM
 	sep #$20 : .as
-	lda #$00
-	sta @$4200
-	sei
-	lda #$04
-	sta @MCU_CMD
-	jmp select_file_fade
+	lda #CMD_LOADLAST
+  jsr game_handshake
 +	jsr pop_window
 	plp
 	rts
