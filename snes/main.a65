@@ -335,6 +335,11 @@ video_init:
 	sta bar_yl
 	stz cur_bright
 	stz tgt_bright
+  lda #$01
+  sta fade_speed
+  stz fade_count
+  stz idle_count
+  stz idle_count+1
 	rts
 
 screen_on:

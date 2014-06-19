@@ -31,12 +31,26 @@
 
 #define ROOT_DIR	$C10000
 
+#define CMD_LOADROM $01
+#define CMD_SETRTC $02
 #define CMD_SYSINFO	$03
+#define CMD_LOADLAST $04
 #define CMD_LOADSPC	$05
 #define CMD_RESET	$06
+#define CMD_SET_ALLOW_PAIR $07
+#define CMD_SET_VIDMODE_GAME $08
+#define CMD_SET_VIDMODE_MENU $09
+#define CMD_READDIR $0A
+#define CMD_FPGA_RECONF $0B
+
+#define VIDMODE_NTSC $00
+#define VIDMODE_PAL $01
+#define VIDMODE_AUTO $02
 
 #define SPC_DATA	$FD0000
 #define SPC_HEADER	$FE0000
 #define SPC_DSP_REGS	$FE0100
 
 #define WINDOW_STACK_BASE $7E2000
+
+#define IDLE_THRES 33000
