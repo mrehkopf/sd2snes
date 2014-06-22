@@ -2,673 +2,665 @@
 
 ; SPC Player
 ; SPC700 transfer and IO routines by Shay Green <gblargg@gmail.com>
+; minor corrections by Maximilian Rehkopf<otakon@gmx.net>
 
 spcplayer:
-	php
-	sep #$30 : .as : .xs
+  php
+  sep #$30 : .as : .xs
 
-	ldx #$0a	; Check if SPC header is present
+  ldx #$0a            ; Check if SPC header is present
 -
-	lda @SPC_HEADER,x
-	cmp @text_spcid,x
-	beq +
-	jmp spc_exit
+  lda @SPC_HEADER,x
+  cmp @text_spcid,x
+  beq +
+  jmp spc_exit
 +
-	dey
-	bne -
+  dey
+  bne -
 
-	rep #$10 : .xl	; Now draw lots of stuff
+  rep #$10 : .xl      ; Now draw lots of stuff
 
-	stz bar_wl
-	dec bar_wl
-	stz bar_xl
-	dec bar_xl
-	stz bar_yl
-	dec bar_yl
+  stz bar_wl
+  dec bar_wl
+  stz bar_xl
+  dec bar_xl
+  stz bar_yl
+  dec bar_yl
 
-	lda #^text_spcplay	; Loading window
-	sta window_tbank
-	ldx #!text_spcplay
-	stx window_taddr
-	lda @spcplay_win_x
-	sta window_x
-	lda @spcplay_win_y
-	sta window_y
-	lda @spcplay_win_w
-	sta window_w
-	lda @spcplay_win_h
-	sta window_h
-	jsr draw_window
+  lda #^text_spcplay  ; Loading window
+  sta window_tbank
+  ldx #!text_spcplay
+  stx window_taddr
+  lda @spcplay_win_x
+  sta window_x
+  lda @spcplay_win_y
+  sta window_y
+  lda @spcplay_win_w
+  sta window_w
+  lda @spcplay_win_h
+  sta window_h
+  jsr draw_window
 
-	lda #^text_spcload	; Loading text
-	ldx #!text_spcload
-	sta print_bank
-	stx print_src
-	stz print_pal
-	lda #29
-	sta print_count
-	lda #17
-	sta print_y
-	lda #17
-	sta print_x
-	jsr hiprint
+  lda #^text_spcload  ; Loading text
+  ldx #!text_spcload
+  sta print_bank
+  stx print_src
+  stz print_pal
+  lda #29
+  sta print_count
+  lda #17
+  sta print_y
+  lda #17
+  sta print_x
+  jsr hiprint
 
-	stz isr_done
+  stz isr_done
 -
-	lda isr_done		; Wait until text is being printed...
-	beq -
+  lda isr_done        ; Wait until text is being printed...
+  beq -
 
-	jsr spc700_load		; Load SPC into SPC700
+  jsr spc700_load     ; Load SPC into SPC700
 
-	lda #^text_spcplay
-	sta window_tbank
-	ldx #!text_spcplay
-	stx window_taddr
-	lda @spcstart_win_x
-	sta window_x
-	lda @spcstart_win_y
-	sta window_y
-	lda @spcstart_win_w
-	sta window_w
-	lda @spcstart_win_h
-	sta window_h
-	jsr draw_window
+  lda #^text_spcplay
+  sta window_tbank
+  ldx #!text_spcplay
+  stx window_taddr
+  lda @spcstart_win_x
+  sta window_x
+  lda @spcstart_win_y
+  sta window_y
+  lda @spcstart_win_w
+  sta window_w
+  lda @spcstart_win_h
+  sta window_h
+  jsr draw_window
 
-	lda #^text_spcstarta
-	ldx #!text_spcstarta
-	sta print_bank
-	stx print_src
-	lda #$01
-	sta print_pal
-	lda #30
-	sta print_count
-	lda #15
-	sta print_y
-	lda #17
-	sta print_x
-	jsr hiprint
+  lda #^text_spcstarta
+  ldx #!text_spcstarta
+  sta print_bank
+  stx print_src
+  lda #$01
+  sta print_pal
+  lda #30
+  sta print_count
+  lda #15
+  sta print_y
+  lda #17
+  sta print_x
+  jsr hiprint
 
-	lda #^text_spcstartb
-	ldx #!text_spcstartb
-	sta print_bank
-	stx print_src
-	lda #$01
-	sta print_pal
-	lda #07
-	sta print_count
-	lda #17
-	sta print_y
-	lda #12
-	sta print_x
-	jsr hiprint
+  lda #^text_spcstartb
+  ldx #!text_spcstartb
+  sta print_bank
+  stx print_src
+  lda #$01
+  sta print_pal
+  lda #07
+  sta print_count
+  lda #17
+  sta print_y
+  lda #12
+  sta print_x
+  jsr hiprint
 
-	lda #$fe
-	ldx #$004e
-	sta print_bank
-	stx print_src
-	stz print_pal
-	lda #32
-	sta print_count
-	lda #17
-	sta print_y
-	lda #20
-	sta print_x
-	jsr hiprint
+  lda #$fe
+  ldx #$004e
+  sta print_bank
+  stx print_src
+  stz print_pal
+  lda #32
+  sta print_count
+  lda #17
+  sta print_y
+  lda #20
+  sta print_x
+  jsr hiprint
 
-	lda #^text_spcstartc
-	ldx #!text_spcstartc
-	sta print_bank
-	stx print_src
-	lda #$01
-	sta print_pal
-	lda #07
-	sta print_count
-	lda #18
-	sta print_y
-	lda #12
-	sta print_x
-	jsr hiprint
+  lda #^text_spcstartc
+  ldx #!text_spcstartc
+  sta print_bank
+  stx print_src
+  lda #$01
+  sta print_pal
+  lda #07
+  sta print_count
+  lda #18
+  sta print_y
+  lda #12
+  sta print_x
+  jsr hiprint
 
-	lda #$fe
-	ldx #$002e
-	sta print_bank
-	stx print_src
-	stz print_pal
-	lda #32
-	sta print_count
-	lda #18
-	sta print_y
-	lda #20
-	sta print_x
-	jsr hiprint
+  lda #$fe
+  ldx #$002e
+  sta print_bank
+  stx print_src
+  stz print_pal
+  lda #32
+  sta print_count
+  lda #18
+  sta print_y
+  lda #20
+  sta print_x
+  jsr hiprint
 
-	lda #^text_spcstartd
-	ldx #!text_spcstartd
-	sta print_bank
-	stx print_src
-	lda #$01
-	sta print_pal
-	lda #07
-	sta print_count
-	lda #19
-	sta print_y
-	lda #12
-	sta print_x
-	jsr hiprint
+  lda #^text_spcstartd
+  ldx #!text_spcstartd
+  sta print_bank
+  stx print_src
+  lda #$01
+  sta print_pal
+  lda #07
+  sta print_count
+  lda #19
+  sta print_y
+  lda #12
+  sta print_x
+  jsr hiprint
 
-	lda #$fe
-	ldx #$00b0
-        sta longptr+2
-	sta print_bank
-        stx longptr
-        ldy #$00
-        lda [longptr], y
-        cmp #$41
-        bpl +
-        inx
-+	stx print_src
-	stz print_pal
-	lda #32
-	sta print_count
-	lda #19
-	sta print_y
-	lda #20
-	sta print_x
-	jsr hiprint
+  lda #$fe
+  ldx #$00b0
+  sta longptr+2
+  sta print_bank
+  stx longptr
+  ldy #$00
+  lda [longptr], y
+  cmp #$41
+  bpl +
+  inx
++ stx print_src
+  stz print_pal
+  lda #32
+  sta print_count
+  lda #19
+  sta print_y
+  lda #20
+  sta print_x
+  jsr hiprint
 
 spc_playloop:
-	lda isr_done	; SPC player loop
-	lsr
-	bcc spc_playloop
-	jsr printtime
-	stz isr_done
+  lda isr_done        ; SPC player loop
+  lsr
+  bcc spc_playloop
+  jsr printtime
+  stz isr_done
 
-	jsr read_pad
-	lda pad_b
-	bne spc_key_b
-	bra spc_playloop
+  jsr read_pad
+  lda pad_b
+  bne spc_key_b
+  bra spc_playloop
 
 spc_key_b:
-	rep #$20 : .al
-	tsc
-	sta saved_sp	; Save SP for later re-entry
-	lda #$fa50	; Write reset signature
-	sta @warm_signature
-	sep #$20 : .as
+  rep #$20 : .al
+  tsc
+  sta saved_sp        ; Save SP for later re-entry
+  lda #$fa50          ; Write reset signature
+  sta @warm_signature
+  sep #$20 : .as
 
-	sei		; Blank screen & issue CMD_RESET command to Microcontroller...
-	stz $2100	; ...this is required, because there is no other way to stop S-SMP & S-DSP
-	lda #CMD_RESET
-	sta @MCU_CMD
+; Blank screen & issue CMD_RESET command to Microcontroller...
+; ...this is required because there is no other way to stop S-SMP & S-DSP
+  sei
+  stz $2100
+  lda #CMD_RESET
+  sta @MCU_CMD
 -
-	bra -		; At this point, the SNES waits for an external reset from the Microcontroller
+; At this point, the SNES waits for an external reset from the Microcontroller
+  bra -
 
-spc_exit:		; Return from player in case of wrong SPC file data
-	plp
-	rts
+spc_exit:             ; Return from player in case of wrong SPC file data
+  plp
+  rts
 
 ;---------------------------------------
 spc700_load:
-	php
-	sep #$20 : .as
-	rep #$10 : .xl
+  php
+  sep #$20 : .as
+  rep #$10 : .xl
 
-	sei			; Disable NMI & IRQ
-	stz $4200		; The SPC player code is really timing sensitive ;)
-	jsr upload_dsp_regs	; Upload S-DSP registers
-	jsr upload_high_ram	; Upload 63.5K of SPC700 ram
-	jsr upload_low_ram	; Upload rest of ram
-	jsr restore_final	; Restore SPC700 state & start execution
+  sei                 ; Disable NMI & IRQ
+  stz $4200           ; The SPC player code is really timing sensitive ;)
+  jsr upload_dsp_regs ; Upload S-DSP registers
+  jsr upload_high_ram ; Upload 63.5K of SPC700 ram
+  jsr upload_low_ram  ; Upload rest of ram
+  jsr restore_final   ; Restore SPC700 state & start execution
 
-	lda #$81		; VBlank NMI + Auto Joypad Read
-	sta $4200		; enable V-BLANK NMI
-	cli
-	plp
-	rts
+  lda #$81            ; VBlank NMI + Auto Joypad Read
+  sta $4200           ; enable V-BLANK NMI
+  cli
+  plp
+  rts
 ;---------------------------------------
 ; Uploads DSP registers and some other setup code
 upload_dsp_regs:
 
 ; ---- Begin upload
 
-	ldy #$0002
-	jsr spc_begin_upload
+  ldy #$0002
+  jsr spc_begin_upload
 
 ; ---- Upload loader
 
-	ldx #$0000
+  ldx #$0000
 -
-	lda @loader,x
-	jsr spc_upload_byte
-	inx
-	cpy #31		; size of loader
-	bne -
+  lda @loader,x
+  jsr spc_upload_byte
+  inx
+  cpy #31             ; size of loader
+  bne -
 
 ; ---- Upload SP, PC & PSW
 
-	lda @SPC_HEADER+43
-	jsr spc_upload_byte
-	lda @SPC_HEADER+38
-	jsr spc_upload_byte
-	lda @SPC_HEADER+37
-	jsr spc_upload_byte
-	lda @SPC_HEADER+42
-	jsr spc_upload_byte
+  lda @SPC_HEADER+43
+  jsr spc_upload_byte
+  lda @SPC_HEADER+38
+  jsr spc_upload_byte
+  lda @SPC_HEADER+37
+  jsr spc_upload_byte
+  lda @SPC_HEADER+42
+  jsr spc_upload_byte
 
 ; ---- Upload DSP registers
 
-	ldx #$0000
+  ldx #$0000
 -
-; initialize FLG and KON ($6c/$4c) to avoid artifacts
-	cpx #$4C
-	bne +
-	lda #$00
-	bra upload_skip_load
+; ---- initialize FLG and KON ($6c/$4c) to avoid artifacts
+; (ikari_01)
+  cpx #$4c
+  bne +
+  lda #$00
+  bra upload_skip_load
 +
-	cpx #$6C
-	bne +
-	lda #$E0
-	bra upload_skip_load
+  cpx #$6c
+  bne +
+  lda #$e0
+  bra upload_skip_load
 +
-	lda @SPC_DSP_REGS,x
+  lda @SPC_DSP_REGS,x
 upload_skip_load
-	jsr spc_upload_byte
-	inx
-	cpx #128
-	bne -
+  jsr spc_upload_byte
+  inx
+  cpx #128
+  bne -
 
 ; --- Upload fixed values for $F1-$F3
 
-	ldy #$00F1
-	jsr spc_next_upload
+  ldy #$00f1
+  jsr spc_next_upload
 
-	lda #$80        ; stop timers
-	jsr spc_upload_byte
-	lda #$6c        ; get dspaddr set for later
-	jsr spc_upload_byte
-	lda #$60
-	jsr spc_upload_byte
+  lda #$80            ; stop timers
+  jsr spc_upload_byte
+  lda #$6c            ; get dspaddr set for later
+  jsr spc_upload_byte
+  lda #$60
+  jsr spc_upload_byte
 
 ; ---- Upload $f8-$1ff
 
-	ldy #$00F8
-	jsr spc_next_upload
+  ldy #$00f8
+  jsr spc_next_upload
 
-	ldx #$00F8
+  ldx #$00f8
 -
-	lda @SPC_DATA,x
-	jsr spc_upload_byte
-	inx
-	cpx #$200
-	bne -
+  lda @SPC_DATA,x
+  jsr spc_upload_byte
+  inx
+  cpx #$200
+  bne -
 
 ; ---- Execute loader
 
-	ldy #$0002
-	jsr spc_execute
-	rts
+  ldy #$0002
+  jsr spc_execute
+  rts
 ;---------------------------------------
 upload_high_ram:
 
-	ldy #$0002
-	jsr spc_begin_upload
+  ldy #$0002
+  jsr spc_begin_upload
 
 ; ---- Upload transfer routine
 
-	ldx #$0000
+  ldx #$0000
 -
-	lda @transfer,x
-	jsr spc_upload_byte
-	inx
-	cpy #43		; size of transfer routine
-	bne -
+  lda @transfer,x
+  jsr spc_upload_byte
+  inx
+  cpy #43             ; size of transfer routine
+  bne -
 
-	ldx #$023f	; prepare transfer address
+  ldx #$023f          ; prepare transfer address
 
 ; ---- Execute transfer routine
 
-	ldy #$0002
-	sty APUIO2
-	stz APUIO1
-	lda APUIO0
-	inc
-	inc
-	sta APUIO0
+  ldy #$0002
+  sty APUIO2
+  stz APUIO1
+  lda APUIO0
+  inc
+  inc
+  sta APUIO0
 ; Wait for acknowledgement
 -
-	cmp APUIO0
-	bne -
+  cmp APUIO0
+  bne -
 
 ; ---- Burst transfer of 63.5K using custom routine
 
 outer_transfer_loop:
-	ldy #$003f		; 3
+  ldy #$003f          ; 3
 inner_transfer_loop:
-	lda @SPC_DATA,x		; 5 |
-	sta APUIO0		; 4 |
-	lda @SPC_DATA+$40,x	; 5 |
-	sta APUIO1		; 4 |
-	lda @SPC_DATA+$80,x	; 5 |
-	sta APUIO2		; 4 |
-	lda @SPC_DATA+$C0,x	; 5 |
-	sta APUIO3		; 4 |
-	tya			; 2 >> 38 cycles
+  lda @SPC_DATA,x     ; 5 |
+  sta APUIO0          ; 4 |
+  lda @SPC_DATA+$40,x ; 5 |
+  sta APUIO1          ; 4 |
+  lda @SPC_DATA+$80,x ; 5 |
+  sta APUIO2          ; 4 |
+  lda @SPC_DATA+$c0,x ; 5 |
+  sta APUIO3          ; 4 |
+  tya                 ; 2 >> 38 cycles
 -
-	cmp APUIO3		; 4 |
-	bne -			; 3 |
-	dex			; 2 |
-	dey			; 2 |
-	bpl inner_transfer_loop	; 3 >> 14 cycles
+  cmp APUIO3          ; 4 |
+  bne -               ; 3 |
+  dex                 ; 2 |
+  dey                 ; 2 |
+  bpl inner_transfer_loop ; 3 >> 14 cycles
 
-	rep #$21 : .al		; 3 |
-	txa			; 2 |
-	adc #$140		; 3 |
-	tax			; 2 |
-	sep #$20 : .as		; 3 |
-	cpx #$003f		; 3 |
-	bne outer_transfer_loop	; 3 >> 19 cycles
+  rep #$21 : .al      ; 3 |
+  txa                 ; 2 |
+  adc #$140           ; 3 |
+  tax                 ; 2 |
+  sep #$20 : .as      ; 3 |
+  cpx #$003f          ; 3 |
+  bne outer_transfer_loop ; 3 >> 19 cycles
 
-	rts
+  rts
 
 ;---------------------------------------
 upload_low_ram:
 
 ; ---- Upload $0002-$00EF using IPL
 
-	ldy #$0002
-	jsr spc_begin_upload
+  ldy #$0002
+  jsr spc_begin_upload
 
-	ldx #$0002
+  ldx #$0002
 -
-	lda @SPC_DATA,x
-	jsr spc_upload_byte
-	inx
-	cpx #$00F0
-	bne -
-	rts
+  lda @SPC_DATA,x
+  jsr spc_upload_byte
+  inx
+  cpx #$00f0
+  bne -
+  rts
 ;---------------------------------------
 ; Executes final restoration code
 restore_final:
-	jsr start_exec_io ; prepare execution from I/O registers
+  jsr start_exec_io   ; prepare execution from I/O registers
 
-	stz $420d	; SPC700 I/O code requires SLOW timing
+  stz $420d           ; SPC700 I/O code requires SLOW timing
 
 ; ---- Restore first two bytes of RAM
 
-	lda @SPC_DATA
-	xba
-	lda #$e8	; MOV A,#@SPC_DATA
-	tax
-	jsr exec_instr
-	ldx #$00C4	; MOV $00,A
-	jsr exec_instr
+  lda @SPC_DATA
+  xba
+  lda #$e8            ; MOV A,#@SPC_DATA
+  tax
+  jsr exec_instr
+  ldx #$00c4          ; MOV $00,A
+  jsr exec_instr
 
-	lda @SPC_DATA+1
-	xba
-	lda #$e8	; MOV A,#@SPC_DATA+1
-	tax
-	jsr exec_instr
-	ldx #$01C4	; MOV $01,A
-	jsr exec_instr
+  lda @SPC_DATA+1
+  xba
+  lda #$e8            ; MOV A,#@SPC_DATA+1
+  tax
+  jsr exec_instr
+  ldx #$01c4          ; MOV $01,A
+  jsr exec_instr
 
 ; ---- Restore SP
 
-	lda @SPC_HEADER+43
-	sec
-	sbc #3
-	xba
-	lda #$cd	; MOV X,#@SPC_HEADER+43
-	tax
-	jsr exec_instr
-	ldx #$bd	; MOV SP,X
-	jsr exec_instr
+  lda @SPC_HEADER+43
+  sec
+  sbc #3
+  xba
+  lda #$cd            ; MOV X,#@SPC_HEADER+43
+  tax
+  jsr exec_instr
+  ldx #$bd            ; MOV SP,X
+  jsr exec_instr
 
 ; ---- Restore X
 
-	lda @SPC_HEADER+40
-	xba
-	lda #$cd	; MOV X,#@SPC_HEADER+40
-	tax
-	jsr exec_instr
+  lda @SPC_HEADER+40
+  xba
+  lda #$cd            ; MOV X,#@SPC_HEADER+40
+  tax
+  jsr exec_instr
 
 ; ---- Restore Y
 
-	lda @SPC_HEADER+41
-	xba
-	lda #$8d	; MOV Y,#@SPC_HEADER+41
-	tax
-	jsr exec_instr
+  lda @SPC_HEADER+41
+  xba
+  lda #$8d            ; MOV Y,#@SPC_HEADER+41
+  tax
+  jsr exec_instr
 
 ; ---- Restore DSP FLG register
 
-	lda @SPC_DSP_REGS+$6c
-	xba
-	lda #$e8	; MOV A,#@SPC_DSP_REGS+$6c
-	tax
-	jsr exec_instr
-	ldx #$f3C4	; MOV $f3,A -> $f2 has been set-up before by SPC700 loader
-	jsr exec_instr
+  lda @SPC_DSP_REGS+$6c
+  xba
+  lda #$e8            ; MOV A,#@SPC_DSP_REGS+$6c
+  tax
+  jsr exec_instr
+  ldx #$f3c4          ; MOV $f3,A -> $f2 has been set-up before by SPC700 loader
+  jsr exec_instr
 
 ; ---- wait a bit (the newer S-APU takes its time to ramp up the volume)
-	lda #$10
--	pha
-	jsr waitblank
-	pla
-	dec
-	bne -
+; (ikari_01)
+  lda #$10
+- pha
+  jsr waitblank
+  pla
+  dec
+  bne -
 
 ; ---- Restore DSP KON register
 
-	lda #$4C
-	xba
-	lda #$e8	; MOV A,#$4c
-	tax
-	jsr exec_instr
-	ldx #$f2C4	; MOV $f2,A
-	jsr exec_instr
-	lda @SPC_DSP_REGS+$4C
-	xba
-	lda #$e8	; MOV A,#@SPC_DSP_REGS+$4c
-	tax
-	jsr exec_instr
-	ldx #$f3C4	; MOV $f3,A
-	jsr exec_instr
+  lda #$4c
+  xba
+  lda #$e8            ; MOV A,#$4c
+  tax
+  jsr exec_instr
+  ldx #$f2c4          ; MOV $f2,A
+  jsr exec_instr
+  lda @SPC_DSP_REGS+$4c
+  xba
+  lda #$e8            ; MOV A,#@SPC_DSP_REGS+$4c
+  tax
+  jsr exec_instr
+  ldx #$f3c4          ; MOV $f3,A
+  jsr exec_instr
 
 ; ---- Restore DSP register address
 
- 	lda @SPC_DATA+$F2
-	xba
-	lda #$e8	; MOV A,#@SPC_DATA+$F2
-	tax
-	jsr exec_instr
-	ldx #$f2C4	; MOV dest,A
-	jsr exec_instr
+  lda @SPC_DATA+$f2
+  xba
+  lda #$e8            ; MOV A,#@SPC_DATA+$F2
+  tax
+  jsr exec_instr
+  ldx #$f2c4          ; MOV dest,A
+  jsr exec_instr
 
 ; ---- Restore CONTROL register
 
-	lda @SPC_DATA+$F1
-	and #$CF	; don't clear input ports
-	xba
-	lda #$e8	; MOV A,#@SPC_DATA+$F1
-	tax
-	jsr exec_instr
-	ldx #$f1C4  	; MOV $F1,A
-	jsr exec_instr
+  lda @SPC_DATA+$f1
+  and #$cf            ; don't clear input ports
+  xba
+  lda #$e8            ; MOV A,#@SPC_DATA+$F1
+  tax
+  jsr exec_instr
+  ldx #$f1c4          ; MOV $F1,A
+  jsr exec_instr
 
 ;---- Restore A
 
-	lda @SPC_HEADER+39
-	xba
-	lda #$e8	; MOV A,#@SPC_HEADER+39
-	tax
-	jsr exec_instr
+  lda @SPC_HEADER+39
+  xba
+  lda #$e8            ; MOV A,#@SPC_HEADER+39
+  tax
+  jsr exec_instr
 
 ;---- Restore PSW and PC
 
-	ldx #$7F00	; NOP; RTI
-	stx APUIO0
-	lda #$FC	; Patch loop to execute instruction just written
-	sta APUIO3
+  ldx #$7f00          ; NOP; RTI
+  stx APUIO0
+  lda #$fc            ; Patch loop to execute instruction just written
+  sta APUIO3
 
 ;---- restore IO ports $f4 - $f7
 
-	rep #$20 : .al
-	lda @SPC_DATA+$F4
-	tax
-	lda @SPC_DATA+$F6
-	sta APUIO2
-	stx APUIO0	; last to avoid overwriting RETI before run
-	sep #$20 : .as
+  rep #$20 : .al
+  lda @SPC_DATA+$f4
+  tax
+  lda @SPC_DATA+$f6
+  sta APUIO2
+  stx APUIO0          ; last to avoid overwriting RETI before run
+  sep #$20 : .as
 
-	lda #$01
-	sta $420d	; restore FAST CPU operation
-	rts
+  lda #$01
+  sta $420d           ; restore FAST CPU operation
+  rts
 ;---------------------------------------
 spc_begin_upload:
-
-	sty APUIO2	; Set address
-
-	ldy #$BBAA	; Wait for SPC
+  sty APUIO2          ; Set address
+  ldy #$bbaa          ; Wait for SPC
 -
-	cpy APUIO0
-	bne -
-
-	lda #$CC	; Send acknowledgement
-	sta APUIO1
-	sta APUIO0
-
--       		; Wait for acknowledgement
-	cmp APUIO0
-	bne -
-
-	ldy #0		; Initialize index
-	rts
+  cpy APUIO0
+  bne -
+  lda #$cc            ; Send acknowledgement
+  sta APUIO1
+  sta APUIO0
+-                     ; Wait for acknowledgement
+  cmp APUIO0
+  bne -
+  ldy #0              ; Initialize index
+  rts
 ;---------------------------------------
 spc_upload_byte:
-	sta APUIO1
-
-	tya		; Signal it's ready
-	sta APUIO0
--     			; Wait for acknowledgement
-	cmp APUIO0
-	bne -
-
-	iny
-
-	rts
+  sta APUIO1
+  tya                 ; Signal it's ready
+  sta APUIO0
+-                     ; Wait for acknowledgement
+  cmp APUIO0
+  bne -
+  iny
+  rts
 ;---------------------------------------
 spc_next_upload:
-	sty APUIO2
-
+  sty APUIO2
 ; Send command
 ; Special case operation has been fully tested.
-	lda APUIO0
-	inc
-	inc
-	bne +
-	inc
+  lda APUIO0
+  inc
+  inc
+  bne +
+  inc
 +
-	sta APUIO1
-	sta APUIO0
+  sta APUIO1
+  sta APUIO0
 
 ; Wait for acknowledgement
 -
-	cmp APUIO0
-	bne -
-
-	ldy #0
-	rts
+  cmp APUIO0
+  bne -
+  ldy #0
+  rts
 ;---------------------------------------
 spc_execute:
-	sty APUIO2
-
-	stz APUIO1
-
-	lda APUIO0
-	inc
-	inc
-	sta APUIO0
+  sty APUIO2
+  stz APUIO1
+  lda APUIO0
+  inc
+  inc
+  sta APUIO0
 
 ; Wait for acknowledgement
 -
-	cmp APUIO0
-	bne -
+  cmp APUIO0
+  bne -
 
-	rts
+  rts
 ;---------------------------------------
 start_exec_io:
 ; Set execution address
-	ldx #$00F5
-	stx APUIO2
+  ldx #$00f5
+  stx APUIO2
 
-	stz APUIO1      ; NOP
-	ldx #$FE2F      ; BRA *-2
+  stz APUIO1          ; NOP
+  ldx #$fe2f          ; BRA *-2
 
 ; Signal to SPC that we're ready
-	lda APUIO0
-	inc
-	inc
-	sta APUIO0
+  lda APUIO0
+  inc
+  inc
+  sta APUIO0
 
 ; Wait for acknowledgement
 -
-	cmp APUIO0
-	bne -
+  cmp APUIO0
+  bne -
 
 ; Quickly write branch
-	stx APUIO2
+  stx APUIO2
 
-	rts
+  rts
 ;---------------------------------------
 exec_instr:
 ; Replace instruction
-	stx APUIO0
-	lda #$FC
-	sta APUIO3      ; 30
+  stx APUIO0
+  lda #$fc
+  sta APUIO3          ; 30
 
-        ; SPC BRA loop takes 4 cycles, so it reads
-        ; the branch offset every 4 SPC cycles (84 master).
-        ; We must handle the case where it read just before
-        ; the write above, and when it reads just after it.
-        ; If it reads just after, we have at least 7 SPC
-        ; cycles (147 master) to change restore the branch
-        ; offset.
+; SPC BRA loop takes 4 cycles, so it reads
+; the branch offset every 4 SPC cycles (84 master).
+; We must handle the case where it read just before
+; the write above, and when it reads just after it.
+; If it reads just after, we have at least 7 SPC
+; cycles (147 master) to change restore the branch
+; offset.
 
-        ; 48 minimum, 90 maximum
-        ora #0
-        ora #0
-        ora #0
-        nop
-        nop
-        nop
+; 48 minimum, 90 maximum
+  ora #0
+  ora #0
+  ora #0
+  nop
+  nop
+  nop
 
-        ; 66 delay, about the middle of the above limits
-	phd ;4
-	pld ;5
+; 66 delay, about the middle of the above limits
+  phd                 ; 4
+  pld                 ; 5
 
-        ; Give plenty of extra time if single execution
-        ; isn't needed, as this avoids such tight timing
-        ; requirements.
+; Give plenty of extra time if single execution
+; isn't needed, as this avoids such tight timing
+; requirements.
 
-;	phd ;4
-;	pld ;5
-;	phd ;4
-;	pld ;5
+;  phd                 ; 4
+;  pld                 ; 5
+;  phd                 ; 4
+;  pld                 ; 5
 
-        ; Patch loop to skip first two bytes
-	lda #$FE        ; 16
-	sta APUIO3      ; 30
+; Patch loop to skip first two bytes
+  lda #$fe            ; 16
+  sta APUIO3          ; 30
 
-        ; 38 minimum (assuming 66 delay above)
-	phd ; 4
-	pld ; 5
-
-        ; Give plenty of extra time if single execution
-        ; isn't needed, as this avoids such tight timing
-        ; requirements.
-
-	phd
-	pld
-	phd
-	pld
-	rts
+; 38 minimum (assuming 66 delay above)
+  phd                 ; 4
+  pld                 ; 5
+; Give plenty of extra time if single execution
+; isn't needed, as this avoids such tight timing
+; requirements.
+  phd
+  pld
+  phd
+  pld
+  rts

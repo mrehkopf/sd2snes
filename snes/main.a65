@@ -2,385 +2,385 @@
 #include "dma.i65"
 
 GAME_MAIN:
-	sep #$20 : .as
-	stz $4200 ; inhibit VBlank NMI
+  sep #$20 : .as
+  stz $4200     ; inhibit VBlank NMI
   lda #$01
   sta $420d
-	lda #$00
-	sta @MCU_CMD		; clear MCU command register
-	rep #$20 : .al
-	lda #$0000
-	sta @MCU_PARAM		; clear MCU command parameters
-	sta @MCU_PARAM+2
+  lda #$00
+  sta @MCU_CMD  ; clear MCU command register
+  rep #$20 : .al
+  lda #$0000
+  sta @MCU_PARAM ; clear MCU command parameters
+  sta @MCU_PARAM+2
   stz dbg_ptr
-	lda @warm_signature	; Was CMD_RESET issued before reset?
-	cmp #$fa50		; If yes, then perform warm boot procedure
-	bne coldboot
-	lda #$0000
-	sta @warm_signature
-	lda @saved_sp		; Restore previous stack pointer
-	tcs
-	sep #$20 : .as
+  lda @warm_signature ; Was CMD_RESET issued before reset?
+  cmp #$fa50    ; If yes, then perform warm boot procedure
+  bne coldboot
+  lda #$0000
+  sta @warm_signature
+  lda @saved_sp ; Restore previous stack pointer
+  tcs
+  sep #$20 : .as
 ; The following initialization processes must not touch memory
 ; structures used by the file selector !
-	jsr waitblank
-	jsr snes_init
-	jsr setup_gfx
+  jsr waitblank
+  jsr snes_init
+  jsr setup_gfx
   jsr store_wram_routines
-	jsr colortest
-	jsr video_init
-	jsr setup_hdma
-	lda #$0f
-	sta cur_bright
-	sta tgt_bright
-	sta $2100
+  jsr colortest
+  jsr video_init
+  jsr setup_hdma
+  lda #$0f
+  sta cur_bright
+  sta tgt_bright
+  sta $2100
 
-	jmp @set_bank		; Set bios bank, just to be sure
+  jmp @set_bank ; Set bios bank, just to be sure
 set_bank:
-	plp			; Restore processor state
-	rts			; Jump to the routine which called the sub-routine issuing CMD_RESET
+  plp           ; Restore processor state
+  rts           ; Jump to the routine which called the sub-routine issuing CMD_RESET
 
-coldboot:							; Regular, cold-start init
-	sep #$20 : .as
-	jsr waitblank
-	jsr snes_init
-	jsr setup_gfx
+coldboot:       ; Regular, cold-start init
+  sep #$20 : .as
+  jsr waitblank
+  jsr snes_init
+  jsr setup_gfx
   jsr store_wram_routines
-	jsr colortest
-	jsr filesel_init
-	jsr video_init
-	jsr setup_hdma
-	jsr screen_on
+  jsr colortest
+  jsr filesel_init
+  jsr video_init
+  jsr setup_hdma
+  jsr screen_on
 
-	sep #$20 : .as
-	lda @RTC_STATUS
-	beq +
-	jsl time_init
+  sep #$20 : .as
+  lda @RTC_STATUS
+  beq +
+  jsl time_init
 +
-	jsr fileselloop
-	sei
-	stz $4200
-	jmp @infloop	;infinite loop in WRAM
+  jsr fileselloop
+  sei
+  stz $4200
+  jmp @infloop  ; infinite loop in WRAM
 
 waitblank:
-	php
-	sep #$30 : .as : .xs
--	lda $4212
-	and #$80
-	bne -
--	lda $4212
-	and #$80
-	beq -
-	plp
-	rts
+  php
+  sep #$30 : .as : .xs
+- lda $4212
+  and #$80
+  bne -
+- lda $4212
+  and #$80
+  beq -
+  plp
+  rts
 
 colortest:
-	sep #$20 : .as
-	rep #$10 : .xl
-	stz $2130
-	rts
+  sep #$20 : .as
+  rep #$10 : .xl
+  stz $2130
+  rts
 
 setup_gfx:
-	sep #$20 : .as
-	rep #$10 : .xl
-	stz $4200
-	stz $420b
-	stz $420c
-;clear tilemap buffers
-	ldx #$8000
-	stx $2181
-	lda #$00
-	sta $2183
-	DMA0(#$08, #$8000, #^zero, #!zero, #$80)
+  sep #$20 : .as
+  rep #$10 : .xl
+  stz $4200
+  stz $420b
+  stz $420c
+; clear tilemap buffers
+  ldx #$8000
+  stx $2181
+  lda #$00
+  sta $2183
+  DMA0(#$08, #$8000, #^zero, #!zero, #$80)
 
-;generate fonts
-	jsr genfonts
+; generate fonts
+  jsr genfonts
 
-;clear BG1 tilemap
-	ldx #BG1_TILE_BASE
-	stx $2116
-	DMA0(#$09, #$1000, #^zero, #!zero, #$18)
+; clear BG1 tilemap
+  ldx #BG1_TILE_BASE
+  stx $2116
+  DMA0(#$09, #$1000, #^zero, #!zero, #$18)
 
-;clear BG2 tilemap
-	ldx #BG2_TILE_BASE
-	stx $2116
-	DMA0(#$09, #$1000, #^zero, #!zero, #$18)
+; clear BG2 tilemap
+  ldx #BG2_TILE_BASE
+  stx $2116
+  DMA0(#$09, #$1000, #^zero, #!zero, #$18)
 
-;clear OAM tables
-	ldx #$0000
-	stx $2102
-	DMA0(#$08, #$220, #^zero, #!zero, #$04)
+; clear OAM tables
+  ldx #$0000
+  stx $2102
+  DMA0(#$08, #$220, #^zero, #!zero, #$04)
 
-;copy logo tiles
-	ldx #$2000
-	stx $2116
-	DMA0(#$01, #$4000, #^logo, #!logo, #$18)
+; copy logo tiles
+  ldx #$2000
+  stx $2116
+  DMA0(#$01, #$4000, #^logo, #!logo, #$18)
 
-;generate logo tilemap
-	ldx #BG1_TILE_BASE
-	stx $2116
-	ldx #$0100
--	stx $2118
-	inx
-	cpx #$01e0
-	bne -
+; generate logo tilemap
+  ldx #BG1_TILE_BASE
+  stx $2116
+  ldx #$0100
+- stx $2118
+  inx
+  cpx #$01e0
+  bne -
 
 
-;copy sprites tiles
-	ldx #OAM_TILE_BASE
-	stx $2116
-	DMA0(#$01, #$500, #^logospr, #!logospr, #$18)
+; copy sprites tiles
+  ldx #OAM_TILE_BASE
+  stx $2116
+  DMA0(#$01, #$500, #^logospr, #!logospr, #$18)
 
-;set OAM tables
-	ldx #$0000
-	stx $2102
-	DMA0(#$00, #$60, #^oam_data_l, #!oam_data_l, #$04)
-	ldx #$0100
-	stx $2102
-	DMA0(#$00, #$09, #^oam_data_h, #!oam_data_h, #$04)
+; set OAM tables
+  ldx #$0000
+  stx $2102
+  DMA0(#$00, #$60, #^oam_data_l, #!oam_data_l, #$04)
+  ldx #$0100
+  stx $2102
+  DMA0(#$00, #$09, #^oam_data_h, #!oam_data_h, #$04)
 
-;set palette
-	stz $2121
-	DMA0(#$00, #$200, #^palette, #!palette, #$22)
-	stz $2121
+; set palette
+  stz $2121
+  DMA0(#$00, #$200, #^palette, #!palette, #$22)
+  stz $2121
 
-;copy hdma tables so we can work "without" the cartridge
-;palette
-	lda #^hdma_pal
-	ldx #!hdma_pal
-	stx $2181
-	sta $2183
-	DMA0(#$00, #52, #^hdma_pal_src, #!hdma_pal_src, #$80)
+; copy hdma tables so we can work "without" the cartridge
+; palette
+  lda #^hdma_pal
+  ldx #!hdma_pal
+  stx $2181
+  sta $2183
+  DMA0(#$00, #52, #^hdma_pal_src, #!hdma_pal_src, #$80)
 
-;CG addr for palette
-	lda #^hdma_cg_addr
-	ldx #!hdma_cg_addr
-	stx $2181
-	sta $2183
-	DMA0(#$00, #227, #^hdma_cg_addr_src, #!hdma_cg_addr_src, #$80)
+; CG addr for palette
+  lda #^hdma_cg_addr
+  ldx #!hdma_cg_addr
+  stx $2181
+  sta $2183
+  DMA0(#$00, #227, #^hdma_cg_addr_src, #!hdma_cg_addr_src, #$80)
 
-;screen mode
-	lda #^hdma_mode
-	ldx #!hdma_mode
-	stx $2181
-	sta $2183
-	DMA0(#$00, #5, #^hdma_mode_src, #!hdma_mode_src, #$80)
+; screen mode
+  lda #^hdma_mode
+  ldx #!hdma_mode
+  stx $2181
+  sta $2183
+  DMA0(#$00, #5, #^hdma_mode_src, #!hdma_mode_src, #$80)
 
-;bg scroll
-	lda #^hdma_scroll
-	ldx #!hdma_scroll
-	stx $2181
-	sta $2183
-	DMA0(#$00, #11, #^hdma_scroll_src, #!hdma_scroll_src, #$80);
+; bg scroll
+  lda #^hdma_scroll
+  ldx #!hdma_scroll
+  stx $2181
+  sta $2183
+  DMA0(#$00, #11, #^hdma_scroll_src, #!hdma_scroll_src, #$80);
 
-;color math
-	lda #^hdma_math
-	ldx #!hdma_math
-	stx $2181
-	sta $2183
-	DMA0(#$00, #19, #^hdma_math_src, #!hdma_math_src, #$80);
+; color math
+  lda #^hdma_math
+  ldx #!hdma_math
+  stx $2181
+  sta $2183
+  DMA0(#$00, #19, #^hdma_math_src, #!hdma_math_src, #$80);
 
-;initialize window stack
+; initialize window stack
   ldx #$ffff
   stx window_stack_head
-	rts
+  rts
 
 genfonts:
-	php
-	rep #$10 : .xl
-	sep #$20 : .as
+  php
+  rep #$10 : .xl
+  sep #$20 : .as
 
-;clear VRAM font areas
-	ldx #$0000
-	stx $2116
-	DMA0(#$09, #$4000, #^zero, #!zero, #$18)
+; clear VRAM font areas
+  ldx #$0000
+  stx $2116
+  DMA0(#$09, #$4000, #^zero, #!zero, #$18)
 
-	ldx #$4000
-	stx $2116
-	DMA0(#$09, #$2000, #^zero, #!zero, #$18)
+  ldx #$4000
+  stx $2116
+  DMA0(#$09, #$2000, #^zero, #!zero, #$18)
 
-	sep #$10 : .xs
-	rep #$20 : .al
+  sep #$10 : .xs
+  rep #$20 : .al
 
-	stz $2116
-	stz $2117
-	ldx #$01
-	stx $4300
-	ldx #^font
-	stx $4304
-	lda #!font
-	sta $4302
-	lda #$0010
-	sta $4305
-	ldx #$18
-	stx $4301
-	lda #$0000
--	sta $2116
-	ldx #$10
-	stx $4305
-	ldx #$01
-	stx $420b
-	clc
-	adc #$20
-	cmp #$2000
-	bne -
-	ldx #^font
-	stx $4304
-	lda #!font
-	sta $4302
-	lda #$4000
--	sta $2116
-	ldx #$10
-	stx $4305
-	ldx #$01
-	stx $420b
-	clc
-	adc #$10
-	cmp #$5000
-	bne -
-	plp
-	rts
+  stz $2116
+  stz $2117
+  ldx #$01
+  stx $4300
+  ldx #^font
+  stx $4304
+  lda #!font
+  sta $4302
+  lda #$0010
+  sta $4305
+  ldx #$18
+  stx $4301
+  lda #$0000
+- sta $2116
+  ldx #$10
+  stx $4305
+  ldx #$01
+  stx $420b
+  clc
+  adc #$20
+  cmp #$2000
+  bne -
+  ldx #^font
+  stx $4304
+  lda #!font
+  sta $4302
+  lda #$4000
+- sta $2116
+  ldx #$10
+  stx $4305
+  ldx #$01
+  stx $420b
+  clc
+  adc #$10
+  cmp #$5000
+  bne -
+  plp
+  rts
 
 
 video_init:
-	sep #$20 : .as		;8-bit accumulator
-	rep #$10 : .xl		;16-bit index
-	lda #$03		;mode 3, mode 5 via HDMA
-	sta $2105
-	lda #$58		;Tilemap addr 0xB000
-	ora #$02		;SC size 32x64
-	sta $2107		;for BG1
-	lda #$50		;Tilemap addr 0xA000
-	ora #$02		;SC size 32x64
-	sta $2108		;for BG2
-	lda #$40		;chr base addr:
-	sta $210b		;BG1=0x0000, BG2=0x8000
-	lda #$13		;enable BG1+BG2+OBJ 
-	sta $212c		;BG Main
-	lda #$13		;enable BG1+BG2+OBJ 
-	sta $212d		;BG Sub
-	lda #$20		;Window 1 for color
-	sta $2125		;Color window
-	lda #$01		;cut off leftmost subscreen pixel garbage
-	sta $2126
-	lda #$fe
-	sta $2127
-	jsr setup_224
-	lda #$10
-	sta $2130
-	lda #$1f
-	sta $212e
-	sta $212f
-;	stz $2121
-	lda #8
-	sta bar_yl
-	stz cur_bright
-	stz tgt_bright
+  sep #$20 : .as ; 8-bit accumulator
+  rep #$10 : .xl ; 16-bit index
+  lda #$03      ; mode 3, mode 5 via HDMA
+  sta $2105
+  lda #$58      ; Tilemap addr 0xB000
+  ora #$02      ; SC size 32x64
+  sta $2107     ; for BG1
+  lda #$50      ; Tilemap addr 0xA000
+  ora #$02      ; SC size 32x64
+  sta $2108     ; for BG2
+  lda #$40      ; chr base addr:
+  sta $210b     ; BG1=0x0000, BG2=0x8000
+  lda #$13      ; enable BG1+BG2+OBJ
+  sta $212c     ; BG Main
+  lda #$13      ; enable BG1+BG2+OBJ
+  sta $212d     ; BG Sub
+  lda #$20      ; Window 1 for color
+  sta $2125     ; Color window
+  lda #$01      ; cut off leftmost subscreen pixel garbage
+  sta $2126
+  lda #$fe
+  sta $2127
+  jsr setup_224
+  lda #$10
+  sta $2130
+  lda #$1f
+  sta $212e
+  sta $212f
+;  stz $2121
+  lda #8
+  sta bar_yl
+  stz cur_bright
+  stz tgt_bright
   lda #$01
   sta fade_speed
   stz fade_count
   stz idle_count
   stz idle_count+1
-	rts
+  rts
 
 screen_on:
-	stz $2100		;screen on, 0% brightness
-	lda #$0f
-	sta tgt_bright
-	rts
+  stz $2100     ; screen on, 0% brightness
+  lda #$0f
+  sta tgt_bright
+  rts
 
 snes_init:
-	sep #$20 : .as		;8-bit accumulator
-	rep #$10 : .xl		;16-bit index
-	stz $4200		;
-	lda #$ff
-	sta $4201		;
-	stz $4202		;
-	stz $4203		;
-	stz $4204		;
-	stz $4205		;
-	stz $4206		;
-	stz $4207		;
-	stz $4208		;
-	stz $4209		;
-	stz $420a		;
-	stz $420b		;
-	stz $420c		;
-	lda #$8f
-	sta $2100		;INIDISP: force blank
-	lda #$03		; 8x8+16x16; name=0; base=3
-	sta $2101		;
-	stz $2102		;
-	stz $2103		;
-;	stz $2104		; (OAM Data?!)
-;	stz $2104		; (OAM Data?!)
-	stz $2105		;
-	stz $2106		;
-	stz $2107		;
-	stz $2108		;
-	stz $2109		;
-	stz $210a		;
-	stz $210b		;
-	stz $210c		;
-	stz $210d		;
-	stz $210d		;
-	stz $210e		;
-	stz $210e		;
-	stz $210f		;
-	stz $210f		;
-	lda #$05
-	sta $2110		;
-	stz $2110		;
-	stz $2111		;
-	stz $2111		;
-	stz $2112		;
-	stz $2112		;
-	stz $2113		;
-	stz $2113		;
-	stz $2114		;
-	stz $2114		;
-	lda #$80
-	sta $2115		;
-	stz $2116		;
-	stz $2117		;
-;	stz $2118		;(VRAM Data?!)
-;	stz $2119		;(VRAM Data?!)
-	stz $211a		;
-	stz $211b		;
-	lda #$01
-	sta $211b		;
-	stz $211c		;
-	stz $211c		;
-	stz $211d		;
-	stz $211d		;
-	stz $211e		;
-	sta $211e		;
-	stz $211f		;
-	stz $211f		;
-	stz $2120		;
-	stz $2120		;
-	stz $2121		;
-;	stz $2122		; (CG Data?!)
-;	stz $2122		; (CG Data?!)
-	stz $2123		;
-	stz $2124		;
-	stz $2125		;
-	stz $2126		;
-	stz $2127		;
-	stz $2128		;
-	stz $2129		;
-	stz $212a		;
-	stz $212b		;
-	stz $212c		;
-	stz $212d		;
-	stz $212e		;
-	stz $212f		;
-	lda #$30
-	sta $2130		;
-	stz $2131		;
-	lda #$e0
-	sta $2132		;
-	stz $2133		;
+  sep #$20 : .as ; 8-bit accumulator
+  rep #$10 : .xl ; 16-bit index
+  stz $4200
+  lda #$ff
+  sta $4201
+  stz $4202
+  stz $4203
+  stz $4204
+  stz $4205
+  stz $4206
+  stz $4207
+  stz $4208
+  stz $4209
+  stz $420a
+  stz $420b
+  stz $420c
+  lda #$8f
+  sta $2100     ; INIDISP: force blank
+  lda #$03      ; 8x8+16x16; name=0; base=3
+  sta $2101
+  stz $2102
+  stz $2103
+;  stz $2104    ; (OAM Data?!)
+;  stz $2104    ; (OAM Data?!)
+  stz $2105
+  stz $2106
+  stz $2107
+  stz $2108
+  stz $2109
+  stz $210a
+  stz $210b
+  stz $210c
+  stz $210d
+  stz $210d
+  stz $210e
+  stz $210e
+  stz $210f
+  stz $210f
+  lda #$05
+  sta $2110
+  stz $2110
+  stz $2111
+  stz $2111
+  stz $2112
+  stz $2112
+  stz $2113
+  stz $2113
+  stz $2114
+  stz $2114
+  lda #$80
+  sta $2115
+  stz $2116
+  stz $2117
+;  stz $2118    ;(VRAM Data?!)
+;  stz $2119    ;(VRAM Data?!)
+  stz $211a
+  stz $211b
+  lda #$01
+  sta $211b
+  stz $211c
+  stz $211c
+  stz $211d
+  stz $211d
+  stz $211e
+  sta $211e
+  stz $211f
+  stz $211f
+  stz $2120
+  stz $2120
+  stz $2121
+;  stz $2122    ; (CG Data?!)
+;  stz $2122    ; (CG Data?!)
+  stz $2123
+  stz $2124
+  stz $2125
+  stz $2126
+  stz $2127
+  stz $2128
+  stz $2129
+  stz $212a
+  stz $212b
+  stz $212c
+  stz $212d
+  stz $212e
+  stz $212f
+  lda #$30
+  sta $2130
+  stz $2131
+  lda #$e0
+  sta $2132
+  stz $2133
   rts
 
 clear_vram:
@@ -401,7 +401,7 @@ clear_vram:
   pla
   sta $2100
   plp
-	rts
+  rts
 
 .byt "fadeloop"
 ; *=$002a10
@@ -410,30 +410,30 @@ clear_vram:
 ; fade screen
 ; acknowledge WRAM init done (send RESET)
 fadeloop:
-	sep #$30 : .as : .xs
-	phk
-	plb
+  sep #$30 : .as : .xs
+  phk
+  plb
   stz $4200
   sei
-	sta MCU_CMD
-	ldx cur_bright
+  sta MCU_CMD
+  ldx cur_bright
 fadeloop_start
-	lda $4212
-	asl
-	bcs fadeloop_start
--	lda $4212
-	asl
-	bcc -
+  lda $4212
+  asl
+  bcs fadeloop_start
+- lda $4212
+  asl
+  bcc -
   dex
   dex
-	stx $2100
-	bpl fadeloop_start
-	stz $2126
-	stz $212e
-	stz $2131
-	stz $2130
+  stx $2100
+  bpl fadeloop_start
+  stz $2126
+  stz $212e
+  stz $2131
+  stz $2130
   lda #$80
-	sta $2100
+  sta $2100
   lda #$00
   sta $2a00
   stz $420c
@@ -444,7 +444,7 @@ fadeloop_start
   stx $2181
   stx $4305
   lda #$55
-  sta $2aff ; WRAM fill value
+  sta $2aff     ; WRAM fill value
   ldx #$8008
   stx $4300
   ldx #$2aff
@@ -474,9 +474,8 @@ nmihook:
   lda $4211
 ; controller query
 - ldx $4218
-  cpx #$02b0 ; left+L+R+A
+  cpx #$02b0    ; left+L+R+A
   bne +
-  bra -
   lda #CMD_RESET
   sta MCU_CMD
 ; arbitrary code area
@@ -521,10 +520,10 @@ store_blockram_routine_src:
   php
   sep #$20 : .as
   rep #$10 : .xl
-	lda #$80
-	sta infloop
-	lda #$fe
-	sta infloop+1
+  lda #$80
+  sta infloop
+  lda #$fe
+  sta infloop+1
   rep #$20 : .al
   lda #$007f
   ldx #!WRAM_FADELOOP

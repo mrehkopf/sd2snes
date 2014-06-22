@@ -1,99 +1,121 @@
 #include "memmap.i65"
-;number of menu entries
+; menu entry structure:
+; 1 byte  entry type (see below)
+; 3 bytes  long pointer to menu entry text
+; 3 bytes  long pointer to routine / submenu structure
+; 1 byte  data type of parameter (see below)
+; 3 bytes  long pointer to parameter (of data type above)
+
+; entry types:
+; 01  function call
+; 02  submenu
+
+; data types:
+; 00  no parameter
+; 01  unsigned char
+; 02  unsigned short
+; 03  string literal (C type string)
+; 04  multiple choice (key-value table)
+
+; parameter is displayed when data type is not 0
+
+; number of menu entries
 main_entries    .byt 2
-;menu entry data
-main_enttab     ;Set Clock
-		.word !text_mm_time
-                .byt ^text_mm_time
-                .word !time_init-1
-                .byt ^time_init
-                .byt 1, 0
-                ;System Information
-                .word !text_mm_sysinfo
-                .byt ^text_mm_sysinfo
-                .word !show_sysinfo-1
-		.byt ^show_sysinfo
-                ;SuperCIC
-		.word !text_mm_scic
-                .byt ^text_mm_scic
-                .word !time_init
-                .byt ^time_init
-                .byt 1, 0
-                ;Menu vmode
-		.word !text_mm_vmode_menu
-                .byt ^text_mm_vmode_menu
-                .word !time_init
-                .byt ^time_init
-                .byt 1, 0
-                ;Game vmode
-		.word !text_mm_vmode_game
-                .byt ^text_mm_vmode_game
-                .word !time_init
-                .byt ^time_init
-                .byt 1, 0
+; menu entry data
+main_enttab
+; Set Clock
+  .word !text_mm_time
+  .byt ^text_mm_time
+  .word !time_init-1
+  .byt ^time_init
+  .byt 1, 0
+; System Information
+  .word !text_mm_sysinfo
+  .byt ^text_mm_sysinfo
+  .word !show_sysinfo-1
+  .byt ^show_sysinfo
+  .byt 1, 0
+; submenu test
+;  .word !text_mm_submenutest
+;  .byt ^text_mm_submenutest
+;  .word !mm_submenutest
+;  .byt ^mm_submenutest
+;  .byt 2, 0
+; Menu vmode
+   .word !text_mm_vmode_menu
+   .byt ^text_mm_vmode_menu
+   .word !time_init
+   .byt ^time_init
+   .byt 1, 0
+; Game vmode
+   .word !text_mm_vmode_game
+   .byt ^text_mm_vmode_game
+   .word !time_init
+   .byt ^time_init
+   .byt 1, 0
 
 mainmenu:
-	php
-	sep #$20 : .as
-	stz listsel_sel
-	stz mm_tmp
-	lda #^text_mainmenu
-	sta window_tbank
-	ldx #!text_mainmenu
-	stx window_taddr
-	lda @main_win_x
-	sta window_x
-	lda @main_win_y
-	sta window_y
-	lda @main_win_w
-	sta window_w
-	lda @main_win_h
-	sta window_h
+  php
+  sep #$20 : .as
+  stz listsel_sel
+  stz mm_tmp
+  lda #^text_mainmenu
+  sta window_tbank
+  ldx #!text_mainmenu
+  stx window_taddr
+  lda @main_win_x
+  sta window_x
+  lda @main_win_y
+  sta window_y
+  lda @main_win_w
+  sta window_w
+  lda @main_win_h
+  sta window_h
   lda @main_entries
   sta listsel_max
   lda #$02
-  sta listsel_step ; XXX TODO put step in menu structure
+  sta listsel_step  ; XXX TODO put step in menu structure
   jsr push_window
-	jsr draw_window
+  jsr draw_window
 mm_redraw
-	stz print_pal
-	ldx #!main_enttab
+  stz print_pal
+  ldx #!main_enttab
 mm_entloop
-	lda #^main_enttab
-	phb
-	pha
-	plb
-	lda !0, x
-	sta @print_src
-	lda !1, x
-	sta @print_src+1
-	lda !2, x
-	sta @print_bank
-	lda @mm_tmp
-	asl
-	clc
-	adc @main_win_y
-	inc
-	inc
-	sta @print_y
-	lda @main_win_x
-	inc
-	inc
-	sta @print_x
-	plb
-	phx
-	jsr hiprint
-	rep #$20 : .al
-	pla
-	clc
-	adc #$08
-	tax
-	sep #$20 : .as
-	inc mm_tmp
-	lda mm_tmp
-	cmp @main_entries
-	bne mm_entloop
-	stz mm_tmp
+  lda #^main_enttab
+  phb
+  pha
+  plb
+  lda !0, x
+  sta @print_src
+  lda !1, x
+  sta @print_src+1
+  lda !2, x
+  sta @print_bank
+  lda @mm_tmp
+  asl
+  clc
+  adc @main_win_y
+  inc
+  inc
+  sta @print_y
+  lda @main_win_x
+  inc
+  inc
+  sta @print_x
+  plb
+  phx
+  jsr hiprint
+  rep #$20 : .al
+  pla
+  clc
+  adc #$08
+  tax
+  sep #$20 : .as
+  inc mm_tmp
+  lda mm_tmp
+  cmp @main_entries
+  bne mm_entloop
+  stz mm_tmp
 mm_menuloop
   jsr menu_select_noinit
   cmp #$ff
@@ -102,25 +124,26 @@ mm_menuloop
   bra mm_menuloop
 mm_exit
   jsr pop_window
-	plp
-	rts
+  plp
+  rts
 
 mm_select
-	phk			; push return bank for subroutine
-	per mm_select_return-1	; push return addr for subroutine
+; push return bank and address for subroutine
+  phk
+  per mm_select_return-1
   xba
   lda #$00
   xba
-	asl
-	asl
-	asl
-	tax
-	lda @main_enttab+5, x
-	pha			; push subroutine bank
-	rep #$20 : .al
-	lda @main_enttab+3, x
-	pha			; push subroutine addr
-	sep #$20 : .as
-	rtl			; jump to subroutine
+  asl
+  asl
+  asl
+  tax
+  lda @main_enttab+5, x
+  pha           ; push subroutine bank
+  rep #$20 : .al
+  lda @main_enttab+3, x
+  pha           ; push subroutine addr
+  sep #$20 : .as
+  rtl           ; jump to subroutine
 mm_select_return
-	rts
+  rts

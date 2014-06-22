@@ -14,203 +14,203 @@
 ; print_over (char after print_count)
 
 hiprint:
-	php
-	sep #$20 : .as
-	rep #$10 : .xl
-	ldx print_src
-	stx print_ptr
-	lda print_bank
-	sta print_ptr+2
-	phb
-	lda #$7e
-	pha
-	plb
-	rep #$30 : .al : .xl
-	lda print_pal
-	and #$00ff
-	xba
-	asl
-	asl
-	ora #$2000
-	sta print_temp
-	lda print_count
-	and #$00ff
-	beq hiprint_end
-	tay
-	lda print_x
-	and #$00ff
-	sta print_x
-	lda print_y
-	and #$00ff
+  php
+  sep #$20 : .as
+  rep #$10 : .xl
+  ldx print_src
+  stx print_ptr
+  lda print_bank
+  sta print_ptr+2
+  phb
+  lda #$7e
+  pha
+  plb
+  rep #$30 : .al : .xl
+  lda print_pal
+  and #$00ff
   xba
-	lsr
-	lsr
-	clc
-	adc print_x
-	and #$fffe
-	tax
-	lda print_x
-	lsr
-	bcs hiprint_bg1
+  asl
+  asl
+  ora #$2000
+  sta print_temp
+  lda print_count
+  and #$00ff
+  beq hiprint_end
+  tay
+  lda print_x
+  and #$00ff
+  sta print_x
+  lda print_y
+  and #$00ff
+  xba
+  lsr
+  lsr
+  clc
+  adc print_x
+  and #$fffe
+  tax
+  lda print_x
+  lsr
+  bcs hiprint_bg1
 hiprint_bg2
-	lda [print_ptr]
-	and #$00ff
-	beq hiprint_end
-	inc print_ptr
-	asl
-	ora print_temp
-	sta !BG2_TILE_BUF, x
-	dey
-	beq hiprint_end
+  lda [print_ptr]
+  and #$00ff
+  beq hiprint_end
+  inc print_ptr
+  asl
+  ora print_temp
+  sta !BG2_TILE_BUF, x
+  dey
+  beq hiprint_end
 hiprint_bg1
-	lda [print_ptr]
-	and #$00ff
-	beq hiprint_end
-	inc print_ptr
-	asl
-	ora print_temp
-	sta !BG1_TILE_BUF, x
-	inx
-	inx
-	dey
-	beq hiprint_end
-	bra hiprint_bg2
+  lda [print_ptr]
+  and #$00ff
+  beq hiprint_end
+  inc print_ptr
+  asl
+  ora print_temp
+  sta !BG1_TILE_BUF, x
+  inx
+  inx
+  dey
+  beq hiprint_end
+  bra hiprint_bg2
 hiprint_end
-	plb
-	sep #$20 : .as
-	lda [print_ptr]
-	sta print_over
-	tya
-	sec
-	sbc print_count
-	eor #$ff
-	inc
-	sta print_done
-	plp
-	rts
+  plb
+  sep #$20 : .as
+  lda [print_ptr]
+  sta print_over
+  tya
+  sec
+  sbc print_count
+  eor #$ff
+  inc
+  sta print_done
+  plp
+  rts
 
 
 loprint:
-	rep #$30 : .xl : .al
-	lda !print_x
-	and #$00ff
-	asl ;double the offset for WRAM addressing
-	clc
-	adc #!BG2_TILE_BUF
-	sta !print_temp
-	lda !print_y
-	and #$00ff
+  rep #$30 : .xl : .al
+  lda !print_x
+  and #$00ff
+  asl                 ; double the offset for WRAM addressing
+  clc
+  adc #!BG2_TILE_BUF
+  sta !print_temp
+  lda !print_y
+  and #$00ff
   xba
-	lsr
-	lsr ;double the offset for WRAM addressing
-	clc
-	adc !print_temp
+  lsr
+  lsr                 ; double the offset for WRAM addressing
+  clc
+  adc !print_temp
 ; we need to transfer to WRAM and from there to VRAM via DMA during VBLANK
 ; because VRAM can only be accessed during VBLANK and forced blanking.
-	sta $2181
-	sep #$20 : .as
-	lda #$7f ;we really only need bit 0. full bank given for clarity
-	sta $2183
-	ldx !print_src
-	lda !print_bank
-	pha
-	plb
+  sta $2181
+  sep #$20 : .as
+  lda #$7f            ; we really only need bit 0. full bank given for clarity
+  sta $2183
+  ldx !print_src
+  lda !print_bank
+  pha
+  plb
 loprint_loop_inner
-	lda !0,x
-	beq loprint_end
-	sta @$2180
-	lda #$00
-	adc #$00
-	ora #$20
-	sta @$2180
-	inx
-	bra loprint_loop_inner
+  lda !0,x
+  beq loprint_end
+  sta @$2180
+  lda #$00
+  adc #$00
+  ora #$20
+  sta @$2180
+  inx
+  bra loprint_loop_inner
 loprint_end
-	lda #$00
-	pha
-	plb
-	rts
+  lda #$00
+  pha
+  plb
+  rts
 
 backup_screen:
 ; MVN: X=source, Y=dest, A=count
 ;      imm1=srcbk, imm2=dstbk
-	phb
-	php
-	rep #$30 : .xl : .al
-	ldx #!BG1_TILE_BUF+64*9
-	ldy #!BG1_TILE_BAK+64*9
-	lda @textdmasize
-	mvn ^BG1_TILE_BUF, ^BG1_TILE_BAK
-	ldx #!BG2_TILE_BUF+64*9
-	ldy #!BG2_TILE_BAK+64*9
-	lda @textdmasize
-	mvn ^BG2_TILE_BUF, ^BG2_TILE_BAK
-	plp
-	plb
-	rts
+  phb
+  php
+  rep #$30 : .xl : .al
+  ldx #!BG1_TILE_BUF+64*9
+  ldy #!BG1_TILE_BAK+64*9
+  lda @textdmasize
+  mvn ^BG1_TILE_BUF, ^BG1_TILE_BAK
+  ldx #!BG2_TILE_BUF+64*9
+  ldy #!BG2_TILE_BAK+64*9
+  lda @textdmasize
+  mvn ^BG2_TILE_BUF, ^BG2_TILE_BAK
+  plp
+  plb
+  rts
 
 restore_screen:
 ; MVN: X=source, Y=dest, A=count
 ;      imm1=srcbk, imm2=dstbk
-	phb
-	php
-	rep #$30 : .xl : .al
-	ldx #!BG1_TILE_BAK+64*9
-	ldy #!BG1_TILE_BUF+64*9
-	lda @textdmasize
-	mvn ^BG1_TILE_BAK, ^BG1_TILE_BUF
-	ldx #!BG2_TILE_BAK+64*9
-	ldy #!BG2_TILE_BUF+64*9
-	lda @textdmasize
-	mvn ^BG2_TILE_BAK, ^BG2_TILE_BUF
-	plp
-	plb
-	rts
+  phb
+  php
+  rep #$30 : .xl : .al
+  ldx #!BG1_TILE_BAK+64*9
+  ldy #!BG1_TILE_BUF+64*9
+  lda @textdmasize
+  mvn ^BG1_TILE_BAK, ^BG1_TILE_BUF
+  ldx #!BG2_TILE_BAK+64*9
+  ldy #!BG2_TILE_BUF+64*9
+  lda @textdmasize
+  mvn ^BG2_TILE_BAK, ^BG2_TILE_BUF
+  plp
+  plb
+  rts
 
 draw_window:
-	phb
-	php
-	sep #$20 : .as
+  phb
+  php
+  sep #$20 : .as
 
 ; draw upper border
 ; upper left corner
-	lda @window_nw
-	sta stringbuf
-	ldx #!stringbuf
-	inx
-	lda window_w
-	sta window_tmp
-	stz window_tmp+1
-	ldy window_tmp
-	dey
-	dey
+  lda @window_nw
+  sta stringbuf
+  ldx #!stringbuf
+  inx
+  lda window_w
+  sta window_tmp
+  stz window_tmp+1
+  ldy window_tmp
+  dey
+  dey
 ; upper edge
 -
-	lda @window_nh
-	sta !0,x
-	inx
-	dey
-	cpy #$0000
-	bne -
+  lda @window_nh
+  sta !0,x
+  inx
+  dey
+  cpy #$0000
+  bne -
 
 ; upper right corner
-	lda @window_ne
-	sta !0,x
+  lda @window_ne
+  sta !0,x
 
 ; print to text buffer
-	lda #$01
-	sta print_pal
-	lda window_x
-	sta print_x
-	lda window_y
-	sta print_y
-	lda #^stringbuf
-	sta print_bank
-	ldx #!stringbuf
-	stx print_src
-	lda window_w
-	sta print_count
-	jsr hiprint
+  lda #$01
+  sta print_pal
+  lda window_x
+  sta print_x
+  lda window_y
+  sta print_y
+  lda #^stringbuf
+  sta print_bank
+  ldx #!stringbuf
+  stx print_src
+  lda window_w
+  sta print_count
+  jsr hiprint
 
 ; print window title if string not empty
   lda window_tbank
@@ -223,110 +223,110 @@ draw_window:
   plb
   xba
   beq draw_window_notitle
-	lda print_x
-	pha
-	inc print_x
-	inc print_x
-	lda #^window_tl
-	sta print_bank
-	ldx #!window_tl
-	stx print_src
-	lda #$01
-	sta print_count
-	jsr hiprint
-	inc print_x
-	lda window_tbank
-	sta print_bank
-	ldx window_taddr
-	stx print_src
-	lda window_w
-	sta print_count
-	jsr hiprint
-	lda print_done
-	clc
-	adc print_x
-	sta print_x
-	lda #^window_tr
-	sta print_bank
-	ldx #!window_tr
-	stx print_src
-	lda #$01
-	sta print_count
-	jsr hiprint
-	lda window_w
-	sta print_count
-	pla
-	sta print_x
+  lda print_x
+  pha
+  inc print_x
+  inc print_x
+  lda #^window_tl
+  sta print_bank
+  ldx #!window_tl
+  stx print_src
+  lda #$01
+  sta print_count
+  jsr hiprint
+  inc print_x
+  lda window_tbank
+  sta print_bank
+  ldx window_taddr
+  stx print_src
+  lda window_w
+  sta print_count
+  jsr hiprint
+  lda print_done
+  clc
+  adc print_x
+  sta print_x
+  lda #^window_tr
+  sta print_bank
+  ldx #!window_tr
+  stx print_src
+  lda #$01
+  sta print_count
+  jsr hiprint
+  lda window_w
+  sta print_count
+  pla
+  sta print_x
 ; draw left+right borders + space inside window
 draw_window_notitle
-	lda #^stringbuf
-	sta print_bank
-	ldx #!stringbuf
-	stx print_src
-	lda @window_wv
-	sta stringbuf
-	ldx #!stringbuf
-	inx
-	lda window_w
-	sta window_tmp
-	stz window_tmp+1
-	ldy window_tmp
-	dey
-	dey
+  lda #^stringbuf
+  sta print_bank
+  ldx #!stringbuf
+  stx print_src
+  lda @window_wv
+  sta stringbuf
+  ldx #!stringbuf
+  inx
+  lda window_w
+  sta window_tmp
+  stz window_tmp+1
+  ldy window_tmp
+  dey
+  dey
 -
-	lda @space64
-	sta !0,x
-	inx
-	dey
-	cpy #$0000
-	bne -
+  lda @space64
+  sta !0,x
+  inx
+  dey
+  cpy #$0000
+  bne -
 
-	lda @window_ev
-	sta !0,x
+  lda @window_ev
+  sta !0,x
 
 ; print to text buffer multiple times
-	lda window_h
-	sta window_tmp
-	stz window_tmp+1
-	ldy window_tmp
-	dey
-	dey
+  lda window_h
+  sta window_tmp
+  stz window_tmp+1
+  ldy window_tmp
+  dey
+  dey
 -
-	inc print_y
-	phy
-	jsr hiprint
-	ply
-	dey
-	bne -
+  inc print_y
+  phy
+  jsr hiprint
+  ply
+  dey
+  bne -
 
 ; draw lower window border
 ; lower left corner
-	lda @window_sw
-	sta stringbuf
-	ldx #!stringbuf
-	inx
-	lda window_w
-	sta window_tmp
-	stz window_tmp+1
-	ldy window_tmp
-	dey
-	dey
+  lda @window_sw
+  sta stringbuf
+  ldx #!stringbuf
+  inx
+  lda window_w
+  sta window_tmp
+  stz window_tmp+1
+  ldy window_tmp
+  dey
+  dey
 ; lower edge
 -
-	lda @window_sh
-	sta !0,x
-	inx
-	dey
-	bne -
+  lda @window_sh
+  sta !0,x
+  inx
+  dey
+  bne -
 ; lower right corner
-	lda @window_se
-	sta !0,x
+  lda @window_se
+  sta !0,x
 ; print to text buffer
-	inc print_y
-	jsr hiprint
-	plp
-	plb
-	rts
+  inc print_y
+  jsr hiprint
+  plp
+  plb
+  rts
 
 draw_loading_window:
   php
@@ -385,7 +385,7 @@ push_window:
   lda window_stack_head
   cmp #$ffff
   bne pushw_skip_current_head
-; empty stack - initialize 
+; empty stack - initialize
   ldx #$0000
   stx window_stack_head
   lda #$ffff
@@ -393,7 +393,7 @@ push_window:
 pushw_skip_current_head
 ; calculate address of next stack element
   tax
-  phx ; save "previous" head
+  phx                 ; save "previous" head
   lda @WINDOW_STACK_BASE+6, x
   and #$00fe
   clc
@@ -411,7 +411,7 @@ pushw_skip_current_head
   adc window_stack_head
   sta window_stack_head
   tax
-  pla ; restore "previous" head
+  pla                 ; restore "previous" head
 pushw_write_element
   sta @WINDOW_STACK_BASE, x
 ; write current window position and dimensions
@@ -425,10 +425,10 @@ pushw_write_element
   and #$00ff
   sta @WINDOW_STACK_BASE+6, x
   ora #$0001
-  pha ; save rounded window_w = count  -1 for MVN
+  pha                 ; save rounded window_w = count -1 for MVN
   lda window_h
   and #$00ff
-  pha ; save window_h
+  pha                 ; save window_h
   sta @WINDOW_STACK_BASE+8, x
   lda listsel_sel
   and #$00ff
@@ -441,62 +441,62 @@ pushw_write_element
   sta @WINDOW_STACK_BASE+14, x
   lda @WINDOW_STACK_BASE+4, x
   rep #$20 : .al
-  xba ; calculate start offset (64*window_y + window_x)
+  xba                 ; calculate start offset (64*window_y + window_x)
   lsr
   lsr
   clc
   adc @WINDOW_STACK_BASE+2, x
-  and #$fffe ; align to 16 bit
-  tax ; source offset
+  and #$fffe          ; align to 16 bit
+  tax                 ; source offset
   lda window_stack_head
   clc
   adc #$0010
   adc #!WINDOW_STACK_BASE
-  tay ; destination address
-  phx ; source offset
-  lda $1, s ; source offset
+  tay                 ; destination address
+  phx                 ; source offset
+  lda $1, s           ; source offset
   clc
   adc #!BG1_TILE_BUF
   tax
-  phx ; source address
-- lda $7, s ; count
+  phx                 ; source address
+- lda $7, s           ; count
   mvn ^WINDOW_STACK_BASE, ^BG1_TILE_BUF
-  lda $1, s ; source address
+  lda $1, s           ; source address
   clc
   adc #$0040
-  sta $1, s ; new source address
+  sta $1, s           ; new source address
   tax
   sep #$20 : .as
   dec window_h
   rep #$20 : .al
   bne -
   sep #$20 : .as
-  lda $5, s ; restore window_h
+  lda $5, s           ; restore window_h
   sta window_h
   rep #$20 : .al
-  lda $3, s ; source offset
+  lda $3, s           ; source offset
   clc
   adc #!BG2_TILE_BUF
-  sta $1, s ; source address
+  sta $1, s           ; source address
   tax
-- lda $7, s ; count
+- lda $7, s           ; count
   mvn ^WINDOW_STACK_BASE, ^BG2_TILE_BUF
-  lda $1, s ; source address
+  lda $1, s           ; source address
   clc
   adc #$0040
-  sta $1, s ; new source address
+  sta $1, s           ; new source address
   tax
   sep #$20 : .as
   dec window_h
   rep #$20 : .al
   bne -
-  pla ; source address
-  pla ; source offset
-  pla ; window_h
+  pla                 ; source address
+  pla                 ; source offset
+  pla                 ; window_h
   sep #$20 : .as
   sta window_h
-  pla ; count
-  pla ; count
+  pla                 ; count
+  pla                 ; count
   plp
   plb
   rts
@@ -521,7 +521,7 @@ popw_rewind_head
   sep #$20 : .as
   lda @WINDOW_STACK_BASE+6, x
   ora #$01
-  pha ; save rounded count for MVN
+  pha                 ; save rounded count for MVN
   lda @WINDOW_STACK_BASE+8, x
   pha
   lda @WINDOW_STACK_BASE+10, x
@@ -533,59 +533,59 @@ popw_rewind_head
 
   lda @WINDOW_STACK_BASE+4, x
   rep #$20 : .al
-  xba ; calculate dest offset (64*window_y + window_x)
+  xba                 ; calculate dest offset (64*window_y + window_x)
   lsr
   lsr
   clc
   adc @WINDOW_STACK_BASE+2, x
-  and #$fffe ; align to 16 bit
-  tay ; dest offset
+  and #$fffe          ; align to 16 bit
+  tay                 ; dest offset
   lda window_stack_head
   clc
   adc #$0010
   adc #!WINDOW_STACK_BASE
-  tax ; source address
-  phy ; dest offset
+  tax                 ; source address
+  phy                 ; dest offset
   tya
   clc
   adc #!BG1_TILE_BUF
   tay
-  phy ; dest address
-- lda $6, s ; count
+  phy                 ; dest address
+- lda $6, s           ; count
   and #$00ff
   mvn ^BG1_TILE_BUF, ^WINDOW_STACK_BASE
-  lda $1, s ; dest address
+  lda $1, s           ; dest address
   clc
   adc #$0040
-  sta $1, s ; new dest address
+  sta $1, s           ; new dest address
   tay
   sep #$20 : .as
   dec window_h
   rep #$20 : .al
   bne -
   sep #$20 : .as
-  lda $5, s ; restore window_h
+  lda $5, s           ; restore window_h
   sta window_h
   rep #$20 : .al
-  lda $3, s ; dest offset
+  lda $3, s           ; dest offset
   clc
   adc #!BG2_TILE_BUF
-  sta $1, s ; dest address
+  sta $1, s           ; dest address
   tay
-- lda $6, s ; count
+- lda $6, s           ; count
   and #$00ff
   mvn ^BG2_TILE_BUF, ^WINDOW_STACK_BASE
-  lda $1, s ; dest address
+  lda $1, s           ; dest address
   clc
   adc #$0040
-  sta $1, s ; new dest address
+  sta $1, s           ; new dest address
   tay
   sep #$20 : .as
   dec window_h
   rep #$20 : .al
   bne -
-  pla ; dest address
-  pla ; dest offset
+  pla                 ; dest address
+  pla                 ; dest offset
 ; restore address of previous stack element
   ldx window_stack_head
   txy
@@ -593,9 +593,9 @@ popw_rewind_head
   tax
   sta window_stack_head
   sep #$20 : .as
-  pla ; window_h
+  pla                 ; window_h
   sta window_h
-  pla ; count
+  pla                 ; count
 ; peek into previous head (if any) to restore dimensions of previous window
 ; otherwise restore dimensions of current window
   cpx #$ffff

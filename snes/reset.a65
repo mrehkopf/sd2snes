@@ -1,72 +1,64 @@
-; This file is part of the snescom-asm demo - a demo of how to build a SNES program.
-; See http://bisqwit.iki.fi/source/snescom.html for details.
-
 #include "memmap.i65"
 #include "dma.i65"
 
-#define TILE_ADDR_REG_VAL(addr, scsize) \
-          (((addr & $FC00) >> 8) + scsize)
-#define BMAP_ADDR_REG_VAL(addr, addr2) \
-          (((addr & $F000) >> 12) | (((addr2 & $F000) >> 12) << 4))
-
 ; NMI - called on VBlank
 NMI_ROUTINE:
-        sep #$20 : .as
-	rep #$10 : .xl
-	lda #$00
-	pha
-	plb
-	ldx #BG1_TILE_BASE+32*9
-	stx $2116
-	DMA0(#$01, #40*64, #^BG1_TILE_BUF, #!BG1_TILE_BUF+64*9, #$18)
+  sep #$20 : .as
+  rep #$10 : .xl
+  lda #$00
+  pha
+  plb
+  ldx #BG1_TILE_BASE+32*9
+  stx $2116
+  DMA0(#$01, #40*64, #^BG1_TILE_BUF, #!BG1_TILE_BUF+64*9, #$18)
 
-	ldx #BG2_TILE_BASE+32*9
-	stx $2116
-	DMA0(#$01, #40*64, #^BG2_TILE_BUF, #!BG2_TILE_BUF+64*9, #$18)
+  ldx #BG2_TILE_BASE+32*9
+  stx $2116
+  DMA0(#$01, #40*64, #^BG2_TILE_BUF, #!BG2_TILE_BUF+64*9, #$18)
 
-	ldx #BG2_TILE_BASE
-	stx $2116
-	DMA0(#$01, #64*9, #^BG2_TILE_BUF, #!BG2_TILE_BUF, #$18)
+  ldx #BG2_TILE_BASE
+  stx $2116
+  DMA0(#$01, #64*9, #^BG2_TILE_BUF, #!BG2_TILE_BUF, #$18)
 
-	lda bar_yl
-	asl
-  dec
-	asl
+  lda bar_yl
+  asl
   dec
   asl
-	sta bar_y
-	cmp #224
-	bne +
-	lda #1
+  dec
+  asl
+  sta bar_y     ; physical pos = logical pos * 8 - 6
+  cmp #224
+  bne +
+  lda #1
 +
-	sta bar_y
-	cmp #113
-	bcs lower_half
-	sta hdma_math
-	lda #$01
-	sta hdma_math+3
-	bra math_cont
+  sta bar_y
+  cmp #113
+  bcs lower_half
+  sta hdma_math
+  lda #$01
+  sta hdma_math+3
+  bra math_cont
 lower_half
-	clc
-	sbc #110
-	sta hdma_math+3
-	lda #112
-	sta hdma_math
+  clc
+  sbc #110
+  sta hdma_math+3
+  lda #112
+  sta hdma_math
 math_cont
-	lda bar_xl	; get logical cursor X pos
-	asl
-	dec
-	asl		; logical pos * 4
-	sta bar_x	; physical pos = logical pos * 4
-	sta $2126	; window 1 left
-	lda bar_wl	; get logical cursor width
-	asl
-	asl		; pixel width = logical width * 4
-	inc
-	sta bar_w	; = physical width
-	clc
-	adc bar_x	; + X start coord
-	sta $2127	; window 1 right
+  lda bar_xl    ; get logical cursor X pos
+  asl
+  dec
+  asl
+  sta bar_x     ; physical pos = logical pos * 4 - 2
+  sta $2126     ; window 1 left
+  lda bar_wl    ; get logical cursor width
+  asl
+  asl           ; pixel width = logical width * 4 + 1
+  inc
+  sta bar_w     ; = physical width
+  clc
+  adc bar_x     ; + X start coord
+  sta $2127     ; window 1 right
 
   rep #$20 : .al
   sep #$10 : .xs
@@ -97,33 +89,33 @@ nobuttonspressed
   cmp fade_speed
   bne +
   stz fade_count
-	lda cur_bright
-	cmp tgt_bright
-	beq +
-	bpl bright_down
+  lda cur_bright
+  cmp tgt_bright
+  beq +
+  bpl bright_down
 bright_up
-	inc
-	sta cur_bright
-	lda $2100
-	and #$f0
-	ora cur_bright
-	sta $2100
-	bra +
+  inc
+  sta cur_bright
+  lda $2100
+  and #$f0
+  ora cur_bright
+  sta $2100
+  bra +
 bright_down
-	dec
-	sta cur_bright
-	lda $2100
-	and #$f0
-	ora cur_bright
-	sta $2100
+  dec
+  sta cur_bright
+  lda $2100
+  and #$f0
+  ora cur_bright
+  sta $2100
 + lda #$01
-	sta isr_done
+  sta isr_done
   inc fade_count
   rtl
 
-; IRQ - called when triggered
+; IRQ_ROUTINE - called when IRQ triggered
 IRQ_ROUTINE:
-        sep #$20 : .as
-        lda $4211  ;Acknowledge irq
-        rtl
+  sep #$20 : .as
+  lda $4211     ; Acknowledge IRQ
+  rtl
 
