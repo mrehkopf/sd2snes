@@ -99,6 +99,12 @@ module mcu_cmd(
   // SNES sync/clk
   input snes_sysclk,
 
+  // snes cmd interface
+  input [7:0] snescmd_data_in,
+  output reg [7:0] snescmd_data_out,
+  output reg [7:0] snescmd_addr_out,
+  output reg snescmd_we_out,
+  
   // debug
   output DBG_mcu_nextaddr
 );
@@ -192,6 +198,7 @@ end
 
 // command interpretation
 always @(posedge clk) begin
+  snescmd_we_out <= 1'b0;
   if (cmd_ready) begin
     case (cmd_data[7:4])
       4'h3: // select mapper
@@ -245,6 +252,15 @@ always @(posedge clk) begin
         endcase
       8'h9x:
         MCU_DATA_OUT_BUF <= param_data;
+      8'hd0:
+        snescmd_addr_out <= param_data;
+      8'hd1:
+        snescmd_addr_out <= snescmd_addr_out + 1;
+      8'hd2: begin
+        if(spi_byte_cnt == 32'h3) snescmd_addr_out <= snescmd_addr_out + 1;
+        snescmd_data_out <= param_data;
+        snescmd_we_out <= 1'b1;
+      end
       8'he0:
         case (spi_byte_cnt)
           32'h2: begin
@@ -416,6 +432,8 @@ always @(posedge clk) begin
   if (cmd_data[7:4] == 4'h8 && mcu_nextaddr)
     MCU_DATA_IN_BUF <= mcu_data_in;
   else if (cmd_ready | param_ready /* bit_cnt == 7 */) begin
+    if (cmd_data[7:4] == 4'hA)
+      MCU_DATA_IN_BUF <= snescmd_data_in;
     if (cmd_data[7:0] == 8'hF0)
       MCU_DATA_IN_BUF <= 8'hA5;
     else if (cmd_data[7:0] == 8'hF1)
@@ -460,6 +478,8 @@ always @(posedge clk) begin
       endcase
     else if (cmd_data[7:0] == 8'hFF)
       MCU_DATA_IN_BUF <= param_data;
+    else if (cmd_data[7:0] == 8'hD1)
+      MCU_DATA_IN_BUF <= snescmd_data_in;
   end
 end
 

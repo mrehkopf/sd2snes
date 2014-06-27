@@ -13,74 +13,74 @@
 ;               or #$FF if no item was selected
 
 menu_select:
-	php
-	sep #$20 : rep #$10 : .as : .xl
-	lda bar_wl
-	pha
-	lda bar_yl
-	pha
-	lda bar_xl
-	pha
-	lda window_x
-	inc
-	inc
-	sta bar_xl
-	lda window_w
-	sec
-	sbc #$04
-	sta bar_wl
-	lda window_y
-	inc
-	sta bar_yl
-	stz listsel_sel
+  php
+  sep #$20 : rep #$10 : .as : .xl
+  stz listsel_sel
+  bra +
+menu_select_noinit:
+  php
+  sep #$20 : rep #$10 : .as : .xl
++
+  lda window_x
+  inc
+  inc
+  sta bar_xl
+  lda window_w
+  sec
+  sbc #$04
+  sta bar_wl
+  lda listsel_sel
+  sta $211b
+  stz $211b
+  lda listsel_step
+  sta $211c
+  lda window_y
+  inc
+  clc
+  adc $2134
+  sta bar_yl
 
 menu_select_loop1
-	lda isr_done
-	beq menu_select_loop1
-	stz isr_done
-	jsr printtime
-	jsr read_pad
-	lda pad_up
-	bne menu_select_up
-	lda pad_down
-	bne menu_select_down
-	lda pad_a
-	bne menu_select_item
-	lda pad_b
-	bne menu_select_none
-	bra menu_select_loop1
+  lda isr_done
+  beq menu_select_loop1
+  stz isr_done
+  jsr printtime
+  jsr read_pad
+  lda pad_up
+  bne menu_select_up
+  lda pad_down
+  bne menu_select_down
+  lda pad_a
+  bne menu_select_item
+  lda pad_b
+  bne menu_select_none
+  bra menu_select_loop1
 menu_select_up
-	lda listsel_sel
-	beq menu_select_loop1
-	dec listsel_sel
-	lda bar_yl
-	sec
-	sbc listsel_step
-	sta bar_yl
-	bra menu_select_loop1
+  lda listsel_sel
+  beq menu_select_loop1
+  dec listsel_sel
+  lda bar_yl
+  sec
+  sbc listsel_step
+  sta bar_yl
+  bra menu_select_loop1
 menu_select_down
-	lda listsel_sel
-	inc
-	cmp listsel_max
-	beq menu_select_loop1
-	inc listsel_sel
-	lda bar_yl
-	clc
-	adc listsel_step
-	sta bar_yl
-	bra menu_select_loop1
+  lda listsel_sel
+  inc
+  cmp listsel_max
+  beq menu_select_loop1
+  inc listsel_sel
+  lda bar_yl
+  clc
+  adc listsel_step
+  sta bar_yl
+  bra menu_select_loop1
 menu_select_item
-	ldx listsel_sel
-	bra menu_select_exit
+  lda listsel_sel
+  bra menu_select_exit
 menu_select_none
-	ldx #$ffff
+  lda #$ff
 menu_select_exit
-	pla
-	sta bar_xl
-	pla
-	sta bar_yl
-	pla
-	sta bar_wl
-	txa
-	plp
-	rts
+  plp
+  rts
+

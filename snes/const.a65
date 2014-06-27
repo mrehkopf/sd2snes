@@ -1,191 +1,207 @@
-version		.byt "                            v0.1",0
-zero		.word	0
-bg2tile		.byt $20
-hdma_pal_src	.byt 44
-		.byt $60, $2d
-		.byt 10
-		.byt $00, $00
-		.byt 2
-		.byt $60, $2d
-		.byt 11
-		.byt $00, $00
-		.byt 11
-		.byt $20, $04
-		.byt 11
-		.byt $40, $08
-		.byt 11
-		.byt $60, $0c
-		.byt 11
-		.byt $80, $10
-		.byt 11
-		.byt $a0, $14
-		.byt 11
-		.byt $c0, $18
-		.byt 11
-		.byt $e0, $1c
-		.byt 11
-		.byt $00, $21
-		.byt 11
-		.byt $20, $25
-		.byt 11
-		.byt $40, $29
-		.byt 29
-		.byt $60, $2d
-		.byt 2
-		.byt $20, $04
-		.byt 1
-		.byt $60, $2d
-		.byt $00
+version         .byt "                            v0.1",0
+zero            .word  0
+bg2tile         .byt $20
+hdma_pal_src
+  .byt 44
+  .byt $60, $2d
+  .byt 10
+  .byt $00, $00
+  .byt 2
+  .byt $60, $2d
+  .byt 11
+  .byt $00, $00
+  .byt 11
+  .byt $20, $04
+  .byt 11
+  .byt $40, $08
+  .byt 11
+  .byt $60, $0c
+  .byt 11
+  .byt $80, $10
+  .byt 11
+  .byt $a0, $14
+  .byt 11
+  .byt $c0, $18
+  .byt 11
+  .byt $e0, $1c
+  .byt 11
+  .byt $00, $21
+  .byt 11
+  .byt $20, $25
+  .byt 11
+  .byt $40, $29
+  .byt 29
+  .byt $60, $2d
+  .byt 2
+  .byt $20, $04
+  .byt 1
+  .byt $60, $2d
+  .byt $00
 
 hdma_cg_addr_src
-		.byt $f0
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $f0
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00, $00, $00, $00, $00, $00, $00, $00
-		.byt $00
-hdma_mode_src	.byt 56, $03, $01, $05, $00
-hdma_scroll_src	.byt 56
-		.byt $00, $00, $ff, $03
-		.byt $01
-		.byt $fc, $00, $1f, $03
-		.byt $00
+  .byt $f0
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $f0
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00, $00, $00, $00, $00, $00, $00, $00
+  .byt $00
+hdma_mode_src   .byt 56, $03, $01, $05, $00
+hdma_scroll_src
+  .byt 56
+  .byt $00, $00, $ff, $03
+  .byt $01
+  .byt $fc, $00, $1f, $03
+  .byt $00
 ; colors:
 ; upper border: + #547fff -> 10,15,31
 ; selection bar:+ #5400ff -> 10,0,31
 ; lower border: 1/2 #5400ff
-hdma_math_src	.byt 1 ; these are filled in...
-		.byt $00, $2a
-		.byt 1 ; ...to move the color bar
-		.byt $00, $9f
-		.byt 1
-		.byt $33, $4f
-		.byt 8
-		.byt $33, $40
-		.byt 1
-		.byt $73, $00
-		.byt 1
-		.byt $00, $e0
-		.byt 0
+hdma_math_src
+  .byt 1 ; these are filled in...
+  .byt $00, $2a
+  .byt 1 ; ...to move the color bar
+  .byt $00, $9f
+  .byt 1
+  .byt $33, $4f
+  .byt 8
+  .byt $33, $40
+  .byt 1
+  .byt $73, $00
+  .byt 1
+  .byt $00, $e0
+  .byt 0
 
-oam_data_l	.byt 88, 56, 0, $08
-		.byt 96, 56, 1, $08
-		.byt 104, 56, 2, $08
-		.byt 112, 56, 3, $08
-		.byt 120, 56, 4, $08
-		.byt 128, 56, 5, $08
-		.byt 136, 56, 6, $08
-		.byt 88, 64, 7, $08
-		.byt 96, 64, 8, $08
-		.byt 104, 64, 9, $08
-		.byt 112, 64, 10, $08
-		.byt 88, 72, 14, $08
-		.byt 96, 72, 15, $08
-		.byt 157, 56, 21, $0a
-		.byt 172, 56, 22, $0c
-		.byt 180, 56, 23, $0c
-		.byt 172, 64, 24, $0c
-		.byt 172, 72, 26, $0c
-		.byt 172, 80, 28, $0c
-		.byt 172, 88, 30, $0c
-		.byt 172, 96, 32, $0c
-		.byt 194, 56, 34, $0e
-		.byt 194, 64, 35, $0e
-		.byt 194, 72, 36, $0e
-oam_data_h	.byt 0, 0, 0, 0, 0, 0, 0, 0, 0
+oam_data_l
+  .byt 88, 56, 0, $08
+  .byt 96, 56, 1, $08
+  .byt 104, 56, 2, $08
+  .byt 112, 56, 3, $08
+  .byt 120, 56, 4, $08
+  .byt 128, 56, 5, $08
+  .byt 136, 56, 6, $08
+  .byt 88, 64, 7, $08
+  .byt 96, 64, 8, $08
+  .byt 104, 64, 9, $08
+  .byt 112, 64, 10, $08
+  .byt 88, 72, 14, $08
+  .byt 96, 72, 15, $08
+  .byt 157, 56, 21, $0a
+  .byt 172, 56, 22, $0c
+  .byt 180, 56, 23, $0c
+  .byt 172, 64, 24, $0c
+  .byt 172, 72, 26, $0c
+  .byt 172, 80, 28, $0c
+  .byt 172, 88, 30, $0c
+  .byt 172, 96, 32, $0c
+  .byt 194, 56, 34, $0e
+  .byt 194, 64, 35, $0e
+  .byt 194, 72, 36, $0e
+oam_data_h
+  .byt 0, 0, 0, 0, 0, 0, 0, 0, 0
 
-space64	.byt $20, $20, $20, $20, $20, $20, $20, $20
-	.byt $20, $20, $20, $20, $20, $20, $20, $20
-	.byt $20, $20, $20, $20, $20, $20, $20, $20
-	.byt $20, $20, $20, $20, $20, $20, $20, $20
-	.byt $20, $20, $20, $20, $20, $20, $20, $20
-	.byt $20, $20, $20, $20, $20, $20, $20, $20
-	.byt $20, $20, $20, $20, $20, $20, $20, $20
-	.byt $20, $20, $20, $20, $20, $20, $20, $20
-	.byt $00
-text_dirmark	.byt " <dir>", 0
-window_nw	.byt 20
-window_ne	.byt 21
-window_sw	.byt 22
-window_se	.byt 23
-window_nh	.byt 24
-window_sh	.byt 25
-window_wv	.byt 26
-window_ev	.byt 27
-window_tl	.byt 28
-window_tr	.byt 29
-text_clkset	.byt "Please set the clock.", 0
-text_buttonB	.byt "Dpad: sel/chg, A: OK", 0
-time_win_x	.byt 18
-time_win_y	.byt 15
-time_win_w	.byt 27
-time_win_h	.byt 7
-main_win_x	.byt 18
-main_win_y	.byt 11
-main_win_w	.byt 27
-main_win_h	.byt 13
-text_mainmenu	.byt "Main Menu", 0
-sysinfo_win_x	.byt 10
-sysinfo_win_y	.byt 9
-sysinfo_win_w	.byt 43
-sysinfo_win_h	.byt 17
-last_win_x	.byt 2
-last_win_y	.byt 12
-last_win_w	.byt 60
-last_win_h	.byt 4
+space64
+  .byt $20, $20, $20, $20, $20, $20, $20, $20
+  .byt $20, $20, $20, $20, $20, $20, $20, $20
+  .byt $20, $20, $20, $20, $20, $20, $20, $20
+  .byt $20, $20, $20, $20, $20, $20, $20, $20
+  .byt $20, $20, $20, $20, $20, $20, $20, $20
+  .byt $20, $20, $20, $20, $20, $20, $20, $20
+  .byt $20, $20, $20, $20, $20, $20, $20, $20
+  .byt $20, $20, $20, $20, $20, $20, $20, $20
+  .byt $00
 
-text_mm_file		.byt "File Browser", 0
-text_mm_last		.byt "Run last game", 0
-text_mm_time		.byt "Set Clock", 0
-text_mm_scic		.byt "Enable SuperCIC", 0
-text_mm_vmode_menu	.byt "Menu video mode", 0
-text_mm_vmode_game	.byt "Game video mode", 0
-text_mm_sysinfo		.byt "System Information", 0
-text_statusbar_keys	.byt "A:Select B:Back X:Menu", 0
-text_last		.byt "Recent games", 0
-text_system		.byt "CPU Rev.: x  PPU1 Rev.: y  PPU2 Rev.: z",0
+text_dirmark    .byt " <dir>", 0
+window_nw       .byt 20
+window_ne       .byt 21
+window_sw       .byt 22
+window_se       .byt 23
+window_nh       .byt 24
+window_sh       .byt 25
+window_wv       .byt 26
+window_ev       .byt 27
+window_tl       .byt 28
+window_tr       .byt 29
+text_clkset     .byt "Please set the clock.", 0
+text_buttonB    .byt "Dpad: sel/chg, A: OK", 0
+time_win_x      .byt 18
+time_win_y      .byt 15
+time_win_w      .byt 27
+time_win_h      .byt 7
+main_win_x      .byt 18
+main_win_y      .byt 11
+main_win_w      .byt 27
+main_win_h      .byt 13
+text_mainmenu   .byt "Main Menu", 0
+sysinfo_win_x   .byt 10
+sysinfo_win_y   .byt 9
+sysinfo_win_w   .byt 43
+sysinfo_win_h   .byt 17
+last_win_x      .byt 2
+last_win_y      .byt 12
+last_win_w      .byt 60
+last_win_h      .byt 4
+
+text_mm_file    .byt "File Browser", 0
+text_mm_last    .byt "Run last game", 0
+text_mm_time    .byt "Set Clock", 0
+text_mm_scic    .byt "Enable SuperCIC", 0
+text_mm_vmode_menu  .byt "Menu video mode", 0
+text_mm_vmode_game  .byt "Game video mode", 0
+text_mm_sysinfo .byt "System Information", 0
+text_statusbar_keys .byt "A:Select B:Back X:Menu", 0
+text_last       .byt "Recent games", 0
+text_system     .byt "CPU Rev.: x  PPU1 Rev.: y  PPU2 Rev.: z",0
 
 
-text_spcplay		.byt "SPC Music Player", 0
-spcplay_win_x		.byt 15
-spcplay_win_y		.byt 15
-spcplay_win_w		.byt 33
-spcplay_win_h		.byt 5
+text_spcplay    .byt "SPC Music Player", 0
+spcplay_win_x   .byt 15
+spcplay_win_y   .byt 15
+spcplay_win_w   .byt 33
+spcplay_win_h   .byt 5
 
-text_spcload		.byt "Loading SPC data to SPC700...", 0
-text_spcstarta		.byt "**** Now playing SPC tune ****", 0
-text_spcstartb		.byt "Name:  ",0
-text_spcstartc		.byt "Song:  ",0
-text_spcstartd		.byt "Artist:",0
+text_spcload    .byt "Loading SPC data to SPC700...", 0
+text_spcstarta  .byt "**** Now playing SPC tune ****", 0
+text_spcstartb  .byt "Name:  ",0
+text_spcstartc  .byt "Song:  ",0
+text_spcstartd  .byt "Artist:",0
 
-spcstart_win_x		.byt 10
-spcstart_win_y		.byt 13
-spcstart_win_w		.byt 44
-spcstart_win_h		.byt 9
+spcstart_win_x  .byt 10
+spcstart_win_y  .byt 13
+spcstart_win_w  .byt 44
+spcstart_win_h  .byt 9
 
-text_spcid		.byt "SNES-SPC700"
+text_loading    .byt "Loading...", 0
+loading_win_x   .byt 24
+loading_win_y   .byt 15
+loading_win_w   .byt 14
+loading_win_h   .byt 5
+
+
+text_spcid      .byt "SNES-SPC700"
+
+rootdir         .byt "/", 0

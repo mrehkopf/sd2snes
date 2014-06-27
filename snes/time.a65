@@ -2,722 +2,721 @@
 #include "dma.i65"
 
 timebox_data
-        ; string offset, selection width, bcdtime offset
-	.byt  0, 4, 9
-	.byt  5, 2, 8
-	.byt  8, 2, 6
-	.byt 11, 2, 4
-	.byt 14, 2, 2
-	.byt 17, 2, 0
+; string offset, selection width, bcdtime offset
+  .byt  0, 4, 9
+  .byt  5, 2, 8
+  .byt  8, 2, 6
+  .byt 11, 2, 4
+  .byt 14, 2, 2
+  .byt 17, 2, 0
 
 time_month
-	.byt 3, 1
-	.byt 2, 8
-	.byt 3, 1
-	.byt 3, 0
-	.byt 3, 1
-	.byt 3, 0
-	.byt 3, 1
-	.byt 3, 1
-	.byt 3, 0
-	.byt 3, 1
-	.byt 3, 0
-	.byt 3, 1
+  .byt 3, 1
+  .byt 2, 8
+  .byt 3, 1
+  .byt 3, 0
+  .byt 3, 1
+  .byt 3, 0
+  .byt 3, 1
+  .byt 3, 1
+  .byt 3, 0
+  .byt 3, 1
+  .byt 3, 0
+  .byt 3, 1
 
 time_init:
-	php
-	sep #$20 : .as
-	; save text area
-	jsr backup_screen
-	; draw window + current time setting
-	lda #^text_clkset
-	sta window_tbank
-	ldx #!text_clkset
-	stx window_taddr
-	lda @time_win_x
-	sta window_x
-	lda @time_win_w
-	sta window_w
-	lda @time_win_y
-	sta window_y
-	lda @time_win_h
-	sta window_h
-	jsr draw_window
-	jsr gettime
-	stz time_sel
-	stz time_exit
-	stz time_cancel
-	lda #^text_buttonB
-	sta print_bank
-	ldx #!text_buttonB
-	stx print_src
-	lda @time_win_x
-	inc
-	inc
-	sta print_x
-	lda @time_win_y
-	clc
-	adc #$5
-	sta print_y
-	lda #$01
-	sta print_pal
-	jsr hiprint
+  php
+  sep #$20 : .as
+; draw window + current time setting
+  lda #^text_clkset
+  sta window_tbank
+  ldx #!text_clkset
+  stx window_taddr
+  lda @time_win_x
+  sta window_x
+  lda @time_win_w
+  sta window_w
+  lda @time_win_y
+  sta window_y
+  lda @time_win_h
+  sta window_h
+  jsr push_window
+  jsr draw_window
+  jsr gettime
+  stz time_sel
+  stz time_exit
+  stz time_cancel
+  lda #^text_buttonB
+  sta print_bank
+  ldx #!text_buttonB
+  stx print_src
+  lda @time_win_x
+  inc
+  inc
+  sta print_x
+  lda @time_win_y
+  clc
+  adc #$5
+  sta print_y
+  lda #$01
+  sta print_pal
+  jsr hiprint
 time_update
-	jsr rendertime
-	lda #^stringbuf
-	sta print_bank
-	ldx #!stringbuf
-	stx print_src
-	lda @time_win_x
-	clc
-	adc #$04
-	sta print_x
-	lda @time_win_y
-	clc
-	adc #$03
-	sta print_y
-	stz print_pal
-	jsr hiprint
-	lda time_sel
-	asl
-	clc
-	adc time_sel
-	xba
-	lda #$00
-	xba
-	tax
-	lda @timebox_data, x
-	clc
-	adc #$04
-	adc @time_win_x
-	sta bar_xl
-	lda @time_win_y
-	adc #$02
-	sta bar_yl
-	inx
-	lda @timebox_data, x
-	sta bar_wl
-	inx
-	lda @timebox_data, x
-	sta time_ptr
+  jsr rendertime
+  lda #^stringbuf
+  sta print_bank
+  ldx #!stringbuf
+  stx print_src
+  lda @time_win_x
+  clc
+  adc #$04
+  sta print_x
+  lda @time_win_y
+  clc
+  adc #$03
+  sta print_y
+  stz print_pal
+  jsr hiprint
+  lda time_sel
+  asl
+  clc
+  adc time_sel
+  xba
+  lda #$00
+  xba
+  tax
+  lda @timebox_data, x
+  clc
+  adc #$04
+  adc @time_win_x
+  sta bar_xl
+  lda @time_win_y
+  adc #$02
+  sta bar_yl
+  inx
+  lda @timebox_data, x
+  sta bar_wl
+  inx
+  lda @timebox_data, x
+  sta time_ptr
 timeloop1
-	lda isr_done
-	lsr
-	bcc timeloop1
-	stz isr_done
-	jsr read_pad
-	lda pad_right
-	bne tkey_right
-	lda pad_left
-	bne tkey_left
-	lda pad_down
-	bne tkey_down
-	lda pad_up
-	bne tkey_up
-	lda pad_b
-	bne tkey_b
-	lda pad_a
-	bne tkey_a
-	; do stuff
-	lda time_exit
-	bne timesave
-	; set clock
-	lda time_cancel
-	bne timenosave
-	beq timeloop1
+  lda isr_done
+  lsr
+  bcc timeloop1
+  stz isr_done
+  jsr read_pad
+  lda pad_right
+  bne tkey_right
+  lda pad_left
+  bne tkey_left
+  lda pad_down
+  bne tkey_down
+  lda pad_up
+  bne tkey_up
+  lda pad_b
+  bne tkey_b
+  lda pad_a
+  bne tkey_a
+; do stuff
+  lda time_exit
+  bne timesave
+; set clock
+  lda time_cancel
+  bne timenosave
+  beq timeloop1
 timesave
-	jsr settime
+  jsr settime
 timenosave
-	; restore text area
-	jsr restore_screen
-	plp
-	rtl
+; restore text area
+  jsr pop_window
+  plp
+  rtl
 
 tkey_b
-	inc time_cancel
-	jmp time_update
+  inc time_cancel
+  jmp time_update
 
 tkey_a
-	inc time_exit
-	jmp time_update
+  inc time_exit
+  jmp time_update
 
 tkey_left
-	jsr time_key_left
-	jmp time_update
+  jsr time_key_left
+  jmp time_update
 
 tkey_right
-	jsr time_key_right
-	jmp time_update
+  jsr time_key_right
+  jmp time_update
 
 tkey_up
-	jsr time_key_up
-	jmp time_update
+  jsr time_key_up
+  jmp time_update
 
 tkey_down
-	jsr time_key_down
-	jmp time_update
+  jsr time_key_down
+  jmp time_update
 
 time_key_left
-	lda time_sel
-	beq +
-	dec time_sel
+  lda time_sel
+  beq +
+  dec time_sel
 +
-	rts
+  rts
 
 time_key_right
-	lda time_sel
-	cmp #5
-	beq +
-	inc time_sel
+  lda time_sel
+  cmp #5
+  beq +
+  inc time_sel
 +
-	rts
+  rts
 
 time_key_up
-	lda time_ptr
-	cmp #4
-	beq time_inc_hour_jmp
-	cmp #6
-	beq time_inc_day_jmp
-	cmp #8
-	beq time_inc_mon_jmp
-	cmp #9
-	beq time_inc_year_jmp
-	xba
-	lda #$00
-	xba
-	tax
-	lda !time_s1, x
-	inc
-	cmp #$0a
-	bmi time_inc_minsec1_normal
-	stz !time_s1, x
-	lda !time_s10, x
-	inc
-	cmp #$06
-	bmi time_inc_minsec10_normal
-	stz !time_s10, x
-	bra +
+  lda time_ptr
+  cmp #4
+  beq time_inc_hour_jmp
+  cmp #6
+  beq time_inc_day_jmp
+  cmp #8
+  beq time_inc_mon_jmp
+  cmp #9
+  beq time_inc_year_jmp
+  xba
+  lda #$00
+  xba
+  tax
+  lda !time_s1, x
+  inc
+  cmp #$0a
+  bmi time_inc_minsec1_normal
+  stz !time_s1, x
+  lda !time_s10, x
+  inc
+  cmp #$06
+  bmi time_inc_minsec10_normal
+  stz !time_s10, x
+  bra +
 time_inc_minsec10_normal
-	sta !time_s10, x
-	bra +
+  sta !time_s10, x
+  bra +
 time_inc_minsec1_normal
-	sta !time_s1, x
+  sta !time_s1, x
 +
-	rts
+  rts
 
 time_inc_hour_jmp
-	jsr time_inc_hour
-	rts
+  jsr time_inc_hour
+  rts
 
 time_inc_day_jmp
-	jsr time_inc_day
-	rts
+  jsr time_inc_day
+  rts
 
 time_inc_mon_jmp
-	jsr time_inc_mon
-	rts
+  jsr time_inc_mon
+  rts
 
 time_inc_year_jmp
-	jsr time_inc_year
-	lda time_mon
-	jsr time_adjust_mon
-	rts
+  jsr time_inc_year
+  lda time_mon
+  jsr time_adjust_mon
+  rts
 
 time_inc_hour
-	lda time_h10
-	cmp #$02
-	bne time_inc_hour_normal
-	lda time_h1
-	inc
-	cmp #$04
-	bmi +
-	stz time_h1
-	stz time_h10
-	rts
+  lda time_h10
+  cmp #$02
+  bne time_inc_hour_normal
+  lda time_h1
+  inc
+  cmp #$04
+  bmi +
+  stz time_h1
+  stz time_h10
+  rts
 +
-	sta time_h1
-	rts
+  sta time_h1
+  rts
 time_inc_hour_normal
-	lda time_h1
-	inc
-	cmp #$0a
-	bmi +
-	stz time_h1
-	inc time_h10
-	rts
+  lda time_h1
+  inc
+  cmp #$0a
+  bmi +
+  stz time_h1
+  inc time_h10
+  rts
 +
-	sta time_h1
-	rts
+  sta time_h1
+  rts
 
 time_inc_day
-	lda time_mon
-	dec
-	asl
-	xba
-	lda #$00
-	xba
-	tax
-	lda @time_month, x
-	cmp time_d10
-	bne time_inc_day_normal
-	inx
-	jsr is_leapyear_feb
-	lda @time_month, x
-	dec
-	adc #$00
-	cmp time_d1
-	bpl +
-	stz time_d1
-	stz time_d10
+  lda time_mon
+  dec
+  asl
+  xba
+  lda #$00
+  xba
+  tax
+  lda @time_month, x
+  cmp time_d10
+  bne time_inc_day_normal
+  inx
+  jsr is_leapyear_feb
+  lda @time_month, x
+  dec
+  adc #$00
+  cmp time_d1
+  bpl +
+  stz time_d1
+  stz time_d10
 +
-	inc time_d1
-	rts
+  inc time_d1
+  rts
 time_inc_day_normal
-	lda time_d1
-	inc
-	cmp #$0a
-	bmi +
-	stz time_d1
-	inc time_d10
-	rts
+  lda time_d1
+  inc
+  cmp #$0a
+  bmi +
+  stz time_d1
+  inc time_d10
+  rts
 +
-	sta time_d1
-	rts
+  sta time_d1
+  rts
 
 time_inc_mon
-	lda time_mon
-	inc
-	cmp #13
-	bmi +
-	lda #$01
+  lda time_mon
+  inc
+  cmp #13
+  bmi +
+  lda #$01
 +
-	jsr time_adjust_mon
-	rts
+  jsr time_adjust_mon
+  rts
 
 time_adjust_mon
-	sta time_mon
-	dec
-	asl
-	xba
-	lda #$00
-	xba
-	tax
-	lda time_d10
-	cmp @time_month, x
-	bcs time_mon_adjust
-	rts
+  sta time_mon
+  dec
+  asl
+  xba
+  lda #$00
+  xba
+  tax
+  lda time_d10
+  cmp @time_month, x
+  bcs time_mon_adjust
+  rts
 time_mon_adjust
-	php
-	inx
-	lda @time_month, x
-	pha
-	jsr is_leapyear_feb	; c=1 -> a leapyear february
-	pla
-	adc #$00
-	plp
-	bne time_mon_doadjust
-	cmp time_d1
-	bcs +
+  php
+  inx
+  lda @time_month, x
+  pha
+  jsr is_leapyear_feb ; c=1 -> a leapyear february
+  pla
+  adc #$00
+  plp
+  bne time_mon_doadjust
+  cmp time_d1
+  bcs +
 time_mon_doadjust
-	sta time_d1
-	dex
-	lda @time_month, x
-	sta time_d10
+  sta time_d1
+  dex
+  lda @time_month, x
+  sta time_d10
 +
-	rts
+  rts
 
 time_inc_year
-	lda time_y1
-	inc
-	cmp #$0a
-	bmi time_inc_y1_normal
-	stz time_y1
-	lda time_y10
-	inc
-	cmp #$0a
-	bmi time_inc_y10_normal
-	stz time_y10
-	inc time_y100
-	rts
+  lda time_y1
+  inc
+  cmp #$0a
+  bmi time_inc_y1_normal
+  stz time_y1
+  lda time_y10
+  inc
+  cmp #$0a
+  bmi time_inc_y10_normal
+  stz time_y10
+  inc time_y100
+  rts
 time_inc_y10_normal
-	sta time_y10
-	rts
+  sta time_y10
+  rts
 time_inc_y1_normal
-	sta time_y1
-	rts
+  sta time_y1
+  rts
 
 
 time_key_down
-	lda time_ptr
-	cmp #4
-	beq time_dec_hour_jmp
-	cmp #6
-	beq time_dec_day_jmp
-	cmp #8
-	beq time_dec_mon_jmp
-	cmp #9
-	beq time_dec_year_jmp
-	xba
-	lda #$00
-	xba
-	tax
-	lda !time_s1, x
-	dec
-	cmp #$ff
-	bne time_dec_minsec1_normal
-	lda #$09
-	sta !time_s1, x
-	lda !time_s10, x
-	dec
-	cmp #$ff
-	bne time_dec_minsec10_normal
-	lda #$05
-	sta !time_s10, x
-	bra +
+  lda time_ptr
+  cmp #4
+  beq time_dec_hour_jmp
+  cmp #6
+  beq time_dec_day_jmp
+  cmp #8
+  beq time_dec_mon_jmp
+  cmp #9
+  beq time_dec_year_jmp
+  xba
+  lda #$00
+  xba
+  tax
+  lda !time_s1, x
+  dec
+  cmp #$ff
+  bne time_dec_minsec1_normal
+  lda #$09
+  sta !time_s1, x
+  lda !time_s10, x
+  dec
+  cmp #$ff
+  bne time_dec_minsec10_normal
+  lda #$05
+  sta !time_s10, x
+  bra +
 time_dec_minsec10_normal
-	sta !time_s10, x
-	bra +
+  sta !time_s10, x
+  bra +
 time_dec_minsec1_normal
-	sta !time_s1, x
+  sta !time_s1, x
 +
-	rts
+  rts
 
 time_dec_hour_jmp
-	jsr time_dec_hour
-	rts
+  jsr time_dec_hour
+  rts
 
 time_dec_day_jmp
-	jsr time_dec_day
-	rts
+  jsr time_dec_day
+  rts
 
 time_dec_mon_jmp
-	jsr time_dec_mon
-	rts
+  jsr time_dec_mon
+  rts
 
 time_dec_year_jmp
-	jsr time_dec_year
-	lda time_mon
-	jsr time_adjust_mon
-	rts
+  jsr time_dec_year
+  lda time_mon
+  jsr time_adjust_mon
+  rts
 
 time_dec_hour
-	lda time_h1
-	dec
-	cmp #$ff
-	bne time_dec_h1_normal
-	lda time_h10
-	bne time_dec_h10_normal
-	lda #$02
-	sta time_h10
-	lda #$03
-	sta time_h1
-	rts
+  lda time_h1
+  dec
+  cmp #$ff
+  bne time_dec_h1_normal
+  lda time_h10
+  bne time_dec_h10_normal
+  lda #$02
+  sta time_h10
+  lda #$03
+  sta time_h1
+  rts
 time_dec_h10_normal
-	lda #$09
-	sta time_h1
-	dec time_h10
-	rts
+  lda #$09
+  sta time_h1
+  dec time_h10
+  rts
 time_dec_h1_normal
-	sta time_h1
-	rts
+  sta time_h1
+  rts
 
 time_dec_day
-	lda time_d10
-	beq +
-	lda time_d1
-	dec
-	cmp #$ff
-	bne time_dec_d1_normal
-	bra time_dec_cont
-+	lda time_d1
-	dec
-	bne time_dec_d1_normal
+  lda time_d10
+  beq +
+  lda time_d1
+  dec
+  cmp #$ff
+  bne time_dec_d1_normal
+  bra time_dec_cont
++ lda time_d1
+  dec
+  bne time_dec_d1_normal
 time_dec_cont
-	lda time_d10
-	bne time_dec_d10_normal
-	lda time_mon
-	dec
-	asl
-	xba
-	lda #$00
-	xba
-	tax
-	lda @time_month, x
-	sta time_d10
-	inx
-	lda @time_month, x
-	pha
-	jsr is_leapyear_feb
-	pla
-	adc #$00
-	sta time_d1
-	rts
+  lda time_d10
+  bne time_dec_d10_normal
+  lda time_mon
+  dec
+  asl
+  xba
+  lda #$00
+  xba
+  tax
+  lda @time_month, x
+  sta time_d10
+  inx
+  lda @time_month, x
+  pha
+  jsr is_leapyear_feb
+  pla
+  adc #$00
+  sta time_d1
+  rts
 time_dec_d10_normal
-	lda #$09
-	sta time_d1
-	dec time_d10
-	rts
+  lda #$09
+  sta time_d1
+  dec time_d10
+  rts
 time_dec_d1_normal
-	sta time_d1
-	rts
+  sta time_d1
+  rts
 
 time_dec_mon
-	lda time_mon
-	dec
-	bne +
-	lda #12
+  lda time_mon
+  dec
+  bne +
+  lda #12
 +
-	jsr time_adjust_mon
-	rts
+  jsr time_adjust_mon
+  rts
 
 time_dec_year
-	lda time_y1
-	dec
-	cmp #$ff
-	bne time_dec_y1_normal
-	lda #$09
-	sta time_y1
-	lda time_y10
-	dec
-	cmp #$ff
-	bne time_dec_y10_normal
-	lda #$09
-	sta time_y10
-	dec time_y100
-	rts
+  lda time_y1
+  dec
+  cmp #$ff
+  bne time_dec_y1_normal
+  lda #$09
+  sta time_y1
+  lda time_y10
+  dec
+  cmp #$ff
+  bne time_dec_y10_normal
+  lda #$09
+  sta time_y10
+  dec time_y100
+  rts
 time_dec_y10_normal
-	sta time_y10
-	rts
+  sta time_y10
+  rts
 time_dec_y1_normal
-	sta time_y1
-	rts
+  sta time_y1
+  rts
 
-	rts
+  rts
 
 gettime
-	php
-	sep #$20 : .as
-	lda #$0d
-	sta $2801
-	lda $2800
-	lda $2800
-	sta time_s1
-	lda $2800
-	sta time_s10
-	lda $2800
-	sta time_m1
-	lda $2800
-	sta time_m10
-	lda $2800
-	sta time_h1
-	lda $2800
-	sta time_h10
-	lda $2800
-	sta time_d1
-	lda $2800
-	sta time_d10
-	lda $2800
-	sta time_mon
-	lda $2800
-	sta time_y1
-	lda $2800
-	sta time_y10
-	lda $2800
-	sta time_y100
-	plp
-	rts
+  php
+  sep #$20 : .as
+  lda #$0d
+  sta $2801
+  lda $2800
+  lda $2800
+  sta time_s1
+  lda $2800
+  sta time_s10
+  lda $2800
+  sta time_m1
+  lda $2800
+  sta time_m10
+  lda $2800
+  sta time_h1
+  lda $2800
+  sta time_h10
+  lda $2800
+  sta time_d1
+  lda $2800
+  sta time_d10
+  lda $2800
+  sta time_mon
+  lda $2800
+  sta time_y1
+  lda $2800
+  sta time_y10
+  lda $2800
+  sta time_y100
+  plp
+  rts
 
 rendertime
-	ldx #!stringbuf
-	lda time_y100
-	and #$0f
-	cmp #$0a
-	bpl y_skip1
-	clc
-	adc #$30
-	sta !1,x
-	lda #$31
-	sta !0,x
-	bra y_skip2
+  ldx #!stringbuf
+  lda time_y100
+  and #$0f
+  cmp #$0a
+  bpl y_skip1
+  clc
+  adc #$30
+  sta !1,x
+  lda #$31
+  sta !0,x
+  bra y_skip2
 y_skip1
-	clc
-	adc #$26
-	sta !1,x
-	lda #$32
-	sta !0,x
+  clc
+  adc #$26
+  sta !1,x
+  lda #$32
+  sta !0,x
 y_skip2
-	inx
-	inx
-	lda time_y10
-	and #$0f
-	clc
-	adc #$30
-	sta !0,x
-	inx
-	lda time_y1
-	and #$0f
-	clc
-	adc #$30
-	sta !0,x
-	inx
-	lda #$2d
-	sta !0,x
-	inx
-	lda time_mon
-	and #$0f
-	cmp #$0a
-	bpl mon_skip1
-        clc
-        adc #$30
-        sta !1,x
-        lda #$30
-        sta !0,x
-        bra mon_skip2
+  inx
+  inx
+  lda time_y10
+  and #$0f
+  clc
+  adc #$30
+  sta !0,x
+  inx
+  lda time_y1
+  and #$0f
+  clc
+  adc #$30
+  sta !0,x
+  inx
+  lda #$2d
+  sta !0,x
+  inx
+  lda time_mon
+  and #$0f
+  cmp #$0a
+  bpl mon_skip1
+  clc
+  adc #$30
+  sta !1,x
+  lda #$30
+  sta !0,x
+  bra mon_skip2
 mon_skip1
-        clc
-        adc #$26
-        sta !1,x
-        lda #$31
-        sta !0,x
+  clc
+  adc #$26
+  sta !1,x
+  lda #$31
+  sta !0,x
 mon_skip2
-	inx
-	inx
-	lda #$2d
-	sta !0,x
-	inx
-	lda time_d10
-	clc
-	adc #$30
-	sta !0,x
-	inx
-	lda time_d1
-	clc
-	adc #$30
-	sta !0,x
-	inx
-	lda #$20
-	sta !0,x
-	inx
-	lda time_h10
-	clc
-	adc #$30
-	sta !0,x
-	inx
-	lda time_h1
-	clc
-	adc #$30
-	sta !0,x
-	inx
-	lda #$3a
-	sta !0,x
-	inx
-	lda time_m10
-	clc
-	adc #$30
-	sta !0,x
-	inx
-	lda time_m1
-	clc
-	adc #$30
-	sta !0,x
-	inx
-	lda #$3a
-	sta !0,x
-	inx
-	lda time_s10
-	clc
-	adc #$30
-	sta !0,x
-	inx
-	lda time_s1
-	clc
-	adc #$30
-	sta !0,x
-	stz !1,x
-	rts
+  inx
+  inx
+  lda #$2d
+  sta !0,x
+  inx
+  lda time_d10
+  clc
+  adc #$30
+  sta !0,x
+  inx
+  lda time_d1
+  clc
+  adc #$30
+  sta !0,x
+  inx
+  lda #$20
+  sta !0,x
+  inx
+  lda time_h10
+  clc
+  adc #$30
+  sta !0,x
+  inx
+  lda time_h1
+  clc
+  adc #$30
+  sta !0,x
+  inx
+  lda #$3a
+  sta !0,x
+  inx
+  lda time_m10
+  clc
+  adc #$30
+  sta !0,x
+  inx
+  lda time_m1
+  clc
+  adc #$30
+  sta !0,x
+  inx
+  lda #$3a
+  sta !0,x
+  inx
+  lda time_s10
+  clc
+  adc #$30
+  sta !0,x
+  inx
+  lda time_s1
+  clc
+  adc #$30
+  sta !0,x
+  stz !1,x
+  rts
 
 is_leapyear_feb
-	lda time_mon
-	cmp #$02
-	bne is_leapyear_feb_no
-	lda time_y10
-	asl
-	sta time_tmp
-	asl
-	asl
-	clc
-	adc time_tmp
-	clc
-	adc time_y1
-	sta time_tmp
-	and #$03
-	beq is_leapyear_4th	; every 4th year
+  lda time_mon
+  cmp #$02
+  bne is_leapyear_feb_no
+  lda time_y10
+  asl
+  sta time_tmp
+  asl
+  asl
+  clc
+  adc time_tmp
+  clc
+  adc time_y1
+  sta time_tmp
+  and #$03
+  beq is_leapyear_4th ; every 4th year
 is_leapyear_feb_no
-	clc
-	rts
+  clc
+  rts
 
-is_leapyear_4th	; leapyear candidate
-	lda time_tmp ; year=00?
-	beq +        ; then check century
-	sec          ; else it's always a leapyear
-	rts
+is_leapyear_4th       ; leapyear candidate
+  lda time_tmp        ; year=00?
+  beq +               ; then check century
+  sec                 ; else it's always a leapyear
+  rts
 +
-	lda time_y100 ; century divisible by 4?
-	clc
-	adc #10
-	and #$03
-	beq is_leapyear_400th
-	clc
-	rts
+  lda time_y100       ; century divisible by 4?
+  clc
+  adc #10
+  and #$03
+  beq is_leapyear_400th
+  clc
+  rts
 
 is_leapyear_400th
-	sec
-	rts
+  sec
+  rts
 
 settime
-	lda time_y100
-	sta @MCU_PARAM
-	lda time_y10
-	sta @MCU_PARAM+1
-	lda time_y1
-	sta @MCU_PARAM+2
-	lda time_mon
-	sta @MCU_PARAM+3
-	lda time_d10
-	sta @MCU_PARAM+4
-	lda time_d1
-	sta @MCU_PARAM+5
-	lda time_h10
-	sta @MCU_PARAM+6
-	lda time_h1
-	sta @MCU_PARAM+7
-	lda time_m10
-	sta @MCU_PARAM+8
-	lda time_m1
-	sta @MCU_PARAM+9
-	lda time_s10
-	sta @MCU_PARAM+10
-	lda time_s1
-	sta @MCU_PARAM+11
-	lda #$02 ; set clock
-	sta @MCU_CMD
-	rts
+  lda time_y100
+  sta @MCU_PARAM
+  lda time_y10
+  sta @MCU_PARAM+1
+  lda time_y1
+  sta @MCU_PARAM+2
+  lda time_mon
+  sta @MCU_PARAM+3
+  lda time_d10
+  sta @MCU_PARAM+4
+  lda time_d1
+  sta @MCU_PARAM+5
+  lda time_h10
+  sta @MCU_PARAM+6
+  lda time_h1
+  sta @MCU_PARAM+7
+  lda time_m10
+  sta @MCU_PARAM+8
+  lda time_m1
+  sta @MCU_PARAM+9
+  lda time_s10
+  sta @MCU_PARAM+10
+  lda time_s1
+  sta @MCU_PARAM+11
+  lda #$02            ; set clock
+  sta @MCU_CMD
+  rts
 
 printtime:
-        jsr gettime
-        jsr rendertime
-        lda listdisp
-        clc
-        adc #$0a
-        sta print_y
-        lda #$2b
-        sta print_x
-        lda #$40
-        sta print_count
-        lda #^stringbuf
-        sta print_bank
-        ldx #!stringbuf
-        stx print_src
-        stz print_pal
-        jsr hiprint
-	rts
+  jsr gettime
+  jsr rendertime
+  lda listdisp
+  clc
+  adc #$0a
+  sta print_y
+  lda #$2b
+  sta print_x
+  lda #$40
+  sta print_count
+  lda #^stringbuf
+  sta print_bank
+  ldx #!stringbuf
+  stx print_src
+  stz print_pal
+  jsr hiprint
+  rts

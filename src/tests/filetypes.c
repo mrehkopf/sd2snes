@@ -65,7 +65,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
   static uint32_t next_subdir_tgt;
   static uint32_t parent_tgt;
   static uint32_t dir_end = 0;
-  static uint8_t was_empty = 0;
+/*  static uint8_t was_empty = 0; */
   uint32_t dir_tgt;
   uint16_t numentries;
   uint32_t dirsize;
@@ -132,12 +132,12 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
         res = f_readdir(&dir, &fno);
         if (res != FR_OK || fno.fname[0] == 0) {
           if(pass) {
-            if(!numentries) was_empty=1;
+/*            if(!numentries) was_empty=1; */
           }
           break;
         }
         fn = *fno.lfname ? fno.lfname : fno.fname;
-        if ((*fn == '.') || !(memcmp(fn, SYS_DIR_NAME, sizeof(SYS_DIR_NAME)))) continue;
+        if ((*fn == '.') || !(memcmp(fn, SYS_DIR_NAME, strlen((char*)SYS_DIR_NAME)))) continue;
         if (fno.fattrib & AM_DIR) {
           depth++;
           if(depth < FS_MAX_DEPTH) {
@@ -172,7 +172,7 @@ uint32_t scan_dir(char* path, FILINFO* fno_param, char mkdb, uint32_t this_dir_t
               parent_tgt = this_dir_tgt;
               scan_dir(path, &fno, mkdb, next_subdir_tgt);
               dir_tgt += 4;
-              was_empty = 0;
+/*              was_empty = 0; */
             }
           }
           depth--;

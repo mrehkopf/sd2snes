@@ -1,221 +1,227 @@
 *=$7E0000
 .data
-;don't anger the stack!
-dirptr_addr	.word	0
-dirptr_bank	.word	0
-dirstart_addr	.word	0
-dirstart_bank	.word	0
-dirend_addr	.word	0
-dirend_bank	.word	0
-dirend_idx	.word	0
-dirptr_idx	.word	0
-dirent_addr	.word	0
-dirent_bank	.word	0
-dirent_type	.byt 0
-dirend_onscreen	.byt 0
-dirlog_idx	.byt 0,0,0 ; long ptr
-direntry_fits_idx
-		.byt 0,0
-longptr		.byt 0,0,0 ; general purpose long ptr
+dirptr_addr     .word 0
+dirptr_bank     .word 0
+dirstart_addr   .word 0
+dirstart_bank   .word 0
+dirend_addr     .word 0
+dirend_bank     .word 0
+dirend_idx      .word 0
+dirptr_idx      .word 0
+dirent_addr     .word 0
+dirent_bank     .word 0
+dirent_type     .byt 0
+dirend_onscreen .byt 0
+dirlog_idx      .byt 0,0,0  ; long ptr
+direntry_fits_idx .byt 0,0
+longptr         .byt 0,0,0  ; general purpose long ptr
 ;----------parameters for text output----------
-print_x	.byt 0		;x coordinate
-	.byt 0
-print_y	.byt 0		;y coordinate
-	.byt 0
-print_src	.word 0	;source data address
-print_bank	.byt 0	;source data bank
-print_pal	.word 0	;palette number for text output
-print_temp	.word 0 ;work variable
-print_ptr	.byt 0,0,0 ;read pointer
-print_count	.word 0	;how many characters may be printed?
-print_done	.word 0 ;how many characters were printed?
-print_over	.byt 0  ;was the string printed incompletely?
+print_x         .word 0     ; x coordinate
+print_y         .word 0     ; y coordinate
+print_src       .word 0     ; source data address
+print_bank      .byt 0      ; source data bank
+print_pal       .word 0     ; palette number for text output
+print_temp      .word 0     ; work variable
+print_ptr       .byt 0,0,0  ; read pointer
+print_count     .word 0     ; how many characters may be printed?
+print_done      .word 0     ; how many characters were printed?
+print_over      .byt 0      ; was the string printed incompletely?
 ;----------parameters for dma----------
-dma_a_bank	.byt 0
-dma_a_addr	.word 0
-dma_b_reg	.byt 0
-dma_len		.word 0
-dma_mode	.byt 0
+dma_a_bank      .byt 0
+dma_a_addr      .word 0
+dma_b_reg       .byt 0
+dma_len         .word 0
+dma_mode        .byt 0
 
 ;----------state information----------
-isr_done	.byt 0  ; isr done flag
-bar_xl		.byt 0	; logical x position of select bar
-bar_yl		.byt 0	; logical y position of select bar
-bar_x		.byt 0	; pixel x position of select bar
-bar_y		.byt 0	; pixel y position of select bar
-bar_w		.byt 0	; bar width
-bar_wl		.byt 0	; bar width
-filesel_state	.byt 0	; menu state (0=file select)
-filesel_dirty	.byt 0	; menu dirty (e.g. after state change or when redraw is needed)
-filesel_sel	.word 0 ; selected item #
-cursor_x	.byt 0	; current cursor position (x)
-cursor_y	.byt 0  ; current cursor position (y)
-fd_addr		.word 0	; address of current "file descriptor"
-fd_bank		.byt 0	; bank of current "file descriptor"
-fd_fnoff	.word 0  ; offset of filename in file descriptor
-pad1mem		.word 0
-pad1trig	.word 0
-pad1delay	.word 0
-window_x	.byt 0
-window_y	.byt 0
-window_w	.byt 0
-window_h	.byt 0
-window_tmp	.word 0
-window_tbank	.byt 0
-window_taddr	.word 0
-stringbuf	.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.word 0
+isr_done        .byt 0      ; isr done flag
+bar_xl          .byt 0      ; logical x position of select bar
+bar_yl          .byt 0      ; logical y position of select bar
+bar_x           .byt 0      ; pixel x position of select bar
+bar_y           .byt 0      ; pixel y position of select bar
+bar_w           .byt 0      ; bar width
+bar_wl          .byt 0      ; bar width
+filesel_state   .byt 0      ; menu state (0=file select)
+filesel_dirty   .byt 0      ; menu dirty (e.g. after state change or when redraw is needed)
+filesel_sel     .word 0     ; selected item #
+cursor_x        .byt 0      ; current cursor position (x)
+cursor_y        .byt 0      ; current cursor position (y)
+fd_addr         .word 0     ; address of current "file descriptor"
+fd_bank         .byt 0      ; bank of current "file descriptor"
+fd_fnoff        .word 0     ; offset of filename in file descriptor
+pad1mem         .word 0
+pad1trig        .word 0
+pad1delay       .word 0
+window_x        .byt 0
+window_y        .byt 0
+window_w        .byt 0
+window_h        .byt 0
+window_tmp      .word 0
+window_tbank    .byt 0
+window_taddr    .word 0
+stringbuf
+  .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .word 0
 ;----------dialog specific data
-time_s1		.byt 0
-time_s10	.byt 0
-time_m1		.byt 0
-time_m10	.byt 0
-time_h1		.byt 0
-time_h10	.byt 0
-time_d1		.byt 0
-time_d10	.byt 0
-time_mon	.byt 0
-time_y1		.byt 0
-time_y10	.byt 0
-time_y100	.byt 0
-time_sel	.byt 0
-time_exit	.byt 0
-time_cancel	.byt 0
-time_ptr	.byt 0
-time_tmp	.byt 0
+time_s1         .byt 0
+time_s10        .byt 0
+time_m1         .byt 0
+time_m10        .byt 0
+time_h1         .byt 0
+time_h10        .byt 0
+time_d1         .byt 0
+time_d10        .byt 0
+time_mon        .byt 0
+time_y1         .byt 0
+time_y10        .byt 0
+time_y100       .byt 0
+time_sel        .byt 0
+time_exit       .byt 0
+time_cancel     .byt 0
+time_ptr        .byt 0
+time_tmp        .byt 0
 ;--
-mm_tmp		.byt 0
-mm_sel		.byt 0
-mm_refresh	.byt 0
+mm_tmp          .byt 0
+mm_sel          .byt 0
 ;--
 num_recent_games .byt 0
 recent_sel      .byt 0
 ;----------menu layout/system constants (224/448)
-vidmode		.byt 0  ; 0=224, 1=448
-listdisp	.word 0 ; number of displayable list entries
-textdmasize	.word 0 ; number of bytes to copy each frame
-barstep		.byt 0  ; step size for bar
+vidmode         .byt 0  ; 0=224, 1=448
+listdisp        .word 0 ; number of displayable list entries
+textdmasize     .word 0 ; number of bytes to copy each frame
+barstep         .byt 0  ; step size for bar
 
 ;-misc
-testvar		.word 0,0,0,0
+testvar         .word 0,0,0,0
 ;menu system
-menu_stack	.word 0,0,0,0,0,0,0,0
-listsel_sel	.byt 0
-listsel_step	.byt 0
-listsel_max	.byt 0
+menu_stack      .word 0,0,0,0,0,0,0,0
+listsel_sel     .byt 0
+listsel_step    .byt 0
+listsel_max     .byt 0
 ;----------hdma tables in WRAM (must be stable when cartridge is cut off)
-hdma_pal	.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0
-hdma_cg_addr	.byt 0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.byt 0
-hdma_mode	.byt 0,0,0,0,0
-hdma_scroll	.byt 0
-		.byt 0,0,0,0
-		.byt 0
-		.byt 0,0,0,0
-		.byt 0
-hdma_math	.byt 0
-		.byt 0,0
-		.byt 0
-		.byt 0,0
+hdma_pal
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0
+hdma_cg_addr
+  .byt 0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt 0
+hdma_mode       .byt 0,0,0,0,0
+hdma_scroll
+  .byt 0
+  .byt 0,0,0,0
+  .byt 0
+  .byt 0,0,0,0
+  .byt 0
+hdma_math
+  .byt 0
+  .byt 0,0
+  .byt 0
+  .byt 0,0
 hdma_math_upperborder
-		.byt 0
-		.byt 0,0
+  .byt 0
+  .byt 0,0
 hdma_math_selection
-		.byt 0
-		.byt 0,0
+  .byt 0
+  .byt 0,0
 hdma_math_lowerborder
-		.byt 0
-		.byt 0,0
-		.byt 0
-		.byt 0,0
-		.byt 0
-		.byt 0,0
-		.byt 0
+  .byt 0
+  .byt 0,0
+  .byt 0
+  .byt 0,0
+  .byt 0
+  .byt 0,0
+  .byt 0
 
-hdma_window	.byt 0
-		.byt 0,0
-		.byt 0
-		.byt 0,0
-		.byt 0
-		.byt 0,0
-		.byt 0
-		.byt 0,0
-		.byt 0
-		.byt 0,0
-		.byt 0
-		.byt 0,0
-		.byt 0
-		.byt 0,0
-		.byt 0
-		.byt 0,0
-		.byt 0
+hdma_window
+  .byt 0
+  .byt 0,0
+  .byt 0
+  .byt 0,0
+  .byt 0
+  .byt 0,0
+  .byt 0
+  .byt 0,0
+  .byt 0
+  .byt 0,0
+  .byt 0
+  .byt 0,0
+  .byt 0
+  .byt 0,0
+  .byt 0
+  .byt 0,0
+  .byt 0
 ; dirlog format:
-; dirstart_addr	2
-; dirstart_bank	1
-; dirptr_addr	2
-; dirptr_bank	1
-; menu_sel	2
-; total		8 bytes
-dirlog  .word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.word	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+; dirstart_addr  2
+; dirstart_bank  1
+; dirptr_addr  2
+; dirptr_bank  1
+; menu_sel  2
+; total    8 bytes
+dirlog
+  .word  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .word  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .word  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .word  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .word  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .word  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 direntry_fits
-	.byt	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byt	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .byt  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 direntry_xscroll_state
-	.word	0
+  .word  0
 direntry_xscroll
-	.word	0
+  .word  0
 direntry_xscroll_wait
-	.word	0
-infloop	.byt 0,0  ; to be filled w/ 80 FE
+  .word  0
+infloop         .byt 0,0  ; to be filled w/ 80 FE
 tgt_bright
-	.byt 0
+  .byt 0
 cur_bright
-	.byt 0
+  .byt 0
 ;-- pad
-pad_b		.byt 0
-pad_y		.byt 0
-pad_select	.byt 0
-pad_start	.byt 0
-pad_up		.byt 0
-pad_down	.byt 0
-pad_left	.byt 0
-pad_right	.byt 0
-pad_a		.byt 0
-pad_x		.byt 0
-pad_l		.byt 0
-pad_r		.byt 0
+pad_b           .byt 0
+pad_y           .byt 0
+pad_select      .byt 0
+pad_start       .byt 0
+pad_up          .byt 0
+pad_down        .byt 0
+pad_left        .byt 0
+pad_right       .byt 0
+pad_a           .byt 0
+pad_x           .byt 0
+pad_l           .byt 0
+pad_r           .byt 0
 
 ;------------------------
 saved_sp
-	.word 0
+  .word 0
 warm_signature
-	.word 0
+  .word 0
 snes_system_config
-	.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-
-wram_fadeloop	.byt 0
+  .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+window_stack_head .word 0
+dbg_ptr         .word 0
+fade_speed      .byt 0
+fade_count      .byt 0
+idle_count      .word 0
+_END            .byt 0

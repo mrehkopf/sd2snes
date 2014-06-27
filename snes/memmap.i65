@@ -1,40 +1,57 @@
-#if 0 /* #if0'd because it's #included, and those don't get parsed properly by snescom */
-; This file is part of the snescom-asm demo - a demo of how to build a SNES program.
-; See http://bisqwit.iki.fi/source/snescom.html for details.
-#endif
+#define APUIO0                      $2140
+#define APUIO1                      $2141
+#define APUIO2                      $2142
+#define APUIO3                      $2143
 
-/* These must be defined as constants, because they're used
- * in calculation that is sent to PPU as parameters */
+#define BG1_TILE_BASE               $5800
+#define BG2_TILE_BASE               $5000
 
-#define APUIO0		$2140
-#define APUIO1		$2141
-#define APUIO2		$2142
-#define APUIO3		$2143
+#define OAM_TILE_BASE               $6000
 
-#define BG1_TILE_BASE	$5800
-#define BG2_TILE_BASE	$5000
+#define BG1_TILE_BUF                $7EB000
+#define BG2_TILE_BUF                $7EA000
+#define BG1_TILE_BAK                $7E9000
+#define BG2_TILE_BAK                $7E8000
 
-#define OAM_TILE_BASE	$6000
+#define MCU_CMD                     $002A00
+#define SNES_CMD                    $002A02
+#define MCU_PARAM                   $002A04
+#define BRAM_ROUTINE                $002A10
+#define BRAM_NMIHOOK                $002A80
 
-#define BG1_TILE_BUF	$7EB000
-#define BG2_TILE_BUF	$7EA000
+#define WRAM_ROUTINE                $7EF000
+#define WRAM_STORE_BLOCKRAM_ROUTINE $7EF080
+#define WRAM_FADELOOP               $7EF100
+#define WRAM_NMIHOOK                $7EF180
 
-#define BG1_TILE_BAK	$7E9000
-#define BG2_TILE_BAK	$7E8000
+#define RTC_STATUS                  $307100
+#define LAST_STATUS                 $307101
+#define SYSINFO_BLK                 $307200
+#define LAST_GAME                   $307420
 
-#define MCU_CMD		$307000
-#define MCU_PARAM	$307004
-#define RTC_STATUS	$307100
-#define LAST_STATUS	$307101
-#define SYSINFO_BLK	$307200
-#define LAST_GAME	$307420
+#define ROOT_DIR                    $C10000
 
-#define ROOT_DIR	$C10000
+#define CMD_LOADROM                 $01
+#define CMD_SETRTC                  $02
+#define CMD_SYSINFO                 $03
+#define CMD_LOADLAST                $04
+#define CMD_LOADSPC                 $05
+#define CMD_RESET                   $06
+#define CMD_SET_ALLOW_PAIR          $07
+#define CMD_SET_VIDMODE_GAME        $08
+#define CMD_SET_VIDMODE_MENU        $09
+#define CMD_READDIR                 $0A
+#define CMD_FPGA_RECONF             $0B
+#define CMD_RESET_TO_MENU           $0C
 
-#define CMD_SYSINFO	$03
-#define CMD_LOADSPC	$05
-#define CMD_RESET	$06
+#define VIDMODE_NTSC                $00
+#define VIDMODE_PAL                 $01
+#define VIDMODE_AUTO                $02
 
-#define SPC_DATA	$FD0000
-#define SPC_HEADER	$FE0000
-#define SPC_DSP_REGS	$FE0100
+#define SPC_DATA                    $FD0000
+#define SPC_HEADER                  $FE0000
+#define SPC_DSP_REGS                $FE0100
+
+#define WINDOW_STACK_BASE           $7E2000
+
+#define IDLE_THRES                  33000

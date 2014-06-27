@@ -24,7 +24,7 @@ module address(
   input [23:0] SNES_ADDR,   // requested address from SNES
   input [7:0] SNES_PA,      // peripheral address from SNES
   output [23:0] ROM_ADDR,   // Address to request from SRAM0
-  output ROM_SEL,           // enable SRAM0 (active low)
+  output ROM_HIT,           // enable SRAM0
   output IS_SAVERAM,        // address/CS mapped as SRAM?
   output IS_ROM,            // address mapped as ROM?
   output IS_WRITABLE,       // address somehow mapped as writable area?
@@ -39,8 +39,7 @@ module address(
   output dspx_dp_enable,
   output dspx_a0,
   output r213f_enable,
-  output snescmd_rd_enable,
-  output snescmd_wr_enable,
+  output snescmd_enable,
   input [8:0] bs_page_offset,
   input [9:0] bs_page,
   input bs_page_enable
@@ -199,7 +198,7 @@ assign SRAM_SNES_ADDR = ((MAPPER == 3'b000)
 
 assign ROM_ADDR = SRAM_SNES_ADDR;
 
-assign ROM_SEL = 1'b0;
+assign ROM_HIT = IS_ROM | IS_WRITABLE;
 
 assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
 assign use_bsx = (MAPPER == 3'b011);
@@ -237,8 +236,6 @@ assign dspx_a0 = featurebits[FEAT_DSPX]
 
 assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 
-assign snescmd_rd_enable = (SNES_PA[7:4] == 4'b1110);
-
-assign snescmd_wr_enable = (SNES_ADDR[23:4] == 20'hccccc);
+assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:8]} == 9'b0_00101010);
 
 endmodule

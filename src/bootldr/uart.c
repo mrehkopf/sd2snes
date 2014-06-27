@@ -192,7 +192,7 @@ void uart_trace(void *ptr, uint16_t start, uint16_t len) {
 }
 
 void uart_flush(void) {
-  while (read_idx != write_idx) ;
+  while(!(BITBAND(UART_REGS->LSR, 5)));
 }
 
 void uart_puts(const char *text) {

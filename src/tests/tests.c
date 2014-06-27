@@ -154,7 +154,9 @@ int test_fpga() {
 
 int test_mem() {
   printf("RAM test\n========\n");
-  printf("Testing RAM0 (128Mbit) - writing RAM -");
+  printf("Testing RAM0 (128Mbit) - clearing RAM -");
+  sram_memset(0, 16777216, 0);
+  printf(" writing RAM -");
   uint32_t addr;
   snes_reset(1);
   fpga_select_mem(0);
@@ -192,7 +194,10 @@ int test_mem() {
   }
   FPGA_DESELECT();
   if(error) printf("RAM0 FAILED\n");
-  else printf("RAM0 PASSED\n");
+  else {
+    printf("RAM0 PASSED\n\n\n");
+//    save_sram((uint8_t*)"/sd2snes/dmatest.bin", 16777216, 0);
+  }
   printf("Testing RAM1 (4Mbit) - writing RAM - ");
   snes_reset(1);
   fpga_select_mem(1);
@@ -257,6 +262,51 @@ int test_clk() {
     printf("FAILED\n\n\n");
     return FAILED;
   }
+  printf("PASSED\n\n\n");
+  return PASSED;
+}
+
+int test_sddma() {
+//  int i=0;
+//  for(i=0; i<4; i++) {
+    uint32_t len;
+    fpga_select_mem(0);
+    printf("SD DMA test\n===========\nclearing RAM - ");
+    sram_memset(0, 16777216, 0);
+    printf("loading test file - ");
+    if((len = load_sram_offload((uint8_t*)"/sd2snes/dmatest.bin", 0)) != 16777216) {
+      printf("DMA test file size mismatch! (expected 16777216, got %lu)\nFAILED\n\n\n", len);
+      return FAILED;
+    }
+
+    printf("verifying -");
+
+    uint32_t addr;
+    uint8_t data, expect;
+    int error = 0;
+    set_mcu_addr(0);
+    FPGA_SELECT();
+    FPGA_TX_BYTE(0x88);
+    for(addr=0; addr < 16777216; addr++) {
+      if((addr&0xffff) == 0)printf("\x8%c", PROGRESS[(addr>>16)&3]);
+      FPGA_WAIT_RDY();
+      data = FPGA_RX_BYTE();
+      expect = (addr)+(addr>>8)+(addr>>16);
+      if(data != expect) {
+        printf("error @0x%06lx: expected 0x%02x, got 0x%02x\n", addr, expect, data);
+        error++;
+        if(error>20) {
+          printf("too many errors, aborting\n");
+          break;
+        }
+      }
+    }
+    FPGA_DESELECT();
+    if(error) {
+      printf("FAILED\n\n\n");
+      return FAILED;
+    }
+//  }
   printf("PASSED\n\n\n");
   return PASSED;
 }
