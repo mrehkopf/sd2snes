@@ -24,10 +24,11 @@
 #define WRAM_STORE_BLOCKRAM_ROUTINE $7EF080
 #define WRAM_FADELOOP               $7EF100
 
-#define RTC_STATUS                  $307100
-#define LAST_STATUS                 $307101
-#define SYSINFO_BLK                 $307200
-#define LAST_GAME                   $307420
+#define FILESEL_CWD                 $FF0000
+#define RTC_STATUS                  $FF1100
+#define LAST_STATUS                 $FF1101
+#define SYSINFO_BLK                 $FF1200
+#define LAST_GAME                   $FF1420
 
 #define ROOT_DIR                    $C10000
 
