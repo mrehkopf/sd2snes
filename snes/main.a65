@@ -533,6 +533,8 @@ game_handshake:
   jsr hide_cursor
   jsr draw_loading_window
 ; send initial request to MCU
+  lda #$00
+  sta @SNES_CMD
   pla
   sta @MCU_CMD
 ; wait for ACK/NACK with error (noimpl warning etc.)
