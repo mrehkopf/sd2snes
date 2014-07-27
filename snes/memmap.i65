@@ -58,3 +58,13 @@
 #define WINDOW_STACK_BASE           $7E2000
 
 #define IDLE_THRES                  33000
+
+#define TYPE_ROM                    $01
+#define TYPE_SRM                    $02
+#define TYPE_SPC                    $04
+#define TYPE_IPS                    $08
+#define TYPE_CHT                    $10
+#define TYPE_SKIN                   $20
+#define TYPE_SUBDIR                 $40
+#define TYPE_PARENT                 $80
+

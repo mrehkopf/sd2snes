@@ -47,10 +47,11 @@ coldboot:       ; Regular, cold-start init
   jsr setup_gfx
   jsr store_wram_routines
   jsr colortest
-  jsr filesel_init
   jsr video_init
   jsr setup_hdma
   jsr screen_on
+  jsr wait_mcu_ready
+  jsr filesel_init
 
   sep #$20 : .as
   lda @RTC_STATUS
@@ -551,5 +552,16 @@ game_handshake:
 game_handshake_error:
 ; TODO display meaningful error message
   jsr pop_window
+  plp
+  rts
+
+wait_mcu_ready:
+  php
+  sep #$20 : .as
+  lda #$00
+  sta @MCU_CMD
+- lda @SNES_CMD
+  cmp #$55
+  bne -
   plp
   rts

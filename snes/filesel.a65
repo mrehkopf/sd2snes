@@ -33,6 +33,11 @@ filesel_init:
   sep #$20 : .as
   lda #^dirlog
   sta dirlog_idx+2
+  lda #$2f
+  sta @FILESEL_CWD
+  lda #$00
+  sta @FILESEL_CWD+1
+  jsr filesel_request_filelist
   rts
 
 fileselloop:
@@ -244,9 +249,8 @@ print_direntry:
   lda #$06      ; skip size string
   sta @fd_fnoff
   lda @dirent_type
-  and #$f0
-  cmp #$80
-  bne dirent_is_file
+  and #TYPE_SUBDIR|TYPE_PARENT
+  beq dirent_is_file
 dirent_is_dir
   lda #$01      ; different color for dirs
   bra dirent_type_cont
@@ -258,11 +262,11 @@ dirent_is_file
   lda #$0000
   bra dirent_type_cont
 +
-  cmp #$0003    ; SPC -> palette 2
+  cmp #TYPE_SPC ; SPC -> palette 2
   bne +
   lda #$0002
   bra dirent_type_cont
-  cmp #$0004    ; IPS -> palette 2 (green)
+  cmp #TYPE_IPS ; IPS -> palette 2 (green)
   bne +
   lda #$0002
   bra dirent_type_cont
@@ -480,15 +484,13 @@ select_item:
   iny
   iny
   lda [dirptr_addr], y
-  cmp #$01
+  cmp #TYPE_ROM
   beq sel_is_file
-  cmp #$03
+  cmp #TYPE_SPC
   beq sel_is_spc
-  cmp #$04
-  beq sel_is_file
-  cmp #$80
+  cmp #TYPE_SUBDIR
   beq sel_is_dir
-  cmp #$81
+  cmp #TYPE_PARENT
   beq sel_is_parent
 select_item_cont
   rts
@@ -511,12 +513,18 @@ select_file:
   rep #$20 : .al
   lda [dirptr_addr], y
   and #$00ff
-  sta @MCU_PARAM+2
+  sta @MCU_PARAM+6
   dey
   dey
   lda [dirptr_addr], y
+  sta @MCU_PARAM+4
+  lda #!FILESEL_CWD
   sta @MCU_PARAM
   sep #$20 : .as
+  lda #^FILESEL_CWD
+  sta @MCU_PARAM+2
+  lda #$00
+  sta @MCU_PARAM+3
   lda #CMD_LOADROM
   jsr game_handshake
   rts
@@ -560,33 +568,81 @@ select_dir:
   rep #$20 : .al
   lda [dirptr_addr], y
   sta @dirent_addr
-  tax
+  tay
   sep #$20 : .as
   lda @dirent_bank
   phb
   pha
   plb
-  lda !2, x     ; load linked dir start bank
-  clc
-  adc #$c0
-  sta @dirptr_bank
-  sta @dirstart_bank
+; append selected dir name to current working directory
+  ldx #$0000
+find_path_end:
+  lda @FILESEL_CWD, x
+  beq path_end_found
+  inx
+  bra find_path_end
+path_end_found
+  dex
+  lda @FILESEL_CWD, x
+  cmp #$2f
+  beq copy_new_path
+  inx
+copy_new_path:
+  lda #$2f
+  sta @FILESEL_CWD, x
+  inx
+copy_new_path_loop:
+  lda !6, y
+  sta @FILESEL_CWD, x
+  beq +
+  inx
+  iny
+  bra copy_new_path_loop
++ lda #$00
+; kill trailing /
+  dex
+  sta @FILESEL_CWD, x
+  plb
+; request directory listing
+  jsr filesel_request_filelist
   rep #$20 : .al
-  lda !0, x     ; load linked dir start address
+  lda #$0000
   sta @dirptr_addr
   sta @dirstart_addr
-  lda #$0000
+  sep #$20 : .as
   sta @filesel_sel
   sta @direntry_xscroll
   sta @direntry_xscroll_state
-  sep #$20 : .as
   lda #$01
   sta @filesel_dirty
-  plb
   rts
 
 select_parent:
-  rep #$20 : .al
+; truncate last subdirectory
+  sep #$20 : .as
+  ldx #$0000
+- lda @FILESEL_CWD, x
+  beq parent_end_found
+  inx
+  bra -
+parent_end_found:
+  cpx #$0001
+  beq cwd_is_root
+- lda @FILESEL_CWD, x
+  cmp #$2f
+  beq +
+  dex
+  bra -
++ cpx #$0000
+  bne +
+  inx
++ lda #$00
+  sta @FILESEL_CWD, x
+  bra parent_do_chdir
+cwd_is_root:
+  rts
+parent_do_chdir
+  jsr filesel_request_filelist
   lda @dirlog_idx
   sec
   sbc #$0008
@@ -622,12 +678,18 @@ select_spc:
   rep #$20 : .al
   lda [dirptr_addr], y
   and #$00ff
-  sta @MCU_PARAM+2
+  sta @MCU_PARAM+6
   dey
   dey
   lda [dirptr_addr], y
+  sta @MCU_PARAM+4
+  lda #!FILESEL_CWD
   sta @MCU_PARAM
   sep #$20 : .as
+  lda #^FILESEL_CWD
+  sta @MCU_PARAM+2
+  lda #$00
+  sta @MCU_PARAM+3
   lda #CMD_LOADSPC
   sta @MCU_CMD
 wait_spc:
@@ -862,3 +924,48 @@ scroll_direntry_scrollfast
   lda #$01
   sta direntry_xscroll_state
 + rts
+
+filesel_request_filelist:
+  php
+  phb
+  rep #$30 : .al : .xl
+  lda #!FILESEL_CWD
+  sta @MCU_PARAM
+  lda #!ROOT_DIR
+  sta @MCU_PARAM+4
+  sep #$20 : .as
+  lda #^FILESEL_CWD
+  sta @MCU_PARAM+2
+  lda #^ROOT_DIR
+  sta @MCU_PARAM+6
+  lda #TYPE_PARENT|TYPE_SUBDIR|TYPE_ROM|TYPE_SPC
+  sta @MCU_PARAM+8
+  lda #$00
+  sta @SNES_CMD
+  lda #CMD_READDIR
+  sta @MCU_CMD
+  lda #$00
+  pha
+  plb
+  jsr hide_cursor
+  jsr draw_loading_window
+filesel_request_filelist_wait_mcu:
+  lda @SNES_CMD
+  cmp #$55
+  bne filesel_request_filelist_wait_mcu
+  jsr pop_window
+  ldy #$0002
+- lda [dirstart_addr], y
+  beq +
+  iny
+  iny
+  iny
+  iny
+  bra -
++ rep #$20 : .al
+  tya
+  and #$fffc
+  sta dirend_addr
+  plb
+  plp
+  rts
