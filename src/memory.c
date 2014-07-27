@@ -167,7 +167,8 @@ void sram_readblock(void* buf, uint32_t addr, uint16_t size) {
   FPGA_DESELECT();
 }
 
-void sram_readstrn(void* buf, uint32_t addr, uint16_t size) {
+uint16_t sram_readstrn(void* buf, uint32_t addr, uint16_t size) {
+  uint16_t elemcount = 0;
   uint16_t count=size;
   uint8_t* tgt = buf;
   set_mcu_addr(addr);
@@ -176,8 +177,10 @@ void sram_readstrn(void* buf, uint32_t addr, uint16_t size) {
   while(count--) {
     FPGA_WAIT_RDY();
     if(!(*(tgt++) = FPGA_RX_BYTE())) break;
+    elemcount++;
   }
   FPGA_DESELECT();
+  return elemcount;
 }
 
 void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {

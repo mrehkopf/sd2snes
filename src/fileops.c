@@ -40,6 +40,8 @@ int newcard;
 void file_init() {
   file_res=f_mount(0, &fatfs);
   newcard = 0;
+  file_path[0] = '/';
+  file_path[1] = 0;
 }
 
 void file_reinit(void) {

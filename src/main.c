@@ -53,6 +53,15 @@ enum system_states {
   SYS_LAST_STATUS = 1
 };
 
+void menu_cmd_readdir(void) {
+  uint8_t path[256];
+  snes_get_filepath(path, 256);
+  uint32_t tgt_addr = snescmd_readlong(SNESCMD_MCU_PARAM + 4);
+  uint8_t typemask = snescmd_readbyte(SNESCMD_MCU_PARAM + 8);
+printf("path=%s tgt=%06lx mask=%02x\n", path, tgt_addr, typemask);
+  scan_dir(path, tgt_addr, typemask);
+}
+
 int main(void) {
   LPC_GPIO2->FIODIR = BV(4) | BV(5);
   LPC_GPIO1->FIODIR = BV(23) | BV(SNES_CIC_PAIR_BIT);
@@ -146,61 +155,13 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 
     cfg_load();
     cfg_save();
+    fpga_pgm((uint8_t*)"/sd2snes/fpga_base.bit");
     sram_writebyte(cfg_get_num_recent_games(), SRAM_STATUS_ADDR+SYS_LAST_STATUS);
     cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
-    *fs_path=0;
-    uint32_t saved_dir_id;
-    get_db_id(&saved_dir_id);
+//    scan_dir((uint8_t*)"/", SRAM_DIR_ADDR, TYPE_ROM | TYPE_PARENT | TYPE_SUBDIR);
 
-    uint32_t mem_dir_id = sram_readlong(SRAM_DIRID);
-    uint32_t mem_magic = sram_readlong(SRAM_SCRATCHPAD);
-    printf("mem_magic=%lx mem_dir_id=%lx saved_dir_id=%lx\n", mem_magic, mem_dir_id, saved_dir_id);
-    if((mem_magic != 0x12345678) || (mem_dir_id != saved_dir_id) || (newcard)) {
-      newcard = 0;
-      /* generate fs footprint (interesting files only) */
-      uint32_t curr_dir_id = scan_dir(fs_path, NULL, 0, 0);
-      printf("curr dir id = %lx\n", curr_dir_id);
-      /* files changed or no database found? */
-      if((get_db_id(&saved_dir_id) != FR_OK)
-        || saved_dir_id != curr_dir_id) {
-        /* rebuild database */
-        printf("saved dir id = %lx\n", saved_dir_id);
-        printf("rebuilding database...");
-        snes_bootprint("     rebuilding database ...    \0");
-        curr_dir_id = scan_dir(fs_path, NULL, 1, 0);
-        sram_writeblock(&curr_dir_id, SRAM_DB_ADDR, 4);
-        uint32_t endaddr, direndaddr;
-        sram_readblock(&endaddr, SRAM_DB_ADDR+4, 4);
-        sram_readblock(&direndaddr, SRAM_DB_ADDR+8, 4);
-        printf("%lx %lx\n", endaddr, direndaddr);
-        printf("sorting database...");
-        snes_bootprint("       sorting database ...     \0");
-        sort_all_dir(direndaddr);
-        printf("done\n");
-        snes_bootprint("        saving database ...     \0");
-        save_sram((uint8_t*)"/sd2snes/sd2snes.db", endaddr-SRAM_DB_ADDR, SRAM_DB_ADDR);
-        save_sram((uint8_t*)"/sd2snes/sd2snes.dir", direndaddr-(SRAM_DIR_ADDR), SRAM_DIR_ADDR);
-        fpga_pgm((uint8_t*)"/sd2snes/fpga_base.bit");
-        printf("done\n");
-      } else {
-        printf("saved dir id = %lx\n", saved_dir_id);
-        printf("different card, consistent db, loading db...\n");
-        fpga_pgm((uint8_t*)"/sd2snes/fpga_base.bit");
-        load_sram_offload((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
-        load_sram_offload((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
-      }
-      sram_writelong(curr_dir_id, SRAM_DIRID);
-      sram_writelong(0x12345678, SRAM_SCRATCHPAD);
-    } else {
-      snes_bootprint("    same card, loading db...     \0");
-      printf("same card, loading db...\n");
-      fpga_pgm((uint8_t*)"/sd2snes/fpga_base.bit");
-      load_sram_offload((uint8_t*)"/sd2snes/sd2snes.db", SRAM_DB_ADDR);
-      load_sram_offload((uint8_t*)"/sd2snes/sd2snes.dir", SRAM_DIR_ADDR);
-    }
-    /* cli_loop(); */
     /* load menu */
-
+    sram_writelong(0x12345678, SRAM_SCRATCHPAD);
     fpga_dspx_reset(1);
     uart_putc('(');
     load_rom((uint8_t*)"/sd2snes/menu.bin", SRAM_MENU_ADDR, 0);
@@ -282,24 +243,30 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           cmd=0; /* stay in menu loop */
           break;
         case SNES_CMD_LOADLAST:
-          cfg_get_last_game(file_lfn, sram_readbyte(SRAM_PARAM_ADDR));
+          cfg_get_last_game(file_lfn, snes_get_mcu_param() & 0xff);
           printf("Selected name: %s\n", file_lfn);
           cfg_add_last_game(file_lfn);
           cfg_save();
-          filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET);
+          filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;
         case SNES_CMD_SET_ALLOW_PAIR:
-          cfg_set_pair_mode_allowed(sram_readbyte(SRAM_PARAM_ADDR));
+          cfg_set_pair_mode_allowed(snes_get_mcu_param() & 0xff);
+          break;
+        case SNES_CMD_READDIR:
+          menu_cmd_readdir();
+          cmd=0; /* stay in menu loop */
           break;
         default:
           printf("unknown cmd: %d\n", cmd);
           cmd=0; /* unknown cmd: stay in loop */
           break;
       }
-
     }
     printf("loaded %lu bytes\n", filesize);
     printf("cmd was %x, going to snes main loop\n", cmd);
+
+    /* clear SNES cmd */
+    snes_set_mcu_cmd(0);
 
     if(romprops.has_msu1) {
       while(!msu1_loop());
