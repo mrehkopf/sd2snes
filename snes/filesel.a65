@@ -135,6 +135,10 @@ filesel_updates:
   bne key_a
   lda pad_x
   bne key_x
+  lda pad_l
+  bne key_l
+  lda pad_r
+  bne key_r
   bra fileselupd_out
 key_down
   jsr filesel_key_down
@@ -162,6 +166,12 @@ key_select
   bra fileselupd_out
 key_start
   jsr filesel_key_start
+  bra fileselupd_out
+key_l
+  jsr filesel_key_l
+  bra fileselupd_out
+key_r
+  jsr filesel_key_r
   bra fileselupd_out
 
 fileselupd_out
@@ -444,7 +454,26 @@ filesel_key_right:
   clc
   adc dirptr_addr
   sta dirptr_addr
+  lda listdisp
+  asl
+  asl
+  clc
+  adc dirptr_addr
+  cmp dirend_addr
+  bmi +
+  lda dirend_addr
+  lsr
+  lsr
+  sec
+  sbc listdisp
+  asl
+  asl
+  sta dirptr_addr
   sep #$20 : .as
+  lda listdisp
+  dec
+  sta filesel_sel
++ sep #$20 : .as
   rts
 
 filesel_key_a:
@@ -461,15 +490,54 @@ filesel_key_start:
 filesel_key_b:
   stz direntry_xscroll
   stz direntry_xscroll_state
+  jmp sel_is_parent
+
+filesel_key_l:
+  stz direntry_xscroll
+  stz direntry_xscroll_state
+  ldx dirstart_addr
+  stx dirptr_addr
+  ldx #$0000
+  stx filesel_sel
+  lda #$01
+  sta filesel_dirty
+  rts
+
+filesel_key_r:
+  lda dirend_onscreen
+  beq +
+  jmp fileselupd_lastcursor
++ lda #$01
+  sta filesel_dirty
+; subtract listdisp from index to get first entry pos
+; if less than one screen's worth, set to 0000, set cursor to last file
+; else set cursor to listdisp
   rep #$20 : .al
-  lda dirstart_addr
-  beq skip_key_b
-  sta dirptr_addr
-  lda #$0000
-  sta filesel_sel
-  bra select_item
-skip_key_b
+  lda dirend_addr
+  lsr
+  lsr
+  sec
+  sbc dirstart_addr
+  cmp listdisp ; listdisp > ptr?
+  bpl +
+  beq +
+  stz dirptr_addr
+  tya
+  lsr
+  lsr
+  dec
   sep #$20 : .as
+  sta filesel_sel
+  bra filesel_key_r_out
++ sbc listdisp
+  asl
+  asl
+  sta dirptr_addr
+  sep #$20 : .as
+  lda listdisp
+  dec
+  sta filesel_sel
+filesel_key_r_out
   rts
 
 select_item:
