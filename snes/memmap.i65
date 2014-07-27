@@ -17,12 +17,12 @@
 #define SNES_CMD                    $002A02
 #define MCU_PARAM                   $002A04
 #define BRAM_ROUTINE                $002A10
-#define BRAM_NMIHOOK                $002A80
-
+#define BRAM_NMIHOOK                $002A20
+#define BRAM_IRQHOOK                $002A26
+#define BRAM_PAYLOAD                $002A2C
 #define WRAM_ROUTINE                $7EF000
 #define WRAM_STORE_BLOCKRAM_ROUTINE $7EF080
 #define WRAM_FADELOOP               $7EF100
-#define WRAM_NMIHOOK                $7EF180
 
 #define RTC_STATUS                  $307100
 #define LAST_STATUS                 $307101
@@ -36,13 +36,16 @@
 #define CMD_SYSINFO                 $03
 #define CMD_LOADLAST                $04
 #define CMD_LOADSPC                 $05
-#define CMD_RESET                   $06
 #define CMD_SET_ALLOW_PAIR          $07
 #define CMD_SET_VIDMODE_GAME        $08
 #define CMD_SET_VIDMODE_MENU        $09
 #define CMD_READDIR                 $0A
 #define CMD_FPGA_RECONF             $0B
-#define CMD_RESET_TO_MENU           $0C
+#define CMD_RESET                   $80
+#define CMD_RESET_TO_MENU           $81
+#define CMD_ENABLE_CHEATS           $82
+#define CMD_DISABLE_CHEATS          $83
+#define CMD_KILL_NMIHOOK            $84
 
 #define VIDMODE_NTSC                $00
 #define VIDMODE_PAL                 $01
