@@ -198,7 +198,7 @@ draw_window:
   sta !0,x
 
 ; print to text buffer
-  lda #$01
+  lda #$03
   sta print_pal
   lda window_x
   sta print_x

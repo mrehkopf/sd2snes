@@ -37,8 +37,6 @@ void write_sysinfo() {
   uint32_t sd_tacc_max_frac = sd_tacc_max - (sd_tacc_max_int * 1000);
   uint32_t sd_tacc_avg_int = sd_tacc_avg / 1000;
   uint32_t sd_tacc_avg_frac = sd_tacc_avg - (sd_tacc_avg_int * 1000);
-  uint16_t numfiles = sram_readshort(SRAM_DB_ADDR+12);
-  uint16_t numdirs = sram_readshort(SRAM_DB_ADDR+14);
   int32_t sysclk = get_snes_sysclk();
 
   len = snprintf(linebuf, sizeof(linebuf), "Firmware version: %s", CONFIG_VERSION);
@@ -110,7 +108,7 @@ void write_sysinfo() {
   sram_writeblock(linebuf, sram_addr, 40);
   sram_memset(sram_addr+len, 40-len, 0x20);
   sram_addr += 40;
-  len = snprintf(linebuf, sizeof(linebuf), "Database: %d files, %d dirs", numfiles, numdirs);
+  len = snprintf(linebuf, sizeof(linebuf), "                                        ");
   sram_writeblock(linebuf, sram_addr, 40);
   sram_memset(sram_addr+len, 40-len, 0x20);
   sram_addr += 40;

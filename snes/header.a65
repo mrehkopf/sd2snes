@@ -13,7 +13,7 @@
 
 ; Begin assembling to this address.
 *= $C0FF00
-
+.word nmihook
 RESET:
   sei
   clc

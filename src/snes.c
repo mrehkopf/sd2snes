@@ -222,3 +222,9 @@ uint8_t snes_get_last_game_index() {
   return sram_readbyte(SRAM_PARAM_ADDR);
 }
 
+void snes_get_filepath(uint8_t *buffer, uint16_t length) {
+  uint32_t path_address = snescmd_readlong(SNESCMD_MCU_PARAM);
+  sram_readstrn(buffer, path_address, length-1);
+printf("%s\n", buffer);
+}
+

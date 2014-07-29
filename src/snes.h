@@ -27,20 +27,31 @@
 #ifndef SNES_H
 #define SNES_H
 
-#define SNES_CMD_LOADROM           (1)
-#define SNES_CMD_SETRTC            (2)
-#define SNES_CMD_SYSINFO           (3)
-#define SNES_CMD_LOADLAST          (4)
-#define SNES_CMD_LOADSPC           (5)
-#define SNES_CMD_RESET             (6)
-#define SNES_CMD_SET_ALLOW_PAIR    (7)
-#define SNES_CMD_SET_VIDMODE_GAME  (8)
-#define SNES_CMD_SET_VIDMODE_MENU  (9)
+#define SNES_CMD_LOADROM           (0x01)
+#define SNES_CMD_SETRTC            (0x02)
+#define SNES_CMD_SYSINFO           (0x03)
+#define SNES_CMD_LOADLAST          (0x04)
+#define SNES_CMD_LOADSPC           (0x05)
+#define SNES_CMD_SET_ALLOW_PAIR    (0x07)
+#define SNES_CMD_SET_VIDMODE_GAME  (0x08)
+#define SNES_CMD_SET_VIDMODE_MENU  (0x09)
+#define SNES_CMD_READDIR           (0x0a)
+#define SNES_CMD_FPGA_RECONF       (0x0b)
 
-#define MENU_ERR_OK     (0)
-#define MENU_ERR_NODSP  (1)
-#define MENU_ERR_NOBSX  (2)
-#define MENU_ERR_NOIMPL (3)
+#define SNES_CMD_RESET             (0x80)
+#define SNES_CMD_RESET_TO_MENU     (0x81)
+#define SNES_CMD_ENABLE_CHEATS     (0x82)
+#define SNES_CMD_DISABLE_CHEATS    (0x83)
+#define SNES_CMD_KILL_NMIHOOK      (0x84)
+
+#define MCU_CMD_RDY                (0x55)
+#define MCU_CMD_ERR                (0xaa)
+
+#define MENU_ERR_OK        (0x0)
+#define MENU_ERR_FS        (0x1)
+#define MENU_ERR_SUPPLFILE (0x2)
+#define MENU_ERR_NOIMPL    (0x3)
+#define MENU_ERR_CARDWP    (0x4)
 
 #define SNES_RESET_PULSELEN_MS	(1)
 

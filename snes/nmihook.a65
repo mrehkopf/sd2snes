@@ -1,0 +1,69 @@
+#include "memmap.i65"
+
+nmihook:
+  jsr !BRAM_PAYLOAD
+  jmp ($2a0e)
+irqhook:
+  jsr !BRAM_PAYLOAD
+  jmp ($2a0c)
+nmi_payload:
+  php
+  rep #$30 : .al : .xl
+  phb
+  pha
+  phx
+  phy
+  phk
+  plb
+  phd
+  lda #$2a00
+  tcd
+; read controller
+  sep #$10 : .xs
+- lda $4212
+  lsr
+  bcs -
+  stz $4016
+  ldx #$11
+  stx $4016
+  dex
+  stx $4016
+- ldy $4016
+  tya
+  ror
+  rol $08
+  dex
+  bne -
+; check button combinations
+; L+R+Start+Select : $3030
+; L+R+Select+X     : $2070
+; L+R+Start+A      : $10b0
+; L+R+Start+B      : $9030
+; L+R+Start+Y      : $5030
+  ldx #$00
+nmi_pad_loop:
+  lda $10, x
+  cmp $08
+  beq nmi_pad_found
+  cpx #$04
+  beq nmi_pad_notfound
+  inx
+  bra nmi_pad_loop
+nmi_pad_found:
+  txa
+  lsr
+  ora #$80
+  tax
+  stx <MCU_CMD
+nmi_pad_notfound:
+; clean up
+  pld
+  rep #$30 : .al : .xl
+  ply
+  plx
+  pla
+  plb
+  plp
+  rts
+.byt "bram_end"
+.word nmi_pad_found+$2a00

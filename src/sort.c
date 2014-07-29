@@ -43,11 +43,11 @@ int sort_cmp_elem(const void* elem1, const void* elem2) {
   sort_getstring_for_dirent(sort_str2, el2);
 /*printf("i1=%d i2=%d elem1=%lx elem2=%lx ; compare %s   ---   %s\n", index1, index2, elem1, elem2, sort_str1, sort_str2); */
 
-  if ((el1 & 0x80000000) && !(el2 & 0x80000000)) {
+  if ((el1 & 0xc0000000) && !(el2 & 0xc0000000)) {
     return -1;
   }
 
-  if (!(el1 & 0x80000000) && (el2 & 0x80000000)) {
+  if (!(el1 & 0xc0000000) && (el2 & 0xc0000000)) {
     return 1;
   }
 
@@ -55,7 +55,7 @@ int sort_cmp_elem(const void* elem1, const void* elem2) {
   if (*sort_str2 == '.') return 1;
 
   /* Do not compare trailing slashes of directory names */
-  if ((el1 & 0x80000000) && (el2 & 0x80000000)) {
+  if ((el1 & 0xc0000000) && (el2 & 0xc0000000)) {
     char *str1_slash = strrchr(sort_str1, '/');
     char *str2_slash = strrchr(sort_str2, '/');
     if(str1_slash != NULL) *str1_slash = 0;
@@ -67,8 +67,13 @@ int sort_cmp_elem(const void* elem1, const void* elem2) {
 
 /* get truncated string from database */
 void sort_getstring_for_dirent(char *ptr, uint32_t addr) {
+  sram_readstrn(ptr, addr + SRAM_MENU_ADDR + 6, SORT_STRLEN);
+}
+
+/* get truncated string from database */
+void sort_getstring_for_dirent_old(char *ptr, uint32_t addr) {
   uint8_t leaf_offset;
-  if(addr & 0x80000000) {
+  if(addr & 0xc0000000) {
     /* is directory link, name offset 4 */
     leaf_offset = sram_readbyte(addr + 4 + SRAM_MENU_ADDR);
     sram_readstrn(ptr, addr + 5 + leaf_offset + SRAM_MENU_ADDR, SORT_STRLEN);

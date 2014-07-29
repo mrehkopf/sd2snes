@@ -1,6 +1,6 @@
 #include "memmap.i65"
 #include "dma.i65"
-
+.word nmi_payload
 GAME_MAIN:
   sep #$20 : .as
   stz $4200     ; inhibit VBlank NMI
@@ -47,10 +47,11 @@ coldboot:       ; Regular, cold-start init
   jsr setup_gfx
   jsr store_wram_routines
   jsr colortest
-  jsr filesel_init
   jsr video_init
   jsr setup_hdma
   jsr screen_on
+  jsr wait_mcu_ready
+  jsr filesel_init
 
   sep #$20 : .as
   lda @RTC_STATUS
@@ -434,13 +435,12 @@ fadeloop_start
   stz $2130
   lda #$80
   sta $2100
-  lda #$00
-  sta $2a00
+  stz $2a00
   stz $420c
 ; DMA fill WRAM banks
+  ldx #$00
   rep #$10 : .xl
   stz $2183
-  ldx #$0000
   stx $2181
   stx $4305
   lda #$55
@@ -455,38 +455,15 @@ fadeloop_start
   sta $420b
 ; fill bank $7f
   sta $420b
+  rep #$20 : .al
+  lda #$fe80 ; - bra -
+  sta @$7fffe0
   lda #CMD_RESET
   sta MCU_CMD
+  jmp @$7fffe0
 - bra -
 .byt "fadeloop_end"
 
-; *=$002a80
-nmihook:
-  php
-  phb
-  sep #$20 : .as
-  rep #$10 : .xl
-  pha
-  phx
-  phk
-  plb
-; ack IRQ
-  lda $4211
-; controller query
-- ldx $4218
-  cpx #$02b0    ; left+L+R+A
-  bne +
-  lda #CMD_RESET
-  sta MCU_CMD
-; arbitrary code area
-+ lda #$cc
-  sta $2a08
-  plx
-  pla
-  plb
-  plp
-  jmp ($2a0e)
-.byt "bram_end"
 ; stores routines in WRAM (including payload for block ram copy)
 store_wram_routines:
 ; copy wram_routine_src
@@ -507,10 +484,6 @@ store_wram_routines:
   ldx #!fadeloop
   ldy #!WRAM_FADELOOP
   mvn $7e, $c0
-  lda #$007f
-  ldx #!nmihook
-  ldy #!WRAM_NMIHOOK
-  mvn $7e, $c0
   plb
   plp
   rts
@@ -529,10 +502,6 @@ store_blockram_routine_src:
   ldx #!WRAM_FADELOOP
   ldy #!BRAM_ROUTINE
   phb
-  mvn $00, $7e
-  ldx #!WRAM_NMIHOOK
-  ldy #!BRAM_NMIHOOK
-  lda #$007f
   mvn $00, $7e
   plb
   plp
@@ -564,6 +533,8 @@ game_handshake:
   jsr hide_cursor
   jsr draw_loading_window
 ; send initial request to MCU
+  lda #$00
+  sta @SNES_CMD
   pla
   sta @MCU_CMD
 ; wait for ACK/NACK with error (noimpl warning etc.)
@@ -583,5 +554,16 @@ game_handshake:
 game_handshake_error:
 ; TODO display meaningful error message
   jsr pop_window
+  plp
+  rts
+
+wait_mcu_ready:
+  php
+  sep #$20 : .as
+  lda #$00
+  sta @MCU_CMD
+- lda @SNES_CMD
+  cmp #$55
+  bne -
   plp
   rts
