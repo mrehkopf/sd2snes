@@ -12,7 +12,7 @@ cfg_t CFG = {
   .vidmode_menu = VIDMODE_AUTO,
   .vidmode_game = VIDMODE_AUTO,
   .pair_mode_allowed = 0,
-  .bsx_use_systime = 0,
+  .bsx_use_usertime = 0,
   .bsx_time = 0x0619970301180530LL,
   .r213f_override = 1
 };
@@ -114,3 +114,21 @@ void cfg_set_r213f_override(uint8_t enable) {
 uint8_t cfg_is_r213f_override_enabled() {
   return CFG.r213f_override;
 }
+
+void cfg_set_vidmode_game(cfg_vidmode_t vidmode) {
+  CFG.vidmode_game = vidmode;
+}
+
+cfg_vidmode_t cfg_get_vidmode_game() {
+  return CFG.vidmode_game;
+}
+
+void cfg_set_vidmode_menu(cfg_vidmode_t vidmode) {
+  CFG.vidmode_menu = vidmode;
+}
+
+cfg_vidmode_t cfg_get_vidmode_menu() {
+  return CFG.vidmode_menu;
+}
+
+
