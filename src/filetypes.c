@@ -138,6 +138,7 @@ SNES_FTYPE determine_filetype(FILINFO fno) {
   if(  (!strcasecmp(ext+1, "SMC"))
      ||(!strcasecmp(ext+1, "SFC"))
      ||(!strcasecmp(ext+1, "FIG"))
+     ||(!strcasecmp(ext+1, "SWC"))
      ||(!strcasecmp(ext+1, "BS"))
     ) {
     return TYPE_ROM;
@@ -149,6 +150,12 @@ SNES_FTYPE determine_filetype(FILINFO fno) {
   }*/
   if(!strcasecmp(ext+1, "SPC")) {
     return TYPE_SPC;
+  }
+  if(!strcasecmp(ext+1, "CHT")) {
+    return TYPE_CHT;
+  }
+  if(!strcasecmp(ext+1, "SKIN")) {
+    return TYPE_SKIN;
   }
   return TYPE_UNKNOWN;
 }

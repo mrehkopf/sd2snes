@@ -58,8 +58,8 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_EXIT, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16, CMD_MEMSET };
+  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0cheat\0";
+enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_EXIT, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16, CMD_MEMSET, CMD_CHEAT };
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
@@ -427,6 +427,25 @@ void cmd_memset(void) {
   sram_memset(offset, len, val);
 }
 
+void cmd_cheat(void) {
+  int8_t index = parse_unsigned(0, 6, 10);
+  uint32_t code = parse_unsigned(0, 0xffffffff, 16);
+  fpga_write_cheat(index, code);
+}
+
+void cmd_test(void) {
+  int i;
+  uint8_t databuf[256];
+  fpga_set_snescmd_addr(0);
+  for(i=0; i<256; i++) {
+//    fpga_write_snescmd(i);
+  }
+  fpga_set_snescmd_addr(0);
+  for(i=0; i<256; i++) {
+    databuf[i]=fpga_read_snescmd();
+  }
+  uart_trace(databuf, 0, 256);
+}
 /* ------------------------------------------------------------------------- */
 /*   CLI interface functions                                                 */
 /* ------------------------------------------------------------------------- */
@@ -558,7 +577,7 @@ void cli_loop(void) {
       break;
 
     case CMD_TEST:
-      testbattery();
+      cmd_test();
       break;
 
     case CMD_SETFEATURE:
@@ -581,6 +600,9 @@ void cli_loop(void) {
       cmd_memset();
       break;
 
+    case CMD_CHEAT:
+      cmd_cheat();
+      break;
     }
   }
 }

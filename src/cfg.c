@@ -39,14 +39,20 @@ int cfg_load() {
 
 int cfg_add_last_game(uint8_t *fn) {
   int err = 0, index, index2, found = 0, foundindex = 0, written = 0;
+  TCHAR fqfn[256];
   TCHAR fntmp[10][256];
   file_open(LAST_FILE, FA_READ);
+  fqfn[0] = 0;
+  if(fn[0] !=  '/') {
+    strncpy(fqfn, (const char*)file_path, 256);
+  }
+  strncat(fqfn, (const char*)fn, 256);
   for(index = 0; index < 10; index++) {
     f_gets(fntmp[index], 255, &file_handle);
     if((*fntmp[index] == 0) || (*fntmp[index] == '\n')) {
       break; /* last entry found */
     }
-    if(!strncasecmp((TCHAR*)fn, fntmp[index], 255)) {
+    if(!strncasecmp((TCHAR*)fqfn, fntmp[index], 255)) {
       found = 1; /* file already in list */
       foundindex = index;
     }
@@ -54,7 +60,7 @@ int cfg_add_last_game(uint8_t *fn) {
   file_close();
   file_open(LAST_FILE, FA_CREATE_ALWAYS | FA_WRITE);
   /* always put new entry on top of list */
-  err = f_puts((const TCHAR*)fn, &file_handle);
+  err = f_puts((const TCHAR*)fqfn, &file_handle);
   err = f_putc(0, &file_handle);
   written++;
   if(index > 9 + found) index = 9 + found; /* truncate oldest entry */
