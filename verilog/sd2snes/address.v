@@ -78,8 +78,7 @@ assign IS_SAVERAM = SAVERAM_MASK[0]
                         & SNES_ADDR[11])
                       :((MAPPER == 3'b000
                         || MAPPER == 3'b010
-                        || MAPPER == 3'b110
-                        || MAPPER == 3'b111)
+                        || MAPPER == 3'b110)
                       ? (!SNES_ADDR[22]
                          & SNES_ADDR[21]
                          & &SNES_ADDR[14:13]
@@ -97,6 +96,8 @@ assign IS_SAVERAM = SAVERAM_MASK[0]
                       ? ((SNES_ADDR[23:19] == 5'b00010)
                          & (SNES_ADDR[15:12] == 4'b0101)
                         )
+                      :(MAPPER == 3'b111)
+                      ? (&SNES_ADDR[23:16])
                       : 1'b0));
 
 
@@ -189,8 +190,7 @@ assign SRAM_SNES_ADDR = ((MAPPER == 3'b000)
                             )
                            :(MAPPER == 3'b111)
                            ?(IS_SAVERAM
-                             ? 24'hFF0000 + ((SNES_ADDR[14:0] - 15'h6000)
-                                             & SAVERAM_MASK)
+                             ? SNES_ADDR
                              : (({1'b0, SNES_ADDR[22:0]} & ROM_MASK)
                                 + 24'hC00000)
                             )
