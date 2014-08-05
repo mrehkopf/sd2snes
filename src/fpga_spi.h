@@ -74,6 +74,9 @@
 #define FPGA_CMD_SDDMA_RANGE     (0x60)
 #define FPGA_CMD_READMEM         (0x80)
 #define FPGA_CMD_WRITEMEM        (0x90)
+#define FPGA_CMD_SNESCMD_SETADDR (0xd0)
+#define FPGA_CMD_SNESCMD_READ    (0xd1)
+#define FPGA_CMD_SNESCMD_WRITE   (0xd2)
 #define FPGA_CMD_CHEAT_WRITE     (0xd3)
 #define FPGA_CMD_MSUSETBITS      (0xe0)
 #define FPGA_CMD_DACPAUSE        (0xe1)
@@ -128,5 +131,8 @@ void fpga_write_dspx_dat(uint16_t data);
 void fpga_dspx_reset(uint8_t reset);
 void fpga_set_features(uint8_t feat);
 void fpga_set_213f(uint8_t data);
+void fpga_set_snescmd_addr(uint8_t addr);
+void fpga_write_snescmd(uint8_t data);
+uint8_t fpga_read_snescmd(void);
 void fpga_write_cheat(uint8_t index, uint32_t code);
 #endif

@@ -37,6 +37,8 @@
 #define SRAM_DIR_ADDR           (0xC10000L)
 #define SRAM_DB_ADDR            (0xC80000L)
 
+#define MENU_ADDR_BRAM_SRC      (0xFF00)
+
 #define SRAM_SPC_DATA_ADDR      (0xFD0000L)
 #define SRAM_SPC_HEADER_ADDR    (0xFE0000L)
 
@@ -50,8 +52,9 @@
 #define SRAM_DIRID              (0xFFFFF0L)
 #define SRAM_RELIABILITY_SCORE  (0x100)
 
-#define LOADROM_WITH_SRAM	(1)
-#define LOADROM_WITH_RESET	(2)
+#define LOADROM_WITH_SRAM   (1)
+#define LOADROM_WITH_RESET  (2)
+#define LOADROM_WAIT_SNES   (4)
 
 uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags);
 uint32_t load_spc(uint8_t* filename, uint32_t spc_data_addr, uint32_t spc_header_addr);
@@ -75,6 +78,5 @@ void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
 uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size);
 uint8_t sram_reliable(void);
 void sram_memset(uint32_t base_addr, uint32_t len, uint8_t val);
-uint64_t sram_gettime(uint32_t base_addr);
 
 #endif

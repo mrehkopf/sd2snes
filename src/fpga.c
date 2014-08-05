@@ -194,7 +194,7 @@ void fpga_rompgm() {
       FPGA_SEND_BYTE_SERIAL(data);
     }
     uart_putc('c');
-    printf("fpga_pgm: %d bytes programmed\n", i);
+    printf("fpga_rompgm: %d bytes programmed\n", i);
     delay_ms(1);
   } while (!fpga_get_done() && retries--);
   if(!fpga_get_done()) {

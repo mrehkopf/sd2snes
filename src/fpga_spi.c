@@ -396,6 +396,30 @@ void fpga_set_213f(uint8_t data) {
   FPGA_DESELECT();
 }
 
+void fpga_set_snescmd_addr(uint8_t addr) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_SNESCMD_SETADDR);
+  FPGA_TX_BYTE(addr);
+  FPGA_DESELECT();
+}
+
+void fpga_write_snescmd(uint8_t data) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_SNESCMD_WRITE);
+  FPGA_TX_BYTE(data);
+  FPGA_TX_BYTE(0x00);
+  FPGA_DESELECT();
+}
+
+uint8_t fpga_read_snescmd() {
+  uint8_t data;
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_SNESCMD_READ);
+  data = FPGA_RX_BYTE();
+  FPGA_DESELECT();
+  return data;
+}
+
 void fpga_write_cheat(uint8_t index, uint32_t code) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_CHEAT_WRITE);

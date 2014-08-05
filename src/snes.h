@@ -55,9 +55,28 @@
 
 #define SNES_RESET_PULSELEN_MS	(1)
 
-#define SNES_BOOL_TRUE  (1)
-#define SNES_BOOL_FALSE (0)
-#define SNES_BOOL_UNDEF (255)
+#define SNES_BOOL_TRUE  (0x01)
+#define SNES_BOOL_FALSE (0x00)
+#define SNES_BOOL_UNDEF (0xff)
+
+#define SNESCMD_MCU_CMD (0x00)
+#define SNESCMD_SNES_CMD (0x02)
+#define SNESCMD_MCU_PARAM (0x04)
+#define SNESCMD_IRQ_VECTOR (0x0c)
+#define SNESCMD_NMI_VECTOR (0x0e)
+#define SNESCMD_IRQ_ROUTINE (0x2a26)
+#define SNESCMD_NMI_ROUTINE (0x2a20)
+#define SNESCMD_NMI_RESET (0x10)
+#define SNESCMD_NMI_RESET_TO_MENU (0x12)
+#define SNESCMD_NMI_ENABLE_CHEATS (0x14)
+#define SNESCMD_NMI_DISABLE_CHEATS (0x16)
+#define SNESCMD_NMI_KILL_NMIHOOK (0x18)
+
+#define SNES_BUTTON_LRET (0x3030)
+#define SNES_BUTTON_LREX (0x2070)
+#define SNES_BUTTON_LRSA (0x10b0)
+#define SNES_BUTTON_LRSB (0x9030)
+#define SNES_BUTTON_LRSY (0x5030)
 
 enum snes_reset_state { SNES_RESET_NONE = 0, SNES_RESET_SHORT, SNES_RESET_LONG };
 
@@ -69,11 +88,24 @@ void snes_reset_pulse(void);
 void snes_reset(int state);
 uint8_t get_snes_reset(void);
 uint8_t get_snes_reset_state(void);
-void snes_main_loop(void);
+uint8_t snes_main_loop(void);
 uint8_t menu_main_loop(void);
 void get_selected_name(uint8_t* lfn);
 void snes_bootprint(void* msg);
 void snes_menu_errmsg(int err, void* msg);
 uint8_t snes_get_last_game_index(void);
-
+uint8_t snes_get_mcu_cmd(void);
+void snes_set_mcu_cmd(uint8_t cmd);
+uint8_t snes_get_snes_cmd(void);
+void snes_set_snes_cmd(uint8_t cmd);
+uint32_t snes_get_mcu_param(void);
+void snescmd_writeshort(uint16_t val, uint8_t addr);
+void snescmd_writebyte(uint8_t val, uint8_t addr);
+void snescmd_writeblock(void *buf, uint8_t addr, uint8_t size);
+uint16_t snescmd_readshort(uint8_t addr);
+uint8_t snescmd_readbyte(uint8_t addr);
+uint32_t snescmd_readlong(uint8_t addr);
+uint64_t snescmd_gettime(void);
+void snescmd_prepare_nmihook(void);
+void snes_get_filepath(uint8_t *buffer, uint16_t length);
 #endif

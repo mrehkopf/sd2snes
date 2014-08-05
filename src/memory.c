@@ -212,11 +212,18 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   filesize = file_handle.fsize;
   smc_id(&romprops);
   file_close();
+
+  if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x55);
+
   /* reconfigure FPGA if necessary */
   if(romprops.fpga_conf) {
+    if(flags & LOADROM_WAIT_SNES) {
+      while(snes_get_mcu_cmd() != SNES_CMD_FPGA_RECONF);
+    }
     printf("reconfigure FPGA with %s...\n", romprops.fpga_conf);
     fpga_pgm((uint8_t*)romprops.fpga_conf);
   }
+  if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x55);
   set_mcu_addr(base_addr + romprops.load_address);
   file_open(filename, FA_READ);
   ff_sd_offload=1;
@@ -320,9 +327,18 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       cic_d4(romprops.region);
     }
 
-  if(flags & LOADROM_WITH_RESET) {
+  if(flags & LOADROM_WAIT_SNES) {
+    while(snes_get_mcu_cmd() != SNES_CMD_RESET);
+  }
+
+//printf("%04lx\n", romprops.header_address + ((void*)&romprops.header.vect_irq16 - (void*)&romprops.header));
+  if(flags & (LOADROM_WITH_RESET|LOADROM_WAIT_SNES)) {
+    printf("resetting SNES\n");
     fpga_dspx_reset(1);
-    snes_reset_pulse();
+    snes_reset(1);
+    delay_ms(SNES_RESET_PULSELEN_MS);
+    snescmd_prepare_nmihook();
+    snes_reset(0);
     fpga_dspx_reset(0);
   }
 
@@ -576,36 +592,6 @@ void sram_memset(uint32_t base_addr, uint32_t len, uint8_t val) {
     FPGA_WAIT_RDY();
   }
   FPGA_DESELECT();
-}
-
-uint64_t sram_gettime(uint32_t base_addr) {
-  set_mcu_addr(base_addr);
-  FPGA_SELECT();
-  FPGA_TX_BYTE(0x88);
-  uint8_t data;
-  uint64_t result = 0LL;
-  /* 1st nibble is the century - 10 (binary)
-4th nibble is the month (binary)
-all other fields are BCD */
-  for(int i=0; i<12; i++) {
-    FPGA_WAIT_RDY();
-    data = FPGA_RX_BYTE();
-    data &= 0xf;
-    switch(i) {
-      case 0:
-        result = (result << 4) | ((data / 10) + 1);
-        result = (result << 4) | (data % 10);
-        break;
-      case 3:
-        result = (result << 4) | ((data / 10));
-        result = (result << 4) | (data % 10);
-        break;
-      default:
-        result = (result << 4) | data;
-    }
-  }
-  FPGA_DESELECT();
-  return result & 0x00ffffffffffffffLL;
 }
 
 void load_dspx(const uint8_t *filename, uint8_t coretype) {

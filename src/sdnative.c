@@ -13,6 +13,7 @@
 #include "bits.h"
 #include "fpga_spi.h"
 #include "memory.h"
+#include "snes.h"
 
 #define MAX_CARDS 1
 
@@ -1108,7 +1109,7 @@ void sdn_gettacc(uint32_t *tacc_max, uint32_t *tacc_avg) {
     sd_offload=1;
     sdn_read(0, NULL, i*sec_step, 1);
   }
-  for (i=0; i < numread && sram_readbyte(SRAM_CMD_ADDR) != 0x00 && disk_state != DISK_REMOVED; i++) {
+  for (i=0; i < numread && (snes_get_mcu_cmd() == SNES_CMD_SYSINFO) && disk_state != DISK_REMOVED; i++) {
   /* reset timer */
     LPC_RIT->RICTRL = 0;
     sd_offload_tgt=2;
