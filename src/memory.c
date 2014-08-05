@@ -298,6 +298,8 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       strcpy(strrchr((char*)filename, (int)'.'), ".srm");
       printf("SRM file: %s\n", filename);
       load_sram(filename, SRAM_SAVE_ADDR);
+      /* file not found error is ok (SRM file might not exist yet) */
+      if(file_res == FR_NO_FILE) file_res = 0;
       saveram_crc_old = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
     } else {
       printf("No SRAM\n");
@@ -511,6 +513,7 @@ void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
   file_open(filename, FA_CREATE_ALWAYS | FA_WRITE);
   if(file_res) {
     uart_putc(0x30+file_res);
+    return;
   }
   while(count<sram_size) {
     set_mcu_addr(base_addr+count);
@@ -525,6 +528,7 @@ void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
     file_write();
     if(file_res) {
       uart_putc(0x30+file_res);
+      return;
     }
   }
   file_close();

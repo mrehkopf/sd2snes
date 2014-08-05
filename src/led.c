@@ -5,6 +5,7 @@
 #include "timer.h"
 #include "led.h"
 #include "cli.h"
+#include "fileops.h"
 
 static uint8_t led_bright[16]={255,253,252,251,249,247,244,239,232,223,210,191,165,127,74,0};
 
@@ -145,4 +146,42 @@ void led_init() {
   BITBAND(LPC_PWM1->TCR, 0) = 1;
   BITBAND(LPC_PWM1->TCR, 3) = 1;
   BITBAND(LPC_PWM1->MCR, 1) = 1;
+}
+
+/* LED error display; gets called by systick handler every 10ms */
+void led_error() {
+  static int led_error_state = 0;
+  static int led_error_count = 0, saved_error_count = 0;
+  static int framecount = 0, pausecount = 0;
+  static int last_file_res = 0;
+  if(file_res != last_file_res) {
+    led_error_count = file_res;
+    saved_error_count = led_error_count;
+    last_file_res = file_res;
+  }
+  if(led_error_count || (led_error_state == 2)) {
+    if(framecount == 14) {
+      framecount = 0;
+      if(led_error_state == 0) {
+        led_error_state = 1;
+        writeled(1);
+      } else if (led_error_state == 1) {
+        led_error_count--;
+        if(led_error_count == 0) {
+          led_error_state = 2;
+        } else {
+          led_error_state = 0;
+        }
+        writeled(0);
+      } else if (led_error_state == 2) {
+        pausecount++;
+        if(pausecount == 5) {
+          pausecount = 0;
+          led_error_state = 0;
+          led_error_count = saved_error_count;
+        }
+      }
+    }
+    framecount++;
+  }
 }
