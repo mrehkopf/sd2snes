@@ -102,7 +102,7 @@ assign bs_page_offset = bs_sta0_en ? 9'h032
 
 reg [3:0] reg_oe_sreg;
 always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[2:0], reg_oe};
-wire reg_oe_falling = (reg_oe_sreg[3:1] == 3'b100);
+wire reg_oe_falling = (reg_oe_sreg[3:1] == 3'b110);
 wire reg_oe_rising = (reg_oe_sreg[3:1] == 3'b001);
 
 reg [2:0] reg_we_sreg;
@@ -180,18 +180,26 @@ initial begin
   bs_stb1_offset <= 5'h00;
 end
 
+reg [7:0] data_tmp;
+initial data_tmp = 8'h00;
+
+always @(posedge clkin) begin
+  if(~reg_oe | ~reg_we) begin
+    data_tmp <= reg_data_in;
+  end
+end
 
 always @(posedge clkin) begin
   if(reg_oe_rising && base_enable) begin
     case(base_addr)
       5'h0b: begin
         bs_stb0_offset <= bs_stb0_offset + 1;
-        base_regs[5'h0d] <= base_regs[5'h0d] | reg_data_in;
+        base_regs[5'h0d] <= base_regs[5'h0d] | data_tmp;
       end
       5'h0c: bs_page0_offset <= bs_page0_offset + 1;
       5'h11: begin
         bs_stb1_offset <= bs_stb1_offset + 1;
-        base_regs[5'h13] <= base_regs[5'h13] | reg_data_in;
+        base_regs[5'h13] <= base_regs[5'h13] | data_tmp;
       end
       5'h12: bs_page1_offset <= bs_page1_offset + 1;
     endcase
@@ -243,12 +251,12 @@ always @(posedge clkin) begin
     if(reg_addr == 4'he)
       regs_outr <= regs_tmpr;
     else
-      regs_tmpr[reg_addr] <= reg_data_in[7];
+      regs_tmpr[reg_addr] <= data_tmp[7];
   end else if(reg_we_rising && base_enable) begin
     case(base_addr)
       5'h09: begin
-        base_regs[8'h09] <= reg_data_in;
-        bs_page0 <= {reg_data_in[1:0], base_regs[8'h08]};
+        base_regs[8'h09] <= data_tmp;
+        bs_page0 <= {data_tmp[1:0], base_regs[8'h08]};
         bs_page0_offset <= 9'h00;
       end
       5'h0b: begin
@@ -258,8 +266,8 @@ always @(posedge clkin) begin
         bs_page0_offset <= 9'h00;
       end
       5'h0f: begin
-        base_regs[8'h0f] <= reg_data_in;
-        bs_page1 <= {reg_data_in[1:0], base_regs[8'h0e]};
+        base_regs[8'h0f] <= data_tmp;
+        bs_page1 <= {data_tmp[1:0], base_regs[8'h0e]};
         bs_page1_offset <= 9'h00;
       end
       5'h11: begin
@@ -269,19 +277,19 @@ always @(posedge clkin) begin
         bs_page1_offset <= 9'h00;
       end
       default:
-        base_regs[base_addr] <= reg_data_in;
+        base_regs[base_addr] <= data_tmp;
     endcase
   end else if(reg_we_rising && flash_enable) begin
     case(flash_addr)
       16'h0000: begin
-        flash_cmd0 <= reg_data_in;
-        if(flash_cmd0 == 8'h38 && reg_data_in == 8'hd0)
+        flash_cmd0 <= data_tmp;
+        if(flash_cmd0 == 8'h38 && data_tmp == 8'hd0)
           flash_ovr_r <= 1;
       end
       16'h5555: begin
-        flash_cmd5555 <= {flash_cmd5555[7:0], reg_data_in};
+        flash_cmd5555 <= {flash_cmd5555[7:0], data_tmp};
         if(flash_cmd5555 == 16'haa55) begin
-          case (reg_data_in)
+          case (data_tmp)
             8'hf0: begin
               flash_ovr_r <= 0;
               flash_we_r <= 0;
@@ -297,7 +305,7 @@ always @(posedge clkin) begin
         end
       end
       16'h2aaa: begin
-        flash_cmd5555 <= {flash_cmd5555[7:0], reg_data_in};
+        flash_cmd5555 <= {flash_cmd5555[7:0], data_tmp};
       end
     endcase
   end

@@ -198,7 +198,7 @@ assign SRAM_SNES_ADDR = ((MAPPER == 3'b000)
 
 assign ROM_ADDR = SRAM_SNES_ADDR;
 
-assign ROM_HIT = IS_ROM | IS_WRITABLE;
+assign ROM_HIT = IS_ROM | IS_WRITABLE | bs_page_enable;
 
 assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
 assign use_bsx = (MAPPER == 3'b011);
