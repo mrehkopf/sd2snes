@@ -273,7 +273,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       load_dspx(DSPFW_1B, romprops.fpga_features);
     }
     if(file_res) {
-      snes_menu_errmsg(MENU_ERR_NODSP, (void*)romprops.dsp_fw);
+      snes_menu_errmsg(MENU_ERR_SUPPLFILE, (void*)romprops.dsp_fw);
     }
   }
   uint32_t rammask;
