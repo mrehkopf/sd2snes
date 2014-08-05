@@ -45,6 +45,7 @@ memory.c: RAM operations
 #include "diskio.h"
 #include "snesboot.h"
 #include "msu1.h"
+#include "cli.h"
 
 #include <string.h>
 char* hex = "0123456789ABCDEF";
@@ -58,7 +59,7 @@ void sram_hexdump(uint32_t addr, uint32_t len) {
   uint32_t ptr;
   for(ptr=0; ptr < len; ptr += 16) {
     sram_readblock((void*)buf, ptr+addr, 16);
-    uart_trace(buf, 0, 16);
+    uart_trace(buf-ptr-addr, ptr+addr, 16);
   }
 }
 

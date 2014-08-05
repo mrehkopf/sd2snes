@@ -26,7 +26,7 @@ unsigned char uart_gotc(void);
 void uart_putc(char c);
 void uart_puts(const char *str);
 void uart_puthex(uint8_t num);
-void uart_trace(void *ptr, uint16_t start, uint16_t len);
+void uart_trace(void *ptr, uint32_t start, uint32_t len);
 void uart_flush(void);
 int  printf(const char *fmt, ...);
 int  snprintf(char *str, size_t size, const char *format, ...);
