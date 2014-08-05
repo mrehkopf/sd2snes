@@ -429,7 +429,7 @@ reg [7:0] SNES_WRITEr;
 reg [7:0] SNES_CPU_CLKr;
 
 reg SNES_DEADr;
-initial SNES_DEADr = 0;
+initial SNES_DEADr = 1;
 
 wire SNES_PARD_start = (SNES_PARDr[7:1] == 7'b1111110);
 wire SNES_RD_start = (SNES_READr[7:1] == 7'b1111110);
@@ -501,6 +501,8 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
 reg [3:0] ST_MEM_DELAYr;
 reg MCU_RD_PENDr;
 reg MCU_WR_PENDr;
+initial MCU_RD_PENDr = 0;
+initial MCU_WR_PENDr = 0;
 reg [23:0] ROM_ADDRr;
 
 reg RQ_MCU_RDYr;
@@ -540,17 +542,17 @@ end
 
 wire SNES_CPU_CLK_change = SNES_CPU_CLKr[2] ^ SNES_CPU_CLKr[1];
 always @(posedge CLK2) begin
-  if(~SNES_CPU_CLK_change) SNES_DEAD_CNTr <= SNES_DEAD_CNTr + 1;
+  if(~SNES_CPU_CLK) SNES_DEAD_CNTr <= SNES_DEAD_CNTr + 1;
   else SNES_DEAD_CNTr <= 17'h0;
 end
 
 always @(posedge CLK2) begin
-  if(SNES_DEAD_CNTr > SNES_DEAD_TIMEOUT) SNES_DEADr <= 1'b1;
-  else if(SNES_CPU_CLK_change) SNES_DEADr <= 1'b0;
+  if(SNES_CPU_CLK) SNES_DEADr <= 1'b0;
+  else if(SNES_DEAD_CNTr > SNES_DEAD_TIMEOUT) SNES_DEADr <= 1'b1;
 end
 
 always @(posedge CLK2) begin
-  if(SNES_DEADr & SNES_CPU_CLK_change) STATE <= ST_IDLE; // interrupt+restart an ongoing MCU access when the SNES comes alive
+  if(SNES_DEADr & SNES_CPU_CLK) STATE <= ST_IDLE; // interrupt+restart an ongoing MCU access when the SNES comes alive
   else
   case(STATE)
     ST_IDLE: begin
