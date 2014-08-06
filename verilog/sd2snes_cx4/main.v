@@ -199,6 +199,7 @@ spi snes_spi(
 
 reg [7:0] MCU_DINr;
 wire [7:0] MCU_DOUT;
+wire [7:0] featurebits;
 
 mcu_cmd snes_mcu_cmd(
   .clk(CLK2),
@@ -247,7 +248,7 @@ mcu_cmd snes_mcu_cmd(
   .mcu_rrq(MCU_RRQ),
   .mcu_wrq(MCU_WRQ),
   .mcu_rq_rdy(MCU_RDY),
-  .use_msu1(use_msu1),
+  .featurebits_out(featurebits),
   .cx4_datrom_addr_out(cx4_datrom_addr),
   .cx4_datrom_data_out(cx4_datrom_data),
   .cx4_datrom_we_out(cx4_datrom_we),
@@ -311,7 +312,7 @@ address snes_addr(
   .IS_WRITABLE(IS_WRITABLE),
   .SAVERAM_MASK(SAVERAM_MASK),
   .ROM_MASK(ROM_MASK),
-  .use_msu1(use_msu1),
+  .featurebits(featurebits),
   //MSU-1
   .msu_enable(msu_enable),
   //CX4
