@@ -45,6 +45,7 @@ memory.c: RAM operations
 #include "diskio.h"
 #include "snesboot.h"
 #include "msu1.h"
+#include "cli.h"
 
 #include <string.h>
 char* hex = "0123456789ABCDEF";
@@ -58,7 +59,7 @@ void sram_hexdump(uint32_t addr, uint32_t len) {
   uint32_t ptr;
   for(ptr=0; ptr < len; ptr += 16) {
     sram_readblock((void*)buf, ptr+addr, 16);
-    uart_trace(buf, 0, 16);
+    uart_trace(buf-ptr-addr, ptr+addr, 16);
   }
 }
 
@@ -212,11 +213,18 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   filesize = file_handle.fsize;
   smc_id(&romprops);
   file_close();
+
+  if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x55);
+
   /* reconfigure FPGA if necessary */
   if(romprops.fpga_conf) {
+    if(flags & LOADROM_WAIT_SNES) {
+      while(snes_get_mcu_cmd() != SNES_CMD_FPGA_RECONF);
+    }
     printf("reconfigure FPGA with %s...\n", romprops.fpga_conf);
     fpga_pgm((uint8_t*)romprops.fpga_conf);
   }
+  if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x55);
   set_mcu_addr(base_addr + romprops.load_address);
   file_open(filename, FA_READ);
   ff_sd_offload=1;
@@ -265,7 +273,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       load_dspx(DSPFW_1B, romprops.fpga_features);
     }
     if(file_res) {
-      snes_menu_errmsg(MENU_ERR_NODSP, (void*)romprops.dsp_fw);
+      snes_menu_errmsg(MENU_ERR_SUPPLFILE, (void*)romprops.dsp_fw);
     }
   }
   uint32_t rammask;
@@ -291,6 +299,8 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       strcpy(strrchr((char*)filename, (int)'.'), ".srm");
       printf("SRM file: %s\n", filename);
       load_sram(filename, SRAM_SAVE_ADDR);
+      /* file not found error is ok (SRM file might not exist yet) */
+      if(file_res == FR_NO_FILE) file_res = 0;
       saveram_crc_old = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
     } else {
       printf("No SRAM\n");
@@ -320,9 +330,18 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       cic_d4(romprops.region);
     }
 
-  if(flags & LOADROM_WITH_RESET) {
+  if(flags & LOADROM_WAIT_SNES) {
+    while(snes_get_mcu_cmd() != SNES_CMD_RESET);
+  }
+
+//printf("%04lx\n", romprops.header_address + ((void*)&romprops.header.vect_irq16 - (void*)&romprops.header));
+  if(flags & (LOADROM_WITH_RESET|LOADROM_WAIT_SNES)) {
+    printf("resetting SNES\n");
     fpga_dspx_reset(1);
-    snes_reset_pulse();
+    snes_reset(1);
+    delay_ms(SNES_RESET_PULSELEN_MS);
+    snescmd_prepare_nmihook();
+    snes_reset(0);
     fpga_dspx_reset(0);
   }
 
@@ -495,6 +514,7 @@ void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
   file_open(filename, FA_CREATE_ALWAYS | FA_WRITE);
   if(file_res) {
     uart_putc(0x30+file_res);
+    return;
   }
   while(count<sram_size) {
     set_mcu_addr(base_addr+count);
@@ -509,6 +529,7 @@ void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
     file_write();
     if(file_res) {
       uart_putc(0x30+file_res);
+      return;
     }
   }
   file_close();
@@ -576,36 +597,6 @@ void sram_memset(uint32_t base_addr, uint32_t len, uint8_t val) {
     FPGA_WAIT_RDY();
   }
   FPGA_DESELECT();
-}
-
-uint64_t sram_gettime(uint32_t base_addr) {
-  set_mcu_addr(base_addr);
-  FPGA_SELECT();
-  FPGA_TX_BYTE(0x88);
-  uint8_t data;
-  uint64_t result = 0LL;
-  /* 1st nibble is the century - 10 (binary)
-4th nibble is the month (binary)
-all other fields are BCD */
-  for(int i=0; i<12; i++) {
-    FPGA_WAIT_RDY();
-    data = FPGA_RX_BYTE();
-    data &= 0xf;
-    switch(i) {
-      case 0:
-        result = (result << 4) | ((data / 10) + 1);
-        result = (result << 4) | (data % 10);
-        break;
-      case 3:
-        result = (result << 4) | ((data / 10));
-        result = (result << 4) | (data % 10);
-        break;
-      default:
-        result = (result << 4) | data;
-    }
-  }
-  FPGA_DESELECT();
-  return result & 0x00ffffffffffffffLL;
 }
 
 void load_dspx(const uint8_t *filename, uint8_t coretype) {

@@ -41,6 +41,7 @@
 
 uint32_t saveram_crc, saveram_crc_old;
 extern snes_romprops_t romprops;
+extern int snes_boot_configured;
 
 volatile int reset_changed;
 volatile int reset_pressed;
@@ -139,16 +140,17 @@ uint8_t get_snes_reset_state(void) {
 }
 
 /*
- * SD2SNES main loop.
+ * SD2SNES game loop.
  * monitors SRAM changes and other things
  */
-uint32_t diffcount = 0, samecount = 0, didnotsave = 0;
+uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_save_failed = 0;
 uint8_t sram_valid = 0;
-void snes_main_loop() {
-  if(!romprops.ramsize_bytes)return;
+uint8_t snes_main_loop() {
+  if(!romprops.ramsize_bytes)return snes_get_mcu_cmd();
   saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
   sram_valid = sram_reliable();
   if(crc_valid && sram_valid) {
+    if(save_failed) didnotsave++;
     if(saveram_crc != saveram_crc_old) {
       if(samecount) {
         diffcount=1;
@@ -165,20 +167,26 @@ void snes_main_loop() {
       printf("SaveRAM CRC: 0x%04lx; saving %s\n", saveram_crc, file_lfn);
       writeled(1);
       save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+      last_save_failed = save_failed;
+      save_failed = file_res ? 1 : 0;
+      didnotsave = save_failed ? 25 : 0;
       writeled(0);
-      didnotsave=0;
     }
     if(didnotsave>50) {
-      printf("periodic save (sram contents keep changing...)\n");
+      printf("periodic save (sram contents keep changing or previous save failed)\n");
       diffcount=0;
       writeled(1);
       save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
-      didnotsave=0;
-      writeled(1);
+      last_save_failed = save_failed;
+      save_failed = file_res ? 1 : 0;
+      didnotsave = save_failed ? 25 : 0;
+      writeled(!last_save_failed);
     }
     saveram_crc_old = saveram_crc;
   }
   printf("crc=%lx crc_valid=%d sram_valid=%d diffcount=%ld samecount=%ld, didnotsave=%ld\n", saveram_crc, crc_valid, sram_valid, diffcount, samecount, didnotsave);
+
+  return snes_get_mcu_cmd();
 }
 
 /*
@@ -187,11 +195,11 @@ void snes_main_loop() {
  */
 uint8_t menu_main_loop() {
   uint8_t cmd = 0;
-  sram_writebyte(0, SRAM_CMD_ADDR);
+  snes_set_mcu_cmd(0);
   while(!cmd) {
     if(!get_snes_reset()) {
       while(!sram_reliable())printf("hurr\n");
-      cmd = sram_readbyte(SRAM_CMD_ADDR);
+      cmd = snes_get_mcu_cmd();
     }
     if(get_snes_reset()) {
       cmd = 0;
@@ -203,13 +211,31 @@ uint8_t menu_main_loop() {
 }
 
 void get_selected_name(uint8_t* fn) {
-  uint32_t addr;
-  addr = sram_readlong(SRAM_PARAM_ADDR);
-  printf("fd addr=%lx\n", addr);
-  sram_readblock(fn, addr + 7 + SRAM_MENU_ADDR, 256);
+  uint32_t cwdaddr;
+  uint32_t fdaddr;
+  cwdaddr = snes_get_mcu_param();
+  fdaddr = snescmd_readlong(0x08);
+  printf("cwd addr=%lx  fdaddr=%lx\n", cwdaddr, fdaddr);
+  uint16_t count = sram_readstrn(fn, cwdaddr, 256);
+  if(count && fn[count-1] != '/') {
+    fn[count] = '/';
+    count++;
+  }
+  sram_readstrn(fn+count, fdaddr+6+SRAM_MENU_ADDR, 256-count);
 }
 
 void snes_bootprint(void* msg) {
+  if(!snes_boot_configured) {
+    fpga_rompgm();
+    sram_writebyte(0, SRAM_CMD_ADDR);
+    load_bootrle(SRAM_MENU_ADDR);
+    set_saveram_mask(0x1fff);
+    set_rom_mask(0x3fffff);
+    set_mapper(0x7);
+    snes_reset(0);
+    snes_boot_configured = 1;
+    sleep_ms(20);
+  }
   sram_writeblock(msg, SRAM_CMD_ADDR, 33);
 }
 
@@ -222,9 +248,116 @@ uint8_t snes_get_last_game_index() {
   return sram_readbyte(SRAM_PARAM_ADDR);
 }
 
+uint8_t snes_get_mcu_cmd() {
+  fpga_set_snescmd_addr(SNESCMD_MCU_CMD);
+  return fpga_read_snescmd();
+}
+
+void snes_set_mcu_cmd(uint8_t cmd) {
+  fpga_set_snescmd_addr(SNESCMD_MCU_CMD);
+  fpga_write_snescmd(cmd);
+}
+
+uint8_t snes_get_snes_cmd() {
+  fpga_set_snescmd_addr(SNESCMD_SNES_CMD);
+  return fpga_read_snescmd();
+}
+
+void snes_set_snes_cmd(uint8_t cmd) {
+  fpga_set_snescmd_addr(SNESCMD_SNES_CMD);
+  fpga_write_snescmd(cmd);
+}
+
+uint32_t snes_get_mcu_param() {
+  fpga_set_snescmd_addr(SNESCMD_MCU_PARAM);
+  return (fpga_read_snescmd()
+         | ((uint32_t)fpga_read_snescmd() << 8)
+         | ((uint32_t)fpga_read_snescmd() << 16)
+         | ((uint32_t)fpga_read_snescmd() << 24));
+}
+
+void snescmd_writeshort(uint16_t val, uint8_t addr) {
+  fpga_set_snescmd_addr(addr);
+  fpga_write_snescmd(val & 0xff);
+  fpga_write_snescmd(val >> 8);
+}
+
+void snescmd_writebyte(uint8_t val, uint8_t addr) {
+  fpga_set_snescmd_addr(addr);
+  fpga_write_snescmd(val);
+}
+
+uint8_t snescmd_readbyte(uint8_t addr) {
+  fpga_set_snescmd_addr(addr);
+  return fpga_read_snescmd();
+}
+
+uint16_t snescmd_readshort(uint8_t addr) {
+  uint16_t data = 0;
+  fpga_set_snescmd_addr(addr);
+  data = fpga_read_snescmd();
+  data |= (uint16_t)fpga_read_snescmd() << 8;
+  return data;
+}
+
+uint32_t snescmd_readlong(uint8_t addr) {
+  uint32_t data = 0;
+  fpga_set_snescmd_addr(addr);
+  data = fpga_read_snescmd();
+  data |= (uint32_t)fpga_read_snescmd() << 8;
+  data |= (uint32_t)fpga_read_snescmd() << 16;
+  data |= (uint32_t)fpga_read_snescmd() << 24;
+  return data;
+}
+
 void snes_get_filepath(uint8_t *buffer, uint16_t length) {
   uint32_t path_address = snescmd_readlong(SNESCMD_MCU_PARAM);
   sram_readstrn(buffer, path_address, length-1);
 printf("%s\n", buffer);
 }
 
+void snescmd_writeblock(void *buf, uint8_t addr, uint8_t size) {
+  fpga_set_snescmd_addr(addr);
+  while(size--) {
+    fpga_write_snescmd(*(uint8_t*)buf++);
+  }
+}
+
+uint64_t snescmd_gettime(void) {
+  fpga_set_snescmd_addr(SNESCMD_MCU_PARAM);
+  uint8_t data;
+  uint64_t result = 0LL;
+  /* 1st nibble is the century - 10 (binary)
+     4th nibble is the month (binary)
+     all other fields are BCD */
+  for(int i=0; i<12; i++) {
+    data = fpga_read_snescmd();
+    data &= 0xf;
+    switch(i) {
+      case 0:
+        result = (result << 4) | ((data / 10) + 1);
+        result = (result << 4) | (data % 10);
+        break;
+      case 3:
+        result = (result << 4) | ((data / 10));
+        result = (result << 4) | (data % 10);
+        break;
+      default:
+        result = (result << 4) | data;
+    }
+  }
+  return result & 0x00ffffffffffffffLL;
+}
+
+void snescmd_prepare_nmihook() {
+  uint16_t bram_src = sram_readshort(SRAM_MENU_ADDR + MENU_ADDR_BRAM_SRC);
+  uint8_t bram[224];
+  snescmd_writeshort(romprops.header.vect_nmi16, SNESCMD_NMI_VECTOR);
+  sram_readblock(bram, SRAM_MENU_ADDR + bram_src, 224);
+  snescmd_writeblock(bram, 0x20, 224);
+  snescmd_writeshort(SNES_BUTTON_LRET, SNESCMD_NMI_RESET);
+  snescmd_writeshort(SNES_BUTTON_LREX, SNESCMD_NMI_RESET_TO_MENU);
+  snescmd_writeshort(SNES_BUTTON_LRSA, SNESCMD_NMI_ENABLE_CHEATS);
+  snescmd_writeshort(SNES_BUTTON_LRSB, SNESCMD_NMI_DISABLE_CHEATS);
+  snescmd_writeshort(SNES_BUTTON_LRSY, SNESCMD_NMI_KILL_NMIHOOK);
+}

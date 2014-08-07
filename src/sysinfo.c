@@ -21,7 +21,7 @@ static uint32_t sd_tacc_max, sd_tacc_avg;
 void sysinfo_loop() {
   sd_tacc_max = 0;
   sd_tacc_avg = 0;
-  while(sram_readbyte(SRAM_CMD_ADDR) != 0x00) {
+  while(snes_get_mcu_cmd() == SNES_CMD_SYSINFO) {
     write_sysinfo();
     delay_ms(100);
   }

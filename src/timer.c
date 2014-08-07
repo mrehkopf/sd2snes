@@ -9,7 +9,7 @@
 #include "uart.h"
 #include "sdnative.h"
 #include "snes.h"
-
+#include "led.h"
 
 extern volatile int sd_changed;
 extern volatile int reset_changed;
@@ -36,6 +36,7 @@ void SysTick_Handler(void) {
     reset_pressed = (reset_state == 0xf000);
     reset_changed = 1;
   }
+  led_error();
   sdn_changed();
   SysTick_Hook();
 }

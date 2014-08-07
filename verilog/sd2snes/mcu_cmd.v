@@ -104,7 +104,12 @@ module mcu_cmd(
   output reg [7:0] snescmd_data_out,
   output reg [7:0] snescmd_addr_out,
   output reg snescmd_we_out,
-  
+
+  // cheat configuration
+  output reg [7:0] cheat_pgm_idx_out,
+  output reg [31:0] cheat_pgm_data_out,
+  output reg cheat_pgm_we_out,
+
   // debug
   output DBG_mcu_nextaddr
 );
@@ -199,6 +204,7 @@ end
 // command interpretation
 always @(posedge clk) begin
   snescmd_we_out <= 1'b0;
+  cheat_pgm_we_out <= 1'b0;
   if (cmd_ready) begin
     case (cmd_data[7:4])
       4'h3: // select mapper
@@ -257,9 +263,29 @@ always @(posedge clk) begin
       8'hd1:
         snescmd_addr_out <= snescmd_addr_out + 1;
       8'hd2: begin
-        if(spi_byte_cnt == 32'h3) snescmd_addr_out <= snescmd_addr_out + 1;
+        case (spi_byte_cnt)
+          32'h2:
+            snescmd_we_out <= 1'b1;
+          32'h3:
+            snescmd_addr_out <= snescmd_addr_out + 1;
+        endcase
         snescmd_data_out <= param_data;
-        snescmd_we_out <= 1'b1;
+      end
+      8'hd3: begin
+        case (spi_byte_cnt)
+          32'h2:
+            cheat_pgm_idx_out <= param_data[2:0];
+          32'h3:
+            cheat_pgm_data_out[31:24] <= param_data;
+          32'h4:
+            cheat_pgm_data_out[23:16] <= param_data;
+          32'h5:
+            cheat_pgm_data_out[15:8] <= param_data;
+          32'h6: begin
+            cheat_pgm_data_out[7:0] <= param_data;
+            cheat_pgm_we_out <= 1'b1;
+          end
+        endcase
       end
       8'he0:
         case (spi_byte_cnt)

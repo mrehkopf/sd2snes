@@ -23,5 +23,5 @@ void led_panic(uint8_t led_states);
 void led_pwm(void);
 void led_std(void);
 void led_init(void);
-
+void led_error(void);
 #endif

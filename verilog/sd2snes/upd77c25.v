@@ -48,11 +48,11 @@ module upd77c25(
 );
 
 parameter STATE_FETCH = 8'b00000001;
-parameter STATE_LOAD = 8'b00000010;
-parameter STATE_ALU1 = 8'b00000100;
-parameter STATE_ALU2 = 8'b00001000;
+parameter STATE_LOAD  = 8'b00000010;
+parameter STATE_ALU1  = 8'b00000100;
+parameter STATE_ALU2  = 8'b00001000;
 parameter STATE_STORE = 8'b00010000;
-parameter STATE_NEXT = 8'b00100000;
+parameter STATE_NEXT  = 8'b00100000;
 parameter STATE_IDLE1 = 8'b01000000;
 parameter STATE_IDLE2 = 8'b10000000;
 

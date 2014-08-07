@@ -19,6 +19,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 module address(
   input CLK,
+  input [7:0] featurebits,
   input [2:0] MAPPER,       // MCU detected mapper
   input [23:0] SNES_ADDR,   // requested address from SNES
   input [7:0] SNES_PA,      // peripheral address from SNES
@@ -39,6 +40,11 @@ module address(
   output snescmd_wr_enable
 );
 
+parameter [2:0]
+  FEAT_MSU1 = 3,
+  FEAT_213F = 4
+;
+
 wire [23:0] SRAM_SNES_ADDR;
 
 /* Cx4 mapper:
@@ -55,7 +61,7 @@ assign ROM_ADDR = SRAM_SNES_ADDR;
 
 assign ROM_SEL = 1'b0;
 
-wire msu_enable_w = use_msu1 & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
+wire msu_enable_w = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
 assign msu_enable = msu_enable_w;
 
 wire cx4_enable_w = (!SNES_ADDR[22] && (SNES_ADDR[15:13] == 3'b011));
@@ -63,8 +69,7 @@ assign cx4_enable = cx4_enable_w;
 
 assign cx4_vect_enable = &SNES_ADDR[15:5];
 
-wire r213f_enable_w = (SNES_PA == 8'h3f);
-assign r213f_enable = r213f_enable_w;
+assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 9'h3f);
 
 wire snescmd_rd_enable_w = (SNES_PA[7:4] == 4'b1111);
 assign snescmd_rd_enable = snescmd_rd_enable_w;

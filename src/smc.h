@@ -60,10 +60,11 @@ typedef struct _snes_header {
   uint16_t vect_brk16;  /* 0xE6 */
   uint16_t vect_abt16;  /* 0xE8 */
   uint16_t vect_nmi16;  /* 0xEA */
+  uint16_t pad2;        /* 0xEC */
   uint16_t vect_irq16;  /* 0xEE */
-  uint16_t pad2;        /* 0xF0 */
+  uint32_t pad3;        /* 0xF0 */
   uint16_t vect_cop8;   /* 0xF4 */
-  uint32_t pad3;        /* 0xF6 */
+  uint16_t pad4;        /* 0xF6 */
   uint16_t vect_abt8;   /* 0xF8 */
   uint16_t vect_nmi8;   /* 0xFA */
   uint16_t vect_reset;  /* 0xFC */
@@ -81,12 +82,21 @@ typedef struct _snes_romprops {
   const uint8_t* fpga_conf;   /* FPGA config file to load (default: base) */
   uint8_t has_dspx;           /* DSP[1-4] presence flag */
   uint8_t has_st0010;         /* st0010 presence flag (additional to dspx) */
+  uint8_t has_st0011;         /* st0011 presence flag */
+  uint8_t has_st0018;         /* st0018 presence flag */
   uint8_t has_msu1;           /* MSU1 presence flag */
   uint8_t has_cx4;            /* CX4 presence flag */
   uint8_t has_obc1;           /* OBC1 presence flag */
+  uint8_t has_gsu;            /* GSU presence flag */
+  uint8_t has_sa1;            /* SA-1 presence flag */
+  uint8_t has_sdd1;           /* S-DD1 presence flag */
+  uint8_t has_spc7110;        /* SPC7110 presence flag */
   uint8_t fpga_features;      /* feature/peripheral enable bits*/
   uint8_t region;             /* game region (derived from destination code) */
   uint32_t load_address;      /* where to load the ROM image */
+  uint32_t header_address;    /* location of ROM header in RAM */
+  uint8_t error;              /* error text ID */
+  uint8_t* error_param;       /* \0 separated list of parameters for error text */
   snes_header_t header;       /* original header from ROM image */
 } snes_romprops_t;
 

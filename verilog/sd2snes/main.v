@@ -305,6 +305,9 @@ upd77c25 snes_dspx (
 
 reg [7:0] MCU_DINr;
 wire [7:0] MCU_DOUT;
+wire [31:0] cheat_pgm_data;
+wire [7:0] cheat_data_out;
+wire [2:0] cheat_pgm_idx;
 
 mcu_cmd snes_mcu_cmd(
   .clk(CLK2),
@@ -336,8 +339,6 @@ mcu_cmd snes_mcu_cmd(
   .SD_DMA_END_MID_BLOCK(SD_DMA_END_MID_BLOCK),
   .dac_addr_out(dac_addr),
   .DAC_STATUS(DAC_STATUS),
-//  .dac_volume_out(dac_volume),
-//  .dac_volume_latch_out(dac_vol_latch),
   .dac_play_out(dac_play),
   .dac_reset_out(dac_reset),
   .msu_addr_out(msu_write_addr),
@@ -372,6 +373,9 @@ mcu_cmd snes_mcu_cmd(
   .snescmd_we_out(snescmd_we_mcu),
   .snescmd_data_out(snescmd_data_out_mcu),
   .snescmd_data_in(snescmd_data_in_mcu),
+  .cheat_pgm_idx_out(cheat_pgm_idx),
+  .cheat_pgm_data_out(cheat_pgm_data),
+  .cheat_pgm_we_out(cheat_pgm_we),
   .DBG_mcu_nextaddr(DBG_mcu_nextaddr)
 );
 
@@ -425,7 +429,7 @@ reg [7:0] SNES_WRITEr;
 reg [7:0] SNES_CPU_CLKr;
 
 reg SNES_DEADr;
-initial SNES_DEADr = 0;
+initial SNES_DEADr = 1;
 
 wire SNES_PARD_start = (SNES_PARDr[7:1] == 7'b1111110);
 wire SNES_RD_start = (SNES_READr[7:1] == 7'b1111110);
@@ -459,6 +463,18 @@ assign SRTC_SNES_DATA_IN = SNES_DATA[3:0];
 assign MSU_SNES_DATA_IN = SNES_DATA;
 assign BSX_SNES_DATA_IN = SNES_DATA;
 
+cheat snes_cheat(
+  .clk(CLK2),
+  .SNES_ADDR(SNES_ADDR),
+  .SNES_DATA(SNES_DATA),
+  .snescmd_wr_strobe(SNES_WR_end & snescmd_enable),
+  .pgm_idx(cheat_pgm_idx),
+  .pgm_we(cheat_pgm_we),
+  .pgm_in(cheat_pgm_data),
+  .data_out(cheat_data_out),
+  .cheat_hit(cheat_hit)
+);
+
 wire [7:0] snescmd_dout;
 
 reg [7:0] r213fr;
@@ -478,12 +494,15 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
                                   :msu_enable ? MSU_SNES_DATA_OUT
                                   :bsx_data_ovr ? BSX_SNES_DATA_OUT
                                   :snescmd_enable ? snescmd_dout
+                                  :cheat_hit ? cheat_data_out
                                   :(ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8])
                                   ) : 8'bZ;
 
 reg [3:0] ST_MEM_DELAYr;
 reg MCU_RD_PENDr;
 reg MCU_WR_PENDr;
+initial MCU_RD_PENDr = 0;
+initial MCU_WR_PENDr = 0;
 reg [23:0] ROM_ADDRr;
 
 reg RQ_MCU_RDYr;
@@ -523,17 +542,17 @@ end
 
 wire SNES_CPU_CLK_change = SNES_CPU_CLKr[2] ^ SNES_CPU_CLKr[1];
 always @(posedge CLK2) begin
-  if(~SNES_CPU_CLK_change) SNES_DEAD_CNTr <= SNES_DEAD_CNTr + 1;
+  if(~SNES_CPU_CLK) SNES_DEAD_CNTr <= SNES_DEAD_CNTr + 1;
   else SNES_DEAD_CNTr <= 17'h0;
 end
 
 always @(posedge CLK2) begin
-  if(SNES_DEAD_CNTr > SNES_DEAD_TIMEOUT) SNES_DEADr <= 1'b1;
-  else if(SNES_CPU_CLK_change) SNES_DEADr <= 1'b0;
+  if(SNES_CPU_CLK) SNES_DEADr <= 1'b0;
+  else if(SNES_DEAD_CNTr > SNES_DEAD_TIMEOUT) SNES_DEADr <= 1'b1;
 end
 
 always @(posedge CLK2) begin
-  if(SNES_DEADr & SNES_CPU_CLK_change) STATE <= ST_IDLE; // interrupt+restart an ongoing MCU access when the SNES comes alive
+  if(SNES_DEADr & SNES_CPU_CLK) STATE <= ST_IDLE; // interrupt+restart an ongoing MCU access when the SNES comes alive
   else
   case(STATE)
     ST_IDLE: begin

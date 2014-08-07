@@ -30,6 +30,7 @@
 #include "smc.h"
 #include "string.h"
 #include "fpga_spi.h"
+#include "snes.h"
 
 snes_romprops_t romprops;
 
@@ -109,25 +110,18 @@ void smc_id(snes_romprops_t* props) {
       }
     }
   }
+
   switch(header->map & 0xef) {
-
-    case 0x21: /* HiROM */
-      props->mapper_id = 0;
-      if(header->map == 0x31 && (header->carttype == 0x03 || header->carttype == 0x05)) {
-        props->has_dspx = 1;
-        props->dsp_fw = DSPFW_1B;
-        props->fpga_features |= FEAT_DSPX;
-      }
-      break;
-
     case 0x20: /* LoROM */
       props->mapper_id = 1;
+      /* Cx4 LoROM */
       if (header->map == 0x20 && header->carttype == 0xf3) {
         props->has_cx4 = 1;
         props->dsp_fw = CX4FW;
         props->fpga_conf = FPGA_CX4;
         props->fpga_features |= FEAT_CX4;
       }
+      /* DSP1/1B LoROM */
       else if ((header->map == 0x20 && header->carttype == 0x03) ||
           (header->map == 0x30 && header->carttype == 0x05 && header->licensee != 0xb2)) {
         props->has_dspx = 1;
@@ -138,28 +132,92 @@ void smc_id(snes_romprops_t* props) {
         } else {
           props->dsp_fw = DSPFW_1B;
         }
-      } else if (header->map == 0x20 && header->carttype == 0x05) {
+      }
+      /* DSP2 LoROM */
+      else if (header->map == 0x20 && header->carttype == 0x05) {
         props->has_dspx = 1;
         props->dsp_fw = DSPFW_2;
         props->fpga_features |= FEAT_DSPX;
-      } else if (header->map == 0x30 && header->carttype == 0x05 && header->licensee == 0xb2) {
+      }
+      /* DSP3 LoROM */
+      else if (header->map == 0x30 && header->carttype == 0x05 && header->licensee == 0xb2) {
         props->has_dspx = 1;
         props->dsp_fw = DSPFW_3;
         props->fpga_features |= FEAT_DSPX;
-      } else if (header->map == 0x30 && header->carttype == 0x03) {
+      }
+      /* DSP4 LoROM */
+      else if (header->map == 0x30 && header->carttype == 0x03) {
         props->has_dspx = 1;
         props->dsp_fw = DSPFW_4;
         props->fpga_features |= FEAT_DSPX;
-      } else if (header->map == 0x30 && header->carttype == 0xf6 && header->romsize >= 0xa) {
+      }
+      /* ST0010 LoROM */
+      else if (header->map == 0x30 && header->carttype == 0xf6 && header->romsize >= 0xa) {
         props->has_dspx = 1;
         props->has_st0010 = 1;
         props->dsp_fw = DSPFW_ST0010;
         props->fpga_features |= FEAT_ST0010;
         header->ramsize = 2;
-      } else if (header->map == 0x30 && header->carttype == 0x25) {
+      }
+      /* ST0011 LoROM */
+      else if (header->map == 0x30 && header->carttype == 0xf6 && header->romsize < 0xa) {
+        props->has_st0011 = 1;
+        props->error = MENU_ERR_NOIMPL;
+        props->error_param = (uint8_t*)"ST0011";
+      }
+      /* ST0018 LoROM */
+      else if (header->map == 0x30 && header->carttype == 0xf5) {
+        props->has_st0011 = 1;
+        props->error = MENU_ERR_NOIMPL;
+        props->error_param = (uint8_t*)"ST0018";
+      }
+      /* OBC1 LoROM */
+      else if (header->map == 0x30 && header->carttype == 0x25) {
         props->has_obc1 = 1;
         props->fpga_conf = FPGA_OBC1;
         props->fpga_features |= FEAT_OBC1;
+      }
+      /* SuperFX LoROM */
+      else if (header->map == 0x20 && ((header->carttype >= 0x13 && header->carttype <= 0x15) ||
+          header->carttype == 0x1a)) {
+        props->has_gsu = 1;
+        props->error = MENU_ERR_NOIMPL;
+        props->error_param = (uint8_t*)"SuperFX";
+      }
+      break;
+
+    case 0x21: /* HiROM */
+      props->mapper_id = 0;
+      /* DSP1B HiROM */
+      if(header->map == 0x31 && (header->carttype == 0x03 || header->carttype == 0x05)) {
+        props->has_dspx = 1;
+        props->dsp_fw = DSPFW_1B;
+        props->fpga_features |= FEAT_DSPX;
+      }
+      break;
+
+    case 0x22: /* ExLoROM */
+      /* S-DD1 */
+      if(header->carttype == 0x43 || header->carttype == 0x45) {
+        props->has_sdd1 = 1;
+        props->error = MENU_ERR_NOIMPL;
+        props->error_param = (uint8_t*)"S-DD1";
+      }
+      /* Star Ocean 96MBit */
+      else if(file_handle.fsize > 0x400200) {
+        props->mapper_id = 6;
+      }
+      /* Standard ExLoROM */
+      else {
+        props->mapper_id = 1;
+      }
+      break;
+
+    case 0x23: /* SA1 */
+      if(header->carttype == 0x32 || header->carttype == 0x34 || header->carttype == 0x35) {
+        props->has_sa1 = 1;
+        props->error = MENU_ERR_NOIMPL;
+        props->error_param = (uint8_t*)"SA-1";
       }
       break;
 
@@ -167,11 +225,11 @@ void smc_id(snes_romprops_t* props) {
       props->mapper_id = 2;
       break;
 
-    case 0x22: /* ExLoROM */
-      if(file_handle.fsize > 0x400200) {
-        props->mapper_id = 6; /* SO96 */
-      } else {
-        props->mapper_id = 1;
+    case 0x2a: /* SPC7110 */
+      if(header->carttype == 0xf5 || header->carttype == 0xf9) {
+        props->has_spc7110 = 1;
+        props->error = MENU_ERR_NOIMPL;
+        props->error_param = (uint8_t*)"SPC7110";
       }
       break;
 
@@ -221,6 +279,8 @@ void smc_id(snes_romprops_t* props) {
   if(header->carttype == 0x55) {
     props->fpga_features |= FEAT_SRTC;
   }
+
+  props->header_address = hdr_addr[score_idx] - props->offset;
 }
 
 uint8_t smc_headerscore(uint32_t addr, snes_header_t* header) {
