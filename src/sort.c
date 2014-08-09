@@ -42,12 +42,15 @@ int sort_cmp_elem(const void* elem1, const void* elem2) {
   sort_getstring_for_dirent(sort_str1, el1);
   sort_getstring_for_dirent(sort_str2, el2);
 /*printf("i1=%d i2=%d elem1=%lx elem2=%lx ; compare %s   ---   %s\n", index1, index2, elem1, elem2, sort_str1, sort_str2); */
+  /* parent dir is always the first entry */
+  if (el1 & 0x80000000) return -1;
+  if (el2 & 0x80000000) return 1;
 
-  if ((el1 & 0xc0000000) && !(el2 & 0xc0000000)) {
+  if ((el1 & 0x40000000) && !(el2 & 0x40000000)) {
     return -1;
   }
 
-  if (!(el1 & 0xc0000000) && (el2 & 0xc0000000)) {
+  if (!(el1 & 0x40000000) && (el2 & 0x40000000)) {
     return 1;
   }
 
@@ -55,7 +58,7 @@ int sort_cmp_elem(const void* elem1, const void* elem2) {
   if (*sort_str2 == '.') return 1;
 
   /* Do not compare trailing slashes of directory names */
-  if ((el1 & 0xc0000000) && (el2 & 0xc0000000)) {
+  if ((el1 & 0x40000000) && (el2 & 0x40000000)) {
     char *str1_slash = strrchr(sort_str1, '/');
     char *str2_slash = strrchr(sort_str2, '/');
     if(str1_slash != NULL) *str1_slash = 0;
