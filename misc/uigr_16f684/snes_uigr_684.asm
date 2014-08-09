@@ -288,9 +288,9 @@ regtimeout
 last_mode_check
     btfsc   reg_current_mode, bit_mode_auto ; last mode "Auto"?
     goto    setregion_auto_withoutLED
-    btfsc   reg_current_mode, bit_mode_60 ; last mode "60Hz"?
+    btfsc   reg_current_mode, bit_mode_60   ; last mode "60Hz"?
     goto    setregion_60_withoutLED
-    btfsc   reg_current_mode, bit_mode_50 ; last mode "50Hz"?
+    btfsc   reg_current_mode, bit_mode_50   ; last mode "50Hz"?
     goto    setregion_50_withoutLED
     goto    setregion_passthru_withoutLED
 
@@ -300,7 +300,7 @@ idle
     bcf     INTCON, RAIF
 
 idle_loop
-    btfsc   INTCON, RAIF                    ; reset or data latch changed?
+    btfsc   INTCON, RAIF                    ; data latch changed?
     goto    waitforlatch_l                  ; if yes - wait for latch become low
     btfsc   PORTA, RESET_IN                 ; reset pressed?
     goto    check_reset                     ; then the SCIC might get a new mode or the console is reseted
