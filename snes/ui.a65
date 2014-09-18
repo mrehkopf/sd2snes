@@ -176,26 +176,22 @@ draw_window:
 ; upper left corner
   lda @window_nw
   sta stringbuf
-  ldx #!stringbuf
-  inx
   lda window_w
   sta window_tmp
   stz window_tmp+1
   ldy window_tmp
   dey
+; upper right corner
+  lda @window_ne
+  sta !stringbuf,y
   dey
 ; upper edge
 -
   lda @window_nh
-  sta !0,x
-  inx
+  sta !stringbuf,y
   dey
-  cpy #$0000
   bne -
 
-; upper right corner
-  lda @window_ne
-  sta !0,x
 
 ; print to text buffer
   lda #$03
@@ -263,26 +259,21 @@ draw_window_notitle
   sta print_bank
   ldx #!stringbuf
   stx print_src
-  lda @window_wv
-  sta stringbuf
-  ldx #!stringbuf
-  inx
   lda window_w
   sta window_tmp
   stz window_tmp+1
   ldy window_tmp
   dey
+  lda @window_ev
+  sta !stringbuf,y
   dey
 -
   lda @space64
-  sta !0,x
-  inx
+  sta !stringbuf,y
   dey
-  cpy #$0000
   bne -
-
-  lda @window_ev
-  sta !0,x
+  lda @window_wv
+  sta stringbuf
 
 ; print to text buffer multiple times
   lda window_h
@@ -301,26 +292,24 @@ draw_window_notitle
 
 ; draw lower window border
 ; lower left corner
-  lda @window_sw
-  sta stringbuf
-  ldx #!stringbuf
-  inx
   lda window_w
   sta window_tmp
   stz window_tmp+1
   ldy window_tmp
   dey
+; lower right corner
+  lda @window_se
+  sta !stringbuf,y
   dey
 ; lower edge
 -
   lda @window_sh
-  sta !0,x
-  inx
+  sta !stringbuf,y
   dey
   bne -
-; lower right corner
-  lda @window_se
-  sta !0,x
+; lower left corner
+  lda @window_sw
+  sta stringbuf
 ; print to text buffer
   inc print_y
   jsr hiprint
