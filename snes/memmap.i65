@@ -20,6 +20,8 @@
 #define BRAM_NMIHOOK                $002A20
 #define BRAM_IRQHOOK                $002A26
 #define BRAM_PAYLOAD                $002A2C
+#define BRAM_CHEATS                 $002A90
+
 #define WRAM_ROUTINE                $7EF000
 #define WRAM_STORE_BLOCKRAM_ROUTINE $7EF080
 #define WRAM_FADELOOP               $7EF100
@@ -29,6 +31,7 @@
 #define LAST_STATUS                 $FF1101
 #define SYSINFO_BLK                 $FF1200
 #define LAST_GAME                   $FF1420
+#define CHEAT_ADDR                  $FF2000
 
 #define ROOT_DIR                    $C10000
 

@@ -40,13 +40,15 @@ nmi_payload:
 ; L+R+Start+A      : $10b0
 ; L+R+Start+B      : $9030
 ; L+R+Start+Y      : $5030
+; L+R+Start+X      : $1070
   ldx #$00
 nmi_pad_loop:
   lda $10, x
   cmp $08
   beq nmi_pad_found
-  cpx #$04
-  beq nmi_pad_notfound
+  cpx #$0a
+  beq nmi_patches
+  inx
   inx
   bra nmi_pad_loop
 nmi_pad_found:
@@ -55,7 +57,37 @@ nmi_pad_found:
   ora #$80
   tax
   stx <MCU_CMD
-nmi_pad_notfound:
+  cpx #$83
+  beq nmi_disable_wram
+  cpx #$82
+  bne nmi_patches
+nmi_enable_wram:
+  ldx #$00
+nmi_disable_wram:
+  stx $be
+nmi_patches:
+; WRAM patches
+; maybe make this speedcode after switching to ca65
+; snescom can't handle relocation
+; skip WRAM patching if disabled
+  ldx $be
+  bne nmi_exit
+; skip WRAM patching if there are no cheats
+  ldy $bf
+  beq nmi_exit
+  sep #$20 : .as
+- lda $c2, x
+  pha
+  plb
+  lda $c3, x
+  sta ($c0, x)
+  inx
+  inx
+  inx
+  inx
+  dey
+  bne -
+nmi_exit:
 ; clean up
   pld
   rep #$30 : .al : .xl
@@ -66,4 +98,3 @@ nmi_pad_notfound:
   plp
   rts
 .byt "bram_end"
-.word nmi_pad_found+$2a00
