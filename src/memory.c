@@ -564,14 +564,6 @@ uint8_t sram_reliable() {
   uint16_t score=0;
   uint32_t val;
   uint8_t result = 0;
-/*while(score<SRAM_RELIABILITY_SCORE) {
-if(sram_readlong(SRAM_SCRATCHPAD)==val) {
-score++;
-} else {
-set_pwr_led(0);
-score=0;
-}
-} */
   for(uint16_t i = 0; i < SRAM_RELIABILITY_SCORE; i++) {
     val=sram_readlong(SRAM_SCRATCHPAD);
     if(val==0x12345678) {
