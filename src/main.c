@@ -107,8 +107,8 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
   LPC_TIM3->MR0=1;
   LPC_TIM3->TCR=1;
   fpga_init();
-  snes_boot_configured = 0;
   while(1) {
+    snes_boot_configured = 0;
     while(get_cic_state() == CIC_FAIL) {
       rdyled(0);
       readled(0);
