@@ -7,8 +7,8 @@
 #include "memory.h"
 #include "sort.h"
 
-/* 
-   heap sort algorithm for data located outside RAM 
+/*
+   heap sort algorithm for data located outside RAM
    addr:     start address of pointer table
    i:        index (in 32-bit elements)
    heapsize: size of heap (in 32-bit elements)

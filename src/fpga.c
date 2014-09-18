@@ -136,7 +136,6 @@ void fpga_pgm(uint8_t* filename) {
     uart_putc('p');
 
     uart_putc('C');
-
     for (;;) {
       data = rle_file_getc();
       i++;

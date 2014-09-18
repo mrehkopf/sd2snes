@@ -133,7 +133,7 @@ void UART_HANDLER(void) {
         }
       }
       break;
-      
+
     case 12: /* RX timeout */
     case  4: /* data received - not implemented yet */
       (void) UART_REGS->RBR; // dummy read to clear
