@@ -214,17 +214,17 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   smc_id(&romprops);
   file_close();
 
+  /* TODO check prerequisites and set error code here */
   if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x55);
-
   /* reconfigure FPGA if necessary */
+  if(flags & LOADROM_WAIT_SNES) {
+    while(snes_get_mcu_cmd() != SNES_CMD_FPGA_RECONF);
+  }
   if(romprops.fpga_conf) {
-    if(flags & LOADROM_WAIT_SNES) {
-      while(snes_get_mcu_cmd() != SNES_CMD_FPGA_RECONF);
-    }
     printf("reconfigure FPGA with %s...\n", romprops.fpga_conf);
     fpga_pgm((uint8_t*)romprops.fpga_conf);
   }
-  if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x55);
+  if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x77);
   set_mcu_addr(base_addr + romprops.load_address);
   file_open(filename, FA_READ);
   ff_sd_offload=1;

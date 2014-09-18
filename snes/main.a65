@@ -523,7 +523,7 @@ wram_routine_src:
   sta @MCU_CMD
 ; wait for ACK (reconf done or not necessary)
 - lda @SNES_CMD
-  cmp #$55
+  cmp #$77
   bne -
 ; install fade loop in block RAM after FPGA reconf
 ; must reside in WRAM prior to copying! ROM not available
@@ -536,11 +536,15 @@ game_handshake:
   php
   sep #$20 : .as
   pha
+  lda #$01
   jsr hide_cursor
   jsr draw_loading_window
+  jsr waitblank
 ; send initial request to MCU
   lda #$00
   sta @SNES_CMD
+  sta $4200
+  sei
   pla
   sta @MCU_CMD
 ; wait for ACK/NACK with error (noimpl warning etc.)
