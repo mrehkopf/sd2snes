@@ -48,6 +48,7 @@
 #define SRAM_STATUS_ADDR        (0xFF1100L)
 #define SRAM_SYSINFO_ADDR       (0xFF1200L)
 #define SRAM_LASTGAME_ADDR      (0xFF1420L)
+#define SRAM_CHEAT_ADDR         (0xFF2000L)
 #define SRAM_SCRATCHPAD         (0xFFFF00L)
 #define SRAM_DIRID              (0xFFFFF0L)
 #define SRAM_RELIABILITY_SCORE  (0x100)

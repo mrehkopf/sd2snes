@@ -46,6 +46,7 @@ memory.c: RAM operations
 #include "snesboot.h"
 #include "msu1.h"
 #include "cli.h"
+#include "cheat.h"
 
 #include <string.h>
 char* hex = "0123456789ABCDEF";
@@ -341,6 +342,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     snes_reset(1);
     delay_ms(SNES_RESET_PULSELEN_MS);
     snescmd_prepare_nmihook();
+    cheat_program();
     snes_reset(0);
     fpga_dspx_reset(0);
   }
