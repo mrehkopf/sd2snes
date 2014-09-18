@@ -49,7 +49,7 @@ module my_dcm (
 //      .LOC("DCM_X0Y0"),
     .PHASE_SHIFT(0),     // Amount of fixed phase shift from -255 to 255
     .STARTUP_WAIT("TRUE")   // Delay configuration DONE until DCM LOCK, TRUE/FALSE
- .) DCM_inst (
+  ) DCM_inst (
     .CLK0(CLK0),     // 0 degree DCM CLK output
     .CLK180(CLK180), // 180 degree DCM CLK output
     .CLK270(CLK270), // 270 degree DCM CLK output

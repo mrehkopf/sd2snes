@@ -76,6 +76,17 @@ module mcu_cmd(
   // SNES sync/clk
   input snes_sysclk,
 
+  // snes cmd interface
+  input [7:0] snescmd_data_in,
+  output reg [7:0] snescmd_data_out,
+  output reg [7:0] snescmd_addr_out,
+  output reg snescmd_we_out,
+
+  // cheat configuration
+  output reg [7:0] cheat_pgm_idx_out,
+  output reg [31:0] cheat_pgm_data_out,
+  output reg cheat_pgm_we_out,
+
   // debug
   output DBG_mcu_nextaddr
 );
@@ -171,6 +182,8 @@ always @(posedge clk) begin
 //      select memory unit
     endcase
   end else if (param_ready) begin
+    snescmd_we_out <= 1'b0;
+    cheat_pgm_we_out <= 1'b0;
     casex (cmd_data[7:0])
       8'h1x:
         case (spi_byte_cnt)
@@ -209,6 +222,35 @@ always @(posedge clk) begin
         endcase
       8'h9x:
         MCU_DATA_OUT_BUF <= param_data;
+      8'hd0:
+        snescmd_addr_out <= param_data;
+      8'hd1:
+        snescmd_addr_out <= snescmd_addr_out + 1;
+      8'hd2: begin
+        case (spi_byte_cnt)
+          32'h2:
+            snescmd_we_out <= 1'b1;
+          32'h3:
+            snescmd_addr_out <= snescmd_addr_out + 1;
+        endcase
+        snescmd_data_out <= param_data;
+      end
+      8'hd3: begin
+        case (spi_byte_cnt)
+          32'h2:
+            cheat_pgm_idx_out <= param_data[2:0];
+          32'h3:
+            cheat_pgm_data_out[31:24] <= param_data;
+          32'h4:
+            cheat_pgm_data_out[23:16] <= param_data;
+          32'h5:
+            cheat_pgm_data_out[15:8] <= param_data;
+          32'h6: begin
+            cheat_pgm_data_out[7:0] <= param_data;
+            cheat_pgm_we_out <= 1'b1;
+          end
+        endcase
+      end
       8'he0:
         case (spi_byte_cnt)
           32'h2: begin
@@ -349,6 +391,8 @@ always @(posedge clk) begin
       endcase
     else if (cmd_data[7:0] == 8'hFF)
       MCU_DATA_IN_BUF <= param_data;
+    else if (cmd_data[7:0] == 8'hD1)
+      MCU_DATA_IN_BUF <= snescmd_data_in;
   end
 end
 

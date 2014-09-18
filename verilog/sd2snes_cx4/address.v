@@ -23,21 +23,18 @@ module address(
   input [2:0] MAPPER,       // MCU detected mapper
   input [23:0] SNES_ADDR,   // requested address from SNES
   input [7:0] SNES_PA,      // peripheral address from SNES
-  input SNES_CS,            // SNES ROMSEL signal
   output [23:0] ROM_ADDR,   // Address to request from SRAM0
-  output ROM_SEL,           // enable SRAM0 (active low)
+  output ROM_HIT,           // want to access RAM0
   output IS_SAVERAM,        // address/CS mapped as SRAM?
   output IS_ROM,            // address mapped as ROM?
   output IS_WRITABLE,       // address somehow mapped as writable area?
   input [23:0] SAVERAM_MASK,
   input [23:0] ROM_MASK,
-  input use_msu1,
   output msu_enable,
   output cx4_enable,
   output cx4_vect_enable,
   output r213f_enable,
-  output snescmd_rd_enable,
-  output snescmd_wr_enable
+  output snescmd_enable
 );
 
 parameter [2:0]
@@ -52,14 +49,19 @@ wire [23:0] SRAM_SNES_ADDR;
    - MMIO @ 6000-7fff
  */
 
-assign IS_ROM = ~SNES_CS;
+assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
+                 |(SNES_ADDR[22]));
 
 assign SRAM_SNES_ADDR = ({2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]}
                          & ROM_MASK);
 
 assign ROM_ADDR = SRAM_SNES_ADDR;
 
-assign ROM_SEL = 1'b0;
+assign IS_SAVERAM = 0;
+
+assign IS_WRITABLE = IS_SAVERAM;
+
+assign ROM_HIT = IS_ROM | IS_WRITABLE;
 
 wire msu_enable_w = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
 assign msu_enable = msu_enable_w;
@@ -71,10 +73,6 @@ assign cx4_vect_enable = &SNES_ADDR[15:5];
 
 assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 9'h3f);
 
-wire snescmd_rd_enable_w = (SNES_PA[7:4] == 4'b1111);
-assign snescmd_rd_enable = snescmd_rd_enable_w;
-
-wire snescmd_wr_enable_w = (SNES_ADDR[23:4] == 20'hccccc);
-assign snescmd_wr_enable = snescmd_wr_enable_w;
+assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:8]} == 9'b0_00101010);
 
 endmodule
