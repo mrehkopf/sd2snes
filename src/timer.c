@@ -25,10 +25,11 @@ void __attribute__((weak,noinline)) SysTick_Hook(void) {
 /* Systick interrupt handler */
 void SysTick_Handler(void) {
   ticks++;
+  static int warmup = 0;
   static uint16_t sdch_state = 0;
   static uint16_t reset_state = 0;
   sdch_state = (sdch_state << 1) | SDCARD_DETECT | 0xe000;
-  if((sdch_state == 0xf000) || (sdch_state == 0xefff)) {
+  if(warmup > WARMUP_TICKS && ((sdch_state == 0xf000) || (sdch_state == 0xefff))) {
     sd_changed = 1;
   }
   reset_state = (reset_state << 1) | get_snes_reset() | 0xe000;
@@ -39,6 +40,7 @@ void SysTick_Handler(void) {
   led_error();
   sdn_changed();
   SysTick_Hook();
+  if(warmup <= WARMUP_TICKS) warmup++;
 }
 
 void __attribute__((weak,noinline)) RIT_Hook(void) {
