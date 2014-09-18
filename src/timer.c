@@ -103,12 +103,12 @@ void delay_ms(unsigned int time) {
 
 void sleep_ms(unsigned int time) {
 
+  NVIC_EnableIRQ(RIT_IRQn);
   wokefromrit = 0;
   /* Prepare RIT */
   LPC_RIT->RICOUNTER = 0;
   LPC_RIT->RICOMPVAL = (CONFIG_CPU_FREQUENCY / 1000) * time;
   LPC_RIT->RICTRL    = BV(RITEN) | BV(RITINT);
-  NVIC_EnableIRQ(RIT_IRQn);
 
   /* Wait until RIT signals an interrupt */
 //uart_putc(';');
