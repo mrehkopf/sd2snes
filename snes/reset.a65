@@ -21,12 +21,11 @@ NMI_ROUTINE:
   DMA0(#$01, #64*9, #^BG2_TILE_BUF, #!BG2_TILE_BUF, #$18)
 
   lda bar_yl
-  asl
   dec
   asl
-  dec
   asl
-  sta bar_y     ; physical pos = logical pos * 8 - 6
+  asl
+  sta bar_y     ; physical pos = logical pos * 8 - 8
   cmp #224
   bne +
   lda #1

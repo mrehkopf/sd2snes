@@ -105,7 +105,7 @@ hdma_pal
   .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
   .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
   .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  .byt 0,0,0,0
+  .byt 0,0,0,0,0,0,0
 hdma_cg_addr
   .byt 0
   .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -130,6 +130,20 @@ hdma_scroll
   .byt 0,0,0,0
   .byt 0
   .byt 0,0,0,0
+  .byt 0
+  .byt 0,0,0,0
+  .byt 0
+  .byt 0,0,0,0
+  .byt 0
+hdma_yscroll
+  .byt 0
+  .byt 0,0
+  .byt 0
+  .byt 0,0
+  .byt 0
+  .byt 0,0
+  .byt 0
+  .byt 0,0
   .byt 0
 hdma_math
   .byt 0

@@ -151,7 +151,7 @@ setup_gfx:
   ldx #!hdma_pal
   stx $2181
   sta $2183
-  DMA0(#$00, #52, #^hdma_pal_src, #!hdma_pal_src, #$80)
+  DMA0(#$00, #55, #^hdma_pal_src, #!hdma_pal_src, #$80)
 
 ; CG addr for palette
   lda #^hdma_cg_addr
@@ -172,7 +172,13 @@ setup_gfx:
   ldx #!hdma_scroll
   stx $2181
   sta $2183
-  DMA0(#$00, #11, #^hdma_scroll_src, #!hdma_scroll_src, #$80);
+  DMA0(#$00, #21, #^hdma_scroll_src, #!hdma_scroll_src, #$80);
+
+  lda #^hdma_yscroll
+  ldx #!hdma_yscroll
+  stx $2181
+  sta $2183
+  DMA0(#$00, #13, #^hdma_yscroll_src, #!hdma_yscroll_src, #$80);
 
 ; color math
   lda #^hdma_math

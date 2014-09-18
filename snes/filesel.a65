@@ -785,8 +785,6 @@ setup_224_adjsel
 +
   lda #18*64
   sta textdmasize
-  lda #$000b
-  sta hdma_scroll+8
   sep #$20 : .as
   lda #$0b
   sta $2110
