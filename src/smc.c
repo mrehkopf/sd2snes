@@ -117,7 +117,6 @@ void smc_id(snes_romprops_t* props) {
       /* Cx4 LoROM */
       if (header->map == 0x20 && header->carttype == 0xf3) {
         props->has_cx4 = 1;
-        props->dsp_fw = CX4FW;
         props->fpga_conf = FPGA_CX4;
         props->fpga_features |= FEAT_CX4;
       }

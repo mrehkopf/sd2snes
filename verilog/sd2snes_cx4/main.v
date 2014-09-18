@@ -249,9 +249,6 @@ mcu_cmd snes_mcu_cmd(
   .mcu_wrq(MCU_WRQ),
   .mcu_rq_rdy(MCU_RDY),
   .featurebits_out(featurebits),
-  .cx4_datrom_addr_out(cx4_datrom_addr),
-  .cx4_datrom_data_out(cx4_datrom_data),
-  .cx4_datrom_we_out(cx4_datrom_we),
   .cx4_reset_out(cx4_reset),
   .region_out(mcu_region)
 );
@@ -337,9 +334,6 @@ cx4 snes_cx4 (
   .nRD(SNES_READ),
   .nWR(SNES_WRITE),
   .CLK(CLK2),
-  .DATROM_DI(cx4_datrom_data),
-  .DATROM_WE(cx4_datrom_we),
-  .DATROM_ADDR(cx4_datrom_addr),
   .BUS_DI(CX4_DINr),
   .BUS_ADDR(CX4_ADDR),
   .BUS_RRQ(CX4_RRQ),

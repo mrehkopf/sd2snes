@@ -27,9 +27,6 @@ module cx4(
   input nRD,
   input nWR,
   input CLK,
-  input [23:0] DATROM_DI,
-  input DATROM_WE,
-  input [9:0] DATROM_ADDR,
   input [7:0] BUS_DI,
   output [23:0] BUS_ADDR,
   output BUS_RRQ,
@@ -873,12 +870,8 @@ end
  ***************************/
 cx4_datrom cx4_datrom (
   .clka(CLK), // input clka
-  .wea(DATROM_WE), // input [0 : 0] wea
-  .addra(DATROM_ADDR), // input [9 : 0] addra
-  .dina(DATROM_DI), // input [23 : 0] dina
-  .clkb(CLK), // input clkb
-  .addrb(cx4_datrom_addr), // input [9 : 0] addrb
-  .doutb(cx4_datrom_do) // output [23 : 0] doutb
+  .addra(cx4_datrom_addr), // input [9 : 0] addrb
+  .douta(cx4_datrom_do) // output [23 : 0] doutb
 );
 
 cx4_datram cx4_datram (

@@ -265,7 +265,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     sram_writebyte(0xfc, rombase+0xd5);
     set_fpga_time(0x0220110301180000LL);
   }
-  if(romprops.has_dspx || romprops.has_cx4) {
+  if(romprops.has_dspx) {
     printf("DSPx game. Loading firmware image %s...\n", romprops.dsp_fw);
     load_dspx(romprops.dsp_fw, romprops.fpga_features);
     /* fallback to DSP1B firmware if DSP1.bin is not present */
@@ -616,9 +616,6 @@ void load_dspx(const uint8_t *filename, uint8_t coretype) {
   } else if (coretype & FEAT_DSPX) {
     datsize = 1024;
     pgmsize = 2048;
-  } else if (coretype & FEAT_CX4) {
-    datsize = 0;
-    pgmsize = 1024; /* Cx4 data ROM */
   } else {
     printf("load_dspx: unknown core (%02x)!\n", coretype);
   }

@@ -22,7 +22,7 @@
 *     devices, or systems.  Use in such applications are expressly             *
 *     prohibited.                                                              *
 *                                                                              *
-*     (c) Copyright 1995-2011 Xilinx, Inc.                                     *
+*     (c) Copyright 1995-2014 Xilinx, Inc.                                     *
 *     All rights reserved.                                                     *
 *******************************************************************************/
 // You must compile the wrapper file cx4_datrom.v when simulating
@@ -38,21 +38,13 @@
 
 module cx4_datrom(
   clka,
-  wea,
   addra,
-  dina,
-  clkb,
-  addrb,
-  doutb
+  douta
 );
 
 input clka;
-input [0 : 0] wea;
 input [9 : 0] addra;
-input [23 : 0] dina;
-input clkb;
-input [9 : 0] addrb;
-output [23 : 0] doutb;
+output [23 : 0] douta;
 
 // synthesis translate_off
 
@@ -64,7 +56,7 @@ output [23 : 0] doutb;
     .C_AXI_SLAVE_TYPE(0),
     .C_AXI_TYPE(1),
     .C_BYTE_SIZE(9),
-    .C_COMMON_CLK(1),
+    .C_COMMON_CLK(0),
     .C_DEFAULT_DATA("0"),
     .C_DISABLE_WARN_BHV_COLL(0),
     .C_DISABLE_WARN_BHV_RANGE(0),
@@ -83,12 +75,12 @@ output [23 : 0] doutb;
     .C_HAS_RSTB(0),
     .C_HAS_SOFTECC_INPUT_REGS_A(0),
     .C_HAS_SOFTECC_OUTPUT_REGS_B(0),
-    .C_INIT_FILE_NAME("no_coe_file_loaded"),
+    .C_INIT_FILE_NAME("cx4_datrom.mif"),
     .C_INITA_VAL("0"),
     .C_INITB_VAL("0"),
     .C_INTERFACE_TYPE(0),
-    .C_LOAD_INIT_FILE(0),
-    .C_MEM_TYPE(1),
+    .C_LOAD_INIT_FILE(1),
+    .C_MEM_TYPE(3),
     .C_MUX_PIPELINE_STAGES(0),
     .C_PRIM_TYPE(1),
     .C_READ_DEPTH_A(1024),
@@ -118,21 +110,21 @@ output [23 : 0] doutb;
   )
   inst (
     .CLKA(clka),
-    .WEA(wea),
     .ADDRA(addra),
-    .DINA(dina),
-    .CLKB(clkb),
-    .ADDRB(addrb),
-    .DOUTB(doutb),
+    .DOUTA(douta),
     .RSTA(),
     .ENA(),
     .REGCEA(),
-    .DOUTA(),
+    .WEA(),
+    .DINA(),
+    .CLKB(),
     .RSTB(),
     .ENB(),
     .REGCEB(),
     .WEB(),
+    .ADDRB(),
     .DINB(),
+    .DOUTB(),
     .INJECTSBITERR(),
     .INJECTDBITERR(),
     .SBITERR(),
