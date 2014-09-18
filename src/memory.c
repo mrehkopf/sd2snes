@@ -263,7 +263,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     sram_writebyte(0x33, rombase+0xda);
     sram_writebyte(0x00, rombase+0xd4);
     sram_writebyte(0xfc, rombase+0xd5);
-    set_fpga_time(0x0220110301180530LL);
+    set_fpga_time(0x0220110301180000LL);
   }
   if(romprops.has_dspx || romprops.has_cx4) {
     printf("DSPx game. Loading firmware image %s...\n", romprops.dsp_fw);
