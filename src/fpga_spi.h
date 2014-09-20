@@ -93,6 +93,7 @@
 #define FPGA_CMD_DSPUNRESET      (0xec)
 #define FPGA_CMD_SETFEATURE      (0xed)
 #define FPGA_CMD_SET213F         (0xee)
+#define FPGA_CMD_DSPFEAT         (0xef)
 #define FPGA_CMD_TEST            (0xf0)
 #define FPGA_CMD_GETSTATUS       (0xf1)
 #define FPGA_CMD_MSUGETADDR      (0xf2)
@@ -135,4 +136,5 @@ void fpga_set_snescmd_addr(uint8_t addr);
 void fpga_write_snescmd(uint8_t data);
 uint8_t fpga_read_snescmd(void);
 void fpga_write_cheat(uint8_t index, uint32_t code);
+void fpga_set_dspfeat(uint16_t feat);
 #endif

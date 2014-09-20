@@ -14,6 +14,7 @@
 #include "fpga_spi.h"
 #include "memory.h"
 #include "snes.h"
+#include "fileops.h"
 
 #define MAX_CARDS 1
 
@@ -1011,15 +1012,18 @@ void disk_init(void) __attribute__ ((weak, alias("sdn_init")));
 
 
 DSTATUS sdn_status(BYTE drv) {
+  DSTATUS status = 0;
   if (SDCARD_DETECT) {
+    if (disk_state == DISK_CHANGED) {
+      status |= STA_NOINIT;
+    }
     if (SDCARD_WP) {
-      return STA_PROTECT;
-    } else {
-      return RES_OK;
+      status |= STA_PROTECT;
     }
   } else {
-    return STA_NOINIT|STA_NODISK;
+    status |= STA_NODISK;
   }
+  return status;
 }
 DSTATUS disk_status(BYTE drv) __attribute__ ((weak, alias("sdn_status")));
 

@@ -1,7 +1,7 @@
 ##############################################################
 #
-# Xilinx Core Generator version 13.2
-# Date: Sun Oct 16 12:57:23 2011
+# Xilinx Core Generator version 14.7
+# Date: Wed Sep 17 20:05:45 2014
 #
 ##############################################################
 #
@@ -41,12 +41,12 @@ SELECT Block_Memory_Generator xilinx.com:ip:blk_mem_gen:6.2
 # BEGIN Parameters
 CSET additional_inputs_for_power_estimation=false
 CSET algorithm=Minimum_Area
-CSET assume_synchronous_clk=true
+CSET assume_synchronous_clk=false
 CSET axi_id_width=4
 CSET axi_slave_type=Memory_Slave
 CSET axi_type=AXI4_Full
 CSET byte_size=9
-CSET coe_file=no_coe_file_loaded
+CSET coe_file=cx4rom.coe
 CSET collision_warnings=ALL
 CSET component_name=cx4_datrom
 CSET disable_collision_warnings=false
@@ -58,8 +58,8 @@ CSET enable_b=Always_Enabled
 CSET error_injection_type=Single_Bit_Error_Injection
 CSET fill_remaining_memory_locations=false
 CSET interface_type=Native
-CSET load_init_file=false
-CSET memory_type=Simple_Dual_Port_RAM
+CSET load_init_file=true
+CSET memory_type=Single_Port_ROM
 CSET operating_mode_a=WRITE_FIRST
 CSET operating_mode_b=WRITE_FIRST
 CSET output_reset_value_a=0
@@ -67,9 +67,9 @@ CSET output_reset_value_b=0
 CSET pipeline_stages=0
 CSET port_a_clock=100
 CSET port_a_enable_rate=100
-CSET port_a_write_rate=50
-CSET port_b_clock=100
-CSET port_b_enable_rate=100
+CSET port_a_write_rate=0
+CSET port_b_clock=0
+CSET port_b_enable_rate=0
 CSET port_b_write_rate=0
 CSET primitive=8kx2
 CSET read_width_a=24
@@ -99,7 +99,7 @@ CSET write_width_a=24
 CSET write_width_b=24
 # END Parameters
 # BEGIN Extra information
-MISC pkg_timestamp=2011-03-11T08:24:14.000Z
+MISC pkg_timestamp=2011-03-11T08:24:14Z
 # END Extra information
 GENERATE
-# CRC: a25bf9a3
+# CRC: 306e6f6c

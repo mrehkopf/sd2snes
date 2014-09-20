@@ -46,6 +46,7 @@ memory.c: RAM operations
 #include "snesboot.h"
 #include "msu1.h"
 #include "cli.h"
+#include "cheat.h"
 
 #include <string.h>
 char* hex = "0123456789ABCDEF";
@@ -214,17 +215,17 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   smc_id(&romprops);
   file_close();
 
+  /* TODO check prerequisites and set error code here */
   if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x55);
-
   /* reconfigure FPGA if necessary */
+  if(flags & LOADROM_WAIT_SNES) {
+    while(snes_get_mcu_cmd() != SNES_CMD_FPGA_RECONF);
+  }
   if(romprops.fpga_conf) {
-    if(flags & LOADROM_WAIT_SNES) {
-      while(snes_get_mcu_cmd() != SNES_CMD_FPGA_RECONF);
-    }
     printf("reconfigure FPGA with %s...\n", romprops.fpga_conf);
     fpga_pgm((uint8_t*)romprops.fpga_conf);
   }
-  if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x55);
+  if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x77);
   set_mcu_addr(base_addr + romprops.load_address);
   file_open(filename, FA_READ);
   ff_sd_offload=1;
@@ -263,9 +264,9 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     sram_writebyte(0x33, rombase+0xda);
     sram_writebyte(0x00, rombase+0xd4);
     sram_writebyte(0xfc, rombase+0xd5);
-    set_fpga_time(0x0220110301180530LL);
+    set_fpga_time(0x0220110301180000LL);
   }
-  if(romprops.has_dspx || romprops.has_cx4) {
+  if(romprops.has_dspx) {
     printf("DSPx game. Loading firmware image %s...\n", romprops.dsp_fw);
     load_dspx(romprops.dsp_fw, romprops.fpga_features);
     /* fallback to DSP1B firmware if DSP1.bin is not present */
@@ -341,6 +342,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     snes_reset(1);
     delay_ms(SNES_RESET_PULSELEN_MS);
     snescmd_prepare_nmihook();
+    cheat_program();
     snes_reset(0);
     fpga_dspx_reset(0);
   }
@@ -562,14 +564,6 @@ uint8_t sram_reliable() {
   uint16_t score=0;
   uint32_t val;
   uint8_t result = 0;
-/*while(score<SRAM_RELIABILITY_SCORE) {
-if(sram_readlong(SRAM_SCRATCHPAD)==val) {
-score++;
-} else {
-set_pwr_led(0);
-score=0;
-}
-} */
   for(uint16_t i = 0; i < SRAM_RELIABILITY_SCORE; i++) {
     val=sram_readlong(SRAM_SCRATCHPAD);
     if(val==0x12345678) {
@@ -616,9 +610,6 @@ void load_dspx(const uint8_t *filename, uint8_t coretype) {
   } else if (coretype & FEAT_DSPX) {
     datsize = 1024;
     pgmsize = 2048;
-  } else if (coretype & FEAT_CX4) {
-    datsize = 0;
-    pgmsize = 1024; /* Cx4 data ROM */
   } else {
     printf("load_dspx: unknown core (%02x)!\n", coretype);
   }

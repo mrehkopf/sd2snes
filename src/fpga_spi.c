@@ -87,6 +87,7 @@
         EC        -             release DSP from reset
         ED        -             set feature enable bits (see below)
         EE        -             set $213f override value (0=NTSC, 1=PAL)
+        EF        aaaa          set DSP core features (see below)
         F0        -             receive test token (to see if FPGA is alive)
         F1        -             receive status (16bit, MSB first), see below
 
@@ -129,6 +130,20 @@
          2         enable SRTC registers
          1         enable ST0010 mapping
          0         enable DSPx mapping
+
+        DSP core features (DSP1-4 / ST0010 / OBC1)
+   ==========================================================================
+         currently no configurable features.
+
+        DSP core features (Cx4)
+        bit
+   ==========================================================================
+      15-1         -
+         0         speed (0: more faithful; 1: no waitstates)
+
+
+
+
 
 */
 
@@ -428,5 +443,13 @@ void fpga_write_cheat(uint8_t index, uint32_t code) {
   FPGA_TX_BYTE((code >> 16) & 0xff);
   FPGA_TX_BYTE((code >> 8) & 0xff);
   FPGA_TX_BYTE(code & 0xff);
+  FPGA_DESELECT();
+}
+
+void fpga_set_dspfeat(uint16_t feat) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_DSPFEAT);
+  FPGA_TX_BYTE(feat >> 8);
+  FPGA_TX_BYTE(feat & 0xff);
   FPGA_DESELECT();
 }

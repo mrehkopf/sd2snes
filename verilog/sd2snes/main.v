@@ -445,11 +445,11 @@ always @(posedge CLK2) begin
   SNES_CPU_CLKr <= {SNES_CPU_CLKr[6:0], SNES_CPU_CLK};
 end
 
-parameter ST_IDLE         = 5'b00001;
-parameter ST_MCU_RD_ADDR  = 5'b00010;
-parameter ST_MCU_RD_END   = 5'b00100;
-parameter ST_MCU_WR_ADDR  = 5'b01000;
-parameter ST_MCU_WR_END   = 5'b10000;
+parameter ST_IDLE        = 5'b00001;
+parameter ST_MCU_RD_ADDR = 5'b00010;
+parameter ST_MCU_RD_END  = 5'b00100;
+parameter ST_MCU_WR_ADDR = 5'b01000;
+parameter ST_MCU_WR_END  = 5'b10000;
 
 parameter SNES_DEAD_TIMEOUT = 17'd88000; // 1ms
 
@@ -499,10 +499,8 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
                                   ) : 8'bZ;
 
 reg [3:0] ST_MEM_DELAYr;
-reg MCU_RD_PENDr;
-reg MCU_WR_PENDr;
-initial MCU_RD_PENDr = 0;
-initial MCU_WR_PENDr = 0;
+reg MCU_RD_PENDr = 0;
+reg MCU_WR_PENDr = 0;
 reg [23:0] ROM_ADDRr;
 
 reg RQ_MCU_RDYr;
@@ -515,11 +513,6 @@ wire MCU_HIT = MCU_WR_HIT | MCU_RD_HIT;
 
 assign ROM_ADDR  = (SD_DMA_TO_ROM) ? MCU_ADDR[23:1] : MCU_HIT ? ROM_ADDRr[23:1] : MAPPED_SNES_ADDR[23:1];
 assign ROM_ADDR0 = (SD_DMA_TO_ROM) ? MCU_ADDR[0] : MCU_HIT ? ROM_ADDRr[0] : MAPPED_SNES_ADDR[0];
-
-reg ROM_WEr;
-initial ROM_WEr = 1'b1;
-reg ROM_DOUT_ENr;
-initial ROM_DOUT_ENr = 1'b0;
 
 reg[17:0] SNES_DEAD_CNTr;
 initial SNES_DEAD_CNTr = 0;
@@ -540,7 +533,6 @@ always @(posedge CLK2) begin
   end
 end
 
-wire SNES_CPU_CLK_change = SNES_CPU_CLKr[2] ^ SNES_CPU_CLKr[1];
 always @(posedge CLK2) begin
   if(~SNES_CPU_CLK) SNES_DEAD_CNTr <= SNES_DEAD_CNTr + 1;
   else SNES_DEAD_CNTr <= 17'h0;
@@ -665,11 +657,14 @@ snescmd_buf snescmd (
   .doutb(snescmd_data_in_mcu) // output [7 : 0] doutb
 );
 
-icon icon (
+/*
+wire [35:0] CONTROL0;
+
+chipscope_icon icon (
     .CONTROL0(CONTROL0) // INOUT BUS [35:0]
 );
 
-ila_srtc ila (
+chipscope_ila ila (
     .CONTROL(CONTROL0), // INOUT BUS [35:0]
     .CLK(CLK2), // IN
     .TRIG0(SNES_ADDR), // IN BUS [23:0]
@@ -681,7 +676,7 @@ ila_srtc ila (
     .TRIG6(MCU_DINr), // IN BUS [7:0]
    .TRIG7(spi_byte_cnt[3:0])
 );
-*/
+
 /*
 ila_srtc ila (
     .CONTROL(CONTROL0), // INOUT BUS [35:0]

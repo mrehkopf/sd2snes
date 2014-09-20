@@ -26,21 +26,22 @@ module cx4(
   input SNES_VECT_EN,
   input nRD,
   input nWR,
+  input WR_EN,
   input CLK,
-  input [23:0] DATROM_DI,
-  input DATROM_WE,
-  input [9:0] DATROM_ADDR,
   input [7:0] BUS_DI,
   output [23:0] BUS_ADDR,
   output BUS_RRQ,
   input BUS_RDY,
-  output cx4_active
+  output cx4_active,
+  output [2:0] cx4_busy_out,
+  input speed
 );
 
 reg [2:0] cx4_busy;
 parameter BUSY_CACHE = 2'b00;
 parameter BUSY_DMA   = 2'b01;
 parameter BUSY_CPU   = 2'b10;
+assign cx4_busy_out = cx4_busy;
 
 wire datram_enable = CS & (ADDR[11:0] < 12'hc00);
 wire mmio_enable = CS & (ADDR[12:5] == 8'b11111010) & (ADDR[4:0] < 5'b10011);
@@ -149,15 +150,8 @@ assign GPR_DO = gpr [ADDR[5:0]];
 assign STATUS_DO = {1'b0, cx4_active, 4'b0000, ~cx4_active, 1'b0};
 
 reg [7:0] DIr;
-always @(posedge CLK) DIr <= DI;
+always @(posedge CLK) if(~nWR) DIr <= DI;
 
-reg [4:0] datram_enable_sreg;
-initial datram_enable_sreg = 5'b11111;
-always @(posedge CLK) datram_enable_sreg <= {datram_enable_sreg[3:0], datram_enable};
-
-reg [5:0] nWR_sreg;
-always @(posedge CLK) nWR_sreg <= {nWR_sreg[4:0], nWR};
-wire WR_EN = (nWR_sreg[5:0] == 6'b000001);
 wire DATRAM_WR_EN = datram_enable & WR_EN;
 wire MMIO_WR_EN = mmio_enable & WR_EN;
 wire VECTOR_WR_EN = vector_enable & WR_EN;
@@ -334,7 +328,7 @@ always @(posedge CLK) begin
         CACHE_ST <= ST_CACHE_START;
         cache_pgmpage <= cx4_mmio_pgmpage;
         cache_cachepage <= cx4_mmio_cachepage;
-      cx4_busy[BUSY_CACHE] <= 1'b1;
+        cx4_busy[BUSY_CACHE] <= 1'b1;
       end else if(cpu_cache_en
          & (~cachevalid[~cpu_page]
             | |(cachetag[~cpu_page] ^ cpu_p))) begin
@@ -454,6 +448,7 @@ reg [23:0] cpu_tmp;
 reg [23:0] cpu_sa;  // tmp register for shifted accumulator
 reg [7:0] cpu_wait;
 initial cpu_wait = 8'h00;
+reg mul_wait = 1'b0;
 
 wire [9:0] cx4_datrom_addr = cpu_a[9:0];
 wire [23:0] cx4_datrom_do;
@@ -521,6 +516,7 @@ always @(posedge CLK) begin
         cpu_page <= cx4_mmio_cachepage;
         cpu_p <= cx4_mmio_pgmpage;
         op <= OP_NOP;
+        mul_wait <= 1'b0;
         CPU_STATE <= ST_CPU_2;
       end
       else CPU_STATE <= ST_CPU_IDLE;
@@ -552,6 +548,7 @@ always @(posedge CLK) begin
           endcase
         end
         OP_LD, OP_ALU, OP_MUL, OP_CMP, OP_SEX: begin
+          if(op == OP_MUL) mul_wait <= 1'b1;
           if(op_imm) cpu_idb <= {16'b0, op_param};
           else casex(op_param)
             8'h00: cpu_idb <= cpu_a;
@@ -648,7 +645,8 @@ always @(posedge CLK) begin
       endcase
     end
     ST_CPU_2: begin
-      CPU_STATE <= ST_CPU_3;
+      CPU_STATE <= mul_wait ? ST_CPU_2 : ST_CPU_3;
+      mul_wait <= 1'b0;
       case(op)
         OP_LD: begin
           casex(cpu_op[11:8])
@@ -750,15 +748,16 @@ always @(posedge CLK) begin
         end
       endcase
       cpu_op <= cpu_op_w;
+
       casex(cpu_op_w[15:11])
         5'b00x01, 5'b00x10, 5'b00100, 5'b00111: begin
-        cpu_wait <= 8'h07;
-        CPU_STATE <= ST_CPU_4;
-      end
+          cpu_wait <= 8'h07;
+          CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
+        end
         5'b01110, 5'b01101, 5'b11101: begin
-        cpu_wait <= 8'h03;
-        CPU_STATE <= ST_CPU_4;
-      end
+          cpu_wait <= 8'h02;
+          CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
+        end
         /*5'b10011: begin
         cpu_wait <= 8'h02;
          CPU_STATE <= ST_CPU_4;
@@ -873,12 +872,8 @@ end
  ***************************/
 cx4_datrom cx4_datrom (
   .clka(CLK), // input clka
-  .wea(DATROM_WE), // input [0 : 0] wea
-  .addra(DATROM_ADDR), // input [9 : 0] addra
-  .dina(DATROM_DI), // input [23 : 0] dina
-  .clkb(CLK), // input clkb
-  .addrb(cx4_datrom_addr), // input [9 : 0] addrb
-  .doutb(cx4_datrom_do) // output [23 : 0] doutb
+  .addra(cx4_datrom_addr), // input [9 : 0] addrb
+  .douta(cx4_datrom_do) // output [23 : 0] doutb
 );
 
 cx4_datram cx4_datram (

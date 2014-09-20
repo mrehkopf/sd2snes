@@ -25,10 +25,11 @@ void __attribute__((weak,noinline)) SysTick_Hook(void) {
 /* Systick interrupt handler */
 void SysTick_Handler(void) {
   ticks++;
+  static int warmup = 0;
   static uint16_t sdch_state = 0;
   static uint16_t reset_state = 0;
   sdch_state = (sdch_state << 1) | SDCARD_DETECT | 0xe000;
-  if((sdch_state == 0xf000) || (sdch_state == 0xefff)) {
+  if(warmup > WARMUP_TICKS && ((sdch_state == 0xf000) || (sdch_state == 0xefff))) {
     sd_changed = 1;
   }
   reset_state = (reset_state << 1) | get_snes_reset() | 0xe000;
@@ -39,6 +40,7 @@ void SysTick_Handler(void) {
   led_error();
   sdn_changed();
   SysTick_Hook();
+  if(warmup <= WARMUP_TICKS) warmup++;
 }
 
 void __attribute__((weak,noinline)) RIT_Hook(void) {
@@ -101,12 +103,12 @@ void delay_ms(unsigned int time) {
 
 void sleep_ms(unsigned int time) {
 
+  NVIC_EnableIRQ(RIT_IRQn);
   wokefromrit = 0;
   /* Prepare RIT */
   LPC_RIT->RICOUNTER = 0;
   LPC_RIT->RICOMPVAL = (CONFIG_CPU_FREQUENCY / 1000) * time;
   LPC_RIT->RICTRL    = BV(RITEN) | BV(RITINT);
-  NVIC_EnableIRQ(RIT_IRQn);
 
   /* Wait until RIT signals an interrupt */
 //uart_putc(';');

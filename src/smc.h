@@ -33,7 +33,6 @@
 #define DSPFW_4 ((const uint8_t*)"/sd2snes/dsp4.bin")
 #define DSPFW_1B ((const uint8_t*)"/sd2snes/dsp1b.bin")
 #define DSPFW_ST0010 ((const uint8_t*)"/sd2snes/st0010.bin")
-#define CX4FW ((const uint8_t*)"/sd2snes/cx4.bin")
 
 #define FPGA_CX4 ((const uint8_t*)"/sd2snes/fpga_cx4.bit")
 #define FPGA_OBC1 ((const uint8_t*)"/sd2snes/fpga_obc1.bit")

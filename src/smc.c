@@ -117,7 +117,6 @@ void smc_id(snes_romprops_t* props) {
       /* Cx4 LoROM */
       if (header->map == 0x20 && header->carttype == 0xf3) {
         props->has_cx4 = 1;
-        props->dsp_fw = CX4FW;
         props->fpga_conf = FPGA_CX4;
         props->fpga_features |= FEAT_CX4;
       }
@@ -197,15 +196,15 @@ void smc_id(snes_romprops_t* props) {
       break;
 
     case 0x22: /* ExLoROM */
+      /* Star Ocean 96MBit */
+      if(file_handle.fsize > 0x600200) {
+        props->mapper_id = 6;
+      }
       /* S-DD1 */
-      if(header->carttype == 0x43 || header->carttype == 0x45) {
+      else if(header->carttype == 0x43 || header->carttype == 0x45) {
         props->has_sdd1 = 1;
         props->error = MENU_ERR_NOIMPL;
         props->error_param = (uint8_t*)"S-DD1";
-      }
-      /* Star Ocean 96MBit */
-      else if(file_handle.fsize > 0x400200) {
-        props->mapper_id = 6;
       }
       /* Standard ExLoROM */
       else {

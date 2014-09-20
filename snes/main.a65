@@ -151,7 +151,7 @@ setup_gfx:
   ldx #!hdma_pal
   stx $2181
   sta $2183
-  DMA0(#$00, #52, #^hdma_pal_src, #!hdma_pal_src, #$80)
+  DMA0(#$00, #55, #^hdma_pal_src, #!hdma_pal_src, #$80)
 
 ; CG addr for palette
   lda #^hdma_cg_addr
@@ -172,7 +172,13 @@ setup_gfx:
   ldx #!hdma_scroll
   stx $2181
   sta $2183
-  DMA0(#$00, #11, #^hdma_scroll_src, #!hdma_scroll_src, #$80);
+  DMA0(#$00, #21, #^hdma_scroll_src, #!hdma_scroll_src, #$80);
+
+  lda #^hdma_yscroll
+  ldx #!hdma_yscroll
+  stx $2181
+  sta $2183
+  DMA0(#$00, #13, #^hdma_yscroll_src, #!hdma_yscroll_src, #$80);
 
 ; color math
   lda #^hdma_math
@@ -517,7 +523,7 @@ wram_routine_src:
   sta @MCU_CMD
 ; wait for ACK (reconf done or not necessary)
 - lda @SNES_CMD
-  cmp #$55
+  cmp #$77
   bne -
 ; install fade loop in block RAM after FPGA reconf
 ; must reside in WRAM prior to copying! ROM not available
@@ -530,11 +536,15 @@ game_handshake:
   php
   sep #$20 : .as
   pha
+  lda #$01
   jsr hide_cursor
   jsr draw_loading_window
+  jsr waitblank
 ; send initial request to MCU
   lda #$00
   sta @SNES_CMD
+  sta $4200
+  sei
   pla
   sta @MCU_CMD
 ; wait for ACK/NACK with error (noimpl warning etc.)

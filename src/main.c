@@ -107,12 +107,8 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
   LPC_TIM3->MR0=1;
   LPC_TIM3->TCR=1;
   fpga_init();
-  snes_boot_configured = 0;
   while(1) {
-    if(disk_state == DISK_CHANGED) {
-      sdn_init();
-      newcard = 1;
-    }
+    snes_boot_configured = 0;
     while(get_cic_state() == CIC_FAIL) {
       rdyled(0);
       readled(0);
@@ -126,15 +122,15 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     /* some sanity checks */
     uint8_t card_go = 0;
     while(!card_go) {
-      if(disk_status(0) & (STA_NOINIT|STA_NODISK)) {
+      if(disk_status(0) & (STA_NODISK)) {
         snes_bootprint("        No SD Card found!       \0");
-        while(disk_status(0) & (STA_NOINIT|STA_NODISK));
+        while(disk_status(0) & (STA_NODISK));
         delay_ms(200);
       }
       file_open((uint8_t*)"/sd2snes/menu.bin", FA_READ);
       if(file_status != FILE_OK) {
         snes_bootprint("  /sd2snes/menu.bin not found!  \0");
-        while(disk_status(0) == RES_OK);
+        while(disk_status(0) == 0);
       } else {
         card_go = 1;
       }
