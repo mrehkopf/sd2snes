@@ -468,6 +468,7 @@ cheat snes_cheat(
   .SNES_ADDR(SNES_ADDR),
   .SNES_DATA(SNES_DATA),
   .snescmd_wr_strobe(SNES_WR_end & snescmd_enable),
+  .SNES_cycle_start(SNES_RD_start),
   .pgm_idx(cheat_pgm_idx),
   .pgm_we(cheat_pgm_we),
   .pgm_in(cheat_pgm_data),

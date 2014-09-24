@@ -377,6 +377,7 @@ cheat snes_cheat(
   .clk(CLK2),
   .SNES_ADDR(SNES_ADDR),
   .SNES_DATA(SNES_DATA),
+  .SNES_cycle_start(SNES_RD_start),
   .snescmd_wr_strobe(SNES_WR_end & snescmd_enable),
   .pgm_idx(cheat_pgm_idx),
   .pgm_we(cheat_pgm_we),
