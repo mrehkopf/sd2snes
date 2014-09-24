@@ -17,10 +17,10 @@
 #define SNES_CMD                    $002A02
 #define MCU_PARAM                   $002A04
 #define BRAM_ROUTINE                $002A10
-#define BRAM_NMIHOOK                $002A20
-#define BRAM_IRQHOOK                $002A26
-#define BRAM_PAYLOAD                $002A2C
-#define BRAM_CHEATS                 $002A90
+#define BRAM_NMIHOOK                $002A12
+#define BRAM_IRQHOOK                $002A18
+#define BRAM_PAYLOAD                $002A1E
+#define BRAM_CHEATS                 $002AC0
 
 #define WRAM_ROUTINE                $7EF000
 #define WRAM_STORE_BLOCKRAM_ROUTINE $7EF080
