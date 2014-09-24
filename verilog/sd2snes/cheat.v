@@ -63,8 +63,8 @@ assign data_out = cheat_match_bits[0] ? cheat_data[0]
                 : cheat_match_bits[3] ? cheat_data[3]
                 : cheat_match_bits[4] ? cheat_data[4]
                 : cheat_match_bits[5] ? cheat_data[5]
-                : nmi_match_bits[1] ? 8'h20
-                : irq_match_bits[1] ? 8'h26
+                : nmi_match_bits[1] ? 8'h12
+                : irq_match_bits[1] ? 8'h18
                 : 8'h2a;
 
 assign cheat_hit = (cheat_enable & cheat_addr_match) | (hook_enable & ((nmi_enable & nmi_addr_match) | (irq_enable & irq_addr_match)));

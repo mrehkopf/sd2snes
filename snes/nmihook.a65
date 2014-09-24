@@ -2,10 +2,10 @@
 
 nmihook:
   jsr !BRAM_PAYLOAD
-  jmp ($2a0e)
+  jmp $ffff
 irqhook:
   jsr !BRAM_PAYLOAD
-  jmp ($2a0c)
+  jmp $ffff
 nmi_payload:
   php
   rep #$30 : .al : .xl
@@ -18,11 +18,28 @@ nmi_payload:
   phd
   lda #$2a00
   tcd
+; backup vectors
++ sep #$10 : .xs
+  ldx #$01
+  stx $bd ; disable vector patching
+; fill in jump addresses above ("$ffff")
+  lda $ffea
+  sta $16
+  lda $ffee
+  sta $1c
+  dex
+  stx $bd
+; only read controller every couple of frames
+  ror $bc
+  bcc nmi_patches
+  lda #$80
+  tsb $bc
 ; read controller
-  sep #$10 : .xs
-- lda $4212
+  lda $4212
   lsr
-  bcs -
+; auto read is active, so we wait for it to finish and use the result
+  bcs nmi_autoread
+; no auto read; read the controller manually
   stz $4016
   ldx #$11
   stx $4016
@@ -31,7 +48,7 @@ nmi_payload:
 - ldy $4016
   tya
   ror
-  rol $08
+  rol $04
   dex
   bne -
 ; check button combinations
@@ -42,9 +59,18 @@ nmi_payload:
 ; L+R+Start+Y      : $5030
 ; L+R+Start+X      : $1070
   ldx #$00
+  bra nmi_pad_loop
+nmi_autoread:
+  sep #$20 : .as
+- lda $4212
+  lsr
+  bcs -
+  rep #$20 : .al
+  lda $4218
+  sta $04
 nmi_pad_loop:
-  lda $10, x
-  cmp $08
+  lda $06, x
+  cmp $04
   beq nmi_pad_found
   cpx #$0a
   beq nmi_patches
@@ -97,4 +123,4 @@ nmi_exit:
   plb
   plp
   rts
-.byt "bram_end"
+.byt"bram_end"
