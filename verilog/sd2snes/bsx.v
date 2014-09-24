@@ -44,8 +44,8 @@ wire [15:0] flash_addr = snes_addr[15:0];
 
 reg flash_ovr_r;
 reg flash_we_r;
+reg flash_status_r = 0;
 reg [7:0] flash_cmd0;
-reg [15:0] flash_cmd5555;
 
 wire cart_enable = (use_bsx) && ((snes_addr[23:12] & 12'hf0f) == 12'h005);
 
@@ -54,21 +54,12 @@ wire base_enable = (use_bsx) && (!snes_addr[22] && (snes_addr[15:0] >= 16'h2188)
 
 wire flash_enable = (snes_addr[23:16] == 8'hc0);
 
-wire is_flash_special_address = (flash_addr == 16'h0002
-                                 || flash_addr == 16'h5555
-                                 || flash_addr == 16'h2aaa
-                                 || flash_addr == 16'h0000
-                                 || (flash_addr >= 16'hff00
-                                     && flash_addr <= 16'hff13));
-
 wire flash_ovr = (use_bsx)
-                 && (flash_enable & flash_ovr_r)
-                 && is_flash_special_address;
+                 && (flash_enable & flash_ovr_r);
 
 assign flash_writable = (use_bsx)
                         && flash_enable
-                        && flash_we_r
-                        && !is_flash_special_address;
+                        && flash_we_r;
 
 assign data_ovr = (cart_enable | base_enable | flash_ovr) & ~bs_page_enable;
 
@@ -168,7 +159,7 @@ initial begin
   flash_vendor_data[3'h3] <= 8'h00;
   flash_vendor_data[3'h4] <= 8'h00;
   flash_vendor_data[3'h5] <= 8'h00;
-  flash_vendor_data[3'h6] <= 8'h2a;
+  flash_vendor_data[3'h6] <= 8'h1a;
   flash_vendor_data[3'h7] <= 8'h00;
   flash_ovr_r <= 1'b0;
   flash_we_r <= 1'b0;
@@ -234,14 +225,13 @@ always @(posedge clkin) begin
       endcase
     end else if (flash_enable) begin
       casex (flash_addr)
-        16'h0002:
-          reg_data_outr <= 8'h80;
-        16'h5555:
-          reg_data_outr <= 8'h80;
         16'b1111111100000xxx:
-          reg_data_outr <= flash_vendor_data[flash_addr&16'h0007];
+          reg_data_outr <= flash_status_r ? 8'h80 : flash_vendor_data[flash_addr&16'h0007];
+        16'b1111111100001xxx,
+        16'b11111111000100xx:
+          reg_data_outr <= flash_status_r ? 8'h80 : 8'h00;
         default:
-          reg_data_outr <= 8'h00;
+          reg_data_outr <= 8'h80;
       endcase
     end
   end else if(pgm_we_rising) begin
@@ -250,8 +240,10 @@ always @(posedge clkin) begin
   end else if(reg_we_rising && cart_enable) begin
     if(reg_addr == 4'he)
       regs_outr <= regs_tmpr;
-    else
+    else begin
       regs_tmpr[reg_addr] <= data_tmp[7];
+      if(reg_addr == 4'h1) regs_outr[reg_addr] <= data_tmp[7];
+    end
   end else if(reg_we_rising && base_enable) begin
     case(base_addr)
       5'h09: begin
@@ -279,33 +271,25 @@ always @(posedge clkin) begin
       default:
         base_regs[base_addr] <= data_tmp;
     endcase
-  end else if(reg_we_rising && flash_enable) begin
+  end else if(reg_we_rising && flash_enable && regs_outr[4'hc]) begin
+    flash_we_r <= 0;
     case(flash_addr)
       16'h0000: begin
         flash_cmd0 <= data_tmp;
-        if(flash_cmd0 == 8'h38 && data_tmp == 8'hd0)
+        if((flash_cmd0 == 8'h72 && data_tmp == 8'h75) & ~flash_we_r) begin
           flash_ovr_r <= 1;
-      end
-      16'h5555: begin
-        flash_cmd5555 <= {flash_cmd5555[7:0], data_tmp};
-        if(flash_cmd5555 == 16'haa55) begin
-          case (data_tmp)
-            8'hf0: begin
-              flash_ovr_r <= 0;
-              flash_we_r <= 0;
-            end
-            8'ha0: begin
-              flash_ovr_r <= 1;
-              flash_we_r <= 1;
-            end
-            8'h70: begin
-              flash_we_r <= 0;
-            end
-          endcase
+          flash_status_r <= 0;
+        end else if((data_tmp == 8'hff) & ~flash_we_r) begin
+          flash_ovr_r <= 0;
+          flash_we_r <= 0;          
+        end else if(data_tmp[7:1] == 7'b0111000 || ((flash_cmd0 == 8'h38 && data_tmp == 8'hd0) & ~flash_we_r)) begin
+          flash_ovr_r <= 1;
+          flash_status_r <= 1;
+        end else if((data_tmp == 8'h10) & ~flash_we_r) begin
+          flash_ovr_r <= 1;
+          flash_status_r <= 1;
+          flash_we_r <= 1;
         end
-      end
-      16'h2aaa: begin
-        flash_cmd5555 <= {flash_cmd5555[7:0], data_tmp};
       end
     endcase
   end

@@ -102,11 +102,14 @@ assign IS_SAVERAM = SAVERAM_MASK[0]
 
 
 /* BS-X has 4 MBits of extra RAM that can be mapped to various places */
-wire [2:0] BSX_PSRAM_BANK = {bsx_regs[2], bsx_regs[6], bsx_regs[5]};
-wire [23:0] BSX_CHKADDR = bsx_regs[2] ? SNES_ADDR : {SNES_ADDR[23], 1'b0, SNES_ADDR[22:16], SNES_ADDR[14:0]};
+// LoROM: A23 = r03/r04  A22 = r06  A21 = r05  A20 = 0    A19 = d/c
+// HiROM: A23 = r03/r04  A22 = d/c  A21 = r06  A20 = r05  A19 = 0
+
+wire [2:0] BSX_PSRAM_BANK = {bsx_regs[6], bsx_regs[5], 1'b0};
+wire [2:0] SNES_PSRAM_BANK = bsx_regs[2] ? SNES_ADDR[21:19] : SNES_ADDR[22:20];
 wire BSX_PSRAM_LOHI = (bsx_regs[3] & ~SNES_ADDR[23]) | (bsx_regs[4] & SNES_ADDR[23]);
 wire BSX_IS_PSRAM = BSX_PSRAM_LOHI
-                     & (( (BSX_CHKADDR[22:20] == BSX_PSRAM_BANK)
+                     & (( IS_ROM & (SNES_PSRAM_BANK == BSX_PSRAM_BANK)
                          &(SNES_ADDR[15] | bsx_regs[2])
                          &(~(SNES_ADDR[19] & bsx_regs[2])))
                        | (bsx_regs[2]
