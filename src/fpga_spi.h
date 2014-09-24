@@ -32,13 +32,13 @@
 #include "spi.h"
 #include "config.h"
 
-#define FPGA_SS_BIT	16
-#define FPGA_SS_REG	LPC_GPIO0
+#define FPGA_SS_BIT 16
+#define FPGA_SS_REG LPC_GPIO0
 
-#define FPGA_SELECT()	do {FPGA_TX_SYNC(); BITBAND(FPGA_SS_REG->FIOCLR, FPGA_SS_BIT) = 1;} while (0)
-#define FPGA_SELECT_ASYNC()	do {BITBAND(FPGA_SS_REG->FIOCLR, FPGA_SS_BIT) = 1;} while (0)
-#define FPGA_DESELECT()	do {FPGA_TX_SYNC(); BITBAND(FPGA_SS_REG->FIOSET, FPGA_SS_BIT) = 1;} while (0)
-#define FPGA_DESELECT_ASYNC()	do {BITBAND(FPGA_SS_REG->FIOSET, FPGA_SS_BIT) = 1;} while (0)
+#define FPGA_SELECT() do {FPGA_TX_SYNC(); BITBAND(FPGA_SS_REG->FIOCLR, FPGA_SS_BIT) = 1;} while (0)
+#define FPGA_SELECT_ASYNC() do {BITBAND(FPGA_SS_REG->FIOCLR, FPGA_SS_BIT) = 1;} while (0)
+#define FPGA_DESELECT() do {FPGA_TX_SYNC(); BITBAND(FPGA_SS_REG->FIOSET, FPGA_SS_BIT) = 1;} while (0)
+#define FPGA_DESELECT_ASYNC() do {BITBAND(FPGA_SS_REG->FIOSET, FPGA_SS_BIT) = 1;} while (0)
 
 #define FPGA_TX_SYNC()     spi_tx_sync()
 #define FPGA_TX_BYTE(x)    spi_tx_byte(x)
