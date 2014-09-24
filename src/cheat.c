@@ -44,6 +44,7 @@ cht_count = 0;
   fpga_write_cheat(6, enable_mask);
   cheat_enable(1);
   cheat_nmi_enable(1);
+  cheat_irq_enable(1);
 }
 
 void cheat_program_rom_cheat(int index, cht_record_t *cheat) {
