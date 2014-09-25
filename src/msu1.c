@@ -136,7 +136,6 @@ int msu1_check(uint8_t* filename) {
 
 int msu1_loop() {
 /* it is assumed that the MSU file is already opened by calling msu1_check(). */
-  while(fpga_status() & 0x4000);
   uint16_t dac_addr = 0;
   uint16_t msu_addr = 0;
   uint8_t msu_repeat = 0;
@@ -145,6 +144,7 @@ int msu1_loop() {
   fpga_status_prev = fpga_status();
   fpga_status_now = fpga_status();
   int msu_res;
+  uint8_t cmd;
 
 /*  set_msu_addr(0x0);
   msu_reset(0x0);
@@ -171,7 +171,25 @@ int msu1_loop() {
   prepare_audio_track(0);
   prepare_data(0);
 /* audio_start, data_start, 0, audio_ctrl[1:0], ctrl_start */
-  while((msu_res = get_snes_reset_state()) == SNES_RESET_NONE){
+  msu_res = SNES_RESET_NONE;
+  while(msu_res == SNES_RESET_NONE){
+    msu_res = get_snes_reset_state();
+    cmd = snes_get_mcu_cmd();
+    if(cmd) {
+      switch(cmd) {
+        case SNES_CMD_RESET:
+          msu_res = SNES_RESET_SHORT;
+          snes_reset_pulse();
+          break;
+        case SNES_CMD_RESET_TO_MENU:
+          msu_res = SNES_RESET_LONG;
+          break;
+        default:
+          printf("unknown cmd: %02x\n", cmd);
+          break;
+      }
+      snes_set_mcu_cmd(0);
+    }
     cli_entrycheck();
     fpga_status_now = fpga_status();
 

@@ -352,14 +352,13 @@ uint64_t snescmd_gettime(void) {
 void snescmd_prepare_nmihook() {
   uint16_t bram_src = sram_readshort(SRAM_MENU_ADDR + MENU_ADDR_BRAM_SRC);
   uint8_t bram[224];
-  snescmd_writeshort(romprops.header.vect_nmi16, SNESCMD_NMI_VECTOR);
-  snescmd_writeshort(romprops.header.vect_irq16, SNESCMD_IRQ_VECTOR);
   sram_readblock(bram, SRAM_MENU_ADDR + bram_src, 224);
-  snescmd_writeblock(bram, 0x20, 224);
+  snescmd_writeblock(bram, 0x12, 224);
   snescmd_writeshort(SNES_BUTTON_LRET, SNESCMD_NMI_RESET);
   snescmd_writeshort(SNES_BUTTON_LREX, SNESCMD_NMI_RESET_TO_MENU);
   snescmd_writeshort(SNES_BUTTON_LRSA, SNESCMD_NMI_ENABLE_CHEATS);
   snescmd_writeshort(SNES_BUTTON_LRSB, SNESCMD_NMI_DISABLE_CHEATS);
   snescmd_writeshort(SNES_BUTTON_LRSY, SNESCMD_NMI_KILL_NMIHOOK);
   snescmd_writeshort(SNES_BUTTON_LRSX, SNESCMD_NMI_TMP_KILL_NMIHOOK);
+  snescmd_writebyte(0x80, SNESCMD_NMI_RUNMASK);
 }

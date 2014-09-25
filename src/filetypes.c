@@ -84,7 +84,7 @@ printf("start\n");
           case TYPE_SUBDIR:
           case TYPE_PARENT:
             if(fno.fattrib & AM_DIR) {
-              if(fn[0]=='.' && fn[1]==0) continue; /* omit './' directory */
+              if((fn[0]=='.' && fn[1]==0) || (fno.fattrib & (AM_HID | AM_SYS))) continue; /* omit './' directory */
               snprintf(buf, sizeof(buf), " <dir>");
             } else {
               entry_fsize = fno.fsize;

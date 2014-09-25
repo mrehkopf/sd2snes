@@ -12,7 +12,7 @@ typedef enum {
   VIDMODE_AUTO
 } cfg_vidmode_t;
 
-typedef struct _cfg_block {
+typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t cfg_ver_maj;       /* version of config */
   uint8_t cfg_ver_min;
   uint8_t num_recent_games;  /* entries present in history */

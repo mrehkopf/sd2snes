@@ -5,8 +5,8 @@
 #include "fileops.h"
 #include "memory.h"
 
-cfg_t CFG = {
-  .cfg_ver_maj = 1,
+cfg_t CFG_DEFAULT = {
+  .cfg_ver_maj = 2,
   .cfg_ver_min = 1,
   .num_recent_games = 0,
   .vidmode_menu = VIDMODE_AUTO,
@@ -17,10 +17,12 @@ cfg_t CFG = {
   .r213f_override = 1
 };
 
+cfg_t CFG;
+
 int cfg_save() {
   int err = 0;
   file_open(CFG_FILE, FA_CREATE_ALWAYS | FA_WRITE);
-  if(file_writeblock(&CFG, 0, sizeof(CFG)) < sizeof(CFG)) {
+  if(file_writeblock(&CFG, 0, sizeof(cfg_t)) < sizeof(cfg_t)) {
     err = file_res;
   }
   file_close();
@@ -29,10 +31,18 @@ int cfg_save() {
 
 int cfg_load() {
   int err = 0;
+printf("sizeof cfg_t=%d\n", sizeof(cfg_t));
   file_open(CFG_FILE, FA_READ);
-  if(file_readblock(&CFG, 0, sizeof(CFG)) < sizeof(CFG)) {
+  if(file_res) {
+    err = file_res;
+  } else if(file_readblock(&CFG, 0, sizeof(cfg_t)) < sizeof(cfg_t)) {
     err = file_res;
   }
+  if(CFG.cfg_ver_maj != CFG_DEFAULT.cfg_ver_maj) {
+    printf("config version mismatch, loading defaults...\n");
+    err = 1;
+  }
+  if(err) memcpy(&CFG, &CFG_DEFAULT, sizeof(cfg_t));
   file_close();
   return err;
 }

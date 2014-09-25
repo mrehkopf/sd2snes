@@ -320,12 +320,19 @@ reg [7:0] SNES_CPU_CLKr;
 reg SNES_DEADr;
 initial SNES_DEADr = 1;
 
+reg free_strobe = 0;
+
 wire SNES_PARD_start = (SNES_PARDr[7:1] == 7'b1111110);
 wire SNES_RD_start = (SNES_READr[7:1] == 7'b1111110);
 wire SNES_WR_end = (SNES_WRITEr[7:1] == 7'b0000001);
 wire SNES_cycle_start = (SNES_CPU_CLKr[4:1] == 4'b0001);
 wire SNES_cycle_end = (SNES_CPU_CLKr[4:1] == 4'b1110);
-wire free_slot = SNES_cycle_end | (~ROM_HIT & SNES_cycle_start);
+wire free_slot = SNES_cycle_end | free_strobe;
+
+always @(posedge CLK2) begin
+  free_strobe <= 1'b0;
+  if(SNES_cycle_start) free_strobe <= ~ROM_HIT;
+end
 
 always @(posedge CLK2) begin
   SNES_PARDr <= {SNES_PARDr[6:0], SNES_PARD};
@@ -357,6 +364,7 @@ cheat snes_cheat(
   .clk(CLK2),
   .SNES_ADDR(SNES_ADDR),
   .SNES_DATA(SNES_DATA),
+  .SNES_cycle_start(SNES_RD_start),
   .snescmd_wr_strobe(SNES_WR_end & snescmd_enable),
   .pgm_idx(cheat_pgm_idx),
   .pgm_we(cheat_pgm_we),
@@ -422,19 +430,19 @@ always @(posedge CLK2) begin
 end
 
 always @(posedge CLK2) begin
-  if(~SNES_CPU_CLK) SNES_DEAD_CNTr <= SNES_DEAD_CNTr + 1;
+  if(~SNES_CPU_CLKr[1]) SNES_DEAD_CNTr <= SNES_DEAD_CNTr + 1;
   else SNES_DEAD_CNTr <= 17'h0;
 end
 
 always @(posedge CLK2) begin
   if(SNES_DEAD_CNTr > SNES_DEAD_TIMEOUT) SNES_DEADr <= 1'b1;
-  else if(SNES_CPU_CLK) SNES_DEADr <= 1'b0;
+  else if(SNES_CPU_CLKr[1]) SNES_DEADr <= 1'b0;
 end
 
 reg snes_wr_cycle;
 
 always @(posedge CLK2) begin
-  if(SNES_DEADr & SNES_CPU_CLK) STATE <= ST_IDLE; // interrupt+restart an ongoing MCU access when the SNES comes alive
+  if(SNES_DEADr & SNES_CPU_CLKr[1]) STATE <= ST_IDLE; // interrupt+restart an ongoing MCU access when the SNES comes alive
   else
   case(STATE)
     ST_IDLE: begin
