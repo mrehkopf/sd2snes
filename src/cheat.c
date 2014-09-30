@@ -3,6 +3,7 @@
 #include "uart.h"
 #include "memory.h"
 #include "fpga_spi.h"
+#include "snes.h"
 #include "cheat.h"
 
 void cheat_program() {
@@ -56,7 +57,7 @@ void cheat_program_rom_cheat(int index, cht_record_t *cheat) {
 }
 
 void cheat_program_ram_cheat(int index, cht_record_t *cheat) {
-  uint8_t address = 0xc0 + 4 * index;
+  uint8_t address = SNESCMD_WRAM_CHEATS + 4 * index;
   fpga_set_snescmd_addr(address);
   fpga_write_snescmd(cheat->patchaddr & 0xff);
   fpga_write_snescmd(cheat->patchaddr >> 8);
@@ -80,8 +81,7 @@ void cheat_enable(int enable) {
   flags = (enable ? 0x01 : 0x10);
   fpga_write_cheat(7, flags);
   /* switch WRAM cheats */
-  fpga_set_snescmd_addr(0xbe);
-  fpga_write_snescmd(enable);
+  snescmd_writebyte(enable ? 0 : 1, SNESCMD_NMI_DISABLE_WRAM);
 }
 
 void cheat_nmi_enable(int enable) {

@@ -78,9 +78,9 @@ assign data_out = cheat_match_bits[0] ? cheat_data[0]
                 : cheat_match_bits[3] ? cheat_data[3]
                 : cheat_match_bits[4] ? cheat_data[4]
                 : cheat_match_bits[5] ? cheat_data[5]
-                : nmi_match_bits[1] ? 8'h12
-                : irq_match_bits[1] ? 8'h18
-                : 8'h2a;
+                : nmi_match_bits[1] ? 8'he0
+                : irq_match_bits[1] ? 8'he6
+                : 8'h2b;
 
 assign cheat_hit = (cheat_enable & cheat_addr_match)
                    | (hook_enable_sync & (((auto_nmi_enable_sync & nmi_enable) & nmi_addr_match) 
@@ -126,7 +126,7 @@ end
  
 always @(posedge clk) begin
   if(snescmd_wr_strobe) begin
-    if(~|SNES_ADDR[7:0]) begin
+    if(~|SNES_ADDR[8:0]) begin
       case(SNES_DATA)
         8'h82: cheat_enable <= 1;
         8'h83: cheat_enable <= 0;
@@ -135,7 +135,7 @@ always @(posedge clk) begin
           hook_enable_count <= 30'd880000000;
         end
       endcase
-    end else if(SNES_ADDR[7:0] == 8'hbd) begin
+    end else if(SNES_ADDR[8:0] == 9'h1fd) begin
       hook_disable <= SNES_DATA[0];
     end
   end else if(pgm_we) begin

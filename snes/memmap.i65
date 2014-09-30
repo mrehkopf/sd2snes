@@ -17,10 +17,22 @@
 #define SNES_CMD                    $002A02
 #define MCU_PARAM                   $002A04
 #define BRAM_ROUTINE                $002A10
-#define BRAM_NMIHOOK                $002A12
-#define BRAM_IRQHOOK                $002A18
-#define BRAM_PAYLOAD                $002A1E
-#define BRAM_CHEATS                 $002AC0
+#define BRAM_NMIHOOK                $002BE0
+#define NMI_VECT_ORIG               $002BE4
+#define BRAM_IRQHOOK                $002BE6
+#define IRQ_VECT_ORIG               $002BEA
+#define BRAM_PAYLOAD                $002A04
+#define BRAM_CHEATS                 $002B00
+#define NMI_PAD_BUTTONS             $002BD0
+#define NMI_PAD                     $002BF0
+#define MIRROR_4200                 $002BFA
+#define NMI_RUNMASK                 $002BFC
+#define NMI_VECT_DISABLE            $002BFD
+#define NMI_WRAM_PATCH_DISABLE      $002BFE
+#define NMI_WRAM_PATCH_COUNT        $002BFF
+#define NMI_WRAM_PATCH_BASE_ADDR    $002B00
+#define NMI_WRAM_PATCH_BASE_BANK    $002B02
+#define NMI_WRAM_PATCH_BASE_VALUE   $002B03
 
 #define WRAM_ROUTINE                $7EF000
 #define WRAM_STORE_BLOCKRAM_ROUTINE $7EF080
