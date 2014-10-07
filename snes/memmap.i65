@@ -66,6 +66,7 @@
 #define CMD_ENABLE_CHEATS           $82
 #define CMD_DISABLE_CHEATS          $83
 #define CMD_KILL_NMIHOOK            $84
+#define CMD_TEMP_KILL_NMIHOOK       $85
 
 #define VIDMODE_NTSC                $00
 #define VIDMODE_PAL                 $01

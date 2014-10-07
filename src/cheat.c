@@ -39,8 +39,7 @@ cht_count = 0;
     cht_record_addr += sizeof(cht_record_t);
   }
   /* put number of WRAM cheats + enable flag */
-  fpga_set_snescmd_addr(0xbf);
-  fpga_write_snescmd(wram_index);
+  snescmd_writebyte(wram_index, SNESCMD_NMI_WRAM_PATCH_COUNT);
   printf("enable mask=%02x\n", enable_mask);
   fpga_write_cheat(6, enable_mask);
   cheat_enable(1);
