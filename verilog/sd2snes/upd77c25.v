@@ -20,9 +20,10 @@ module upd77c25(
   input [7:0] DI,
   output [7:0] DO,
   input A0,
-  input nCS,
-  input nRD,
-  input nWR,
+  input enable,
+  input reg_oe_falling,
+  input reg_oe_rising,
+  input reg_we_rising,
   input RST,
   input CLK,
 
@@ -34,7 +35,7 @@ module upd77c25(
   input [15:0] DAT_DI,
   input [10:0] DAT_WR_ADDR,
 
-  input DP_nCS,
+  input DP_enable,
   input [10:0] DP_ADDR,
 
   // debug
@@ -98,9 +99,6 @@ upd77c25_pgmrom pgmrom (
   .doutb(pgm_doutb) // output [23 : 0] doutb
 );
 
-reg [7:0] DIr;
-always @(posedge CLK) if(~nWR) DIr <= DI;
-
 wire [23:0] opcode_w = pgm_doutb;
 reg [1:0] op;
 reg [1:0] op_pselect;
@@ -124,24 +122,6 @@ upd77c25_datrom datrom (
   .doutb(dat_doutb) // output [15 : 0] doutb
 );
 
-reg [4:0] reg_nCS_sreg;
-initial reg_nCS_sreg = 5'b11111;
-always @(posedge CLK) reg_nCS_sreg <= {reg_nCS_sreg[3:0], nCS};
-
-reg [5:0] reg_oe_sreg;
-initial reg_oe_sreg = 6'b111111;
-always @(posedge CLK) reg_oe_sreg <= {reg_oe_sreg[4:0], nRD};
-wire reg_oe_rising = !reg_nCS_sreg[4] && (reg_oe_sreg[5:1] == 5'b00001);
-wire reg_oe_falling = (reg_oe_sreg[5:1] == 5'b10000);
-
-reg [4:0] reg_DP_nCS_sreg;
-initial reg_DP_nCS_sreg = 5'b11111;
-always @(posedge CLK) reg_DP_nCS_sreg <= {reg_DP_nCS_sreg[3:0], DP_nCS};
-
-reg [5:0] reg_we_sreg;
-initial reg_we_sreg = 6'b111111;
-always @(posedge CLK) reg_we_sreg <= {reg_we_sreg[4:0], nWR};
-wire reg_we_rising = !reg_nCS_sreg[4] && (reg_we_sreg[5:1] == 5'b00001);
 
 wire [15:0] ram_douta;
 wire [9:0] ram_addra;
@@ -149,13 +129,7 @@ reg [7:0] DP_DOr;
 wire [7:0] DP_DO;
 wire [7:0] UPD_DO;
 
-reg ram_web;
-reg [10:0] ram_addrb;
-
-always @(posedge CLK) begin
-  ram_addrb <= DP_ADDR; //r[10:0];
-  ram_web <= ~(nWR | reg_DP_nCS_sreg[0] | reg_DP_nCS_sreg[4]);
-end
+wire ram_web = reg_we_rising & DP_enable;
 
 upd77c25_datram datram (
   .clka(CLK), // input clka
@@ -165,7 +139,7 @@ upd77c25_datram datram (
   .douta(ram_douta), // output [15 : 0] douta
   .clkb(CLK), // input clkb
   .web(ram_web), // input [0 : 0] web
-  .addrb(ram_addrb), // input [10 : 0] addrb
+  .addrb(DP_ADDR), // input [10 : 0] addrb
   .dinb(DI), // input [7 : 0] dinb
   .doutb(DP_DO) // output [7 : 0] doutb
 );
@@ -216,7 +190,6 @@ assign updB = regs_ab[1];
 assign updFL_A = {flags_s1[0],flags_s0[0],flags_c[0],flags_z[0],flags_ov1[0],flags_ov0[0]};
 assign updFL_B = {flags_s1[1],flags_s0[1],flags_c[1],flags_z[1],flags_ov1[1],flags_ov0[1]};
 
-
 initial begin
   alu_store = 2'b11;
   insn_state = STATE_IDLE1;
@@ -242,15 +215,11 @@ initial begin
   regs_dr = 16'b0;
 end
 
-reg [3:0] A0r;
-initial A0r = 4'b1111;
-always @(posedge CLK) A0r <= {A0r[2:0], A0};
-
 always @(posedge CLK) begin
   if(RST) begin
     if((op_src == 4'b1000 && op[1] == 1'b0 && insn_state == STATE_STORE)
     || (op_dst == 4'b0110 && op != 2'b10 && insn_state == STATE_STORE)) regs_sr[SR_RQM] <= 1'b1;
-    else if((reg_we_rising) && (A0r[3] == 1'b0)) begin
+    else if(enable & reg_we_rising & (A0 == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b1) begin
           regs_sr[SR_RQM] <= 1'b0;
@@ -259,7 +228,7 @@ always @(posedge CLK) begin
         regs_sr[SR_RQM] <= 1'b0;
       end
     end
-    else if(reg_oe_rising && (A0r[3] == 1'b0)) begin
+    else if(enable & reg_oe_rising & (A0 == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b1) begin
           regs_sr[SR_RQM] <= 1'b0;
@@ -275,7 +244,7 @@ end
 
 always @(posedge CLK) begin
   if(RST) begin
-    if(reg_we_rising && (A0r[3] == 1'b0)) begin
+    if(enable & reg_we_rising & (A0 == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b0) begin
           regs_sr[SR_DRS] <= 1'b1;
@@ -283,8 +252,8 @@ always @(posedge CLK) begin
           regs_sr[SR_DRS] <= 1'b0;
         end
       end
-    end else if(reg_oe_rising) begin
-      case(A0r[3])
+    end else if(enable & reg_oe_rising) begin
+      case(A0)
         1'b0: begin
           if(!regs_sr[SR_DRC]) begin
             if(regs_sr[SR_DRS] == 1'b0) begin
@@ -303,15 +272,15 @@ end
 
 always @(posedge CLK) begin
   if(RST) begin
-    if(reg_we_rising && (A0r[3] == 1'b0)) begin
+    if(enable & reg_we_rising & (A0 == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b0) begin
-          regs_dr[7:0] <= DIr;
+          regs_dr[7:0] <= DI;
         end else begin
-          regs_dr[15:8] <= DIr;
+          regs_dr[15:8] <= DI;
         end
       end else begin
-        regs_dr[7:0] <= DIr;
+        regs_dr[7:0] <= DI;
       end
     end else if(ld_dst == 4'b0110 && insn_state == STATE_STORE) begin
       if (op == I_OP || op == I_RT) regs_dr <= idb;
@@ -322,12 +291,8 @@ always @(posedge CLK) begin
   end
 end
 
-always @(posedge CLK) begin
-  if(reg_oe_falling) DP_DOr <= DP_DO;
-end
-
 assign UPD_DO = (A0 ? regs_sr[15:8] : (regs_sr[SR_DRC] ? regs_dr[7:0] : (regs_sr[SR_DRS] ? regs_dr[15:8] : regs_dr[7:0])));
-assign DO = !DP_nCS ? DP_DOr : UPD_DO;
+assign DO = DP_enable ? DP_DO : UPD_DO;
 
 always @(posedge CLK) begin
   if(RST) begin

@@ -23,12 +23,12 @@ module main(
   input CLKIN,
 
   /* SNES signals */
-  input [23:0] SNES_ADDR,
-  input SNES_READ,
-  input SNES_WRITE,
+  input [23:0] SNES_ADDR_IN,
+  input SNES_READ_IN,
+  input SNES_WRITE_IN,
   input SNES_CS,
   inout [7:0] SNES_DATA,
-  input SNES_CPU_CLK,
+  input SNES_CPU_CLK_IN,
   input SNES_REFRESH,
   output SNES_IRQ,
   output SNES_DATABUS_OE,
@@ -36,8 +36,8 @@ module main(
   input SNES_SYSCLK,
 
   input [7:0] SNES_PA,
-  input SNES_PARD,
-  input SNES_PAWR,
+  input SNES_PARD_IN,
+  input SNES_PAWR_IN,
 
   /* SRAM signals */
   /* Bus 1: PSRAM, 128Mbit, 16bit, 70ns */
@@ -94,6 +94,55 @@ wire [23:0] ROM_MASK;
 
 wire [23:0] MAPPED_SNES_ADDR;
 wire ROM_ADDR0;
+
+
+assign DCM_RST=0;
+
+reg [7:0] SNES_PARDr;
+reg [7:0] SNES_READr;
+reg [7:0] SNES_WRITEr;
+reg [7:0] SNES_CPU_CLKr;
+reg [23:0] SNES_ADDRr [3:0];
+
+reg SNES_DEADr = 1;
+reg SNES_reset_strobe = 0;
+
+reg free_strobe = 0;
+
+wire SNES_PARD_start = ((SNES_PARDr[6:1] & SNES_PARDr[7:2]) == 6'b111110);
+wire SNES_RD_start = ((SNES_READr[6:1] & SNES_READr[7:2]) == 6'b111110);
+wire SNES_RD_end = ((SNES_READr[6:1] & SNES_READr[7:2]) == 6'b000001);
+wire SNES_WR_end = ((SNES_WRITEr[6:1] & SNES_WRITEr[7:2]) == 6'b000001);
+wire SNES_cycle_start = ((SNES_CPU_CLKr[4:1] & SNES_CPU_CLKr[5:2]) == 4'b0001);
+wire SNES_cycle_end = ((SNES_CPU_CLKr[4:1] & SNES_CPU_CLKr[5:2]) == 4'b1110);
+wire SNES_WRITE = SNES_WRITEr[2] & SNES_WRITEr[1];
+wire SNES_READ = SNES_READr[2] & SNES_READr[1];
+wire SNES_CPU_CLK = SNES_CPU_CLKr[2] & SNES_CPU_CLKr[1];
+wire SNES_PARD = SNES_PARDr[2] & SNES_PARDr[1];
+
+wire [23:0] SNES_ADDR = (SNES_ADDRr[3] & SNES_ADDRr[2]);
+wire free_slot = SNES_cycle_end | free_strobe;
+
+wire ROM_HIT;
+
+assign DCM_RST=0;
+
+always @(posedge CLK2) begin
+  free_strobe <= 1'b0;
+  if(SNES_cycle_start) free_strobe <= ~ROM_HIT;
+end
+
+always @(posedge CLK2) begin
+  SNES_PARDr <= {SNES_PARDr[6:0], SNES_PARD_IN};
+  SNES_READr <= {SNES_READr[6:0], SNES_READ_IN};
+  SNES_WRITEr <= {SNES_WRITEr[6:0], SNES_WRITE_IN};
+  SNES_CPU_CLKr <= {SNES_CPU_CLKr[6:0], SNES_CPU_CLK_IN};
+  SNES_ADDRr[3] <= SNES_ADDRr[2];
+  SNES_ADDRr[2] <= SNES_ADDRr[1];
+  SNES_ADDRr[1] <= SNES_ADDRr[0];
+  SNES_ADDRr[0] <= SNES_ADDR_IN;
+end
+
 
 spi snes_spi(
   .clk(CLK2),
@@ -153,38 +202,6 @@ address snes_addr(
   .SAVERAM_MASK(SAVERAM_MASK),
   .ROM_MASK(ROM_MASK)
 );
-
-assign DCM_RST=0;
-
-reg [7:0] SNES_PARDr;
-reg [7:0] SNES_READr;
-reg [7:0] SNES_WRITEr;
-reg [7:0] SNES_CPU_CLKr;
-
-reg SNES_DEADr;
-initial SNES_DEADr = 1;
-
-reg free_strobe = 0;
-
-wire SNES_PARD_start = (SNES_PARDr[7:1] == 7'b1111110);
-wire SNES_RD_start = (SNES_READr[7:1] == 7'b1111110);
-wire SNES_WR_start = (SNES_WRITEr[7:1] == 7'b1111110);
-wire SNES_WR_end = (SNES_WRITEr[7:1] == 7'b0000001);
-wire SNES_cycle_start = (SNES_CPU_CLKr[4:1] == 4'b0001);
-wire SNES_cycle_end = (SNES_CPU_CLKr[4:1] == 4'b1110);
-wire free_slot = SNES_cycle_end | free_strobe;
-
-always @(posedge CLK2) begin
-  free_strobe <= 1'b0;
-  if(SNES_cycle_start) free_strobe <= ~ROM_HIT;
-end
-
-always @(posedge CLK2) begin
-  SNES_PARDr <= {SNES_PARDr[6:0], SNES_PARD};
-  SNES_READr <= {SNES_READr[6:0], SNES_READ};
-  SNES_WRITEr <= {SNES_WRITEr[6:0], SNES_WRITE};
-  SNES_CPU_CLKr <= {SNES_CPU_CLKr[6:0], SNES_CPU_CLK};
-end
 
 parameter ST_IDLE        = 5'b00001;
 parameter ST_MCU_RD_ADDR = 5'b00010;
