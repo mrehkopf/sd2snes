@@ -236,10 +236,6 @@ pad_l           .byt 0
 pad_r           .byt 0
 
 ;------------------------
-saved_sp
-  .word 0
-warm_signature
-  .word 0
 snes_system_config
   .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 window_stack_head .word 0

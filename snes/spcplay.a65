@@ -192,9 +192,11 @@ spc_playloop:
 spc_key_b:
   rep #$20 : .al
   tsc
-  sta saved_sp        ; Save SP for later re-entry
+  sta SAVED_SP        ; Save SP for later re-entry
   lda #$fa50          ; Write reset signature
-  sta @warm_signature
+  sta WARM_SIGNATURE
+  eor #$ffff
+  sta WARM_COMPLEMENT
   sep #$20 : .as
 
 ; Blank screen & issue CMD_RESET command to Microcontroller...

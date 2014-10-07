@@ -17,6 +17,10 @@
 #define SNES_CMD                    $002A02
 #define MCU_PARAM                   $002A04
 #define BRAM_ROUTINE                $002A10
+#define WARM_SIGNATURE              $002AFD
+#define WARM_COMPLEMENT             $002AF9
+#define SAVED_SP                    $002AFB
+
 #define BRAM_NMIHOOK                $002BE0
 #define NMI_VECT_ORIG               $002BE4
 #define BRAM_IRQHOOK                $002BE6

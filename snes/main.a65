@@ -13,12 +13,15 @@ GAME_MAIN:
   sta @MCU_PARAM ; clear MCU command parameters
   sta @MCU_PARAM+2
   stz dbg_ptr
-  lda @warm_signature ; Was CMD_RESET issued before reset?
+  lda WARM_SIGNATURE ; Was CMD_RESET issued before reset?
   cmp #$fa50    ; If yes, then perform warm boot procedure
   bne coldboot
-  lda #$0000
-  sta @warm_signature
-  lda @saved_sp ; Restore previous stack pointer
+  eor WARM_COMPLEMENT
+  inc
+  bne coldboot
+  sta WARM_SIGNATURE
+  sta WARM_COMPLEMENT
+  lda SAVED_SP ; Restore previous stack pointer
   tcs
   sep #$20 : .as
 ; The following initialization processes must not touch memory
@@ -42,6 +45,7 @@ set_bank:
 
 coldboot:       ; Regular, cold-start init
   sep #$20 : .as
+  jsr clear_wram
   jsr waitblank
   jsr snes_init
   jsr setup_gfx
@@ -575,5 +579,36 @@ wait_mcu_ready:
 - lda @SNES_CMD
   cmp #$55
   bne -
+  plp
+  rts
+
+clear_wram:
+  php
+  rep #$10 : .xl
+  ldx #$0000
+  stz $2183
+  stx $2181
+  lda #$55
+  sta $2aff     ; WRAM fill value
+  ldx #$8008
+  stx $4300
+  ldx #$2aff
+  stx $4302
+  stz $4304
+  lda #$01
+; fill $7e0000-$7e1fef (spare a bit of stack)
+  ldx #$1ff0
+  stx $4305
+  sta $420b
+; fill $7e2000-$7effff
+  ldx #$2000
+  stx $2181
+  ldx #$e000
+  stx $4305
+  sta $420b
+; fill bank $7f
+  ldx #$0000
+  stx $4305
+  sta $420b
   plp
   rts
