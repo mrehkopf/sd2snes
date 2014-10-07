@@ -23,6 +23,7 @@ nmi_payload:
   tcd
 ; backup vectors
   sep #$20 : .as
+  bit $4211
   lda #$01
   sta <NMI_VECT_DISABLE ; disable vector patching
 ; fill in jump addresses above ("$ffff")
@@ -33,9 +34,11 @@ nmi_payload:
   stz <NMI_VECT_DISABLE
 ; only read controller every couple of frames
   clc
-  ror <NMI_RUNMASK
+  lda <NMI_RUNMASK
+  cmp #$80
+  rol
+  sta <NMI_RUNMASK
   bcc nmi_patches
-  ror <NMI_RUNMASK
 ; read controller
   lda <MIRROR_4200
   lsr
