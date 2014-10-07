@@ -45,6 +45,7 @@ cht_count = 0;
   cheat_enable(1);
   cheat_nmi_enable(1);
   cheat_irq_enable(1);
+  cheat_holdoff_enable(1);
 }
 
 void cheat_program_rom_cheat(int index, cht_record_t *cheat) {
@@ -94,5 +95,12 @@ void cheat_irq_enable(int enable) {
   uint8_t flags;
   printf("irq_enable->%d\n", enable);
   flags = (enable ? 0x04 : 0x40);
+  fpga_write_cheat(7, flags);
+}
+
+void cheat_holdoff_enable(int enable) {
+  uint8_t flags;
+  printf("holdoff_enable->%d\n", enable);
+  flags = (enable ? 0x08 : 0x80);
   fpga_write_cheat(7, flags);
 }
