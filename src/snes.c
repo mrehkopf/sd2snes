@@ -276,23 +276,23 @@ uint32_t snes_get_mcu_param() {
          | ((uint32_t)fpga_read_snescmd() << 24));
 }
 
-void snescmd_writeshort(uint16_t val, uint8_t addr) {
+void snescmd_writeshort(uint16_t val, uint16_t addr) {
   fpga_set_snescmd_addr(addr);
   fpga_write_snescmd(val & 0xff);
   fpga_write_snescmd(val >> 8);
 }
 
-void snescmd_writebyte(uint8_t val, uint8_t addr) {
+void snescmd_writebyte(uint8_t val, uint16_t addr) {
   fpga_set_snescmd_addr(addr);
   fpga_write_snescmd(val);
 }
 
-uint8_t snescmd_readbyte(uint8_t addr) {
+uint8_t snescmd_readbyte(uint16_t addr) {
   fpga_set_snescmd_addr(addr);
   return fpga_read_snescmd();
 }
 
-uint16_t snescmd_readshort(uint8_t addr) {
+uint16_t snescmd_readshort(uint16_t addr) {
   uint16_t data = 0;
   fpga_set_snescmd_addr(addr);
   data = fpga_read_snescmd();
@@ -300,7 +300,7 @@ uint16_t snescmd_readshort(uint8_t addr) {
   return data;
 }
 
-uint32_t snescmd_readlong(uint8_t addr) {
+uint32_t snescmd_readlong(uint16_t addr) {
   uint32_t data = 0;
   fpga_set_snescmd_addr(addr);
   data = fpga_read_snescmd();
@@ -316,7 +316,7 @@ void snes_get_filepath(uint8_t *buffer, uint16_t length) {
 printf("%s\n", buffer);
 }
 
-void snescmd_writeblock(void *buf, uint8_t addr, uint8_t size) {
+void snescmd_writeblock(void *buf, uint16_t addr, uint16_t size) {
   fpga_set_snescmd_addr(addr);
   while(size--) {
     fpga_write_snescmd(*(uint8_t*)buf++);
@@ -351,14 +351,15 @@ uint64_t snescmd_gettime(void) {
 
 void snescmd_prepare_nmihook() {
   uint16_t bram_src = sram_readshort(SRAM_MENU_ADDR + MENU_ADDR_BRAM_SRC);
-  uint8_t bram[224];
-  sram_readblock(bram, SRAM_MENU_ADDR + bram_src, 224);
-  snescmd_writeblock(bram, 0x12, 224);
+  uint8_t bram[512];
+  sram_readblock(bram, SRAM_MENU_ADDR + bram_src, 512);
+  snescmd_writeblock(bram, SNESCMD_HOOKS, 12);
+  snescmd_writeblock(bram+12, 0x4, 224);
   snescmd_writeshort(SNES_BUTTON_LRET, SNESCMD_NMI_RESET);
   snescmd_writeshort(SNES_BUTTON_LREX, SNESCMD_NMI_RESET_TO_MENU);
   snescmd_writeshort(SNES_BUTTON_LRSA, SNESCMD_NMI_ENABLE_CHEATS);
   snescmd_writeshort(SNES_BUTTON_LRSB, SNESCMD_NMI_DISABLE_CHEATS);
   snescmd_writeshort(SNES_BUTTON_LRSY, SNESCMD_NMI_KILL_NMIHOOK);
   snescmd_writeshort(SNES_BUTTON_LRSX, SNESCMD_NMI_TMP_KILL_NMIHOOK);
-  snescmd_writebyte(0x80, SNESCMD_NMI_RUNMASK);
+  snescmd_writebyte(0x01, SNESCMD_NMI_RUNMASK);
 }

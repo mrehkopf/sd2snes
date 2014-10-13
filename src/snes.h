@@ -59,16 +59,20 @@
 #define SNES_BOOL_FALSE (0x00)
 #define SNES_BOOL_UNDEF (0xff)
 
-#define SNESCMD_MCU_CMD (0x00)
-#define SNESCMD_SNES_CMD (0x02)
-#define SNESCMD_MCU_PARAM (0x04)
-#define SNESCMD_NMI_RESET (0x06)
-#define SNESCMD_NMI_RESET_TO_MENU (0x08)
-#define SNESCMD_NMI_ENABLE_CHEATS (0x0a)
-#define SNESCMD_NMI_DISABLE_CHEATS (0x0c)
-#define SNESCMD_NMI_KILL_NMIHOOK (0x0e)
-#define SNESCMD_NMI_TMP_KILL_NMIHOOK (0x10)
-#define SNESCMD_NMI_RUNMASK (0xbc)
+#define SNESCMD_MCU_CMD              (0x2a00)
+#define SNESCMD_SNES_CMD             (0x2a02)
+#define SNESCMD_MCU_PARAM            (0x2a04)
+#define SNESCMD_NMI_RESET            (0x2bd0)
+#define SNESCMD_NMI_RESET_TO_MENU    (0x2bd2)
+#define SNESCMD_NMI_ENABLE_CHEATS    (0x2bd4)
+#define SNESCMD_NMI_DISABLE_CHEATS   (0x2bd6)
+#define SNESCMD_NMI_KILL_NMIHOOK     (0x2bd8)
+#define SNESCMD_NMI_TMP_KILL_NMIHOOK (0x2bda)
+#define SNESCMD_NMI_RUNMASK          (0x2bfc)
+#define SNESCMD_NMI_DISABLE_WRAM     (0x2bfe)
+#define SNESCMD_NMI_WRAM_PATCH_COUNT (0x2bff)
+#define SNESCMD_HOOKS                (0x2be0)
+#define SNESCMD_WRAM_CHEATS          (0x2b00)
 
 #define SNES_BUTTON_LRET (0x3030)
 #define SNES_BUTTON_LREX (0x2070)
@@ -98,12 +102,12 @@ void snes_set_mcu_cmd(uint8_t cmd);
 uint8_t snes_get_snes_cmd(void);
 void snes_set_snes_cmd(uint8_t cmd);
 uint32_t snes_get_mcu_param(void);
-void snescmd_writeshort(uint16_t val, uint8_t addr);
-void snescmd_writebyte(uint8_t val, uint8_t addr);
-void snescmd_writeblock(void *buf, uint8_t addr, uint8_t size);
-uint16_t snescmd_readshort(uint8_t addr);
-uint8_t snescmd_readbyte(uint8_t addr);
-uint32_t snescmd_readlong(uint8_t addr);
+void snescmd_writeshort(uint16_t val, uint16_t addr);
+void snescmd_writebyte(uint8_t val, uint16_t addr);
+void snescmd_writeblock(void *buf, uint16_t addr, uint16_t size);
+uint16_t snescmd_readshort(uint16_t addr);
+uint8_t snescmd_readbyte(uint16_t addr);
+uint32_t snescmd_readlong(uint16_t addr);
 uint64_t snescmd_gettime(void);
 void snescmd_prepare_nmihook(void);
 void snes_get_filepath(uint8_t *buffer, uint16_t length);

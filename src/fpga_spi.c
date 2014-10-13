@@ -411,10 +411,11 @@ void fpga_set_213f(uint8_t data) {
   FPGA_DESELECT();
 }
 
-void fpga_set_snescmd_addr(uint8_t addr) {
+void fpga_set_snescmd_addr(uint16_t addr) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_SNESCMD_SETADDR);
-  FPGA_TX_BYTE(addr);
+  FPGA_TX_BYTE(addr & 0xff);
+  FPGA_TX_BYTE(addr >> 8);
   FPGA_DESELECT();
 }
 

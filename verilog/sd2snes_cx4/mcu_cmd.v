@@ -82,7 +82,7 @@ module mcu_cmd(
   // snes cmd interface
   input [7:0] snescmd_data_in,
   output reg [7:0] snescmd_data_out,
-  output reg [7:0] snescmd_addr_out,
+  output reg [8:0] snescmd_addr_out,
   output reg snescmd_we_out,
 
   // cheat configuration
@@ -227,7 +227,12 @@ always @(posedge clk) begin
       8'h9x:
         MCU_DATA_OUT_BUF <= param_data;
       8'hd0:
-        snescmd_addr_out <= param_data;
+        case (spi_byte_cnt)
+          32'h2:
+            snescmd_addr_out[7:0] <= param_data;
+          32'h3:
+            snescmd_addr_out[8] <= param_data[0];
+        endcase
       8'hd1:
         snescmd_addr_out <= snescmd_addr_out + 1;
       8'hd2: begin

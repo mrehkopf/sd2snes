@@ -23,12 +23,12 @@ module main(
   input CLKIN,
 
   /* SNES signals */
-  input [23:0] SNES_ADDR,
-  input SNES_READ,
-  input SNES_WRITE,
+  input [23:0] SNES_ADDR_IN,
+  input SNES_READ_IN,
+  input SNES_WRITE_IN,
   input SNES_CS,
   inout [7:0] SNES_DATA,
-  input SNES_CPU_CLK,
+  input SNES_CPU_CLK_IN,
   input SNES_REFRESH,
   output SNES_IRQ,
   output SNES_DATABUS_OE,
@@ -36,8 +36,8 @@ module main(
   input SNES_SYSCLK,
 
   input [7:0] SNES_PA,
-  input SNES_PARD,
-  input SNES_PAWR,
+  input SNES_PARD_IN,
+  input SNES_PAWR_IN,
 
   /* SRAM signals */
   /* Bus 1: PSRAM, 128Mbit, 16bit, 70ns */
@@ -115,9 +115,80 @@ wire [23:0] cx4_datrom_data;
 wire [9:0] cx4_datrom_addr;
 wire cx4_datrom_we;
 
-wire [7:0] snescmd_addr_mcu;
+wire [8:0] snescmd_addr_mcu;
 wire [7:0] snescmd_data_out_mcu;
 wire [7:0] snescmd_data_in_mcu;
+
+reg [7:0] SNES_PARDr;
+reg [7:0] SNES_READr;
+reg [7:0] SNES_WRITEr;
+reg [7:0] SNES_CPU_CLKr;
+reg [23:0] SNES_ADDRr [3:0];
+
+reg [7:0] BUS_DATA;
+
+always @(posedge CLK2) begin
+  if(~SNES_READ_IN | ~SNES_WRITE_IN) BUS_DATA <= SNES_DATA;
+end
+
+reg[17:0] SNES_DEAD_CNTr = 18'h00000;
+
+reg SNES_DEADr = 1;
+reg SNES_reset_strobe = 0;
+
+reg free_strobe = 0;
+
+wire SNES_PARD_start = ((SNES_PARDr[6:1] & SNES_PARDr[7:2]) == 6'b111110);
+wire SNES_RD_start = ((SNES_READr[6:1] & SNES_READr[7:2]) == 6'b111110);
+wire SNES_RD_end = ((SNES_READr[6:1] & SNES_READr[7:2]) == 6'b000001);
+wire SNES_WR_end = ((SNES_WRITEr[6:1] & SNES_WRITEr[7:2]) == 6'b000001);
+wire SNES_cycle_start = ((SNES_CPU_CLKr[4:1] & SNES_CPU_CLKr[5:2]) == 4'b0001);
+wire SNES_cycle_end = ((SNES_CPU_CLKr[4:1] & SNES_CPU_CLKr[5:2]) == 4'b1110);
+wire SNES_WRITE = SNES_WRITEr[2] & SNES_WRITEr[1];
+wire SNES_READ = SNES_READr[2] & SNES_READr[1];
+wire SNES_CPU_CLK = SNES_CPU_CLKr[2] & SNES_CPU_CLKr[1];
+wire SNES_PARD = SNES_PARDr[2] & SNES_PARDr[1];
+
+wire [23:0] SNES_ADDR = (SNES_ADDRr[3] & SNES_ADDRr[2]);
+wire free_slot = SNES_cycle_end | free_strobe;
+
+wire ROM_HIT;
+
+assign DCM_RST=0;
+
+always @(posedge CLK2) begin
+  free_strobe <= 1'b0;
+  if(SNES_cycle_start) free_strobe <= ~ROM_HIT;
+end
+
+always @(posedge CLK2) begin
+  SNES_PARDr <= {SNES_PARDr[6:0], SNES_PARD_IN};
+  SNES_READr <= {SNES_READr[6:0], SNES_READ_IN};
+  SNES_WRITEr <= {SNES_WRITEr[6:0], SNES_WRITE_IN};
+  SNES_CPU_CLKr <= {SNES_CPU_CLKr[6:0], SNES_CPU_CLK_IN};
+  SNES_ADDRr[3] <= SNES_ADDRr[2];
+  SNES_ADDRr[2] <= SNES_ADDRr[1];
+  SNES_ADDRr[1] <= SNES_ADDRr[0];
+  SNES_ADDRr[0] <= SNES_ADDR_IN;
+end
+
+parameter ST_IDLE         = 7'b0000001;
+parameter ST_MCU_RD_ADDR  = 7'b0000010;
+parameter ST_MCU_RD_END   = 7'b0000100;
+parameter ST_MCU_WR_ADDR  = 7'b0001000;
+parameter ST_MCU_WR_END   = 7'b0010000;
+parameter ST_CX4_RD_ADDR  = 7'b0100000;
+parameter ST_CX4_RD_END   = 7'b1000000;
+
+parameter ROM_CYCLE_LEN = 4'd7;
+
+parameter SNES_DEAD_TIMEOUT = 17'd88000; // 1ms
+
+reg [6:0] STATE;
+initial STATE = ST_IDLE;
+
+assign MSU_SNES_DATA_IN = BUS_DATA;
+assign CX4_SNES_DATA_IN = BUS_DATA;
 
 sd_dma snes_sd_dma(
   .CLK(CLK2),
@@ -162,8 +233,9 @@ msu snes_msu (
   .reg_addr(SNES_ADDR[2:0]),
   .reg_data_in(MSU_SNES_DATA_IN),
   .reg_data_out(MSU_SNES_DATA_OUT),
-  .reg_oe(SNES_READ),
-  .reg_we(SNES_WRITE),
+  .reg_oe_falling(SNES_RD_start),
+  .reg_oe_rising(SNES_RD_end),
+  .reg_we_rising(SNES_WR_end),
   .status_out(msu_status_out),
   .volume_out(msu_volumerq_out),
   .volume_latch_out(msu_volume_latch_out),
@@ -299,37 +371,6 @@ address snes_addr(
 
 assign DCM_RST=0;
 
-reg [7:0] SNES_PARDr;
-reg [7:0] SNES_READr;
-reg [7:0] SNES_WRITEr;
-reg [7:0] SNES_CPU_CLKr;
-reg non_hit_cycle = 1'b0;
-
-reg SNES_DEADr;
-initial SNES_DEADr = 1;
-
-reg free_strobe = 0;
-
-wire SNES_PARD_start = (SNES_PARDr[7:1] == 7'b1111110);
-wire SNES_RD_start = (SNES_READr[7:1] == 7'b1111110);
-wire SNES_WR_start = (SNES_WRITEr[7:1] == 7'b1111110);
-wire SNES_WR_end = (SNES_WRITEr[7:1] == 7'b0000001);
-wire SNES_cycle_start = (SNES_CPU_CLKr[4:1] == 4'b0001);
-wire SNES_cycle_end = (SNES_CPU_CLKr[4:1] == 4'b1110);
-wire free_slot = SNES_cycle_end | free_strobe;
-
-always @(posedge CLK2) begin
-  free_strobe <= 1'b0;
-  if(SNES_cycle_start) free_strobe <= ~ROM_HIT;
-end
-
-always @(posedge CLK2) begin
-  SNES_PARDr <= {SNES_PARDr[6:0], SNES_PARD};
-  SNES_READr <= {SNES_READr[6:0], SNES_READ};
-  SNES_WRITEr <= {SNES_WRITEr[6:0], SNES_WRITE};
-  SNES_CPU_CLKr <= {SNES_CPU_CLKr[6:0], SNES_CPU_CLK};
-end
-
 //always @(posedge CLK2) begin
 //  non_hit_cycle <= 1'b0;
 //  if(SNES_cycle_start) non_hit_cycle <= ~ROM_HIT;
@@ -345,9 +386,7 @@ cx4 snes_cx4 (
   .ADDR(SNES_ADDR[12:0]),
   .CS(cx4_enable),
   .SNES_VECT_EN(cx4_vect_enable),
-  .nRD(SNES_READ),
-  .nWR(SNES_WRITE),
-  .WR_EN(SNES_WR_end),
+  .reg_we_rising(SNES_WR_end),
   .CLK(CLK2),
   .BUS_DI(CX4_DINr),
   .BUS_ADDR(CX4_ADDR),
@@ -358,31 +397,11 @@ cx4 snes_cx4 (
   .speed(dsp_feat[0])
 );
 
-parameter MODE_SNES = 1'b0;
-parameter MODE_MCU = 1'b1;
-
-parameter ST_IDLE         = 7'b0000001;
-parameter ST_MCU_RD_ADDR  = 7'b0000010;
-parameter ST_MCU_RD_END   = 7'b0000100;
-parameter ST_MCU_WR_ADDR  = 7'b0001000;
-parameter ST_MCU_WR_END   = 7'b0010000;
-parameter ST_CX4_RD_ADDR  = 7'b0100000;
-parameter ST_CX4_RD_END   = 7'b1000000;
-
-parameter ROM_CYCLE_LEN = 4'd7;
-
-parameter SNES_DEAD_TIMEOUT = 17'd88000; // 1ms
-
-reg [6:0] STATE;
-initial STATE = ST_IDLE;
-
-assign MSU_SNES_DATA_IN = SNES_DATA;
-assign CX4_SNES_DATA_IN = SNES_DATA;
-
 cheat snes_cheat(
   .clk(CLK2),
   .SNES_ADDR(SNES_ADDR),
   .SNES_DATA(SNES_DATA),
+  .SNES_reset_strobe(SNES_reset_strobe),
   .SNES_cycle_start(SNES_RD_start),
   .snescmd_wr_strobe(SNES_WR_end & snescmd_enable),
   .pgm_idx(cheat_pgm_idx),
@@ -437,14 +456,6 @@ wire CX4_HIT = |(STATE & ST_CX4_RD_ADDR);
 assign ROM_ADDR  = (SD_DMA_TO_ROM) ? MCU_ADDR[23:1] : MCU_HIT ? ROM_ADDRr[23:1] : CX4_HIT ? CX4_ADDRr[23:1] : MAPPED_SNES_ADDR[23:1];
 assign ROM_ADDR0 = (SD_DMA_TO_ROM) ? MCU_ADDR[0] : MCU_HIT ? ROM_ADDRr[0] : CX4_HIT ? CX4_ADDRr[0] : MAPPED_SNES_ADDR[0];
 
-reg ROM_WEr;
-initial ROM_WEr = 1'b1;
-reg ROM_DOUT_ENr;
-initial ROM_DOUT_ENr = 1'b0;
-
-reg[17:0] SNES_DEAD_CNTr;
-initial SNES_DEAD_CNTr = 0;
-
 always @(posedge CLK2) begin
   if(cx4_active) begin
     if(CX4_RRQ) begin
@@ -455,10 +466,7 @@ always @(posedge CLK2) begin
       CX4_RD_PENDr <= 1'b0;
       RQ_CX4_RDYr <= 1'b1;
     end
-  end /*else begin
-    CX4_RD_PENDr <= 1'b0;
-    RQ_CX4_RDYr <= 1'b1;
-  end*/
+  end
 end
 
 always @(posedge CLK2) begin
@@ -483,8 +491,12 @@ always @(posedge CLK2) begin
 end
 
 always @(posedge CLK2) begin
-  if(SNES_DEAD_CNTr > SNES_DEAD_TIMEOUT) SNES_DEADr <= 1'b1;
-  else if(SNES_CPU_CLKr[1]) SNES_DEADr <= 1'b0;
+  SNES_reset_strobe <= 1'b0;
+  if(SNES_CPU_CLKr[1]) begin
+    SNES_DEADr <= 1'b0;
+    if(SNES_DEADr) SNES_reset_strobe <= 1'b1;
+  end
+  else if(SNES_DEAD_CNTr > SNES_DEAD_TIMEOUT) SNES_DEADr <= 1'b1;
 end
 
 always @(posedge CLK2) begin
@@ -581,10 +593,13 @@ assign ROM_CE = 1'b0;
 assign ROM_BHE = ROM_ADDR0;
 assign ROM_BLE = !ROM_ADDR0;
 
+wire snoop_4200_enable = {SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h04200;
+
 assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
                          cx4_enable ? 1'b0 :
                          (cx4_active & cx4_vect_enable) ? 1'b0 :
                          r213f_enable & !SNES_PARD ? 1'b0 :
+                         snoop_4200_enable ? SNES_WRITE :
                          snescmd_enable ? (SNES_READ & SNES_WRITE) :
                          ((IS_ROM & SNES_CS)
                           |(!IS_ROM & !IS_SAVERAM & !IS_WRITABLE)
@@ -599,15 +614,17 @@ assign SNES_IRQ = 1'b0;
 
 assign p113_out = 1'b0;
 
+wire [8:0] snescmd_addra = snoop_4200_enable ? 9'h1fa : SNES_ADDR[8:0];
+
 snescmd_buf snescmd (
   .clka(CLK2), // input clka
-  .wea(SNES_WR_end & snescmd_enable), // input [0 : 0] wea
-  .addra(SNES_ADDR[7:0]), // input [7 : 0] addra
+  .wea(SNES_WR_end & (snescmd_enable | snoop_4200_enable)), // input [0 : 0] wea
+  .addra(snescmd_addra), // input [8 : 0] addra
   .dina(SNES_DATA), // input [7 : 0] dina
   .douta(snescmd_dout), // output [7 : 0] douta
   .clkb(CLK2), // input clkb
   .web(snescmd_we_mcu), // input [0 : 0] web
-  .addrb(snescmd_addr_mcu), // input [7 : 0] addrb
+  .addrb(snescmd_addr_mcu), // input [8 : 0] addrb
   .dinb(snescmd_data_out_mcu), // input [7 : 0] dinb
   .doutb(snescmd_data_in_mcu) // output [7 : 0] doutb
 );

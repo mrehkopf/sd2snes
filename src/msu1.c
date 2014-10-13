@@ -141,8 +141,6 @@ int msu1_loop() {
   uint8_t msu_repeat = 0;
   uint16_t msu_track = 0;
   uint32_t msu_offset = 0;
-  fpga_status_prev = fpga_status();
-  fpga_status_now = fpga_status();
   int msu_res;
   uint8_t cmd;
 
@@ -172,6 +170,8 @@ int msu1_loop() {
   prepare_data(0);
 /* audio_start, data_start, 0, audio_ctrl[1:0], ctrl_start */
   msu_res = SNES_RESET_NONE;
+  fpga_status_prev = fpga_status();
+  fpga_status_now = fpga_status();
   while(msu_res == SNES_RESET_NONE){
     msu_res = get_snes_reset_state();
     cmd = snes_get_mcu_cmd();

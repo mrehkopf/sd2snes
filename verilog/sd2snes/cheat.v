@@ -22,6 +22,7 @@ module cheat(
   input clk,
   input [23:0] SNES_ADDR,
   input [7:0] SNES_DATA,
+  input SNES_reset_strobe,
   input snescmd_wr_strobe,
   input SNES_cycle_start,
   input [2:0] pgm_idx,
@@ -34,8 +35,7 @@ module cheat(
 reg cheat_enable = 0;
 reg nmi_enable = 0;
 reg irq_enable = 0;
-reg nmi_enable_bak = 0;
-reg irq_enable_bak = 0;
+reg holdoff_enable = 0; // temp disable hooks after reset
 
 reg auto_nmi_enable = 1;
 reg auto_irq_enable = 0;
@@ -78,9 +78,9 @@ assign data_out = cheat_match_bits[0] ? cheat_data[0]
                 : cheat_match_bits[3] ? cheat_data[3]
                 : cheat_match_bits[4] ? cheat_data[4]
                 : cheat_match_bits[5] ? cheat_data[5]
-                : nmi_match_bits[1] ? 8'h12
-                : irq_match_bits[1] ? 8'h18
-                : 8'h2a;
+                : nmi_match_bits[1] ? 8'he0
+                : irq_match_bits[1] ? 8'he6
+                : 8'h2b;
 
 assign cheat_hit = (cheat_enable & cheat_addr_match)
                    | (hook_enable_sync & (((auto_nmi_enable_sync & nmi_enable) & nmi_addr_match) 
@@ -123,19 +123,25 @@ always @(posedge clk) begin
     end
   end
 end
- 
+
+always @(posedge clk) begin
+  if((snescmd_wr_strobe & ~|SNES_ADDR[8:0] & (SNES_DATA == 8'h85))
+     | (holdoff_enable & SNES_reset_strobe)) begin
+    hook_enable_count <= 30'd880000000;
+  end else if (|hook_enable_count) begin
+    hook_enable_count <= hook_enable_count - 1;
+  end
+end
+
 always @(posedge clk) begin
   if(snescmd_wr_strobe) begin
-    if(~|SNES_ADDR[7:0]) begin
+    if(~|SNES_ADDR[8:0]) begin
       case(SNES_DATA)
         8'h82: cheat_enable <= 1;
         8'h83: cheat_enable <= 0;
         8'h84: {nmi_enable, irq_enable} <= 2'b00;
-        8'h85: begin
-          hook_enable_count <= 30'd880000000;
-        end
       endcase
-    end else if(SNES_ADDR[7:0] == 8'hbd) begin
+    end else if(SNES_ADDR[8:0] == 9'h1fd) begin
       hook_disable <= SNES_DATA[0];
     end
   end else if(pgm_we) begin
@@ -145,12 +151,11 @@ always @(posedge clk) begin
     end else if(pgm_idx == 6) begin // set rom patch enable
       cheat_enable_mask <= pgm_in[5:0];
     end else if(pgm_idx == 7) begin // set/reset global enable / hooks
-    // pgm_in[6:4] are reset bit flags
-    // pgm_in[2:0] are set bit flags
-      {irq_enable, nmi_enable, cheat_enable} <= ({irq_enable, nmi_enable, cheat_enable} & ~pgm_in[6:4]) | pgm_in[2:0];
+    // pgm_in[7:4] are reset bit flags
+    // pgm_in[3:0] are set bit flags
+      {holdoff_enable, irq_enable, nmi_enable, cheat_enable} <= ({holdoff_enable, irq_enable, nmi_enable, cheat_enable} & ~pgm_in[7:4])
+                                                                 | pgm_in[3:0];
     end
-  end else if (|hook_enable_count) begin
-    hook_enable_count <= hook_enable_count - 1;
   end
 end
 

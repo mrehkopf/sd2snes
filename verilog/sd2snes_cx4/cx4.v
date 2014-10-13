@@ -24,9 +24,7 @@ module cx4(
   input [12:0] ADDR,
   input CS,
   input SNES_VECT_EN,
-  input nRD,
-  input nWR,
-  input WR_EN,
+  input reg_we_rising,
   input CLK,
   input [7:0] BUS_DI,
   output [23:0] BUS_ADDR,
@@ -149,13 +147,10 @@ assign VECTOR_DO = vector [ADDR[4:0]];
 assign GPR_DO = gpr [ADDR[5:0]];
 assign STATUS_DO = {1'b0, cx4_active, 4'b0000, ~cx4_active, 1'b0};
 
-reg [7:0] DIr;
-always @(posedge CLK) if(~nWR) DIr <= DI;
-
-wire DATRAM_WR_EN = datram_enable & WR_EN;
-wire MMIO_WR_EN = mmio_enable & WR_EN;
-wire VECTOR_WR_EN = vector_enable & WR_EN;
-wire GPR_WR_EN = gpr_enable & WR_EN;
+wire DATRAM_WR_EN = datram_enable & reg_we_rising;
+wire MMIO_WR_EN = mmio_enable & reg_we_rising;
+wire VECTOR_WR_EN = vector_enable & reg_we_rising;
+wire GPR_WR_EN = gpr_enable & reg_we_rising;
 
 reg [23:0] cpu_idb; // tmp register for reg file read
 
@@ -237,33 +232,33 @@ end
 always @(posedge CLK) begin
   if(MMIO_WR_EN) begin
     case(ADDR[4:0])
-      5'h00: cx4_mmio_dmasrc[7:0] <= DIr;   // 1f40
-      5'h01: cx4_mmio_dmasrc[15:8] <= DIr;  // 1f41
-      5'h02: cx4_mmio_dmasrc[23:16] <= DIr; // 1f42
-      5'h03: cx4_mmio_dmalen[7:0] <= DIr;   // 1f43
-      5'h04: cx4_mmio_dmalen[15:8] <= DIr;  // 1f44
-      5'h05: cx4_mmio_dmatgt[7:0] <= DIr;   // 1f45
-      5'h06: cx4_mmio_dmatgt[15:8] <= DIr;  // 1f46
+      5'h00: cx4_mmio_dmasrc[7:0] <= DI;   // 1f40
+      5'h01: cx4_mmio_dmasrc[15:8] <= DI;  // 1f41
+      5'h02: cx4_mmio_dmasrc[23:16] <= DI; // 1f42
+      5'h03: cx4_mmio_dmalen[7:0] <= DI;   // 1f43
+      5'h04: cx4_mmio_dmalen[15:8] <= DI;  // 1f44
+      5'h05: cx4_mmio_dmatgt[7:0] <= DI;   // 1f45
+      5'h06: cx4_mmio_dmatgt[15:8] <= DI;  // 1f46
       5'h07: begin
-        cx4_mmio_dmatgt[23:16] <= DIr; // 1f47
+        cx4_mmio_dmatgt[23:16] <= DI; // 1f47
         DMA_TRIG_ENr <= 1'b1;
       end
       5'h08: begin
-        cx4_mmio_cachepage <= DIr[0];  // 1f48
+        cx4_mmio_cachepage <= DI[0];  // 1f48
         CACHE_TRIG_ENr <= 1'b1;
       end
-      5'h09: cx4_mmio_pgmoff[7:0] <= DIr;   // 1f49
-      5'h0a: cx4_mmio_pgmoff[15:8] <= DIr;  // 1f4a
-      5'h0b: cx4_mmio_pgmoff[23:16] <= DIr; // 1f4b
+      5'h09: cx4_mmio_pgmoff[7:0] <= DI;   // 1f49
+      5'h0a: cx4_mmio_pgmoff[15:8] <= DI;  // 1f4a
+      5'h0b: cx4_mmio_pgmoff[23:16] <= DI; // 1f4b
       5'h0c: begin
-        cx4_mmio_savepage <= DIr[1:0];
-        if(DIr[0]) cx4_mmio_pagemem[0] <= cx4_mmio_pgmpage;
-        if(DIr[1]) cx4_mmio_pagemem[1] <= cx4_mmio_pgmpage;
+        cx4_mmio_savepage <= DI[1:0];
+        if(DI[0]) cx4_mmio_pagemem[0] <= cx4_mmio_pgmpage;
+        if(DI[1]) cx4_mmio_pagemem[1] <= cx4_mmio_pgmpage;
       end
-      5'h0d: cx4_mmio_pgmpage[7:0] <= DIr;  // 1f4d
-      5'h0e: cx4_mmio_pgmpage[14:8] <= DIr[6:0];   // 1f4e
+      5'h0d: cx4_mmio_pgmpage[7:0] <= DI;  // 1f4d
+      5'h0e: cx4_mmio_pgmpage[14:8] <= DI[6:0];   // 1f4e
       5'h0f: begin
-        cx4_mmio_pc <= DIr;  // 1f4f
+        cx4_mmio_pc <= DI;  // 1f4f
         if(cx4_mmio_savepage[0]
            && cx4_mmio_pagemem[0] == cx4_mmio_pgmpage)
           cx4_mmio_cachepage <= 1'b0;
@@ -272,9 +267,9 @@ always @(posedge CLK) begin
           cx4_mmio_cachepage <= 1'b1;
         cpu_go_en_r <= 1'b1;
       end
-      5'h10: cx4_mmio_r1f50 <= DIr & 8'h77; // 1f50
-      5'h11: cx4_mmio_r1f51 <= DIr[0];      // 1f51
-      5'h12: cx4_mmio_r1f52 <= DIr[0];      // 1f52
+      5'h10: cx4_mmio_r1f50 <= DI & 8'h77; // 1f50
+      5'h11: cx4_mmio_r1f51 <= DI[0];      // 1f51
+      5'h12: cx4_mmio_r1f52 <= DI[0];      // 1f52
     endcase
   end else begin
     CACHE_TRIG_ENr <= 1'b0;
@@ -284,7 +279,7 @@ always @(posedge CLK) begin
 end
 
 always @(posedge CLK) begin
-  if(VECTOR_WR_EN) vector[ADDR[4:0]] <= DIr;
+  if(VECTOR_WR_EN) vector[ADDR[4:0]] <= DI;
 end
 
 reg [4:0] CACHE_ST;
@@ -448,7 +443,6 @@ reg [23:0] cpu_tmp;
 reg [23:0] cpu_sa;  // tmp register for shifted accumulator
 reg [7:0] cpu_wait;
 initial cpu_wait = 8'h00;
-reg mul_wait = 1'b0;
 
 wire [9:0] cx4_datrom_addr = cpu_a[9:0];
 wire [23:0] cx4_datrom_do;
@@ -516,7 +510,6 @@ always @(posedge CLK) begin
         cpu_page <= cx4_mmio_cachepage;
         cpu_p <= cx4_mmio_pgmpage;
         op <= OP_NOP;
-        mul_wait <= 1'b0;
         CPU_STATE <= ST_CPU_2;
       end
       else CPU_STATE <= ST_CPU_IDLE;
@@ -548,7 +541,6 @@ always @(posedge CLK) begin
           endcase
         end
         OP_LD, OP_ALU, OP_MUL, OP_CMP, OP_SEX: begin
-          if(op == OP_MUL) mul_wait <= 1'b1;
           if(op_imm) cpu_idb <= {16'b0, op_param};
           else casex(op_param)
             8'h00: cpu_idb <= cpu_a;
@@ -645,8 +637,7 @@ always @(posedge CLK) begin
       endcase
     end
     ST_CPU_2: begin
-      CPU_STATE <= mul_wait ? ST_CPU_2 : ST_CPU_3;
-      mul_wait <= 1'b0;
+      CPU_STATE <= ST_CPU_3;
       case(op)
         OP_LD: begin
           casex(cpu_op[11:8])
@@ -755,7 +746,7 @@ always @(posedge CLK) begin
           CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
         end
         5'b01110, 5'b01101, 5'b11101: begin
-          cpu_wait <= 8'h02;
+          cpu_wait <= 8'h03;
           CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
         end
         /*5'b10011: begin
@@ -864,7 +855,7 @@ always @(posedge CLK) begin
     gpr[op_param[3:0]*3+1] <= cpu_idb[15:8];
     gpr[op_param[3:0]*3] <= cpu_idb[7:0];
   end
-  else if(GPR_WR_EN) gpr[ADDR[5:0]] <= DIr;
+  else if(GPR_WR_EN) gpr[ADDR[5:0]] <= DI;
 end
 
 /***************************
@@ -880,7 +871,7 @@ cx4_datram cx4_datram (
   .clka(CLK), // input clka
   .wea(DATRAM_WR_EN), // input [0 : 0] wea
   .addra(ADDR[11:0]), // input [11 : 0] addra
-  .dina(DIr), // input [7 : 0] dina
+  .dina(DI), // input [7 : 0] dina
   .douta(DATRAM_DO), // output [7 : 0] douta
   .clkb(CLK), // input clkb
   .web(cx4_datram_we), // input [0 : 0] web

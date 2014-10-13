@@ -239,6 +239,6 @@ assign dspx_a0 = featurebits[FEAT_DSPX]
 
 assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 
-assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:8]} == 9'b0_00101010);
+assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);
 
 endmodule

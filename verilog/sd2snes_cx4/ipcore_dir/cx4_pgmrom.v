@@ -22,7 +22,7 @@
 *     devices, or systems.  Use in such applications are expressly             *
 *     prohibited.                                                              *
 *                                                                              *
-*     (c) Copyright 1995-2011 Xilinx, Inc.                                     *
+*     (c) Copyright 1995-2014 Xilinx, Inc.                                     *
 *     All rights reserved.                                                     *
 *******************************************************************************/
 // You must compile the wrapper file cx4_pgmrom.v when simulating
@@ -83,11 +83,11 @@ output [15 : 0] doutb;
     .C_HAS_RSTB(0),
     .C_HAS_SOFTECC_INPUT_REGS_A(0),
     .C_HAS_SOFTECC_OUTPUT_REGS_B(0),
-    .C_INIT_FILE_NAME("cx4_pgmrom.mif"),
+    .C_INIT_FILE_NAME("no_coe_file_loaded"),
     .C_INITA_VAL("0"),
     .C_INITB_VAL("0"),
     .C_INTERFACE_TYPE(0),
-    .C_LOAD_INIT_FILE(1),
+    .C_LOAD_INIT_FILE(0),
     .C_MEM_TYPE(1),
     .C_MUX_PIPELINE_STAGES(0),
     .C_PRIM_TYPE(1),

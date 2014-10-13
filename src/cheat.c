@@ -3,6 +3,7 @@
 #include "uart.h"
 #include "memory.h"
 #include "fpga_spi.h"
+#include "snes.h"
 #include "cheat.h"
 
 void cheat_program() {
@@ -38,13 +39,13 @@ cht_count = 0;
     cht_record_addr += sizeof(cht_record_t);
   }
   /* put number of WRAM cheats + enable flag */
-  fpga_set_snescmd_addr(0xbf);
-  fpga_write_snescmd(wram_index);
+  snescmd_writebyte(wram_index, SNESCMD_NMI_WRAM_PATCH_COUNT);
   printf("enable mask=%02x\n", enable_mask);
   fpga_write_cheat(6, enable_mask);
   cheat_enable(1);
   cheat_nmi_enable(1);
   cheat_irq_enable(1);
+  cheat_holdoff_enable(1);
 }
 
 void cheat_program_rom_cheat(int index, cht_record_t *cheat) {
@@ -56,7 +57,7 @@ void cheat_program_rom_cheat(int index, cht_record_t *cheat) {
 }
 
 void cheat_program_ram_cheat(int index, cht_record_t *cheat) {
-  uint8_t address = 0xc0 + 4 * index;
+  uint8_t address = SNESCMD_WRAM_CHEATS + 4 * index;
   fpga_set_snescmd_addr(address);
   fpga_write_snescmd(cheat->patchaddr & 0xff);
   fpga_write_snescmd(cheat->patchaddr >> 8);
@@ -80,8 +81,7 @@ void cheat_enable(int enable) {
   flags = (enable ? 0x01 : 0x10);
   fpga_write_cheat(7, flags);
   /* switch WRAM cheats */
-  fpga_set_snescmd_addr(0xbe);
-  fpga_write_snescmd(enable);
+  snescmd_writebyte(enable ? 0 : 1, SNESCMD_NMI_DISABLE_WRAM);
 }
 
 void cheat_nmi_enable(int enable) {
@@ -95,5 +95,12 @@ void cheat_irq_enable(int enable) {
   uint8_t flags;
   printf("irq_enable->%d\n", enable);
   flags = (enable ? 0x04 : 0x40);
+  fpga_write_cheat(7, flags);
+}
+
+void cheat_holdoff_enable(int enable) {
+  uint8_t flags;
+  printf("holdoff_enable->%d\n", enable);
+  flags = (enable ? 0x08 : 0x80);
   fpga_write_cheat(7, flags);
 }

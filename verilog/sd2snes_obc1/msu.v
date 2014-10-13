@@ -27,8 +27,9 @@ module msu(
   input [2:0] reg_addr,
   input [7:0] reg_data_in,
   output [7:0] reg_data_out,
-  input reg_oe,
-  input reg_we,
+  input reg_oe_falling,
+  input reg_oe_rising,
+  input reg_we_rising,
   output [6:0] status_out,
   output [7:0] volume_out,
   output volume_latch_out,
@@ -47,15 +48,6 @@ module msu(
   output DBG_msu_address_ext_write_rising
 );
 
-reg [2:0] reg_addr_r [3:0];
-always @(posedge clkin) begin
-  reg_addr_r[3] <= reg_addr_r[2];
-  reg_addr_r[2] <= reg_addr_r[1];
-  reg_addr_r[1] <= reg_addr_r[0];
-  reg_addr_r[0] <= reg_addr;
-end
-
-
 reg [1:0] status_reset_we_r;
 always @(posedge clkin) status_reset_we_r = {status_reset_we_r[0], status_reset_we};
 wire status_reset_en = (status_reset_we_r == 2'b01);
@@ -71,19 +63,6 @@ reg [2:0] msu_address_ext_write_sreg;
 always @(posedge clkin)
   msu_address_ext_write_sreg <= {msu_address_ext_write_sreg[1:0], msu_address_ext_write};
 wire msu_address_ext_write_rising = (msu_address_ext_write_sreg[2:1] == 2'b01);
-
-reg [4:0] reg_enable_sreg;
-initial reg_enable_sreg = 5'b11111;
-always @(posedge clkin) reg_enable_sreg <= {reg_enable_sreg[3:0], enable};
-
-reg [5:0] reg_oe_sreg;
-always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[4:0], reg_oe};
-wire reg_oe_rising = reg_enable_sreg[4] && (reg_oe_sreg[5:1] == 5'b00001);
-wire reg_oe_falling = reg_enable_sreg[1] && (reg_oe_sreg[5:1] == 5'b11110);
-
-reg [5:0] reg_we_sreg;
-always @(posedge clkin) reg_we_sreg <= {reg_we_sreg[4:0], reg_we};
-wire reg_we_rising = reg_enable_sreg[4] && (reg_we_sreg[5:1] == 5'b00001);
 
 reg [31:0] addr_out_r;
 assign addr_out = addr_out_r;
@@ -146,21 +125,30 @@ reg [7:0] data_out_r;
 assign reg_data_out = data_out_r;
 
 always @(posedge clkin) begin
-  case(reg_addr_r[1])
-    3'h0: data_out_r <= {data_busy_r, audio_busy_r, audio_status_r, audio_error_r, 3'b001};
-    3'h1: data_out_r <= msu_data;
-    3'h2: data_out_r <= 8'h53;
-    3'h3: data_out_r <= 8'h2d;
-    3'h4: data_out_r <= 8'h4d;
-    3'h5: data_out_r <= 8'h53;
-    3'h6: data_out_r <= 8'h55;
-    3'h7: data_out_r <= 8'h31;
-  endcase
+  if(msu_address_ext_write_rising)
+    msu_address_r <= msu_address_ext;
+  else if(reg_oe_falling & enable & (reg_addr == 3'h1)) begin
+    msu_address_r <= msu_address_r + 1;
+  end
 end
 
 always @(posedge clkin) begin
-  if(reg_we_rising) begin
-    case(reg_addr_r[1])
+  if(reg_oe_falling & enable)
+    case(reg_addr)
+      3'h0: data_out_r <= {data_busy_r, audio_busy_r, audio_status_r, audio_error_r, 3'b001};
+      3'h1: data_out_r <= msu_data;
+      3'h2: data_out_r <= 8'h53;
+      3'h3: data_out_r <= 8'h2d;
+      3'h4: data_out_r <= 8'h4d;
+      3'h5: data_out_r <= 8'h53;
+      3'h6: data_out_r <= 8'h55;
+      3'h7: data_out_r <= 8'h31;
+    endcase
+end
+
+always @(posedge clkin) begin
+  if(reg_we_rising & enable) begin
+    case(reg_addr)
       3'h0: addr_out_r[7:0] <= reg_data_in;
       3'h1: addr_out_r[15:8] <= reg_data_in;
       3'h2: addr_out_r[23:16] <= reg_data_in;
@@ -201,12 +189,5 @@ always @(posedge clkin) begin
   end
 end
 
-always @(posedge clkin) begin
-  if(msu_address_ext_write_rising)
-    msu_address_r <= msu_address_ext;
-  else if(reg_addr_r[3] == 3'h1 && reg_oe_rising) begin
-    msu_address_r <= msu_address_r + 1;
-  end
-end
 
 endmodule

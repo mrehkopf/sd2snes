@@ -20,8 +20,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 module bsx(
   input clkin,
-  input reg_oe,
-  input reg_we,
+  input reg_oe_falling,
+  input reg_oe_rising,
+  input reg_we_rising,
   input [23:0] snes_addr,
   input [7:0] reg_data_in,
   output [7:0] reg_data_out,
@@ -90,15 +91,6 @@ assign bs_page_offset = bs_sta0_en ? 9'h032
                       : bs_sta1_en ? 9'h032
                       : bs_stb1_en ? (9'h034 + bs_stb1_offset)
                       : (9'h048 + (bs_page0_en ? bs_page0_offset : bs_page1_offset));
-
-reg [3:0] reg_oe_sreg;
-always @(posedge clkin) reg_oe_sreg <= {reg_oe_sreg[2:0], reg_oe};
-wire reg_oe_falling = (reg_oe_sreg[3:1] == 3'b110);
-wire reg_oe_rising = (reg_oe_sreg[3:1] == 3'b001);
-
-reg [2:0] reg_we_sreg;
-always @(posedge clkin) reg_we_sreg <= {reg_we_sreg[1:0], reg_we};
-wire reg_we_rising = (reg_we_sreg[2:1] == 2'b01);
 
 reg [1:0] pgm_we_sreg;
 always @(posedge clkin) pgm_we_sreg <= {pgm_we_sreg[0], pgm_we};
@@ -171,26 +163,17 @@ initial begin
   bs_stb1_offset <= 5'h00;
 end
 
-reg [7:0] data_tmp;
-initial data_tmp = 8'h00;
-
-always @(posedge clkin) begin
-  if(~reg_oe | ~reg_we) begin
-    data_tmp <= reg_data_in;
-  end
-end
-
 always @(posedge clkin) begin
   if(reg_oe_rising && base_enable) begin
     case(base_addr)
       5'h0b: begin
         bs_stb0_offset <= bs_stb0_offset + 1;
-        base_regs[5'h0d] <= base_regs[5'h0d] | data_tmp;
+        base_regs[5'h0d] <= base_regs[5'h0d] | reg_data_in;
       end
       5'h0c: bs_page0_offset <= bs_page0_offset + 1;
       5'h11: begin
         bs_stb1_offset <= bs_stb1_offset + 1;
-        base_regs[5'h13] <= base_regs[5'h13] | data_tmp;
+        base_regs[5'h13] <= base_regs[5'h13] | reg_data_in;
       end
       5'h12: bs_page1_offset <= bs_page1_offset + 1;
     endcase
@@ -241,14 +224,14 @@ always @(posedge clkin) begin
     if(reg_addr == 4'he)
       regs_outr <= regs_tmpr;
     else begin
-      regs_tmpr[reg_addr] <= data_tmp[7];
-      if(reg_addr == 4'h1) regs_outr[reg_addr] <= data_tmp[7];
+      regs_tmpr[reg_addr] <= reg_data_in[7];
+      if(reg_addr == 4'h1) regs_outr[reg_addr] <= reg_data_in[7];
     end
   end else if(reg_we_rising && base_enable) begin
     case(base_addr)
       5'h09: begin
-        base_regs[8'h09] <= data_tmp;
-        bs_page0 <= {data_tmp[1:0], base_regs[8'h08]};
+        base_regs[8'h09] <= reg_data_in;
+        bs_page0 <= {reg_data_in[1:0], base_regs[8'h08]};
         bs_page0_offset <= 9'h00;
       end
       5'h0b: begin
@@ -258,8 +241,8 @@ always @(posedge clkin) begin
         bs_page0_offset <= 9'h00;
       end
       5'h0f: begin
-        base_regs[8'h0f] <= data_tmp;
-        bs_page1 <= {data_tmp[1:0], base_regs[8'h0e]};
+        base_regs[8'h0f] <= reg_data_in;
+        bs_page1 <= {reg_data_in[1:0], base_regs[8'h0e]};
         bs_page1_offset <= 9'h00;
       end
       5'h11: begin
@@ -269,23 +252,23 @@ always @(posedge clkin) begin
         bs_page1_offset <= 9'h00;
       end
       default:
-        base_regs[base_addr] <= data_tmp;
+        base_regs[base_addr] <= reg_data_in;
     endcase
   end else if(reg_we_rising && flash_enable && regs_outr[4'hc]) begin
     flash_we_r <= 0;
     case(flash_addr)
       16'h0000: begin
-        flash_cmd0 <= data_tmp;
-        if((flash_cmd0 == 8'h72 && data_tmp == 8'h75) & ~flash_we_r) begin
+        flash_cmd0 <= reg_data_in;
+        if((flash_cmd0 == 8'h72 && reg_data_in == 8'h75) & ~flash_we_r) begin
           flash_ovr_r <= 1;
           flash_status_r <= 0;
-        end else if((data_tmp == 8'hff) & ~flash_we_r) begin
+        end else if((reg_data_in == 8'hff) & ~flash_we_r) begin
           flash_ovr_r <= 0;
           flash_we_r <= 0;          
-        end else if(data_tmp[7:1] == 7'b0111000 || ((flash_cmd0 == 8'h38 && data_tmp == 8'hd0) & ~flash_we_r)) begin
+        end else if(reg_data_in[7:1] == 7'b0111000 || ((flash_cmd0 == 8'h38 && reg_data_in == 8'hd0) & ~flash_we_r)) begin
           flash_ovr_r <= 1;
           flash_status_r <= 1;
-        end else if((data_tmp == 8'h10) & ~flash_we_r) begin
+        end else if((reg_data_in == 8'h10) & ~flash_we_r) begin
           flash_ovr_r <= 1;
           flash_status_r <= 1;
           flash_we_r <= 1;

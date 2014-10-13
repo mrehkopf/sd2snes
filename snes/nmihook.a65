@@ -1,11 +1,14 @@
 #include "memmap.i65"
 
+; *=$2BF0
 nmihook:
   jsr !BRAM_PAYLOAD
   jmp $ffff
 irqhook:
   jsr !BRAM_PAYLOAD
   jmp $ffff
+
+; *=$2A04
 nmi_payload:
   php
   rep #$30 : .al : .xl
@@ -16,39 +19,47 @@ nmi_payload:
   phk
   plb
   phd
-  lda #$2a00
+  lda #$2b00
   tcd
 ; backup vectors
-+ sep #$10 : .xs
-  ldx #$01
-  stx $bd ; disable vector patching
+  sep #$20 : .as
+  bit $4211
+  lda #$01
+  sta <NMI_VECT_DISABLE ; disable vector patching
 ; fill in jump addresses above ("$ffff")
-  lda $ffea
-  sta $16
-  lda $ffee
-  sta $1c
-  dex
-  stx $bd
+  ldx $ffea
+  stx <NMI_VECT_ORIG
+  ldx $ffee
+  stx <IRQ_VECT_ORIG
+  stz <NMI_VECT_DISABLE
 ; only read controller every couple of frames
-  ror $bc
+  clc
+  lda <NMI_RUNMASK
+  cmp #$80
+  rol
+  sta <NMI_RUNMASK
   bcc nmi_patches
-  lda #$80
-  tsb $bc
 ; read controller
-  lda $4212
+  lda <MIRROR_4200
   lsr
 ; auto read is active, so we wait for it to finish and use the result
   bcs nmi_autoread
 ; no auto read; read the controller manually
   stz $4016
-  ldx #$11
-  stx $4016
-  dex
-  stx $4016
-- ldy $4016
-  tya
+  lda #$11
+  sta $4016
+  dec
+  sta $4016
+  ldx #$0008
+- lda $4016
   ror
-  rol $04
+  rol <NMI_PAD
+  dex
+  bne -
+  ldx #$0008
+- lda $4016
+  ror
+  rol <NMI_PAD+1
   dex
   bne -
 ; check button combinations
@@ -58,21 +69,19 @@ nmi_payload:
 ; L+R+Start+B      : $9030
 ; L+R+Start+Y      : $5030
 ; L+R+Start+X      : $1070
-  ldx #$00
   bra nmi_pad_loop
 nmi_autoread:
-  sep #$20 : .as
 - lda $4212
   lsr
   bcs -
-  rep #$20 : .al
-  lda $4218
-  sta $04
+  ldy $4218
+  sty <NMI_PAD
+  ldx #$0000
 nmi_pad_loop:
-  lda $06, x
-  cmp $04
+  ldy <NMI_PAD_BUTTONS, x
+  cpy <NMI_PAD
   beq nmi_pad_found
-  cpx #$0a
+  cpx #$000a
   beq nmi_patches
   inx
   inx
@@ -81,32 +90,31 @@ nmi_pad_found:
   txa
   lsr
   ora #$80
-  tax
-  stx <MCU_CMD
-  cpx #$83
+  sta !MCU_CMD
+  cmp #$83
   beq nmi_disable_wram
-  cpx #$82
+  cmp #$82
   bne nmi_patches
 nmi_enable_wram:
-  ldx #$00
+  lda #$00
 nmi_disable_wram:
-  stx $be
+  sta <NMI_WRAM_PATCH_DISABLE
 nmi_patches:
 ; WRAM patches
 ; maybe make this speedcode after switching to ca65
 ; snescom can't handle relocation
 ; skip WRAM patching if disabled
-  ldx $be
+  lda <NMI_WRAM_PATCH_DISABLE
   bne nmi_exit
 ; skip WRAM patching if there are no cheats
-  ldy $bf
+  sep #$10 : .xs
+  ldy <NMI_WRAM_PATCH_COUNT
   beq nmi_exit
-  sep #$20 : .as
-- lda $c2, x
+- lda <NMI_WRAM_PATCH_BASE_BANK, x
   pha
   plb
-  lda $c3, x
-  sta ($c0, x)
+  lda <NMI_WRAM_PATCH_BASE_VALUE, x
+  sta (<NMI_WRAM_PATCH_BASE_ADDR, x)
   inx
   inx
   inx
@@ -123,4 +131,4 @@ nmi_exit:
   plb
   plp
   rts
-.byt"bram_end"
+.byt "bram_end"

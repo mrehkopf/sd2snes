@@ -57,5 +57,6 @@ void cheat_save_from_menu(uint8_t *filename, uint32_t address);
 void cheat_enable(int enable);
 void cheat_nmi_enable(int enable);
 void cheat_irq_enable(int enable);
+void cheat_holdoff_enable(int enable);
 
 #endif

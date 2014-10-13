@@ -106,6 +106,6 @@ assign ROM_HIT = IS_ROM | IS_WRITABLE;
 assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
 assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 assign obc1_enable = featurebits[FEAT_OBC1] & (~SNES_ADDR[22]) & (SNES_ADDR[15:11] == 5'b01111);
-assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:8]} == 9'b0_00101010);
+assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);
 
 endmodule
