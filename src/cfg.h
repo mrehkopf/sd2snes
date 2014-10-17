@@ -13,15 +13,24 @@ typedef enum {
 } cfg_vidmode_t;
 
 typedef struct __attribute__ ((__packed__)) _cfg_block {
-  uint8_t cfg_ver_maj;       /* version of config */
+  uint8_t cfg_ver_maj;          /* version of config */
   uint8_t cfg_ver_min;
-  uint8_t num_recent_games;  /* entries present in history */
-  uint8_t vidmode_menu;      /* menu video mode */
-  uint8_t vidmode_game;      /* game video mode */
-  uint8_t pair_mode_allowed; /* use pair mode if available */
-  uint8_t bsx_use_usertime;  /* use user defined time for BS */
-  uint64_t bsx_time;         /* user setting for BS time */
-  uint8_t r213f_override;    /* override register 213f bit 4 */
+  uint8_t num_recent_games;     /* entries present in history */
+  uint8_t vidmode_menu;         /* menu video mode */
+  uint8_t vidmode_game;         /* game video mode */
+  uint8_t pair_mode_allowed;    /* use pair mode if available */
+  uint8_t bsx_use_usertime;     /* use user defined time for BS */
+  uint64_t bsx_time;            /* user setting for BS time */
+  uint8_t r213f_override;       /* override register 213f bit 4 */
+  uint8_t enable_irq_hook;      /* enable hook routines */
+  uint8_t enable_irq_buttons;   /* enable in-game buttons in hook routines */
+  uint8_t enable_irq_holdoff;   /* enable temp hook disable after reset */
+  uint8_t enable_screensaver;   /* enable screen saver */
+  uint16_t screensaver_timeout; /* screensaver activate timeout in frames */
+  uint8_t sort_directories;     /* sort directories (slower) (default: on) */
+  uint8_t hide_extensions;      /* hide file extensions (default: off) */
+  uint8_t cx4_speed;            /* Cx4 speed (0: original, 1: no waitstates */
+  uint8_t skin_name[80];        /* file name of selected skin */
 } cfg_t;
 
 int cfg_save(void);

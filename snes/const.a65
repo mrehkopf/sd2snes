@@ -185,15 +185,41 @@ last_win_h      .byt 4
 
 text_mm_file    .byt "File Browser", 0
 text_mm_last    .byt "Run last game", 0
-text_mm_time    .byt "Set Clock", 0
-text_mm_scic    .byt "Enable SuperCIC", 0
-text_mm_vmode_menu  .byt "Menu video mode", 0
-text_mm_vmode_game  .byt "Game video mode", 0
-text_mm_sysinfo .byt "System Information", 0
+mtext_mm_cfg    .byt "Configuration", 127, 128, 0
+mtext_mm_sysinfo .byt "System Information", 0
+mtext_cfg_time  .byt "Set Clock", 0
+mtext_cfg_bsx   .byt "BS-X Settings", 127, 128, 0
+mtext_cfg_browser .byt "Browser Settings", 127, 128, 0
+mtext_cfg_screensaver_enable .byt "Screensaver", 0
+mtext_cfg_dsp   .byt "Chip options", 127, 128, 0
+mtext_cfg_ingame .byt "In-game functions", 127, 128, 0
+mtext_cfg_regionpatch .byt "Auto region patch", 0
+mtext_bsx_use_usertime .byt "Satellaview time source", 0
+mtext_bsx_time  .byt "Set custom time", 0
+mtext_scic_enable .byt "Enable SuperCIC", 0
+mtext_scic_vmode_menu .byt "Menu video mode", 0
+mtext_scic_vmode_game .byt "Game video mode", 0
+mtext_browser_sort .byt "Sort directories", 0
+mtext_browser_hide_ext .byt "Hide file extensions", 0
+mtext_ingame_enable .byt "In-game hook", 0
+mtext_ingame_buttons .byt "In-game buttons", 0
+mtext_ingame_holdoff .byt "Initial holdoff", 0
+mtext_dsp_cx4_speed .byt "Cx4 speed", 0
 text_statusbar_keys .byt "A:Select B:Back X:Menu", 0
 text_last       .byt "Recent games", 0
 text_system     .byt "CPU Rev.: x  PPU1 Rev.: y  PPU2 Rev.: z",0
 
+text_on         .byt "On", 0
+text_off        .byt "Off", 0
+text_normal     .byt "Normal", 0
+text_fast       .byt "Fast", 0
+text_rtc        .byt "Real time", 0
+text_custom     .byt "Custom", 0
+text_yes        .byt "Yes", 0
+text_no         .byt "No", 0
+text_50Hz       .byt "50Hz", 0
+text_60Hz       .byt "60Hz", 0
+text_auto       .byt "Auto", 0
 
 text_spcplay    .byt "SPC Music Player", 0
 spcplay_win_x   .byt 15
@@ -212,12 +238,16 @@ spcstart_win_y  .byt 13
 spcstart_win_w  .byt 44
 spcstart_win_h  .byt 9
 
-text_loading    .byt "Loading...", 0
-loading_win_x   .byt 24
+text_loading    .byt "Loading", 127, 128, 0
+loading_win_x   .byt 26
 loading_win_y   .byt 15
-loading_win_w   .byt 14
+loading_win_w   .byt 13
 loading_win_h   .byt 5
 
+cheat_tab_head  .byt "Name                  Address  Cmp  Data  Enable", 0
+cheat_tab_line  .byt 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24
+                .byt 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24
+                .byt 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,0
 
 text_spcid      .byt "SNES-SPC700"
 

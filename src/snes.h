@@ -37,7 +37,9 @@
 #define SNES_CMD_SET_VIDMODE_MENU  (0x09)
 #define SNES_CMD_READDIR           (0x0a)
 #define SNES_CMD_FPGA_RECONF       (0x0b)
-
+#define SNES_CMD_LOAD_CHT          (0x0c)
+#define SNES_CMD_SAVE_CHT          (0x0d)
+#define SNES_CMD_SAVE_CFG          (0x0e)
 #define SNES_CMD_RESET             (0x80)
 #define SNES_CMD_RESET_TO_MENU     (0x81)
 #define SNES_CMD_ENABLE_CHEATS     (0x82)

@@ -14,7 +14,16 @@ cfg_t CFG_DEFAULT = {
   .pair_mode_allowed = 0,
   .bsx_use_usertime = 0,
   .bsx_time = 0x0619970301180530LL,
-  .r213f_override = 1
+  .r213f_override = 1,
+  .enable_irq_hook = 1,
+  .enable_irq_buttons = 1,
+  .enable_irq_holdoff = 1,
+  .enable_screensaver = 1,
+  .screensaver_timeout = 33000,
+  .sort_directories = 1,
+  .hide_extensions = 0,
+  .cx4_speed = 0,
+  .skin_name = "sd2snes.skin"
 };
 
 cfg_t CFG;
