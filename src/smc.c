@@ -87,8 +87,8 @@ void smc_id(snes_romprops_t* props) {
   if(header->name[0x13] == 0x00 || header->name[0x13] == 0xff) {
     if(header->name[0x14] == 0x00) {
       const uint8_t n15 = header->map;
-      if(n15 == 0x00 || n15 == 0x80 || n15 == 0x84 || n15 == 0x9c
-        || n15 == 0xbc || n15 == 0xfc) {
+      if(n15 == 0x00 || n15 == 0x80 || n15 == 0x84 || n15 == 0x8c
+        || n15 == 0x9c || n15 == 0xbc || n15 == 0xfc) {
         if(header->licensee == 0x33 || header->licensee == 0xff) {
           props->mapper_id = 0;
 /*XXX do this properly */
