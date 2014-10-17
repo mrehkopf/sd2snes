@@ -42,6 +42,7 @@ uint16_t sd_offload_partial_start = 0;
 uint16_t sd_offload_partial_end = 0;
 
 int snes_boot_configured;
+extern const uint8_t *fpga_config;
 
 volatile enum diskstates disk_state;
 extern volatile tick_t ticks;
@@ -148,6 +149,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     cfg_load();
     cfg_save();
     fpga_pgm((uint8_t*)"/sd2snes/fpga_base.bit");
+    if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
     sram_writebyte(cfg_get_num_recent_games(), SRAM_STATUS_ADDR+SYS_LAST_STATUS);
     cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
 //    scan_dir((uint8_t*)"/", SRAM_DIR_ADDR, TYPE_ROM | TYPE_PARENT | TYPE_SUBDIR);
@@ -160,6 +162,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     /* force memory size + mapper */
     set_rom_mask(0x3fffff);
     set_mapper(0x7);
+    fpga_write_cheat(7, 0xf0);
     uart_putc(')');
     uart_putcrlf();
 

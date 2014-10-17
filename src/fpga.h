@@ -41,6 +41,13 @@ void fpga_rompgm(void);
 
 uint8_t SPI_OFFLOAD;
 
+const uint8_t *fpga_config;
+
+#define FPGA_CX4 ((const uint8_t*)"/sd2snes/fpga_cx4.bit")
+#define FPGA_OBC1 ((const uint8_t*)"/sd2snes/fpga_obc1.bit")
+#define FPGA_BASE ((const uint8_t*)"/sd2snes/fpga_base.bit")
+#define FPGA_ROM ((const uint8_t*)"rom")
+
 #define CCLKREG  LPC_GPIO0
 #define PROGBREG LPC_GPIO1
 #define INITBREG LPC_GPIO2

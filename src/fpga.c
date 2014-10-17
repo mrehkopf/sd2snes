@@ -152,6 +152,7 @@ void fpga_pgm(uint8_t* filename) {
     led_panic(LED_PANIC_FPGA_NOCONF);
   }
   printf("FPGA configured\n");
+  fpga_config = filename;
   fpga_postinit();
 }
 
@@ -201,6 +202,7 @@ void fpga_rompgm() {
     led_panic(LED_PANIC_FPGA_NOCONF);
   }
   printf("FPGA configured\n");
+  fpga_config = FPGA_ROM;
   fpga_postinit();
 }
 
