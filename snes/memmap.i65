@@ -43,12 +43,12 @@
 #define WRAM_FADELOOP               $7EF100
 
 #define FILESEL_CWD                 $FF0000
+#define CFG_ADDR                    $FF0100
 #define RTC_STATUS                  $FF1100
 #define LAST_STATUS                 $FF1101
 #define SYSINFO_BLK                 $FF1200
 #define LAST_GAME                   $FF1420
 #define CHEAT_ADDR                  $FF2000
-
 #define ROOT_DIR                    $C10000
 
 #define CMD_LOADROM                 $01
@@ -61,12 +61,37 @@
 #define CMD_SET_VIDMODE_MENU        $09
 #define CMD_READDIR                 $0A
 #define CMD_FPGA_RECONF             $0B
+#define CMD_LOAD_CHT                $0C
+#define CMD_SAVE_CHT                $0D
+#define CMD_SAVE_CFG                $0E
+#define CMD_SET_CFG                 $0F
 #define CMD_RESET                   $80
 #define CMD_RESET_TO_MENU           $81
 #define CMD_ENABLE_CHEATS           $82
 #define CMD_DISABLE_CHEATS          $83
 #define CMD_KILL_NMIHOOK            $84
 #define CMD_TEMP_KILL_NMIHOOK       $85
+
+#define CFG_VER_MAJ                 $0000
+#define CFG_VER_MIN                 $0001
+#define CFG_NUM_RECENT_GAMES        $0002
+#define CFG_VIDMODE_MENU            $0003
+#define CFG_VIDMODE_GAME            $0004
+#define CFG_PAIR_MODE_ALLOWED       $0005
+#define CFG_BSX_USE_USERTIME        $0006
+#define CFG_BSX_TIME                $0007
+#define CFG_R213F_OVERRIDE          $000F
+#define CFG_ENABLE_IRQ_HOOK         $0010
+#define CFG_ENABLE_IRQ_HOLDOFF      $0011
+#define CFG_ENABLE_SCREENSAVER      $0012
+#define CFG_SCREENSAVER_TIMEOUT     $0013
+#define CFG_SORT_DIRECTORIES        $0014
+#define CFG_HIDE_EXTENSIONS         $0015
+#define CFG_CX4_SPEED               $0016
+// #define CFG_SKIN_NAME               $0015
+
+#define MTYPE_FUNC                  $01
+#define MTYPE_SUBMENU               $02
 
 #define VIDMODE_NTSC                $00
 #define VIDMODE_PAL                 $01

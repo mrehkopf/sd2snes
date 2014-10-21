@@ -12,9 +12,9 @@ show_sysinfo:
   dec bar_xl
   stz bar_yl
   dec bar_yl
-  lda #^text_mm_sysinfo
+  lda #^mtext_mm_sysinfo
   sta window_tbank
-  ldx #!text_mm_sysinfo
+  ldx #!mtext_mm_sysinfo
   stx window_taddr
   lda @sysinfo_win_x
   sta window_x

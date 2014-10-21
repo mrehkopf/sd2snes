@@ -41,7 +41,8 @@ int sd_offload_end_mid = 0;
 uint16_t sd_offload_partial_start = 0;
 uint16_t sd_offload_partial_end = 0;
 
-int snes_boot_configured;
+int snes_boot_configured, firstboot;
+extern const uint8_t *fpga_config;
 
 volatile enum diskstates disk_state;
 extern volatile tick_t ticks;
@@ -58,7 +59,7 @@ enum system_states {
 void menu_cmd_readdir(void) {
   uint8_t path[256];
   snes_get_filepath(path, 256);
-  uint32_t tgt_addr = snescmd_readlong(SNESCMD_MCU_PARAM + 4);
+  uint32_t tgt_addr = snescmd_readlong(SNESCMD_MCU_PARAM + 4) & 0xffffff;
   uint8_t typemask = snescmd_readbyte(SNESCMD_MCU_PARAM + 8);
 printf("path=%s tgt=%06lx mask=%02x\n", path, tgt_addr, typemask);
   scan_dir(path, tgt_addr, typemask);
@@ -107,6 +108,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
   LPC_TIM3->MR0=1;
   LPC_TIM3->TCR=1;
   fpga_init();
+  firstboot = 1;
   while(1) {
     snes_boot_configured = 0;
     while(get_cic_state() == CIC_FAIL) {
@@ -145,12 +147,14 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     readled(0);
     writeled(0);
 
-    cfg_load();
-    cfg_save();
-    fpga_pgm((uint8_t*)"/sd2snes/fpga_base.bit");
+    if(firstboot) {
+      cfg_load();
+      cfg_save();
+    }
+    firstboot = 0;
+    if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
     sram_writebyte(cfg_get_num_recent_games(), SRAM_STATUS_ADDR+SYS_LAST_STATUS);
     cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
-//    scan_dir((uint8_t*)"/", SRAM_DIR_ADDR, TYPE_ROM | TYPE_PARENT | TYPE_SUBDIR);
 
     /* load menu */
     sram_writelong(0x12345678, SRAM_SCRATCHPAD);
@@ -160,6 +164,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     /* force memory size + mapper */
     set_rom_mask(0x3fffff);
     set_mapper(0x7);
+    fpga_write_cheat(7, 0xf0);
     uart_putc(')');
     uart_putcrlf();
 

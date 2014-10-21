@@ -34,13 +34,10 @@
 #define DSPFW_1B ((const uint8_t*)"/sd2snes/dsp1b.bin")
 #define DSPFW_ST0010 ((const uint8_t*)"/sd2snes/st0010.bin")
 
-#define FPGA_CX4 ((const uint8_t*)"/sd2snes/fpga_cx4.bit")
-#define FPGA_OBC1 ((const uint8_t*)"/sd2snes/fpga_obc1.bit")
-
 typedef struct _snes_header {
   uint8_t maker[2];     /* 0xB0 */
   uint8_t gamecode[4];  /* 0xB2 */
-  uint8_t fixed_00[7];	/* 0xB6 */
+  uint8_t fixed_00[7];  /* 0xB6 */
   uint8_t expramsize;   /* 0xBD */
   uint8_t specver;      /* 0xBE */
   uint8_t carttype2;    /* 0xBF */
@@ -55,7 +52,7 @@ typedef struct _snes_header {
   uint16_t cchk;        /* 0xDC */
   uint16_t chk;         /* 0xDE */
   uint32_t pad1;        /* 0xE0 */
-  uint16_t vect_cop16;	/* 0xE4 */
+  uint16_t vect_cop16;  /* 0xE4 */
   uint16_t vect_brk16;  /* 0xE6 */
   uint16_t vect_abt16;  /* 0xE8 */
   uint16_t vect_nmi16;  /* 0xEA */

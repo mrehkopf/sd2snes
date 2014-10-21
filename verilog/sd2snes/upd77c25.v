@@ -217,9 +217,7 @@ end
 
 always @(posedge CLK) begin
   if(RST) begin
-    if((op_src == 4'b1000 && op[1] == 1'b0 && insn_state == STATE_STORE)
-    || (op_dst == 4'b0110 && op != 2'b10 && insn_state == STATE_STORE)) regs_sr[SR_RQM] <= 1'b1;
-    else if(enable & reg_we_rising & (A0 == 1'b0)) begin
+    if(enable & reg_we_rising & (A0 == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b1) begin
           regs_sr[SR_RQM] <= 1'b0;
@@ -236,6 +234,9 @@ always @(posedge CLK) begin
       end else begin
         regs_sr[SR_RQM] <= 1'b0;
       end
+    end else if((op_src == 4'b1000 && op[1] == 1'b0 && insn_state == STATE_STORE)
+             || (op_dst == 4'b0110 && op != 2'b10 && insn_state == STATE_STORE)) begin
+      regs_sr[SR_RQM] <= 1'b1;
     end
   end else begin
     regs_sr[SR_RQM] <= 1'b0;
