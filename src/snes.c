@@ -103,6 +103,8 @@ uint8_t get_snes_reset_state(void) {
   static uint8_t resbutton=0, resbutton_prev=0;
   static uint8_t pushes=0, reset_short_flag=0;
 
+  uint8_t release_flag = 0;
+
   uint8_t result=SNES_RESET_NONE;
 
   snes_reset(0); // release sd2snes-reset (just in case it was a reset detected before)
@@ -120,6 +122,7 @@ uint8_t get_snes_reset_state(void) {
   } else if(!resbutton && resbutton_prev) { /* button released */
     result = SNES_RESET_SHORT;
     reset_short_flag = 1;
+    release_flag = 1;
   }
 
   if(pushes == 2) {/* we had a second push  -> initiate long reset */
@@ -132,7 +135,10 @@ uint8_t get_snes_reset_state(void) {
 
   if(reset_short_flag) {
     snes_reset(1);
-    delay_ms(SNES_RESET_PULSELEN_MS);
+    if(release_flag)
+      delay_ms(170);
+    else
+      delay_ms(SNES_RESET_PULSELEN_MS);
   }
 
   resbutton_prev = resbutton;
