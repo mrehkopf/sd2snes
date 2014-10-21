@@ -75,6 +75,19 @@
 ;   D-Pad up     Toggle the region timeout                       0xd7 0xcf
 ;   D-Pad down   Toggle $213f-D4-Patch enable/disable            0xdb 0xcf
 ;
+;   Temporary Lock:
+;   To lock all other combinations one may press (D-Pad left + D-Pad up + L +
+;   R + A + X -> strean data 0xf5 0x0f) together. The same combination unlocks
+;   the IGR functionalities again.
+;   Lock   -> LED confirms with fast flashing red
+;   Unlock -> LED confirms with fast flashing green
+;
+;   Permanent Lock:
+;   To lock all combinations one may press (D-Pad down + D-Pad left + L +
+;   R + A + B -> strean data 0x79 0x4f) together. This can only be undone by
+;   a reset (only reset button, not by sd2snes-IGRs) or power off and on again
+;   Lock   -> LED confirms with fast flashing red
+;
 ;
 ;   functional description:
 ;   =======================
@@ -215,6 +228,8 @@ bit_mode_50         EQU 2
 bit_mode_scic       EQU 3
 bit_regtimeout      EQU 4
 bit_regpatch        EQU 5
+bit_igrlock_tmp     EQU 6
+bit_igrlock_ever    EQU 7
 
 code_mode_auto      EQU (1<<bit_mode_auto)      ; 0x01
 code_mode_60        EQU (1<<bit_mode_60)        ; 0x02
@@ -222,6 +237,7 @@ code_mode_50        EQU (1<<bit_mode_50)        ; 0x04
 code_mode_scic      EQU (1<<bit_mode_scic)      ; 0x08
 code_regtimeout     EQU (1<<bit_regtimeout)     ; 0x10
 code_regpatch       EQU (1<<bit_regpatch)       ; 0x20
+code_igrlock_tmp    EQU (1<<bit_igrlock_tmp)    ; 0x40
 
 code_led_off    EQU 0x00    ; off
 code_led_60     EQU 0x10    ; red
@@ -289,6 +305,8 @@ check_scic_auto
     goto    setregion_passthru                  ; if yes, check the current state
 
 idle
+    btfsc   reg_current_mode, bit_igrlock_ever
+    goto    check_scic_auto
     M_movlf 0xff, reg_ctrl_data_lsb
     M_movlf 0xff, reg_ctrl_data_msb
     M_T1reset
@@ -473,6 +491,9 @@ read_Button_None0
 
 
 checkkeys
+    M_belf  0xf5, reg_ctrl_data_msb, un_lock_igr_tmp    ; check for (un)lock igr before doin' anything else
+    btfsc   reg_current_mode, bit_igrlock_tmp           ; igr locked?
+    goto    check_scic_auto                             ; yes
     M_belf  0x4f, reg_ctrl_data_lsb, group4f
     M_belf  0x8f, reg_ctrl_data_lsb, group8f
     M_belf  0xcf, reg_ctrl_data_lsb, groupcf
@@ -480,6 +501,7 @@ checkkeys
 
 group4f ; check L+R+sel+A
     M_belf  0xdf, reg_ctrl_data_msb, doregion_60
+    M_belf  0x79, reg_ctrl_data_msb, lock_igr_ever
     goto    check_scic_auto
 
 group8f ; check L+R+sel+X
@@ -585,6 +607,7 @@ check_reset_loop
     goto    wait_for_rstloop_scic_passthru      ; if yes, the user might want to change the mode of the SCIC
 
 check_reset_prepare_timeout
+    bcf     reg_current_mode, bit_igrlock_ever
     btfss   reg_current_mode, bit_regtimeout                ; region timeout disabled?
     goto    check_scic_auto                                 ; if yes, go on with 'normal procedure'
     M_setAuto                                               ; if no, predefine the auto-mode ...
@@ -738,6 +761,77 @@ LED_confirm_d4on    ; LED fading pattern: off->green->off->green->off->last LED 
     M_delay_x10ms   repetitions_LED_delay
     M_movff         reg_led_save, PORTC ; return to last LED color
     goto            check_scic_auto
+
+
+un_lock_igr_tmp ; check for (un)lock the irg
+    M_belf  0x0f, reg_ctrl_data_lsb, toggle_igrlock_tmp ; check the LSBs
+    goto    check_scic_auto                             ; if stream data is not matched, go back to check_scic_auto
+
+toggle_igrlock_tmp
+    movfw   reg_current_mode
+    xorlw   code_igrlock_tmp                    ; toggle
+    movwf   reg_current_mode
+    call    save_mode
+    btfsc   reg_current_mode, bit_igrlock_tmp   ; irg now unlocked?
+    goto    LED_confirm_lock_igr                ; if no, conform locking
+
+LED_confirm_unlock_igr ; LED fast flashing green
+    M_movpf         PORTC, reg_led_save ; save last LED color and d4
+    call            setled_off
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_50
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_off
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_50
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_off
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_50
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_off
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_50
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_off
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_50
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_off
+    M_delay_x10ms   repetitions_LED_delay_fast
+    M_movff         reg_led_save, PORTC ; return to last LED color
+    goto            check_scic_auto
+
+LED_confirm_lock_igr ; LED fast flashing red
+    M_movpf         PORTC, reg_led_save ; save last LED color and d4
+    call            setled_off
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_60
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_off
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_60
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_off
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_60
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_off
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_60
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_off
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_60
+    M_delay_x10ms   repetitions_LED_delay_fast
+    call            setled_off
+    M_delay_x10ms   repetitions_LED_delay_fast
+    M_movff         reg_led_save, PORTC ; return to last LED color
+    goto            check_scic_auto
+
+lock_igr_ever
+    bsf     reg_current_mode, bit_igrlock_ever
+    goto    LED_confirm_lock_igr
 
 
 call_M_setAuto
