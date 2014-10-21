@@ -144,6 +144,12 @@ M_belf  macro   literal, compReg, branch  ; branch if a literal is stored in fil
         goto    branch
         endm
 
+M_delay_x20ms   macro   literal ; delay about literal x 20ms
+                movlw   literal
+                movwf   reg_repetition_cnt
+                call    delay_x20ms
+                endm
+
 M_T1reset   macro   ; reset and start timer1
             clrf    TMR1L
             clrf    TMR1H
@@ -182,10 +188,12 @@ REGPATCH_OUT    EQU 3
 reg_ctrl_data_lsb   EQU 0x20
 reg_ctrl_data_msb   EQU 0x21
 reg_ctrl_data_cnt   EQU 0x22
-reg_current_mode    EQU 0x50
-reg_passthru_calc   EQU 0x51
-reg_led_save        EQU 0x51
-reg_t1_overflows    EQU 0x52
+reg_t0_overflows    EQU 0x31
+reg_repetition_cnt  EQU 0x32
+reg_t1_overflows    EQU 0x33
+reg_current_mode    EQU 0x40
+reg_passthru_calc   EQU 0x41
+reg_led_save        EQU 0x41
 
 bit_mode_auto   EQU 0
 bit_mode_60     EQU 1
@@ -204,6 +212,14 @@ code_led_off    EQU 0x00                ; off
 code_led_60     EQU 0x10                ; red
 code_led_50     EQU 0x20                ; green
 code_led_auto   EQU 0x30                ; yellow
+
+
+delay_20ms_t0_overflows     EQU 0x05    ; prescaler T0 set to 1:16
+repetitions_60ms            EQU 0x03
+repetitions_200ms           EQU 0x0a
+repetitions_260ms           EQU 0x0d
+repetitions_LED_delay       EQU 0x1d    ; around 580ms
+repetitions_LED_delay_fast  EQU 0x0e    ; around 300ms
 
 overflows_t1_regtimeout_start       EQU 0x11
 overflows_t1_regtimeout_reset       EQU 0x11
@@ -288,9 +304,9 @@ regtimeout
 last_mode_check
     btfsc   reg_current_mode, bit_mode_auto ; last mode "Auto"?
     goto    setregion_auto_withoutLED
-    btfsc   reg_current_mode, bit_mode_60   ; last mode "60Hz"?
+    btfsc   reg_current_mode, bit_mode_60 ; last mode "60Hz"?
     goto    setregion_60_withoutLED
-    btfsc   reg_current_mode, bit_mode_50   ; last mode "50Hz"?
+    btfsc   reg_current_mode, bit_mode_50 ; last mode "50Hz"?
     goto    setregion_50_withoutLED
     goto    setregion_passthru_withoutLED
 
@@ -372,18 +388,18 @@ group0c ; check L+R+sel+...
     M_belf  0xde, reg_ctrl_data_msb, doscic_passthru    ; Right
     goto    idle
 
+
 doreset_normal
-    banksel TRISA
-    bcf     TRISA, RESET_OUT
-    banksel PORTA
-    bsf     PORTA, RESET_OUT
+	banksel TRISA
+	bcf     TRISA, RESET_OUT
+	banksel PORTA
+	bsf     PORTA, RESET_OUT
     btfsc   reg_current_mode, bit_regtimeout    ; region timeout enabled?
     call    call_M_setAuto                      ; if yes, define the output to the S-CPUN/PPUs
-    movlw   0x15
-    call    longwait
+	call    delay_20ms
     banksel TRISA
-    bsf     TRISA, RESET_OUT
-    banksel PORTA
+	bsf     TRISA, RESET_OUT
+	banksel PORTA
     btfss   reg_current_mode, bit_regtimeout    ; region timout disabled?
     goto    idle                                ; if yes, go on with 'normal procedure'
     movlw   overflows_t1_regtimeout_reset
@@ -393,28 +409,25 @@ doreset_normal
     goto    regtimeout                          ; if no, we had to perform a region timeout
 
 doreset_dbl
-    banksel TRISA
-    bcf     TRISA, RESET_OUT
-    banksel PORTA
-    bsf     PORTA, RESET_OUT
-    movlw   0x15
-    call    longwait
-    banksel TRISA
-    bsf     TRISA, RESET_OUT
-    clrw
-    call    longwait
-    bcf     TRISA, RESET_OUT
-    banksel PORTA
-    bsf     PORTA, RESET_OUT                    ; let the reset-line stay high (just to be sure)
-    movlw   0x15
-    call    longwait
-    banksel TRISA
-    bsf     TRISA, RESET_OUT
-    banksel PORTA
-    btfss   reg_current_mode, bit_regtimeout    ; region timeout enabled?
-    goto    idle                                ; if yes, go on with 'normal procedure'
-    movlw   overflows_t1_regtimeout_dblreset
-    movwf   reg_t1_overflows
+	banksel         TRISA
+	bcf             TRISA, RESET_OUT
+	banksel         PORTA
+	bsf             PORTA, RESET_OUT
+	call            delay_20ms
+	banksel         TRISA
+	bsf             TRISA, RESET_OUT
+	M_delay_x20ms   repetitions_200ms
+	bcf             TRISA, RESET_OUT
+	banksel         PORTA
+    bsf             PORTA, RESET_OUT                    ; let the reset-line stay high (just to be sure)
+	call            delay_20ms
+	banksel         TRISA
+	bsf             TRISA, RESET_OUT
+	banksel         PORTA
+    btfss           reg_current_mode, bit_regtimeout    ; region timeout enabled?
+    goto            idle                                ; if yes, go on with 'normal procedure'
+    movlw           overflows_t1_regtimeout_dblreset
+    movwf           reg_t1_overflows
 
     M_T1reset                                   ; start timer 1
     goto    regtimeout                          ; if no, we had to perform a region timeout
@@ -462,10 +475,9 @@ setregion_50_withoutLED
     goto    idle
 
 check_reset
-    clrw
-    call    longwait        ; software debounce
+    call    delay_20ms                  ; software debounce
     btfss   PORTA, RESET_IN
-    goto    check_reset_prepare_timeout
+    goto    idle
     M_movpf PORTC, reg_passthru_calc
 
 check_reset_loop
@@ -517,60 +529,50 @@ setregion_passthru_withoutLED_Ca
     M_belf  0x01, reg_passthru_calc, setregion_50_withoutLED    ; 50Hz-mode
     M_belf  0x02, reg_passthru_calc, setregion_60_withoutLED    ; 60Hz-mode
     goto    setregion_auto_withoutLED                           ; auto-mode
-    
+
 toggle_startup
     movfw   reg_current_mode
     xorlw   code_regtimeout                     ; toggle
     movwf   reg_current_mode
-    call    save_mode    
+    call    save_mode
     btfsc   reg_current_mode, bit_regtimeout    ; reg_timeout now disabled?
     goto    LED_confirm_rt_1                    ; if enabled, confirm with r-y-gr
-    
+
 LED_confirm_rt_0 ; LED fading pattern: off->green->yellow->red->off->last LED color
-    M_movpf PORTC, reg_led_save ; save last LED color and d4
-    call    setled_off
-    movlw   0x03
-    call    superlongwait
-    call    setled_50
-    movlw   0x03
-    call    superlongwait
-    call    setled_auto
-    movlw   0x03
-    call    superlongwait
-    call    setled_60
-    movlw   0x03
-    call    superlongwait
-    call    setled_off
-    movlw   0x03
-    call    superlongwait
-    M_movff reg_led_save, PORTC ; return to last LED color
-    goto    idle
-    
+    M_movpf         PORTC, reg_led_save ; save last LED color and d4
+    call            setled_off
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_50
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_auto
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_60
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_off
+	M_delay_x20ms   repetitions_LED_delay
+    M_movff         reg_led_save, PORTC ; return to last LED color
+    goto            idle
+
 LED_confirm_rt_1 ; LED fading pattern: off->red->yellow->green->off->last LED color
-    M_movpf PORTC, reg_led_save ; save last LED color and d4
-    call    setled_off
-    movlw   0x03
-    call    superlongwait
-    call    setled_60
-    movlw   0x03
-    call    superlongwait
-    call    setled_auto
-    movlw   0x03
-    call    superlongwait
-    call    setled_50
-    movlw   0x03
-    call    superlongwait
-    call    setled_off
-    movlw   0x03
-    call    superlongwait
-    M_movff reg_led_save, PORTC ; return to last LED color
-    goto    idle
+    M_movpf         PORTC, reg_led_save ; save last LED color and d4
+    call            setled_off
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_60
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_auto
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_50
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_off
+	M_delay_x20ms   repetitions_LED_delay
+    M_movff         reg_led_save, PORTC ; return to last LED color
+    goto            idle
 
 toggle_d4_patch
-    movf    reg_current_mode, w
+    movfw   reg_current_mode
     xorlw   code_regpatch                   ; toggle
     movwf   reg_current_mode
-    call    save_mode    
+    call    save_mode
     btfsc   reg_current_mode, bit_regpatch  ; region patch now disabled?
     goto    enable_d4_patch                 ; if no, enable it
 
@@ -578,74 +580,57 @@ disable_d4_patch ; otherwise disable d4-patch
     setD4off
 
 LED_confirm_d4off   ; LED fading pattern: off->red->off->red->off->last LED color
-    M_movpf PORTC, reg_led_save ; save last LED color and d4
-    call    setled_off
-    movlw   0x03
-    call    superlongwait
-    call    setled_60
-    movlw   0x03
-    call    superlongwait
-    call    setled_off
-    movlw   0x03
-    call    superlongwait
-    call    setled_60
-    movlw   0x03
-    call    superlongwait
-    call    setled_off
-    movlw   0x03
-    call    superlongwait
-    M_movff reg_led_save, PORTC ; return to last LED color
-    goto    idle
+    M_movpf         PORTC, reg_led_save ; save last LED color and d4
+    call            setled_off
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_60
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_off
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_60
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_off
+	M_delay_x20ms   repetitions_LED_delay
+    M_movff         reg_led_save, PORTC ; return to last LED color
+    goto            idle
 
 enable_d4_patch ; enable d4-patch
     setD4on
 
 LED_confirm_d4on    ; LED fading pattern: off->green->off->green->off->last LED color
-    M_movpf PORTC, reg_led_save ; save last LED color and d4
-    call    setled_off
-    movlw   0x03
-    call    superlongwait
-    call    setled_50
-    movlw   0x03
-    call    superlongwait
-    call    setled_off
-    movlw   0x03
-    call    superlongwait
-    call    setled_50
-    movlw   0x03
-    call    superlongwait
-    call    setled_off
-    movlw   0x03
-    call    superlongwait
-    M_movff reg_led_save, PORTC ; return to last LED color
-    goto    idle
+    M_movpf         PORTC, reg_led_save ; save last LED color and d4
+    call            setled_off
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_50
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_off
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_50
+	M_delay_x20ms   repetitions_LED_delay
+    call            setled_off
+	M_delay_x20ms   repetitions_LED_delay
+    M_movff         reg_led_save, PORTC ; return to last LED color
+    goto            idle
 
-; --------wait: 3*(W-1)+7 cycles (including call+return). W=0 -> 256!--------
-wait
-        movwf   0x2f
-wait0   decfsz  0x2f, f
-        goto    wait0
-        goto	longwait1
+delay_20ms
+    M_movlf delay_20ms_t0_overflows, reg_t0_overflows
+    clrf    W
+    movwf   TMR0    ; start timer
 
-; --------wait long: 8+(3*(w-1))+(772*w). W=0 -> 256!--------
-longwait
-        movwf   0x2e
-        clrw
-longwait0
-        goto	wait
-longwait1
-        decfsz  0x2e, f
-        goto    longwait0
-        return
+delay_20ms_loop_pre
+    bcf     INTCON, T0IF
 
-; --------wait extra long: 8+(3*(w-1))+(198405*w).
-superlongwait
-    movwf   0x2d
-    clrw
-superlongwait0
-    call    longwait
-    decfsz  0x2d, f
-    goto    superlongwait0
+delay_20ms_loop
+    btfss   INTCON, T0IF
+    goto    delay_20ms_loop
+    decfsz  reg_t0_overflows, 1
+    goto    delay_20ms_loop_pre
+    return
+
+delay_x20ms
+    call    delay_20ms
+    decfsz  reg_repetition_cnt, 1
+    goto    delay_x20ms
     return
 
 call_M_setAuto
