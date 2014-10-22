@@ -465,6 +465,9 @@ fadeloop_start
   sta $420b
 ; fill bank $7f
   sta $420b
+; fix for anti-copier routines that rely on pre-initialized DMA target
+  lda #$ff
+  sta $4301
   rep #$20 : .al
   lda #$fe80 ; - bra -
   sta @$7fffe0
