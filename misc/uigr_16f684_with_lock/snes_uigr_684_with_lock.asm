@@ -329,7 +329,6 @@ idle_loop
 
 
 read_Button_B   ; button B can be read imediately
-    nop
     bcf     INTCON, INTF
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_msb, BUTTON_B
@@ -341,9 +340,9 @@ wait_read_Button_Y
 ;    sleep
 read_Button_Y
     bcf     INTCON, INTF
-    bcf     INTCON, RAIF                ; from now on, no IOC at the data latch shall appear
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_msb, BUTTON_Y
+    bcf     INTCON, RAIF                ; from now on, no IOC at the data latch shall appear
 
 wait_read_Button_Sl
     btfss   INTCON, INTF    ; wait for rising edge on clk
@@ -351,7 +350,6 @@ wait_read_Button_Sl
 ;    sleep
 read_Button_Sl
     bcf     INTCON, INTF
-    nop
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_msb, BUTTON_Sl
 
@@ -361,7 +359,6 @@ wait_read_Button_St
 ;    sleep
 read_Button_St
     bcf     INTCON, INTF
-    nop
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_msb, BUTTON_St
 
@@ -371,7 +368,6 @@ wait_read_Button_Up
 ;    sleep
 read_Button_Up
     bcf     INTCON, INTF
-    nop
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_msb, BUTTON_Up
 
@@ -381,7 +377,6 @@ wait_read_Button_Dw
 ;    sleep
 read_Button_Dw
     bcf     INTCON, INTF
-    nop
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_msb, BUTTON_Dw
 
@@ -391,7 +386,6 @@ wait_read_Button_Le
 ;    sleep
 read_Button_Le
     bcf     INTCON, INTF
-    nop
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_msb, BUTTON_Le
 
@@ -401,7 +395,6 @@ wait_read_Button_Ri
 ;    sleep
 read_Button_Ri
     bcf     INTCON, INTF
-    nop
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_msb, BUTTON_Ri
 
@@ -412,7 +405,6 @@ wait_read_Button_A
 ;    sleep
 read_Button_A
     bcf     INTCON, INTF
-    nop
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_lsb, BUTTON_A
 
@@ -422,7 +414,6 @@ wait_read_Button_X
 ;    sleep
 read_Button_X
     bcf     INTCON, INTF
-    nop
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_lsb, BUTTON_X
 
@@ -432,7 +423,6 @@ wait_read_Button_L
 ;    sleep
 read_Button_L
     bcf     INTCON, INTF
-    nop
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_lsb, BUTTON_L
 
@@ -442,7 +432,6 @@ wait_read_Button_R
 ;    sleep
 read_Button_R
     bcf     INTCON, INTF
-    nop
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_lsb, BUTTON_R
 
@@ -453,7 +442,6 @@ wait_read_Button_None3
 ;    sleep
 read_Button_None3
     bcf     INTCON, INTF
-    nop
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_lsb, BUTTON_None3
 
@@ -463,7 +451,6 @@ wait_read_Button_None2
 ;    sleep
 read_Button_None2
     bcf     INTCON, INTF
-    nop
 	btfss   PORTA, SERIAL_DATA
 	bcf     reg_ctrl_data_lsb, BUTTON_None2
 
@@ -473,7 +460,6 @@ wait_read_Button_None1
 ;    sleep
 read_Button_None1
     bcf     INTCON, INTF
-    nop
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_lsb, BUTTON_None1
 
@@ -481,7 +467,6 @@ wait_read_Button_None0
     btfsc   INTCON, INTF    ; wait for rising edge on clk
     goto    read_Button_None0
 read_Button_None0
-    nop
     nop
     btfss   PORTA, SERIAL_DATA
     bcf     reg_ctrl_data_lsb, BUTTON_None0
