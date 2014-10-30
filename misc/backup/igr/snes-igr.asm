@@ -85,95 +85,115 @@
     __CONFIG _INTRC_OSC_NOCLKOUT & _WDT_OFF & _PWRTE_OFF & _MCLRE_OFF & _BODEN & _CP_OFF & _CPD_OFF
 
 ; -----------------------------------------------------------------------
+
+#define SERIAL_DATA     0
+#define DATA_LATCH      1
+#define DATA_CLK        2
+#define SCIC_MODE_IN    3
+#define MODE_OUT        4
+#define RESET_OUT       5
+
+#define LED_MODE_50_IN  0
+#define LED_MODE_60_IN  1
+#define SCIC_PRESENT_IN 2
+#define LED_TYPE_IN     3
+
+#define bit_scic_present    1
+#define bit_scic_passthru   1
+
+#define reg_ctrl_data_lsb   0x20
+#define reg_ctrl_data_msb   0x21
+#define reg_ctrl_data_cnt   0x22
+#define reg_scic_passthru   0x23
+#define reg_scic_present    0x24
+
+; -----------------------------------------------------------------------
+
 ; relocatable code
 PROG CODE
-
-calibrate_osccal
-        bsf STATUS, RP0 ;Bank 1
-        call 3FFh ;Get the cal value
-;        movlw 0xfc ; load '11111100' to set the OSCCAL to maximum
-        movwf OSCCAL ;Calibrate
-        bcf STATUS, RP0 ;Bank 0
 start
-        banksel PORTA
-        clrf    PORTA
-        movlw   0x07            ; PORTA2..0 are digital I/O (not connected to comparator)
-        movwf   CMCON
-        movlw   0x00            ; disable all interrupts
-        movwf   INTCON
-        banksel TRISA
-        movlw   0x2f            ; in out in in in in
-        movwf   TRISA
-        movlw   0x0f            ; out out in in in in
-        movwf   TRISC
-        movlw   0x00            ; no pullups
-        movwf   WPUA
-        movlw   0x80            ; global pullup disable
-        movwf   OPTION_REG
+    banksel PORTA
+    clrf    PORTA
+    movlw   0x07            ; PORTA2..0 are digital I/O (not connected to comparator)
+    movwf   CMCON
+    movlw   0x00            ; disable all interrupts
+    movwf   INTCON
+    banksel TRISA
+    call 3FFh               ; Get the osccal value
+;    movlw 0xfc             ; load '11111100' to set the OSCCAL to maximum
+    movwf OSCCAL            ; Calibrate
+    movlw   0x2f            ; in out in in in in
+    movwf   TRISA
+    movlw   0x0f            ; out out in in in in
+    movwf   TRISC
+    movlw   0x00            ; no pullups
+    movwf   WPUA
+    movlw   0x80            ; global pullup disable
+    movwf   OPTION_REG
 	banksel	PORTA
-	bsf	PORTA, 5
+	bsf	PORTA, RESET_OUT
 
 ;	tits	GTFO
 
-	clrf	0x24
-	btfsc	PORTC, 2
-	bsf	0x24, 1
+	clrf	reg_scic_present
+	btfsc	PORTC, SCIC_PRESENT_IN
+	bsf     reg_scic_present, bit_scic_present
 
-	clrf	0x23
-	btfss	0x24, 1		; SuperCIC absent?
-	goto	doregion_60	; then set defaults
+	clrf	reg_scic_passthru
+	btfss	reg_scic_present, bit_scic_present      ; SuperCIC absent?
+	goto	doregion_60                             ; then set defaults
 	
-	bsf	0x23, 1		; else enable passthru
+	bsf     reg_scic_passthru, bit_scic_passthru    ; else enable passthru
 
 idle
 ; check region passthru
-	btfss	0x23, 1		; passthru enabled?
+	btfss	reg_scic_passthru, bit_scic_passthru    ; passthru enabled?
 	goto	waitforlatch_h	; 
-	btfsc	PORTA, 3
-	bsf	PORTA, 4
-	btfss	PORTA, 3
-	bcf	PORTA, 4
+	btfsc	PORTA, SCIC_MODE_IN
+	bsf     PORTA, MODE_OUT
+	btfss	PORTA, SCIC_MODE_IN
+	bcf     PORTA, MODE_OUT
 	call	setleds_passthru
 waitforlatch_h	; wait for "latch" to become high
-	btfss	PORTA, 1
+	btfss	PORTA, DATA_LATCH
 	goto	idle
 
 
 waitforlatch_l	; wait for "latch" to become low
-	btfsc	PORTA, 1
+	btfsc	PORTA, DATA_LATCH
 	goto	waitforlatch_l
 
 
-	clrf	0x20
-	clrf	0x21
-	clrf	0x22
-	bcf	STATUS, C	; clear carry
+	clrf	reg_ctrl_data_lsb
+	clrf	reg_ctrl_data_msb
+	clrf	reg_ctrl_data_cnt
+	bcf     STATUS, C	; clear carry
 
 dl1_init ; first data is read on the first falling edge
-	btfsc   PORTA, 2 ; wait for "clk" to become low
+	btfsc   PORTA, DATA_CLK ; wait for "clk" to become low
 	goto    dl1_init
 dl1
-	movf	PORTA, w		;read data bit
-	rlf	0x20, f		;shift
+	movf	PORTA, w                ; read data bit
+	rlf     reg_ctrl_data_msb, f	; shift
 	andlw	0x1	
-	iorwf	0x20, f		;put in data reg
-	incf	0x22, f		;inc bit count
+	iorwf	reg_ctrl_data_msb, f	; put in data reg
+	incf	reg_ctrl_data_cnt, f	; inc bit count
 dl1_wait
-	btfss	PORTA, 2		;wait for clk=h
+	btfss	PORTA, DATA_CLK         ; wait for clk=h
 	goto	dl1_wait
-	btfss	0x22, 3		;first byte done?
+	btfss	reg_ctrl_data_cnt, 3	; first byte done?
 	goto	dl1
-	clrf	0x22
+	clrf	reg_ctrl_data_cnt
 dl2
-	movf	PORTA, w		;read data bit
-	rlf	0x21, f		;shift
+	movf	PORTA, w                ; read data bit
+	rlf     reg_ctrl_data_lsb, f	; shift
 	andlw	0x1	
-	iorwf	0x21, f		;put in data reg
-	incf	0x22, f		;inc bit count
+	iorwf	reg_ctrl_data_lsb, f	; put in data reg
+	incf	reg_ctrl_data_cnt, f	; inc bit count
 dl2_wait
-	btfss	PORTA, 2		;wait for clk=h
+	btfss	PORTA, DATA_CLK         ; wait for clk=h
 	goto	dl2_wait
-	btfss	0x22, 2		; read only 4 bits
+	btfss	reg_ctrl_data_cnt, 2	; read only 4 bits
 	goto	dl2
 
 
@@ -183,109 +203,109 @@ checkkeys
 ; we now have the first 8 bits in 0x20 and the second 4 bits in 0x21
 	; 00011111 00011111 = ABXY, Select, L
 	movlw	0x04
-	xorwf	0x21, w
+	xorwf	reg_ctrl_data_lsb, w
 	btfsc	STATUS, Z
 	goto	group04
 	movlw	0x08
-	xorwf	0x21, w
+	xorwf	reg_ctrl_data_lsb, w
 	btfsc	STATUS, Z
 	goto	group08
 	movlw	0x0c
-	xorwf	0x21, w
+	xorwf	reg_ctrl_data_lsb, w
 	btfsc	STATUS, Z
 	goto	group0c
 	goto	idle
 
 group04
 	movlw	0xdf
-	xorwf	0x20, w
+	xorwf	reg_ctrl_data_msb, w
 	btfss	STATUS, Z
 	goto	idle
 	goto	doregion_60
 
 group08
 	movlw	0xdf
-	xorwf	0x20, w
+	xorwf	reg_ctrl_data_msb, w
 	btfss	STATUS, Z
 	goto	idle
-	btfss	0x24, 1		; SuperCIC absent?
-	goto	doreset_long	; then do long reset
-	goto	doreset_dbl	; else do dbl reset
+	btfss	0x24, bit_scic_present  ; SuperCIC absent?
+	goto	doreset_long            ; then do long reset
+	goto	doreset_dbl             ; else do dbl reset
 
 group0c
 	movlw	0x5f
-	xorwf	0x20, w
+	xorwf	reg_ctrl_data_msb, w
 	btfsc	STATUS, Z
 	goto	doregion_passthru
 	movlw	0x9f
-	xorwf	0x20, w
+	xorwf	reg_ctrl_data_msb, w
 	btfsc	STATUS, Z
 	goto	doregion_50
 	movlw	0xcf
-	xorwf	0x20, w
+	xorwf	reg_ctrl_data_msb, w
 	btfsc	STATUS, Z
 	goto	doreset_normal
 	goto	idle
 
 doreset_normal
 	banksel	TRISA
-	bcf	TRISA, 5
+	bcf     TRISA, RESET_OUT
 	banksel	PORTA
-	bsf	PORTA, 5
+	bsf     PORTA, RESET_OUT
 	movlw	0x15
 	call	longwait
 	banksel TRISA
-	bsf	TRISA, 5
+	bsf     TRISA, RESET_OUT
 	banksel	PORTA
 	goto	idle
 
 doreset_dbl
 	banksel	TRISA
-	bcf	TRISA, 5
+	bcf     TRISA, RESET_OUT
 	banksel	PORTA
-	bsf	PORTA, 5
+	bsf     PORTA, RESET_OUT
 	movlw	0x15
 	call	longwait
 	banksel	TRISA
-	bsf	TRISA, 5
+	bsf     TRISA, RESET_OUT
 	clrw
 	call	longwait
-	bcf	TRISA, 5
+	bcf     TRISA, RESET_OUT
 	movlw	0x15
 	call	longwait
 	banksel	TRISA
-	bsf	TRISA, 5
+	bsf     TRISA, RESET_OUT
 	banksel	PORTA
 	goto	idle
 
 doreset_long
 	banksel	TRISA
-	bcf	TRISA, 5
+	bcf     TRISA, RESET_OUT
 	banksel	PORTA
-	bsf	PORTA, 5
-	movlw	0x1e
+	bsf     PORTA, RESET_OUT
+	movlw	0x1a
 	call	superlongwait
 	banksel	TRISA
-	bsf	TRISA, 5
+	bsf     TRISA, RESET_OUT
 	banksel	PORTA
 	goto	idle
 
 doregion_50
-	bsf	PORTA, 4
-	clrf	0x23
+	bsf     PORTA, MODE_OUT
+	clrf	reg_scic_passthru
 	call	setleds_own
 	goto	idle
 
 doregion_60
-	bcf	PORTA, 4
-	clrf	0x23
+	bcf     PORTA, MODE_OUT
+	clrf	reg_scic_passthru
 	call	setleds_own
 	goto	idle
 
 doregion_passthru
-	clrf	0x23
-	btfsc	0x24, 1		; SuperCIC present?
-	bsf	0x23, 1		; then enable passthru
+	clrf	reg_scic_passthru
+	btfsc	reg_scic_present, bit_scic_present      ; SuperCIC present?
+	bsf     reg_scic_passthru, bit_scic_passthru    ; then enable passthru
 	goto	idle
 
 ; --------wait: 3*(W-1)+7 cycles (including call+return). W=0 -> 256!--------
@@ -317,23 +337,23 @@ superlongwait0
 	return
 
 setleds
-	btfss	0x24, 1
+	btfss	reg_scic_passthru, bit_scic_passthru
 	goto	setleds_own
 setleds_passthru
 	clrw
-	btfsc	PORTC, 0	; green LED	
+	btfsc	PORTC, LED_MODE_50_IN	; green LED
 	iorlw	0x20
-	btfsc	PORTC, 1	; red LED
+	btfsc	PORTC, LED_MODE_60_IN	; red LED
 	iorlw	0x10
 	movwf	PORTC
 	return
 
 setleds_own
-	movlw	0x20		; assume green LED
-	btfss	PORTA, 4
-	movlw	0x10		; if PORTA.4 is low -> red LED
-	btfsc	PORTC, 3	; if common anode:
-	xorlw	0x30		; invert output
+	movlw	0x20                ; assume green LED
+	btfss	PORTA, MODE_OUT
+	movlw	0x10                ; if PORTA.4 is low -> red LED
+	btfsc	PORTC, LED_TYPE_IN	; if common anode:
+	xorlw	0x30                ; invert output
 	movwf	PORTC	
 	return
 END
