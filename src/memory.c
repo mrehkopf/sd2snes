@@ -317,7 +317,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   printf("done\n");
 
-  if(cfg_is_r213f_override_enabled())
+  if(cfg_is_r213f_override_enabled() & (filename != (uint8_t*)"/sd2snes/menu.bin"))
     romprops.fpga_features |= FEAT_213F; /* e.g. for general consoles */
 //  else
 //    romprops.fpga_features &= ~FEAT_213F; /* only for consoles with $213f-D4-Region-Patching (e.g. U16) */
