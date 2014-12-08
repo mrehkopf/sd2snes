@@ -83,8 +83,10 @@ printf("start\n");
           case TYPE_SPC:
           case TYPE_SUBDIR:
           case TYPE_PARENT:
+            /* omit entries with hidden or system attribute */
+            if(fno.fattrib & (AM_HID | AM_SYS)) continue;
             if(fno.fattrib & AM_DIR) {
-              if((fn[0]=='.' && fn[1]==0) || (fno.fattrib & (AM_HID | AM_SYS))) continue; /* omit './' directory */
+              if(fn[0]=='.' && fn[1]!='.') continue; /* omit dot directories except '..' */
               snprintf(buf, sizeof(buf), " <dir>");
             } else {
               entry_fsize = fno.fsize;
@@ -95,6 +97,7 @@ printf("start\n");
               }
               snprintf(buf, sizeof(buf), "% 5ld", entry_fsize);
               strncat(buf, size_units[entry_unit_idx], 1);
+              if(fn[0]=='.') continue; /* omit dot files */
             }
             fnlen = strlen(fn);
             if(fno.fattrib & AM_DIR) {
