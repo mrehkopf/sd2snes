@@ -165,6 +165,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     set_rom_mask(0x3fffff);
     set_mapper(0x7);
     fpga_write_cheat(7, 0xf0);
+    dac_pause();
     uart_putc(')');
     uart_putcrlf();
 
