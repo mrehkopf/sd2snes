@@ -32,7 +32,9 @@
 #include "fpga_spi.h"
 #include "snes.h"
 #include "fpga.h"
+#include "cfg.h"
 
+extern cfg_t CFG;
 snes_romprops_t romprops;
 
 uint32_t hdr_addr[6] = {0xffb0, 0x101b0, 0x7fb0, 0x81b0, 0x40ffb0, 0x4101b0};
@@ -120,6 +122,7 @@ void smc_id(snes_romprops_t* props) {
         props->has_cx4 = 1;
         props->fpga_conf = FPGA_CX4;
         props->fpga_features |= FEAT_CX4;
+        props->fpga_dspfeat = CFG.cx4_speed;
       }
       /* DSP1/1B LoROM */
       else if ((header->map == 0x20 && header->carttype == 0x03) ||
@@ -278,6 +281,15 @@ void smc_id(snes_romprops_t* props) {
 
   if(header->carttype == 0x55) {
     props->fpga_features |= FEAT_SRTC;
+  }
+
+  /* ~12.5MHz for ST0010, 8MHz for DSPx */
+  if(props->has_dspx) {
+    if(props->has_st0010) {
+      props->fpga_dspfeat = 0;
+    } else {
+      props->fpga_dspfeat = 4; /* 4 extra waitstates */
+    }
   }
 
   props->header_address = hdr_addr[score_idx] - props->offset;
