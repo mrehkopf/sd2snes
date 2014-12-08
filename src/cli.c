@@ -477,20 +477,6 @@ void cli_loop(void) {
     curchar = getline(">");
     printf("\n");
 
-    /* Process medium changes before executing the command */
-    if (disk_state != DISK_OK && disk_state != DISK_REMOVED) {
-      FRESULT res;
-
-      printf("Medium changed... ");
-      res = f_mount(0,&fatfs);
-      if (res != FR_OK) {
-        printf("Failed to mount new medium, result %d\n",res);
-      } else {
-        printf("Ok\n");
-      }
-
-    }
-
     /* Remove whitespace */
     while (*curchar == ' ') curchar++;
     while (strlen(curchar) > 0 && curchar[strlen(curchar)-1] == ' ')
