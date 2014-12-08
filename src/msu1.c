@@ -280,6 +280,7 @@ int msu1_loop() {
       msu_audio_bytes_read = MSU_DAC_BUFSIZE;
     }
   }
+  dac_pause();
   f_close(&file_handle);
   DBG_MSU1 printf("Reset ");
   if(msu_res == SNES_RESET_LONG) {
