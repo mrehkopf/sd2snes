@@ -29,7 +29,8 @@ module cheat(
   input pgm_we,
   input [31:0] pgm_in,
   output [7:0] data_out,
-  output cheat_hit
+  output cheat_hit,
+  output snescmd_unlock
 );
 
 reg cheat_enable = 0;
@@ -52,6 +53,10 @@ reg [20:0] usage_count = 21'h1fffff;
 reg [29:0] hook_enable_count = 0;
 reg hook_disable = 0;
 
+reg [3:0] unlock_token = 0;
+reg [5:0] temp_unlock_delay = 0;
+reg temp_vector_unlock = 0;
+
 reg [23:0] cheat_addr[5:0];
 reg [7:0] cheat_data[5:0];
 reg [5:0] cheat_enable_mask;
@@ -72,6 +77,8 @@ wire irq_addr_match = |irq_match_bits;
 
 wire hook_enable = ~|hook_enable_count & ~hook_disable;
 
+assign snescmd_unlock = &unlock_token | temp_vector_unlock;
+
 assign data_out = cheat_match_bits[0] ? cheat_data[0]
                 : cheat_match_bits[1] ? cheat_data[1]
                 : cheat_match_bits[2] ? cheat_data[2]
@@ -83,7 +90,7 @@ assign data_out = cheat_match_bits[0] ? cheat_data[0]
                 : 8'h2b;
 
 assign cheat_hit = (cheat_enable & cheat_addr_match)
-                   | (hook_enable_sync & (((auto_nmi_enable_sync & nmi_enable) & nmi_addr_match) 
+                   | (hook_enable_sync & (((auto_nmi_enable_sync & nmi_enable) & nmi_addr_match)
                                            |((auto_irq_enable_sync & irq_enable) & irq_addr_match)));
 
 always @(posedge clk) usage_count <= usage_count - 1;
@@ -109,6 +116,22 @@ always @(posedge clk) begin
   end
 end
 
+// Temporary allow entry of snescmd area by the CPU, software must then unlock
+// permanently
+always @(posedge clk) begin
+  if(SNES_cycle_start) begin
+    if(nmi_addr_match | irq_addr_match) begin
+      temp_unlock_delay <= 6'd48;
+      temp_vector_unlock <= 1'b1;
+    end else begin
+      if (|temp_unlock_delay) temp_unlock_delay <= temp_unlock_delay - 1;
+      if (temp_unlock_delay == 6'd0) begin
+        temp_vector_unlock <= 1'b0;
+      end
+    end
+  end
+end
+
 // Do not change vectors while they are being read
 always @(posedge clk) begin
   if(SNES_cycle_start) begin
@@ -124,8 +147,20 @@ always @(posedge clk) begin
   end
 end
 
+// write/read inhibit bram area from SNES
 always @(posedge clk) begin
-  if((snescmd_wr_strobe & ~|SNES_ADDR[8:0] & (SNES_DATA == 8'h85))
+  if(snescmd_wr_strobe) begin
+    if(SNES_ADDR[8:0] == 9'h1f4 && SNES_DATA == 8'h48) unlock_token[0] <= 1'b1;
+    else if(SNES_ADDR[8:0] == 9'h1f5 && SNES_DATA == 8'h75) unlock_token[1] <= 1'b1;
+    else if(SNES_ADDR[8:0] == 9'h1f6 && SNES_DATA == 8'h72) unlock_token[2] <= 1'b1;
+    else if(SNES_ADDR[8:0] == 9'h1f7 && SNES_DATA == 8'h7a) unlock_token[3] <= 1'b1;
+    else if(SNES_ADDR[8:2] == 9'b1111101) unlock_token <= 4'b0000;
+  end else if(SNES_reset_strobe) unlock_token <= 4'b0000;
+end
+
+// feature control
+always @(posedge clk) begin
+  if((snescmd_unlock & snescmd_wr_strobe & ~|SNES_ADDR[8:0] & (SNES_DATA == 8'h85))
      | (holdoff_enable & SNES_reset_strobe)) begin
     hook_enable_count <= 30'd880000000;
   end else if (|hook_enable_count) begin
@@ -134,7 +169,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-  if(snescmd_wr_strobe) begin
+  if(snescmd_unlock & snescmd_wr_strobe) begin
     if(~|SNES_ADDR[8:0]) begin
       case(SNES_DATA)
         8'h82: cheat_enable <= 1;
