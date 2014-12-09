@@ -29,6 +29,7 @@
 #define BRAM_CHEATS                 $002B00
 #define NMI_PAD_BUTTONS             $002BD0
 #define NMI_PAD                     $002BF0
+#define BRAM_UNLOCK                 $002BF4
 #define MIRROR_4200                 $002BFA
 #define NMI_RUNMASK                 $002BFC
 #define NMI_VECT_DISABLE            $002BFD

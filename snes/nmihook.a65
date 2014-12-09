@@ -13,11 +13,15 @@ nmi_payload:
   php
   rep #$30 : .al : .xl
   phb
-  pha
-  phx
-  phy
   phk
   plb
+  pha
+  lda #$7548
+  sta !BRAM_UNLOCK
+  lda #$7a72
+  sta !BRAM_UNLOCK+2
+  phx
+  phy
   phd
   lda #$2b00
   tcd
@@ -123,6 +127,8 @@ nmi_patches:
 nmi_exit:
 ; clean up
   pld
+  lda $ffea ; get another 48 cycles of BRAM visibility
+  stz !BRAM_UNLOCK ; disable BRAM visibility for game
   rep #$30 : .al : .xl
   ply
   plx
