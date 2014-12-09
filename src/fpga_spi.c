@@ -131,9 +131,10 @@
          1         enable ST0010 mapping
          0         enable DSPx mapping
 
-        DSP core features (DSP1-4 / ST0010 / OBC1)
+        DSP core features (DSP1-4 / ST0010)
    ==========================================================================
-         currently no configurable features.
+      15-4         -
+       3-0         number of additional clocks per DSP cycle (7+x)
 
         DSP core features (Cx4)
         bit
@@ -448,6 +449,7 @@ void fpga_write_cheat(uint8_t index, uint32_t code) {
 }
 
 void fpga_set_dspfeat(uint16_t feat) {
+  printf("dspfeat <= %d\n", feat);
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_DSPFEAT);
   FPGA_TX_BYTE(feat >> 8);
