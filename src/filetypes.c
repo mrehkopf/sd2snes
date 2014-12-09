@@ -58,9 +58,6 @@ uint16_t scan_dir(const uint8_t *path, const uint32_t base_addr, const SNES_FTYP
   uint32_t ptr_tbl_off = base_addr;
   uint32_t file_tbl_off = base_addr + 0x10000;
   char buf[7];
-  char *size_units[3] = {" ", "k", "M"};
-  uint32_t entry_fsize;
-  uint8_t entry_unit_idx;
   size_t fnlen;
 
   fno.lfsize = 255;
@@ -89,15 +86,8 @@ printf("start\n");
               if(fn[0]=='.' && fn[1]!='.') continue; /* omit dot directories except '..' */
               snprintf(buf, sizeof(buf), " <dir>");
             } else {
-              entry_fsize = fno.fsize;
-              entry_unit_idx = 0;
-              while(entry_fsize > 9999) {
-                entry_fsize >>= 10;
-                entry_unit_idx++;
-              }
-              snprintf(buf, sizeof(buf), "% 5ld", entry_fsize);
-              strncat(buf, size_units[entry_unit_idx], 1);
               if(fn[0]=='.') continue; /* omit dot files */
+              make_filesize_string(buf, fno.fsize);
             }
             fnlen = strlen(fn);
             if(fno.fattrib & AM_DIR) {
@@ -197,4 +187,16 @@ void sort_all_dir(uint32_t endaddr) {
     current_base += 4*entries + 4;
     entries = 0;
   }
+}
+
+void make_filesize_string(char *buf, uint32_t size) {
+  char *size_units[3] = {" ", "k", "M"};
+  uint32_t fsize = size;
+  uint8_t unit_idx = 0;
+  while(fsize > 9999) {
+    fsize >>= 10;
+    unit_idx++;
+  }
+  snprintf(buf, 6, "% 5ld", fsize);
+  strncat(buf, size_units[unit_idx], 1);
 }
