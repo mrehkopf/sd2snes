@@ -356,6 +356,8 @@ spi snes_spi(
   .bit_cnt(spi_bit_cnt)
 );
 
+wire [15:0] dsp_feat;
+
 upd77c25 snes_dspx (
   .DI(DSPX_SNES_DATA_IN),
   .DO(DSPX_SNES_DATA_OUT),
@@ -373,7 +375,8 @@ upd77c25 snes_dspx (
   .DAT_DI(dspx_dat_data),
   .DAT_WR_ADDR(dspx_dat_addr),
   .DP_enable(dspx_dp_enable),
-  .DP_ADDR(SNES_ADDR[10:0])
+  .DP_ADDR(SNES_ADDR[10:0]),
+  .dsp_feat(dsp_feat)
 );
 
 reg [7:0] MCU_DINr;
@@ -449,7 +452,7 @@ mcu_cmd snes_mcu_cmd(
   .cheat_pgm_idx_out(cheat_pgm_idx),
   .cheat_pgm_data_out(cheat_pgm_data),
   .cheat_pgm_we_out(cheat_pgm_we),
-  .DBG_mcu_nextaddr(DBG_mcu_nextaddr)
+  .dsp_feat_out(dsp_feat)
 );
 
 wire [7:0] DCM_STATUS;
@@ -505,6 +508,7 @@ cheat snes_cheat(
   .pgm_we(cheat_pgm_we),
   .pgm_in(cheat_pgm_data),
   .data_out(cheat_data_out),
+  .cheat_hit(cheat_hit),
   .cheat_hit(cheat_hit)
 );
 

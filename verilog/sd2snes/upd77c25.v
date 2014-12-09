@@ -38,6 +38,8 @@ module upd77c25(
   input DP_enable,
   input [10:0] DP_ADDR,
 
+  input [15:0] dsp_feat,
+
   // debug
   output [15:0] updDR,
   output [15:0] updSR,
@@ -143,9 +145,9 @@ upd77c25_datram datram (
   .dinb(DI), // input [7 : 0] dinb
   .doutb(DP_DO) // output [7 : 0] doutb
 );
-assign ram_wea = ((op != I_JP) && op_dst == 4'b1111 && insn_state == STATE_IDLE1);
+assign ram_wea = ((op != I_JP) && op_dst == 4'b1111 && insn_state == STATE_NEXT);
 assign ram_addra = {regs_dpb,
-                    regs_dph | ((insn_state == STATE_ALU1 && op_dst == 4'b1100)
+                    regs_dph | ((|(insn_state & (STATE_ALU1 | STATE_ALU2)) && op_dst == 4'b1100)
                                 ? 4'b0100
                                 : 4'b0000),
                     regs_dpl};
@@ -181,6 +183,8 @@ reg [10:0] stack [15:0];
 reg [15:0] idb;
 
 reg [15:0] regs_ab [1:0];
+
+reg [3:0] cpu_wait = 0;
 
 assign updDR = regs_dr;
 assign updSR = regs_sr;
@@ -383,7 +387,7 @@ always @(posedge CLK) begin
         endcase
       end
       STATE_ALU1: begin
-        insn_state <= STATE_STORE;
+        insn_state <= STATE_ALU2;
         case(op)
           I_OP, I_RT: begin
             alu_q <= regs_ab[op_asl];
@@ -441,11 +445,11 @@ always @(posedge CLK) begin
           end
         endcase
       end
-//      STATE_ALU2: begin
-//        insn_state <= STATE_STORE;
-//      end
+      STATE_ALU2: begin
+        insn_state <= STATE_STORE;
+      end
       STATE_STORE: begin
-        insn_state <= STATE_IDLE1;
+        insn_state <= STATE_NEXT;
         if(op[1] == 1'b0) begin
           case(op_alu)
             4'b0001: alu_r <= alu_q | alu_p;
@@ -561,11 +565,14 @@ always @(posedge CLK) begin
             pc <= pc + 1;
           end
         endcase
+        cpu_wait <= dsp_feat[3:0];
       end
 
-//      STATE_NEXT: begin
-//        insn_state <= STATE_IDLE1;
-//      end
+      STATE_NEXT: begin
+        insn_state <= STATE_NEXT;
+        if(~|cpu_wait) insn_state <= STATE_IDLE1;
+        cpu_wait <= cpu_wait - 1;
+      end
 
       STATE_IDLE1: begin
         insn_state <= STATE_FETCH;
