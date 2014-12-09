@@ -23,7 +23,6 @@ nmi_payload:
   tcd
 ; backup vectors
   sep #$20 : .as
-  bit $4211
   lda #$01
   sta <NMI_VECT_DISABLE ; disable vector patching
 ; fill in jump addresses above ("$ffff")
