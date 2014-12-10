@@ -1,0 +1,23 @@
+#define hash #
+#define f(x) x
+#define imm(a) f(hash)a
+
+#define AllocStack(bytes) \
+  phd \
+: tsc \
+: sec \
+: sbc imm(bytes) \
+: tcs \
+: inc \
+: tcd
+
+#define FreeStack(bytes) \
+  tsc \
+: clc \
+: adc imm(bytes) \
+: tcs \
+: pld
+
+#define ParamJmp(localStack, offset) localStack+offset+$03
+#define ParamJml(localStack, offset) localStack+offset+$04
+

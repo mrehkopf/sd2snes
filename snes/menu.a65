@@ -1,6 +1,158 @@
 #include "memmap.i65"
 #include "dma.i65"
+#include "stack.i65"
 
+; menu entry structure:
+; 1 byte  entry type (see below)
+; 3 bytes  long pointer to menu entry text
+; 3 bytes  long pointer to routine / submenu structure / preset table
+; 1 byte  data type of parameter (see below)
+; 3 bytes  long pointer to parameter (of data type above)
+
+; entry types:
+; 00  termination
+; 01  function call
+; 02  submenu
+
+; data types:
+; 00  no parameter
+; 01  unsigned char
+; 02  unsigned short
+; 03  string literal (C type string)
+; 04  multiple choice (key-value table - 8-bit key)
+; 05  multiple choice (key-value table - 16-bit key)
+; 06  file select
+
+; parameter is displayed when data type is not 0
+
+; preset table/value:
+; data types 01,02: two 16-bit values - (min, max)
+;                   unlimited if both values == $0000
+; data type     03: one 16-bit value  - max string length
+; data type  04,05: table of tuples of two 16-bit entries
+;                   (setting value, pointer to value C-string)
+; data type     06: 3 bytes - long pointer to file path
+;                   1 byte - file type mask
+
+; menu entry data
+main_entries .byt 2
+main_enttab
+; Configuration sub menu
+;  .byt MTYPE_SUBMENU
+  .word !mtext_cfg_time
+  .byt ^mtext_cfg_time
+  .word !time_init-1
+  .byt ^time_init
+  .byt 1, 0;, 0, 0
+; System Information
+;  .byt MTYPE_FUNC
+  .word !mtext_mm_sysinfo
+  .byt ^mtext_mm_sysinfo
+  .word !show_sysinfo-1
+  .byt ^show_sysinfo
+  .byt 1, 0, 0, 0
+; termination
+  .byt 0
+; submenu test
+;  .word !text_mm_submenutest
+;  .byt ^text_mm_submenutest
+;  .word !mm_submenutest
+;  .byt ^mm_submenutest
+;  .byt 2, 0
+
+mainmenu:
+  php
+  sep #$20 : .as
+  stz listsel_sel
+  stz mm_tmp
+  lda #^text_mainmenu
+  sta window_tbank
+  ldx #!text_mainmenu
+  stx window_taddr
+  lda @main_win_x
+  sta window_x
+  lda @main_win_y
+  sta window_y
+  lda @main_win_w
+  sta window_w
+  lda @main_win_h
+  sta window_h
+  lda @main_entries
+  sta listsel_max
+  lda #$02
+  sta listsel_step  ; XXX TODO put step in menu structure
+  jsr push_window
+  jsr draw_window
+mm_redraw
+  stz print_pal
+  ldx #!main_enttab
+mm_entloop
+  lda #^main_enttab
+  phb
+  pha
+  plb
+  lda !0, x
+  sta @print_src
+  lda !1, x
+  sta @print_src+1
+  lda !2, x
+  sta @print_bank
+  lda @mm_tmp
+  asl
+  clc
+  adc @main_win_y
+  inc
+  inc
+  sta @print_y
+  lda @main_win_x
+  inc
+  inc
+  sta @print_x
+  plb
+  phx
+  jsr hiprint
+  rep #$20 : .al
+  pla
+  clc
+  adc #$08
+  tax
+  sep #$20 : .as
+  inc mm_tmp
+  lda mm_tmp
+  cmp @main_entries
+  bne mm_entloop
+  stz mm_tmp
+mm_menuloop
+  jsr menu_select_noinit
+  cmp #$ff
+  beq mm_exit
+  jsr mm_select
+  bra mm_menuloop
+mm_exit
+  jsr pop_window
+  plp
+  rts
+
+mm_select
+; push return bank and address for subroutine
+  phk
+  per mm_select_return-1
+  xba
+  lda #$00
+  xba
+  asl
+  asl
+  asl
+  tax
+  lda @main_enttab+5, x
+  pha           ; push subroutine bank
+  rep #$20 : .al
+  lda @main_enttab+3, x
+  pha           ; push subroutine addr
+  sep #$20 : .as
+  rtl           ; jump to subroutine
+mm_select_return
+  rts
 ; helper routine to select a list entry
 ; window and list items must be printed in advance
 ; used variables:
@@ -84,3 +236,76 @@ menu_select_exit
   plp
   rts
 
+
+show_menu:
+  php
+    rep #$30 : .al : .xl
+    AllocStack(4)
+    lda $6, s
+    tax
+    sep #$20 : .as
+    lda $8, s
+    phb
+      pha
+      plb
+      jsr menu_measure : .al ; returns with m=0
+      txa
+      sta $3, s
+      tya
+      sta $5, s
+    plb
+    FreeStack(4)
+  plp
+  rts
+
+; params:
+; x: offset of menu structure
+; db: bank of menu structure
+; returns:
+; y: number of menu entries
+; x: maximum menu entry string length
+.byt "HURR I AM STECK"
+menu_measure:
+  rep #$30 : .xl : .al
+  ldy #$0000
+; ==== WORKING VARIABLES ON STACK ====
+  AllocStack(2)          ; implies PHD
+#define _max_entry_len $00
+  stz _max_entry_len     ; initialize variable
+; ====================================
+menu_measure_line_loop:
+    lda !$0, x           ; read menu entry type
+    and #$00ff           ; (mask)
+    beq menu_measure_out ; termination -> exit
+    iny                  ; entry counter
+    phy
+      lda !$2, x         ; resolve pointer to menu entry text
+      tay
+      lda !$1, x
+      phb
+        sep #$20 : .as
+        pha
+        plb
+-       lda !$0, y       ; count characters
+        beq +
+        iny
+        bra -
++     plb
+      rep #$20 : .al
+      tya
+      sec
+      sbc !$2, x         ; subtract pointer
+      cmp _max_entry_len ; replace max value with
+      bmi +              ; new length
+      sta _max_entry_len ; if bigger or equal.
++     txa                ; move to next entry.
+      clc
+      adc #11
+      tax
+    ply
+    bra menu_measure_line_loop
+menu_measure_out:
+  plx                    ; var: max_string_length
+  pld
+  rts
+#undef max_string_len
