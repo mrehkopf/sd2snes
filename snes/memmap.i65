@@ -93,6 +93,15 @@
 
 #define MTYPE_FUNC                  $01
 #define MTYPE_SUBMENU               $02
+#define MTYPE_VALUE                 $03
+
+#define OPTTYPE_NONE                $00
+#define OPTTYPE_BYTE                $01
+#define OPTTYPE_WORD                $02
+#define OPTTYPE_STRING              $03
+#define OPTTYPE_KVBYTE              $04
+#define OPTTYPE_KVWORD              $05
+#define OPTTYPE_FILESEL             $06
 
 #define VIDMODE_NTSC                $00
 #define VIDMODE_PAL                 $01

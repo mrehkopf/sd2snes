@@ -2,157 +2,23 @@
 #include "dma.i65"
 #include "stack.i65"
 
-; menu entry structure:
-; 1 byte  entry type (see below)
-; 3 bytes  long pointer to menu entry text
-; 3 bytes  long pointer to routine / submenu structure / preset table
-; 1 byte  data type of parameter (see below)
-; 3 bytes  long pointer to parameter (of data type above)
-
-; entry types:
-; 00  termination
-; 01  function call
-; 02  submenu
-
-; data types:
-; 00  no parameter
-; 01  unsigned char
-; 02  unsigned short
-; 03  string literal (C type string)
-; 04  multiple choice (key-value table - 8-bit key)
-; 05  multiple choice (key-value table - 16-bit key)
-; 06  file select
-
-; parameter is displayed when data type is not 0
-
-; preset table/value:
-; data types 01,02: two 16-bit values - (min, max)
-;                   unlimited if both values == $0000
-; data type     03: one 16-bit value  - max string length
-; data type  04,05: table of tuples of two 16-bit entries
-;                   (setting value, pointer to value C-string)
-; data type     06: 3 bytes - long pointer to file path
-;                   1 byte - file type mask
-
-; menu entry data
-main_entries .byt 2
-main_enttab
-; Configuration sub menu
-;  .byt MTYPE_SUBMENU
-  .word !mtext_cfg_time
-  .byt ^mtext_cfg_time
-  .word !time_init-1
-  .byt ^time_init
-  .byt 1, 0;, 0, 0
-; System Information
-;  .byt MTYPE_FUNC
-  .word !mtext_mm_sysinfo
-  .byt ^mtext_mm_sysinfo
-  .word !show_sysinfo-1
-  .byt ^show_sysinfo
-  .byt 1, 0, 0, 0
-; termination
-  .byt 0
-; submenu test
-;  .word !text_mm_submenutest
-;  .byt ^text_mm_submenutest
-;  .word !mm_submenutest
-;  .byt ^mm_submenutest
-;  .byt 2, 0
-
 mainmenu:
-  php
   sep #$20 : .as
-  stz listsel_sel
-  stz mm_tmp
-  lda #^text_mainmenu
-  sta window_tbank
-  ldx #!text_mainmenu
-  stx window_taddr
-  lda @main_win_x
+  rep #$10 : .xl
+  lda #$08
   sta window_x
-  lda @main_win_y
+  lda #$09
   sta window_y
-  lda @main_win_w
-  sta window_w
-  lda @main_win_h
-  sta window_h
-  lda @main_entries
-  sta listsel_max
-  lda #$02
-  sta listsel_step  ; XXX TODO put step in menu structure
-  jsr push_window
-  jsr draw_window
-mm_redraw
-  stz print_pal
-  ldx #!main_enttab
-mm_entloop
-  lda #^main_enttab
   phb
-  pha
+    lda #^menu_enttab_mm
+    pha
+    plb
+    ldx #!menu_enttab_mm
+    jsr show_menu
   plb
-  lda !0, x
-  sta @print_src
-  lda !1, x
-  sta @print_src+1
-  lda !2, x
-  sta @print_bank
-  lda @mm_tmp
-  asl
-  clc
-  adc @main_win_y
-  inc
-  inc
-  sta @print_y
-  lda @main_win_x
-  inc
-  inc
-  sta @print_x
-  plb
-  phx
-  jsr hiprint
-  rep #$20 : .al
-  pla
-  clc
-  adc #$08
-  tax
-  sep #$20 : .as
-  inc mm_tmp
-  lda mm_tmp
-  cmp @main_entries
-  bne mm_entloop
-  stz mm_tmp
-mm_menuloop
-  jsr menu_select_noinit
-  cmp #$ff
-  beq mm_exit
-  jsr mm_select
-  bra mm_menuloop
-mm_exit
-  jsr pop_window
-  plp
   rts
 
-mm_select
-; push return bank and address for subroutine
-  phk
-  per mm_select_return-1
-  xba
-  lda #$00
-  xba
-  asl
-  asl
-  asl
-  tax
-  lda @main_enttab+5, x
-  pha           ; push subroutine bank
-  rep #$20 : .al
-  lda @main_enttab+3, x
-  pha           ; push subroutine addr
-  sep #$20 : .as
-  rtl           ; jump to subroutine
-mm_select_return
-  rts
+; menu_select:
 ; helper routine to select a list entry
 ; window and list items must be printed in advance
 ; used variables:
@@ -163,7 +29,6 @@ mm_select_return
 ;
 ; return value: index of selected item in A
 ;               or #$FF if no item was selected
-
 menu_select:
   php
   sep #$20 : rep #$10 : .as : .xl
@@ -237,75 +102,431 @@ menu_select_exit
   rts
 
 
+.byt "SHOW_MENU"
 show_menu:
-  php
-    rep #$30 : .al : .xl
-    AllocStack(4)
-    lda $6, s
+; params:
+; x: offset of menu structure
+; db: bank of menu structure
+; local vars:
+#define _work_vars      $0a
+#define w_numentries    $00
+#define w_max_lbl_len   $02
+#define w_max_opt_len   $04
+#define w_menu_addr     $06
+#define w_menu_bank     $08
+  AllocStack()
+; backup params
+  sep #$20 : .as
+  phb
+  pla
+  sta w_menu_bank
+  stx w_menu_addr
+  jsr menu_measure      ; determine required window dimensions
+  sep #$20 : .as
+  lda #$80
+  phb
+;show_menu_loop:
+    pha
+    plb
+    lda w_numentries
+    sta $211b
+    stz $211b
+    lda [w_menu_addr] ; listsel_step from menu structure
+    sta $211c
+    lda $2134
+    sec
+    sbc [w_menu_addr] ; listsel_step from menu structure
+    inc
+    clc
+    adc #$04
+    sta window_h
+    lda w_max_lbl_len
+    adc w_max_opt_len
+    adc #$04
+    ldx w_max_opt_len
+    beq +
+    inc
+    inc
+    inc
++   sta window_w
+    jsr push_window
+    lda [w_menu_addr]
+    sta listsel_step
+    stz listsel_sel
+    ldy #$0001
+    rep #$20 : .al
+    lda [w_menu_addr], y
+    sta window_taddr
+    sep #$20 : .as
+    iny
+    iny
+    lda [w_menu_addr], y
+    sta window_tbank
+    jsr draw_window
+    phb
+      lda w_menu_bank
+      pha
+      plb
+      ldx w_menu_addr
+      lda w_max_lbl_len
+      pha
+      jsr menu_print_entries
+      pla
+    plb
+    lda w_numentries
+    sta listsel_max
+show_menu_loop:
+    jsr menu_select_noinit
+    cmp #$ff
+    beq show_menu_out
+    sta $211b
+    stz $211b
+    lda #11
+    sta $211c
+    rep #$20 : .al
+    lda $2134
+    clc
+    adc #$04
+    tay
+    lda [w_menu_addr], y
+    and #$00ff
+    iny
+    iny
+    iny
+    iny
+    cmp #MTYPE_SUBMENU
+    beq show_menu_submenu
+    cmp #MTYPE_FUNC
+    beq show_menu_func
+show_menu_cont:
+    sep #$20 : .as
+;    jsr pop_window
+    jmp show_menu_loop
+show_menu_out:
+    sep #$20 : .as
+    jsr pop_window
+  plb
+  FreeStack()
+  rts
+
+show_menu_submenu:
+    .al
+    lda [w_menu_addr], y
     tax
     sep #$20 : .as
-    lda $8, s
+    lda @window_x
+    inc
+    inc
+    sta @window_x
+    lda @window_y
+    inc
+    sta @window_y
+    iny
+    iny
+    lda [w_menu_addr], y
     phb
       pha
       plb
-      jsr menu_measure : .al ; returns with m=0
-      txa
-      sta $3, s
-      tya
-      sta $5, s
+      jsr show_menu
     plb
-    FreeStack(4)
-  plp
-  rts
+    bra show_menu_cont
+
+show_menu_func:
+    phk
+    per show_menu_cont-1
+    rep #$20 : .al
+    lda [w_menu_addr], y
+    tax
+    sep #$20 : .as
+    iny
+    iny
+    lda [w_menu_addr], y
+    pha
+    phx
+    rtl
+#undef _work_vars
 
 ; params:
 ; x: offset of menu structure
 ; db: bank of menu structure
 ; returns:
-; y: number of menu entries
-; x: maximum menu entry string length
-.byt "HURR I AM STECK"
+; number of menu entries
+; maximum menu label string length
+; maximum menu option string length
+.byt "MENU_MEASURE"
 menu_measure:
-  rep #$30 : .xl : .al
-  ldy #$0000
+; local variables
+#define _work_vars      $02
+#define w_max_kv_len    $00
+; ==== return variables (same as parameter variables at the caller)
+#define r_numentries    $00
+#define r_max_lbl_len   $02
+#define r_max_opt_len   $04
 ; ==== WORKING VARIABLES ON STACK ====
-  AllocStack(2)          ; implies PHD
-#define _max_entry_len $00
-  stz _max_entry_len     ; initialize variable
+  AllocStack()           ; implies PHP : PHD
+  stz StackParam(r_max_lbl_len) ; initialize variable
+  stz StackParam(r_max_opt_len) ; initialize variable
+  stz StackParam(r_numentries)
+  stz w_max_kv_len
 ; ====================================
 menu_measure_line_loop:
-    lda !$0, x           ; read menu entry type
-    and #$00ff           ; (mask)
-    beq menu_measure_out ; termination -> exit
-    iny                  ; entry counter
-    phy
-      lda !$2, x         ; resolve pointer to menu entry text
-      tay
-      lda !$1, x
-      phb
-        sep #$20 : .as
-        pha
-        plb
--       lda !$0, y       ; count characters
-        beq +
-        iny
-        bra -
-+     plb
-      rep #$20 : .al
-      tya
-      sec
-      sbc !$2, x         ; subtract pointer
-      cmp _max_entry_len ; replace max value with
-      bmi +              ; new length
-      sta _max_entry_len ; if bigger or equal.
-+     txa                ; move to next entry.
-      clc
-      adc #11
-      tax
-    ply
-    bra menu_measure_line_loop
+  lda !$4, x           ; read menu entry type
+  and #$00ff           ; (mask)
+  beq menu_measure_out ; termination -> exit
+  inc StackParam(r_numentries) ; entry counter
+  phb
+    sep #$20 : .as
+    ldy !$5, x         ; resolve pointer to menu entry text
+    lda !$7, x
+    pha
+    plb
+    jsr strlen
+  plb
+  lda !$4, x
+  cmp #MTYPE_SUBMENU    ; add 2 chars for '...' on sub menu entries
+  bne +
+  iny
+  iny
++ rep #$20 : .al
+  cpy StackParam(r_max_lbl_len); replace max value with
+  bmi +                        ; new length
+  sty StackParam(r_max_lbl_len); if bigger or equal.
++ jsr menu_meas_opt            ; calculate max option string length
+                               ; move to next entry.
+  txa
+  clc
+  adc #11
+  tax
+  bra menu_measure_line_loop
 menu_measure_out:
-  plx                    ; var: max_string_length
-  pld
+  FreeStack()
   rts
-#undef max_string_len
+
+menu_meas_no_set:
+  .as
+  lda #$00
+  jmp menu_meas_opt_set
+menu_meas_opt:
+  sep #$20 : .as
+  lda !$4, x         ; calculate space needed to show options
+  cmp #MTYPE_VALUE   ; only for "value set" entry types
+  bne menu_meas_no_set
+  lda !$b, x
+  beq menu_meas_no_set ; no option
+  cmp #$01           ; uint8
+  bne menu_meas_opt_02
+  lda #$03           ; "0"-"255" - 3 chars
+  bra menu_meas_opt_set
+menu_meas_opt_02
+  cmp #$02           ; uint16
+  bne menu_meas_opt_03
+  lda #$05           ; "0"-"65535" - 5 chars
+  bra menu_meas_opt_set
+menu_meas_opt_03
+  cmp #$03           ; string (free entry)
+  bne menu_meas_opt_04
+  lda !$8, x         ; load length constraint
+  bra menu_meas_opt_set
+menu_meas_opt_04
+  cmp #$04           ; key-value (8bit)
+  beq menu_meas_opt_keyval
+  cmp #$05           ; key-value (16bit)
+  beq menu_meas_opt_keyval
+  bra menu_meas_opt_06
+menu_meas_opt_keyval ; count max value length
+  phb
+    ldy !$8, x       ; get pointer to
+    lda !$a, x       ; key-value table
+    pha
+    plb
+    rep #$20 : .al
+menu_meas_opt_nextkey
+    lda !$0, y        ; get key
+    cmp #$ffff
+    beq +
+    iny
+    iny              ; move to value
+    phy
+      lda !$0, y     ; get pointer to string
+      tay
+      jsr strlen     ; get length
+      cpy w_max_kv_len ; compare-replace
+      bmi menu_meas_opt_keyval_skip
+      sty w_max_kv_len
+menu_meas_opt_keyval_skip
+    ply
+    iny              ; move to next key
+    iny
+    bra menu_meas_opt_nextkey
++
+  plb
+  lda w_max_kv_len
+  bra menu_meas_opt_set
+menu_meas_opt_06      ; file select (16 characters)
+  lda #$10
+  bra menu_meas_opt_set
+menu_meas_opt_set
+  cmp StackParam(r_max_opt_len)
+  bmi +
+  sta StackParam(r_max_opt_len)
++ rep #$20 : .al
+  rts
+#undef _work_vars
+
+.byt "MENU_PRINT_ENTRIES"
+menu_print_entries:
+#define _work_vars      $00
+; params
+; x: address of menu entry structure
+; db: bank of menu entry structure
+#define p_max_lbl_len   $00
+  AllocStack()
+  sep #$20 : .as
+  lda @window_y
+  inc
+  inc
+  sta @print_y
+  lda @window_w
+  sta @print_count
+menu_print_ent_loop:
+  lda @window_x
+  inc
+  inc
+  sta @print_x
+  lda !4, x
+  bne +
+  jmp menu_print_ent_out
++ lda !5, x
+  sta @print_src
+  lda !6, x
+  sta @print_src+1
+  lda !7, x
+  sta @print_bank
+  lda #$00
+  sta @print_pal
+  phx
+  jsr hiprint
+  plx
+  lda !4, x
+  cmp #MTYPE_SUBMENU
+  bne +
+  lda @print_done
+  adc @print_x
+  dec
+  sta @print_x
+  lda #<text_ellipse
+  sta @print_src
+  lda #>text_ellipse
+  sta @print_src+1
+  lda #^text_ellipse
+  sta @print_bank
+  phx
+  jsr hiprint
+  plx
++ lda StackParam(p_max_lbl_len)
+  clc
+  adc @window_x
+  adc #$05
+  sta @print_x
+  jsr menu_print_opt_string
+  rep #$20 : .al
+  txa
+  clc
+  adc #11
+  tax
+  sep #$20 : .as
+  lda @print_y
+  clc
+  adc @listsel_step
+  sta @print_y
+  jmp menu_print_ent_loop
+menu_print_ent_out:
+  FreeStack()
+  rts
+#undef _work_vars
+
+.byt "MENU_PRINT_OPT_STRING"
+menu_print_opt_string_none:
+  jmp menu_print_opt_string_out
+menu_print_opt_string:
+; params
+; x: address of menu entry structure
+; db: bank of menu entry structure
+#define _work_vars   $03
+#define w_entry_addr $00
+#define w_entry_bank $02
+  AllocStack()
+  rep #$20 : .al
+  lda !$c, x
+  sta w_entry_addr
+  lda #!stringbuf
+  sta @print_src
+  sep #$20 : .as
+  lda #$02
+  sta @print_pal
+  lda #^stringbuf
+  sta @print_bank
+  lda !$e, x
+  sta w_entry_bank
+  lda !$4, x
+  cmp #MTYPE_VALUE
+  bne menu_print_opt_string_none
+  lda !$b, x
+  beq menu_print_opt_string_none
+  cmp #$01
+  bne menu_print_opt_string_02
+  rep #$20 : .al
+  lda [w_entry_addr]
+  and #$00ff
+  phx
+  jsr bin2dec16
+  lda @print_src
+  inc
+  inc
+  sta @print_src
+  jsr hiprint
+  plx
+  jmp menu_print_opt_string_out
+menu_print_opt_string_02:
+  .as
+  cmp #$02
+  bne menu_print_opt_string_03
+  rep #$20 : .al
+  lda [w_entry_addr]
+  phx
+  jsr bin2dec16
+  jsr hiprint
+  plx
+  jmp menu_print_opt_string_out
+menu_print_opt_string_03:
+  .as
+  cmp #$03
+  bne menu_print_opt_string_04
+  lda 
+menu_print_opt_string_04:
+  .as
+  cmp #$04
+  beq menu_print_opt_string_keyval
+  cmp #$05
+  beq menu_print_opt_string_keyval
+  bra menu_print_opt_string_06
+menu_print_opt_string_keyval:
+menu_print_opt_string_06:
+  sep #$20 : .as
+  lda #$41
+  sta @stringbuf
+  lda #$00
+  sta @stringbuf+1
+  lda #^stringbuf
+  sta @print_bank
+  lda #$02
+  sta @print_pal
+  rep #$20 : .al
+  lda #!stringbuf
+  sta @print_src
+  phx
+  jsr hiprint
+  plx
+menu_print_opt_string_out:
+  FreeStack()
+  rts

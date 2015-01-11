@@ -2,22 +2,28 @@
 #define f(x) x
 #define imm(a) f(hash)a
 
-#define AllocStack(bytes) \
-  phd \
+// Allocate memory on stack and place DP at top
+// DESTROYS ACCUMULATOR
+#define AllocStack() \
+  php \
+: rep imm($20) : .al \
+: phd \
 : tsc \
 : sec \
-: sbc imm(bytes) \
+: sbc imm(_work_vars) \
 : tcs \
 : inc \
 : tcd
 
-#define FreeStack(bytes) \
+// Free memory on stack and restore DP
+// DESTROYS ACCUMULATOR
+#define FreeStack() \
   tsc \
+: rep imm($20) : .al \
 : clc \
-: adc imm(bytes) \
+: adc imm(_work_vars) \
 : tcs \
-: pld
+: pld \
+: plp
 
-#define ParamJmp(localStack, offset) localStack+offset+$03
-#define ParamJml(localStack, offset) localStack+offset+$04
-
+#define StackParam(offset) _work_vars+offset+$02+$02+$01

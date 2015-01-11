@@ -15,16 +15,19 @@
 
 hiprint:
   php
+  phd
   sep #$20 : .as
   rep #$10 : .xl
-  ldx print_src
-  stx print_ptr
-  lda print_bank
-  sta print_ptr+2
+  pea $0000
+  pld
   phb
   lda #$7e
   pha
   plb
+  ldx print_src
+  stx print_ptr
+  lda print_bank
+  sta print_ptr+2
   rep #$30 : .al : .xl
   lda print_pal
   and #$00ff
@@ -76,7 +79,6 @@ hiprint_bg1
   beq hiprint_end
   bra hiprint_bg2
 hiprint_end
-  plb
   sep #$20 : .as
   lda [print_ptr]
   sta print_over
@@ -86,6 +88,8 @@ hiprint_end
   eor #$ff
   inc
   sta print_done
+  plb
+  pld
   plp
   rts
 
@@ -171,7 +175,6 @@ draw_window:
   phb
   php
   sep #$20 : .as
-
 ; draw upper border
 ; upper left corner
   lda @window_nw
@@ -369,6 +372,10 @@ draw_loading_window:
 push_window:
   phb
   php
+  sep #$20 : .as
+  lda #$80
+  pha
+  plb
   rep #$30 : .al : .xl
 ; write pointer to current head
   lda window_stack_head
@@ -494,6 +501,10 @@ pushw_write_element
 pop_window:
   phb
   php
+  sep #$20 : .as
+  lda #$80
+  pha
+  plb
   rep #$30 : .al : .xl
 ; write pointer to current head
   lda window_stack_head
