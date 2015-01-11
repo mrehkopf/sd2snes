@@ -29,6 +29,7 @@
 #define BRAM_CHEATS                 $002B00
 #define NMI_PAD_BUTTONS             $002BD0
 #define NMI_PAD                     $002BF0
+#define BRAM_UNLOCK                 $002BF4
 #define MIRROR_4200                 $002BFA
 #define NMI_RUNMASK                 $002BFC
 #define NMI_VECT_DISABLE            $002BFD
@@ -92,6 +93,15 @@
 
 #define MTYPE_FUNC                  $01
 #define MTYPE_SUBMENU               $02
+#define MTYPE_VALUE                 $03
+
+#define OPTTYPE_NONE                $00
+#define OPTTYPE_BYTE                $01
+#define OPTTYPE_WORD                $02
+#define OPTTYPE_STRING              $03
+#define OPTTYPE_KVBYTE              $04
+#define OPTTYPE_KVWORD              $05
+#define OPTTYPE_FILESEL             $06
 
 #define VIDMODE_NTSC                $00
 #define VIDMODE_PAL                 $01

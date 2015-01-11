@@ -1,0 +1,168 @@
+; menu entry structure:
+; HEADER:
+; 1 byte   line spacing for menu display
+; 3 bytes  long pointer to menu window title
+;
+; ENTRIES:
+; 1 byte   entry type (see below)
+; 3 bytes  long pointer to menu entry text
+; 3 bytes  long pointer to routine / submenu structure / preset table
+; 1 byte   data type of parameter (see below)
+; 3 bytes  long pointer to parameter (of data type above)
+
+; entry types:
+; 00  termination
+; 01  function call
+; 02  submenu
+; 03  value setting
+
+; data types:
+; 00  no parameter
+; 01  unsigned char
+; 02  unsigned short
+; 03  string literal (C type string)
+; 04  multiple choice (key-value table - 8-bit key)
+; 05  multiple choice (key-value table - 16-bit key)
+; 06  file select
+
+; parameter is displayed when data type is not 0
+
+; preset table/value:
+; data types 01,02: two 16-bit values - (min, max)
+;                   unlimited if both values == $0000
+; data type     03: one 16-bit value  - max string length
+; data type  04,05: table of tuples of two 16-bit entries
+;                   (setting value, pointer to value C-string)
+;                   (val=$ffff terminates)
+; data type     06: 3 bytes - long pointer to file path
+;                   1 byte - file type mask
+
+#include "memmap.i65"
+
+menu_enttab_mm:
+; HEADER
+ .byt  2              ; listsel_step=2
+ .word !text_mainmenu ; window title
+ .byt  ^text_mainmenu ; for this menu
+; ENTRIES
+ .byt  MTYPE_FUNC
+ .word !text_mm_last
+ .byt  ^text_mm_last
+ .word !select_last_file-1
+ .byt  ^select_last_file-1
+ .byt  0
+ .byt  0,0,0
+
+ .byt  MTYPE_FUNC
+ .word !mtext_mm_sysinfo
+ .byt  ^mtext_mm_sysinfo
+ .word !show_sysinfo-1
+ .byt  ^show_sysinfo-1
+ .byt  0
+ .byt  0,0,0
+
+ .byt  MTYPE_SUBMENU
+ .word !mtext_mm_cfg
+ .byt  ^mtext_mm_cfg
+ .word !menu_enttab_cfg
+ .byt  ^menu_enttab_cfg
+ .byt  0
+ .byt  0,0,0
+
+ .byt  0
+
+menu_enttab_cfg:
+; HEADER
+ .byt 2               ; listsel_step=2
+ .word !mtext_mm_cfg
+ .byt ^mtext_mm_cfg
+
+ .byt MTYPE_FUNC
+ .word !mtext_cfg_time
+ .byt ^mtext_cfg_time
+ .word !time_init-1
+ .byt ^time_init
+ .byt 0
+ .byt 0,0,0
+
+ .byt MTYPE_SUBMENU
+ .word !mtext_cfg_bsx
+ .byt ^mtext_cfg_bsx
+ .word !menu_enttab_bsx
+ .byt ^menu_enttab_bsx
+ .byt 0
+ .byt 0,0,0
+
+ .byt MTYPE_SUBMENU
+ .word !mtext_cfg_browser
+ .byt ^mtext_cfg_browser
+ .word !menu_enttab_browser
+ .byt ^menu_enttab_browser
+ .byt 0
+ .byt 0,0,0
+
+ .byt MTYPE_SUBMENU
+ .word !mtext_cfg_dsp
+ .byt ^mtext_cfg_dsp
+ .word !menu_enttab_dsp
+ .byt ^menu_enttab_dsp
+ .byt 0
+ .byt 0,0,0
+
+ .byt MTYPE_SUBMENU
+ .word !mtext_cfg_ingame
+ .byt  ^mtext_cfg_ingame
+ .word !menu_enttab_ingame
+ .byt  ^menu_enttab_ingame
+ .byt  0
+ .byt  0,0,0
+
+ .byt MTYPE_SUBMENU  ; FUNC?
+ .word !mtext_cfg_regionpatch
+ .byt  ^mtext_cfg_regionpatch
+ .word !menu_enttab_regionpatch
+ .byt  ^menu_enttab_regionpatch
+ .byt  0
+ .byt  0,0,0
+
+ .byt  MTYPE_SUBMENU
+ .word !mtext_cfg_scic
+ .byt  ^mtext_cfg_scic
+ .word !menu_enttab_scic
+ .byt  ^menu_enttab_scic
+ .byt  0
+ .byt  0,0,0
+
+ .byt 0
+
+menu_enttab_bsx:
+; HEADER
+ .byt  2
+ .word !mtext_cfg_bsx
+ .byt  ^mtext_cfg_bsx
+; ENTRIES
+ .byt  MTYPE_VALUE
+ .word !mtext_bsx_timesource
+ .byt  ^mtext_bsx_timesource
+ .word !mkv_bsx_timesource
+ .byt  ^mkv_bsx_timesource
+ .byt  OPTTYPE_WORD
+; .byt  OPTTYPE_KVWORD
+ .word !CFG_BSX_USE_USERTIME+CFG_ADDR
+ .byt  ^CFG_BSX_USE_USERTIME+CFG_ADDR
+
+ .byt  MTYPE_FUNC
+ .word !mtext_bsx_time
+ .byt  ^mtext_bsx_time
+ .word !mfunc_set_bsx_time-1
+ .byt  ^mfunc_set_bsx_time-1
+ .byt  0
+ .byt  0,0,0
+
+ .byt 0
+
+mkv_bsx_timesource:
+ .word $0000, !text_rtc
+ .word $0001, !text_custom
+ .word $ffff, $ffff
+

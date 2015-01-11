@@ -110,8 +110,8 @@ module mcu_cmd(
   output reg [31:0] cheat_pgm_data_out,
   output reg cheat_pgm_we_out,
 
-  // debug
-  output DBG_mcu_nextaddr
+  // DSP core features
+  output reg [15:0] dsp_feat_out = 16'h0000
 );
 
 initial begin
@@ -161,6 +161,8 @@ reg [31:0] SNES_SYSCLK_FREQ_BUF;
 reg [7:0] MCU_DATA_OUT_BUF;
 reg [7:0] MCU_DATA_IN_BUF;
 reg [2:0] mcu_nextaddr_buf;
+
+reg [7:0] dsp_feat_tmp;
 
 wire mcu_nextaddr;
 
@@ -407,6 +409,13 @@ always @(posedge clk) begin
         featurebits_out <= param_data;
       8'hee:
         region_out <= param_data[0];
+      8'hef:
+        case (spi_byte_cnt)
+          32'h2: dsp_feat_tmp <= param_data[7:0];
+          32'h3: begin
+            dsp_feat_out <= {dsp_feat_tmp, param_data[7:0]};
+          end
+        endcase        
     endcase
   end
 end

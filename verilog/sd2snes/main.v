@@ -356,6 +356,8 @@ spi snes_spi(
   .bit_cnt(spi_bit_cnt)
 );
 
+wire [15:0] dsp_feat;
+
 upd77c25 snes_dspx (
   .DI(DSPX_SNES_DATA_IN),
   .DO(DSPX_SNES_DATA_OUT),
@@ -373,7 +375,8 @@ upd77c25 snes_dspx (
   .DAT_DI(dspx_dat_data),
   .DAT_WR_ADDR(dspx_dat_addr),
   .DP_enable(dspx_dp_enable),
-  .DP_ADDR(SNES_ADDR[10:0])
+  .DP_ADDR(SNES_ADDR[10:0]),
+  .dsp_feat(dsp_feat)
 );
 
 reg [7:0] MCU_DINr;
@@ -449,7 +452,7 @@ mcu_cmd snes_mcu_cmd(
   .cheat_pgm_idx_out(cheat_pgm_idx),
   .cheat_pgm_data_out(cheat_pgm_data),
   .cheat_pgm_we_out(cheat_pgm_we),
-  .DBG_mcu_nextaddr(DBG_mcu_nextaddr)
+  .dsp_feat_out(dsp_feat)
 );
 
 wire [7:0] DCM_STATUS;
@@ -505,7 +508,8 @@ cheat snes_cheat(
   .pgm_we(cheat_pgm_we),
   .pgm_in(cheat_pgm_data),
   .data_out(cheat_data_out),
-  .cheat_hit(cheat_hit)
+  .cheat_hit(cheat_hit),
+  .snescmd_unlock(snescmd_unlock)
 );
 
 wire [7:0] snescmd_dout;
@@ -526,7 +530,7 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
                                   :dspx_dp_enable ? DSPX_SNES_DATA_OUT
                                   :msu_enable ? MSU_SNES_DATA_OUT
                                   :bsx_data_ovr ? BSX_SNES_DATA_OUT
-                                  :snescmd_enable ? snescmd_dout
+                                  :(snescmd_unlock & snescmd_enable) ? snescmd_dout
                                   :cheat_hit ? cheat_data_out
                                   :(ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8])
                                   ) : 8'bZ;
@@ -666,7 +670,7 @@ assign SNES_DATABUS_OE = (dspx_enable | dspx_dp_enable) ? 1'b0 :
                          msu_enable ? 1'b0 :
                          bsx_data_ovr ? (SNES_READ & SNES_WRITE) :
                          srtc_enable ? (SNES_READ & SNES_WRITE) :
-                         snescmd_enable ? (SNES_READ & SNES_WRITE) :
+                         snescmd_enable ? ((~snescmd_unlock | SNES_READ) & SNES_WRITE) :
                          bs_page_enable ? (SNES_READ) :
                          r213f_enable & !SNES_PARD ? 1'b0 :
                          snoop_4200_enable ? SNES_WRITE :
@@ -688,7 +692,7 @@ wire [8:0] snescmd_addra = snoop_4200_enable ? 9'h1fa : SNES_ADDR[8:0];
 
 snescmd_buf snescmd (
   .clka(CLK2), // input clka
-  .wea(SNES_WR_end & (snescmd_enable | snoop_4200_enable)), // input [0 : 0] wea
+  .wea(SNES_WR_end & ((snescmd_unlock & snescmd_enable) | snoop_4200_enable)), // input [0 : 0] wea
   .addra(snescmd_addra), // input [8 : 0] addra
   .dina(SNES_DATA), // input [7 : 0] dina
   .douta(snescmd_dout), // output [7 : 0] douta

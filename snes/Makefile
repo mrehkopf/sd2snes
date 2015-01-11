@@ -1,4 +1,4 @@
-OBJS = header.ips reset.o65 main.o65 font.o65 palette.o65 data.o65 const.o65 logo.o65 logospr.o65 dma.o65 filesel.o65 pad.o65 time.o65 mainmenu.o65 sysinfo.o65 spc700.o65 spcplay.o65 menu.o65 ui.o65 nmihook.o65 # gfx.o65 # vars.o65
+OBJS = header.ips reset.o65 main.o65 font.o65 palette.o65 data.o65 const.o65 logo.o65 logospr.o65 dma.o65 filesel.o65 pad.o65 time.o65 sysinfo.o65 spc700.o65 spcplay.o65 menu.o65 menudata.o65 ui.o65 nmihook.o65 common.o65 # gfx.o65 # vars.o65
 
 all: clean menu.bin map
 

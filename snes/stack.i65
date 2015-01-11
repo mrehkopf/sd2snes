@@ -1,0 +1,29 @@
+#define hash #
+#define f(x) x
+#define imm(a) f(hash)a
+
+// Allocate memory on stack and place DP at top
+// DESTROYS ACCUMULATOR
+#define AllocStack() \
+  php \
+: rep imm($20) : .al \
+: phd \
+: tsc \
+: sec \
+: sbc imm(_work_vars) \
+: tcs \
+: inc \
+: tcd
+
+// Free memory on stack and restore DP
+// DESTROYS ACCUMULATOR
+#define FreeStack() \
+  tsc \
+: rep imm($20) : .al \
+: clc \
+: adc imm(_work_vars) \
+: tcs \
+: pld \
+: plp
+
+#define StackParam(offset) _work_vars+offset+$02+$02+$01

@@ -56,5 +56,5 @@ uint16_t scan_dir(const uint8_t *path, uint32_t base_addr, uint8_t type_mask);
 FRESULT get_db_id(uint32_t*);
 int get_num_dirent(uint32_t addr);
 void sort_all_dir(uint32_t endaddr);
-
+void make_filesize_string(char *buf, uint32_t size);
 #endif

@@ -183,24 +183,26 @@ last_win_y      .byt 12
 last_win_w      .byt 60
 last_win_h      .byt 4
 
+text_ellipse    .byt 127, 128, 0
 text_mm_file    .byt "File Browser", 0
-text_mm_last    .byt "Run last game", 0
-mtext_mm_cfg    .byt "Configuration", 127, 128, 0
+text_mm_last    .byt "Recent games", 0
+mtext_mm_cfg    .byt "Configuration", 0
 mtext_mm_sysinfo .byt "System Information", 0
 mtext_cfg_time  .byt "Set Clock", 0
-mtext_cfg_bsx   .byt "BS-X Settings", 127, 128, 0
-mtext_cfg_browser .byt "Browser Settings", 127, 128, 0
-mtext_cfg_screensaver_enable .byt "Screensaver", 0
-mtext_cfg_dsp   .byt "Chip options", 127, 128, 0
-mtext_cfg_ingame .byt "In-game functions", 127, 128, 0
+mtext_cfg_bsx   .byt "BS-X Settings", 0
+mtext_cfg_browser .byt "Browser Settings", 0
+mtext_cfg_dsp   .byt "Chip options", 0
+mtext_cfg_ingame .byt "In-game functions", 0
 mtext_cfg_regionpatch .byt "Auto region patch", 0
-mtext_bsx_use_usertime .byt "Satellaview time source", 0
+mtext_cfg_scic .byt "SuperCIC settings", 0
+mtext_bsx_timesource .byt "Satellaview time source", 0
 mtext_bsx_time  .byt "Set custom time", 0
 mtext_scic_enable .byt "Enable SuperCIC", 0
 mtext_scic_vmode_menu .byt "Menu video mode", 0
 mtext_scic_vmode_game .byt "Game video mode", 0
 mtext_browser_sort .byt "Sort directories", 0
 mtext_browser_hide_ext .byt "Hide file extensions", 0
+mtext_browser_screensaver .byt "Screensaver", 0
 mtext_ingame_enable .byt "In-game hook", 0
 mtext_ingame_buttons .byt "In-game buttons", 0
 mtext_ingame_holdoff .byt "Initial holdoff", 0
@@ -250,5 +252,4 @@ cheat_tab_line  .byt 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24
                 .byt 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,0
 
 text_spcid      .byt "SNES-SPC700"
-
 rootdir         .byt "/", 0

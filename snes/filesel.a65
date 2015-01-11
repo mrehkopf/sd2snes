@@ -484,7 +484,7 @@ filesel_key_select:
   rts
 
 filesel_key_start:
-  jsr select_last_file
+  jsl select_last_file
   rts
 
 filesel_key_b:
@@ -854,11 +854,10 @@ select_last_file:
   rep #$10 : .xl
   lda @LAST_STATUS
   sta num_recent_games
-  sta listsel_max
   stz recent_sel
   bne +
   plp
-  rts
+  rtl
 + lda #^text_last
   sta window_tbank
   ldx #!text_last
@@ -882,6 +881,8 @@ select_last_file:
   adc window_h
   sta window_h
   jsr push_window
+  lda num_recent_games
+  sta listsel_max
   jsr draw_window
   stz print_pal
   lda #^LAST_GAME
@@ -911,7 +912,7 @@ select_last_file:
   jsr game_handshake
 + jsr pop_window
   plp
-  rts
+  rtl
 
 scroll_direntry_clean:
   lda #$01
