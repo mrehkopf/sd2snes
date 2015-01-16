@@ -502,7 +502,6 @@ menu_print_opt_string_03:
   .as
   cmp #$03
   bne menu_print_opt_string_04
-  lda 
 menu_print_opt_string_04:
   .as
   cmp #$04
