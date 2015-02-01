@@ -52,7 +52,6 @@ menu_select_noinit:
   lda listsel_step
   sta $211c
   lda window_y
-  inc
   clc
   adc $2134
   sta bar_yl
@@ -125,7 +124,6 @@ show_menu:
   sep #$20 : .as
   lda #$80
   phb
-;show_menu_loop:
     pha
     plb
     lda w_numentries
@@ -137,8 +135,8 @@ show_menu:
     sec
     sbc [w_menu_addr] ; listsel_step from menu structure
     inc
-    clc
-    adc #$04
+    inc
+    inc
     sta window_h
     lda w_max_lbl_len
     adc w_max_opt_len

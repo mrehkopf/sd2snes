@@ -34,7 +34,7 @@ hdma_pal_src
   .byt $60, $2d
   .byt 2
   .byt $20, $04
-  .byt 12
+  .byt 11
   .byt $60, $2d
   .byt 1
   .byt $20, $04
@@ -105,7 +105,7 @@ hdma_math_src
   .byt $00, $9f
   .byt 1
   .byt $33, $4f
-  .byt 8
+  .byt 7
   .byt $33, $40
   .byt 1
   .byt $73, $00
@@ -181,7 +181,6 @@ sysinfo_win_h   .byt 17
 last_win_x      .byt 2
 last_win_y      .byt 12
 last_win_w      .byt 60
-last_win_h      .byt 4
 
 text_ellipse    .byt 127, 128, 0
 text_mm_file    .byt "File Browser", 0

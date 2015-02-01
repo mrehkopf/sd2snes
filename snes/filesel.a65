@@ -794,8 +794,6 @@ setup_224_adjsel
   sta barstep
   ora #$08
   sta $2133
-  lda #$08
-  sta hdma_math_selection
   stz vidmode
   lda #$01
   sta filesel_dirty
@@ -870,15 +868,12 @@ select_last_file:
   lda @last_win_y
   sta window_y
   inc
-  inc
   pha
   lda @last_win_w
   sta window_w
-  lda @last_win_h
-  sta window_h
   lda @LAST_STATUS
-  clc
-  adc window_h
+  inc
+  inc
   sta window_h
   jsr push_window
   lda num_recent_games
