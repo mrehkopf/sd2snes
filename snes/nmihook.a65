@@ -123,17 +123,7 @@ nmi_patches:
   sep #$10 : .xs
   ldy <NMI_WRAM_PATCH_COUNT
   beq nmi_exit
-- lda <NMI_WRAM_PATCH_BASE_BANK, x
-  pha
-  plb
-  lda <NMI_WRAM_PATCH_BASE_VALUE, x
-  sta (<NMI_WRAM_PATCH_BASE_ADDR, x)
-  inx
-  inx
-  inx
-  inx
-  dey
-  bne -
+  jsr NMI_WRAM_CHEATS
 nmi_exit:
 ; clean up
   lda $ffea ; get another 72 cycles of BRAM visibility

@@ -25,8 +25,9 @@
  *      6     2   unused (set to FE FC by snes9x)
  *      8    20   cheat description (ASCII)
  *
- *  - compare value: only apply (WRAM) cheat if address previously
- *    contained this value
+ *  - compare value: only apply cheat if address previously
+ *    contained this value - really only makes sense for bank-switched
+ *    ROMs and isn't implemented right now
  */
 #include <arm/NXP/LPC17xx/LPC17xx.h>
 

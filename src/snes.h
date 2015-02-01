@@ -76,6 +76,10 @@
 #define SNESCMD_HOOKS                (0x2be0)
 #define SNESCMD_WRAM_CHEATS          (0x2b00)
 
+#define ASM_LDA_IMM      (0xa9)
+#define ASM_STA_ABSLONG  (0x8f)
+#define ASM_RTS          (0x60)
+
 #define SNES_BUTTON_LRET (0x3030)
 #define SNES_BUTTON_LREX (0x2070)
 #define SNES_BUTTON_LRSA (0x10b0)
