@@ -139,6 +139,7 @@ show_menu:
     inc
     sta window_h
     lda w_max_lbl_len
+    clc
     adc w_max_opt_len
     adc #$04
     ldx w_max_opt_len
