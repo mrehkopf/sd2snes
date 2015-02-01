@@ -357,8 +357,7 @@ menu_meas_opt_04
   cmp #$04           ; key-value (8bit)
   beq menu_meas_opt_keyval
   cmp #$05           ; key-value (16bit)
-  beq menu_meas_opt_keyval
-  bra menu_meas_opt_06
+  bne menu_meas_opt_06
 menu_meas_opt_keyval ; count max value length
   phb
     ldy !$8, x       ; get pointer to
@@ -373,15 +372,23 @@ menu_meas_opt_nextkey
     iny
     iny              ; move to value
     phy
-      lda !$0, y     ; get pointer to string
-      tay
-      jsr strlen     ; get length
+      phb
+        sep #$20 : .as
+        lda !$2, y     ; get bank of string
+        pha
+        rep #$20 : .al
+        lda !$0, y     ; get pointer to string
+        plb
+        tay
+        jsr strlen     ; get length
+      plb
       cpy w_max_kv_len ; compare-replace
       bmi menu_meas_opt_keyval_skip
       sty w_max_kv_len
 menu_meas_opt_keyval_skip
     ply
     iny              ; move to next key
+    iny
     iny
     bra menu_meas_opt_nextkey
 +
@@ -409,7 +416,6 @@ menu_print_entries:
   AllocStack()
   sep #$20 : .as
   lda @window_y
-  inc
   inc
   sta @print_y
   lda @window_w
@@ -478,9 +484,14 @@ menu_print_opt_string:
 ; params
 ; x: address of menu entry structure
 ; db: bank of menu entry structure
-#define _work_vars   $03
+#define _work_vars   $0b
 #define w_entry_addr $00
 #define w_entry_bank $02
+#define w_kvpar_addr $03
+#define w_kvpar_bank $05
+#define w_kvpar_data $06
+#define w_kvtab_addr $08
+#define w_kvtab_bank $0a
   AllocStack()
   rep #$20 : .al
   lda !$c, x
@@ -488,7 +499,7 @@ menu_print_opt_string:
   lda #!stringbuf
   sta @print_src
   sep #$20 : .as
-  lda #$02
+  lda #$01
   sta @print_pal
   lda #^stringbuf
   sta @print_bank
@@ -528,14 +539,69 @@ menu_print_opt_string_03:
   .as
   cmp #$03
   bne menu_print_opt_string_04
+  lda !$c, x
+  sta @print_src
+  lda !$d, x
+  sta @print_src+1
+  lda !$e, x
+  sta @print_bank
+  lda !$8, x
+  sta @print_count
+  phx
+  jsr hiprint
+  plx
+  lda @window_w
+  sta @print_count
+  jmp menu_print_opt_string_out
 menu_print_opt_string_04:
   .as
   cmp #$04
   beq menu_print_opt_string_keyval
   cmp #$05
-  beq menu_print_opt_string_keyval
-  bra menu_print_opt_string_06
+  bne menu_print_opt_string_06
 menu_print_opt_string_keyval:
+  lda !$e, x              ; load address
+  ldy !$c, x              ; of current setting
+  sta w_kvpar_bank
+  sty w_kvpar_addr
+  rep #$20 : .al
+  lda [w_kvpar_addr]      ; load currently set value
+  sta w_kvpar_data
+  lda !$8, x              ; load pointer to kvtable
+  sta w_kvtab_addr
+  sep #$20 : .as
+  lda !$a, x
+  sta w_kvtab_bank
+  phb
+    pha
+    plb
+    rep #$20 : .al
+    ldy w_kvtab_addr
+    lda w_kvpar_data
+    jsr menu_kv_lookup
+    lda !$2, y
+    pha                   ; save offset for justification
+      sta @print_src
+      sep #$20 : .as
+      lda !$4, y
+      sta @print_bank
+      pha
+      plb
+    ply
+    jsr strlen            ; right-justify:
+    tya                   ; print_x = window_x+window_w-2-strlen
+    sec                   ; = ~(strlen-window_x)+1+window_w-2
+    sbc @window_x
+    eor #$ff
+    clc
+    adc @window_w
+    dec                   ; = ~(strlen-window_x)+window_w-1
+    sta @print_x
+  plb
+  phx
+  jsr hiprint
+  plx
+  jmp menu_print_opt_string_out
 menu_print_opt_string_06:
   sep #$20 : .as
   lda #$41
@@ -554,4 +620,35 @@ menu_print_opt_string_06:
   plx
 menu_print_opt_string_out:
   FreeStack()
+  rts
+
+; menu_kv_lookup
+; look for key in a kv table
+; and return address of kv entry
+; params:
+; y: address of entry table
+; db: bank of entry table
+; a: search value
+; returns:
+; y: address of table entry if found,
+;    $ffff if not found
+menu_kv_lookup:
+  php
+    rep #$30 : .xl : .al
+    pha
+-   lda !$0, y          ; compare with table key
+    cmp #$ffff          ; termination
+    beq +
+    cmp $1, s          ; compare with search value
+    beq menu_kv_lookup_out
+    iny
+    iny
+    iny
+    iny
+    iny
+    bra -
++   ldy #$ffff
+menu_kv_lookup_out:
+    pla
+  plp
   rts
