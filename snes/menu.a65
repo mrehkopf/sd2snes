@@ -5,9 +5,19 @@
 mainmenu:
   sep #$20 : .as
   rep #$10 : .xl
-  lda #$08
+  lda #$02
   sta window_x
   lda #$09
+  sta window_y
+  lda #60
+  sta window_w
+  lda #18
+  sta window_h
+  jsr push_window
+  jsr window_greyout
+  lda #$06
+  sta window_x
+  lda #$0b
   sta window_y
   phb
     lda #^menu_enttab_mm
@@ -16,6 +26,7 @@ mainmenu:
     ldx #!menu_enttab_mm
     jsr show_menu
   plb
+  jsr pop_window
   rts
 
 ; menu_select:
@@ -210,6 +221,10 @@ show_menu_out:
 
 show_menu_submenu:
     .al
+    phy
+    jsr push_window
+    jsr window_greyout
+    ply
     lda [w_menu_addr], y
     tax
     sep #$20 : .as
@@ -228,11 +243,18 @@ show_menu_submenu:
       plb
       jsr show_menu
     plb
+    phy
+    jsr pop_window
+    ply
     bra show_menu_cont
 
 show_menu_func:
+    phy
+    jsr push_window
+    jsr window_greyout
+    ply
     phk
-    per show_menu_cont-1
+    per show_menu_func_cont-1
     rep #$20 : .al
     lda [w_menu_addr], y
     tax
@@ -243,6 +265,11 @@ show_menu_func:
     pha
     phx
     rtl
+show_menu_func_cont:
+    phy
+    jsr pop_window
+    ply
+    bra show_menu_cont
 #undef _work_vars
 
 ; params:
