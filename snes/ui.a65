@@ -1,5 +1,6 @@
 .text
 #include "memmap.i65"
+#include "stack.i65"
 .byt "===HIPRINT==="
 ; input:
 ; print_count
@@ -339,11 +340,11 @@ draw_loading_window:
   stx window_taddr
   jsr draw_window
   lda @loading_win_x
-  clc
-  adc #$02
+  inc
+  inc
   sta print_x
   lda @loading_win_y
-  adc #$02
+  inc
   sta print_y
   lda #^text_loading
   sta print_bank
@@ -624,3 +625,69 @@ hide_cursor:
   dec bar_yl
   plp
   rts
+
+window_greyout:
+#define _work_vars      $04
+#define w_vcount        $00
+#define w_start_offset  $02
+  AllocStack()
+  phb
+    sep #$20 : .as
+    lda #$7e
+    pha
+    plb
+    rep #$20 : .al
+    lda !window_h
+    and #$00ff
+    sta w_vcount
+    lda !window_y
+    and #$00ff
+    xba
+    lsr
+    lsr
+    pha
+      lda !window_x
+      and #$00ff
+      clc
+      adc $1, s
+      and #$fffe
+      sta w_start_offset
+      tax
+    pla
+greyout_start:
+    lda !window_w
+    and #$00ff
+    tay
+    lda !window_x
+    lsr
+    bcs greyout_bg1
+greyout_bg2:
+    lda !BG2_TILE_BUF, x
+    and #$03ff
+    ora #$3800
+    sta !BG2_TILE_BUF, x
+    dey
+    beq greyout_next
+greyout_bg1:
+    lda !BG1_TILE_BUF, x
+    and #$03ff
+    ora #$3800
+    sta !BG1_TILE_BUF, x
+    inx
+    inx
+    dey
+    bne greyout_bg2
+greyout_next:
+    dec w_vcount
+    beq greyout_out
+    lda w_start_offset
+    clc
+    adc #$0040
+    sta w_start_offset
+    tax
+    bra greyout_start
+greyout_out:
+  plb
+  FreeStack()
+  rts
+#undef _work_vars

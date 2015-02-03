@@ -34,7 +34,7 @@ hdma_pal_src
   .byt $60, $2d
   .byt 2
   .byt $20, $04
-  .byt 12
+  .byt 11
   .byt $60, $2d
   .byt 1
   .byt $20, $04
@@ -105,7 +105,7 @@ hdma_math_src
   .byt $00, $9f
   .byt 1
   .byt $33, $4f
-  .byt 8
+  .byt 7
   .byt $33, $40
   .byt 1
   .byt $73, $00
@@ -181,7 +181,6 @@ sysinfo_win_h   .byt 17
 last_win_x      .byt 2
 last_win_y      .byt 12
 last_win_w      .byt 60
-last_win_h      .byt 4
 
 text_ellipse    .byt 127, 128, 0
 text_mm_file    .byt "File Browser", 0
@@ -195,7 +194,7 @@ mtext_cfg_dsp   .byt "Chip options", 0
 mtext_cfg_ingame .byt "In-game functions", 0
 mtext_cfg_regionpatch .byt "Auto region patch", 0
 mtext_cfg_scic .byt "SuperCIC settings", 0
-mtext_bsx_timesource .byt "Satellaview time source", 0
+mtext_bsx_timesource .byt "Satellaview clock", 0
 mtext_bsx_time  .byt "Set custom time", 0
 mtext_scic_enable .byt "Enable SuperCIC", 0
 mtext_scic_vmode_menu .byt "Menu video mode", 0
@@ -215,7 +214,7 @@ text_on         .byt "On", 0
 text_off        .byt "Off", 0
 text_normal     .byt "Normal", 0
 text_fast       .byt "Fast", 0
-text_rtc        .byt "Real time", 0
+text_rtc        .byt "Real-time", 0
 text_custom     .byt "Custom", 0
 text_yes        .byt "Yes", 0
 text_no         .byt "No", 0
@@ -244,7 +243,7 @@ text_loading    .byt "Loading", 127, 128, 0
 loading_win_x   .byt 26
 loading_win_y   .byt 15
 loading_win_w   .byt 13
-loading_win_h   .byt 5
+loading_win_h   .byt 3
 
 cheat_tab_head  .byt "Name                  Address  Cmp  Data  Enable", 0
 cheat_tab_line  .byt 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24

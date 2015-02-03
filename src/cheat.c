@@ -57,12 +57,15 @@ void cheat_program_rom_cheat(int index, cht_record_t *cheat) {
 }
 
 void cheat_program_ram_cheat(int index, cht_record_t *cheat) {
-  uint8_t address = SNESCMD_WRAM_CHEATS + 4 * index;
+  uint8_t address = SNESCMD_WRAM_CHEATS + 6 * index;
   fpga_set_snescmd_addr(address);
+  fpga_write_snescmd(ASM_LDA_IMM);
+  fpga_write_snescmd(cheat->patchvalue);
+  fpga_write_snescmd(ASM_STA_ABSLONG);
   fpga_write_snescmd(cheat->patchaddr & 0xff);
   fpga_write_snescmd(cheat->patchaddr >> 8);
   fpga_write_snescmd(cheat->patchbank);
-  fpga_write_snescmd(cheat->patchvalue);
+  fpga_write_snescmd(ASM_RTS);
   printf("RAM cheat #%d: %02x%04x %02x\n", index, cheat->patchbank, cheat->patchaddr, cheat->patchvalue);
 }
 

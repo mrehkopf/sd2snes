@@ -54,7 +54,7 @@ reg [29:0] hook_enable_count = 0;
 reg hook_disable = 0;
 
 reg [3:0] unlock_token = 0;
-reg [5:0] temp_unlock_delay = 0;
+reg [6:0] temp_unlock_delay = 0;
 reg temp_vector_unlock = 0;
 
 reg [23:0] cheat_addr[5:0];
@@ -85,8 +85,8 @@ assign data_out = cheat_match_bits[0] ? cheat_data[0]
                 : cheat_match_bits[3] ? cheat_data[3]
                 : cheat_match_bits[4] ? cheat_data[4]
                 : cheat_match_bits[5] ? cheat_data[5]
-                : nmi_match_bits[1] ? 8'he0
-                : irq_match_bits[1] ? 8'he6
+                : nmi_match_bits[1] ? 8'hb0
+                : irq_match_bits[1] ? 8'hc4
                 : 8'h2b;
 
 assign cheat_hit = (cheat_enable & cheat_addr_match)
@@ -121,11 +121,11 @@ end
 always @(posedge clk) begin
   if(SNES_cycle_start) begin
     if(nmi_addr_match | irq_addr_match) begin
-      temp_unlock_delay <= 6'd48;
+      temp_unlock_delay <= 7'd72;
       temp_vector_unlock <= 1'b1;
     end else begin
       if (|temp_unlock_delay) temp_unlock_delay <= temp_unlock_delay - 1;
-      if (temp_unlock_delay == 6'd0) begin
+      if (temp_unlock_delay == 7'd0) begin
         temp_vector_unlock <= 1'b0;
       end
     end

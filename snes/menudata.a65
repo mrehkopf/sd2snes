@@ -31,8 +31,9 @@
 ; data types 01,02: two 16-bit values - (min, max)
 ;                   unlimited if both values == $0000
 ; data type     03: one 16-bit value  - max string length
-; data type  04,05: table of tuples of two 16-bit entries
-;                   (setting value, pointer to value C-string)
+; data type  04,05: table of tuples of entries
+;                   1. 16-bit setting value
+;                   2. 24-bit pointer to C string of value
 ;                   (val=$ffff terminates)
 ; data type     06: 3 bytes - long pointer to file path
 ;                   1 byte - file type mask
@@ -41,7 +42,7 @@
 
 menu_enttab_mm:
 ; HEADER
- .byt  2              ; listsel_step=2
+ .byt  1              ; listsel_step=1
  .word !text_mainmenu ; window title
  .byt  ^text_mainmenu ; for this menu
 ; ENTRIES
@@ -73,7 +74,7 @@ menu_enttab_mm:
 
 menu_enttab_cfg:
 ; HEADER
- .byt 2               ; listsel_step=2
+ .byt 1               ; listsel_step=1
  .word !mtext_mm_cfg
  .byt ^mtext_mm_cfg
 
@@ -137,7 +138,7 @@ menu_enttab_cfg:
 
 menu_enttab_bsx:
 ; HEADER
- .byt  2
+ .byt  1
  .word !mtext_cfg_bsx
  .byt  ^mtext_cfg_bsx
 ; ENTRIES
@@ -146,10 +147,9 @@ menu_enttab_bsx:
  .byt  ^mtext_bsx_timesource
  .word !mkv_bsx_timesource
  .byt  ^mkv_bsx_timesource
- .byt  OPTTYPE_WORD
-; .byt  OPTTYPE_KVWORD
- .word !CFG_BSX_USE_USERTIME+CFG_ADDR
- .byt  ^CFG_BSX_USE_USERTIME+CFG_ADDR
+ .byt  OPTTYPE_KVBYTE
+ .word !mkv_bsx_timesource
+ .byt  ^mkv_bsx_timesource
 
  .byt  MTYPE_FUNC
  .word !mtext_bsx_time
@@ -162,7 +162,7 @@ menu_enttab_bsx:
  .byt 0
 
 mkv_bsx_timesource:
- .word $0000, !text_rtc
- .word $0001, !text_custom
- .word $ffff, $ffff
+ .word $0000, !text_rtc : .byt ^text_rtc
+ .word $0001, !text_custom : .byt ^text_custom
+ .word $ffff
 
