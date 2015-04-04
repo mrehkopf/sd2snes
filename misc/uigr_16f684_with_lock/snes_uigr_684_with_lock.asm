@@ -5,7 +5,7 @@
 ;
 ;   Copyright (C) 2010 by Maximilian Rehkopf <otakon@gmx.net>
 ;
-;   Last Modified: October 2014 by Peter Bartmann <peter.bartmann@gmx.de>
+;   Last Modified: Dec. 2014 by Peter Bartmann <peter.bartmann@gmx.de>
 ;
 ;   This program is free software; you can redistribute it and/or modify
 ;   it under the terms of the GNU General Public License as published by
@@ -157,10 +157,10 @@ M_belf  macro   literal, compReg, branch  ; branch if a literal is stored in fil
         goto    branch
         endm
 
-M_delay_x10ms   macro   literal ; delay about literal x 10ms
+M_delay_x05ms   macro   literal ; delay about literal x 05ms
                 movlw   literal
                 movwf   reg_repetition_cnt
-                call    delay_x10ms
+                call    delay_x05ms
                 endm
 
 M_T1reset   macro   ; reset and start timer1
@@ -247,13 +247,13 @@ code_led_auto   EQU 0x30    ; yellow
 code_mode_default   EQU (code_mode_60 ^ code_regpatch)
 
 
-delay_10ms_t0_overflows     EQU 0x0a    ; prescaler T0 set to 1:8
-repetitions_60ms            EQU 0x06
-repetitions_200ms           EQU 0x14
-repetitions_260ms           EQU 0x1a
-repetitions_580ms           EQU 0x3a
-repetitions_LED_delay       EQU 0x3c    ; around 600ms
-repetitions_LED_delay_fast  EQU 0x1e    ; around 300ms
+delay_05ms_t0_overflows     EQU 0x14    ; prescaler T0 set to 1:2
+repetitions_60ms            EQU 0x0c
+repetitions_200ms           EQU 0x28
+repetitions_260ms           EQU 0x34
+repetitions_580ms           EQU 0x74
+repetitions_LED_delay       EQU 0x78    ; around 600ms
+repetitions_LED_delay_fast  EQU 0x3c    ; around 300ms
 
 overflows_t1_regtimeout_start       EQU 0xa3
 overflows_t1_regtimeout_reset       EQU 0xa3
@@ -506,10 +506,12 @@ groupcf ; check L+R+sel+...
 
 doreset_normal
     M_push_reset
-    call    delay_10ms
+    call    delay_05ms
+    call    delay_05ms
     btfsc   reg_current_mode, bit_regtimeout                ; region timeout enabled?
     call    call_M_setAuto                                  ; if yes, define the output to the S-CPUN/PPUs
-    call    delay_10ms
+    call    delay_05ms
+    call    delay_05ms
     M_release_reset
     btfss   reg_current_mode, bit_regtimeout                ; region timout disabled?
     goto    check_scic_auto                                 ; if yes, go on with 'normal procedure'
@@ -520,15 +522,19 @@ doreset_normal
 
 doreset_dbl
     M_push_reset
-    call            delay_10ms
-    call            delay_10ms
+    call            delay_05ms
+    call            delay_05ms
+    call            delay_05ms
+    call            delay_05ms
     M_release_reset
-    M_delay_x10ms   repetitions_200ms
+    M_delay_x05ms   repetitions_200ms
     M_push_reset
-    call            delay_10ms
+    call            delay_05ms
+    call            delay_05ms
     btfsc           reg_current_mode, bit_regtimeout            ; region timeout enabled?
     call            call_M_setAuto                              ; if yes, define the output to the S-CPUN/PPUs
-    call            delay_10ms
+    call            delay_05ms
+    call            delay_05ms
     M_release_reset
     btfss           reg_current_mode, bit_regtimeout            ; region timeout enabled?
     goto            check_scic_auto                             ; if yes, go on with 'normal procedure'
@@ -580,8 +586,9 @@ setregion_50_withoutLED
     goto    idle
 
 check_reset
-    call    delay_10ms  ; software debounce needed in case of region timeout is enabled
-    call    delay_10ms
+    call    delay_05ms  ; software debounce needed in case of region timeout is enabled
+    call    delay_05ms
+    call    delay_05ms
     btfss   PORTA, RESET_IN                     ; reset still pressed?
     goto    check_scic_auto
 
@@ -597,13 +604,16 @@ check_reset_prepare_timeout
     goto    check_scic_auto                                 ; if yes, go on with 'normal procedure'
     M_setAuto                                               ; if no, predefine the auto-mode ...
 
-    call    delay_10ms          ; software debounce
+    call    delay_05ms          ; software debounce
     M_setAuto
-    call    delay_10ms          ; software debounce
+    call    delay_05ms          ; software debounce
+    call    delay_05ms
     M_setAuto
-    M_movlf 0xc2, OPTION_REG    ; make sure prescale assigned to T0 and set to 1:8
+    banksel TRISA
+    M_movlf 0xc0, OPTION_REG    ; make sure prescale assigned to T0 with 1:2
+    banksel PORTA
     M_movlf repetitions_580ms, reg_repetition_cnt
-    M_movlf delay_10ms_t0_overflows, reg_t0_overflows
+    M_movlf delay_05ms_t0_overflows, reg_t0_overflows
     clrf    TMR0    ; start timer
     bcf     INTCON, T0IF
 
@@ -616,7 +626,7 @@ check_dblrst
     bcf     INTCON, T0IF
     decfsz  reg_t0_overflows, 1
     goto    check_dblrst
-    M_movlf delay_10ms_t0_overflows, reg_t0_overflows
+    M_movlf delay_05ms_t0_overflows, reg_t0_overflows
     decfsz  reg_repetition_cnt, 1
     goto    check_dblrst
 
@@ -676,30 +686,30 @@ toggle_startup
 LED_confirm_rt_0 ; LED fading pattern: off->green->yellow->red->off->last LED color
     M_movpf         PORTC, reg_led_save ; save last LED color and d4
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_50
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_auto
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_60
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     M_movff         reg_led_save, PORTC ; return to last LED color
     goto            check_scic_auto
 
 LED_confirm_rt_1 ; LED fading pattern: off->red->yellow->green->off->last LED color
     M_movpf         PORTC, reg_led_save ; save last LED color and d4
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_60
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_auto
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_50
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     M_movff         reg_led_save, PORTC ; return to last LED color
     goto            check_scic_auto
 
@@ -717,15 +727,15 @@ disable_d4_patch ; otherwise disable d4-patch
 LED_confirm_d4off   ; LED fading pattern: off->red->off->red->off->last LED color
     M_movpf         PORTC, reg_led_save ; save last LED color and d4
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_60
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_60
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     M_movff         reg_led_save, PORTC ; return to last LED color
     goto            check_scic_auto
 
@@ -735,15 +745,15 @@ enable_d4_patch ; enable d4-patch
 LED_confirm_d4on    ; LED fading pattern: off->green->off->green->off->last LED color
     M_movpf         PORTC, reg_led_save ; save last LED color and d4
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_50
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_50
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay
+    M_delay_x05ms   repetitions_LED_delay
     M_movff         reg_led_save, PORTC ; return to last LED color
     goto            check_scic_auto
 
@@ -763,54 +773,54 @@ toggle_igrlock_tmp
 LED_confirm_unlock_igr ; LED fast flashing green
     M_movpf         PORTC, reg_led_save ; save last LED color and d4
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_50
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_50
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_50
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_50
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_50
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     M_movff         reg_led_save, PORTC ; return to last LED color
     goto            check_scic_auto
 
 LED_confirm_lock_igr ; LED fast flashing red
     M_movpf         PORTC, reg_led_save ; save last LED color and d4
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_60
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_60
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_60
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_60
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_60
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     call            setled_off
-    M_delay_x10ms   repetitions_LED_delay_fast
+    M_delay_x05ms   repetitions_LED_delay_fast
     M_movff         reg_led_save, PORTC ; return to last LED color
     goto            check_scic_auto
 
@@ -874,34 +884,34 @@ save_mode
     banksel EEADR       ; save to EEPROM. note: banksels take two cycles each!
     movwf   EEDAT
     bsf     EECON1,WREN
-    movlw   0x55
-    movwf   EECON2
-    movlw   0xaa
-    movwf   EECON2
+    M_movlf 0x55, EECON2
+    M_movlf 0xaa, EECON2
     bsf     EECON1, WR
     banksel PORTA       ; two cycles again
     return
 
 
-delay_10ms
-    M_movlf 0xc2, OPTION_REG    ; make sure prescale assigned to T0 and set to 1:8
-    M_movlf delay_10ms_t0_overflows, reg_t0_overflows
+delay_05ms
+    banksel TRISA
+    M_movlf 0xc0, OPTION_REG    ; make sure prescale assigned to T0 with 1:2
+    banksel PORTA
+    M_movlf delay_05ms_t0_overflows, reg_t0_overflows
     clrf    TMR0    ; start timer
 
-delay_10ms_loop_pre
+delay_05ms_loop_pre
     bcf     INTCON, T0IF
 
-delay_10ms_loop
+delay_05ms_loop
     btfss   INTCON, T0IF
-    goto    delay_10ms_loop
+    goto    delay_05ms_loop
     decfsz  reg_t0_overflows, 1
-    goto    delay_10ms_loop_pre
+    goto    delay_05ms_loop_pre
     return
 
-delay_x10ms
-    call    delay_10ms
+delay_x05ms
+    call    delay_05ms
     decfsz  reg_repetition_cnt, 1
-    goto    delay_x10ms
+    goto    delay_x05ms
     return
 
 
@@ -917,7 +927,7 @@ start
     M_movlf 0x07, TRISC         ; out out out in in in
     M_movlf 0x00, WPUA          ; no pullups
     M_movlf 0x02, IOCA          ; IOC on DATA_LATCH
-    M_movlf 0xc2, OPTION_REG    ; global pullup disable, use rising data clock edge for interrupt, prescaler T0 1:8
+    M_movlf 0xc0, OPTION_REG    ; global pullup disable, use rising data clock edge for interrupt, prescaler assigned to T0 (1:2)
     banksel PORTA
     M_movlf 0x10, T1CON         ; set prescaler T1 1:2
 
