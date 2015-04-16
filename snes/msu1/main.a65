@@ -20,6 +20,7 @@ GAME_MAIN:
 	sep #$20 : .as
 -	jsr msu1init
 	cli
+  jsr waitblank
 	jsr msu1loop
 	sei
 	bra -
@@ -27,39 +28,7 @@ GAME_MAIN:
 killdma:
 	stz $420b
 	stz $420c
-	stz $4310
-	stz $4311
-	stz $4312
-	stz $4313
-	stz $4314
-	stz $4320
-	stz $4321
-	stz $4322
-	stz $4323
-	stz $4324
-	stz $4330
-	stz $4331
-	stz $4332
-	stz $4333
-	stz $4334
-	stz $4340
-	stz $4341
-	stz $4342
-	stz $4343
-	stz $4344
-	stz $4350
-	stz $4351
-	stz $4352
-	stz $4353
-	stz $4354
-	stz $4360
-	stz $4361
-	stz $4362
-	stz $4363
-	stz $4364
 	rts
-
-
 
 
 waitblank:
