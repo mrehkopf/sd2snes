@@ -58,8 +58,8 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0cheat\0fpgaconf\0dspfeat\0bsregs\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_EXIT, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16, CMD_MEMSET, CMD_CHEAT, CMD_FPGACONF, CMD_DSPFEAT, CMD_BSREGS };
+  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0cheat\0fpgaconf\0dspfeat\0bsregs\0gameloop\0";
+enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_EXIT, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16, CMD_MEMSET, CMD_CHEAT, CMD_FPGACONF, CMD_DSPFEAT, CMD_BSREGS, CMD_GAMELOOP };
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
@@ -279,10 +279,10 @@ static void cmd_show_directory(void) {
   } while (finfo.fname[0]);
 }
 
-
 static void cmd_loadrom(void) {
   uint32_t address = 0;
   uint8_t flags = LOADROM_WITH_SRAM | LOADROM_WITH_RESET;
+  strncpy((char*)file_lfn, (const char*)curchar, 255);
   load_rom((uint8_t*)curchar, address, flags);
 }
 
@@ -458,6 +458,10 @@ void cmd_bsregs(void) {
   set_bsx_regs(set, reset);
 }
 
+static void cmd_gameloop(void) {
+  snes_set_mcu_cmd(SNES_CMD_GAMELOOP);
+}
+
 /* ------------------------------------------------------------------------- */
 /*   CLI interface functions                                                 */
 /* ------------------------------------------------------------------------- */
@@ -612,6 +616,10 @@ void cli_loop(void) {
 
     case CMD_BSREGS:
       cmd_bsregs();
+      break;
+
+    case CMD_GAMELOOP:
+      cmd_gameloop();
       break;
     }
   }

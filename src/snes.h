@@ -45,6 +45,7 @@
 #define SNES_CMD_ENABLE_CHEATS     (0x82)
 #define SNES_CMD_DISABLE_CHEATS    (0x83)
 #define SNES_CMD_KILL_NMIHOOK      (0x84)
+#define SNES_CMD_GAMELOOP          (0xff)
 
 #define MCU_CMD_RDY                (0x55)
 #define MCU_CMD_ERR                (0xaa)
