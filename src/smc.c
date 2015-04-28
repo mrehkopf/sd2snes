@@ -61,6 +61,7 @@ uint8_t checkChksum(uint16_t cchk, uint16_t chk) {
 
 void smc_id(snes_romprops_t* props) {
   uint8_t score, maxscore=1, score_idx=2; /* assume LoROM */
+  uint8_t ext_coprocessor=0;
   snes_header_t* header = &(props->header);
 
   props->load_address = 0;
@@ -114,11 +115,13 @@ void smc_id(snes_romprops_t* props) {
     }
   }
 
+  ext_coprocessor = ((header->carttype & 0xf0) == 0xf0);
+
   switch(header->map & 0xef) {
     case 0x20: /* LoROM */
       props->mapper_id = 1;
       /* Cx4 LoROM */
-      if (header->map == 0x20 && header->carttype == 0xf3) {
+      if (header->map == 0x20 && ext_coprocessor && header->carttype2 == 0x10) {
         props->has_cx4 = 1;
         props->fpga_conf = FPGA_CX4;
         props->fpga_features |= FEAT_CX4;
