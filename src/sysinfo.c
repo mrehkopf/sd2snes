@@ -20,14 +20,19 @@ static uint32_t sd_tacc_max, sd_tacc_avg;
 void sysinfo_loop() {
   sd_tacc_max = 0;
   sd_tacc_avg = 0;
+  int sd_measured = 0;
   while(snes_get_mcu_cmd() == SNES_CMD_SYSINFO) {
-    write_sysinfo();
+    write_sysinfo(sd_measured);
+    if(disk_state == DISK_REMOVED) {
+      sd_measured = 0;
+    } else {
+      sd_measured = 1;
+    }
     delay_ms(100);
   }
 }
 
-void write_sysinfo() {
-  static int sd_measured = 0;
+void write_sysinfo(int sd_measured) {
   uint32_t sram_addr = SRAM_SYSINFO_ADDR;
   char linebuf[40];
   int len;
@@ -77,7 +82,6 @@ void write_sysinfo() {
     sram_memset(sram_addr+len, 40-len, 0x20);
     sram_addr += 40;
     sd_ok = 0;
-    sd_measured = 0;
   } else {
     len = snprintf(linebuf, sizeof(linebuf), "SD Maker/OEM:    0x%02x, \"%c%c\"", sd_cid[1], sd_cid[2], sd_cid[3]);
     sram_writeblock(linebuf, sram_addr, 40);
