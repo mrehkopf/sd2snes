@@ -70,7 +70,6 @@
 #define SNESCMD_NMI_DISABLE_CHEATS   (0x2ba6)
 #define SNESCMD_NMI_KILL_NMIHOOK     (0x2ba8)
 #define SNESCMD_NMI_TMP_KILL_NMIHOOK (0x2baa)
-#define SNESCMD_NMI_RUNMASK          (0x2bfc)
 #define SNESCMD_NMI_DISABLE_WRAM     (0x2bfe)
 #define SNESCMD_NMI_WRAM_PATCH_COUNT (0x2bff)
 #define SNESCMD_HOOKS                (0x2bb0)

@@ -367,5 +367,4 @@ void snescmd_prepare_nmihook() {
   snescmd_writeshort(SNES_BUTTON_LRSB, SNESCMD_NMI_DISABLE_CHEATS);
   snescmd_writeshort(SNES_BUTTON_LRSY, SNESCMD_NMI_KILL_NMIHOOK);
   snescmd_writeshort(SNES_BUTTON_LRSX, SNESCMD_NMI_TMP_KILL_NMIHOOK);
-  snescmd_writebyte(0x01, SNESCMD_NMI_RUNMASK);
 }
