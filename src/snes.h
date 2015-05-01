@@ -56,7 +56,8 @@
 #define MENU_ERR_NOIMPL    (0x3)
 #define MENU_ERR_CARDWP    (0x4)
 
-#define SNES_RESET_PULSELEN_MS (1)
+#define SNES_RELEASE_RESET_DELAY_US (2)
+#define SNES_RESET_PULSELEN_MS (5)
 
 #define SNES_BOOL_TRUE  (0x01)
 #define SNES_BOOL_FALSE (0x00)

@@ -103,7 +103,7 @@ uint8_t get_snes_reset_state(void) {
   static uint8_t resbutton=0, resbutton_prev=0;
   static uint8_t pushes=0, reset_short_flag=0;
 
-  uint8_t release_flag = 0;
+  uint8_t release_flag=0;
 
   uint8_t result=SNES_RESET_NONE;
 
@@ -111,7 +111,7 @@ uint8_t get_snes_reset_state(void) {
      the SNES in reset */
   if(reset_short_flag) {
     snes_reset(0);
-    delay_ms(SNES_RESET_PULSELEN_MS);
+    delay_us(SNES_RELEASE_RESET_DELAY_US);
   }
   resbutton = get_snes_reset();
 
