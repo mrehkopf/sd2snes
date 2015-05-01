@@ -102,3 +102,8 @@ utils/derle
 *.gvp
 *.drl
 *.cmd
+src/utils/genhdr
+snes/.cproject
+snes/.project
+src/.cproject
+src/.project
