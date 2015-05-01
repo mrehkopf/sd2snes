@@ -103,10 +103,12 @@ idle
 	goto	idle	; wait for interrupt from lock
 
 main
-	banksel	TRISIO
+    bsf STATUS, RP0
+    bcf STATUS, RP1
 	bsf	TRISIO, 0
 	bcf	TRISIO, 1
-	banksel	GPIO
+    bcf STATUS, RP0
+    bcf STATUS, RP1
 ; --------INIT LOCK SEED (what the lock sends)--------
 	movlw	0xb
 	movwf	0x21
@@ -140,11 +142,13 @@ main
 	movwf 	0x2f
 	
 ; --------INIT KEY SEED (what we must send)--------
-	banksel	EEADR		; D/F411 and D/F413
+    bsf STATUS, RP0   ; D/F411 and D/F413
+    bcf STATUS, RP1
 	clrf	EEADR		; differ in 2nd seed nibble
 	bsf	EECON1, RD	; of key stream,
 	movf	EEDAT, w	; restore saved nibble from EEPROM
-	banksel GPIO
+    bcf STATUS, RP0
+    bcf STATUS, RP1
 	movwf	0x32
 	movlw	0xa
 	movwf	0x33
@@ -209,10 +213,12 @@ main
 ;	bcf	GPIO, 0
 	btfsc	GPIO, 0		; check stream ID bit
 	bsf	0x31, 2		; copy to lock seed
-	banksel	TRISIO
+    bsf STATUS, RP0
+    bcf STATUS, RP1
 	bcf	TRISIO, 0
 	bsf	TRISIO, 1
-	banksel	GPIO
+    bcf STATUS, RP0
+    bcf STATUS, RP1
 	nop
 	movlw	0x27		; "wait" 1
 	call	wait		; wait 121
@@ -257,17 +263,20 @@ loop1
 	call	mangle
 	btfsc	0x37, 0
 	goto	swap
-	banksel	TRISIO
+    bsf STATUS, RP0
+    bcf STATUS, RP1
 	bcf	TRISIO, 0
 	bsf	TRISIO, 1
 	goto	swapskip
 swap
-	banksel	TRISIO
+    bsf STATUS, RP0
+    bcf STATUS, RP1
 	bsf	TRISIO, 0
 	bcf	TRISIO, 1
 	nop
 swapskip
-	banksel GPIO
+    bcf STATUS, RP0
+    bcf STATUS, RP1
 	movf	0x37, w
 	andlw	0xf
 	btfss	STATUS, Z

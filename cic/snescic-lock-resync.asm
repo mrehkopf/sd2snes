@@ -105,7 +105,7 @@ init
 	movwf	OPTION_REG
 	
 	banksel GPIO
-	bcf 	GPIO, 4	; LED off
+	bcf 	GPIO, 4	; hold SNES in reset
 	goto	rst
 main
 	movlw	0x40	; wait a bit before initializing the slave + console
@@ -118,10 +118,12 @@ main
 	nop
 	bcf	GPIO, 2 	
 
-	banksel	TRISIO
+    bsf STATUS, RP0
+    bcf STATUS, RP1
 	bcf	TRISIO, 0
 	bsf	TRISIO, 1
-	banksel	GPIO
+    bcf STATUS, RP0
+    bcf STATUS, RP1
 ; --------INIT LOCK SEED (what we must send)--------
 	movlw	0xb
 	movwf	0x21
@@ -237,10 +239,12 @@ main
 	bcf	GPIO, 0
 	movlw	0x1		; wait=3*0+7
 	call	wait		; burn 10 cycles
-	banksel	TRISIO
+    bsf STATUS, RP0
+    bcf STATUS, RP1
 	bsf	TRISIO, 0
 	bcf	TRISIO, 1
-	banksel	GPIO
+    bcf STATUS, RP0
+    bcf STATUS, RP1
 	movlw	0x24		; "wait" 1
 	call	wait		; wait 112
 ;	nop
@@ -302,17 +306,20 @@ loop1
 	movwf	0x44
 	btfsc	0x37, 0
 	goto	swap
-	banksel	TRISIO
+    bsf STATUS, RP0
+    bcf STATUS, RP1
 	bsf	TRISIO, 0
 	bcf	TRISIO, 1
 	goto	swapskip
 swap
-	banksel	TRISIO
+    bsf STATUS, RP0
+    bcf STATUS, RP1
 	bcf	TRISIO, 0
 	bsf	TRISIO, 1
 	nop
 swapskip
-	banksel GPIO
+    bcf STATUS, RP0
+    bcf STATUS, RP1
 	btfsc	GPIO, 3 ; poll master reset
 	goto	rst
 	clrf	0x43	; don't check key region anymore
