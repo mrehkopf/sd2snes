@@ -1,5 +1,4 @@
 *.cod
-*.hex
 *.lst
 *.o
 *.diff
@@ -102,8 +101,14 @@ utils/derle
 *.gvp
 *.drl
 *.cmd
+<<<<<<< HEAD
 src/utils/genhdr
 snes/.cproject
 snes/.project
 src/.cproject
 src/.project
+=======
+.project
+.cproject
+>>>>>>> 72a1859ba55291f4240732b4c07f495ce220e80c
+src/obj/sd2snes.hex
