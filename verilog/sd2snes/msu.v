@@ -127,7 +127,7 @@ assign reg_data_out = data_out_r;
 always @(posedge clkin) begin
   if(msu_address_ext_write_rising)
     msu_address_r <= msu_address_ext;
-  else if(reg_oe_falling & enable & (reg_addr == 3'h1)) begin
+  else if(reg_oe_rising & enable & (reg_addr == 3'h1)) begin
     msu_address_r <= msu_address_r + 1;
   end
 end

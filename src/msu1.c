@@ -144,15 +144,9 @@ int msu1_loop() {
   int msu_res;
   uint8_t cmd;
 
-/*  set_msu_addr(0x0);
-  msu_reset(0x0);
-  ff_sd_offload=1;
-  sd_offload_tgt=2;
-  f_lseek(&msufile, 0L);
-  ff_sd_offload=1;
-  sd_offload_tgt=2;
-  f_read(&msufile, file_buf, 16384, &msu_data_bytes_read);
-*/
+  msu_page1_start = 0x0000;
+  msu_page2_start = 0x2000;
+
   set_dac_addr(dac_addr);
   dac_pause();
   dac_reset();

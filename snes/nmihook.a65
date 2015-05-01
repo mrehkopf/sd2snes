@@ -47,13 +47,6 @@ nmi_payload:
   ldx $ffee
   stx <IRQ_VECT_ORIG
   stz <NMI_VECT_DISABLE
-; only read controller every couple of frames
-;  clc
-;  lda <NMI_RUNMASK
-;  cmp #$80
-;  rol
-;  sta <NMI_RUNMASK
-;  bcc nmi_patches
 ; read controller
   lda <MIRROR_4200
   lsr

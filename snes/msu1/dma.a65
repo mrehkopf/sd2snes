@@ -49,6 +49,8 @@ setup_hdma:
 	sty $4332
 	sta $4334
 
+	jsr waitblank
+
 	ldx #185		;Set IRQ trigger to line 185
 	stx $4209		;
 	lda #$0e

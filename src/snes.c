@@ -107,8 +107,12 @@ uint8_t get_snes_reset_state(void) {
 
   uint8_t result=SNES_RESET_NONE;
 
-  snes_reset(0); // release sd2snes-reset (just in case it was a reset detected before)
-  delay_ms(SNES_RESET_PULSELEN_MS);
+  /* reset had been pushed; now check if something else is holding
+     the SNES in reset */
+  if(reset_short_flag) {
+    snes_reset(0);
+    delay_ms(SNES_RESET_PULSELEN_MS);
+  }
   resbutton = get_snes_reset();
 
   if(rising_ticks_tmp > rising_ticks + 22) {/* reset push counter after 230ms (time for igr's double reset) */
@@ -367,5 +371,4 @@ void snescmd_prepare_nmihook() {
   snescmd_writeshort(SNES_BUTTON_LRSB, SNESCMD_NMI_DISABLE_CHEATS);
   snescmd_writeshort(SNES_BUTTON_LRSY, SNESCMD_NMI_KILL_NMIHOOK);
   snescmd_writeshort(SNES_BUTTON_LRSX, SNESCMD_NMI_TMP_KILL_NMIHOOK);
-  snescmd_writebyte(0x01, SNESCMD_NMI_RUNMASK);
 }

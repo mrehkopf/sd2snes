@@ -159,7 +159,8 @@ reg [7:0] SNES_PARDr;
 reg [7:0] SNES_READr;
 reg [7:0] SNES_WRITEr;
 reg [7:0] SNES_CPU_CLKr;
-reg [23:0] SNES_ADDRr [3:0];
+reg [23:0] SNES_ADDRr [5:0];
+reg [23:0] SNES_ADDR_CYCLEr = 24'h000000;
 
 reg [7:0] BUS_DATA;
 
@@ -172,18 +173,19 @@ reg SNES_reset_strobe = 0;
 
 reg free_strobe = 0;
 
-wire SNES_PARD_start = ((SNES_PARDr[6:1] & SNES_PARDr[7:2]) == 6'b111110);
-wire SNES_RD_start = ((SNES_READr[6:1] & SNES_READr[7:2]) == 6'b111110);
+wire SNES_PARD_start = ((SNES_PARDr[6:1] | SNES_PARDr[7:2]) == 6'b111110);
+wire SNES_RD_start = ((SNES_READr[6:1] | SNES_READr[7:2]) == 6'b111110);
 wire SNES_RD_end = ((SNES_READr[6:1] & SNES_READr[7:2]) == 6'b000001);
 wire SNES_WR_end = ((SNES_WRITEr[6:1] & SNES_WRITEr[7:2]) == 6'b000001);
-wire SNES_cycle_start = ((SNES_CPU_CLKr[4:1] & SNES_CPU_CLKr[5:2]) == 4'b0001);
-wire SNES_cycle_end = ((SNES_CPU_CLKr[4:1] & SNES_CPU_CLKr[5:2]) == 4'b1110);
+wire SNES_cycle_start = ((SNES_CPU_CLKr[5:2] & SNES_CPU_CLKr[4:1]) == 4'b0001);
+wire SNES_cycle_end = ((SNES_CPU_CLKr[5:2] | SNES_CPU_CLKr[4:1]) == 4'b1110);
 wire SNES_WRITE = SNES_WRITEr[2] & SNES_WRITEr[1];
 wire SNES_READ = SNES_READr[2] & SNES_READr[1];
 wire SNES_CPU_CLK = SNES_CPU_CLKr[2] & SNES_CPU_CLKr[1];
 wire SNES_PARD = SNES_PARDr[2] & SNES_PARDr[1];
 
-wire [23:0] SNES_ADDR = (SNES_ADDRr[3] & SNES_ADDRr[2]);
+wire [23:0] SNES_ADDR = (SNES_ADDRr[5] & SNES_ADDRr[4]);
+
 wire free_slot = SNES_cycle_end | free_strobe;
 
 wire ROM_HIT;
@@ -200,6 +202,8 @@ always @(posedge CLK2) begin
   SNES_READr <= {SNES_READr[6:0], SNES_READ_IN};
   SNES_WRITEr <= {SNES_WRITEr[6:0], SNES_WRITE_IN};
   SNES_CPU_CLKr <= {SNES_CPU_CLKr[6:0], SNES_CPU_CLK_IN};
+  SNES_ADDRr[5] <= SNES_ADDRr[4];
+  SNES_ADDRr[4] <= SNES_ADDRr[3];
   SNES_ADDRr[3] <= SNES_ADDRr[2];
   SNES_ADDRr[2] <= SNES_ADDRr[1];
   SNES_ADDRr[1] <= SNES_ADDRr[0];

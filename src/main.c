@@ -263,6 +263,9 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           menu_cmd_readdir();
           cmd=0; /* stay in menu loop */
           break;
+        case SNES_CMD_GAMELOOP:
+          /* enter game loop immediately */
+          break;
         default:
           printf("unknown cmd: %d\n", cmd);
           cmd=0; /* unknown cmd: stay in loop */

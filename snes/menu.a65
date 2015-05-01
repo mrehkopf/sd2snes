@@ -118,12 +118,13 @@ show_menu:
 ; x: offset of menu structure
 ; db: bank of menu structure
 ; local vars:
-#define _work_vars      $0a
+#define _work_vars      $0c
 #define w_numentries    $00
 #define w_max_lbl_len   $02
 #define w_max_opt_len   $04
-#define w_menu_addr     $06
-#define w_menu_bank     $08
+#define w_title_len     $06
+#define w_menu_addr     $08
+#define w_menu_bank     $0a
   AllocStack()
 ; backup params
   sep #$20 : .as
@@ -152,6 +153,14 @@ show_menu:
     lda w_max_lbl_len
     clc
     adc w_max_opt_len
+; check whether window width is limited by label+option
+; or by window title text
+    cmp w_title_len
+    bcs +
+    lda w_title_len
+    inc
+    inc
++   clc
     adc #$04
     ldx w_max_opt_len
     beq +
@@ -178,10 +187,7 @@ show_menu:
       pha
       plb
       ldx w_menu_addr
-      lda w_max_lbl_len
-      pha
       jsr menu_print_entries
-      pla
     plb
     lda w_numentries
     sta listsel_max
@@ -288,6 +294,7 @@ menu_measure:
 #define r_numentries    $00
 #define r_max_lbl_len   $02
 #define r_max_opt_len   $04
+#define r_title_len     $06
 ; ==== WORKING VARIABLES ON STACK ====
   AllocStack()           ; implies PHP : PHD
   stz StackParam(r_max_lbl_len) ; initialize variable
@@ -295,6 +302,17 @@ menu_measure:
   stz StackParam(r_numentries)
   stz w_max_kv_len
 ; ====================================
+; include window title in calculation
+  sep #$20 : .as
+  ldy !$1, x
+  lda !$3, x
+  phb
+    pha
+    plb
+    jsr strlen
+    sty StackParam(r_title_len)
+  plb
+  rep #$20 : .al
 menu_measure_line_loop:
   lda !$4, x           ; read menu entry type
   and #$00ff           ; (mask)

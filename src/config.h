@@ -6,7 +6,7 @@
 // #define DEBUG_FS
 // #define DEBUG_SD
 // #define DEBUG_IRQ
-// #define DEBUG_MSU1
+#define DEBUG_MSU1
 
 #define IN_AHBRAM                 __attribute__ ((section(".ahbram")))
 
@@ -39,8 +39,8 @@
 //#define CONFIG_CPU_FREQUENCY      46000000
 #define CONFIG_UART_PCLKDIV       1
 #define CONFIG_UART_TX_BUF_SHIFT  8
-//#define CONFIG_UART_BAUDRATE      921600
-#define CONFIG_UART_BAUDRATE      115200
+#define CONFIG_UART_BAUDRATE      921600
+//#define CONFIG_UART_BAUDRATE      115200
 #define CONFIG_UART_DEADLOCKABLE
 
 #define SSP_CLK_DIVISOR           2
