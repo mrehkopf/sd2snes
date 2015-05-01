@@ -1,5 +1,4 @@
 *.cod
-*.hex
 *.lst
 *.o
 *.diff
@@ -102,3 +101,5 @@ utils/derle
 *.gvp
 *.drl
 *.cmd
+.project
+.cproject
