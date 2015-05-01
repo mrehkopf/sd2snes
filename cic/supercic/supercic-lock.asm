@@ -8,6 +8,9 @@ processor p16f630
 ;   Copyright (C) 2010 by Maximilian Rehkopf (ikari_01) <otakon@gmx.net>
 ;   This software is part of the sd2snes project.
 ;
+;   Based on reverse engineering work and disassembly by segher.
+;   http://hackmii.com/2010/01/the-weird-and-wonderful-cic/
+;
 ;   This program is free software; you can redistribute it and/or modify
 ;   it under the terms of the GNU General Public License as published by
 ;   the Free Software Foundation; version 2 of the License only.
@@ -250,10 +253,12 @@ main
 	nop
 	bcf	PORTC, 2 	
 
-	banksel	TRISC
+    bsf STATUS, RP0
+    bcf STATUS, RP1
 	bcf	TRISC, 0
 	bsf	TRISC, 1
-	banksel	PORTC
+    bcf STATUS, RP0
+    bcf STATUS, RP1
 ; --------INIT LOCK SEED (what we must send)--------
 	movlw	0xb
 	movwf	0x21
@@ -359,10 +364,12 @@ main
 	bcf	PORTC, 0
 	movlw	0x1		; wait=3*0+7
 	call	wait		; burn 10 cycles in total
-	banksel	TRISC
+    bsf STATUS, RP0
+    bcf STATUS, RP1
 	bsf	TRISC, 0
 	bcf	TRISC, 1
-	banksel	PORTC
+    bcf STATUS, RP0
+    bcf STATUS, RP1
 	movlw	0x23		;
 	call	wait		; wait 109
 	movlw	0x1		; 'first time' bit
@@ -429,17 +436,20 @@ main_skipinval2
 	nop
 	btfsc	0x37, 0
 	goto	swap
-	banksel	TRISC
+    bsf STATUS, RP0
+    bcf STATUS, RP1
 	bsf	TRISC, 0
 	bcf	TRISC, 1
 	goto	swapskip
 swap
-	banksel	TRISC
+    bsf STATUS, RP0
+    bcf STATUS, RP1
 	bcf	TRISC, 0
 	bsf	TRISC, 1
 	nop
 swapskip
-	banksel PORTA
+    bcf STATUS, RP0
+    bcf STATUS, RP1
 	bsf	0x54, 2		; run the console
 	movf	0x54, w		; read resolved mode
 	iorwf	0x59, w		; get D4 value
