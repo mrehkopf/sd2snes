@@ -188,10 +188,6 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     if(get_cic_state() == CIC_PAIR) {
       printf("PAIR MODE ENGAGED!\n");
       cic_pair(CFG.vidmode_menu, CFG.vidmode_menu);
-      cfg_set_r213f_override(0);
-    } else {
-      cfg_set_r213f_override(0);
-//      cfg_set_r213f_override(1);
     }
     snes_reset(0);
 
