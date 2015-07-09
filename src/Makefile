@@ -55,7 +55,12 @@ TARGET = $(OBJDIR)/sd2snes
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c printf.c spi.c fileops.c rtc.c fpga.c fpga_spi.c snes.c smc.c memory.c filetypes.c faulthandler.c sort.c crc32.c cic.c cli.c xmodem.c irq.c rle.c sdnative.c msu1.c crc16.c sysinfo.c cfg.c cheat.c
+SRC  = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c
+SRC += printf.c spi.c fileops.c rtc.c fpga.c fpga_spi.c snes.c smc.c
+SRC += memory.c filetypes.c faulthandler.c sort.c crc32.c cic.c
+SRC += cli.c xmodem.c irq.c rle.c sdnative.c msu1.c crc16.c sysinfo.c
+SRC += cfg.c cheat.c yaml.c
+
 #SRC += usbdesc.c usbcore.c usbuser.c usbhw.c cdcuser.c
 
 # usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c

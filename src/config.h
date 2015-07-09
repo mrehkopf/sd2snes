@@ -6,7 +6,8 @@
 // #define DEBUG_FS
 // #define DEBUG_SD
 // #define DEBUG_IRQ
-#define DEBUG_MSU1
+// #define DEBUG_MSU1
+// #define DEBUG_YAML
 
 #define IN_AHBRAM                 __attribute__ ((section(".ahbram")))
 
