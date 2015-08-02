@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include "config.h"
 #include "yaml.h"
@@ -11,23 +12,25 @@
 yaml_state_t ystate;
 
 void yaml_file_open(char *filename, uint8_t ff_flags) {
-  if(ystate.file_open) {
+  if(ystate.flags & YAML_FLAG_FILE_OPEN) {
     printf("yaml_file_open: there is already a yaml file open!\n");
     return;
   }
   file_open((uint8_t*)filename, ff_flags);
   if(file_res) return;
-  ystate.file_open = true;
+  ystate.flags = YAML_FLAG_FILE_OPEN | YAML_FLAG_BUF_EMPTY;
   ystate.ff_flags = ff_flags;
   ystate.depth = 0;
   ystate.parent_offset = 0;
-  ystate.empty = 1;
   ystate.line[0] = 0;
+  ystate.state = YAML_PSTATE_NONE;
+  ystate.delim = YAML_DELIM_NONE;
+  ystate.line_offset = 0;
 }
 
 void yaml_file_close() {
   file_close();
-  ystate.file_open = false;
+  ystate.flags &= ~YAML_FLAG_FILE_OPEN;
 }
 
 yaml_token_type yaml_detect_value(char **token, yaml_token_t *tok) {
@@ -64,48 +67,65 @@ yaml_token_type yaml_detect_value(char **token, yaml_token_t *tok) {
 }
 
 /* read next token sequentially */
-int yaml_get_next(yaml_token_t *tok){
+int yaml_get_next(yaml_token_t *tok) {
   static char *tokline = NULL, *line = NULL, *token = NULL;
-  static bool rewind_line = false;
-  static bool rewind_token = false;
   uint8_t repeat = 0;
-  static char *delim = YAML_DELIM_NONE;
   static int indent = 0;
   int len = 0;
 
   yaml_token_type type;
   do {
+    DBG_YAML printf("yaml flags = %02x\n", ystate.flags);
     repeat = 0;
-    if (rewind_line) {
+    if (ystate.flags & YAML_FLAG_REWIND_LINE) {
       tokline = line;
-    } else if (rewind_token) {
+    } else if (ystate.flags & YAML_FLAG_REWIND_TOKEN) {
       tokline = token;
-    } else if(ystate.empty) {
+    } else if(ystate.flags & YAML_FLAG_BUF_EMPTY) {
+      DBG_YAML printf("refilling line buffer... ");
+      ystate.line_offset = f_tell(&file_handle);
       line = f_gets(ystate.line, YAML_BUFLEN, &file_handle);
+      /* truncate comments */
+      if(line && *line) {
+        char *ptr = line;
+        while(*ptr) {
+          if(*ptr == '#') {
+            DBG_YAML printf("truncating comment %s from line %s\n", ptr, line);
+            *ptr = 0;
+            break;
+          }
+          ptr++;
+        }
+      }
       tokline = line;
+      DBG_YAML printf("line = %p f_eof=%d f_error=%d\n", line, f_eof(&file_handle), f_error(&file_handle));
     }
     if(line) {
-      ystate.empty = false;
+      ystate.flags &= ~YAML_FLAG_BUF_EMPTY;
       /* measure indentation on new line */
       if(tokline) {
         for(indent=0; line[indent] == ' '; indent++);
       }
-      token = strtok(tokline, delim);
+      token = strtok(tokline, ystate.delim);
       tokline = NULL;
-      if(token == NULL && !rewind_line && !rewind_token) {
+      if(token == NULL && !(ystate.flags & (YAML_FLAG_REWIND_LINE | YAML_FLAG_REWIND_TOKEN))) {
         repeat = 1; /* end of line, read next line */
-        ystate.empty = true;
+        ystate.flags |= YAML_FLAG_BUF_EMPTY;
+      }
+      /* trim leading spaces */
+      while(token && (*token == ' ')) {
+        token++;
+      }
+      /* skip comments */
+      if(token && *token == '#') {
+        DBG_YAML printf("skipping comment line: %s\n", token);
+        repeat = 1;
       }
     }
   } while (repeat);
   if(line == NULL) return EOF;
-  /* trim leading spaces */
-  while(token && (*token == ' ')) {
-    token++;
-  }
 
-  rewind_line = false;
-  rewind_token = false;
+  ystate.flags &= ~(YAML_FLAG_REWIND_LINE | YAML_FLAG_REWIND_TOKEN);
 
   type = YAML_UNKNOWN;
   DBG_YAML printf("indent: %d; token: %s; pstate: %d -> ", indent, token, ystate.state);
@@ -113,41 +133,51 @@ int yaml_get_next(yaml_token_t *tok){
     case YAML_PSTATE_NONE:
       if(!strncmp(token, "---", 3)) {
         type = YAML_DOC_START;
-        delim = YAML_DELIM_KEY;
+        ystate.delim = YAML_DELIM_KEY;
         ystate.state = YAML_PSTATE_KEY;
       }
       break;
     case YAML_PSTATE_KEY:
       if(!strncmp(token, "- ", 2)) {
-        /* eat lists at key level */
-        while(*token == ' ' || *token == '-') token++;
-      }
-      if(!strncmp(token, "...", 3)) {
+        /* use "bullet" as item start marker, emit ITEM_START type */
+        ystate.parent_offset = ystate.line_offset + 2;
+        /* eat bullet so it doesn't get re-tokenized after REWIND_LINE */
+        while(*token == ' ' || *token == '-') {
+          *token = ' ';
+          token++;
+        }
+        /* HACK restore delimiter so strtok can work with the whole line again */
+        token[strlen(token)]=':';
+        ystate.flags |= YAML_FLAG_REWIND_LINE;
+        type = YAML_ITEM_START;
+        ystate.state = YAML_PSTATE_KEY;
+        DBG_YAML printf("Item start! line_offset=%ld  parent_offset=%ld\n", ystate.line_offset, ystate.parent_offset);
+      } else if(!strncmp(token, "...", 3)) {
         type = YAML_DOC_END;
-        delim = YAML_DELIM_NONE;
+        ystate.delim = YAML_DELIM_NONE;
         ystate.state = YAML_PSTATE_NONE;
       } else {
         type = YAML_KEY;
-        delim = YAML_DELIM_VALUE;
+        ystate.delim = YAML_DELIM_VALUE;
         ystate.state = YAML_PSTATE_VALUE;
         strncpy(tok->stringvalue, token, YAML_BUFLEN);
       }
       break;
     case YAML_PSTATE_VALUE:
-      delim = YAML_DELIM_KEY;
+      ystate.delim = YAML_DELIM_KEY;
       ystate.state = YAML_PSTATE_KEY;
       if(!strncmp(token, "- ", 2)) {
         type = YAML_LIST_START;
-        delim = YAML_DELIM_VALUE;
+        ystate.delim = YAML_DELIM_VALUE;
         ystate.state = YAML_PSTATE_LIST_MULTILINE;
-        rewind_line = true;
+        ystate.flags |= YAML_FLAG_REWIND_LINE;
         ystate.depth = indent;
       } else if(*token == '[') {
         /* go to sub state */
         type = YAML_LIST_START;
-        delim = YAML_DELIM_LIST_INLINE;
+        ystate.delim = YAML_DELIM_LIST_INLINE;
         ystate.state = YAML_PSTATE_LIST_INLINE;
-        rewind_token = true;
+        ystate.flags |= YAML_FLAG_REWIND_TOKEN;
       } else {
         type = yaml_detect_value(&token, tok);
       }
@@ -159,8 +189,8 @@ int yaml_get_next(yaml_token_t *tok){
         type = yaml_detect_value(&token, tok);
       } else {
       /* this isn't a list item anymore, re-run state machine on this line */
-        rewind_line = true;
-        delim = YAML_DELIM_KEY;
+        ystate.flags |= YAML_FLAG_REWIND_LINE;
+        ystate.delim = YAML_DELIM_KEY;
         ystate.state = YAML_PSTATE_KEY;
         type = YAML_LIST_END;
       }
@@ -174,8 +204,8 @@ int yaml_get_next(yaml_token_t *tok){
           len--;
         }
         ystate.state = YAML_PSTATE_LIST_INLINE_END;
-        delim = YAML_DELIM_KEY;
-        rewind_token = true;
+        ystate.delim = YAML_DELIM_KEY;
+        ystate.flags |= YAML_FLAG_REWIND_TOKEN;
       }
       type = yaml_detect_value(&token, tok);
       break;
@@ -186,25 +216,84 @@ int yaml_get_next(yaml_token_t *tok){
   }
   DBG_YAML printf("%d; token: %s (type: %d intval: %ld)\n", ystate.state, token, type, tok->longvalue);
   tok->type = type;
-  return 0;
-}
-
-
-/* search for previous token with given properties */
-int yaml_search_prev(yaml_token_t *tok){
-  return -1;
+  return 1;
 }
 
 /* search for next token with given properties */
-int yaml_search_next(yaml_token_t *tok){
-  return -1;
+int yaml_search_next(yaml_token_t *tok, yaml_scope scope) {
+  yaml_token_t cmp;
+  int found = 0;
+  while(!found && (yaml_get_next(&cmp) != EOF)) {
+    if(scope == YAML_SCOPE_ITEM && cmp.type == YAML_ITEM_START) {
+      break;
+    }
+    if(cmp.type == tok->type) {
+      switch(tok->type) {
+        case YAML_KEY:
+        case YAML_STRING:
+          if(!tok->stringvalue[0] || !strcasecmp(tok->stringvalue, cmp.stringvalue)) {
+            found = 1;
+          }
+          break;
+        default: found = 1;
+      }
+    }
+    if(found) *tok = cmp;
+  }
+  return found;
+}
+
+void yaml_seek(uint32_t offset) {
+  ystate.depth = 0;
+  ystate.flags |= YAML_FLAG_BUF_EMPTY;
+  ystate.flags &= ~(YAML_FLAG_REWIND_LINE | YAML_FLAG_REWIND_TOKEN);
+  ystate.line[0] = 0;
+  f_lseek(&file_handle, offset);
 }
 
 /* go back to head of file */
-void yaml_rewind(){
+void yaml_rewind() {
+  DBG_YAML printf("rewinding file (offset: 0)\n");
+  yaml_seek(0);
+  ystate.parent_offset = 0;
+  ystate.state = YAML_PSTATE_NONE;
+  ystate.delim = YAML_DELIM_NONE;
 }
 
-/* retrieve value of a given key (returns first hit) */
-int yaml_get_value(char *key){
-  return -1;
+/* go to after last occurrence of "^- " */
+void yaml_rewind_item() {
+  DBG_YAML printf("rewinding item (offset: %ld)\n", ystate.parent_offset);
+  yaml_seek(ystate.parent_offset);
+  ystate.state = YAML_PSTATE_KEY;
+  ystate.delim = YAML_DELIM_KEY;
+}
+
+/* search for next item start ("^- ") */
+int yaml_next_item() {
+  yaml_token_t cmp;
+  cmp.type = YAML_ITEM_START;
+  return yaml_search_next(&cmp, YAML_SCOPE_GLOBAL);
+}
+
+/* retrieve value of a given key (returns next hit) */
+int yaml_get_value(char *key, yaml_token_t *tok, yaml_scope scope) {
+  int found;
+  /* always search whole item */
+  if(scope == YAML_SCOPE_ITEM) {
+    yaml_rewind_item();
+  }
+  yaml_token_t cmp;
+  cmp.type = YAML_KEY;
+  strncpy(cmp.stringvalue, key, YAML_BUFLEN);
+  /* look for key */
+  found = yaml_search_next(&cmp, scope);
+  /* now move to value */
+  if(found) {
+    found = yaml_get_next(tok);
+  }
+  return found;
+}
+
+int yaml_get_itemvalue(char *key, yaml_token_t *tok) {
+  return yaml_get_value(key, tok, YAML_SCOPE_ITEM);
 }

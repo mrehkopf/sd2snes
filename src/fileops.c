@@ -30,10 +30,7 @@
 #include "fileops.h"
 #include "diskio.h"
 
-/*
-WCHAR ff_convert(WCHAR w, UINT dir) {
-  return w;
-}*/
+#include <string.h>
 
 int newcard;
 
@@ -57,6 +54,7 @@ void file_open(const uint8_t* filename, BYTE flags) {
   file_block_off = sizeof(file_buf);
   file_block_max = sizeof(file_buf);
   file_status = file_res ? FILE_ERR : FILE_OK;
+  printf("file_open (%s, %02x) = %d\n", filename, flags, file_res);
 }
 
 void file_close() {
@@ -107,4 +105,15 @@ uint8_t file_getc() {
     file_block_off = 0;
   }
   return file_buf[file_block_off++];
+}
+
+void append_file_basename(char *dirbase, char *filename, char *extension, int num) {
+  char *append = strrchr(filename, '/');
+  if(append == NULL) {
+    append = filename;
+  } else {
+    append++;
+  }
+  strncat(dirbase, append, num-strlen(dirbase));
+  strcpy(strrchr(dirbase, (int)'.'), extension);
 }
