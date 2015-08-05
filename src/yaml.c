@@ -88,11 +88,20 @@ int yaml_get_next(yaml_token_t *tok) {
       /* truncate comments */
       if(line && *line) {
         char *ptr = line;
+        int dblquote = 0;
+        int quote = 0;
         while(*ptr) {
-          if(*ptr == '#') {
+          if(*ptr == '#' && !dblquote && !quote) {
+            /* check for escaped # */
             DBG_YAML printf("truncating comment %s from line %s\n", ptr, line);
             *ptr = 0;
             break;
+          }
+          if(*ptr == '\'') {
+            quote ^= 1;
+          }
+          if(*ptr == '\"') {
+            dblquote ^= 1;
           }
           ptr++;
         }
