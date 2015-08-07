@@ -339,15 +339,14 @@ idle_loop
     goto    read_Button_B     ; if yes - goto data sampling procedure
     goto    idle_loop
 
-read_Button_B ; button B can be read immediately
+read_Button_B ; button B can be read (nearly) immediately
     bcf     INTCON, INTF
-    nop                         ; for UWRC by micro (or probably other thrid party controller)
+    nop                         ; for UWRC by micro (or other thrid party controller)
     btfsc   PORTA, SERIAL_DATA
     bsf     reg_ctrl_data_msb, BUTTON_B
 postwait_Button_B
     btfss   INTCON, INTF
     goto    postwait_Button_B
-    bcf     INTCON, RAIF        ; from now on, no IOC at the data latch shall appear
 
     bcf     INTCON, INTF
     movfw   PORTA
@@ -361,6 +360,7 @@ read_Button_Y
 store_Button_Y
     btfss   STATUS, Z
     bsf     reg_ctrl_data_msb, BUTTON_Y
+    bcf     INTCON, RAIF        ; from now on, no IOC at the data latch shall appear
 
     bcf     INTCON, INTF
     movfw   PORTA
