@@ -23,6 +23,7 @@ typedef enum _yaml_token_type {
   YAML_LONG,
   YAML_BOOL,
   YAML_NONE,
+  YAML_ITEM_START,
   YAML_UNKNOWN
 } yaml_token_type;
 
@@ -31,6 +32,16 @@ typedef enum _yaml_token_type {
 #define YAML_DELIM_KEY            (":\r\n")
 #define YAML_DELIM_VALUE          ("\r\n")
 #define YAML_DELIM_NONE           (" \r\n")
+
+#define YAML_FLAG_FILE_OPEN       (0x01)
+#define YAML_FLAG_BUF_EMPTY       (0x02)
+#define YAML_FLAG_REWIND_LINE     (0x04)
+#define YAML_FLAG_REWIND_TOKEN    (0x08)
+
+typedef enum _yaml_scope {
+  YAML_SCOPE_GLOBAL = 0,
+  YAML_SCOPE_ITEM
+} yaml_scope;
 
 typedef enum _yaml_parse_state {
   YAML_PSTATE_NONE = 0,
@@ -49,13 +60,14 @@ typedef struct _yaml_token {
 } yaml_token_t;
 
 typedef struct _yaml_state {
-  bool     file_open;
+  uint8_t  flags;
   uint8_t  ff_flags;
   int      depth;
+  uint32_t line_offset;
   uint32_t parent_offset;
-  bool     empty;
   yaml_parse_state state;
   char     line[YAML_BUFLEN+1];
+  char     *delim;
 } yaml_state_t;
 
 void yaml_file_open(char *filename, uint8_t ff_flags);
@@ -63,13 +75,17 @@ void yaml_file_close(void);
 
 /* read next token sequentially */
 int yaml_get_next(yaml_token_t *tok);
-/* search for previous token with given properties */
-int yaml_search_prev(yaml_token_t *tok);
 /* search for next token with given properties */
-int yaml_search_next(yaml_token_t *tok);
+int yaml_search_next(yaml_token_t *tok, yaml_scope scope);
 /* go back to head of file */
 void yaml_rewind(void);
+/* go back to start of current item */
+void yaml_rewind_item(void);
+/* go to next item */
+int yaml_next_item(void);
 /* retrieve value of a given key */
-int yaml_get_value(char *key);
+int yaml_get_value(char *key, yaml_token_t *tok, yaml_scope scope);
+/* retrieve value from within current item only */
+int yaml_get_itemvalue(char *key, yaml_token_t *tok);
 
 #endif

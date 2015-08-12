@@ -52,4 +52,6 @@ UINT file_readblock(void* buf, uint32_t addr, uint16_t size);
 UINT file_writeblock(void* buf, uint32_t addr, uint16_t size);
 
 uint8_t file_getc(void);
+void append_file_basename(char *dirbase, char *filename, char *extension, int num);
+
 #endif
