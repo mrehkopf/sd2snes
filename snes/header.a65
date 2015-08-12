@@ -63,15 +63,19 @@ NMI_8bit:
   .byt "MR"     ; 2 bytes - company id
   .byt "SNSD"   ; 4 bytes - rom id
 
+;*= $C0FFC0
+;  .byt "SD2SNES MAIN MENU    "
 *= $C0FFC0
-  .byt "SD2SNES MAIN MENU    "
+  .byt "SD2SNES MENU v017pre4"
 ;       123456789012345678901  -  max 21 chars
 
 *= $C0FFD5  .byt $31 ; rom map + speed (HiROM FastROM)
 *= $C0FFD6  .byt $55 ; rom type   SRTC
 *= $C0FFD7  .byt $06 ; rom size   64 kByte
 *= $C0FFD8  .byt $03 ; sram size  8 kBit
-*= $C0FFD9  .byt $09 ; rom region 9 = Germany
+;*= $C0FFD9  .byt $09 ; rom region 9 = Germany
+*= $C0FFD9  .byt $01 ; rom region 1 = USA
+;  (just for Ultra16 -> show menu in 60Hz if 'Auto' is selected as videomode)
 *= $C0FFDA  .byt $33 ; company id flag
 
 *= $C0FFDC  .word 0,0 ; checksums
