@@ -85,6 +85,7 @@ static int32_t parse_unsigned(uint32_t lower, uint32_t upper, uint8_t base) {
     return -2;
   }
 
+  errno = 0;
   result = strtoul(curchar, &end, base);
   if ((*end != ' ' && *end != 0) || errno != 0) {
     printf("Invalid numeric argument\n");
