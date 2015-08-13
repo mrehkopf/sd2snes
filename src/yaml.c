@@ -278,9 +278,14 @@ void yaml_rewind() {
 /* go to after last occurrence of "^- " */
 void yaml_rewind_item() {
   DBG_YAML printf("rewinding item (offset: %ld)\n", ystate.parent_offset);
-  yaml_seek(ystate.parent_offset);
-  ystate.state = YAML_PSTATE_KEY;
-  ystate.delim = YAML_DELIM_KEY;
+  if(ystate.parent_offset) {
+    yaml_seek(ystate.parent_offset);
+    ystate.state = YAML_PSTATE_KEY;
+    ystate.delim = YAML_DELIM_KEY;
+  } else {
+    /* rewind entire file when not within item */
+    yaml_rewind();
+  }
 }
 
 /* search for next item start ("^- ") */
