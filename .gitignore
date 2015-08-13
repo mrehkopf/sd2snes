@@ -107,6 +107,13 @@ snes/.cproject
 snes/.project
 src/.cproject
 src/.project
+src/bootldr/obj
+others/*
+verilog/*/ipcore_dir/*/*
+verilog/*/_xmsgs/
+verilog/*/iseconfig/
+verilog/*/xst/
+verilog/*/xlnx_auto_0_xdb/
 =======
 .project
 .cproject
