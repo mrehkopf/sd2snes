@@ -35,7 +35,7 @@
 int newcard;
 
 void file_init() {
-  file_res=f_mount(0, &fatfs);
+  file_res=f_mount(&fatfs, "/", 1);
   newcard = 0;
   file_path[0] = '/';
   file_path[1] = 0;
