@@ -11,14 +11,14 @@ rtcstate_t rtc_state;
 #define CLKEN  0
 #define CTCRST 1
 
-uint8_t rtc_isvalid(void) {
+uint8_t rtc_isvalid() {
   if(LPC_RTC->GPREG0 == RTC_MAGIC) {
     return RTC_OK;
   }
   return RTC_INVALID;
 }
 
-void rtc_init(void) {
+void rtc_init() {
   if (LPC_RTC->CCR & BV(CLKEN)) {
     rtc_state = RTC_OK;
   } else {
@@ -81,7 +81,7 @@ uint32_t get_fattime(void) {
     ((uint32_t)time.tm_sec)   >> 1;
 }
 
-uint64_t get_bcdtime(void) {
+uint64_t get_bcdtime() {
   struct tm time;
   read_rtc(&time);
   uint16_t year = time.tm_year;
@@ -119,6 +119,50 @@ void set_bcdtime(uint64_t btime) {
 void printtime(struct tm *time) {
   printf("%04d-%02d-%02d %02d:%02d:%02d\n", time->tm_year, time->tm_mon,
     time->tm_mday, time->tm_hour, time->tm_min, time->tm_sec);
+}
+
+void bcdtime2srtctime(uint64_t bcdtime, uint8_t *srtctime) {
+  uint8_t century = ((bcdtime >> 52) & 0xf) * 10
+                  + ((bcdtime >> 48) & 0xf);
+  srtctime[0] = (century - 10) & 0xf;
+  srtctime[1] = (bcdtime >> 44) & 0xf;
+  srtctime[2] = (bcdtime >> 40) & 0xf;
+  uint8_t month = ((bcdtime >> 36) & 0xf) * 10
+                + ((bcdtime >> 32) & 0xf);
+  srtctime[3] = month;
+  srtctime[4] = (bcdtime >> 28) & 0xf;
+  srtctime[5] = (bcdtime >> 24) & 0xf;
+  srtctime[6] = (bcdtime >> 20) & 0xf;
+  srtctime[7] = (bcdtime >> 16) & 0xf;
+  srtctime[8] = (bcdtime >> 12) & 0xf;
+  srtctime[9] = (bcdtime >> 8) & 0xf;
+  srtctime[10] = (bcdtime >> 4) & 0xf;
+  srtctime[11] = bcdtime & 0xf;
+}
+
+uint64_t srtctime2bcdtime(uint8_t *srtctime) {
+  /* 1st nibble is the century - 10 (binary 0-f = 10xx-25xx)
+     4th nibble is the month (binary 1-c)
+     all other fields are BCD */
+  uint64_t result = 0LL;
+  uint8_t data;
+  for(int i=0; i<12; i++) {
+    data = srtctime[i];
+    data &= 0xf;
+    switch(i) {
+      case 0:
+        result = (result << 4) | ((data / 10) + 1);
+        result = (result << 4) | (data % 10);
+        break;
+      case 3:
+        result = (result << 4) | ((data / 10));
+        result = (result << 4) | (data % 10);
+        break;
+      default:
+        result = (result << 4) | data;
+    }
+  }
+  return result & 0x00ffffffffffffffLL;
 }
 
 void testbattery() {
