@@ -35,8 +35,11 @@
 #include "memory.h"
 #include "led.h"
 #include "sort.h"
+#include "cfg.h"
 
 #include "timer.h"
+
+extern cfg_t CFG;
 
 /*
  * directory format:
@@ -111,7 +114,9 @@ printf("start\n");
   }
   /* write directory termination */
   sram_writelong(0, ptr_tbl_off);
-  sort_dir(SRAM_DIR_ADDR, numentries);
+  if(CFG.sort_directories) {
+    sort_dir(SRAM_DIR_ADDR, numentries);
+  }
 printf("end\n");
 printf("%d entries, time: %d\n", numentries, getticks()-ticks);
   return numentries;
