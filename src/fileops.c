@@ -41,14 +41,6 @@ void file_init() {
   file_path[1] = 0;
 }
 
-FRESULT dir_open_by_filinfo(DIR* dir, FILINFO* fno) {
-  return l_opendirbycluster(&fatfs, dir, (TCHAR*)"", fno->clust);
-}
-
-void file_open_by_filinfo(FILINFO* fno) {
-  file_res = l_openfilebycluster(&fatfs, &file_handle, (TCHAR*)"", fno->clust, fno->fsize);
-}
-
 void file_open(const uint8_t* filename, BYTE flags) {
   file_res = f_open(&file_handle, (TCHAR*)filename, flags);
   file_block_off = sizeof(file_buf);
