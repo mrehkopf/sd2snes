@@ -124,7 +124,7 @@ void smc_id(snes_romprops_t* props) {
       if (header->map == 0x20 && ext_coprocessor && header->carttype2 == 0x10) {
         props->has_cx4 = 1;
         props->fpga_conf = FPGA_CX4;
-        props->fpga_features |= FEAT_CX4;
+//        props->fpga_features |= FEAT_CX4;
         props->fpga_dspfeat = CFG.cx4_speed;
       }
       /* DSP1/1B LoROM */

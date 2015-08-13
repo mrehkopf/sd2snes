@@ -54,7 +54,7 @@
 #define FEAT_ST0010        (1 << 1)
 #define FEAT_DSPX          (1 << 0)
 
-#define FEAT_CX4           (1 << 4)
+// #define FEAT_CX4           (1 << 4)
 
 #define FPGA_WAIT_RDY()    do {while(BITBAND(SSP_REGS->SR, SSP_BSY)); while(!BITBAND(FPGA_MCU_RDY_REG->FIOPIN, FPGA_MCU_RDY_BIT));} while (0)
 
