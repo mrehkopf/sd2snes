@@ -1,7 +1,7 @@
 ##############################################################
 #
-# Xilinx Core Generator version 13.2
-# Date: Sun Oct 16 18:54:12 2011
+# Xilinx Core Generator version 14.7
+# Date: Wed Feb 11 08:57:18 2015
 #
 ##############################################################
 #
@@ -99,7 +99,7 @@ CSET write_width_a=8
 CSET write_width_b=8
 # END Parameters
 # BEGIN Extra information
-MISC pkg_timestamp=2011-03-11T08:24:14.000Z
+MISC pkg_timestamp=2011-03-11T08:24:14Z
 # END Extra information
 GENERATE
-# CRC: a7d60fbd
+# CRC: 90c561b0
