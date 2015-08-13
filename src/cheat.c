@@ -200,7 +200,7 @@ void cheat_yaml_save(uint8_t *romfilename) {
     f_printf(&file_handle, "  Code:\n");
     for(int i = 0; i < cheat.numpatches; i++) {
       uint32_t gg_code = cheat_raw2gg(cheat.patches[i].code);
-      f_printf(&file_handle, "  - %08lX    ", cheat.patches[i].code);
+      f_printf(&file_handle, "  - \"%08lX\"    ", cheat.patches[i].code);
       if(cheat_is_wram_cheat(cheat.patches[i].code)) {
         f_printf(&file_handle, "# GG code: N/A (WRAM cheat)\n");
       } else {
