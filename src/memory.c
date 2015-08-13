@@ -326,11 +326,16 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   fpga_set_features(romprops.fpga_features);
   fpga_set_dspfeat(romprops.fpga_dspfeat);
 
-  if(get_cic_state() == CIC_PAIR)
+  if(get_cic_state() == CIC_PAIR) {
     if(filename != (uint8_t*)"/sd2snes/menu.bin") {
-      cic_videomode(CFG.vidmode_game);
+      if(CFG.vidmode_game == VIDMODE_AUTO) {
+        cic_videomode(romprops.region);
+      } else {
+        cic_videomode(CFG.vidmode_game);
+      }
       cic_d4(romprops.region);
     }
+  }
 
   if(flags & LOADROM_WAIT_SNES) {
     while(snes_get_mcu_cmd() != SNES_CMD_RESET);
