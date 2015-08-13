@@ -47,6 +47,9 @@ nmi_payload:
   ldx $ffee
   stx <IRQ_VECT_ORIG
   stz <NMI_VECT_DISABLE
+; skip in-game buttons if disabled
+  lda <NMI_BUTTONS_ENABLE
+  beq nmi_patches
 ; read controller
   lda <MIRROR_4200
   lsr

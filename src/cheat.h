@@ -64,6 +64,7 @@ void cheat_enable(int enable);
 void cheat_nmi_enable(int enable);
 void cheat_irq_enable(int enable);
 void cheat_holdoff_enable(int enable);
+void cheat_buttons_enable(int enable);
 
 /* read cheats from YAML file and convert to SNES structure */
 void cheat_yaml_load(uint8_t *romfilename);

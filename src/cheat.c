@@ -6,9 +6,12 @@
 #include "snes.h"
 #include "cheat.h"
 #include "yaml.h"
+#include "cfg.h"
 
 #include <string.h>
 #include <stdlib.h>
+
+extern cfg_t CFG;
 
 uint8_t rom_index;
 uint8_t wram_index;
@@ -52,11 +55,12 @@ void cheat_program() {
   printf("enable mask=%02x\n", enable_mask);
   fpga_write_cheat(6, enable_mask);
   cheat_enable(1);
-  cheat_nmi_enable(1);
-  cheat_irq_enable(1);
-  cheat_holdoff_enable(1);
-}
+  cheat_nmi_enable(CFG.enable_irq_hook);
+  cheat_irq_enable(CFG.enable_irq_hook);
+  cheat_holdoff_enable(CFG.enable_irq_holdoff);
+  cheat_buttons_enable(CFG.enable_irq_buttons);
 
+}
 void cheat_program_single(cheat_patch_record_t *cheat) {
   uint8_t is_wram_cheat;
   /* determine ROM or WRAM cheat */
@@ -130,6 +134,10 @@ void cheat_holdoff_enable(int enable) {
   printf("holdoff_enable->%d\n", enable);
   flags = (enable ? 0x08 : 0x80);
   fpga_write_cheat(7, flags);
+}
+
+void cheat_buttons_enable(int enable) {
+  snescmd_writebyte(enable, SNESCMD_NMI_ENABLE_BUTTONS);
 }
 
 /* read cheats from YAML file to ROM for menu usage */
