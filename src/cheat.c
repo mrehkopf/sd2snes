@@ -179,7 +179,6 @@ void cheat_yaml_load(uint8_t* romfilename) {
   }
   sram_writebyte(cheat_idx, SRAM_CHEAT_ADDR);
   yaml_file_close();
-  file_res = 0; /* soft fail, suppress LED blink */
 }
 
 /* save cheats to YAML file from ROM/menu */

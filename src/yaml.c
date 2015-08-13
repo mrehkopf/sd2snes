@@ -17,7 +17,7 @@ void yaml_file_open(char *filename, uint8_t ff_flags) {
     return;
   }
   file_open((uint8_t*)filename, ff_flags);
-  if(file_res) return;
+  if(file_res) file_open((uint8_t*)filename, ff_flags | FA_CREATE_ALWAYS); /* file does not exist -> just create it to suppress LED blink */;
   ystate.flags = YAML_FLAG_FILE_OPEN | YAML_FLAG_BUF_EMPTY;
   ystate.ff_flags = ff_flags;
   ystate.depth = 0;
