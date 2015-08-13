@@ -502,6 +502,10 @@ store_wram_routines:
   ldx #!fadeloop
   ldy #!WRAM_FADELOOP
   mvn $7e, $c0
+  lda #$000a
+  ldx #!wram_wait_mcu_src
+  ldy #!WRAM_WAIT_MCU
+  mvn $7e, $c0
   plb
   plp
   rts
@@ -542,6 +546,14 @@ wram_routine_src:
   jsl @WRAM_STORE_BLOCKRAM_ROUTINE
   jsl @BRAM_ROUTINE
   plp
+  rtl
+
+; *=$7ef180
+wram_wait_mcu_src:
+  .as
+- lda @SNES_CMD
+  cmp #$55
+  bne -
   rtl
 
 game_handshake:
