@@ -8,7 +8,7 @@
 ; 3 bytes  long pointer to menu entry text
 ; 3 bytes  long pointer to routine / submenu structure / preset table
 ; 1 byte   data type of parameter (see below)
-; 3 bytes  long pointer to parameter (of data type above)
+; 3 bytes  long pointer to parameter value (of data type above)
 
 ; entry types:
 ; 00  termination
@@ -29,10 +29,9 @@
 
 ; preset table/value:
 ; data types 01,02: two 16-bit values - (min, max)
-;                   unlimited if both values == $0000
 ; data type     03: one 16-bit value  - max string length
 ; data type  04,05: table of tuples of entries
-;                   1. 16-bit setting value
+;                   1. 16-bit setting value (type 04 only uses low byte)
 ;                   2. 24-bit pointer to C string of value
 ;                   (val=$ffff terminates)
 ; data type     06: 3 bytes - long pointer to file path
@@ -77,6 +76,14 @@ menu_enttab_cfg:
  .byt 1               ; listsel_step=1
  .word !mtext_mm_cfg
  .byt ^mtext_mm_cfg
+; ENTRIES
+ .byt MTYPE_SUBMENU
+ .word !test_mtext_title
+ .byt ^test_mtext_title
+ .word !menu_enttab_test
+ .byt ^menu_enttab_test
+ .byt 0
+ .byt 0,0,0
 
  .byt MTYPE_FUNC
  .word !mtext_cfg_time
@@ -145,11 +152,11 @@ menu_enttab_bsx:
  .byt  MTYPE_VALUE
  .word !mtext_bsx_timesource
  .byt  ^mtext_bsx_timesource
- .word !mkv_bsx_timesource
- .byt  ^mkv_bsx_timesource
+ .word !kv_bsx_timesource
+ .byt  ^kv_bsx_timesource
  .byt  OPTTYPE_KVBYTE
- .word !mkv_bsx_timesource
- .byt  ^mkv_bsx_timesource
+ .word !kv_bsx_timesource
+ .byt  ^kv_bsx_timesource
 
  .byt  MTYPE_FUNC
  .word !mtext_bsx_time
@@ -161,8 +168,89 @@ menu_enttab_bsx:
 
  .byt 0
 
-mkv_bsx_timesource:
- .word $0000, !text_rtc : .byt ^text_rtc
- .word $0001, !text_custom : .byt ^text_custom
- .word $ffff
+kv_bsx_timesource:
+.word $0000, !text_rtc : .byt ^text_rtc
+.word $0001, !text_custom : .byt ^text_custom
+.word $ffff
 
+menu_enttab_test:
+; HEADER
+ .byt 1
+ .word !test_mtext_title
+ .byt  ^test_mtext_title
+; ENTRIES
+ .byt  MTYPE_VALUE
+ .word !test_mtext_entry_byte
+ .byt  ^test_mtext_entry_byte
+ .word !test_mtext_entry_byte_ptab
+ .byt  ^test_mtext_entry_byte_ptab
+ .byt  OPTTYPE_BYTE
+ .word $F000
+ .byt  $7F
+ .byt  MTYPE_VALUE
+ .word !test_mtext_entry_word
+ .byt  ^test_mtext_entry_word
+ .word !test_mtext_entry_word_ptab
+ .byt  ^test_mtext_entry_word_ptab
+ .byt  OPTTYPE_WORD
+ .word $F001
+ .byt  $7F
+ .byt  MTYPE_VALUE
+ .word !test_mtext_entry_string
+ .byt  ^test_mtext_entry_string
+ .word $0008
+ .byt  0
+ .byt  OPTTYPE_STRING
+ .word $F003
+ .byt  $7F
+ .byt  MTYPE_VALUE
+ .word !test_mtext_entry_kvbyte
+ .byt  ^test_mtext_entry_kvbyte
+ .word !test_mtext_entry_kvbyte_ptab
+ .byt  ^test_mtext_entry_kvbyte_ptab
+ .byt  OPTTYPE_KVBYTE
+ .word $F00B
+ .byt  $7F
+ .byt  MTYPE_VALUE
+ .word !test_mtext_entry_kvword
+ .byt  ^test_mtext_entry_kvword
+ .word !test_mtext_entry_kvword_ptab
+ .byt  ^test_mtext_entry_kvword_ptab
+ .byt  OPTTYPE_KVWORD
+ .word $F00C
+ .byt  $7F
+ .byt  MTYPE_VALUE
+ .word !test_mtext_entry_file
+ .byt  ^test_mtext_entry_file
+ .word !test_mtext_entry_file_path
+ .byt  ^test_mtext_entry_file_path
+ .byt  OPTTYPE_FILESEL
+ .word $F00E
+ .byt  $7F
+
+ .byt 0
+
+test_mtext_title              .byt "Test Menu", 0
+test_mtext_entry_byte         .byt "Byte Select", 0
+test_mtext_entry_word         .byt "Word Select", 0
+test_mtext_entry_string       .byt "String Select", 0
+test_mtext_entry_kvbyte       .byt "8bit Key-Value Select", 0
+test_mtext_entry_kvword       .byt "16bit Key-Value Select", 0
+test_mtext_entry_file         .byt "File Select", 0
+test_mtext_entry_byte_ptab    .word $0000, $00ff
+test_mtext_entry_word_ptab    .word $0000, $ffff
+test_mtext_entry_kvbyte_ptab  .word $0000, !text_on : .byt ^text_on
+                              .word $0003, !text_off : .byt ^text_off
+                              .word $0001, !text_yes : .byt ^text_yes
+                              .word $010e, !text_no : .byt ^text_no
+                              .word $0104, !text_fast : .byt ^text_fast
+                              .word $ffff
+
+test_mtext_entry_kvword_ptab  .word $10f0, !text_50Hz : .byt ^text_50Hz
+                              .word $20e3, !text_60Hz : .byt ^text_60Hz
+                              .word $0008, !text_normal : .byt ^text_normal
+                              .word $0133, !text_rtc : .byt ^text_rtc
+                              .word $010a, !text_auto : .byt ^text_auto
+                              .word $ffff
+
+test_mtext_entry_file_path    .byt TYPE_IPS : .word !rootdir : .byt ^rootdir

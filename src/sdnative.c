@@ -891,7 +891,7 @@ DRESULT sdn_ioctl(BYTE drv, BYTE cmd, void *buffer) {
 }
 DRESULT disk_ioctl(BYTE drv, BYTE cmd, void *buffer) __attribute__ ((weak, alias("sdn_ioctl")));
 
-DRESULT sdn_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
+DRESULT sdn_read(BYTE drv, BYTE *buffer, DWORD sector, UINT count) {
   uint8_t sec;
   if(drv >= MAX_CARDS) {
     return RES_PARERR;
@@ -904,7 +904,7 @@ DRESULT sdn_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
   readled(0);
   return RES_OK;
 }
-DRESULT disk_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sdn_read")));
+DRESULT disk_read(BYTE drv, BYTE *buffer, DWORD sector, UINT count) __attribute__ ((weak, alias("sdn_read")));
 
 DSTATUS sdn_initialize(BYTE drv) {
 
@@ -1061,7 +1061,7 @@ DRESULT sdn_getinfo(BYTE drv, BYTE page, void *buffer) {
 }
 DRESULT disk_getinfo(BYTE drv, BYTE page, void *buffer) __attribute__ ((weak, alias("sdn_getinfo")));
 
-DRESULT sdn_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
+DRESULT sdn_write(BYTE drv, const BYTE *buffer, DWORD sector, UINT count) {
   uint8_t sec;
   uint8_t *buf = (uint8_t*)buffer;
   if(drv >= MAX_CARDS) {
@@ -1079,7 +1079,7 @@ DRESULT sdn_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
   return RES_OK;
 }
 
-DRESULT disk_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sdn_write")));
+DRESULT disk_write(BYTE drv, const BYTE *buffer, DWORD sector, UINT count) __attribute__ ((weak, alias("sdn_write")));
 
 /* Detect changes of SD card 0 */
 void sdn_changed() {
@@ -1145,4 +1145,3 @@ void sdn_gettacc(uint32_t *tacc_max, uint32_t *tacc_avg) {
     *tacc_avg = time_avg/(CONFIG_CPU_FREQUENCY / 1000000)-114;
   }
 }
-

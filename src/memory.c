@@ -47,6 +47,7 @@ memory.c: RAM operations
 #include "msu1.h"
 #include "cli.h"
 #include "cheat.h"
+#include "rtc.h"
 
 #include <string.h>
 char* hex = "0123456789ABCDEF";
@@ -264,7 +265,11 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     sram_writebyte(0x33, rombase+0xda);
     sram_writebyte(0x00, rombase+0xd4);
     sram_writebyte(0x00, rombase+0xd5);
-    set_fpga_time(0x0220110301180000LL);
+    if(CFG.bsx_use_usertime) {
+      set_fpga_time(srtctime2bcdtime(CFG.bsx_time));
+    } else {
+      set_fpga_time(get_bcdtime());
+    }
   }
   if(romprops.has_dspx) {
     printf("DSPx game. Loading firmware image %s...\n", romprops.dsp_fw);
@@ -326,11 +331,16 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   fpga_set_features(romprops.fpga_features);
   fpga_set_dspfeat(romprops.fpga_dspfeat);
 
-  if(get_cic_state() == CIC_PAIR)
+  if(get_cic_state() == CIC_PAIR) {
     if(filename != (uint8_t*)"/sd2snes/menu.bin") {
-      cic_videomode(CFG.vidmode_game);
+      if(CFG.vidmode_game == VIDMODE_AUTO) {
+        cic_videomode(romprops.region);
+      } else {
+        cic_videomode(CFG.vidmode_game);
+      }
       cic_d4(romprops.region);
     }
+  }
 
   if(flags & LOADROM_WAIT_SNES) {
     while(snes_get_mcu_cmd() != SNES_CMD_RESET);

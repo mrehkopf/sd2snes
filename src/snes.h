@@ -72,6 +72,7 @@
 #define SNESCMD_NMI_DISABLE_CHEATS   (0x2ba6)
 #define SNESCMD_NMI_KILL_NMIHOOK     (0x2ba8)
 #define SNESCMD_NMI_TMP_KILL_NMIHOOK (0x2baa)
+#define SNESCMD_NMI_ENABLE_BUTTONS   (0x2bfc)
 #define SNESCMD_NMI_DISABLE_WRAM     (0x2bfe)
 #define SNESCMD_NMI_WRAM_PATCH_COUNT (0x2bff)
 #define SNESCMD_HOOKS                (0x2bb0)
@@ -108,6 +109,7 @@ uint8_t snes_get_mcu_cmd(void);
 void snes_set_mcu_cmd(uint8_t cmd);
 uint8_t snes_get_snes_cmd(void);
 void snes_set_snes_cmd(uint8_t cmd);
+void echo_mcu_cmd(void);
 uint32_t snes_get_mcu_param(void);
 void snescmd_writeshort(uint16_t val, uint16_t addr);
 void snescmd_writebyte(uint8_t val, uint16_t addr);

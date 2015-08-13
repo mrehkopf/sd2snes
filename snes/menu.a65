@@ -2,6 +2,8 @@
 #include "dma.i65"
 #include "stack.i65"
 
+#define MENU_NUM_DATA_TYPES $06
+
 mainmenu:
   sep #$20 : .as
   rep #$10 : .xl
@@ -187,7 +189,10 @@ show_menu:
       pha
       plb
       ldx w_menu_addr
+      lda w_max_lbl_len
+      pha
       jsr menu_print_entries
+      pla
     plb
     lda w_numentries
     sta listsel_max
@@ -214,6 +219,8 @@ show_menu_loop:
     beq show_menu_submenu
     cmp #MTYPE_FUNC
     beq show_menu_func
+    cmp #MTYPE_VALUE
+    beq show_menu_editvalue
 show_menu_cont:
     sep #$20 : .as
 ;    jsr pop_window
@@ -228,8 +235,8 @@ show_menu_out:
 show_menu_submenu:
     .al
     phy
-    jsr push_window
-    jsr window_greyout
+      jsr push_window
+      jsr window_greyout
     ply
     lda [w_menu_addr], y
     tax
@@ -276,6 +283,60 @@ show_menu_func_cont:
     jsr pop_window
     ply
     bra show_menu_cont
+
+show_menu_editvalue:
+    phy
+      phb
+        rep #$20 : .al
+        tya
+        clc
+        adc w_menu_addr
+        sec
+        sbc #$0004 ; subtract previous Y displacement
+        tax
+        sep #$20 : .as
+        lda w_menu_bank
+        pha
+        plb
+        jsr menu_edit_value
+      plb
+    ply
+    jmp show_menu_cont
+#undef _work_vars
+
+; menu_edit_value
+; show a select/edit dialog depending on data type
+; and store value in location according to menu
+; entry structure
+; params:
+; db: bank of menu entry
+; x: address of menu entry
+.byt "MENU_EDIT_VALUE"
+menu_edit_value:
+; local variables
+#define _work_vars      $03
+#define w_preset_addr   $00
+#define w_preset_bank   $02
+; returns:
+; carry flag: 1=value set, 0=canceled
+  AllocStack()
+  rep #$20 : .al
+  lda !$4, x
+  sta w_preset_addr
+  lda #$0000 ; cleanup B for jump table offset
+  sep #$20 : .as
+  lda !$6, x
+  sta w_preset_bank
+  lda !$7, x
+  ; do not jump to undefined
+  cmp #MENU_NUM_DATA_TYPES+1
+  bcs menu_edit_value_out
+  asl ; prepare jump table pointer
+  tax
+  jsr (menu_tab_edit_value_dialogs, x)
+menu_edit_value_out:
+  FreeStack()
+  rts
 #undef _work_vars
 
 ; params:
@@ -414,6 +475,7 @@ menu_meas_opt_keyval_skip
   lda w_max_kv_len
   bra menu_meas_opt_set
 menu_meas_opt_06      ; file select (16 characters)
+  .as
   lda #$10
   bra menu_meas_opt_set
 menu_meas_opt_set
@@ -534,12 +596,20 @@ menu_print_opt_string:
   lda [w_entry_addr]
   and #$00ff
   phx
-  jsr bin2dec16
-  lda @print_src
-  inc
-  inc
-  sta @print_src
-  jsr hiprint
+    jsr bin2dec16
+    lda @print_src
+    inc
+    inc
+    sta @print_src
+    tay
+    sep #$20 : .as
+    lda @print_bank
+    phb
+      pha
+      plb
+      jsr right_align
+    plb
+    jsr hiprint
   plx
   jmp menu_print_opt_string_out
 menu_print_opt_string_02:
@@ -549,24 +619,39 @@ menu_print_opt_string_02:
   rep #$20 : .al
   lda [w_entry_addr]
   phx
-  jsr bin2dec16
-  jsr hiprint
+    jsr bin2dec16
+    lda @print_src
+    tay
+    sep #$20 : .as
+    lda @print_bank
+    phb
+      pha
+      plb
+      jsr right_align
+    plb
+    jsr hiprint
   plx
   jmp menu_print_opt_string_out
 menu_print_opt_string_03:
   .as
   cmp #$03
   bne menu_print_opt_string_04
+  rep #$20 : .al
   lda !$c, x
   sta @print_src
-  lda !$d, x
-  sta @print_src+1
-  lda !$e, x
-  sta @print_bank
+  tay
+  sep #$20 : .as
   lda !$8, x
   sta @print_count
+  lda !$e, x
+  sta @print_bank
   phx
-  jsr hiprint
+    phb
+      pha
+      plb
+      jsr right_align
+    plb
+    jsr hiprint
   plx
   lda @window_w
   sta @print_count
@@ -584,6 +669,15 @@ menu_print_opt_string_keyval:
   sty w_kvpar_addr
   rep #$20 : .al
   lda [w_kvpar_addr]      ; load currently set value
+  ; mask for 8-bit key!
+  phx
+    ldy !$b, x
+    sep #$10 : .xs
+    cpy #$05
+    beq +
+    and #$00ff
++   rep #$10 : .xl
+  plx
   sta w_kvpar_data
   lda !$8, x              ; load pointer to kvtable
   sta w_kvtab_addr
@@ -598,7 +692,7 @@ menu_print_opt_string_keyval:
     lda w_kvpar_data
     jsr menu_kv_lookup
     lda !$2, y
-    pha                   ; save offset for justification
+    pha                   ; save offset for right-align
       sta @print_src
       sep #$20 : .as
       lda !$4, y
@@ -606,15 +700,7 @@ menu_print_opt_string_keyval:
       pha
       plb
     ply
-    jsr strlen            ; right-justify:
-    tya                   ; print_x = window_x+window_w-2-strlen
-    sec                   ; = ~(strlen-window_x)+1+window_w-2
-    sbc @window_x
-    eor #$ff
-    clc
-    adc @window_w
-    dec                   ; = ~(strlen-window_x)+window_w-1
-    sta @print_x
+    jsr right_align
   plb
   phx
   jsr hiprint
@@ -626,14 +712,23 @@ menu_print_opt_string_06:
   sta @stringbuf
   lda #$00
   sta @stringbuf+1
-  lda #^stringbuf
-  sta @print_bank
   lda #$02
   sta @print_pal
+  lda #$10
+  sta @print_count
   rep #$20 : .al
   lda #!stringbuf
   sta @print_src
+  tay
+  sep #$20 : .as
+  lda #^stringbuf
+  sta @print_bank
   phx
+    phb
+      pha
+      plb
+      jsr right_align
+    plb
   jsr hiprint
   plx
 menu_print_opt_string_out:
@@ -670,3 +765,75 @@ menu_kv_lookup_out:
     pla
   plp
   rts
+
+menu_value_dialog_dummy:
+  rts
+
+menu_value_dialog_u8:
+  php
+    rep #$10 : .xl
+    sep #$20 : .as
+    phb
+    lda #$80
+    pha
+    plb
+    lda bar_xl
+    clc
+    adc bar_wl
+    dec
+    dec
+    dec
+    sta bar_xl
+    lda #$03
+    sta bar_wl
+-   jsr read_pad
+    lda pad_b
+    beq -
+    plb
+  plp
+  rts
+
+menu_value_dialog_u16:
+  php
+    rep #$10 : .xl
+    sep #$20 : .as
+    phb
+    lda #$80
+    pha
+    plb
+    lda bar_xl
+    clc
+    adc bar_wl
+    sec
+    sbc #$05
+    sta bar_xl
+    lda #$05
+    sta bar_wl
+-   jsr read_pad
+    lda pad_b
+    beq -
+    plb
+  plp
+  rts
+
+menu_value_dialog_string:
+  rts
+
+menu_value_dialog_kv8:
+  rts
+
+menu_value_dialog_kv16:
+  rts
+
+menu_value_dialog_file:
+  rts
+
+; jump table to different data type edit dialogs
+menu_tab_edit_value_dialogs:
+.word menu_value_dialog_dummy
+.word menu_value_dialog_u8
+.word menu_value_dialog_u16
+.word menu_value_dialog_string
+.word menu_value_dialog_kv8
+.word menu_value_dialog_kv16
+.word menu_value_dialog_file

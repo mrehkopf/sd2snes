@@ -228,7 +228,7 @@ spcplay_win_y   .byt 15
 spcplay_win_w   .byt 33
 spcplay_win_h   .byt 5
 
-text_spcload    .byt "Loading SPC data to SPC700...", 0
+text_spcload    .byt "Loading SPC data to SPC700", 127, 128, 0
 text_spcstarta  .byt "**** Now playing SPC tune ****", 0
 text_spcstartb  .byt "Name:  ",0
 text_spcstartc  .byt "Song:  ",0

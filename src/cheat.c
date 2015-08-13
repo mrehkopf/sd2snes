@@ -6,9 +6,12 @@
 #include "snes.h"
 #include "cheat.h"
 #include "yaml.h"
+#include "cfg.h"
 
 #include <string.h>
 #include <stdlib.h>
+
+extern cfg_t CFG;
 
 uint8_t rom_index;
 uint8_t wram_index;
@@ -52,11 +55,12 @@ void cheat_program() {
   printf("enable mask=%02x\n", enable_mask);
   fpga_write_cheat(6, enable_mask);
   cheat_enable(1);
-  cheat_nmi_enable(1);
-  cheat_irq_enable(1);
-  cheat_holdoff_enable(1);
-}
+  cheat_nmi_enable(CFG.enable_irq_hook);
+  cheat_irq_enable(CFG.enable_irq_hook);
+  cheat_holdoff_enable(CFG.enable_irq_holdoff);
+  cheat_buttons_enable(CFG.enable_irq_buttons);
 
+}
 void cheat_program_single(cheat_patch_record_t *cheat) {
   uint8_t is_wram_cheat;
   /* determine ROM or WRAM cheat */
@@ -132,6 +136,10 @@ void cheat_holdoff_enable(int enable) {
   fpga_write_cheat(7, flags);
 }
 
+void cheat_buttons_enable(int enable) {
+  snescmd_writebyte(enable, SNESCMD_NMI_ENABLE_BUTTONS);
+}
+
 /* read cheats from YAML file to ROM for menu usage */
 void cheat_yaml_load(uint8_t* romfilename) {
   yaml_token_t token;
@@ -199,7 +207,7 @@ void cheat_yaml_save(uint8_t *romfilename) {
     f_printf(&file_handle, "  Code:\n");
     for(int i = 0; i < cheat.numpatches; i++) {
       uint32_t gg_code = cheat_raw2gg(cheat.patches[i].code);
-      f_printf(&file_handle, "  - %08lX    ", cheat.patches[i].code);
+      f_printf(&file_handle, "  - \"%08lX\"    ", cheat.patches[i].code);
       if(cheat_is_wram_cheat(cheat.patches[i].code)) {
         f_printf(&file_handle, "# GG code: N/A (WRAM cheat)\n");
       } else {

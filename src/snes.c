@@ -38,6 +38,7 @@
 #include "cli.h"
 #include "fpga.h"
 #include "fpga_spi.h"
+#include "rtc.h"
 
 uint32_t saveram_crc, saveram_crc_old;
 extern snes_romprops_t romprops;
@@ -296,6 +297,10 @@ void snes_set_snes_cmd(uint8_t cmd) {
   fpga_write_snescmd(cmd);
 }
 
+void echo_mcu_cmd() {
+  snes_set_snes_cmd(snes_get_mcu_cmd());
+}
+
 uint32_t snes_get_mcu_param() {
   fpga_set_snescmd_addr(SNESCMD_MCU_PARAM);
   return (fpga_read_snescmd()
@@ -353,28 +358,11 @@ void snescmd_writeblock(void *buf, uint16_t addr, uint16_t size) {
 
 uint64_t snescmd_gettime(void) {
   fpga_set_snescmd_addr(SNESCMD_MCU_PARAM);
-  uint8_t data;
-  uint64_t result = 0LL;
-  /* 1st nibble is the century - 10 (binary)
-     4th nibble is the month (binary)
-     all other fields are BCD */
+  uint8_t data[12];
   for(int i=0; i<12; i++) {
-    data = fpga_read_snescmd();
-    data &= 0xf;
-    switch(i) {
-      case 0:
-        result = (result << 4) | ((data / 10) + 1);
-        result = (result << 4) | (data % 10);
-        break;
-      case 3:
-        result = (result << 4) | ((data / 10));
-        result = (result << 4) | (data % 10);
-        break;
-      default:
-        result = (result << 4) | data;
-    }
+    data[i] = fpga_read_snescmd();
   }
-  return result & 0x00ffffffffffffffLL;
+  return srtctime2bcdtime(data);
 }
 
 void snescmd_prepare_nmihook() {

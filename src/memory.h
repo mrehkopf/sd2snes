@@ -42,7 +42,9 @@
 #define SRAM_SPC_DATA_ADDR      (0xFD0000L)
 #define SRAM_SPC_HEADER_ADDR    (0xFE0000L)
 
-#define SRAM_MENU_SAVE_ADDR     (0xFF0000L)
+#define SRAM_SKIN_ADDR          (0xF00000L)
+#define SRAM_MENU_FILEPATH_ADDR (0xFF0000L)
+#define SRAM_MENU_CFG_ADDR      (0xFF0100L)
 #define SRAM_CMD_ADDR           (0xFF1000L)
 #define SRAM_PARAM_ADDR         (0xFF1004L)
 #define SRAM_STATUS_ADDR        (0xFF1100L)

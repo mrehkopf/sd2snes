@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define YAML_BUFLEN (80)
+#define YAML_BUFLEN (128)
 
 /* token types emitted by yaml_get_next */
 typedef enum _yaml_token_type {

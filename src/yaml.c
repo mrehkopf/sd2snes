@@ -48,10 +48,16 @@ yaml_token_type yaml_detect_value(char **token, yaml_token_t *tok) {
     }
     type = YAML_STRING;
     strncpy(tok->stringvalue, *token, YAML_BUFLEN);
-  } else if (!strcasecmp(*token, "true")) {
+  } else if (   !strcasecmp(*token, "true")
+             || !strcasecmp(*token, "yes")
+             || !strcasecmp(*token, "on")
+             || !strcasecmp(*token, "y")) {
     type = YAML_BOOL;
     tok->boolvalue = true;
-  } else if (!strcasecmp(*token, "false")) {
+  } else if (   !strcasecmp(*token, "false")
+             || !strcasecmp(*token, "no")
+             || !strcasecmp(*token, "off")
+             || !strcasecmp(*token, "n")) {
     type = YAML_BOOL;
     tok->boolvalue = false;
   } else {
@@ -272,9 +278,14 @@ void yaml_rewind() {
 /* go to after last occurrence of "^- " */
 void yaml_rewind_item() {
   DBG_YAML printf("rewinding item (offset: %ld)\n", ystate.parent_offset);
-  yaml_seek(ystate.parent_offset);
-  ystate.state = YAML_PSTATE_KEY;
-  ystate.delim = YAML_DELIM_KEY;
+  if(ystate.parent_offset) {
+    yaml_seek(ystate.parent_offset);
+    ystate.state = YAML_PSTATE_KEY;
+    ystate.delim = YAML_DELIM_KEY;
+  } else {
+    /* rewind entire file when not within item */
+    yaml_rewind();
+  }
 }
 
 /* search for next item start ("^- ") */

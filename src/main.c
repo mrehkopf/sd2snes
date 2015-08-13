@@ -98,6 +98,7 @@ led_pwm();
 printf("PCONP=%lx\n", LPC_SC->PCONP);
 
   file_init();
+  cic_init(0);
 /* setup timer (fpga clk) */
   LPC_TIM3->TCR=2;
   LPC_TIM3->CTCR=0;
@@ -145,8 +146,8 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     if(firstboot) {
       cfg_load();
       cfg_save();
-      cic_init(cfg_is_pair_mode_allowed());
     }
+    cic_init(cfg_is_pair_mode_allowed());
     firstboot = 0;
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
     sram_writebyte(cfg_get_num_recent_games(), SRAM_STATUS_ADDR+SYS_LAST_STATUS);
@@ -184,11 +185,11 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     fpga_reset_srtc_state();
     delay_ms(SNES_RESET_PULSELEN_MS);
     sram_writebyte(32, SRAM_CMD_ADDR);
-
     if(get_cic_state() == CIC_PAIR) {
       printf("PAIR MODE ENGAGED!\n");
       cic_pair(CFG.vidmode_menu, CFG.vidmode_menu);
     }
+    cfg_load_to_menu();
     snes_reset(0);
 
     uint8_t cmd = 0;

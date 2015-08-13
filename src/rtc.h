@@ -75,4 +75,9 @@ void set_bcdtime(uint64_t btime);
 void printtime(struct tm *time);
 
 void testbattery(void);
+
+/* convert date-time between S-RTC and packed BCD format */
+void bcdtime2srtctime(uint64_t bcdtime, uint8_t *srtctime);
+uint64_t srtctime2bcdtime(uint8_t *srtctime);
+
 #endif

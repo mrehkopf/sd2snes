@@ -21,18 +21,15 @@ void sysinfo_loop() {
   sd_tacc_max = 0;
   sd_tacc_avg = 0;
   int sd_measured = 0;
+  echo_mcu_cmd();
   while(snes_get_mcu_cmd() == SNES_CMD_SYSINFO) {
-    write_sysinfo(sd_measured);
-    if(disk_state == DISK_REMOVED) {
-      sd_measured = 0;
-    } else {
-      sd_measured = 1;
-    }
+    sd_measured = write_sysinfo(sd_measured);
     delay_ms(100);
   }
+  echo_mcu_cmd();
 }
 
-void write_sysinfo(int sd_measured) {
+int write_sysinfo(int sd_measured) {
   uint32_t sram_addr = SRAM_SYSINFO_ADDR;
   char linebuf[40];
   int len;
@@ -47,6 +44,8 @@ void write_sysinfo(int sd_measured) {
   uint32_t fsfree;
   FATFS *ffs = &fatfs;
 
+
+  if(!sd_measured)sram_writeblock("Calculating disk space\x7f\x80                ", sram_addr, 40);
   /* remount before sdn_getcid so fatfs registers the disk state change first */
   f_getfree("0:", &fsfree, &ffs);
   sd_cid = sdn_getcid();
@@ -63,6 +62,7 @@ void write_sysinfo(int sd_measured) {
   sram_memset(sram_addr+len, 40-len, 0x20);
   sram_addr += 40;
   if(disk_state == DISK_REMOVED) {
+    sd_measured = 0;
     sd_tacc_max = 0;
     sd_tacc_avg = 0;
     len = snprintf(linebuf, sizeof(linebuf), "                                        ");
@@ -98,7 +98,7 @@ void write_sysinfo(int sd_measured) {
     if(sd_tacc_max) {
       len = snprintf(linebuf, sizeof(linebuf), "SD acc. time: %ld.%03ld / %ld.%03ld ms avg/max", sd_tacc_avg_int, sd_tacc_avg_frac, sd_tacc_max_int, sd_tacc_max_frac);
     } else {
-      len = snprintf(linebuf, sizeof(linebuf), "SD acc. time: measuring...  ");
+      len = snprintf(linebuf, sizeof(linebuf), "SD acc. time: measuring\x7f\x80  ");
     }
     sram_writeblock(linebuf, sram_addr, 40);
     sram_memset(sram_addr+len, 40-len, 0x20);
@@ -114,7 +114,7 @@ void write_sysinfo(int sd_measured) {
   sram_memset(sram_addr+len, 40-len, 0x20);
   sram_addr += 40;
   if(sysclk == -1)
-    len = snprintf(linebuf, sizeof(linebuf), "SNES master clock: measuring...");
+    len = snprintf(linebuf, sizeof(linebuf), "SNES master clock: measuring\x7f\x80");
   else
     len = snprintf(linebuf, sizeof(linebuf), "SNES master clock: %ldHz    ", get_snes_sysclk());
   sram_writeblock(linebuf, sram_addr, 40);
@@ -144,5 +144,5 @@ void write_sysinfo(int sd_measured) {
     sdn_gettacc(&sd_tacc_max, &sd_tacc_avg);
     sd_measured = 1;
   }
+  return sd_measured;
 }
-

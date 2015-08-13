@@ -176,6 +176,9 @@ draw_window:
   phb
   php
   sep #$20 : .as
+  lda #$80
+  pha
+  plb
 ; draw upper border
 ; upper left corner
   lda @window_nw
@@ -691,3 +694,24 @@ greyout_out:
   FreeStack()
   rts
 #undef _work_vars
+
+; right-align: calculate print X position based on string length and
+;              window dimensions
+; params:
+; db: bank of string to print
+; y: address of string to print
+right_align:
+  php
+    jsr strlen            ; right-align:
+    sep #$20 : .as
+    rep #$10 : .xl
+    tya                   ; print_x = window_x+window_w-2-strlen
+    sec                   ; = ~(strlen-window_x)+1+window_w-2
+    sbc @window_x
+    eor #$ff
+    clc
+    adc @window_w
+    dec                   ; = ~(strlen-window_x)+window_w-1
+    sta @print_x
+  plp
+  rts

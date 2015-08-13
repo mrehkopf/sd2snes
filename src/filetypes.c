@@ -35,8 +35,11 @@
 #include "memory.h"
 #include "led.h"
 #include "sort.h"
+#include "cfg.h"
 
 #include "timer.h"
+
+extern cfg_t CFG;
 
 /*
  * directory format:
@@ -111,7 +114,9 @@ printf("start\n");
   }
   /* write directory termination */
   sram_writelong(0, ptr_tbl_off);
-  sort_dir(SRAM_DIR_ADDR, numentries);
+  if(CFG.sort_directories) {
+    sort_dir(SRAM_DIR_ADDR, numentries);
+  }
 printf("end\n");
 printf("%d entries, time: %d\n", numentries, getticks()-ticks);
   return numentries;
@@ -151,18 +156,6 @@ SNES_FTYPE determine_filetype(FILINFO fno) {
     return TYPE_SKIN;
   }
   return TYPE_UNKNOWN;
-}
-
-FRESULT get_db_id(uint32_t* id) {
-  file_open((uint8_t*)"/sd2snes/sd2snes.db", FA_READ);
-  if(file_res == FR_OK) {
-    file_readblock(id, 0, 4);
-/* XXX */// *id=0xdead;
-    file_close();
-  } else {
-    *id=0xdeadbeef;
-  }
-  return file_res;
 }
 
 int get_num_dirent(uint32_t addr) {

@@ -31,7 +31,7 @@
 #define NMI_PAD                     $002BF0
 #define BRAM_UNLOCK                 $002BF4
 #define MIRROR_4200                 $002BFA
-#define NMI_RUNMASK                 $002BFC
+#define NMI_BUTTONS_ENABLE          $002BFC
 #define NMI_VECT_DISABLE            $002BFD
 #define NMI_WRAM_PATCH_DISABLE      $002BFE
 #define NMI_WRAM_PATCH_COUNT        $002BFF
@@ -39,6 +39,7 @@
 #define WRAM_ROUTINE                $7EF000
 #define WRAM_STORE_BLOCKRAM_ROUTINE $7EF080
 #define WRAM_FADELOOP               $7EF100
+#define WRAM_WAIT_MCU               $7EF180
 
 #define FILESEL_CWD                 $FF0000
 #define CFG_ADDR                    $FF0100
@@ -120,4 +121,3 @@
 #define TYPE_SKIN                   $20
 #define TYPE_SUBDIR                 $40
 #define TYPE_PARENT                 $80
-
