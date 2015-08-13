@@ -107,6 +107,7 @@ uint8_t snes_get_mcu_cmd(void);
 void snes_set_mcu_cmd(uint8_t cmd);
 uint8_t snes_get_snes_cmd(void);
 void snes_set_snes_cmd(uint8_t cmd);
+void echo_mcu_cmd(void);
 uint32_t snes_get_mcu_param(void);
 void snescmd_writeshort(uint16_t val, uint16_t addr);
 void snescmd_writebyte(uint8_t val, uint16_t addr);

@@ -48,6 +48,9 @@ sysinfo_printloop:
   rep #$10 : .xl
   lda #CMD_SYSINFO
   sta @MCU_CMD
+- lda @SNES_CMD
+  cmp #CMD_SYSINFO
+  bne -
   lda #^SYSINFO_BLK
   ldx #!SYSINFO_BLK
   sta print_bank
@@ -125,7 +128,9 @@ sysinfo_printloop:
   pha
   jmp sysinfo_printloop
 + plp
-  jsr pop_window
   lda #$00
   sta @MCU_CMD
+- lda @SNES_CMD
+  bne -
+  jsr pop_window
   rtl

@@ -278,6 +278,10 @@ void snes_set_snes_cmd(uint8_t cmd) {
   fpga_write_snescmd(cmd);
 }
 
+void echo_mcu_cmd() {
+  snes_set_snes_cmd(snes_get_mcu_cmd());
+}
+
 uint32_t snes_get_mcu_param() {
   fpga_set_snescmd_addr(SNESCMD_MCU_PARAM);
   return (fpga_read_snescmd()
