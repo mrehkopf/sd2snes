@@ -3,8 +3,25 @@
 
 #include <stdint.h>
 
-#define CFG_FILE ((const uint8_t*)"/sd2snes/sd2snes.cfg")
+#define CFG_FILE ("/sd2snes/config.yml")
 #define LAST_FILE ((const uint8_t*)"/sd2snes/lastgame.cfg")
+
+#define CFG_VIDMODE_MENU          ("VideoModeMenu")
+#define CFG_VIDMODE_GAME          ("VideoModeGame")
+#define CFG_PAIR_MODE_ALLOWED     ("PairModeAllowed")
+#define CFG_BSX_USE_USERTIME      ("BSXUseUsertime")
+#define CFG_BSX_TIME              ("BSXTime")
+#define CFG_R213F_OVERRIDE        ("R213fOverride")
+#define CFG_ENABLE_IRQ_HOOK       ("EnableIRQHook")
+#define CFG_ENABLE_IRQ_BUTTONS    ("EnableIRQButtons")
+#define CFG_ENABLE_IRQ_HOLDOFF    ("EnableIRQHoldoff")
+#define CFG_ENABLE_SCREENSAVER    ("EnableScreensaver")
+#define CFG_SCREENSAVER_TIMEOUT   ("ScreensaverTimeout")
+#define CFG_SORT_DIRECTORIES      ("SortDirectories")
+#define CFG_HIDE_EXTENSIONS       ("HideExtensions")
+#define CFG_CX4_SPEED             ("Cx4Speed")
+#define CFG_SKIN_NAME             ("SkinName")
+#define CFG_CONTROL_TYPE          ("ControlType")
 
 typedef enum {
   VIDMODE_60 = 0,
@@ -20,7 +37,7 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t vidmode_game;         /* game video mode */
   uint8_t pair_mode_allowed;    /* use pair mode if available */
   uint8_t bsx_use_usertime;     /* use user defined time for BS */
-  uint64_t bsx_time;            /* user setting for BS time */
+  uint8_t bsx_time[12];         /* user setting for BS time (in S-RTC format)*/
   uint8_t r213f_override;       /* override register 213f bit 4 */
   uint8_t enable_irq_hook;      /* enable hook routines */
   uint8_t enable_irq_buttons;   /* enable in-game buttons in hook routines */
@@ -31,6 +48,7 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t hide_extensions;      /* hide file extensions (default: off) */
   uint8_t cx4_speed;            /* Cx4 speed (0: original, 1: no waitstates */
   uint8_t skin_name[80];        /* file name of selected skin */
+  uint8_t control_type;         /* control type (0: A=OK, B=Cancel; 1: A=Cancel, B=OK) */
 } cfg_t;
 
 int cfg_save(void);
@@ -39,6 +57,8 @@ int cfg_load(void);
 int cfg_add_last_game(uint8_t *fn);
 int cfg_get_last_game(uint8_t *fn, uint8_t index);
 void cfg_dump_recent_games_for_snes(uint32_t address);
+
+void cfg_load_to_menu(void);
 
 void cfg_set_vidmode_menu(cfg_vidmode_t vidmode);
 cfg_vidmode_t cfg_get_vidmode_menu(void);
