@@ -56,6 +56,7 @@ int cfg_load(void);
 
 int cfg_add_last_game(uint8_t *fn);
 int cfg_get_last_game(uint8_t *fn, uint8_t index);
+void set_cfg_num_recent_games(void);
 void cfg_dump_recent_games_for_snes(uint32_t address);
 
 void cfg_load_to_menu(void);

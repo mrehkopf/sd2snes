@@ -180,6 +180,21 @@ int cfg_get_last_game(uint8_t *fn, uint8_t index) {
   return err;
 }
 
+void set_cfg_num_recent_games() {
+  file_open(LAST_FILE, FA_READ);
+  if(file_res) return;
+  int num_recent_games;
+  TCHAR fntmp[256];
+  for(num_recent_games = 0; num_recent_games < 11; num_recent_games++) {
+    f_gets(fntmp, 255, &file_handle);
+    if((*fntmp == 0) || (*fntmp == '\n')) {
+      break; /* last entry found */
+    }
+  }
+  file_close();
+  cfg_set_num_recent_games(num_recent_games);
+}
+
 void cfg_dump_recent_games_for_snes(uint32_t address) {
   TCHAR fntmp[256];
   int err = 0, index;
