@@ -146,7 +146,6 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     cic_init(cfg_is_pair_mode_allowed());
     firstboot = 0;
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
-    sram_writebyte(cfg_get_num_recent_games(), SRAM_STATUS_ADDR+SYS_LAST_STATUS);
     cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
 
     /* load menu */

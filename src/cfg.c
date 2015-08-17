@@ -181,12 +181,13 @@ int cfg_get_last_game(uint8_t *fn, uint8_t index) {
 
 void cfg_dump_recent_games_for_snes(uint32_t address) {
   TCHAR fntmp[256];
-  int err = 0, index;
+  int index;
   file_open(LAST_FILE, FA_READ);
-  for(index = 0; index < 10 && !err; index++) {
+  for(index = 0; index < 10 && !f_eof(&file_handle); index++) {
     f_gets(fntmp, 255, &file_handle);
     sram_writeblock(strrchr((const char*)fntmp, '/')+1, address+256*index, 256);
   }
+  ST.num_recent_games = index;
   file_close();
 }
 
