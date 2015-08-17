@@ -205,7 +205,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       snescmd_writebyte(MCU_CMD_RDY, SNESCMD_SNES_CMD);
       cmd=menu_main_loop();
       /* acknowledge command */
-      snescmd_writebyte(cmd, SNESCMD_SNES_CMD);
+      echo_mcu_cmd();
       printf("cmd: %d\n", cmd);
       uart_putc('-');
       switch(cmd) {
