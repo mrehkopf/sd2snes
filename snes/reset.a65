@@ -59,6 +59,8 @@ math_cont
   adc bar_x     ; + X start coord
   sta $2127     ; window 1 right
 
+  lda @CFG_ENABLE_SCREENSAVER
+  beq +
   rep #$20 : .al
   sep #$10 : .xs
   lda pad1mem
