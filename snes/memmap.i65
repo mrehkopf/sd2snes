@@ -64,6 +64,7 @@
 #define CMD_SAVE_CHT                $0D
 #define CMD_SAVE_CFG                $0E
 #define CMD_SET_CFG                 $0F
+#define CMD_MCU_RDY                 $55
 #define CMD_RESET                   $80
 #define CMD_RESET_TO_MENU           $81
 #define CMD_ENABLE_CHEATS           $82
