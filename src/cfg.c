@@ -40,11 +40,11 @@ int cfg_save() {
   f_puts("##############################\n", &file_handle);
   f_puts("# sd2snes configuration file #\n", &file_handle);
   f_puts("##############################\n\n", &file_handle);
-  f_printf(&file_handle, "# Video mode (%d = 60Hz, %d = 50Hz, %d = Auto (game only))\n", VIDMODE_60, VIDMODE_50, VIDMODE_AUTO);
+  f_puts("# Allow SuperCIC Pair Mode (required for video mode setting)\n", &file_handle);
+  f_printf(&file_handle, "%s: %s\n", CFG_PAIR_MODE_ALLOWED, CFG.pair_mode_allowed ? "true" : "false");
+  f_printf(&file_handle, "\n# Video mode (%d = 60Hz, %d = 50Hz, %d = Auto (game only))\n", VIDMODE_60, VIDMODE_50, VIDMODE_AUTO);
   f_printf(&file_handle, "%s: %d\n", CFG_VIDMODE_MENU, CFG.vidmode_menu);
   f_printf(&file_handle, "%s: %d\n", CFG_VIDMODE_GAME, CFG.vidmode_game);
-  f_puts("\n# Allow SuperCIC Pair Mode (required for video mode setting)\n", &file_handle);
-  f_printf(&file_handle, "%s: %s\n", CFG_PAIR_MODE_ALLOWED, CFG.pair_mode_allowed ? "true" : "false");
   f_printf(&file_handle, "\n# Satellaview Settings\n#  %s: use user defined time instead of real time\n", CFG_BSX_USE_USERTIME);
   f_printf(&file_handle, "#  %s: user defined Satellaview broadcast time (format: YYYYMMDDhhmmss)\n", CFG_BSX_TIME);
   f_printf(&file_handle, "%s: %s\n", CFG_BSX_USE_USERTIME, CFG.bsx_use_usertime ? "true" : "false");
