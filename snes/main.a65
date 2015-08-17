@@ -63,7 +63,7 @@ coldboot:       ; Regular, cold-start init
   jsr filesel_init
 
   sep #$20 : .as
-  lda @RTC_STATUS
+  lda @ST_RTC_VALID
   beq +
   jsl time_init
 +

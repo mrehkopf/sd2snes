@@ -50,11 +50,7 @@ extern snes_romprops_t romprops;
 extern volatile int reset_changed;
 
 extern volatile cfg_t CFG;
-
-enum system_states {
-  SYS_RTC_STATUS = 0,
-  SYS_LAST_STATUS = 1
-};
+extern volatile status_t ST;
 
 void menu_cmd_readdir(void) {
   uint8_t path[256];
@@ -170,13 +166,13 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 
     if((rtc_state = rtc_isvalid()) != RTC_OK) {
       printf("RTC invalid!\n");
-      sram_writebyte(0xff, SRAM_STATUS_ADDR+SYS_RTC_STATUS);
+      ST.rtc_valid = 0xff;
       set_bcdtime(0x20120701000000LL);
       set_fpga_time(0x20120701000000LL);
       invalidate_rtc();
     } else {
       printf("RTC valid!\n");
-      sram_writebyte(0x00, SRAM_STATUS_ADDR+SYS_RTC_STATUS);
+      ST.rtc_valid = 0;
       set_fpga_time(get_bcdtime());
     }
     sram_memset(SRAM_SYSINFO_ADDR, 13*40, 0x20);
@@ -190,6 +186,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       cic_pair(CFG.vidmode_menu, CFG.vidmode_menu);
     }
     cfg_load_to_menu();
+    status_load_to_menu();
     snes_reset(0);
 
     uint8_t cmd = 0;

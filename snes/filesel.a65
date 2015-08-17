@@ -850,7 +850,7 @@ select_last_file:
   php
   sep #$20 : .as
   rep #$10 : .xl
-  lda @LAST_STATUS
+  lda @ST_NUM_RECENT_GAMES
   sta num_recent_games
   stz recent_sel
   bne +
@@ -871,7 +871,7 @@ select_last_file:
   pha
   lda @last_win_w
   sta window_w
-  lda @LAST_STATUS
+  lda @ST_NUM_RECENT_GAMES
   inc
   inc
   sta window_h

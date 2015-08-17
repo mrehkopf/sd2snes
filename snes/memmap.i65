@@ -42,9 +42,7 @@
 #define WRAM_WAIT_MCU               $7EF180
 
 #define FILESEL_CWD                 $FF0000
-#define CFG_ADDR                    $FF0100
-#define RTC_STATUS                  $FF1100
-#define LAST_STATUS                 $FF1101
+
 #define SYSINFO_BLK                 $FF1200
 #define LAST_GAME                   $FF1420
 #define CHEAT_ADDR                  $FF2000
@@ -72,23 +70,27 @@
 #define CMD_KILL_NMIHOOK            $84
 #define CMD_TEMP_KILL_NMIHOOK       $85
 
-#define CFG_VER_MAJ                 $0000
-#define CFG_VER_MIN                 $0001
-#define CFG_NUM_RECENT_GAMES        $0002
-#define CFG_VIDMODE_MENU            $0003
-#define CFG_VIDMODE_GAME            $0004
-#define CFG_PAIR_MODE_ALLOWED       $0005
-#define CFG_BSX_USE_USERTIME        $0006
-#define CFG_BSX_TIME                $0007
-#define CFG_R213F_OVERRIDE          $000F
-#define CFG_ENABLE_IRQ_HOOK         $0010
-#define CFG_ENABLE_IRQ_HOLDOFF      $0011
-#define CFG_ENABLE_SCREENSAVER      $0012
-#define CFG_SCREENSAVER_TIMEOUT     $0013
-#define CFG_SORT_DIRECTORIES        $0014
-#define CFG_HIDE_EXTENSIONS         $0015
-#define CFG_CX4_SPEED               $0016
-// #define CFG_SKIN_NAME               $0015
+#define ST_ADDR                     $FF1100
+#define ST_RTC_VALID                ST_ADDR+$0000
+#define ST_NUM_RECENT_GAMES         ST_ADDR+$0001
+
+#define CFG_ADDR                    $FF0100
+#define CFG_VIDMODE_MENU            CFG_ADDR+$0000
+#define CFG_VIDMODE_GAME            CFG_ADDR+$0001
+#define CFG_PAIR_MODE_ALLOWED       CFG_ADDR+$0002
+#define CFG_BSX_USE_USERTIME        CFG_ADDR+$0003
+#define CFG_BSX_TIME                CFG_ADDR+$0004
+#define CFG_R213F_OVERRIDE          CFG_ADDR+$0010
+#define CFG_ENABLE_IRQ_HOOK         CFG_ADDR+$0011
+#define CFG_ENABLE_IRQ_BUTTONS      CFG_ADDR+$0012
+#define CFG_ENABLE_IRQ_HOLDOFF      CFG_ADDR+$0013
+#define CFG_ENABLE_SCREENSAVER      CFG_ADDR+$0014
+#define CFG_SCREENSAVER_TIMEOUT     CFG_ADDR+$0015
+#define CFG_SORT_DIRECTORIES        CFG_ADDR+$0017
+#define CFG_HIDE_EXTENSIONS         CFG_ADDR+$0018
+#define CFG_CX4_SPEED               CFG_ADDR+$0019
+#define CFG_SKIN_NAME               CFG_ADDR+$001A
+#define CFG_CONTROL_TYPE            CFG_ADDR+$009A
 
 #define MTYPE_FUNC                  $01
 #define MTYPE_SUBMENU               $02

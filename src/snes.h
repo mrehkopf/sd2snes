@@ -90,6 +90,11 @@
 
 enum snes_reset_state { SNES_RESET_NONE = 0, SNES_RESET_SHORT, SNES_RESET_LONG };
 
+typedef struct __attribute__ ((__packed__)) _status {
+  uint8_t rtc_valid;
+  uint8_t num_recent_games;
+} status_t;
+
 uint8_t crc_valid;
 
 void prepare_reset(void);
@@ -119,4 +124,5 @@ uint32_t snescmd_readlong(uint16_t addr);
 uint64_t snescmd_gettime(void);
 void snescmd_prepare_nmihook(void);
 void snes_get_filepath(uint8_t *buffer, uint16_t length);
+void status_load_to_menu(void);
 #endif

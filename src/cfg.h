@@ -30,9 +30,6 @@ typedef enum {
 } cfg_vidmode_t;
 
 typedef struct __attribute__ ((__packed__)) _cfg_block {
-  uint8_t cfg_ver_maj;          /* version of config */
-  uint8_t cfg_ver_min;
-  uint8_t num_recent_games;     /* entries present in history */
   uint8_t vidmode_menu;         /* menu video mode */
   uint8_t vidmode_game;         /* game video mode */
   uint8_t pair_mode_allowed;    /* use pair mode if available */
@@ -47,7 +44,7 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t sort_directories;     /* sort directories (slower) (default: on) */
   uint8_t hide_extensions;      /* hide file extensions (default: off) */
   uint8_t cx4_speed;            /* Cx4 speed (0: original, 1: no waitstates */
-  uint8_t skin_name[80];        /* file name of selected skin */
+  uint8_t skin_name[128];       /* file name of selected skin */
   uint8_t control_type;         /* control type (0: A=OK, B=Cancel; 1: A=Cancel, B=OK) */
 } cfg_t;
 

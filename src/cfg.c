@@ -8,11 +8,9 @@
 #include "memory.h"
 #include "yaml.h"
 #include "rtc.h"
+#include "snes.h"
 
 cfg_t CFG_DEFAULT = {
-  .cfg_ver_maj = 2,
-  .cfg_ver_min = 1,
-  .num_recent_games = 0,
   .vidmode_menu = VIDMODE_60,
   .vidmode_game = VIDMODE_AUTO,
   .pair_mode_allowed = 0,
@@ -27,10 +25,12 @@ cfg_t CFG_DEFAULT = {
   .sort_directories = 1,
   .hide_extensions = 0,
   .cx4_speed = 0,
-  .skin_name = "sd2snes.skin"
+  .skin_name = "sd2snes.skin",
+  .control_type = 0
 };
 
 cfg_t CFG;
+extern status_t ST;
 
 int cfg_save() {
   int err = 0;
@@ -166,7 +166,6 @@ int cfg_add_last_game(uint8_t *fn) {
     written++;
   }
   file_close();
-  cfg_set_num_recent_games(written);
   return err;
 }
 
@@ -194,13 +193,6 @@ void cfg_dump_recent_games_for_snes(uint32_t address) {
 /* make binary config available to menu */
 void cfg_load_to_menu() {
   sram_writeblock(&CFG, SRAM_MENU_CFG_ADDR, sizeof(cfg_t));
-}
-
-void cfg_set_num_recent_games(uint8_t valid) {
-  CFG.num_recent_games = valid;
-}
-uint8_t cfg_get_num_recent_games() {
-  return CFG.num_recent_games;
 }
 
 void cfg_set_pair_mode_allowed(uint8_t allowed) {
