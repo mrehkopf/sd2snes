@@ -15,6 +15,8 @@
 #include "sdnative.h"
 #include "sysinfo.h"
 
+extern status_t ST;
+
 static uint32_t sd_tacc_max, sd_tacc_avg;
 
 void sysinfo_loop() {
@@ -43,7 +45,7 @@ int write_sysinfo(int sd_measured) {
   uint32_t fssize;
   uint32_t fsfree;
   FATFS *ffs = &fatfs;
-
+  status_save_from_menu();
 
   if(!sd_measured)sram_writeblock("Calculating disk space\x7f\x80                ", sram_addr, 40);
   /* remount before sdn_getcid so fatfs registers the disk state change first */
@@ -65,6 +67,10 @@ int write_sysinfo(int sd_measured) {
     sd_measured = 0;
     sd_tacc_max = 0;
     sd_tacc_avg = 0;
+    len = snprintf(linebuf, sizeof(linebuf), "                                        ");
+    sram_writeblock(linebuf, sram_addr, 40);
+    sram_memset(sram_addr+len, 40-len, 0x20);
+    sram_addr += 40;
     len = snprintf(linebuf, sizeof(linebuf), "                                        ");
     sram_writeblock(linebuf, sram_addr, 40);
     sram_memset(sram_addr+len, 40-len, 0x20);
@@ -103,6 +109,10 @@ int write_sysinfo(int sd_measured) {
     sram_writeblock(linebuf, sram_addr, 40);
     sram_memset(sram_addr+len, 40-len, 0x20);
     sram_addr += 40;
+    len = snprintf(linebuf, sizeof(linebuf), "Card usage: %ldMB / %ldMB", fssize-fsfree, fssize);
+    sram_writeblock(linebuf, sram_addr, 40);
+    sram_memset(sram_addr+len, 40-len, 0x20);
+    sram_addr += 40;
     sd_ok = 1;
   }
   len = snprintf(linebuf, sizeof(linebuf), "                                        ");
@@ -120,19 +130,11 @@ int write_sysinfo(int sd_measured) {
   sram_writeblock(linebuf, sram_addr, 40);
   sram_memset(sram_addr+len, 40-len, 0x20);
   sram_addr += 40;
-  len = snprintf(linebuf, sizeof(linebuf), "                                        ");
-  sram_writeblock(linebuf, sram_addr, 40);
-  sram_memset(sram_addr+len, 40-len, 0x20);
-  sram_addr += 40;
-  if(disk_state == DISK_REMOVED) {
-    len = snprintf(linebuf, sizeof(linebuf), "                                        ");
+  if(ST.is_u16) {
+    len = snprintf(linebuf, sizeof(linebuf), "Ultra16 serial no. %d", ST.is_u16);
   } else {
-    len = snprintf(linebuf, sizeof(linebuf), "Card usage: %ldMB / %ldMB", fssize-fsfree, fssize);
+    len = snprintf(linebuf, sizeof(linebuf), "                                        ");
   }
-  sram_writeblock(linebuf, sram_addr, 40);
-  sram_memset(sram_addr+len, 40-len, 0x20);
-  sram_addr += 40;
-  len = snprintf(linebuf, sizeof(linebuf), "                                        ");
   sram_writeblock(linebuf, sram_addr, 40);
   sram_memset(sram_addr+len, 40-len, 0x20);
   sram_addr += 40;

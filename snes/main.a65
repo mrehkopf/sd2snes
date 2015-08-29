@@ -54,11 +54,11 @@ GAME_MAIN:
   jsr colortest
   jsr video_init
   jsr setup_hdma
+  jsr detect_ultra16
   lda #$0f
   sta cur_bright
   sta tgt_bright
   sta $2100
-
   jmp @set_bank ; Set bios bank, just to be sure
 set_bank:
   plp           ; Restore processor state
@@ -74,6 +74,7 @@ coldboot:       ; Regular, cold-start init
   jsr colortest
   jsr video_init
   jsr setup_hdma
+  jsr detect_ultra16
   jsr screen_on
   jsr wait_mcu_ready
   jsr filesel_init
@@ -660,3 +661,22 @@ backup_wram:
   plp
   rts
 
+detect_ultra16:
+  php
+  sep #$20 : .as
+  lda #$aa
+  sta @$0021c0
+  lda @$0021c0
+  cmp #$55
+  beq detect_ultra16_found
+  lda #$00
+  sta @ST_IS_U16
+  bra detect_ultra16_out
+detect_ultra16_found:
+  lda @$0021c2
+  sta @ST_IS_U16
+detect_ultra16_out:
+  lda #$55
+  sta @$0021c0
+  plp
+  rts

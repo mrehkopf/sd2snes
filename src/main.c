@@ -207,6 +207,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       /* acknowledge command */
       echo_mcu_cmd();
       printf("cmd: %d\n", cmd);
+      status_save_from_menu();
       uart_putc('-');
       switch(cmd) {
         case SNES_CMD_LOADROM:

@@ -73,6 +73,7 @@
 #define ST_ADDR                     $FF1100
 #define ST_RTC_VALID                ST_ADDR+$0000
 #define ST_NUM_RECENT_GAMES         ST_ADDR+$0001
+#define ST_IS_U16                   ST_ADDR+$0002
 
 #define CFG_ADDR                    $FF0100
 #define CFG_VIDMODE_MENU            CFG_ADDR+$0000

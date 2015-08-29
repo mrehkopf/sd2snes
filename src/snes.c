@@ -49,7 +49,8 @@ volatile int reset_pressed;
 
 status_t ST = {
   .rtc_valid = 0xff,
-  .num_recent_games = 0
+  .num_recent_games = 0,
+  .is_u16 = 0
 };
 
 void prepare_reset() {
@@ -368,4 +369,8 @@ void snescmd_prepare_nmihook() {
 
 void status_load_to_menu() {
   sram_writeblock(&ST, SRAM_STATUS_ADDR, sizeof(status_t));
+}
+
+void status_save_from_menu() {
+  sram_readblock(&ST, SRAM_STATUS_ADDR, sizeof(status_t));
 }
