@@ -20,6 +20,17 @@ spcplayer:
 
   rep #$10 : .xl      ; Now draw lots of stuff
 
+  lda #$02
+  sta window_x
+  lda #$09
+  sta window_y
+  lda #60
+  sta window_w
+  lda #18
+  sta window_h
+  jsr push_window
+  jsr window_greyout
+
   stz bar_wl
   dec bar_wl
   stz bar_xl
