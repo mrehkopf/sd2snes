@@ -45,7 +45,7 @@
 
 #define SYSINFO_BLK                 $FF1200
 #define LAST_GAME                   $FF1420
-#define CHEAT_ADDR                  $FF2000
+#define CHEAT_ADDR                  $FC0000
 #define ROOT_DIR                    $C10000
 
 #define CMD_LOADROM                 $01
@@ -91,6 +91,8 @@
 #define CFG_CX4_SPEED               CFG_ADDR+$0019
 #define CFG_SKIN_NAME               CFG_ADDR+$001A
 #define CFG_CONTROL_TYPE            CFG_ADDR+$009A
+
+#define WRAM_BAK                    $FF2000
 
 #define MTYPE_FUNC                  $01
 #define MTYPE_SUBMENU               $02

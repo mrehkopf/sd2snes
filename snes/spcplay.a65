@@ -203,6 +203,9 @@ spc_key_b:
 ; ...this is required because there is no other way to stop S-SMP & S-DSP
   sei
   stz $2100
+  jsr pop_window
+  jsr backup_wram     ; Save menu state in case it gets overwritten by Ultra16
+                      ; or other malware :P
   lda #CMD_RESET
   sta @MCU_CMD
 -
