@@ -742,11 +742,11 @@ always @(posedge CLK) begin
 
       casex(cpu_op_w[15:11])
         5'b00x01, 5'b00x10, 5'b00100, 5'b00111: begin
-          cpu_wait <= 8'h07;
+          cpu_wait <= 8'h06;
           CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
         end
         5'b01110, 5'b01101, 5'b11101: begin
-          cpu_wait <= 8'h03;
+          cpu_wait <= 8'h02;
           CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
         end
         /*5'b10011: begin

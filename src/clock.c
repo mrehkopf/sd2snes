@@ -17,14 +17,11 @@ void clock_init() {
 /* set flash access time to 5 clks (80<f<=100MHz) */
   setFlashAccessTime(5);
 
-/* setup PLL0 for ~44100*256*8 Hz
+/* setup PLL0 for 86MHz
    Base clock: 12MHz
-   Multiplier:  429
-   Pre-Divisor:  19
+   Multiplier:   23
+   Pre-Divisor:   2
    Divisor:       6
-   (want: 90316800, get: 90315789.47)
-   -> DAC freq = 44099.5 Hz
-   -> FPGA freq = 11289473.7Hz
    First, disable and disconnect PLL0.
 */
   clock_disconnect();
@@ -48,7 +45,7 @@ void clock_init() {
  */
   enableMainOsc();
   setClkSrc(CLKSRC_MAINOSC);
-  setPLL0MultPrediv(22, 1);
+  setPLL0MultPrediv(43, 2);
   enablePLL0();
   setCCLKDiv(6);
   connectPLL0();

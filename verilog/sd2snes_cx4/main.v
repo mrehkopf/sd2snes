@@ -182,7 +182,7 @@ parameter ST_CX4_RD_END   = 7'b1000000;
 
 parameter ROM_CYCLE_LEN = 4'd7;
 
-parameter SNES_DEAD_TIMEOUT = 17'd88000; // 1ms
+parameter SNES_DEAD_TIMEOUT = 17'd86000; // 1ms
 
 reg [6:0] STATE;
 initial STATE = ST_IDLE;
