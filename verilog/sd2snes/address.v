@@ -96,8 +96,9 @@ assign IS_SAVERAM = SAVERAM_MASK[0]
                       ? ((SNES_ADDR[23:19] == 5'b00010)
                          & (SNES_ADDR[15:12] == 4'b0101)
                         )
+/*  Menu mapper: 8Mbit "SRAM" @ Bank 0xf0-0xff (entire banks!) */
                       :(MAPPER == 3'b111)
-                      ? (&SNES_ADDR[23:16])
+                      ? (&SNES_ADDR[23:20])
                       : 1'b0));
 
 
