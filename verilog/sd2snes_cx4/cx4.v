@@ -475,6 +475,8 @@ parameter OP_CMP   = 5'b01110;
 parameter OP_SEX   = 5'b01111;
 parameter OP_HLT   = 5'b10000;
 
+parameter MUL_DELAY = 3'h2;
+
 wire [6:0] op_id = cpu_op_w[15:10];
 reg [7:0] op_param;
 reg [4:0] op;
@@ -484,6 +486,7 @@ reg op_p;
 reg op_call;
 reg op_jump;
 reg condtrue;
+reg [2:0] mul_wait = MUL_DELAY;
 
 always @(posedge CLK) begin
   if(cpu_go_en_r) cx4_busy[BUSY_CPU] <= 1'b1;
@@ -557,6 +560,7 @@ always @(posedge CLK) begin
                                gpr[op_param[3:0]*3]};
             default: cpu_idb <= 24'b0;
           endcase
+			 mul_wait <= MUL_DELAY;
         end
         OP_ST: begin
           cpu_idb <= cpu_a;
@@ -695,11 +699,16 @@ always @(posedge CLK) begin
             5'b10110: cpu_alu_res <= cpu_sa & cpu_idb;
             5'b10111: cpu_alu_res <= cpu_sa | cpu_idb;
             5'b11000: cpu_alu_res <= cpu_a >> cpu_idb;
-            5'b11001: cpu_alu_res <= ($signed(cpu_a)) >>> cpu_idb;
-            5'b11010: {cpu_dummy, cpu_alu_res[23:0]} <= {cpu_a, cpu_a} >> cpu_idb;
+            5'b11001: cpu_alu_res <= ($signed(cpu_a)) >>> cpu_idb[4:0];
+            5'b11010: cpu_alu_res[23:0] <= {cpu_a, cpu_a} >> cpu_idb[4:0];
             5'b11011: cpu_alu_res <= cpu_a << cpu_idb;
           endcase
         end
+		  OP_MUL: begin
+			 mul_wait <= mul_wait - 3'h1;
+			 if(mul_wait == 3'h0) CPU_STATE <= ST_CPU_3;
+			 else CPU_STATE <= ST_CPU_2;
+		  end
       endcase
     end
     ST_CPU_3: begin
