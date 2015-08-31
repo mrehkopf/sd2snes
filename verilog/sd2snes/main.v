@@ -160,13 +160,7 @@ reg [7:0] SNES_READr;
 reg [7:0] SNES_WRITEr;
 reg [7:0] SNES_CPU_CLKr;
 reg [23:0] SNES_ADDRr [5:0];
-reg [23:0] SNES_ADDR_CYCLEr = 24'h000000;
-
-reg [7:0] BUS_DATA;
-
-always @(posedge CLK2) begin
-  if(~SNES_READ_IN | ~SNES_WRITE_IN) BUS_DATA <= SNES_DATA;
-end
+reg [7:0] SNES_DATAr [4:0];
 
 reg SNES_DEADr = 1;
 reg SNES_reset_strobe = 0;
@@ -185,6 +179,14 @@ wire SNES_CPU_CLK = SNES_CPU_CLKr[2] & SNES_CPU_CLKr[1];
 wire SNES_PARD = SNES_PARDr[2] & SNES_PARDr[1];
 
 wire [23:0] SNES_ADDR = (SNES_ADDRr[5] & SNES_ADDRr[4]);
+wire [7:0] SNES_DATA_IN = (SNES_DATAr[3] & SNES_DATAr[2]);
+
+reg [7:0] BUS_DATA;
+
+always @(posedge CLK2) begin
+  if(~SNES_READ) BUS_DATA <= SNES_DATA;
+  else if(~SNES_WRITE) BUS_DATA <= SNES_DATA_IN;
+end
 
 wire free_slot = SNES_cycle_end | free_strobe;
 
@@ -208,6 +210,11 @@ always @(posedge CLK2) begin
   SNES_ADDRr[2] <= SNES_ADDRr[1];
   SNES_ADDRr[1] <= SNES_ADDRr[0];
   SNES_ADDRr[0] <= SNES_ADDR_IN;
+  SNES_DATAr[4] <= SNES_DATAr[3];
+  SNES_DATAr[3] <= SNES_DATAr[2];
+  SNES_DATAr[2] <= SNES_DATAr[1];
+  SNES_DATAr[1] <= SNES_DATAr[0];
+  SNES_DATAr[0] <= SNES_DATA;
 end
 
 parameter ST_IDLE        = 5'b00001;
@@ -216,7 +223,7 @@ parameter ST_MCU_RD_END  = 5'b00100;
 parameter ST_MCU_WR_ADDR = 5'b01000;
 parameter ST_MCU_WR_END  = 5'b10000;
 
-parameter SNES_DEAD_TIMEOUT = 17'd88000; // 1ms
+parameter SNES_DEAD_TIMEOUT = 17'd86000; // 1ms
 
 parameter ROM_CYCLE_LEN = 4'd7;
 

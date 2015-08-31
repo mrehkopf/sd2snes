@@ -75,10 +75,6 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="1"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="3"/>
     </file>
-    <file xil_pn:name="ipcore_dir/cx4_mul.xco" xil_pn:type="FILE_COREGEN">
-      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="2"/>
-      <association xil_pn:name="Implementation" xil_pn:seqID="4"/>
-    </file>
     <file xil_pn:name="main.ucf" xil_pn:type="FILE_UCF">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
@@ -90,7 +86,14 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="117"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="16"/>
     </file>
+    <file xil_pn:name="ipcore_dir/cx4_mul.xco" xil_pn:type="FILE_COREGEN">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="122"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="4"/>
+    </file>
     <file xil_pn:name="ipcore_dir/snescmd_buf.xise" xil_pn:type="FILE_COREGENISE">
+      <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
+    </file>
+    <file xil_pn:name="ipcore_dir/cx4_mul.xise" xil_pn:type="FILE_COREGENISE">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
   </files>
@@ -359,8 +362,8 @@
     <property xil_pn:name="Specify Top Level Instance Names Post-Route" xil_pn:value="work.updtest" xil_pn:valueState="default"/>
     <property xil_pn:name="Specify Top Level Instance Names Post-Translate" xil_pn:value="work.updtest" xil_pn:valueState="default"/>
     <property xil_pn:name="Speed Grade" xil_pn:value="-4" xil_pn:valueState="non-default"/>
-    <property xil_pn:name="Starting Placer Cost Table (1-100) Map" xil_pn:value="9" xil_pn:valueState="non-default"/>
-    <property xil_pn:name="Starting Placer Cost Table (1-100) Par" xil_pn:value="9" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Starting Placer Cost Table (1-100) Map" xil_pn:value="6" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Starting Placer Cost Table (1-100) Par" xil_pn:value="6" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Structure window" xil_pn:value="true" xil_pn:valueState="default"/>
     <property xil_pn:name="Synthesis Tool" xil_pn:value="XST (VHDL/Verilog)" xil_pn:valueState="default"/>
     <property xil_pn:name="Target Simulator" xil_pn:value="Please Specify" xil_pn:valueState="default"/>

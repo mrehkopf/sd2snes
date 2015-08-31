@@ -59,7 +59,7 @@ setup_hdma:
 
   jsr waitblank
   lda #$7e
-  sta $420c     ;enable HDMA ch. 1-5
+  sta $420c     ;enable HDMA ch. 1-6
   lda #$81      ;VBlank NMI + Auto Joypad Read
   sta $4200     ;enable V-BLANK NMI
   rts

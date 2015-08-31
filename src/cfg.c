@@ -8,11 +8,9 @@
 #include "memory.h"
 #include "yaml.h"
 #include "rtc.h"
+#include "snes.h"
 
 cfg_t CFG_DEFAULT = {
-  .cfg_ver_maj = 2,
-  .cfg_ver_min = 1,
-  .num_recent_games = 0,
   .vidmode_menu = VIDMODE_60,
   .vidmode_game = VIDMODE_AUTO,
   .pair_mode_allowed = 0,
@@ -27,10 +25,12 @@ cfg_t CFG_DEFAULT = {
   .sort_directories = 1,
   .hide_extensions = 0,
   .cx4_speed = 0,
-  .skin_name = "sd2snes.skin"
+  .skin_name = "sd2snes.skin",
+  .control_type = 0
 };
 
 cfg_t CFG;
+extern status_t ST;
 
 int cfg_save() {
   int err = 0;
@@ -40,11 +40,11 @@ int cfg_save() {
   f_puts("##############################\n", &file_handle);
   f_puts("# sd2snes configuration file #\n", &file_handle);
   f_puts("##############################\n\n", &file_handle);
-  f_printf(&file_handle, "# Video mode (%d = 60Hz, %d = 50Hz, %d = Auto (game only))\n", VIDMODE_60, VIDMODE_50, VIDMODE_AUTO);
+  f_puts("# Allow SuperCIC Pair Mode (required for video mode setting)\n", &file_handle);
+  f_printf(&file_handle, "%s: %s\n", CFG_PAIR_MODE_ALLOWED, CFG.pair_mode_allowed ? "true" : "false");
+  f_printf(&file_handle, "\n# Video mode (%d = 60Hz, %d = 50Hz, %d = Auto (game only))\n", VIDMODE_60, VIDMODE_50, VIDMODE_AUTO);
   f_printf(&file_handle, "%s: %d\n", CFG_VIDMODE_MENU, CFG.vidmode_menu);
   f_printf(&file_handle, "%s: %d\n", CFG_VIDMODE_GAME, CFG.vidmode_game);
-  f_puts("\n# Allow SuperCIC Pair Mode (required for video mode setting)\n", &file_handle);
-  f_printf(&file_handle, "%s: %s\n", CFG_PAIR_MODE_ALLOWED, CFG.pair_mode_allowed ? "true" : "false");
   f_printf(&file_handle, "\n# Satellaview Settings\n#  %s: use user defined time instead of real time\n", CFG_BSX_USE_USERTIME);
   f_printf(&file_handle, "#  %s: user defined Satellaview broadcast time (format: YYYYMMDDhhmmss)\n", CFG_BSX_TIME);
   f_printf(&file_handle, "%s: %s\n", CFG_BSX_USE_USERTIME, CFG.bsx_use_usertime ? "true" : "false");
@@ -166,7 +166,6 @@ int cfg_add_last_game(uint8_t *fn) {
     written++;
   }
   file_close();
-  cfg_set_num_recent_games(written);
   return err;
 }
 
@@ -180,42 +179,21 @@ int cfg_get_last_game(uint8_t *fn, uint8_t index) {
   return err;
 }
 
-void set_cfg_num_recent_games() {
-  file_open(LAST_FILE, FA_READ);
-  if(file_res) return;
-  int num_recent_games;
-  TCHAR fntmp[256];
-  for(num_recent_games = 0; num_recent_games < 11; num_recent_games++) {
-    f_gets(fntmp, 255, &file_handle);
-    if((*fntmp == 0) || (*fntmp == '\n')) {
-      break; /* last entry found */
-    }
-  }
-  file_close();
-  cfg_set_num_recent_games(num_recent_games);
-}
-
 void cfg_dump_recent_games_for_snes(uint32_t address) {
   TCHAR fntmp[256];
-  int err = 0, index;
+  int index;
   file_open(LAST_FILE, FA_READ);
-  for(index = 0; index < 10 && !err; index++) {
+  for(index = 0; index < 10 && !f_eof(&file_handle); index++) {
     f_gets(fntmp, 255, &file_handle);
     sram_writeblock(strrchr((const char*)fntmp, '/')+1, address+256*index, 256);
   }
+  ST.num_recent_games = index;
   file_close();
 }
 
 /* make binary config available to menu */
 void cfg_load_to_menu() {
   sram_writeblock(&CFG, SRAM_MENU_CFG_ADDR, sizeof(cfg_t));
-}
-
-void cfg_set_num_recent_games(uint8_t valid) {
-  CFG.num_recent_games = valid;
-}
-uint8_t cfg_get_num_recent_games() {
-  return CFG.num_recent_games;
 }
 
 void cfg_set_pair_mode_allowed(uint8_t allowed) {

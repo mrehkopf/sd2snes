@@ -55,6 +55,7 @@ char* hex = "0123456789ABCDEF";
 extern snes_romprops_t romprops;
 extern uint32_t saveram_crc_old;
 extern cfg_t CFG;
+extern status_t ST;
 
 void sram_hexdump(uint32_t addr, uint32_t len) {
   static uint8_t buf[16];
@@ -322,11 +323,9 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   printf("done\n");
 
-  if(cfg_is_r213f_override_enabled() & (filename != (uint8_t*)"/sd2snes/menu.bin"))
+  if(cfg_is_r213f_override_enabled() && (filename != (uint8_t*)"/sd2snes/menu.bin") && !ST.is_u16) {
     romprops.fpga_features |= FEAT_213F; /* e.g. for general consoles */
-//  else
-//    romprops.fpga_features &= ~FEAT_213F; /* only for consoles with $213f-D4-Region-Patching (e.g. U16) */
-
+  }
   fpga_set_213f(romprops.region);
   fpga_set_features(romprops.fpga_features);
   fpga_set_dspfeat(romprops.fpga_dspfeat);

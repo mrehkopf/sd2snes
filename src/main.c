@@ -50,11 +50,7 @@ extern snes_romprops_t romprops;
 extern volatile int reset_changed;
 
 extern volatile cfg_t CFG;
-
-enum system_states {
-  SYS_RTC_STATUS = 0,
-  SYS_LAST_STATUS = 1
-};
+extern volatile status_t ST;
 
 void menu_cmd_readdir(void) {
   uint8_t path[256];
@@ -147,11 +143,9 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       cfg_load();
       cfg_save();
       cic_init(cfg_is_pair_mode_allowed());
-      set_cfg_num_recent_games();
     }
     firstboot = 0;
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
-    sram_writebyte(cfg_get_num_recent_games(), SRAM_STATUS_ADDR+SYS_LAST_STATUS);
     cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
 
     /* load menu */
@@ -171,13 +165,13 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 
     if((rtc_state = rtc_isvalid()) != RTC_OK) {
       printf("RTC invalid!\n");
-      sram_writebyte(0xff, SRAM_STATUS_ADDR+SYS_RTC_STATUS);
+      ST.rtc_valid = 0xff;
       set_bcdtime(0x20120701000000LL);
       set_fpga_time(0x20120701000000LL);
       invalidate_rtc();
     } else {
       printf("RTC valid!\n");
-      sram_writebyte(0x00, SRAM_STATUS_ADDR+SYS_RTC_STATUS);
+      ST.rtc_valid = 0;
       set_fpga_time(get_bcdtime());
     }
     sram_memset(SRAM_SYSINFO_ADDR, 13*40, 0x20);
@@ -191,6 +185,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       cic_pair(CFG.vidmode_menu, CFG.vidmode_menu);
     }
     cfg_load_to_menu();
+    status_load_to_menu();
     snes_reset(0);
 
     uint8_t cmd = 0;
@@ -210,8 +205,9 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       snescmd_writebyte(MCU_CMD_RDY, SNESCMD_SNES_CMD);
       cmd=menu_main_loop();
       /* acknowledge command */
-      snescmd_writebyte(cmd, SNESCMD_SNES_CMD);
+      echo_mcu_cmd();
       printf("cmd: %d\n", cmd);
+      status_save_from_menu();
       uart_putc('-');
       switch(cmd) {
         case SNES_CMD_LOADROM:

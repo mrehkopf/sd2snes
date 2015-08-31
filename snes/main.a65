@@ -11,7 +11,7 @@ GAME_MAIN:
   sta @BRAM_UNLOCK
   lda #$7a72
   sta @BRAM_UNLOCK+2
-  lda #$00
+  lda #$0000
   sta @MCU_CMD  ; clear MCU command register
   rep #$20 : .al
   lda #$0000
@@ -28,9 +28,25 @@ GAME_MAIN:
   sta WARM_COMPLEMENT
   lda SAVED_SP ; Restore previous stack pointer
   tcs
+  ; restore menu state that might have been destroyed
   sep #$20 : .as
-; The following initialization processes must not touch memory
-; structures used by the file selector !
+  rep #$10 : .xl
+  stz $2183
+  ldx #$0000
+  stx $2181
+  stz $4300
+  ldx #!WRAM_BAK
+  lda #^WRAM_BAK
+  stx $4302
+  sta $4304
+  ldx #$2000
+  stx $4305
+  lda #$80
+  sta $4301
+  lda #$01
+  sta $420b
+  ; The following initialization processes must not touch memory
+  ; structures used by the file selector !
   jsr waitblank
   jsr snes_init
   jsr setup_gfx
@@ -38,11 +54,11 @@ GAME_MAIN:
   jsr colortest
   jsr video_init
   jsr setup_hdma
+  jsr detect_ultra16
   lda #$0f
   sta cur_bright
   sta tgt_bright
   sta $2100
-
   jmp @set_bank ; Set bios bank, just to be sure
 set_bank:
   plp           ; Restore processor state
@@ -58,12 +74,13 @@ coldboot:       ; Regular, cold-start init
   jsr colortest
   jsr video_init
   jsr setup_hdma
+  jsr detect_ultra16
   jsr screen_on
   jsr wait_mcu_ready
   jsr filesel_init
 
   sep #$20 : .as
-  lda @RTC_STATUS
+  lda @ST_RTC_VALID
   beq +
   jsl time_init
 +
@@ -630,5 +647,36 @@ clear_wram:
   ldx #$0000
   stx $4305
   sta $420b
+  plp
+  rts
+
+backup_wram:
+  php
+  rep #$10 : .xl
+  sep #$20 : .as
+  ldx #$0000
+  stx $2181
+  stz $2183
+  DMA0(#$80, #$2000, #^WRAM_BAK, #!WRAM_BAK, #$80)
+  plp
+  rts
+
+detect_ultra16:
+  php
+  sep #$20 : .as
+  lda #$aa
+  sta @$0021c0
+  lda @$0021c0
+  cmp #$55
+  beq detect_ultra16_found
+  lda #$00
+  sta @ST_IS_U16
+  bra detect_ultra16_out
+detect_ultra16_found:
+  lda @$0021c2
+  sta @ST_IS_U16
+detect_ultra16_out:
+  lda #$55
+  sta @$0021c0
   plp
   rts

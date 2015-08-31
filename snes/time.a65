@@ -700,6 +700,8 @@ settime
   sta @MCU_PARAM+11
   lda #$02            ; set clock
   sta @MCU_CMD
+  lda #$00
+  sta @ST_RTC_VALID   ; set rtc valid
   rts
 
 printtime:

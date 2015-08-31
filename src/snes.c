@@ -47,6 +47,12 @@ extern int snes_boot_configured;
 volatile int reset_changed;
 volatile int reset_pressed;
 
+status_t ST = {
+  .rtc_valid = 0xff,
+  .num_recent_games = 0,
+  .is_u16 = 0
+};
+
 void prepare_reset() {
   snes_reset(1);
   delay_ms(SNES_RESET_PULSELEN_MS);
@@ -377,4 +383,12 @@ void snescmd_prepare_nmihook() {
   snescmd_writeshort(SNES_BUTTON_LRSB, SNESCMD_NMI_DISABLE_CHEATS);
   snescmd_writeshort(SNES_BUTTON_LRSY, SNESCMD_NMI_KILL_NMIHOOK);
   snescmd_writeshort(SNES_BUTTON_LRSX, SNESCMD_NMI_TMP_KILL_NMIHOOK);
+}
+
+void status_load_to_menu() {
+  sram_writeblock(&ST, SRAM_STATUS_ADDR, sizeof(status_t));
+}
+
+void status_save_from_menu() {
+  sram_readblock(&ST, SRAM_STATUS_ADDR, sizeof(status_t));
 }

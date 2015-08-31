@@ -128,9 +128,9 @@ sysinfo_printloop:
   pha
   jmp sysinfo_printloop
 + plp
-  lda #$00
+  lda #CMD_MCU_RDY
   sta @MCU_CMD
-- lda @SNES_CMD
+- cmp @SNES_CMD
   bne -
   jsr pop_window
   rtl
