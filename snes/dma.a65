@@ -3,6 +3,15 @@ setup_hdma:
   sep #$20 : .as
   rep #$10 : .xl
 
+  lda #$02      ;A to B; direct; 2x single reg
+  sta $4300     ;ch. 0 for y scroll
+  lda #$10      ;2110 = BG2VOFS
+  sta $4301
+  lda #^hdma_bg2scroll
+  ldy #!hdma_bg2scroll
+  sty $4302
+  sta $4304
+
   lda #$00      ;A to B; direct; 1x single reg
   sta $4310     ;ch. 1 for color address
   lda #$21      ;2121 = CG addr
@@ -34,8 +43,8 @@ setup_hdma:
   sta $4340     ;ch. 4 for scroll
   lda #$0d      ;210d = BG1HOFS
   sta $4341
-  lda #^hdma_scroll
-  ldy #!hdma_scroll
+  lda #^hdma_bg1scroll
+  ldy #!hdma_bg1scroll
   sty $4342
   sta $4344
 
@@ -48,18 +57,9 @@ setup_hdma:
   sty $4352
   sta $4354
 
-  lda #$02      ;A to B; direct; 2x single reg
-  sta $4360     ;ch. 6 for y scroll
-  lda #$10      ;2110 = BG2VOFS
-  sta $4361
-  lda #^hdma_yscroll
-  ldy #!hdma_yscroll
-  sty $4362
-  sta $4364
-
   jsr waitblank
-  lda #$7e
-  sta $420c     ;enable HDMA ch. 1-6
+  lda #$3f
+  sta $420c     ;enable HDMA ch. 0-5
   lda #$81      ;VBlank NMI + Auto Joypad Read
   sta $4200     ;enable V-BLANK NMI
   rts

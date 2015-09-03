@@ -34,19 +34,19 @@ GAME_MAIN:
   stz $2183
   ldx #$0000
   stx $2181
-  stz $4300
+  stz $4370
   ldx #!WRAM_BAK
   lda #^WRAM_BAK
-  stx $4302
-  sta $4304
+  stx $4372
+  sta $4374
   ldx #$2000
-  stx $4305
+  stx $4375
   lda #$80
-  sta $4301
-  lda #$01
+  sta $4371
   sta $420b
   ; The following initialization processes must not touch memory
   ; structures used by the file selector !
+  jsr killdma
   jsr waitblank
   jsr snes_init
   jsr setup_gfx
@@ -66,6 +66,7 @@ set_bank:
 
 coldboot:       ; Regular, cold-start init
   sep #$20 : .as
+  jsr killdma
   jsr clear_wram
   jsr waitblank
   jsr snes_init
@@ -118,7 +119,7 @@ setup_gfx:
   stx $2181
   lda #$00
   sta $2183
-  DMA0(#$08, #$8000, #^zero, #!zero, #$80)
+  DMA7(#$08, #$8000, #^zero, #!zero, #$80)
 
 ; generate fonts
   jsr genfonts
@@ -126,22 +127,22 @@ setup_gfx:
 ; clear BG1 tilemap
   ldx #BG1_TILE_BASE
   stx $2116
-  DMA0(#$09, #$1000, #^zero, #!zero, #$18)
+  DMA7(#$09, #$1000, #^zero, #!zero, #$18)
 
 ; clear BG2 tilemap
   ldx #BG2_TILE_BASE
   stx $2116
-  DMA0(#$09, #$1000, #^zero, #!zero, #$18)
+  DMA7(#$09, #$1000, #^zero, #!zero, #$18)
 
 ; clear OAM tables
   ldx #$0000
   stx $2102
-  DMA0(#$08, #$220, #^zero, #!zero, #$04)
+  DMA7(#$08, #$220, #^zero, #!zero, #$04)
 
 ; copy logo tiles
   ldx #$2000
   stx $2116
-  DMA0(#$01, #$4000, #^logo, #!logo, #$18)
+  DMA7(#$01, #$4000, #^logo, #!logo, #$18)
 
 ; generate logo tilemap
   ldx #BG1_TILE_BASE
@@ -156,19 +157,19 @@ setup_gfx:
 ; copy sprites tiles
   ldx #OAM_TILE_BASE
   stx $2116
-  DMA0(#$01, #$500, #^logospr, #!logospr, #$18)
+  DMA7(#$01, #$500, #^logospr, #!logospr, #$18)
 
 ; set OAM tables
   ldx #$0000
   stx $2102
-  DMA0(#$00, #$60, #^oam_data_l, #!oam_data_l, #$04)
+  DMA7(#$00, #$60, #^oam_data_l, #!oam_data_l, #$04)
   ldx #$0100
   stx $2102
-  DMA0(#$00, #$09, #^oam_data_h, #!oam_data_h, #$04)
+  DMA7(#$00, #$09, #^oam_data_h, #!oam_data_h, #$04)
 
 ; set palette
   stz $2121
-  DMA0(#$00, #$200, #^palette, #!palette, #$22)
+  DMA7(#$00, #$200, #^palette, #!palette, #$22)
   stz $2121
 
 ; copy hdma tables so we can work "without" the cartridge
@@ -177,41 +178,41 @@ setup_gfx:
   ldx #!hdma_pal
   stx $2181
   sta $2183
-  DMA0(#$00, #55, #^hdma_pal_src, #!hdma_pal_src, #$80)
+  DMA7(#$00, #55, #^hdma_pal_src, #!hdma_pal_src, #$80)
 
 ; CG addr for palette
   lda #^hdma_cg_addr
   ldx #!hdma_cg_addr
   stx $2181
   sta $2183
-  DMA0(#$00, #227, #^hdma_cg_addr_src, #!hdma_cg_addr_src, #$80)
+  DMA7(#$00, #227, #^hdma_cg_addr_src, #!hdma_cg_addr_src, #$80)
 
 ; screen mode
   lda #^hdma_mode
   ldx #!hdma_mode
   stx $2181
   sta $2183
-  DMA0(#$00, #5, #^hdma_mode_src, #!hdma_mode_src, #$80)
+  DMA7(#$00, #5, #^hdma_mode_src, #!hdma_mode_src, #$80)
 
 ; bg scroll
-  lda #^hdma_scroll
-  ldx #!hdma_scroll
+  lda #^hdma_bg1scroll
+  ldx #!hdma_bg1scroll
   stx $2181
   sta $2183
-  DMA0(#$00, #21, #^hdma_scroll_src, #!hdma_scroll_src, #$80);
+  DMA7(#$00, #21, #^hdma_bg1scroll_src, #!hdma_bg1scroll_src, #$80);
 
-  lda #^hdma_yscroll
-  ldx #!hdma_yscroll
+  lda #^hdma_bg2scroll
+  ldx #!hdma_bg2scroll
   stx $2181
   sta $2183
-  DMA0(#$00, #13, #^hdma_yscroll_src, #!hdma_yscroll_src, #$80);
+  DMA7(#$00, #13, #^hdma_bg2scroll_src, #!hdma_bg2scroll_src, #$80);
 
 ; color math
   lda #^hdma_math
   ldx #!hdma_math
   stx $2181
   sta $2183
-  DMA0(#$00, #19, #^hdma_math_src, #!hdma_math_src, #$80);
+  DMA7(#$00, #19, #^hdma_math_src, #!hdma_math_src, #$80);
 
 ; initialize window stack
   ldx #$ffff
@@ -226,11 +227,11 @@ genfonts:
 ; clear VRAM font areas
   ldx #$0000
   stx $2116
-  DMA0(#$09, #$4000, #^zero, #!zero, #$18)
+  DMA7(#$09, #$4000, #^zero, #!zero, #$18)
 
   ldx #$4000
   stx $2116
-  DMA0(#$09, #$2000, #^zero, #!zero, #$18)
+  DMA7(#$09, #$2000, #^zero, #!zero, #$18)
 
   sep #$10 : .xs
   rep #$20 : .al
@@ -238,34 +239,34 @@ genfonts:
   stz $2116
   stz $2117
   ldx #$01
-  stx $4300
+  stx $4370
   ldx #^font
-  stx $4304
+  stx $4374
   lda #!font
-  sta $4302
+  sta $4372
   lda #$0010
-  sta $4305
+  sta $4375
   ldx #$18
-  stx $4301
+  stx $4371
   lda #$0000
 - sta $2116
   ldx #$10
-  stx $4305
-  ldx #$01
+  stx $4375
+  ldx #$80
   stx $420b
   clc
   adc #$20
   cmp #$2000
   bne -
   ldx #^font
-  stx $4304
+  stx $4374
   lda #!font
-  sta $4302
+  sta $4372
   lda #$4000
 - sta $2116
   ldx #$10
-  stx $4305
-  ldx #$01
+  stx $4375
+  ldx #$80
   stx $420b
   clc
   adc #$10
@@ -474,22 +475,22 @@ fadeloop_start
   rep #$10 : .xl
   stz $2183
   stx $2181
-  stx $4305
+  stx $4375
   lda #$55
   sta $2aff     ; WRAM fill value
   ldx #$8008
-  stx $4300
+  stx $4370
   ldx #$2aff
-  stx $4302
-  stz $4304
-  lda #$01
+  stx $4372
+  stz $4374
+  lda #$80
 ; fill bank $7e
   sta $420b
 ; fill bank $7f
   sta $420b
 ; fix for anti-copier routines that rely on pre-initialized DMA target
-  lda #$ff
-  sta $4301
+; lda #$ff
+; sta $4301
   rep #$20 : .al
   lda #$fe80 ; - bra -
   sta @$7fffe0
@@ -628,24 +629,24 @@ clear_wram:
   lda #$55
   sta $2aff     ; WRAM fill value
   ldx #$8008
-  stx $4300
+  stx $4370
   ldx #$2aff
-  stx $4302
-  stz $4304
-  lda #$01
+  stx $4372
+  stz $4374
+  lda #$80
 ; fill $7e0000-$7e1fef (spare a bit of stack)
   ldx #$1ff0
-  stx $4305
+  stx $4375
   sta $420b
 ; fill $7e2000-$7effff
   ldx #$2000
   stx $2181
   ldx #$e000
-  stx $4305
+  stx $4375
   sta $420b
 ; fill bank $7f
   ldx #$0000
-  stx $4305
+  stx $4375
   sta $420b
   plp
   rts
@@ -657,7 +658,7 @@ backup_wram:
   ldx #$0000
   stx $2181
   stz $2183
-  DMA0(#$80, #$2000, #^WRAM_BAK, #!WRAM_BAK, #$80)
+  DMA7(#$80, #$2000, #^WRAM_BAK, #!WRAM_BAK, #$80)
   plp
   rts
 
@@ -679,4 +680,94 @@ detect_ultra16_out:
   lda #$55
   sta @$0021c0
   plp
+  rts
+
+killdma:
+  stz $420b
+  stz $420c
+
+  stz $4300
+  stz $4301
+  stz $4302
+  stz $4303
+  stz $4304
+  stz $4305
+  stz $4306
+  stz $4307
+  stz $4308
+  stz $4309
+  stz $430a
+  stz $430b
+  stz $4310
+  stz $4311
+  stz $4312
+  stz $4313
+  stz $4314
+  stz $4315
+  stz $4316
+  stz $4317
+  stz $4318
+  stz $4319
+  stz $431a
+  stz $431b
+  stz $4320
+  stz $4321
+  stz $4322
+  stz $4323
+  stz $4324
+  stz $4325
+  stz $4326
+  stz $4327
+  stz $4328
+  stz $4329
+  stz $432a
+  stz $432b
+  stz $4330
+  stz $4331
+  stz $4332
+  stz $4333
+  stz $4334
+  stz $4335
+  stz $4336
+  stz $4337
+  stz $4338
+  stz $4339
+  stz $433a
+  stz $433b
+  stz $4340
+  stz $4341
+  stz $4342
+  stz $4343
+  stz $4344
+  stz $4345
+  stz $4346
+  stz $4347
+  stz $4348
+  stz $4349
+  stz $434a
+  stz $434b
+  stz $4350
+  stz $4351
+  stz $4352
+  stz $4353
+  stz $4354
+  stz $4355
+  stz $4356
+  stz $4357
+  stz $4358
+  stz $4359
+  stz $435a
+  stz $435b
+  stz $4370
+  stz $4371
+  stz $4372
+  stz $4373
+  stz $4374
+  stz $4375
+  stz $4376
+  stz $4377
+  stz $4378
+  stz $4379
+  stz $437a
+  stz $437b
   rts

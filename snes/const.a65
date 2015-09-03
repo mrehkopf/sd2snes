@@ -73,7 +73,7 @@ hdma_cg_addr_src
   .byt $00, $00, $00, $00, $00, $00, $00, $00
   .byt $00
 hdma_mode_src   .byt 56, $03, $01, $05, $00
-hdma_scroll_src
+hdma_bg1scroll_src
   .byt 56
   .byt $00, $00, $ff, $03
   .byt 127
@@ -83,7 +83,7 @@ hdma_scroll_src
   .byt 1
   .byt $fc, $00, $0f, $00
   .byt $00
-hdma_yscroll_src
+hdma_bg2scroll_src
   .byt 56
   .byt $ff, $03
   .byt 127
