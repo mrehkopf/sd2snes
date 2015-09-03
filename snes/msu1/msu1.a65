@@ -10,6 +10,9 @@ msu1init:
 -	bit MSU_STATUS
 	bmi -
 
+	lda #$ff
+	sta MSU_VOLUME
+
 	stx MSU_TRACK
 -	bit MSU_STATUS
 	bvs -
