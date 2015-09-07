@@ -47,6 +47,7 @@ GAME_MAIN:
   ; The following initialization processes must not touch memory
   ; structures used by the file selector !
   jsr killdma
+  jsr apu_ram_init
   jsr waitblank
   jsr snes_init
   jsr setup_gfx
@@ -68,6 +69,7 @@ coldboot:       ; Regular, cold-start init
   sep #$20 : .as
   jsr killdma
   jsr clear_wram
+  jsr apu_ram_init
   jsr waitblank
   jsr snes_init
   jsr setup_gfx
