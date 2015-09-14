@@ -1,3 +1,47 @@
+#include "memmap.i65"
+
+ APU RAM init routine
+apu_ram_init:
+  php
+  sep #$20 : .as
+  rep #$10 : .xl
+  ldy #$0002
+  jsr spc_begin_upload
+  ldx #$0000
+-
+  lda @apu_ram_init_code, x
+  jsr spc_upload_byte
+  inx
+  cpx #20
+  bne -
+  ldx #$0002
+  stx APUIO2
+  stz APUIO1
+  lda APUIO0
+  inc
+  inc
+  sta APUIO0
+- cmp APUIO0
+  bne -
+  plp
+  rts
+
+apu_ram_init_code:  ; .org $0002
+  .byt $e8,$aa      ; mov a, #$aa
+  .byt $8d,$00      ; mov y, #$00
+  .byt $cd,$fe      ; mov x, #$fe
+  ; loop:
+  .byt $d6,$00,$01  ; mov !$0100+y, a
+  .byt $fc          ; inc y
+  .byt $d0,-6       ; bne loop
+  .byt $ab,$0a      ; inc loop+2
+  .byt $1d          ; dec x
+  .byt $d0,-11      ; bne loop
+  ; Re-run IPL
+  .byt $5f,$c0,$ff  ; jmp $ffc0
+
+
+; SPC player code
 ; All SPC700 routines in SPC700 machine code
 ; SPC loader & transfer routines by Shay Green <gblargg@gmail.com>
 
