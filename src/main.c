@@ -214,7 +214,6 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           get_selected_name(file_lfn);
           printf("Selected name: %s\n", file_lfn);
           cfg_add_last_game(file_lfn);
-          cfg_save();
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;
         case SNES_CMD_SETRTC:
@@ -247,7 +246,6 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           cfg_get_last_game(file_lfn, snes_get_mcu_param() & 0xff);
           printf("Selected name: %s\n", file_lfn);
           cfg_add_last_game(file_lfn);
-          cfg_save();
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;
         case SNES_CMD_SET_ALLOW_PAIR:
