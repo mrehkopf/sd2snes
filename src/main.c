@@ -178,7 +178,11 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     printf("SNES GO!\n");
     snes_reset(1);
     fpga_reset_srtc_state();
-    delay_ms(SNES_RESET_PULSELEN_MS);
+    if(ST.is_u16 && (ST.u16_cfg & 0x01)) {
+      delay_ms(60*SNES_RESET_PULSELEN_MS);
+    } else {
+      delay_ms(SNES_RESET_PULSELEN_MS);
+    }
     sram_writebyte(32, SRAM_CMD_ADDR);
     if(get_cic_state() == CIC_PAIR) {
       printf("PAIR MODE ENGAGED!\n");

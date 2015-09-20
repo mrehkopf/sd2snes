@@ -40,6 +40,7 @@
 #define WRAM_STORE_BLOCKRAM_ROUTINE $7EF080
 #define WRAM_FADELOOP               $7EF100
 #define WRAM_WAIT_MCU               $7EF180
+#define WRAM_LOAD_ULTRA16_CFG       $7EF200
 
 #define FILESEL_CWD                 $FF0000
 
@@ -74,6 +75,7 @@
 #define ST_RTC_VALID                ST_ADDR+$0000
 #define ST_NUM_RECENT_GAMES         ST_ADDR+$0001
 #define ST_IS_U16                   ST_ADDR+$0002
+#define ST_U16_CFG                  ST_ADDR+$0003
 
 #define CFG_ADDR                    $FF0100
 #define CFG_VIDMODE_MENU            CFG_ADDR+$0000

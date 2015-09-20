@@ -50,7 +50,8 @@ volatile int reset_pressed;
 status_t ST = {
   .rtc_valid = 0xff,
   .num_recent_games = 0,
-  .is_u16 = 0
+  .is_u16 = 0,
+  .u16_cfg = 0xff
 };
 
 void prepare_reset() {

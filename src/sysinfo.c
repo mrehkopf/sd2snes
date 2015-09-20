@@ -131,7 +131,11 @@ int write_sysinfo(int sd_measured) {
   sram_memset(sram_addr+len, 40-len, 0x20);
   sram_addr += 40;
   if(ST.is_u16) {
-    len = snprintf(linebuf, sizeof(linebuf), "Ultra16 serial no. %d", ST.is_u16);
+    if(ST.u16_cfg & 0x01) {
+      len = snprintf(linebuf, sizeof(linebuf), "Ultra16 serial no. %d (Autoboot On)", ST.is_u16);
+    } else {
+      len = snprintf(linebuf, sizeof(linebuf), "Ultra16 serial no. %d (Autoboot Off)", ST.is_u16);
+    }
   } else {
     len = snprintf(linebuf, sizeof(linebuf), "                                        ");
   }

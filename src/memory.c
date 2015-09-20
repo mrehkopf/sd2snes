@@ -350,7 +350,11 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     printf("resetting SNES\n");
     fpga_dspx_reset(1);
     snes_reset(1);
-    delay_ms(SNES_RESET_PULSELEN_MS);
+    if(ST.is_u16 && (ST.u16_cfg & 0x01)) {
+      delay_ms(60*SNES_RESET_PULSELEN_MS);
+    } else {
+      delay_ms(SNES_RESET_PULSELEN_MS);
+    }
     snescmd_prepare_nmihook();
     cheat_yaml_load(filename);
     cheat_yaml_save(filename);
