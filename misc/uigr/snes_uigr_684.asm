@@ -31,22 +31,29 @@
 ;
 ;                                                 ,-----_-----.
 ;        +5V (1) [mb front 1 and many others :-)] |1        14| GND (7) [mb front 11 and many others :-)]
-;   Reset in/out [to CIC pin 8 / SuperCIC pin 13] |2  A5 A0 13| serial data in(4) [mb front 6]
+;   Reset in/out [to CIC pin 8 / SuperCIC pin 13] |2  A5 A0 13| serial data in(4) [mb front 6(*)]
 ;                           50/60Hz out [to PPUs] |3  A4 A1 12| latch in(3)       [mb front 10]
-;               Cart-Region [from SuperCIC pin 3] |4  A3 A2 11| clk in(2)         [mb front 8]
+;               Cart-Region [from SuperCIC pin 3] |4  A3 A2 11| clk in(2)         [mb front 8(**)]
 ;                        LED out - grn, 50Hz Mode |5  C5 C0 10| LED in - grn [from SuperCIC pin 5]
 ;                        LED out - red, 60Hz Mode |6  C4 C1  9| LED in - red [from SuperCIC pin 6]
-;                       $213f-D4-Patch enable out |7  C3 C2  8| LED_TYPE in  [from SuperCIC pin 7]
+;                 $213f-D4-Patch enable out (***) |7  C3 C2  8| LED_TYPE in  [from SuperCIC pin 7] (****)
 ;                                                 `-----------'
 ;
-;   Pin 7 can be left open if no $213f-D4-Patch is build in the console.
-;   Otherwise this pin has to be connected to one input of the 74*133 IC of the
-;   patch. Logic is positive.
-;
-;   Pin 8 (LED_TYPE) sets the output mode for the LED pins
-;   (must be tied to either level):
-;      low  = common cathode
-;      high = common anode   (output inverted)
+;   (*)
+;     use pin 4 at mb front ctrl.panel connector instead of pin 6 if you want to
+;     use the IGR-functions with player 2
+;   (**)
+;     use pin 9 at mb front ctrl.panel connector instead of pin 8 if you want to
+;     use the IGR-functions with player 2
+;   (***)
+;     Pin 7 can be left open if no $213f-D4-Patch is build in the console.
+;     Otherwise this pin has to be connected to one input of the 74*133 IC of the
+;     patch. Logic is positive.
+;   (***)
+;     Pin 8 (LED_TYPE) sets the output mode for the LED pins
+;     (must be tied to either level):
+;       low  = common cathode
+;       high = common anode   (output inverted)
 ;
 ;
 ;   As the internal oscillator is used, you should connect a capacitor of about 100nF between
@@ -57,7 +64,7 @@
 ;   ========================
 ;        _______________________________
 ;       |                 |             \
-;       | (1) (2) (3) (4) | (5) (6) (7)  )
+;       | (1) (2) (3) (4) | (5) (6) (7)  ) (player 1 or player 2 can be used)
 ;       |_________________|_____________/
 ;
 ;
