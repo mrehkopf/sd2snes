@@ -276,10 +276,10 @@ BUTTON_B    EQU 7
 BUTTON_Y    EQU 6
 BUTTON_Sl   EQU 5
 BUTTON_St   EQU 4
-BUTTON_Up   EQU 3
-BUTTON_Dw   EQU 2
-BUTTON_Le   EQU 1
-BUTTON_Ri   EQU 0
+DPAD_UP     EQU 3
+DPAD_DW     EQU 2
+DPAD_LE     EQU 1
+DPAD_RI     EQU 0
 
 BUTTON_A    EQU 7
 BUTTON_X    EQU 6
@@ -391,54 +391,54 @@ store_Button_St
     bcf     INTCON, INTF
     movfw   PORTA
 
-read_Button_Up
+read_DPad_Up
     btfss   INTCON, INTF
     movfw   PORTA
     andlw   (1 << SERIAL_DATA)
     btfss   INTCON, INTF
-    goto    read_Button_Up
-store_Button_Up
+    goto    read_DPad_Up
+store_DPad_Up
     btfss   STATUS, Z
-    bsf     reg_ctrl_data_msb, BUTTON_Up
+    bsf     reg_ctrl_data_msb, DPAD_UP
 
     bcf     INTCON, INTF
     movfw   PORTA
 
-read_Button_Dw
+read_DPad_Dw
     btfss   INTCON, INTF
     movfw   PORTA
     andlw   (1 << SERIAL_DATA)
     btfss   INTCON, INTF
-    goto    read_Button_Dw
-store_Button_Dw
+    goto    read_DPad_Dw
+store_DPad_Dw
     btfss   STATUS, Z
-    bsf     reg_ctrl_data_msb, BUTTON_Dw
+    bsf     reg_ctrl_data_msb, DPAD_DW
 
     bcf     INTCON, INTF
     movfw   PORTA
 
-read_Button_Le
+read_DPad_Le
     btfss   INTCON, INTF
     movfw   PORTA
     andlw   (1 << SERIAL_DATA)
     btfss   INTCON, INTF
-    goto    read_Button_Le
-store_Button_Le
+    goto    read_DPad_Le
+store_DPad_Le
     btfss   STATUS, Z
-    bsf     reg_ctrl_data_msb, BUTTON_Le
+    bsf     reg_ctrl_data_msb, DPAD_LE
 
     bcf     INTCON, INTF
     movfw   PORTA
 
-read_Button_Ri
+read_DPad_Ri
     btfss   INTCON, INTF
     movfw   PORTA
     andlw   (1 << SERIAL_DATA)
     btfss   INTCON, INTF
-    goto    read_Button_Ri
-store_Button_Ri
+    goto    read_DPad_Ri
+store_DPad_Ri
     btfss   STATUS, Z
-    bsf     reg_ctrl_data_msb, BUTTON_Ri
+    bsf     reg_ctrl_data_msb, DPAD_RI
 
 
     bcf     INTCON, INTF
