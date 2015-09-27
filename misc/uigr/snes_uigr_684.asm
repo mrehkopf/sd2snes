@@ -5,7 +5,7 @@
 ;
 ;   Copyright (C) 2010 by Maximilian Rehkopf <otakon@gmx.net>
 ;
-;   Last Modified: Aug. 2015 by Peter Bartmann <peter.bartmann@gmx.de>
+;   Last Modified: Sep. 2015 by Peter Bartmann <peter.bartmann@gmx.de>
 ;
 ;   This program is free software; you can redistribute it and/or modify
 ;   it under the terms of the GNU General Public License as published by
@@ -293,10 +293,10 @@ BUTTON_X    EQU 6
 BUTTON_L    EQU 5
 BUTTON_R    EQU 4
 
-BUTTON_None3    EQU 3
-BUTTON_None2    EQU 2
-BUTTON_None1    EQU 1
-BUTTON_None0    EQU 0
+BUTTON_NONE3    EQU 3
+BUTTON_NONE2    EQU 2
+BUTTON_NONE1    EQU 1
+BUTTON_NONE0    EQU 0
 
 ; -----------------------------------------------------------------------
 
@@ -346,6 +346,7 @@ idle_loop
     goto    read_Button_B     ; if yes - goto data sampling procedure
     goto    idle_loop
 
+
 read_Button_B ; button B can be read (nearly) immediately
     bcf     INTCON, INTF
     nop                         ; for UWRC by micro (or other thrid party controller)
@@ -355,205 +356,188 @@ postwait_Button_B
     btfss   INTCON, INTF
     goto    postwait_Button_B
 
+prewait_Button_Y
+    btfss   PORTA, DATA_CLK
+    goto    prewait_Button_Y
     bcf     INTCON, INTF
-    movfw   PORTA
-
-read_Button_Y
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_Button_Y
-store_Button_Y
-    btfss   STATUS, Z
-    bsf     reg_ctrl_data_msb, BUTTON_Y
     bcf     INTCON, RAIF        ; from now on, no IOC at the data latch shall appear
+store_Button_Y
+    btfsc   PORTA, SERIAL_DATA
+    bsf     reg_ctrl_data_msb, BUTTON_Y
+postwait_Button_Y
+    btfss   INTCON, INTF
+    goto    postwait_Button_Y
 
+prewait_Button_Sl
+    btfss   PORTA, DATA_CLK
+    goto    prewait_Button_Sl
     bcf     INTCON, INTF
-    movfw   PORTA
-
-read_Button_Sl
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_Button_Sl
+    nop
 store_Button_Sl
-    btfss   STATUS, Z
+    btfsc   PORTA, SERIAL_DATA
     bsf     reg_ctrl_data_msb, BUTTON_Sl
+postwait_Button_Sl
+    btfss   INTCON, INTF
+    goto    postwait_Button_Sl
 
+prewait_Button_St
+    btfss   PORTA, DATA_CLK
+    goto    prewait_Button_St
     bcf     INTCON, INTF
-    movfw   PORTA
-
-read_Button_St
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_Button_St
+    nop
 store_Button_St
-    btfss   STATUS, Z
+    btfsc   PORTA, SERIAL_DATA
     bsf     reg_ctrl_data_msb, BUTTON_St
+postwait_Button_St
+    btfss   INTCON, INTF
+    goto    postwait_Button_St
 
+prewait_DPad_Up
+    btfss   PORTA, DATA_CLK
+    goto    prewait_DPad_Up
     bcf     INTCON, INTF
-    movfw   PORTA
-
-read_DPad_Up
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_DPad_Up
+    nop
 store_DPad_Up
-    btfss   STATUS, Z
+    btfsc   PORTA, SERIAL_DATA
     bsf     reg_ctrl_data_msb, DPAD_UP
+postwait_DPad_Up
+    btfss   INTCON, INTF
+    goto    postwait_DPad_Up
 
+prewait_DPad_Dw
     bcf     INTCON, INTF
-    movfw   PORTA
-
-read_DPad_Dw
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_DPad_Dw
-store_DPad_Dw
-    btfss   STATUS, Z
+    nop
+    btfss   PORTA, DATA_CLK
+    goto    prewait_DPad_Dw
+store_Button_DW
+    btfsc   PORTA, SERIAL_DATA
     bsf     reg_ctrl_data_msb, DPAD_DW
+postwait_DPad_Dw
+    btfss   INTCON, INTF
+    goto    postwait_DPad_Dw
 
+prewait_DPad_Le
+    btfss   PORTA, DATA_CLK
+    goto    prewait_DPad_Le
     bcf     INTCON, INTF
-    movfw   PORTA
-
-read_DPad_Le
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_DPad_Le
+    nop
 store_DPad_Le
-    btfss   STATUS, Z
+    btfsc   PORTA, SERIAL_DATA
     bsf     reg_ctrl_data_msb, DPAD_LE
+postwait_DPad_Le
+    btfss   INTCON, INTF
+    goto    postwait_DPad_Le
 
+prewait_DPad_Ri
+    btfss   PORTA, DATA_CLK
+    goto    prewait_DPad_Ri
     bcf     INTCON, INTF
-    movfw   PORTA
-
-read_DPad_Ri
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_DPad_Ri
+    nop
 store_DPad_Ri
-    btfss   STATUS, Z
+    btfsc   PORTA, SERIAL_DATA
     bsf     reg_ctrl_data_msb, DPAD_RI
+postwait_DPad_Ri
+    btfss   INTCON, INTF
+    goto    postwait_DPad_Ri
 
 
+prewait_Button_A
+    btfss   PORTA, DATA_CLK
+    goto    prewait_Button_A
     bcf     INTCON, INTF
-    movfw   PORTA
-
-read_Button_A
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_Button_A
+    nop
 store_Button_A
-    btfss   STATUS, Z
+    btfsc   PORTA, SERIAL_DATA
     bsf     reg_ctrl_data_lsb, BUTTON_A
+postwait_Button_A
+    btfss   INTCON, INTF
+    goto    postwait_Button_A
 
+prewait_Button_X
+    btfss   PORTA, DATA_CLK
+    goto    prewait_Button_X
     bcf     INTCON, INTF
-    movfw   PORTA
-
-read_Button_X
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_Button_X
+    nop
 store_Button_X
-    btfss   STATUS, Z
+    btfsc   PORTA, SERIAL_DATA
     bsf     reg_ctrl_data_lsb, BUTTON_X
+postwait_Button_X
+    btfss   INTCON, INTF
+    goto    postwait_Button_X
 
+prewait_Button_L
+    btfss   PORTA, DATA_CLK
+    goto    prewait_Button_L
     bcf     INTCON, INTF
-    movfw   PORTA
-
-read_Button_L
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_Button_L
+    nop
 store_Button_L
-    btfss   STATUS, Z
+    btfsc   PORTA, SERIAL_DATA
     bsf     reg_ctrl_data_lsb, BUTTON_L
+postwait_Button_L
+    btfss   INTCON, INTF
+    goto    postwait_Button_L
 
+prewait_Button_R
+    btfss   PORTA, DATA_CLK
+    goto    prewait_Button_R
     bcf     INTCON, INTF
-    movfw   PORTA
-
-read_Button_R
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_Button_R
+    nop
 store_Button_R
-    btfss   STATUS, Z
+    btfsc   PORTA, SERIAL_DATA
     bsf     reg_ctrl_data_lsb, BUTTON_R
+postwait_Button_R
+    btfss   INTCON, INTF
+    goto    postwait_Button_R
 
+prewait_Button_None3
+    btfss   PORTA, DATA_CLK
+    goto    prewait_Button_None3
     bcf     INTCON, INTF
-
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-
-read_Button_None3
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_Button_None3
+    nop
 store_Button_None3
-    btfss   STATUS, Z
-    bsf     reg_ctrl_data_lsb, BUTTON_None3
+    btfsc   PORTA, SERIAL_DATA
+    bsf     reg_ctrl_data_lsb, BUTTON_NONE3
+postwait_Button_None3
+    btfss   INTCON, INTF
+    goto    postwait_Button_None3
 
+prewait_Button_None2
+    btfss   PORTA, DATA_CLK
+    goto    prewait_Button_None2
     bcf     INTCON, INTF
-    movfw   PORTA
-
-read_Button_None2
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_Button_None2
+    nop
 store_Button_None2
-    btfss   STATUS, Z
-    bsf     reg_ctrl_data_lsb, BUTTON_None2
+    btfsc   PORTA, SERIAL_DATA
+    bsf     reg_ctrl_data_lsb, BUTTON_NONE2
+postwait_Button_None2
+    btfss   INTCON, INTF
+    goto    postwait_Button_None2
 
+prewait_Button_None1
+    btfss   PORTA, DATA_CLK
+    goto    prewait_Button_None1
     bcf     INTCON, INTF
-    movfw   PORTA
-
-read_Button_None1
-    btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_Button_None1
+    nop
 store_Button_None1
-    btfss   STATUS, Z
-    bsf     reg_ctrl_data_lsb, BUTTON_None1
-
-    bcf     INTCON, INTF
-    movfw   PORTA
-
-read_Button_None0
+    btfsc   PORTA, SERIAL_DATA
+    bsf     reg_ctrl_data_lsb, BUTTON_NONE1
+postwait_Button_None1
     btfss   INTCON, INTF
-    movfw   PORTA
-    andlw   (1 << SERIAL_DATA)
-    btfss   INTCON, INTF
-    goto    read_Button_None0
+    goto    postwait_Button_None1
+
+prewait_Button_None0
+    btfss   PORTA, DATA_CLK
+    goto    prewait_Button_None0
+    nop
+    nop
 store_Button_None0
-    btfss   STATUS, Z
-    bsf     reg_ctrl_data_lsb, BUTTON_None0
-
+    btfsc   PORTA, SERIAL_DATA
+    bsf     reg_ctrl_data_lsb, BUTTON_NONE0
+postwait_Button_None0
+    btfss   INTCON, INTF
+    goto    postwait_Button_None0
+	
+check_controller_read
     btfsc   INTCON, RAIF
     goto    check_scic_auto         ; another IOC on data latch appeared -> invalid read
 
@@ -1028,7 +1012,7 @@ start
     M_movlf 0x07, TRISC         ; out out out in in in
     M_movlf 0x00, WPUA          ; no pullups
     M_movlf 0x02, IOCA          ; IOC on DATA_LATCH
-    M_movlf 0x80, OPTION_REG    ; global pullup disable, use falling clock edge for data sampling, prescaler assigned to T0 (1:2)
+    M_movlf 0x80, OPTION_REG    ; global pullup disable, use falling clock edge for INTE, prescaler assigned to T0 (1:2)
     banksel PORTA
     M_movlf 0x10, T1CON         ; set prescaler T1 1:2
 
