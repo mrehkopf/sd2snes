@@ -224,7 +224,7 @@ REGPATCH_OUT    EQU 3
 
 reg_ctrl_data_lsb       EQU 0x20
 reg_ctrl_data_msb       EQU 0x21
-; reg_ctrl_data_cnt       EQU 0x22
+reg_ctrl_read_ready     EQU 0x22
 reg_t0_overflows        EQU 0x31
 reg_repetition_cnt      EQU 0x32
 reg_t1_overflows        EQU 0x33
@@ -245,7 +245,7 @@ code_mode_50        EQU (1<<bit_mode_50)        ; 0x04
 code_mode_scic      EQU (1<<bit_mode_scic)      ; 0x08
 code_regtimeout     EQU (1<<bit_regtimeout)     ; 0x10
 code_regpatch       EQU (1<<bit_regpatch)       ; 0x20
-        
+
   if with_lock
     bit_igrlock_tmp     EQU 6
     bit_igrlock_ever    EQU 7
@@ -260,7 +260,6 @@ code_led_auto   EQU 0x30    ; yellow
 code_invert_led EQU 0x30    ; to invert the LED (needed if a com. anode LED is used)
 
 code_mode_default   EQU (code_mode_60 ^ code_regpatch)
-
 
 delay_05ms_t0_overflows     EQU 0x14    ; prescaler T0 set to 1:2
 repetitions_60ms            EQU 0x0c
@@ -307,48 +306,12 @@ BUTTON_NONE0    EQU 0
     nop                 ; 02h
     goto    start       ; 03h Initialisierung / ProgrammBeginn
 
- org    0x0004  ; jump here on interrupt with GIE set (should not appear)
-    return      ; return with GIE unset
 
- org    0x0005
-check_scic_auto
-    btfsc   PORTA, RESET_IN                 ; reset button pressed?
-    goto    check_reset                     ; then the SCIC might get a new mode or the console is reseted
-    btfsc   reg_current_mode, bit_mode_auto ; Auto-Mode?
-    goto    setregion_auto_withoutLED       ; if yes, check the current state
-    btfsc   reg_current_mode, bit_mode_scic ; SCIC-Mode?
-    goto    setregion_passthru              ; if yes, check the current state
-
-idle
-    if with_lock
-      btfsc   reg_current_mode, bit_igrlock_ever
-      goto    check_scic_auto
-    endif
-    
-    clrf  reg_ctrl_data_lsb
-    clrf  reg_ctrl_data_msb
-    M_T1reset
-    
-    btfsc   PORTA, CTRL_LATCH   ; data latch currently high?
-    goto    read_Button_B       ; if yes -> go go go
-    bcf     INTCON, RAIF
-
-idle_loop
-    btfsc   INTCON, RAIF      ; data latch changed?
-    goto    read_Button_B     ; if yes - goto data sampling procedure
-    btfsc   PORTA, RESET_IN   ; reset button pressed?
-    goto    check_reset       ; then the SCIC might get a new mode or the console is reseted
-    btfsc   INTCON, RAIF      ; data latch changed?
-    goto    read_Button_B     ; if yes - goto data sampling procedure
-    btfss   PIR1, TMR1IF      ; timer 1 overflow?
-    goto    check_scic_auto   ; SNES hasn't read controller past ~65ms
-    btfsc   INTCON, RAIF      ; data latch changed?
-    goto    read_Button_B     ; if yes - goto data sampling procedure
-    goto    idle_loop
-
-
-read_Button_B ; button B can be read (nearly) immediately
-    bcf     INTCON, INTF
+; --------ISR--------
+ org    0x0004  ; jump here on interrupt with GIE set       
+read_Button_B   ; button B can be read (nearly) immediately
+    M_movlf ((1<<INTE)^(1<<RAIE)), INTCON
+    nop
     nop
     btfsc   PORTA, CTRL_DATA
     bsf     reg_ctrl_data_msb, BUTTON_B
@@ -360,7 +323,7 @@ prewait_Button_Y
     btfss   PORTA, CTRL_CLK
     goto    prewait_Button_Y
     bcf     INTCON, INTF
-    bcf     INTCON, RAIF        ; from now on, no IOC at the data latch shall appear
+    bcf     INTCON, RAIF      ; from now on, no IOC at the data latch shall appear
 store_Button_Y
     btfsc   PORTA, CTRL_DATA
     bsf     reg_ctrl_data_msb, BUTTON_Y
@@ -405,10 +368,10 @@ postwait_DPad_Up
     goto    postwait_DPad_Up
 
 prewait_DPad_Dw
-    bcf     INTCON, INTF
-    nop
     btfss   PORTA, CTRL_CLK
     goto    prewait_DPad_Dw
+    bcf     INTCON, INTF
+    nop
 store_Button_DW
     btfsc   PORTA, CTRL_DATA
     bsf     reg_ctrl_data_msb, DPAD_DW
@@ -528,7 +491,7 @@ postwait_Button_None1
 prewait_Button_None0
     btfss   PORTA, CTRL_CLK
     goto    prewait_Button_None0
-    nop
+    bcf     INTCON, INTF
     nop
 store_Button_None0
     btfsc   PORTA, CTRL_DATA
@@ -537,42 +500,91 @@ postwait_Button_None0
     btfss   INTCON, INTF
     goto    postwait_Button_None0
 
-	
+
 check_controller_read
-    btfsc   INTCON, RAIF
-    goto    check_scic_auto         ; another IOC on data latch appeared -> invalid read
+    btfsc   INTCON, RAIF            ; another IOC on data latch appeared
+    goto    invalid_controller_read ; -> if yes, invalid read
+    bsf	    reg_ctrl_read_ready, 0  ; -> if no, indicate a valid read is stored
+    return                          ; return with GIE still unset (GIE is set again on demand)
+
+invalid_controller_read
+    clrf    INTCON
+    clrf    reg_ctrl_data_lsb
+    clrf    reg_ctrl_data_msb
+    clrf    reg_ctrl_read_ready
+    bsf	    INTCON, RAIE
+    retfie                      ; return with GIE set
 
 
-checkkeys
+; --------IDLE loops--------
+ org    0x008e
+check_scic_auto
+    clrf    INTCON
+    btfsc   PORTA, RESET_IN                 ; reset button pressed?
+    goto    check_reset                     ; then the SCIC might get a new mode or the console is reseted
+    btfsc   reg_current_mode, bit_mode_auto ; Auto-Mode?
+    goto    setregion_auto_withoutLED       ; if yes, check the current state
+    btfsc   reg_current_mode, bit_mode_scic ; SCIC-Mode?
+    goto    setregion_passthru              ; if yes, check the current state
+
+idle_prepare
     if with_lock
-      M_belf  0xf5, reg_ctrl_data_msb, un_lock_igr_tmp    ; check for (un)lock igr before doin' anything else
-      btfsc   reg_current_mode, bit_igrlock_tmp           ; igr locked?
-      goto    check_scic_auto                             ; yes
+      btfsc   reg_current_mode, bit_igrlock_ever
+      goto    check_scic_auto
     endif
+
+    clrf    reg_ctrl_data_lsb
+    clrf    reg_ctrl_data_msb
+    clrf    reg_ctrl_read_ready
+    M_T1reset
+
+    btfsc   PORTA, CTRL_LATCH   ; data latch currently high?
+    call    read_Button_B       ; if yes -> go go go
+    M_movlf ((1<<GIE)^(1<<RAIE)), INTCON    ; set GIE, only react on RAIF
+
+idle_loop
+    btfsc   reg_ctrl_read_ready, 0
+    goto    checkkeys
+    btfsc   PORTA, RESET_IN   ; reset button pressed?
+    goto    check_reset       ; then the SCIC might get a new mode or the console is reset
+    btfss   PIR1, TMR1IF      ; timer 1 overflow?
+    goto    check_scic_auto   ; SNES hasn't read controller past ~65ms
+    goto    idle_loop
+
+
+; --------controller routines--------
+ org 0x00a9
+checkkeys
+    clrf    INTCON
+  if with_lock
+    M_belf  0xf5, reg_ctrl_data_msb, un_lock_igr_tmp  ; check for (un)lock igr before doin' anything else
+    btfsc   reg_current_mode, bit_igrlock_tmp         ; igr locked?
+    goto    check_scic_auto                           ; yes
+  endif
     M_belf  0x4f, reg_ctrl_data_lsb, group4f
     M_belf  0x8f, reg_ctrl_data_lsb, group8f
     M_belf  0xcf, reg_ctrl_data_lsb, groupcf
     goto    check_scic_auto
 
 group4f ; check L+R+sel+...
-    M_belf  0xdf, reg_ctrl_data_msb, doregion_60      ; A
-    if with_lock
-      M_belf  0x79, reg_ctrl_data_msb, lock_igr_ever  ; Dw+Le+A+B
-    endif
+    M_belf  0xdf, reg_ctrl_data_msb, doregion_60    ; A
+  if with_lock
+    M_belf  0x79, reg_ctrl_data_msb, lock_igr_ever  ; Dw+Le+A+B
+  endif
     goto    check_scic_auto
 
 group8f ; check L+R+sel+X
-    M_belf  0xdf, reg_ctrl_data_msb, doreset_dbl    ; do dbl reset
+    M_belf  0xdf, reg_ctrl_data_msb, doreset_dbl  ; do dbl reset
     goto    check_scic_auto
 
 groupcf ; check L+R+sel+...
-    M_belf  0x5f, reg_ctrl_data_msb, doregion_auto      ; B
-    M_belf  0x9f, reg_ctrl_data_msb, doregion_50        ; Y
-    M_belf  0xcf, reg_ctrl_data_msb, doreset_normal     ; start
-    M_belf  0xd7, reg_ctrl_data_msb, toggle_startup     ; Up
-    M_belf  0xdb, reg_ctrl_data_msb, toggle_d4_patch    ; Down
-    M_belf  0xdd, reg_ctrl_data_msb, doscic_passthru    ; Left
-    M_belf  0xde, reg_ctrl_data_msb, doscic_passthru    ; Right
+    M_belf  0x5f, reg_ctrl_data_msb, doregion_auto    ; B
+    M_belf  0x9f, reg_ctrl_data_msb, doregion_50      ; Y
+    M_belf  0xcf, reg_ctrl_data_msb, doreset_normal   ; start
+    M_belf  0xd7, reg_ctrl_data_msb, toggle_startup   ; Up
+    M_belf  0xdb, reg_ctrl_data_msb, toggle_d4_patch  ; Down
+    M_belf  0xdd, reg_ctrl_data_msb, doscic_passthru  ; Left
+    M_belf  0xde, reg_ctrl_data_msb, doscic_passthru  ; Right
     goto    check_scic_auto
 
 
@@ -580,45 +592,45 @@ doreset_normal
     M_push_reset
     call    delay_05ms
     call    delay_05ms
-    btfsc   reg_current_mode, bit_regtimeout                ; region timeout enabled?
-    call    call_M_setAuto                                  ; if yes, define the output to the S-CPUN/PPUs
+    btfsc   reg_current_mode, bit_regtimeout  ; region timeout enabled?
+    call    call_M_setAuto                    ; if yes, define the output to the S-CPUN/PPUs
     call    delay_05ms
     call    delay_05ms
     M_release_reset
-    btfss   reg_current_mode, bit_regtimeout                ; region timout disabled?
-    goto    check_scic_auto                                 ; if yes, go on with 'normal procedure'
+    btfss   reg_current_mode, bit_regtimeout  ; region timout disabled?
+    goto    check_scic_auto                   ; if yes, go on with 'normal procedure'
 
     M_movlf overflows_t1_regtimeout_reset, reg_t1_overflows
-    M_T1reset                                               ; start timer 1
-    goto    regtimeout                                      ; if no, we had to perform a region timeout
+    M_T1reset                                 ; start timer 1
+    goto    regtimeout                        ; if no, we had to perform a region timeout
 
 doreset_dbl
     M_push_reset
-    call            delay_05ms
-    call            delay_05ms
-    call            delay_05ms
-    call            delay_05ms
+    call    delay_05ms
+    call    delay_05ms
+    call    delay_05ms
+    call    delay_05ms
     M_release_reset
     M_delay_x05ms   repetitions_200ms
     M_push_reset
-    call            delay_05ms
-    call            delay_05ms
-    btfsc           reg_current_mode, bit_regtimeout            ; region timeout enabled?
-    call            call_M_setAuto                              ; if yes, define the output to the S-CPUN/PPUs
-    call            delay_05ms
-    call            delay_05ms
+    call    delay_05ms
+    call    delay_05ms
+    btfsc   reg_current_mode, bit_regtimeout  ; region timeout enabled?
+    call    call_M_setAuto                    ; if yes, define the output to the S-CPUN/PPUs
+    call    delay_05ms
+    call    delay_05ms
     M_release_reset
-    btfss           reg_current_mode, bit_regtimeout            ; region timeout enabled?
-    goto            check_scic_auto                             ; if yes, go on with 'normal procedure'
+    btfss   reg_current_mode, bit_regtimeout  ; region timeout enabled?
+    goto    check_scic_auto                   ; if yes, go on with 'normal procedure'
 
     M_movlf overflows_t1_regtimeout_dblrst, reg_t1_overflows
-    M_T1reset                                                   ; start timer 1
-    goto    regtimeout                                          ; if no, we had to perform a region timeout
+    M_T1reset                                 ; start timer 1
+    goto    regtimeout                        ; if no, we had to perform a region timeout
 
 doregion_auto
     movfw   reg_current_mode
-    andlw   0x70                ; save the igrlock_tmp, reg_timeout and d4
-    xorlw   code_mode_auto      ; set mode auto
+    andlw   0x70              ; save the igrlock_tmp, reg_timeout and d4
+    xorlw   code_mode_auto    ; set mode auto
     movwf   reg_current_mode
     call    save_mode
 
@@ -627,12 +639,12 @@ setregion_auto
 
 setregion_auto_withoutLED
     M_setAuto
-    goto    idle
+    goto    idle_prepare
 
 doregion_60
     movfw   reg_current_mode
-    andlw   0x70                ; save the igrlock_tmp, reg_timeout and d4
-    xorlw   code_mode_60        ; set mode 60
+    andlw   0x70              ; save the igrlock_tmp, reg_timeout and d4
+    xorlw   code_mode_60      ; set mode 60
     movwf   reg_current_mode
     call    save_mode
 
@@ -641,12 +653,12 @@ setregion_60
 
 setregion_60_withoutLED
     set60Hz
-    goto    idle
+    goto    idle_prepare
 
 doregion_50
     movfw   reg_current_mode
-    andlw   0x70                ; save the igrlock_tmp, reg_timeout and d4
-    xorlw   code_mode_50        ; set mode 50
+    andlw   0x70              ; save the igrlock_tmp, reg_timeout and d4
+    xorlw   code_mode_50      ; set mode 50
     movwf   reg_current_mode
     call    save_mode
 
@@ -655,114 +667,16 @@ setregion_50
 
 setregion_50_withoutLED
     set50Hz
-    goto    idle
+    goto    idle_prepare
 
-check_reset
-    call    delay_05ms  ; software debounce needed in case of region timeout is enabled
-    call    delay_05ms
-    call    delay_05ms
-    btfss   PORTA, RESET_IN                     ; reset still pressed?
-    goto    check_scic_auto
-
-    M_movpf PORTC, reg_passthru_calc
-
-check_reset_loop
-    btfsc   PORTA, RESET_IN                     ; reset still pressed?
-    goto    wait_for_rstloop_scic_passthru      ; if yes, the user might want to change the mode of the SCIC
-
-check_reset_prepare_timeout
-    if with_lock
-      bcf     reg_current_mode, bit_igrlock_ever
-    endif
-    btfss   reg_current_mode, bit_regtimeout  ; region timeout disabled?
-    goto    check_scic_auto                   ; if yes, go on with 'normal procedure'
-    M_setAuto                                 ; if no, predefine the auto-mode ...
-
-    call    delay_05ms  ; software debounce
-    M_setAuto
-    call    delay_05ms  ; software debounce
-    M_setAuto
-    call    delay_05ms  ; software debounce
-    M_setAuto
-    
-    clrf    TMR0        ; start timer (operation clears prescaler of T0)
-    banksel TRISA
-    movfw   OPTION_REG
-    andlw   0xf0
-    movwf   OPTION_REG
-    banksel PORTA
-    M_movlf repetitions_580ms, reg_repetition_cnt
-    M_movlf delay_05ms_t0_overflows, reg_t0_overflows
-    bsf     INTCON, T0IE        ; enable timer 0 interrupt
-    bcf     INTCON, T0IF
-
-check_dblrst
-    btfsc   PORTA, RESET_IN     ; reset pressed again?
-    goto    check_dblrst_prepare_timeout
-    M_setAuto
-    btfss   INTCON, T0IF
-    goto    check_dblrst
-    bcf     INTCON, T0IF
-    decfsz  reg_t0_overflows, 1
-    goto    check_dblrst
-    M_movlf delay_05ms_t0_overflows, reg_t0_overflows
-    decfsz  reg_repetition_cnt, 1
-    goto    check_dblrst
-
-    bcf     INTCON, T0IE        ; disable timer 0 interrupt
-    M_movlf overflows_t1_regtimeout_reset_2, reg_t1_overflows
-    M_T1reset                   ; start timer 1
-    goto    regtimeout          ; ...and perform a region timeout
-
-check_dblrst_prepare_timeout
-    bcf     INTCON, T0IE        ; disable timer 0 interrupt
-    M_movlf overflows_t1_regtimeout_dblrst_2, reg_t1_overflows
-    M_T1reset                   ; start timer 1
-    goto    regtimeout          ; ...and perform a region timeout
-
-wait_for_rstloop_scic_passthru
-    M_bepf  PORTC, reg_passthru_calc, check_reset_loop ; go back to check_reset_loop if LED not changed by S-CIC
-
-rstloop_scic_passthru
-    call    setled_passthru
-    btfsc   PORTA, RESET_IN         ; reset still pressed?
-    goto    rstloop_scic_passthru
-
-doscic_passthru
-    movfw   reg_current_mode
-    andlw   0x70                ; save the igrlock_tmp, reg_timeout and d4
-    xorlw   code_mode_scic      ; set bit 3
-    movwf   reg_current_mode
-    call    save_mode
-
-setregion_passthru
-    call    setled_passthru
-
-setregion_passthru_withoutLED
-    movfw   PORTC
-    andlw   0x07
-    movwf   reg_passthru_calc
-    btfss   reg_passthru_calc, LED_TYPE_IN
-    goto    setregion_passthru_withoutLED_Ca
-
-setregion_passthru_withoutLED_An
-    M_belf  0x04, reg_passthru_calc, setregion_auto_withoutLED  ; auto-mode
-    M_belf  0x05, reg_passthru_calc, setregion_60_withoutLED    ; 60Hz-mode
-    goto    setregion_50_withoutLED                             ; 50Hz-mode
-
-
-setregion_passthru_withoutLED_Ca
-    M_belf  0x01, reg_passthru_calc, setregion_50_withoutLED    ; 50Hz-mode
-    M_belf  0x02, reg_passthru_calc, setregion_60_withoutLED    ; 60Hz-mode
-    goto    setregion_auto_withoutLED                           ; auto-mode
 
 toggle_startup
     movfw   reg_current_mode
-    xorlw   code_regtimeout                     ; toggle
+    xorlw   code_regtimeout                   ; toggle
     movwf   reg_current_mode
     call    save_mode
-    btfsc   reg_current_mode, bit_regtimeout    ; reg_timeout now disabled?
-    goto    LED_confirm_rt_1                    ; if enabled, confirm with r-y-gr
+    btfsc   reg_current_mode, bit_regtimeout  ; reg_timeout now disabled?
+    goto    LED_confirm_rt_1                  ; if enabled, confirm with r-y-gr
 
 LED_confirm_rt_0 ; LED fading pattern: off->green->yellow->red->off->last LED color
     M_movpf         PORTC, reg_led_save ; save last LED color and d4
@@ -838,79 +752,182 @@ LED_confirm_d4on    ; LED fading pattern: off->green->off->green->off->last LED 
     M_movff         reg_led_save, PORTC ; return to last LED color
     goto            check_scic_auto
 
+  if with_lock
+    un_lock_igr_tmp ; check for (un)lock the irg
+        M_belf  0x0f, reg_ctrl_data_lsb, toggle_igrlock_tmp ; check the LSBs
+        goto    check_scic_auto                             ; if stream data is not matched, go back to check_scic_auto
+
+    toggle_igrlock_tmp
+        movfw   reg_current_mode
+        xorlw   code_igrlock_tmp                    ; toggle
+        movwf   reg_current_mode
+        call    save_mode
+        btfsc   reg_current_mode, bit_igrlock_tmp   ; irg now unlocked?
+        goto    LED_confirm_lock_igr                ; if no, conform locking
+
+    LED_confirm_unlock_igr ; LED fast flashing green
+        M_movpf         PORTC, reg_led_save ; save last LED color and d4
+        call            setled_off
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_50
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_off
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_50
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_off
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_50
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_off
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_50
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_off
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_50
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_off
+        M_delay_x05ms   repetitions_LED_delay_fast
+        M_movff         reg_led_save, PORTC ; return to last LED color
+        goto            check_scic_auto
+
+    lock_igr_ever
+        bsf     reg_current_mode, bit_igrlock_ever
+
+    LED_confirm_lock_igr ; LED fast flashing red
+        M_movpf         PORTC, reg_led_save ; save last LED color and d4
+        call            setled_off
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_60
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_off
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_60
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_off
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_60
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_off
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_60
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_off
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_60
+        M_delay_x05ms   repetitions_LED_delay_fast
+        call            setled_off
+        M_delay_x05ms   repetitions_LED_delay_fast
+        M_movff         reg_led_save, PORTC ; return to last LED color
+        goto            check_scic_auto
+  endif
+
+
+; --------reset-button routines--------
+ org 0x0226
+check_reset
+    clrf    INTCON
+    call    delay_05ms      ; software debounce
+    call    delay_05ms      ; -- needed in case of region timeout is enabled
+    call    delay_05ms
+    btfss   PORTA, RESET_IN ; reset still pressed?
+    goto    check_scic_auto
+
+    M_movpf PORTC, reg_passthru_calc
+
+check_reset_loop
+    btfsc   PORTA, RESET_IN                  ; reset still pressed?
+    goto    wait_for_rstloop_scic_passthru  ; if yes, the user might want to change the mode of the SCIC
+
+check_reset_prepare_timeout
     if with_lock
-      un_lock_igr_tmp ; check for (un)lock the irg
-          M_belf  0x0f, reg_ctrl_data_lsb, toggle_igrlock_tmp ; check the LSBs
-          goto    check_scic_auto                             ; if stream data is not matched, go back to check_scic_auto
-
-      toggle_igrlock_tmp
-          movfw   reg_current_mode
-          xorlw   code_igrlock_tmp                    ; toggle
-          movwf   reg_current_mode
-          call    save_mode
-          btfsc   reg_current_mode, bit_igrlock_tmp   ; irg now unlocked?
-          goto    LED_confirm_lock_igr                ; if no, conform locking
-
-      LED_confirm_unlock_igr ; LED fast flashing green
-          M_movpf         PORTC, reg_led_save ; save last LED color and d4
-          call            setled_off
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_50
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_off
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_50
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_off
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_50
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_off
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_50
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_off
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_50
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_off
-          M_delay_x05ms   repetitions_LED_delay_fast
-          M_movff         reg_led_save, PORTC ; return to last LED color
-          goto            check_scic_auto
-
-      LED_confirm_lock_igr ; LED fast flashing red
-          M_movpf         PORTC, reg_led_save ; save last LED color and d4
-          call            setled_off
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_60
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_off
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_60
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_off
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_60
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_off
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_60
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_off
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_60
-          M_delay_x05ms   repetitions_LED_delay_fast
-          call            setled_off
-          M_delay_x05ms   repetitions_LED_delay_fast
-          M_movff         reg_led_save, PORTC ; return to last LED color
-          goto            check_scic_auto
-
-      lock_igr_ever
-          bsf     reg_current_mode, bit_igrlock_ever
-          goto    LED_confirm_lock_igr
+      bcf     reg_current_mode, bit_igrlock_ever
     endif
+    btfss   reg_current_mode, bit_regtimeout  ; region timeout disabled?
+    goto    check_scic_auto                   ; if yes, go on with 'normal procedure'
+    M_setAuto                                 ; if no, predefine the auto-mode ...
+
+    call    delay_05ms  ; software debounce
+    M_setAuto
+    call    delay_05ms  ; software debounce
+    M_setAuto
+    call    delay_05ms  ; software debounce
+    M_setAuto
+
+    clrf    TMR0        ; start timer (operation clears prescaler of T0)
+    banksel TRISA
+    movfw   OPTION_REG
+    andlw   0xf0
+    movwf   OPTION_REG
+    banksel PORTA
+    M_movlf repetitions_580ms, reg_repetition_cnt
+    M_movlf delay_05ms_t0_overflows, reg_t0_overflows
+    M_movlf (1<<T0IE), INTCON ; enable timer 0 interrupt
+
+check_dblrst
+    btfsc   PORTA, RESET_IN   ; reset pressed again?
+    goto    check_dblrst_prepare_timeout
+    M_setAuto
+    btfss   INTCON, T0IF
+    goto    check_dblrst
+    bcf     INTCON, T0IF
+    decfsz  reg_t0_overflows, 1
+    goto    check_dblrst
+    M_movlf delay_05ms_t0_overflows, reg_t0_overflows
+    decfsz  reg_repetition_cnt, 1
+    goto    check_dblrst
+
+    clrf    INTCON            ; disable timer 0 interrupt
+    M_movlf overflows_t1_regtimeout_reset_2, reg_t1_overflows
+    M_T1reset                 ; start timer 1
+    goto    regtimeout        ; ...and perform a region timeout
+
+check_dblrst_prepare_timeout
+    clrf    INTCON            ; disable timer 0 interrupt
+    M_movlf overflows_t1_regtimeout_dblrst_2, reg_t1_overflows
+    M_T1reset                 ; start timer 1
+    goto    regtimeout        ; ...and perform a region timeout
+
+wait_for_rstloop_scic_passthru
+    M_bepf  PORTC, reg_passthru_calc, check_reset_loop ; go back to check_reset_loop if LED not changed by S-CIC
+
+rstloop_scic_passthru
+    call    setled_passthru
+    btfsc   PORTA, RESET_IN       ; reset still pressed?
+    goto    rstloop_scic_passthru
+
+doscic_passthru
+    movfw   reg_current_mode
+    andlw   0x70              ; save the igrlock_tmp, reg_timeout and d4
+    xorlw   code_mode_scic    ; set bit 3
+    movwf   reg_current_mode
+    call    save_mode
+
+setregion_passthru
+    call    setled_passthru
+
+setregion_passthru_withoutLED
+    movfw   PORTC
+    andlw   0x07
+    movwf   reg_passthru_calc
+    btfss   reg_passthru_calc, LED_TYPE_IN
+    goto    setregion_passthru_withoutLED_Ca
+
+setregion_passthru_withoutLED_An
+    M_belf  0x04, reg_passthru_calc, setregion_auto_withoutLED  ; auto-mode
+    M_belf  0x05, reg_passthru_calc, setregion_60_withoutLED    ; 60Hz-mode
+    goto    setregion_50_withoutLED                             ; 50Hz-mode
 
 
+setregion_passthru_withoutLED_Ca
+    M_belf  0x01, reg_passthru_calc, setregion_50_withoutLED    ; 50Hz-mode
+    M_belf  0x02, reg_passthru_calc, setregion_60_withoutLED    ; 60Hz-mode
+    goto    setregion_auto_withoutLED                           ; auto-mode
+
+
+; --------mode, led, delay and save_mode calls--------
+ org 0x0297
 call_M_setAuto
     M_setAuto
     return
@@ -981,7 +998,7 @@ delay_05ms
     movwf   OPTION_REG
     banksel PORTA
     M_movlf delay_05ms_t0_overflows, reg_t0_overflows
-    bsf     INTCON, T0IE        ; enable timer 0 interrupt
+    M_movlf (1<<T0IE), T0IE     ; enable timer 0 interrupt
 
 delay_05ms_loop_pre
     bcf     INTCON, T0IF
@@ -991,7 +1008,7 @@ delay_05ms_loop
     goto    delay_05ms_loop
     decfsz  reg_t0_overflows, 1
     goto    delay_05ms_loop_pre
-    bcf     INTCON, T0IE        ; disable timer 0 interrupt
+    clrf    INTCON              ; disable timer 0 interrupt
     return
 
 delay_x05ms
@@ -1001,21 +1018,23 @@ delay_x05ms
     return
 
 
+; --------initialization--------
+ org 0x02e0
 start
     clrf    PORTA
     clrf    PORTC
-    M_movlf 0x07, CMCON0        ; PORTA2..0 are digital I/O (not connected to comparator)
-    M_movlf 0x18, INTCON        ; enable RAIE and INTE to react on data latch and clock
+    M_movlf 0x07, CMCON0      ; PORTA2..0 are digital I/O (not connected to comparator)
+    clrf    INTCON            ; INTCON set on demand during program
     banksel TRISA
-    M_movlf 0x70, OSCCON        ; use 8MHz internal clock (internal clock set on config)
+    M_movlf 0x70, OSCCON      ; use 8MHz internal clock (internal clock set on config)
     clrf    ANSEL
-    M_movlf 0x2f, TRISA         ; in out in in in in
-    M_movlf 0x07, TRISC         ; out out out in in in
-    M_movlf 0x00, WPUA          ; no pullups
-    M_movlf 0x02, IOCA          ; IOC on CTRL_LATCH
-    M_movlf 0x80, OPTION_REG    ; global pullup disable, use falling clock edge for INTE, prescaler assigned to T0 (1:2)
+    M_movlf 0x2f, TRISA       ; in out in in in in
+    M_movlf 0x07, TRISC       ; out out out in in in
+    M_movlf 0x00, WPUA        ; no pullups
+    M_movlf 0x02, IOCA        ; IOC on CTRL_LATCH
+    M_movlf 0x80, OPTION_REG  ; global pullup disable, use falling clock edge for INTE, prescaler assigned to T0 (1:2)
     banksel PORTA
-    M_movlf 0x10, T1CON         ; set prescaler T1 1:2
+    M_movlf 0x10, T1CON       ; set prescaler T1 1:2
 
     set60Hz ; assume NTSC-Mode
     setD4on ; assume D4-Patch on
@@ -1025,8 +1044,8 @@ load_mode
     bcf     STATUS, C   ; clear carry
     banksel EEADR       ; fetch current mode from EEPROM
     clrf    EEADR       ; address 0
-    bsf     EECON1, RD;
-    movfw   EEDAT       ;
+    bsf     EECON1, RD
+    movfw   EEDAT
     banksel PORTA
   if with_lock
     andlw   0x7f        ; unset potential permanent lock
@@ -1050,8 +1069,8 @@ check_last_led
     call    setled_passthru
 
 check_reg_timeout
-    btfss   reg_current_mode, bit_regtimeout    ; regtimeout disabled?
-    goto    last_mode_check                     ; if yes, jump directly to the last mode chosen
+    btfss   reg_current_mode, bit_regtimeout  ; regtimeout disabled?
+    goto    last_mode_check                   ; if yes, jump directly to the last mode chosen
     movlw   overflows_t1_regtimeout_start
     movwf   reg_t1_overflows
 
@@ -1071,11 +1090,11 @@ regtimeout
     
 
 last_mode_check
-    btfsc   reg_current_mode, bit_mode_auto ; last mode "Auto"?
+    btfsc   reg_current_mode, bit_mode_auto  ; last mode "Auto"?
     goto    setregion_auto_withoutLED
-    btfsc   reg_current_mode, bit_mode_60 ; last mode "60Hz"?
+    btfsc   reg_current_mode, bit_mode_60    ; last mode "60Hz"?
     goto    setregion_60_withoutLED
-    btfsc   reg_current_mode, bit_mode_50 ; last mode "50Hz"?
+    btfsc   reg_current_mode, bit_mode_50    ; last mode "50Hz"?
     goto    setregion_50_withoutLED
     goto    setregion_passthru_withoutLED
 
