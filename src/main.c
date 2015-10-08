@@ -144,7 +144,6 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       cfg_save();
       cic_init(cfg_is_pair_mode_allowed());
     }
-    firstboot = 0;
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
     cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
 
@@ -178,11 +177,13 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     printf("SNES GO!\n");
     snes_reset(1);
     fpga_reset_srtc_state();
-    if(ST.is_u16 && (ST.u16_cfg & 0x01)) {
-      delay_ms(60*SNES_RESET_PULSELEN_MS);
-    } else {
-      delay_ms(SNES_RESET_PULSELEN_MS);
+    if(!firstboot) {
+      if(ST.is_u16 && (ST.u16_cfg & 0x01)) {
+        delay_ms(59*SNES_RESET_PULSELEN_MS);
+      }
     }
+    firstboot = 0;
+    delay_ms(SNES_RESET_PULSELEN_MS);
     sram_writebyte(32, SRAM_CMD_ADDR);
     if(get_cic_state() == CIC_PAIR) {
       printf("PAIR MODE ENGAGED!\n");
