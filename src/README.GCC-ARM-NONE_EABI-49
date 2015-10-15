@@ -1,0 +1,23 @@
+Personally I use version 4.9 of gcc-arm-none-eabi.
+If you want to do that too, just copy or link the include/arm/-folder to /path/to/arm-none-eabi-4.9/arm-none-eabi/include/.
+
+(E.g.:  sudo ln -s $HOME/Git/sd2snes/src/include/arm/ /opt/arm-none-eabi-4.9/include/. <<)
+
+Where to download gcc-arm-none-eabi version 4.9?
+For Ubuntu I used this PPA: https://launchpad.net/~terry.guo/+archive/ubuntu/gcc-arm-embedded (tested in Xubuntu 14.04)
+For MacOS X I used this one: https://launchpad.net/gcc-arm-embedded/+download
+
+There is no need to install the cm3-toolchain.
+
+-----------------------------------------------------
+
+Steps on Ubuntu for setting up the tools as described (tested in Ubuntu 14.04):
+
+1. sudo apt-get remove binutils-arm-none-eabi gcc-arm-none-eabi
+(only if previously installed)
+2. sudo add-apt-repository ppa:terry.guo/gcc-arm-embedded
+3. sudo apt-get update
+4. sudo apt-get install gcc-arm-none-eabi gawk
+5. sudo ln -s $HOME/Git/sd2snes/src/include/arm/ /usr/arm-none-eabi/include/. 
+
+(enjoy your ‚small version‘ of the toolchain ;) )
