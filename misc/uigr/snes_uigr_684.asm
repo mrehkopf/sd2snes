@@ -5,7 +5,7 @@
 ;
 ;   Copyright (C) 2010 by Maximilian Rehkopf <otakon@gmx.net>
 ;
-;   Last Modified: Sep. 2015 by Peter Bartmann <peter.bartmann@gmx.de>
+;   Last Modified: Oct. 2015 by Peter Bartmann <borti4938@gmx.de>
 ;
 ;   This program is free software; you can redistribute it and/or modify
 ;   it under the terms of the GNU General Public License as published by
@@ -523,7 +523,7 @@ check_scic_auto
     btfsc   PORTA, RESET_IN                 ; reset button pressed?
     goto    check_reset                     ; then the SCIC might get a new mode or the console is reseted
     btfsc   reg_current_mode, bit_mode_auto ; Auto-Mode?
-    goto    setregion_auto_withoutLED       ; if yes, check the current state
+    goto    setregion_auto_woLED            ; if yes, check the current state
     btfsc   reg_current_mode, bit_mode_scic ; SCIC-Mode?
     goto    setregion_passthru              ; if yes, check the current state
 
@@ -637,7 +637,7 @@ doregion_auto
 setregion_auto
     call    setled_auto
 
-setregion_auto_withoutLED
+setregion_auto_woLED
     M_setAuto
     goto    idle_prepare
 
@@ -651,7 +651,7 @@ doregion_60
 setregion_60
     call    setled_60
 
-setregion_60_withoutLED
+setregion_60_woLED
     set60Hz
     goto    idle_prepare
 
@@ -665,7 +665,7 @@ doregion_50
 setregion_50
     call    setled_50
 
-setregion_50_withoutLED
+setregion_50_woLED
     set50Hz
     goto    idle_prepare
 
@@ -837,7 +837,7 @@ check_reset
     M_movpf PORTC, reg_passthru_calc
 
 check_reset_loop
-    btfsc   PORTA, RESET_IN                  ; reset still pressed?
+    btfsc   PORTA, RESET_IN                 ; reset still pressed?
     goto    wait_for_rstloop_scic_passthru  ; if yes, the user might want to change the mode of the SCIC
 
 check_reset_prepare_timeout
@@ -907,27 +907,30 @@ doscic_passthru
 setregion_passthru
     call    setled_passthru
 
-setregion_passthru_withoutLED
-    movfw   PORTC
-    andlw   0x07
-    movwf   reg_passthru_calc
+setregion_passthru_woLED
+    M_movff PORTC, reg_passthru_calc
     btfss   reg_passthru_calc, LED_TYPE_IN
-    goto    setregion_passthru_withoutLED_Ca
+    goto    setregion_passthru_woLED_Ca
 
-setregion_passthru_withoutLED_An
-    M_belf  0x04, reg_passthru_calc, setregion_auto_withoutLED  ; auto-mode
-    M_belf  0x05, reg_passthru_calc, setregion_60_withoutLED    ; 60Hz-mode
-    goto    setregion_50_withoutLED                             ; 50Hz-mode
+setregion_passthru_woLED_An
+    btfsc   reg_passthru_calc, LED_MODE_50_IN
+    goto    setregion_60_woLED    ; SCIC: green off -> red must be on
+                                  ; SCIC: green on & ...
+    btfsc   reg_passthru_calc, LED_MODE_60_IN
+    goto    setregion_50_woLED    ; ... red off
+    goto    setregion_auto_woLED  ; ... red on
 
-
-setregion_passthru_withoutLED_Ca
-    M_belf  0x01, reg_passthru_calc, setregion_50_withoutLED    ; 50Hz-mode
-    M_belf  0x02, reg_passthru_calc, setregion_60_withoutLED    ; 60Hz-mode
-    goto    setregion_auto_withoutLED                           ; auto-mode
+setregion_passthru_woLED_Ca
+    btfss   reg_passthru_calc, LED_MODE_50_IN
+    goto    setregion_60_woLED    ; SCIC: green off -> red must be on
+                                  ; SCIC: green on & ...
+    btfss   reg_passthru_calc, LED_MODE_60_IN
+    goto    setregion_50_woLED    ; ... red off
+    goto    setregion_auto_woLED  ; ... red on
 
 
 ; --------mode, led, delay and save_mode calls--------
- org 0x0297
+ org 0x028e
 call_M_setAuto
     M_setAuto
     return
@@ -998,7 +1001,7 @@ delay_05ms
     movwf   OPTION_REG
     banksel PORTA
     M_movlf delay_05ms_t0_overflows, reg_t0_overflows
-    M_movlf (1<<T0IE), T0IE     ; enable timer 0 interrupt
+    M_movlf (1<<T0IE), INTCON   ; enable timer 0 interrupt
 
 delay_05ms_loop_pre
     bcf     INTCON, T0IF
@@ -1019,7 +1022,7 @@ delay_x05ms
 
 
 ; --------initialization--------
- org 0x02e0
+ org 0x02d7
 start
     clrf    PORTA
     clrf    PORTC
@@ -1091,12 +1094,12 @@ regtimeout
 
 last_mode_check
     btfsc   reg_current_mode, bit_mode_auto  ; last mode "Auto"?
-    goto    setregion_auto_withoutLED
+    goto    setregion_auto_woLED
     btfsc   reg_current_mode, bit_mode_60    ; last mode "60Hz"?
-    goto    setregion_60_withoutLED
+    goto    setregion_60_woLED
     btfsc   reg_current_mode, bit_mode_50    ; last mode "50Hz"?
-    goto    setregion_50_withoutLED
-    goto    setregion_passthru_withoutLED
+    goto    setregion_50_woLED
+    goto    setregion_passthru_woLED
 
 ; -----------------------------------------------------------------------
 ; eeprom data
