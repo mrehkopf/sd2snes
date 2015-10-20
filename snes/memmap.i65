@@ -106,6 +106,7 @@
 #define OPTTYPE_KVBYTE              $04
 #define OPTTYPE_KVWORD              $05
 #define OPTTYPE_FILESEL             $06
+#define OPTTYPE_TIME                $07
 
 #define VIDMODE_NTSC                $00
 #define VIDMODE_PAL                 $01
