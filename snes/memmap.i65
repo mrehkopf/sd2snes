@@ -69,6 +69,8 @@
 #define CMD_DISABLE_CHEATS          $83
 #define CMD_KILL_NMIHOOK            $84
 #define CMD_TEMP_KILL_NMIHOOK       $85
+#define CMD_VMODE_50                $86
+#define CMD_VMODE_60                $87
 
 #define ST_ADDR                     $FF1100
 #define ST_RTC_VALID                ST_ADDR+$0000
