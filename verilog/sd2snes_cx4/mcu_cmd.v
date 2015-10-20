@@ -56,6 +56,8 @@ module mcu_cmd(
   input DAC_STATUS,
   output dac_play_out,
   output dac_reset_out,
+  output reg [2:0] dac_vol_select_out = 3'b000,
+  output reg dac_palmode_out = 0,
 
   // MSU data
   output [13:0] msu_addr_out,
@@ -297,9 +299,12 @@ always @(posedge clk) begin
             MSU_RESET_OUT_BUF <= 1'b0;
         endcase
       8'heb: // put cx4 into reset
-        cx4_reset_out <= 1'b1;
-      8'hec: // release cx4 reset
-        cx4_reset_out <= 1'b0;
+        cx4_reset_out <= param_data[0];
+      8'hec: // set DAC properties
+        begin
+          dac_vol_select_out <= param_data[2:0];
+          dac_palmode_out <= param_data[7];
+        end
       8'hed:
         featurebits_out <= param_data;
       8'hee:
