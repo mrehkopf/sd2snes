@@ -8,6 +8,8 @@ processor p12f629
 ;   Copyright (C) 2010 by Maximilian Rehkopf (ikari_01) <otakon@gmx.net>
 ;   This software is part of the sd2snes project.
 ;
+;   Last Modified: Oct. 2015 by Peter Bartmann <borti4938@gmx.de>
+;
 ;   This program is free software; you can redistribute it and/or modify
 ;   it under the terms of the GNU General Public License as published by
 ;   the Free Software Foundation; version 2 of the License only.

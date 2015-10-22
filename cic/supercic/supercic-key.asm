@@ -7,6 +7,8 @@ processor p12f629
 ;   Copyright (C) 2010 by Maximilian Rehkopf (ikari_01) <otakon@gmx.net>
 ;   This software is part of the sd2snes project.
 ;
+;   Last Modified: Oct. 2015 by Peter Bartmann <borti4938@gmx.de>
+;
 ;   Based on reverse engineering work and disassembly by segher,
 ;   http://hackmii.com/2010/01/the-weird-and-wonderful-cic/
 ;
