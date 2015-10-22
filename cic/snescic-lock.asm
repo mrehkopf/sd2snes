@@ -90,13 +90,15 @@ rst_loop
 	goto	main
 init
 	org 0x0010
-	banksel GPIO
+	bcf	STATUS, RP0
+	nop
 	clrf	GPIO
 	movlw	0x07	; GPIO2..0 are digital I/O (not connected to comparator)
 	movwf	CMCON
 	movlw	0x00	; disable all interrupts
 	movwf	INTCON
-	banksel	TRISIO
+	bsf	STATUS, RP0
+	nop
 	movlw	0x29	; in out in OUT out in. slave reset is an output on lock
 	movwf	TRISIO
 	movlw	0x00	; no pullups
@@ -104,7 +106,8 @@ init
 	movlw	0x80	; global pullup disable
 	movwf	OPTION_REG
 	
-	banksel GPIO
+	bcf	STATUS, RP0
+	nop
 	bcf 	GPIO, 4	; hold SNES in reset
 	goto	rst
 main
@@ -118,12 +121,12 @@ main
 	nop
 	bcf	GPIO, 2
 	
-    bsf STATUS, RP0
-    bcf STATUS, RP1
+	bsf	STATUS, RP0
+	nop
 	bcf	TRISIO, 0
 	bsf	TRISIO, 1
-    bcf STATUS, RP0
-    bcf STATUS, RP1
+	bcf	STATUS, RP0
+	nop
 ; --------INIT LOCK SEED (what we must send)--------
 	movlw	0xb
 	movwf	0x21
@@ -239,12 +242,12 @@ main
 	bcf	GPIO, 0
 	movlw	0x1		; wait=3*0+7
 	call	wait		; burn 10 cycles
-    bsf STATUS, RP0
-    bcf STATUS, RP1
+	bsf	STATUS, RP0
+	nop
 	bsf	TRISIO, 0
 	bcf	TRISIO, 1
-    bcf STATUS, RP0
-    bcf STATUS, RP1
+	bcf	STATUS, RP0
+	nop
 	movlw	0x24		; "wait" 1
 	call	wait		; wait 112
 ;	nop
@@ -291,20 +294,20 @@ loop1
 	call	mangle
 	btfsc	0x37, 0
 	goto	swap
-    bsf STATUS, RP0
-    bcf STATUS, RP1
+	bsf	STATUS, RP0
+	nop
 	bsf	TRISIO, 0
 	bcf	TRISIO, 1
 	goto	swapskip
 swap
-    bsf STATUS, RP0
-    bcf STATUS, RP1
+	bsf	STATUS, RP0
+	nop
 	bcf	TRISIO, 0
 	bsf	TRISIO, 1
 	nop
 swapskip
-    bcf STATUS, RP0
-    bcf STATUS, RP1
+	bcf	STATUS, RP0
+	nop
 	btfsc	GPIO, 3 ; poll master reset
 	goto	rst
 	clrf	0x43	; don't check key region anymore

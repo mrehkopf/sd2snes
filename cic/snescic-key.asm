@@ -83,13 +83,15 @@ isr
 	goto	main
 init
 	org 0x0010
-	banksel GPIO
+	bcf     STATUS, RP0
+	nop
 	clrf	GPIO
 	movlw	0x07	; GPIO2..0 are digital I/O (not connected to comparator)
 	movwf	CMCON
 	movlw	0x90	; global enable interrupts + enable external interrupt
 	movwf	INTCON
-	banksel	TRISIO
+	bsf     STATUS, RP0
+	nop
 	movlw	0x2d	; in out in in out in
 	movwf	TRISIO
 	movlw	0x24	; pullups for reset+clk to avoid errors when no CIC in host 
@@ -97,18 +99,19 @@ init
 	movlw	0x00	; 0x80 for global pullup disable
 	movwf	OPTION_REG
 	
-	banksel GPIO
+	bcf     STATUS, RP0
+	nop
 	bcf 	GPIO, 4	; LED off
 idle
 	goto	idle	; wait for interrupt from lock
 
 main
-    bsf STATUS, RP0
-    bcf STATUS, RP1
+	bsf     STATUS, RP0
+	nop
 	bsf	TRISIO, 0
 	bcf	TRISIO, 1
-    bcf STATUS, RP0
-    bcf STATUS, RP1
+	bcf     STATUS, RP0
+	nop
 ; --------INIT LOCK SEED (what the lock sends)--------
 	movlw	0xb
 	movwf	0x21
@@ -142,13 +145,13 @@ main
 	movwf 	0x2f
 	
 ; --------INIT KEY SEED (what we must send)--------
-    bsf STATUS, RP0   ; D/F411 and D/F413
-    bcf STATUS, RP1
+	bsf     STATUS, RP0     ; D/F411 and D/F413
+	nop
 	clrf	EEADR		; differ in 2nd seed nibble
-	bsf	EECON1, RD	; of key stream,
+	bsf 	EECON1, RD	; of key stream,
 	movf	EEDAT, w	; restore saved nibble from EEPROM
-    bcf STATUS, RP0
-    bcf STATUS, RP1
+	bcf     STATUS, RP0
+	nop
 	movwf	0x32
 	movlw	0xa
 	movwf	0x33
@@ -213,12 +216,12 @@ main
 ;	bcf	GPIO, 0
 	btfsc	GPIO, 0		; check stream ID bit
 	bsf	0x31, 2		; copy to lock seed
-    bsf STATUS, RP0
-    bcf STATUS, RP1
+	bsf     STATUS, RP0
+	nop
 	bcf	TRISIO, 0
 	bsf	TRISIO, 1
-    bcf STATUS, RP0
-    bcf STATUS, RP1
+	bcf     STATUS, RP0
+	nop
 	nop
 	movlw	0x27		; "wait" 1
 	call	wait		; wait 121
@@ -263,20 +266,20 @@ loop1
 	call	mangle
 	btfsc	0x37, 0
 	goto	swap
-    bsf STATUS, RP0
-    bcf STATUS, RP1
+	bsf     STATUS, RP0
+	nop
 	bcf	TRISIO, 0
 	bsf	TRISIO, 1
 	goto	swapskip
 swap
-    bsf STATUS, RP0
-    bcf STATUS, RP1
+	bsf     STATUS, RP0
+	nop
 	bsf	TRISIO, 0
 	bcf	TRISIO, 1
 	nop
 swapskip
-    bcf STATUS, RP0
-    bcf STATUS, RP1
+	bcf     STATUS, RP0
+	nop
 	movf	0x37, w
 	andlw	0xf
 	btfss	STATUS, Z
@@ -659,12 +662,14 @@ longwait0
 
 ; --------change region in eeprom and die--------
 die
-	banksel	EEADR
+	bsf     STATUS, RP0
+	nop
 	clrw
 	movwf	EEADR
 	bsf	EECON1, RD
 	movf	EEDAT, w
-	banksel	GPIO
+	bcf     STATUS, RP0
+	nop
 	movwf	0x4d
 	btfsc	0x4d, 0
 	goto	die_reg_6
@@ -674,7 +679,8 @@ die_reg_9
 die_reg_6
 	movlw	0x6	; died with NTSC, fall back to PAL
 die_reg_cont
-	banksel	EEADR
+	bsf     STATUS, RP0
+	nop
 	movwf	EEDAT
 	bsf	EECON1, WREN
 
@@ -690,7 +696,8 @@ die_intloop
 	bsf	EECON1, WR
 	bsf	INTCON, GIE
 
-	banksel	GPIO
+	bcf     STATUS, RP0
+	nop
 ; --------forever: blink status pin--------
 die_blink	
 	clrw

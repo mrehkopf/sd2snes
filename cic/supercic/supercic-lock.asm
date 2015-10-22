@@ -1,6 +1,12 @@
-    #include <p16f630.inc>
-processor p16f630
+use_16f676  set 0 ; 0 = 16F630, 1 = 16F676
 
+if use_16f676
+  #include <p16f676.inc>
+  processor p16f676
+else
+  #include <p16f630.inc>
+  processor p16f630
+endif
 ; ---------------------------------------------------------------------
 ;   feature enhanced auto region switching SNES CIC clone 
 ;   for PIC Microcontrollers (lock mode)
@@ -195,11 +201,13 @@ rst_loop
 	clrf	0x59		; clear D4
 	clrf	0x5e		;
 	clrf	0x5f		;
-        banksel EEADR		; fetch current mode from EEPROM
-        clrf    EEADR		; address 0
-        bsf     EECON1, RD	; 
-        movf    EEDAT, w        ; 
-        banksel PORTA
+	bsf	STATUS, RP0     ; fetch current mode from EEPROM
+	nop                     ; (RP 1 reserved and maintained as 0)
+	clrf	EEADR		; address 0
+	bsf	EECON1, RD	; 
+	movf	EEDAT, w        ; 
+	bcf	STATUS, RP0
+	nop
 	movwf	0x55		; store saved mode in mode var
 	movwf	0x56		; and temp LED
 	movwf	0x58		; and forced region
@@ -223,13 +231,19 @@ rst_loop
 init
 ;	PORTA:  in out  in out out  in
 ;	PORTC: out out  in out out  in
-	banksel PORTA
+	bcf	STATUS, RP0
+	nop
 	clrf	PORTA
 	movlw	0x07		; GPIO2..0 are digital I/O (not connected to comparator)
 	movwf	CMCON
 	movlw	0x00		; disable all interrupts
 	movwf	INTCON
-	banksel	TRISA
+	bsf	STATUS, RP0
+  if use_16f676
+	clrf	ANSEL
+  else
+	nop
+  endif
 	movlw	0x29		; in out in out out in
 	movwf	TRISA
 	movlw	0x09		; out out in out out in
@@ -239,7 +253,8 @@ init
 	movlw	0x80		; global pullup disable
 	movwf	OPTION_REG
 	
-	banksel PORTA
+	bcf	STATUS, RP0
+	nop
 	bcf 	PORTA, 2	; hold SNES in reset
 	goto	rst
 main
@@ -253,12 +268,12 @@ main
 	nop
 	bcf	PORTC, 2 	
 
-    bsf STATUS, RP0
-    bcf STATUS, RP1
+	bsf	STATUS, RP0
+	nop
 	bcf	TRISC, 0
 	bsf	TRISC, 1
-    bcf STATUS, RP0
-    bcf STATUS, RP1
+	bcf	STATUS, RP0
+	nop
 ; --------INIT LOCK SEED (what we must send)--------
 	movlw	0xb
 	movwf	0x21
@@ -364,12 +379,12 @@ main
 	bcf	PORTC, 0
 	movlw	0x1		; wait=3*0+7
 	call	wait		; burn 10 cycles in total
-    bsf STATUS, RP0
-    bcf STATUS, RP1
+	bsf     STATUS, RP0
+	nop
 	bsf	TRISC, 0
 	bcf	TRISC, 1
-    bcf STATUS, RP0
-    bcf STATUS, RP1
+	bcf     STATUS, RP0
+	nop
 	movlw	0x23		;
 	call	wait		; wait 109
 	movlw	0x1		; 'first time' bit
@@ -436,20 +451,20 @@ main_skipinval2
 	nop
 	btfsc	0x37, 0
 	goto	swap
-    bsf STATUS, RP0
-    bcf STATUS, RP1
+	bsf	STATUS, RP0
+	nop
 	bsf	TRISC, 0
 	bcf	TRISC, 1
 	goto	swapskip
 swap
-    bsf STATUS, RP0
-    bcf STATUS, RP1
+	bsf	STATUS, RP0
+	nop
 	bcf	TRISC, 0
 	bsf	TRISC, 1
 	nop
 swapskip
-    bcf STATUS, RP0
-    bcf STATUS, RP1
+	bcf	STATUS, RP0
+	nop
 	bsf	0x54, 2		; run the console
 	movf	0x54, w		; read resolved mode
 	iorwf	0x59, w		; get D4 value
@@ -920,7 +935,8 @@ checkrst_1_0	; 26
 	movf	0x56, w		; get temp mode
 	movwf	0x55		; set final mode
 	movwf	0x58		; set forced mode
-	banksel	EEADR		; save to EEPROM. note: banksels take two cycles each!
+	bsf	STATUS, RP0     ; save to EEPROM
+	nop
 	movwf	EEDAT
 	bsf	EECON1,WREN
 	movlw	0x55
@@ -928,7 +944,8 @@ checkrst_1_0	; 26
 	movlw	0xaa
 	movwf	EECON2
 	bsf	EECON1, WR
-	banksel	PORTA		; two cycles again
+	bcf	STATUS, RP0     ; two cycles again
+	nop
 	movlw	0x2
 	andwf	0x58, f		; cleanup forced mode
 	bcf	T1CON, 0	; stop the timer
@@ -1041,10 +1058,12 @@ checkrst_0_0_setregion_plus5
 	goto	checkrst_0_0_setregion
 
 supercic_pairmode
-	banksel	TRISC
+	bsf	STATUS, RP0
+	nop
 	bsf	TRISC, 0	; tristate both
 	bsf	TRISC, 1	; data lines
-	banksel	PORTC
+	bcf	STATUS, RP0
+	nop
 supercic_pairmode_loop
 	clrf	0x5d
 	bsf	0x5d, 2
