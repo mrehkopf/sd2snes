@@ -5,7 +5,7 @@ If you want to do that too, just copy or link the include/arm/-folder to /path/t
 
 Where to download gcc-arm-none-eabi version 4.9?
 For Ubuntu I used this PPA: https://launchpad.net/~terry.guo/+archive/ubuntu/gcc-arm-embedded (tested in Xubuntu 14.04)
-For MacOS X I used this one: https://launchpad.net/gcc-arm-embedded/+download
+For MacOS X I used this one: https://launchpad.net/gcc-arm-embedded/+download (precompiled, tested in OS X 10.10 and 10.11)
 
 There is no need to install the cm3-toolchain.
 
