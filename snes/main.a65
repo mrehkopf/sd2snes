@@ -81,11 +81,10 @@ coldboot:       ; Regular, cold-start init
   jsr screen_on
   jsr wait_mcu_ready
   jsr filesel_init
-
   sep #$20 : .as
   lda @ST_RTC_VALID
   beq +
-  jsl time_init
+  jsl rtc_init
 +
   jsr fileselloop
   sei
@@ -490,10 +489,14 @@ fadeloop_start
   sta $420b
 ; fill bank $7f
   sta $420b
-; fix for anti-copier routines that rely on pre-initialized DMA target
-; lda #$ff
-; sta $4301
+; fix for uninitialized DMA transfers
   rep #$20 : .al
+  lda #$ffff
+  ldy #$007c
+- dey
+  dey
+  sta $4300, y
+  bne -
   lda #$fe80 ; - bra -
   sta @$7fffe0
   lda #CMD_RESET
@@ -708,91 +711,17 @@ detect_ultra16_out:
   rts
 
 killdma:
+  php
   stz $420b
   stz $420c
 
-  stz $4300
-  stz $4301
-  stz $4302
-  stz $4303
-  stz $4304
-  stz $4305
-  stz $4306
-  stz $4307
-  stz $4308
-  stz $4309
-  stz $430a
-  stz $430b
-  stz $4310
-  stz $4311
-  stz $4312
-  stz $4313
-  stz $4314
-  stz $4315
-  stz $4316
-  stz $4317
-  stz $4318
-  stz $4319
-  stz $431a
-  stz $431b
-  stz $4320
-  stz $4321
-  stz $4322
-  stz $4323
-  stz $4324
-  stz $4325
-  stz $4326
-  stz $4327
-  stz $4328
-  stz $4329
-  stz $432a
-  stz $432b
-  stz $4330
-  stz $4331
-  stz $4332
-  stz $4333
-  stz $4334
-  stz $4335
-  stz $4336
-  stz $4337
-  stz $4338
-  stz $4339
-  stz $433a
-  stz $433b
-  stz $4340
-  stz $4341
-  stz $4342
-  stz $4343
-  stz $4344
-  stz $4345
-  stz $4346
-  stz $4347
-  stz $4348
-  stz $4349
-  stz $434a
-  stz $434b
-  stz $4350
-  stz $4351
-  stz $4352
-  stz $4353
-  stz $4354
-  stz $4355
-  stz $4356
-  stz $4357
-  stz $4358
-  stz $4359
-  stz $435a
-  stz $435b
-  stz $4370
-  stz $4371
-  stz $4372
-  stz $4373
-  stz $4374
-  stz $4375
-  stz $4376
-  stz $4377
-  stz $4378
-  stz $4379
-  stz $437a
-  stz $437b
+  rep #$20 : .al
+  sep #$10 : .xs
+  lda #$ffff
+  ldy #$7c
+- dey
+  dey
+  sta $4300, y
+  bne -
+  plp
   rts

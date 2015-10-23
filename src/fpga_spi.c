@@ -83,8 +83,13 @@
         E8        -             reset DSP program and data ROM write pointers
         E9        hhmmllxxxx    write+incr. DSP program ROM (xxxx=dummy writes)
         EA        hhllxxxx      write+incr. DSP data ROM (xxxx=dummy writes)
-        EB        -             put DSP into reset
-        EC        -             release DSP from reset
+        EB        rr            control DSP reset
+        EC        vv            set DAC volume boost
+                                  vv[2:0]: 0 = 1x
+                                           1 = 1.5x
+                                           2 = 2x
+                                           3 = 3x
+                                           4 = 4x
         ED        -             set feature enable bits (see below)
         EE        -             set $213f override value (0=NTSC, 1=PAL)
         EF        aaaa          set DSP core features (see below)
@@ -391,8 +396,15 @@ void fpga_write_dspx_dat(uint16_t data) {
 
 void fpga_dspx_reset(uint8_t reset) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(reset ? FPGA_CMD_DSPRESET : FPGA_CMD_DSPUNRESET);
-  FPGA_TX_BYTE(0x00);
+  FPGA_TX_BYTE(FPGA_CMD_DSPRESET);
+  FPGA_TX_BYTE(reset);
+  FPGA_DESELECT();
+}
+
+void fpga_set_dac_boost(uint8_t boost) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_DACBOOST);
+  FPGA_TX_BYTE(boost);
   FPGA_DESELECT();
 }
 

@@ -26,8 +26,10 @@ module dac(
   input[7:0] pgm_data,
   input[7:0] volume,
   input vol_latch,
+  input [2:0] vol_select,
   input play,
   input reset,
+  input palmode,
   output sdout,
   output lrck,
   output mclk,
@@ -36,18 +38,17 @@ module dac(
 );
 
 reg[8:0] dac_address_r;
-wire[8:0] dac_address = dac_address_r;
+reg[8:0] dac_address_r_sync;
+wire[8:0] dac_address = dac_address_r_sync;
 
 wire[31:0] dac_data;
 assign DAC_STATUS = dac_address_r[8];
-reg[7:0] vol_reg;
-reg[7:0] vol_target_reg;
+reg[10:0] vol_reg;
+reg[10:0] vol_target_reg;
 reg[1:0] vol_latch_reg;
 reg vol_valid;
 reg[2:0] sysclk_sreg;
 wire sysclk_rising = (sysclk_sreg[2:1] == 2'b01);
-
-reg [25:0] interpol_count;
 
 always @(posedge clkin) begin
   sysclk_sreg <= {sysclk_sreg[1:0], sysclk};
@@ -93,24 +94,32 @@ initial begin
   smpcnt = 16'b0;
   lrck_sreg = 2'b11;
   sclk_sreg = 1'b0;
-  dac_address_r = 10'b0;
+  dac_address_r = 9'b0;
   vol_valid = 1'b0;
   vol_latch_reg = 1'b0;
-  vol_reg = 8'h0;
-  vol_target_reg = 8'h00;
+  vol_reg = 9'h000;
+  vol_target_reg = 9'h000;
   samples <= 2'b00;
 end
+
+/*
+  21477272.727272... / 37500 * 77 = 44100
+  21281370 / 709379 * 1470 = 44100
+*/
+reg [19:0] phaseacc = 0;
+wire [10:0] phasemul = (palmode ? 1470 : 77);
+wire [19:0] phasediv = (palmode ? 709379 : 37500);
 
 always @(posedge clkin) begin
   if(reset_rising) begin
     dac_address_r <= 0;
-    interpol_count <= 0;
+    phaseacc <= 0;
   end else if(sysclk_rising) begin
-    if(interpol_count > 59378938) begin
-      interpol_count <= interpol_count + 122500 - 59501439;
+    if(phaseacc >= phasediv) begin
+      phaseacc <= phaseacc - phasediv;
       dac_address_r <= dac_address_r + play_r;
     end else begin
-      interpol_count <= interpol_count + 122500;
+      phaseacc <= phaseacc + phasemul;
     end
   end
 end
@@ -124,19 +133,37 @@ always @(posedge clkin) begin
   reset_sreg <= {reset_sreg[0], reset};
 end
 
+wire [9:0] vol_orig = volume + volume[7];
+wire [9:0] vol_3db = volume + volume[7:1] + volume[7];
+wire [9:0] vol_6db = {1'b0, volume, volume[7]} + volume[7];
+wire [9:0] vol_9db = {1'b0, volume, 1'b0} + volume + volume[7:6];
+wire [9:0] vol_12db = {volume, volume[7:6]};
+
+reg [9:0] vol_scaled;
+always @* begin
+  case(vol_select)
+    3'b000: vol_scaled = vol_orig;
+    3'b001: vol_scaled = vol_3db;
+    3'b010: vol_scaled = vol_6db;
+    3'b011: vol_scaled = vol_9db;
+    3'b100: vol_scaled = vol_12db;
+    default: vol_scaled = vol_orig;
+  endcase
+end
+
 always @(posedge clkin) begin
-  if (vol_latch_rising) begin
-    vol_valid <= 1'b1;
-  end
-  else if(vol_valid) begin
-    vol_target_reg <= volume;
-    vol_valid <= 1'b0;
+  vol_target_reg <= vol_scaled;
+end
+
+always @(posedge clkin) begin
+  if (lrck_rising) begin
+    dac_address_r_sync <= dac_address_r;
   end
 end
 
-// ramp volume only every 4 samples
+// ramp volume only on sample boundaries
 always @(posedge clkin) begin
-  if (lrck_rising && &samples[1:0]) begin
+  if (lrck_rising) begin
     if(vol_reg > vol_target_reg)
       vol_reg <= vol_reg - 1;
     else if(vol_reg < vol_target_reg)
@@ -144,15 +171,20 @@ always @(posedge clkin) begin
   end
 end
 
+wire signed [15:0] dac_data_ch = lrck ? dac_data[31:16] : dac_data[15:0];
+wire signed [25:0] vol_sample;
+wire signed [15:0] vol_sample_sat;
+assign vol_sample = dac_data_ch * $signed({1'b0, vol_reg});
+assign vol_sample_sat = ((vol_sample[25:23] == 3'b000 || vol_sample[25:23] == 3'b111) ? vol_sample[23:8]
+                      : vol_sample[25] ? 16'sh8000
+                      : 16'sh7fff);
+
 always @(posedge clkin) begin
   if (sclk_falling) begin
     smpcnt <= smpcnt + 1;
     sdout_reg <= smpshift[15];
-    if (lrck_rising) begin // right channel
-      smpshift <= (({16'h0, dac_data[31:16]^16'h8000} * vol_reg) >> 8) ^ 16'h8000;
-      samples <= samples + 1;
-    end else if (lrck_falling) begin // left channel
-      smpshift <= (({16'h0, dac_data[15:0]^16'h8000} * vol_reg) >> 8) ^ 16'h8000;
+    if (lrck_rising | lrck_falling) begin
+      smpshift <= vol_sample_sat;
     end else begin
       smpshift <= {smpshift[14:0], 1'b0};
     end

@@ -24,6 +24,7 @@
 ; 04  multiple choice (key-value table - 8-bit key)
 ; 05  multiple choice (key-value table - 16-bit key)
 ; 06  file select
+; 07  date
 
 ; parameter is displayed when data type is not 0
 
@@ -36,6 +37,7 @@
 ;                   (val=$ffff terminates)
 ; data type     06: 3 bytes - long pointer to file path
 ;                   1 byte - file type mask
+; data type     07: not used
 
 #include "memmap.i65"
 
@@ -88,8 +90,8 @@ menu_enttab_cfg:
  .byt MTYPE_FUNC
  .word !mtext_cfg_time
  .byt ^mtext_cfg_time
- .word !time_init-1
- .byt ^time_init
+ .word !rtc_init-1
+ .byt ^rtc_init
  .byt 0
  .byt 0,0,0
 
@@ -155,22 +157,52 @@ menu_enttab_bsx:
  .word !kv_bsx_timesource
  .byt  ^kv_bsx_timesource
  .byt  OPTTYPE_KVBYTE
- .word !kv_bsx_timesource
- .byt  ^kv_bsx_timesource
+ .word !CFG_BSX_USE_USERTIME
+ .byt  ^CFG_BSX_USE_USERTIME
 
  .byt  MTYPE_FUNC
  .word !mtext_bsx_time
  .byt  ^mtext_bsx_time
  .word !mfunc_set_bsx_time-1
  .byt  ^mfunc_set_bsx_time-1
- .byt  0
- .byt  0,0,0
+ .byt  OPTTYPE_TIME
+ .word !CFG_BSX_TIME
+ .byt  ^CFG_BSX_TIME
 
  .byt 0
+
+mfunc_set_bsx_time:
+  php
+  sep #$20 : .as
+  lda #^CFG_BSX_TIME
+  pha
+  pea !CFG_BSX_TIME
+    jsr time_init
+  pla
+  pla
+  pla
+  plp
+  rtl
 
 kv_bsx_timesource:
 .word $0000, !text_rtc : .byt ^text_rtc
 .word $0001, !text_custom : .byt ^text_custom
+.word $ffff
+
+kv_onoff:
+.word $0000, !text_off : .byt ^text_off
+.word $0001, !text_on : .byt ^text_on
+.word $ffff
+
+kv_vmode:
+.word $0000, !text_60Hz : .byt ^text_60Hz
+.word $0001, !text_50Hz : .byt ^text_50Hz
+.word $0002, !text_auto : .byt ^text_auto
+.word $ffff
+
+kv_cx4_speed:
+.word $0000, !text_normal : .byt ^text_normal
+.word $0001, !text_fast : .byt ^text_fast
 .word $ffff
 
 menu_enttab_test:
