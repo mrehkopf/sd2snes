@@ -702,7 +702,7 @@ detect_ultra16_found:
   sta @ST_IS_U16
   jsl @WRAM_LOAD_ULTRA16_CFG
   lda @$0021c1
-  and #$f1
+  and #$fb
   sta @$0021c1
 detect_ultra16_out:
   lda #$55
