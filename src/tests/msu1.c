@@ -84,15 +84,12 @@ int msu1_loop() {
     /* Data buffer refill */
     if((fpga_status_now & 0x2000) != (fpga_status_prev & 0x2000)) {
       DBG_MSU1 printf("data\n");
-      uint8_t pageno = 0;
       if(fpga_status_now & 0x2000) {
 	msu_addr = 0x0;
 	msu_page1_start = msu_page2_start + msu_page_size;
-	pageno = 1;
       } else {
 	msu_addr = 0x2000;
 	msu_page2_start = msu_page1_start + msu_page_size;
-	pageno = 2;
       }
       set_msu_addr(msu_addr);
       sd_offload_tgt=2;

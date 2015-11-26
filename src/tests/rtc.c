@@ -5,6 +5,10 @@
 #include "uart.h"
 #include "timer.h"
 #include "power.h"
+#include "ff.h"
+#include "tests.h"
+
+extern FIL logfile;
 
 rtcstate_t rtc_state;
 
@@ -117,7 +121,7 @@ void set_bcdtime(uint64_t btime) {
 }
 
 void printtime(struct tm *time) {
-  printf("%04d-%02d-%02d %02d:%02d:%02d\n", time->tm_year, time->tm_mon,
+  LOGPRINT("%04d-%02d-%02d %02d:%02d:%02d\n", time->tm_year, time->tm_mon,
     time->tm_mday, time->tm_hour, time->tm_min, time->tm_sec);
 }
 

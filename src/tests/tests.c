@@ -23,14 +23,17 @@
 
 #define PROGRESS	("-\\|/")
 
+extern FIL logfile;
+
 int test_sd() {
-  printf("SD test... please insert card\n=============================\n");
+  LOGPRINT("SD test... please insert card\n=============================\n");
+  f_sync(&logfile);
   while(disk_status(0) & (STA_NOINIT|STA_NODISK)) cli_entrycheck();
 
   file_open((uint8_t*)"/sd2snes/testfile.bin", FA_WRITE | FA_CREATE_ALWAYS);
   if(file_res) {
-    printf("could not open /sd2snes/testfile.bin: Error %d\n", file_res);
-    printf("FAILED\n\n\n");
+    LOGPRINT("could not open /sd2snes/testfile.bin: Error %d\n", file_res);
+    LOGPRINT("FAILED\n\n\n");
     return FAILED;
   }
   uint32_t testval = 0x55AA55AA;
@@ -44,7 +47,7 @@ int test_sd() {
     }
     file_write();
   }
-  printf("crc1 = %08lx ", crc);
+  LOGPRINT("crc1 = %08lx ", crc);
   file_close();
   file_open((uint8_t*)"/sd2snes/testfile.bin", FA_READ);
   uint32_t crc2 = 0;
@@ -56,107 +59,121 @@ int test_sd() {
     }
   }
   file_close();
-  printf("crc2 = %08lx ", crc2);
+  LOGPRINT("crc2 = %08lx ", crc2);
   if(crc==crc2) {
-    printf("  PASSED\n\n\n");
+    LOGPRINT("  PASSED\n\n\n");
     return PASSED;
   } else {
-    printf("  FAILED\n\n\n");
+    LOGPRINT("  FAILED\n\n\n");
     return FAILED;
   }
 }
 
 int test_cic() {
   int cic_state = get_cic_state();
-  printf("CIC Test:\n=========\n");
-  printf("Current CIC state: %s\n", get_cic_statename(cic_state));
+  LOGPRINT("CIC Test:\n=========\n");
+  LOGPRINT("Current CIC state: %s\n", get_cic_statename(cic_state));
   if(cic_state == CIC_FAIL) {
-    printf("CIC reports error, push reset...\n");
-    while((cic_state = get_cic_state()) == CIC_FAIL);
+    tick_t now = getticks();
+    LOGPRINT("CIC reports error, push reset...\n");
+    while(((cic_state = get_cic_state()) == CIC_FAIL) && (getticks() < now + 1000)) {
+      toggle_rdy_led();
+      delay_ms(200);
+    }
+    rdyled(1);
+    if(cic_state == CIC_FAIL) {
+      LOGPRINT("CIC did not come up ok within 10 seconds.\nFAILED\n");
+      return FAILED;
+    }
   }
   if(cic_state == CIC_OK) {
-    printf("CIC reports OK; no pair mode available. Provoking CIC error...\n");
+    LOGPRINT("CIC reports OK; no pair mode available. Provoking CIC error...\n");
     cic_pair(1,1);
     delay_ms(200);
     cic_init(0);
-    printf("new CIC state: %s\n", get_cic_statename(get_cic_state()));
+    delay_ms(100);
+    LOGPRINT("new CIC state: %s\n", get_cic_statename(get_cic_state()));
     if(get_cic_state() == CIC_FAIL) {
-      printf("***Please reset SNES***\n");
+      LOGPRINT("***Please reset SNES***\n");
       int failcount=2;
       while(failcount--) {
-        while(get_cic_state() == CIC_FAIL);
+        while(get_cic_state() == CIC_FAIL) {
+          toggle_rdy_led();
+          delay_ms(200);
+        }
         delay_ms(200);
       }
+      rdyled(1);
       if(get_cic_state() != CIC_FAIL) {
-        printf("PASSED\n\n\n");
+        LOGPRINT("PASSED\n\n\n");
         return PASSED;
       }
-      printf("CIC did not recover properly.\nFAILED\n");
+      LOGPRINT("CIC did not recover properly.\nFAILED\n");
       return FAILED;
     }
-    printf("FAILED\n\n\n");
+    LOGPRINT("FAILED\n\n\n");
     return FAILED;
   }
   if(cic_state == CIC_SCIC) {
-    printf("CIC reports OK; pair mode available. Switching to pair mode...\n");
+    LOGPRINT("CIC reports OK; pair mode available. Switching to pair mode...\n");
     cic_init(1);
     delay_ms(100);
     cic_pair(0,0);
     delay_ms(1000);
-    printf("new CIC state: %s\n", get_cic_statename(cic_state = get_cic_state()));
+    LOGPRINT("new CIC state: %s\n", get_cic_statename(cic_state = get_cic_state()));
     if(get_cic_state() != CIC_PAIR) {
-      printf("FAILED to switch to pair mode!!!\n");
+      LOGPRINT("FAILED to switch to pair mode!!!\n");
       return FAILED;
     }
   }
   if(cic_state == CIC_PAIR) {
     cic_init(1);
     cic_pair(0,0);
-    printf("cycling modes, observe power LED color\n");
+    LOGPRINT("cycling modes, observe power LED color\n");
     for(cic_state = 0; cic_state < 17; cic_state++) {
       cic_videomode(cic_state & 1);
       delay_ms(200);
     }
   }
-  printf("PASSED\n\n\n");
+  LOGPRINT("PASSED\n\n\n");
   return PASSED;
 }
 
 int test_rtc() {
   struct tm time;
-  printf("RTC Test\n========\n");
-  printf("setting clock to 2011-01-01 00:00:00\n");
+  LOGPRINT("RTC Test\n========\n");
+  LOGPRINT("setting clock to 2011-01-01 00:00:00\n");
   set_bcdtime(0x20110101000000LL);
-  printf("waiting 5 seconds\n");
+  LOGPRINT("waiting 5 seconds\n");
   delay_ms(5000);
 //  uint64_t newtime = get_bcdtime();
-  printf("new time: ");
+  LOGPRINT("new time: ");
   read_rtc(&time);
   printtime(&time);
   if((get_bcdtime() & 0xffffffffffffff) >= 0x20110101000004LL) {
-    printf("PASSED\n\n\n");
+    LOGPRINT("PASSED\n\n\n");
     return PASSED;
-  } else printf("FAILED\n\n\n");
+  } else LOGPRINT("FAILED\n\n\n");
   return FAILED;
 }
 
 int test_fpga() {
-  printf("FPGA test\n=========\n");
-  printf("configuring fpga...\n");
+  LOGPRINT("FPGA test\n=========\n");
+  LOGPRINT("configuring fpga...\n");
   fpga_pgm((uint8_t*)"/sd2snes/test.bit");
-  printf("basic communication test...");
+  LOGPRINT("basic communication test...");
   if(fpga_test() != FPGA_TEST_TOKEN) {
-    printf("FAILED\n\n\n");
+    LOGPRINT("FAILED\n\n\n");
     return FAILED;
-  } else printf("PASSED\n\n\n");
+  } else LOGPRINT("PASSED\n\n\n");
   return PASSED;
 }
 
 int test_mem() {
-  printf("RAM test\n========\n");
-  printf("Testing RAM0 (128Mbit) - clearing RAM -");
+  LOGPRINT("RAM test\n========\n");
+  LOGPRINT("Testing RAM0 (128Mbit) - clearing RAM -");
   sram_memset(0, 16777216, 0);
-  printf(" writing RAM -");
+  LOGPRINT(" writing RAM -");
   uint32_t addr;
   snes_reset(1);
   fpga_select_mem(0);
@@ -172,7 +189,7 @@ int test_mem() {
     FPGA_WAIT_RDY();
   }
   FPGA_DESELECT();
-  printf(" verifying RAM -");
+  LOGPRINT(" verifying RAM -");
   uint8_t data, expect, error=0, failed=0;
   set_mcu_addr(0);
   FPGA_SELECT();
@@ -183,44 +200,49 @@ int test_mem() {
     data = FPGA_RX_BYTE();
     expect = (addr)+(addr>>8)+(addr>>16);
     if(data != expect) {
-      printf("error @0x%06lx: expected 0x%02x, got 0x%02x\n", addr, expect, data);
+      LOGPRINT("error @0x%06lx: expected 0x%02x, got 0x%02x\n", addr, expect, data);
       error++;
       failed=1;
       if(error>20) {
-        printf("too many errors, aborting\n");
+        LOGPRINT("too many errors, aborting\n");
         break;
       }
     }
   }
   FPGA_DESELECT();
-  if(error) printf("RAM0 FAILED\n");
-  else {
-    printf("RAM0 PASSED\n\n\n");
-//    save_sram((uint8_t*)"/sd2snes/dmatest.bin", 16777216, 0);
+  if(error) {
+    LOGPRINT("RAM0 FAILED\n");
+  } else {
+    LOGPRINT("RAM0 PASSED\n\n\n");
   }
-  printf("Testing RAM1 (4Mbit) - writing RAM - ");
+  save_sram((uint8_t*)"/sd2snes/ram0dump.bin", 16777216, 0);
+  LOGPRINT("Testing RAM1 (4Mbit) - writing RAM - ");
   snes_reset(1);
   fpga_select_mem(1);
   for(addr=0; addr < 524288; addr++) {
     sram_writebyte((addr)+(addr>>8)+(addr>>16), addr);
   }
-  printf("verifying RAM...");
+  LOGPRINT("verifying RAM...");
   error = 0;
   for(addr=0; addr < 524288; addr++) {
     data = sram_readbyte(addr);
     expect = (addr)+(addr>>8)+(addr>>16);
     if(data != expect) {
-      printf("error @0x%05lx: expected 0x%02x, got 0x%02x\n", addr, expect, data);
+      LOGPRINT("error @0x%05lx: expected 0x%02x, got 0x%02x\n", addr, expect, data);
       error++;
       failed=1;
       if(error>20) {
-        printf("too many errors, aborting\n");
+        LOGPRINT("too many errors, aborting\n");
         break;
       }
     }
   }
-  if(error) printf("RAM1 FAILED\n\n\n");
-  else printf("RAM1 PASSED\n\n\n");
+  if(error) {
+    LOGPRINT("RAM1 FAILED\n\n\n");
+  } else {
+    LOGPRINT("RAM1 PASSED\n\n\n");
+  }
+  save_sram((uint8_t*)"/sd2snes/ram1dump.bin", 524288, 0);
   if(failed) return FAILED;
   return PASSED;
 }
@@ -229,40 +251,40 @@ int test_clk() {
   uint32_t sysclk[4];
   int32_t diff, max_diff = 0;
   int i, error=0;
-  printf("sysclk test\n===========\n");
-  printf("measuring SNES clock...\n");
+  LOGPRINT("sysclk test\n===========\n");
+  LOGPRINT("measuring SNES clock...\n");
   for(i=0; i<4; i++) {
     sysclk[i]=get_snes_sysclk();
     if(sysclk[i] < 21000000 || sysclk[i] > 22000000) error = 1;
-    printf("%lu Hz ", sysclk[i]);
+    LOGPRINT("%lu Hz ", sysclk[i]);
     if(i) {
       diff = sysclk[i] - sysclk[i-1];
       if(diff < 0) diff = -diff;
       if(diff > max_diff) max_diff = diff;
-      printf("diff = %ld  max = %ld", diff, max_diff);
+      LOGPRINT("diff = %ld  max = %ld", diff, max_diff);
     }
-    printf("\n");
+    LOGPRINT("\n");
     delay_ms(1010);
   }
   if(error) {
-    printf("clock frequency out of range!\n");
+    LOGPRINT("clock frequency out of range!\n");
   }
   if(diff > 1000000) {
-    printf("clock variation too great!\n");
+    LOGPRINT("clock variation too great!\n");
     error = 1;
   }
-  printf("   CPUCLK: %lu\n", get_snes_cpuclk());
-  printf("  READCLK: %lu\n", get_snes_readclk());
-  printf(" WRITECLK: %lu\n", get_snes_writeclk());
-  printf("  PARDCLK: %lu\n", get_snes_pardclk());
-  printf("  PAWRCLK: %lu\n", get_snes_pawrclk());
-  printf("  REFRCLK: %lu\n", get_snes_refreshclk());
-  printf("ROMSELCLK: %lu\n", get_snes_romselclk());
+  LOGPRINT("   CPUCLK: %lu\n", get_snes_cpuclk());
+  LOGPRINT("  READCLK: %lu\n", get_snes_readclk());
+  LOGPRINT(" WRITECLK: %lu\n", get_snes_writeclk());
+  LOGPRINT("  PARDCLK: %lu\n", get_snes_pardclk());
+  LOGPRINT("  PAWRCLK: %lu\n", get_snes_pawrclk());
+  LOGPRINT("  REFRCLK: %lu\n", get_snes_refreshclk());
+  LOGPRINT("ROMSELCLK: %lu\n", get_snes_romselclk());
   if(error) {
-    printf("FAILED\n\n\n");
+    LOGPRINT("FAILED\n\n\n");
     return FAILED;
   }
-  printf("PASSED\n\n\n");
+  LOGPRINT("PASSED\n\n\n");
   return PASSED;
 }
 
@@ -271,15 +293,15 @@ int test_sddma() {
 //  for(i=0; i<4; i++) {
     uint32_t len;
     fpga_select_mem(0);
-    printf("SD DMA test\n===========\nclearing RAM - ");
+    LOGPRINT("SD DMA test\n===========\nclearing RAM - ");
     sram_memset(0, 16777216, 0);
-    printf("loading test file - ");
+    LOGPRINT("loading test file - ");
     if((len = load_sram_offload((uint8_t*)"/sd2snes/dmatest.bin", 0)) != 16777216) {
-      printf("DMA test file size mismatch! (expected 16777216, got %lu)\nFAILED\n\n\n", len);
+      LOGPRINT("DMA test file size mismatch! (expected 16777216, got %lu)\nFAILED\n\n\n", len);
       return FAILED;
     }
 
-    printf("verifying -");
+    LOGPRINT("verifying -");
 
     uint32_t addr;
     uint8_t data, expect;
@@ -293,20 +315,21 @@ int test_sddma() {
       data = FPGA_RX_BYTE();
       expect = (addr)+(addr>>8)+(addr>>16);
       if(data != expect) {
-        printf("error @0x%06lx: expected 0x%02x, got 0x%02x\n", addr, expect, data);
+        LOGPRINT("error @0x%06lx: expected 0x%02x, got 0x%02x\n", addr, expect, data);
         error++;
         if(error>20) {
-          printf("too many errors, aborting\n");
+          LOGPRINT("too many errors, aborting\n");
           break;
         }
       }
     }
     FPGA_DESELECT();
+    save_sram((uint8_t*)"/sd2snes/dma_dump.bin", 16777216, 0);
     if(error) {
-      printf("FAILED\n\n\n");
+      LOGPRINT("FAILED\n\n\n");
       return FAILED;
     }
 //  }
-  printf("PASSED\n\n\n");
+  LOGPRINT("PASSED\n\n\n");
   return PASSED;
 }

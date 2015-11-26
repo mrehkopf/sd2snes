@@ -3,6 +3,8 @@
 #ifndef _TESTS_H
 #define _TESTS_H
 
+#define LOGPRINT(...) {printf(__VA_ARGS__); f_printf(&logfile, __VA_ARGS__);}
+
 int test_sd(void);
 int test_rtc(void);
 int test_cic(void);
