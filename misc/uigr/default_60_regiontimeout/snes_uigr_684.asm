@@ -5,7 +5,7 @@
 ;
 ;   Copyright (C) 2010 by Maximilian Rehkopf <otakon@gmx.net>
 ;
-;   Last Modified: Oct. 2015 by Peter Bartmann <borti4938@gmx.de>
+;   Last Modified: Dec. 2015 by Peter Bartmann <borti4938@gmx.de>
 ;
 ;   This program is free software; you can redistribute it and/or modify
 ;   it under the terms of the GNU General Public License as published by
@@ -82,21 +82,28 @@
 ;   D-Pad up     Toggle the region timeout                       0xd7 0xcf
 ;   D-Pad down   Toggle $213f-D4-Patch enable/disable            0xdb 0xcf
 ;
-;   Temporary Lock:
+;   Toggle region timeout:
+;   LED confirms with
+;     - region timeout switched on : red   -> yellow -> green
+;     - region timeout switched off: green -> yellow -> red
+;
+;   Toggle region patch:
+;   LED confirms with
+;     - region patch switched on : green -> off -> green
+;     - region patch switched off: red   -> off -> red
+;
+;   Lock Type 1:
 ;   To lock all other combinations one may press (D-Pad left + D-Pad up + L +
 ;   R + A + X -> strean data 0xf5 0x0f) together. The same combination unlocks
 ;   the IGR functionalities again.
 ;   Lock   -> LED confirms with fast flashing red
 ;   Unlock -> LED confirms with fast flashing green
 ;
-;   Permanent Lock:
+;   Lock Type 2:
 ;   To lock all combinations one may press (D-Pad down + D-Pad left + L +
 ;   R + A + B -> strean data 0x79 0x4f) together. This can only be undone by
 ;   a reset (only reset button, not by sd2snes-IGRs) or power off and on again
 ;   Lock   -> LED confirms with fast flashing red
-;
-;   The two locking combinations can be disabled by setting the constant
-;   'with_lock' from 0x01 to 0x00.
 ;
 ;
 ;   functional description:
@@ -117,14 +124,35 @@
 ;
 ;   Toggle region timeout  for ~9s the console stays in the region mode of the
 ;                          cartridge and switches then into the last user mode
-;   Toggle region patch  enables or disables the d4-patch over pin 7
+;   Toggle region patch    enables or disables the d4-patch over pin 7
 ;                          (0V = disable, +5V = enable)
+;
+;
+;   Support of retro-bit wireless controllers:
+;   ==========================================
+;   These controllers have a long delay from signalling a button bit change by
+;   the SNES until the bit is set on the dataline. This is not a problem if the
+;   auto joypad read (AJR) is enabled. However, if AJR is not, this may harm the
+;   respondence of the uIGR (as the uIGR might not have enough time to store the
+;   button bit). Hence I decided to introduce a new finger breaking button combo
+;   to switch on and off the long delays (and hence the support of retro-bit
+;   wireless controllers).
+;   This combo is:
+;     - L+R+St+B+Y+A+X (stream data: 0x2f 0x0f)
+;   The uIGR confirms with LED color codes:
+;     - support switched on : green -> yellow -> green
+;     - support switched off: red   -> yellow -> red
+;
 ;
 ; -----------------------------------------------------------------------
 ; Configuration bits: adapt to your setup and needs
     __CONFIG _INTOSCIO & _IESO_OFF & _WDT_OFF & _PWRTE_OFF & _MCLRE_OFF & _CP_OFF & _CPD_OFF & _BOD_OFF
 
-with_lock set 1 ; 0 = without locking combination, 1 = with locking combinations
+with_lock             set 1 ; 0 = without locking combination
+                            ; 1 = with locking combinations
+default_with_regpatch set 0 ; 0 = default set to 60Hz and region timeout enabled
+                            ; 1 = default set to 60Hz and region patch enabled
+                            ;     (for installations without or with region patch)
 
 ; -----------------------------------------------------------------------
 ; macros and definitions
@@ -180,6 +208,37 @@ M_T1reset   macro   ; reset and start timer1
             bsf     T1CON, TMR1ON
             endm
 
+M_StBuToRegF    macro   button, toReg  ; store button to register (fast)
+                btfsc   PORTA, CTRL_DATA
+                bsf     toReg, button
+                btfss   INTCON, INTF
+                goto    $-1
+                endm
+
+M_StBuToReg macro   button, toReg  ; store button to register
+            btfss   PORTA, CTRL_CLK
+            goto    $-1
+            nop
+            bcf     INTCON, INTF
+            btfsc   PORTA, CTRL_DATA
+            bsf     toReg, button
+            btfss   INTCON, INTF
+            goto    $-1
+            endm
+
+M_StBuToRegRBWC macro   button, toReg  ; store button to register (Retro-Bit Wireless Controller)
+                btfss   PORTA, CTRL_CLK
+                goto    $-1
+                goto    $+1 ; 2-cycle-delay
+                nop
+                bcf     INTCON, INTF
+                nop
+                btfsc   PORTA, CTRL_DATA
+                bsf     toReg, button
+                btfss   INTCON, INTF
+                goto    $-1
+                endm
+
 M_push_reset    macro   ; push reset button
                 banksel TRISA
                 bcf     TRISA, RESET_OUT
@@ -230,21 +289,23 @@ reg_repetition_cnt      EQU 0x32
 reg_t1_overflows        EQU 0x33
 reg_current_mode        EQU 0x40
 reg_passthru_calc       EQU 0x41
-reg_led_save            EQU 0x41
+reg_led_save            EQU 0x42
 
-bit_mode_auto       EQU 0
-bit_mode_60         EQU 1
-bit_mode_50         EQU 2
-bit_mode_scic       EQU 3
+bit_mode_scic       EQU 0
+bit_mode_auto       EQU 1
+bit_mode_50_60      EQU 2
+bit_rbwc_support    EQU 3
 bit_regtimeout      EQU 4
 bit_regpatch        EQU 5
+
     
-code_mode_auto      EQU (1<<bit_mode_auto)      ; 0x01
-code_mode_60        EQU (1<<bit_mode_60)        ; 0x02
-code_mode_50        EQU (1<<bit_mode_50)        ; 0x04
-code_mode_scic      EQU (1<<bit_mode_scic)      ; 0x08
-code_regtimeout     EQU (1<<bit_regtimeout)     ; 0x10
-code_regpatch       EQU (1<<bit_regpatch)       ; 0x20
+code_mode_scic    EQU (1<<bit_mode_scic)      ; 0x01
+code_mode_auto    EQU (1<<bit_mode_auto)      ; 0x02
+code_mode_60      EQU (0<<bit_mode_50_60)     ; 0x00
+code_mode_50      EQU (1<<bit_mode_50_60)     ; 0x04
+code_rbwc_support EQU (1<<bit_rbwc_support)   ; 0x08
+code_regtimeout   EQU (1<<bit_regtimeout)     ; 0x10
+code_regpatch     EQU (1<<bit_regpatch)       ; 0x20
 
   if with_lock
     bit_igrlock_tmp     EQU 6
@@ -259,8 +320,11 @@ code_led_50     EQU 0x20    ; green
 code_led_auto   EQU 0x30    ; yellow
 code_invert_led EQU 0x30    ; to invert the LED (needed if a com. anode LED is used)
 
-; code_mode_default   EQU (code_mode_60 ^ code_regpatch)
-code_mode_default   EQU (code_mode_60 ^ code_regtimeout)
+  if default_with_regpatch
+    code_mode_default   EQU (code_mode_60 ^ code_regpatch)
+  else
+    code_mode_default   EQU (code_mode_60 ^ code_regtimeout)
+  end
 
 delay_05ms_t0_overflows     EQU 0x14    ; prescaler T0 set to 1:2
 repetitions_60ms            EQU 0x0c
@@ -309,198 +373,70 @@ BUTTON_NONE0    EQU 0
 
 
 ; --------ISR--------
- org    0x0004  ; jump here on interrupt with GIE set       
-read_Button_B   ; button B can be read (nearly) immediately
+ org    0x0004  ; jump here on interrupt with GIE set
+CtrlRead_ISR
     M_movlf ((1<<INTE)^(1<<RAIE)), INTCON
-    nop
-    nop
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_msb, BUTTON_B
-postwait_Button_B
-    btfss   INTCON, INTF
-    goto    postwait_Button_B
-
-prewait_Button_Y
+    btfsc   reg_current_mode, bit_rbwc_support
+    goto    CtrlRead_ISR_RBWC
+    
+; button B can be read immediately (nearly, 4 instruction cycles until this  macro is reached)
+    M_StBuToRegF  BUTTON_B, reg_ctrl_data_msb
+    
+; before button Y is stored, unset RAIF (from now on, no IOC at the data latch shall appear)
     btfss   PORTA, CTRL_CLK
-    goto    prewait_Button_Y
+    goto    $-1
     bcf     INTCON, INTF
-    bcf     INTCON, RAIF      ; from now on, no IOC at the data latch shall appear
-store_Button_Y
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_msb, BUTTON_Y
-postwait_Button_Y
-    btfss   INTCON, INTF
-    goto    postwait_Button_Y
+    bcf     INTCON, RAIF
+    M_StBuToRegF  BUTTON_Y, reg_ctrl_data_msb
 
-prewait_Button_Sl
+; read all other buttons afterwards
+    M_StBuToReg BUTTON_SL, reg_ctrl_data_msb
+    M_StBuToReg BUTTON_ST, reg_ctrl_data_msb
+    M_StBuToReg DPAD_UP,   reg_ctrl_data_msb
+    M_StBuToReg DPAD_DW,   reg_ctrl_data_msb
+    M_StBuToReg DPAD_LE,   reg_ctrl_data_msb
+    M_StBuToReg DPAD_RI,   reg_ctrl_data_msb
+    
+    M_StBuToReg BUTTON_A,     reg_ctrl_data_lsb
+    M_StBuToReg BUTTON_X,     reg_ctrl_data_lsb
+    M_StBuToReg BUTTON_L,     reg_ctrl_data_lsb
+    M_StBuToReg BUTTON_R,     reg_ctrl_data_lsb
+    M_StBuToReg BUTTON_NONE3, reg_ctrl_data_lsb
+    M_StBuToReg BUTTON_NONE2, reg_ctrl_data_lsb
+    M_StBuToReg BUTTON_NONE1, reg_ctrl_data_lsb
+    M_StBuToReg BUTTON_NONE0, reg_ctrl_data_lsb
+
+    goto  check_controller_read
+    
+CtrlRead_ISR_RBWC
+; button B can be read immediately (nearly, 5 instruction cycles until this  macro is reached)
+    M_StBuToRegF  BUTTON_B, reg_ctrl_data_msb
+    
+; before button Y is stored, unset RAIF (from now on, no IOC at the data latch shall appear)
     btfss   PORTA, CTRL_CLK
-    goto    prewait_Button_Sl
-    bcf     INTCON, INTF
+    goto    $-1
+    goto    $+1  ; 2-cycle-delay
     nop
-store_Button_Sl
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_msb, BUTTON_SL
-postwait_Button_Sl
-    btfss   INTCON, INTF
-    goto    postwait_Button_Sl
-
-prewait_Button_St
-    btfss   PORTA, CTRL_CLK
-    goto    prewait_Button_St
     bcf     INTCON, INTF
-    nop
-store_Button_St
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_msb, BUTTON_ST
-postwait_Button_St
-    btfss   INTCON, INTF
-    goto    postwait_Button_St
+    bcf     INTCON, RAIF
+    M_StBuToRegF  BUTTON_Y, reg_ctrl_data_msb
 
-prewait_DPad_Up
-    btfss   PORTA, CTRL_CLK
-    goto    prewait_DPad_Up
-    bcf     INTCON, INTF
-    nop
-store_DPad_Up
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_msb, DPAD_UP
-postwait_DPad_Up
-    btfss   INTCON, INTF
-    goto    postwait_DPad_Up
-
-prewait_DPad_Dw
-    btfss   PORTA, CTRL_CLK
-    goto    prewait_DPad_Dw
-    bcf     INTCON, INTF
-    nop
-store_Button_DW
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_msb, DPAD_DW
-postwait_DPad_Dw
-    btfss   INTCON, INTF
-    goto    postwait_DPad_Dw
-
-prewait_DPad_Le
-    btfss   PORTA, CTRL_CLK
-    goto    prewait_DPad_Le
-    bcf     INTCON, INTF
-    nop
-store_DPad_Le
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_msb, DPAD_LE
-postwait_DPad_Le
-    btfss   INTCON, INTF
-    goto    postwait_DPad_Le
-
-prewait_DPad_Ri
-    btfss   PORTA, CTRL_CLK
-    goto    prewait_DPad_Ri
-    bcf     INTCON, INTF
-    nop
-store_DPad_Ri
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_msb, DPAD_RI
-postwait_DPad_Ri
-    btfss   INTCON, INTF
-    goto    postwait_DPad_Ri
-
-
-prewait_Button_A
-    btfss   PORTA, CTRL_CLK
-    goto    prewait_Button_A
-    bcf     INTCON, INTF
-    nop
-store_Button_A
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_lsb, BUTTON_A
-postwait_Button_A
-    btfss   INTCON, INTF
-    goto    postwait_Button_A
-
-prewait_Button_X
-    btfss   PORTA, CTRL_CLK
-    goto    prewait_Button_X
-    bcf     INTCON, INTF
-    nop
-store_Button_X
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_lsb, BUTTON_X
-postwait_Button_X
-    btfss   INTCON, INTF
-    goto    postwait_Button_X
-
-prewait_Button_L
-    btfss   PORTA, CTRL_CLK
-    goto    prewait_Button_L
-    bcf     INTCON, INTF
-    nop
-store_Button_L
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_lsb, BUTTON_L
-postwait_Button_L
-    btfss   INTCON, INTF
-    goto    postwait_Button_L
-
-prewait_Button_R
-    btfss   PORTA, CTRL_CLK
-    goto    prewait_Button_R
-    bcf     INTCON, INTF
-    nop
-store_Button_R
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_lsb, BUTTON_R
-postwait_Button_R
-    btfss   INTCON, INTF
-    goto    postwait_Button_R
-
-prewait_Button_None3
-    btfss   PORTA, CTRL_CLK
-    goto    prewait_Button_None3
-    bcf     INTCON, INTF
-    nop
-store_Button_None3
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_lsb, BUTTON_NONE3
-postwait_Button_None3
-    btfss   INTCON, INTF
-    goto    postwait_Button_None3
-
-prewait_Button_None2
-    btfss   PORTA, CTRL_CLK
-    goto    prewait_Button_None2
-    bcf     INTCON, INTF
-    nop
-store_Button_None2
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_lsb, BUTTON_NONE2
-postwait_Button_None2
-    btfss   INTCON, INTF
-    goto    postwait_Button_None2
-
-prewait_Button_None1
-    btfss   PORTA, CTRL_CLK
-    goto    prewait_Button_None1
-    bcf     INTCON, INTF
-    nop
-store_Button_None1
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_lsb, BUTTON_NONE1
-postwait_Button_None1
-    btfss   INTCON, INTF
-    goto    postwait_Button_None1
-
-prewait_Button_None0
-    btfss   PORTA, CTRL_CLK
-    goto    prewait_Button_None0
-    bcf     INTCON, INTF
-    nop
-store_Button_None0
-    btfsc   PORTA, CTRL_DATA
-    bsf     reg_ctrl_data_lsb, BUTTON_NONE0
-postwait_Button_None0
-    btfss   INTCON, INTF
-    goto    postwait_Button_None0
-
+; read all other buttons afterwards
+    M_StBuToRegRBWC BUTTON_SL, reg_ctrl_data_msb
+    M_StBuToRegRBWC BUTTON_ST, reg_ctrl_data_msb
+    M_StBuToRegRBWC DPAD_UP,   reg_ctrl_data_msb
+    M_StBuToRegRBWC DPAD_DW,   reg_ctrl_data_msb
+    M_StBuToRegRBWC DPAD_LE,   reg_ctrl_data_msb
+    M_StBuToRegRBWC DPAD_RI,   reg_ctrl_data_msb
+    
+    M_StBuToRegRBWC BUTTON_A,     reg_ctrl_data_lsb
+    M_StBuToRegRBWC BUTTON_X,     reg_ctrl_data_lsb
+    M_StBuToRegRBWC BUTTON_L,     reg_ctrl_data_lsb
+    M_StBuToRegRBWC BUTTON_R,     reg_ctrl_data_lsb
+    M_StBuToRegRBWC BUTTON_NONE3, reg_ctrl_data_lsb
+    M_StBuToRegRBWC BUTTON_NONE2, reg_ctrl_data_lsb
+    M_StBuToRegRBWC BUTTON_NONE1, reg_ctrl_data_lsb
+    M_StBuToRegRBWC BUTTON_NONE0, reg_ctrl_data_lsb
 
 check_controller_read
     btfsc   INTCON, RAIF            ; another IOC on data latch appeared
@@ -510,23 +446,22 @@ check_controller_read
 
 invalid_controller_read
     clrf    INTCON
-    clrf    reg_ctrl_data_lsb
     clrf    reg_ctrl_data_msb
+    clrf    reg_ctrl_data_lsb
     clrf    reg_ctrl_read_ready
     bsf	    INTCON, RAIE
     retfie                      ; return with GIE set
 
 
 ; --------IDLE loops--------
- org    0x008e
 check_scic_auto
     clrf    INTCON
     btfsc   PORTA, RESET_IN                 ; reset button pressed?
-    goto    check_reset                     ; then the SCIC might get a new mode or the console is reseted
-    btfsc   reg_current_mode, bit_mode_auto ; Auto-Mode?
-    goto    setregion_auto_woLED            ; if yes, check the current state
+    goto    check_reset                     ; then the SCIC might get a new mode or the console is reset
     btfsc   reg_current_mode, bit_mode_scic ; SCIC-Mode?
     goto    setregion_passthru              ; if yes, check the current state
+    btfsc   reg_current_mode, bit_mode_auto ; Auto-Mode?
+    goto    setregion_auto_woLED            ; if yes, check the current state
 
 idle_prepare
     if with_lock
@@ -534,13 +469,13 @@ idle_prepare
       goto    check_scic_auto
     endif
 
-    clrf    reg_ctrl_data_lsb
     clrf    reg_ctrl_data_msb
+    clrf    reg_ctrl_data_lsb
     clrf    reg_ctrl_read_ready
     M_T1reset
 
     btfsc   PORTA, CTRL_LATCH   ; data latch currently high?
-    call    read_Button_B       ; if yes -> go go go
+    call    CtrlRead_ISR        ; if yes -> go go go
     M_movlf ((1<<GIE)^(1<<RAIE)), INTCON    ; set GIE, only react on RAIF
 
 idle_loop
@@ -554,7 +489,6 @@ idle_loop
 
 
 ; --------controller routines--------
- org 0x00a9
 checkkeys
     clrf    INTCON
   if with_lock
@@ -565,6 +499,7 @@ checkkeys
     M_belf  0x4f, reg_ctrl_data_lsb, group4f
     M_belf  0x8f, reg_ctrl_data_lsb, group8f
     M_belf  0xcf, reg_ctrl_data_lsb, groupcf
+    M_belf  0x0f, reg_ctrl_data_lsb, rbwc_support
     goto    check_scic_auto
 
 group4f ; check L+R+sel+...
@@ -575,19 +510,30 @@ group4f ; check L+R+sel+...
     goto    check_scic_auto
 
 group8f ; check L+R+sel+X
-    M_belf  0xdf, reg_ctrl_data_msb, doreset_dbl  ; do dbl reset
+    M_movlf overflows_t1_regtimeout_dblrst, reg_t1_overflows  ; in case of reg.timout is enabled
+    M_belf  0xdf, reg_ctrl_data_msb, doreset_dbl              ; do dbl reset
     goto    check_scic_auto
 
 groupcf ; check L+R+sel+...
-    M_belf  0x5f, reg_ctrl_data_msb, doregion_auto    ; B
-    M_belf  0x9f, reg_ctrl_data_msb, doregion_50      ; Y
-    M_belf  0xcf, reg_ctrl_data_msb, doreset_normal   ; start
-    M_belf  0xd7, reg_ctrl_data_msb, toggle_startup   ; Up
-    M_belf  0xdb, reg_ctrl_data_msb, toggle_d4_patch  ; Down
-    M_belf  0xdd, reg_ctrl_data_msb, doscic_passthru  ; Left
-    M_belf  0xde, reg_ctrl_data_msb, doscic_passthru  ; Right
+    M_movlf overflows_t1_regtimeout_reset, reg_t1_overflows ; in case of reg.timout is enabled
+    M_belf  0xcf, reg_ctrl_data_msb, doreset_normal         ; start
+    M_belf  0x5f, reg_ctrl_data_msb, doregion_auto          ; B
+    M_belf  0x9f, reg_ctrl_data_msb, doregion_50            ; Y
+    M_belf  0xd7, reg_ctrl_data_msb, toggle_startup         ; Up
+    M_belf  0xdb, reg_ctrl_data_msb, toggle_d4_patch        ; Down
+    M_belf  0xdd, reg_ctrl_data_msb, doscic_passthru        ; Left
+    M_belf  0xde, reg_ctrl_data_msb, doscic_passthru        ; Right
     goto    check_scic_auto
 
+
+doreset_dbl
+    M_push_reset
+    call    delay_05ms
+    call    delay_05ms
+    call    delay_05ms
+    call    delay_05ms
+    M_release_reset
+    M_delay_x05ms   repetitions_200ms
 
 doreset_normal
     M_push_reset
@@ -599,38 +545,29 @@ doreset_normal
     call    delay_05ms
     M_release_reset
     btfss   reg_current_mode, bit_regtimeout  ; region timout disabled?
-    goto    check_scic_auto                   ; if yes, go on with 'normal procedure'
+    goto    doreset_end                       ; if yes, go on with 'normal procedure'
 
-    M_movlf overflows_t1_regtimeout_reset, reg_t1_overflows
     M_T1reset                                 ; start timer 1
     goto    regtimeout                        ; if no, we had to perform a region timeout
 
-doreset_dbl
-    M_push_reset
-    call    delay_05ms
-    call    delay_05ms
-    call    delay_05ms
-    call    delay_05ms
-    M_release_reset
-    M_delay_x05ms   repetitions_200ms
-    M_push_reset
-    call    delay_05ms
-    call    delay_05ms
-    btfsc   reg_current_mode, bit_regtimeout  ; region timeout enabled?
-    call    call_M_setAuto                    ; if yes, define the output to the S-CPUN/PPUs
-    call    delay_05ms
-    call    delay_05ms
-    M_release_reset
-    btfss   reg_current_mode, bit_regtimeout  ; region timeout enabled?
-    goto    check_scic_auto                   ; if yes, go on with 'normal procedure'
+doreset_end ; short delay - time for the user to release the button combination
+    M_movlf repetitions_580ms, reg_repetition_cnt
+    btfsc   reg_current_mode, bit_mode_scic ; SCIC-Mode?
+    goto    doreset_end_scic_mode           ; if yes, split up delays
+    call    delay_x05ms
+    goto    check_scic_auto
 
-    M_movlf overflows_t1_regtimeout_dblrst, reg_t1_overflows
-    M_T1reset                                 ; start timer 1
-    goto    regtimeout                        ; if no, we had to perform a region timeout
+doreset_end_scic_mode ; delay is split up as the LED state is not updated during
+                      ; the delay call
+    call    setled_passthru
+    call    delay_05ms
+    decfsz  reg_repetition_cnt, 1
+    goto    doreset_end_scic_mode
+    goto    setregion_passthru
 
 doregion_auto
     movfw   reg_current_mode
-    andlw   0x70              ; save the igrlock_tmp, reg_timeout and d4
+    andlw   0x78              ; save the igr_lock, reg_timeout, reg_patch and rbwc_support
     xorlw   code_mode_auto    ; set mode auto
     movwf   reg_current_mode
     call    save_mode
@@ -644,8 +581,8 @@ setregion_auto_woLED
 
 doregion_60
     movfw   reg_current_mode
-    andlw   0x70              ; save the igrlock_tmp, reg_timeout and d4
-    xorlw   code_mode_60      ; set mode 60
+    andlw   0x78              ; save the igr_lock, reg_timeout, reg_patch and rbwc_support
+;    xorlw   code_mode_60      ; set mode 60
     movwf   reg_current_mode
     call    save_mode
 
@@ -658,7 +595,7 @@ setregion_60_woLED
 
 doregion_50
     movfw   reg_current_mode
-    andlw   0x70              ; save the igrlock_tmp, reg_timeout and d4
+    andlw   0x78              ; save the igr_lock, reg_timeout, reg_patch and rbwc_support
     xorlw   code_mode_50      ; set mode 50
     movwf   reg_current_mode
     call    save_mode
@@ -824,9 +761,49 @@ LED_confirm_d4on    ; LED fading pattern: off->green->off->green->off->last LED 
         goto            check_scic_auto
   endif
 
+rbwc_support
+    M_belf  0x2f, reg_ctrl_data_msb, toggle_rbwc_support  ; check the MSBs
+    goto    check_scic_auto                               ; if stream data is not matched, go back to check_scic_auto
+
+toggle_rbwc_support
+    movfw   reg_current_mode
+    xorlw   code_rbwc_support                   ; toggle
+    movwf   reg_current_mode
+    call    save_mode
+    btfss   reg_current_mode, bit_rbwc_support  ; support switched on?
+    goto    LED_confirm_rbwc_support_off        ; if no, conform switching off
+
+LED_confirm_rbwc_support_on   ; LED fading pattern: off->green->yellow->green->off->last LED color
+    M_movpf         PORTC, reg_led_save ; save last LED color and d4
+    call            setled_off
+    M_delay_x05ms   repetitions_LED_delay
+    call            setled_50
+    M_delay_x05ms   repetitions_LED_delay
+    call            setled_auto
+    M_delay_x05ms   repetitions_LED_delay
+    call            setled_50
+    M_delay_x05ms   repetitions_LED_delay
+    call            setled_off
+    M_delay_x05ms   repetitions_LED_delay
+    M_movff         reg_led_save, PORTC ; return to last LED color
+    goto            check_scic_auto
+
+LED_confirm_rbwc_support_off   ; LED fading pattern: off->red->yellow->red->off->last LED color
+    M_movpf         PORTC, reg_led_save ; save last LED color and d4
+    call            setled_off
+    M_delay_x05ms   repetitions_LED_delay
+    call            setled_60
+    M_delay_x05ms   repetitions_LED_delay
+    call            setled_auto
+    M_delay_x05ms   repetitions_LED_delay
+    call            setled_60
+    M_delay_x05ms   repetitions_LED_delay
+    call            setled_off
+    M_delay_x05ms   repetitions_LED_delay
+    M_movff         reg_led_save, PORTC ; return to last LED color
+    goto            check_scic_auto
 
 ; --------reset-button routines--------
- org 0x0226
 check_reset
     clrf    INTCON
     call    delay_05ms      ; software debounce
@@ -900,8 +877,8 @@ rstloop_scic_passthru
 
 doscic_passthru
     movfw   reg_current_mode
-    andlw   0x70              ; save the igrlock_tmp, reg_timeout and d4
-    xorlw   code_mode_scic    ; set bit 3
+    andlw   0x78              ; save the igr_lock, reg_timeout, reg_patch and rbwc_support
+    xorlw   code_mode_scic    ; set mode scic
     movwf   reg_current_mode
     call    save_mode
 
@@ -931,7 +908,6 @@ setregion_passthru_woLED_Ca
 
 
 ; --------mode, led, delay and save_mode calls--------
- org 0x028e
 call_M_setAuto
     M_setAuto
     return
@@ -965,7 +941,7 @@ setled_auto
 
 setled_passthru
     movfw   PORTC
-    andlw   0x0f                    ; save d4 and LED in
+    andlw   0x0f                    ; save d4
     btfsc   PORTC, LED_MODE_50_IN   ; green LED
     xorlw   code_led_50
     btfsc   PORTC, LED_MODE_60_IN   ; red LED
@@ -984,15 +960,19 @@ setled_off
 
 save_mode
     movfw   reg_current_mode
-    banksel EEADR       ; save to EEPROM. note: banksels take two cycles each!
+    banksel EEADR
     movwf   EEDAT
+    clrf    EEADR             ; address 0
     bsf     EECON1,WREN
     M_movlf 0x55, EECON2
     M_movlf 0xaa, EECON2
     bsf     EECON1, WR
-    banksel PORTA       ; two cycles again
+wait_save_mode_end
+    btfsc   EECON1, WR
+    goto    wait_save_mode_end
+    bcf     EECON1, WREN
+    banksel PORTA
     return
-
 
 delay_05ms
     clrf    TMR0                ; start timer (operation clears prescaler of T0)
@@ -1003,16 +983,49 @@ delay_05ms
     banksel PORTA
     M_movlf delay_05ms_t0_overflows, reg_t0_overflows
     M_movlf (1<<T0IE), INTCON   ; enable timer 0 interrupt
-
 delay_05ms_loop_pre
     bcf     INTCON, T0IF
-
 delay_05ms_loop
+    btfsc   reg_current_mode, bit_mode_scic ; SCIC-Mode?
+    call    delay_update_scic_mode          ; if yes, check the current state
+    btfsc   reg_current_mode, bit_mode_auto ; Auto-Mode?
+    call    delay_update_auto_mode          ; if yes, check the current state
     btfss   INTCON, T0IF
     goto    delay_05ms_loop
     decfsz  reg_t0_overflows, 1
     goto    delay_05ms_loop_pre
     clrf    INTCON              ; disable timer 0 interrupt
+    return
+
+delay_update_auto_mode
+    M_setAuto
+    return
+
+delay_update_scic_mode
+    M_movff PORTC, reg_passthru_calc
+    btfss   reg_passthru_calc, LED_TYPE_IN
+    goto    delay_update_scic_mode_Ca
+delay_update_scic_mode_An
+    btfsc   reg_passthru_calc, LED_MODE_50_IN
+    goto    delay_update_scic_mode_60Hz       ; SCIC: green off -> red must be on
+                                              ; SCIC: green on & ...
+    btfsc   reg_passthru_calc, LED_MODE_60_IN
+    goto    delay_update_scic_mode_50Hz       ; ... red off
+    M_setAuto                                 ; ... red on
+    return
+delay_update_scic_mode_Ca
+    btfss   reg_passthru_calc, LED_MODE_50_IN
+    goto    delay_update_scic_mode_60Hz       ; SCIC: green off -> red must be on
+                                              ; SCIC: green on & ...
+    btfss   reg_passthru_calc, LED_MODE_60_IN
+    goto    delay_update_scic_mode_50Hz       ; ... red off
+    M_setAuto                                 ; ... red on
+    return
+delay_update_scic_mode_60Hz
+    set60Hz
+    return
+delay_update_scic_mode_50Hz
+    set50Hz
     return
 
 delay_x05ms
@@ -1023,7 +1036,6 @@ delay_x05ms
 
 
 ; --------initialization--------
- org 0x02d7
 start
     clrf    PORTA
     clrf    PORTC
@@ -1063,14 +1075,28 @@ check_d4_mode
     setD4off
 
 check_last_led
-    btfsc   reg_current_mode, bit_mode_auto ; last mode "Auto"?
-    call    setled_auto
-    btfsc   reg_current_mode, bit_mode_60   ; last mode "60Hz"?
-    call    setled_60
-    btfsc   reg_current_mode, bit_mode_50   ; last mode "50Hz"?
+    btfsc   reg_current_mode, bit_mode_scic   ; last mode from SCIC?
+    goto    check_last_led_scic
+    btfsc   reg_current_mode, bit_mode_auto   ; last mode "Auto"?
+    goto    check_last_led_auto
+    btfss   reg_current_mode, bit_mode_50_60  ; last mode "60Hz"?
+    goto    check_last_led_60
+;    btfsc   reg_current_mode, bit_mode_50_60   ; last mode "50Hz"?
+;    goto    check_last_led_50
+
+check_last_led_50
     call    setled_50
-    btfsc   reg_current_mode, bit_mode_scic ; last mode from SCIC?
+    goto    check_reg_timeout
+check_last_led_60
+    call    setled_60
+    goto    check_reg_timeout
+check_last_led_auto
+    call    setled_auto
+    goto    check_reg_timeout
+check_last_led_scic
     call    setled_passthru
+;    goto    check_reg_timeout
+
 
 check_reg_timeout
     btfss   reg_current_mode, bit_regtimeout  ; regtimeout disabled?
@@ -1091,16 +1117,16 @@ regtimeout
     goto    regtimeout                      ; If no, repeat this loop
 
     bcf     T1CON, TMR1ON
-    
 
 last_mode_check
-    btfsc   reg_current_mode, bit_mode_auto  ; last mode "Auto"?
-    goto    setregion_auto_woLED
-    btfsc   reg_current_mode, bit_mode_60    ; last mode "60Hz"?
-    goto    setregion_60_woLED
-    btfsc   reg_current_mode, bit_mode_50    ; last mode "50Hz"?
-    goto    setregion_50_woLED
+    btfsc   reg_current_mode, bit_mode_scic   ; last mode from SCIC?
     goto    setregion_passthru_woLED
+    btfsc   reg_current_mode, bit_mode_auto   ; last mode "Auto"?
+    goto    setregion_auto_woLED
+    btfss   reg_current_mode, bit_mode_50_60  ; last mode "60Hz"?
+    goto    setregion_60_woLED
+;    btfsc   reg_current_mode, bit_mode_50_60  ; last mode "50Hz"?
+    goto    setregion_50_woLED
 
 ; -----------------------------------------------------------------------
 ; eeprom data
