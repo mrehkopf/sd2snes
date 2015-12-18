@@ -324,7 +324,7 @@ code_invert_led EQU 0x30    ; to invert the LED (needed if a com. anode LED is u
     code_mode_default   EQU (code_mode_60 ^ code_regpatch)
   else
     code_mode_default   EQU (code_mode_60 ^ code_regtimeout)
-  end
+  endif
 
 delay_05ms_t0_overflows     EQU 0x14    ; prescaler T0 set to 1:2
 repetitions_60ms            EQU 0x0c
