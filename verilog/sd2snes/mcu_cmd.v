@@ -56,6 +56,8 @@ module mcu_cmd(
   input DAC_STATUS,
   output dac_play_out,
   output dac_reset_out,
+  output reg [2:0] dac_vol_select_out = 3'b000,
+  output reg dac_palmode_out = 0,
 
   // MSU data
   output [13:0] msu_addr_out,
@@ -401,10 +403,13 @@ always @(posedge clk) begin
             dspx_dat_addr_out <= dspx_dat_addr_out + 1;
           end
         endcase
-      8'heb: // put DSPx into reset
-        dspx_reset_out <= 1'b1;
-      8'hec: // release DSPx reset
-        dspx_reset_out <= 1'b0;
+      8'heb: // control DSPx reset
+        dspx_reset_out <= param_data[0];
+      8'hec:
+        begin // set DAC properties
+          dac_vol_select_out <= param_data[2:0];
+          dac_palmode_out <= param_data[7];
+        end
       8'hed:
         featurebits_out <= param_data;
       8'hee:
@@ -415,7 +420,7 @@ always @(posedge clk) begin
           32'h3: begin
             dsp_feat_out <= {dsp_feat_tmp, param_data[7:0]};
           end
-        endcase        
+        endcase
     endcase
   end
 end

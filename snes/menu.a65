@@ -184,16 +184,7 @@ show_menu:
     lda [w_menu_addr], y
     sta window_tbank
     jsr draw_window
-    phb
-      lda w_menu_bank
-      pha
-      plb
-      ldx w_menu_addr
-      lda w_max_lbl_len
-      pha
-      jsr menu_print_entries
-      pla
-    plb
+    jsr show_menu_entries
     lda w_numentries
     sta listsel_max
 show_menu_loop:
@@ -220,16 +211,34 @@ show_menu_loop:
     cmp #MTYPE_FUNC
     beq show_menu_func
     cmp #MTYPE_VALUE
-    beq show_menu_editvalue
+    bne show_menu_cont
+    jmp show_menu_editvalue
 show_menu_cont:
     sep #$20 : .as
 ;    jsr pop_window
+    jsr show_menu_entries
     jmp show_menu_loop
 show_menu_out:
     sep #$20 : .as
     jsr pop_window
   plb
   FreeStack()
+  rts
+
+show_menu_entries:
+  php
+  sep #$20 : .as
+  phb
+    lda w_menu_bank
+    pha
+    plb
+    ldx w_menu_addr
+    lda w_max_lbl_len
+    pha
+    jsr menu_print_entries
+    pla
+  plb
+  plp
   rts
 
 show_menu_submenu:
@@ -282,7 +291,7 @@ show_menu_func_cont:
     phy
     jsr pop_window
     ply
-    bra show_menu_cont
+    jmp show_menu_cont
 
 show_menu_editvalue:
     phy
@@ -357,7 +366,7 @@ menu_measure:
 #define r_max_opt_len   $04
 #define r_title_len     $06
 ; ==== WORKING VARIABLES ON STACK ====
-  AllocStack()           ; implies PHP : PHD
+  AllocStack()           ; implies PHP : PHD : .al
   stz StackParam(r_max_lbl_len) ; initialize variable
   stz StackParam(r_max_opt_len) ; initialize variable
   stz StackParam(r_numentries)
@@ -413,9 +422,9 @@ menu_meas_no_set:
   jmp menu_meas_opt_set
 menu_meas_opt:
   sep #$20 : .as
-  lda !$4, x         ; calculate space needed to show options
-  cmp #MTYPE_VALUE   ; only for "value set" entry types
-  bne menu_meas_no_set
+;  lda !$4, x         ; calculate space needed to show options
+;  cmp #MTYPE_VALUE   ; only for "value set" entry types
+;  bne menu_meas_no_set
   lda !$b, x
   beq menu_meas_no_set ; no option
   cmp #$01           ; uint8
@@ -476,7 +485,12 @@ menu_meas_opt_keyval_skip
   bra menu_meas_opt_set
 menu_meas_opt_06      ; file select (16 characters)
   .as
+  cmp #$06
+  bne menu_meas_opt_07
   lda #$10
+  bra menu_meas_opt_set
+menu_meas_opt_07      ; date/time select (19 characters)
+  lda #$13
   bra menu_meas_opt_set
 menu_meas_opt_set
   cmp StackParam(r_max_opt_len)
@@ -585,9 +599,9 @@ menu_print_opt_string:
   sta @print_bank
   lda !$e, x
   sta w_entry_bank
-  lda !$4, x
-  cmp #MTYPE_VALUE
-  bne menu_print_opt_string_none
+;  lda !$4, x
+;  cmp #MTYPE_VALUE
+;  bne menu_print_opt_string_none
   lda !$b, x
   beq menu_print_opt_string_none
   cmp #$01
@@ -703,11 +717,13 @@ menu_print_opt_string_keyval:
     jsr right_align
   plb
   phx
-  jsr hiprint
+    jsr hiprint
   plx
   jmp menu_print_opt_string_out
 menu_print_opt_string_06:
   sep #$20 : .as
+  cmp #$06
+  bne menu_print_opt_string_07
   lda #$41
   sta @stringbuf
   lda #$00
@@ -729,7 +745,38 @@ menu_print_opt_string_06:
       plb
       jsr right_align
     plb
-  jsr hiprint
+    jsr hiprint
+  plx
+  bra menu_print_opt_string_out
+menu_print_opt_string_07:
+  sep #$20 : .as
+  lda #$02
+  sta @print_pal
+  lda #$13
+  sta @print_count
+  rep #$20 : .al
+  lda #!stringbuf
+  sta @print_src
+  tay
+  sep #$20 : .as
+  lda #^stringbuf
+  sta @print_bank
+  phx
+    phb
+      pha
+      plb
+      phy
+        lda w_entry_bank
+        ldx w_entry_addr
+        pha
+        phx
+          jsr rendertime
+        plx
+        pla
+      ply
+      jsr right_align
+    plb
+    jsr hiprint
   plx
 menu_print_opt_string_out:
   FreeStack()

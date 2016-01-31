@@ -97,6 +97,7 @@ wire [10:0] SD_DMA_PARTIAL_START;
 wire [10:0] SD_DMA_PARTIAL_END;
 
 wire [10:0] dac_addr;
+wire [2:0] dac_vol_select_out;
 wire [7:0] msu_volumerq_out;
 wire [6:0] msu_status_out;
 wire [31:0] msu_addressrq_out;
@@ -231,6 +232,8 @@ dac snes_dac(
   .DAC_STATUS(DAC_STATUS),
   .volume(msu_volumerq_out),
   .vol_latch(msu_volume_latch_out),
+  .vol_select(dac_vol_select_out),
+  .palmode(dac_palmode_out),
   .play(dac_play),
   .reset(dac_reset)
 );
@@ -320,6 +323,8 @@ mcu_cmd snes_mcu_cmd(
 //  .dac_volume_latch_out(dac_vol_latch),
   .dac_play_out(dac_play),
   .dac_reset_out(dac_reset),
+  .dac_vol_select_out(dac_vol_select_out),
+  .dac_palmode_out(dac_palmode_out),
   .msu_addr_out(msu_write_addr),
   .MSU_STATUS(msu_status_out),
   .msu_status_reset_out(msu_status_reset_bits),

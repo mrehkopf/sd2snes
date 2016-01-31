@@ -1,5 +1,6 @@
 #include "memmap.i65"
 #include "dma.i65"
+#include "stack.i65"
 
 timebox_data
 ; string offset, selection width, bcdtime offset
@@ -25,8 +26,32 @@ time_month
   .byt 3, 1
 
 time_init:
-  php
+#define p_time_addr $00
+#define p_time_bank $02
+#define _work_vars  $10
+#define w_time_addr $00
+#define w_time_bank $02
+#define w_time_work $03
+#define w_time_s1   $03
+#define w_time_s10  $04
+#define w_time_m1   $05
+#define w_time_m10  $06
+#define w_time_h1   $07
+#define w_time_h10  $08
+#define w_time_d1   $09
+#define w_time_d10  $0a
+#define w_time_mon  $0b
+#define w_time_y1   $0c
+#define w_time_y10  $0d
+#define w_time_y100 $0e
+#define w_time_tmp  $0f
+  AllocStack()
   sep #$20 : .as
+  lda StackParam(p_time_bank)
+  ldy StackParam(p_time_addr)
+  sta w_time_bank
+  sty w_time_addr
+  jsr time_make_working_copy
 ; draw window + current time setting
   lda #^text_clkset
   sta window_tbank
@@ -62,7 +87,17 @@ time_init:
   sta print_pal
   jsr hiprint
 time_update
-  jsr rendertime
+  lda #$00
+  pha
+  rep #$20 : .al
+  tdc
+  clc
+  adc #w_time_work
+  pha
+  sep #$20 : .as
+    jsr rendertime
+  plx
+  pla
   lda #^stringbuf
   sta print_bank
   ldx #!stringbuf
@@ -125,12 +160,18 @@ timeloop1
   bne timenosave
   beq timeloop1
 timesave
-  jsr settime
+  jsr time_save_working_copy
+  ; restore text area
+  jsr pop_window
+  FreeStack() : .as
+  sec
+  rts
 timenosave
 ; restore text area
   jsr pop_window
-  plp
-  rtl
+  FreeStack() : .as
+  clc
+  rts
 
 tkey_b
   inc time_cancel
@@ -185,22 +226,22 @@ time_key_up
   lda #$00
   xba
   tax
-  lda !time_s1, x
+  lda w_time_s1, x
   inc
   cmp #$0a
   bmi time_inc_minsec1_normal
-  stz !time_s1, x
-  lda !time_s10, x
+  stz w_time_s1, x
+  lda w_time_s10, x
   inc
   cmp #$06
   bmi time_inc_minsec10_normal
-  stz !time_s10, x
+  stz w_time_s10, x
   bra +
 time_inc_minsec10_normal
-  sta !time_s10, x
+  sta w_time_s10, x
   bra +
 time_inc_minsec1_normal
-  sta !time_s1, x
+  sta w_time_s1, x
 +
   rts
 
@@ -218,38 +259,38 @@ time_inc_mon_jmp
 
 time_inc_year_jmp
   jsr time_inc_year
-  lda time_mon
+  lda w_time_mon
   jsr time_adjust_mon
   rts
 
 time_inc_hour
-  lda time_h10
+  lda w_time_h10
   cmp #$02
   bne time_inc_hour_normal
-  lda time_h1
+  lda w_time_h1
   inc
   cmp #$04
   bmi +
-  stz time_h1
-  stz time_h10
+  stz w_time_h1
+  stz w_time_h10
   rts
 +
-  sta time_h1
+  sta w_time_h1
   rts
 time_inc_hour_normal
-  lda time_h1
+  lda w_time_h1
   inc
   cmp #$0a
   bmi +
-  stz time_h1
-  inc time_h10
+  stz w_time_h1
+  inc w_time_h10
   rts
 +
-  sta time_h1
+  sta w_time_h1
   rts
 
 time_inc_day
-  lda time_mon
+  lda w_time_mon
   dec
   asl
   xba
@@ -257,34 +298,34 @@ time_inc_day
   xba
   tax
   lda @time_month, x
-  cmp time_d10
+  cmp w_time_d10
   bne time_inc_day_normal
   inx
   jsr is_leapyear_feb
   lda @time_month, x
   dec
   adc #$00
-  cmp time_d1
+  cmp w_time_d1
   bpl +
-  stz time_d1
-  stz time_d10
+  stz w_time_d1
+  stz w_time_d10
 +
-  inc time_d1
+  inc w_time_d1
   rts
 time_inc_day_normal
-  lda time_d1
+  lda w_time_d1
   inc
   cmp #$0a
   bmi +
-  stz time_d1
-  inc time_d10
+  stz w_time_d1
+  inc w_time_d10
   rts
 +
-  sta time_d1
+  sta w_time_d1
   rts
 
 time_inc_mon
-  lda time_mon
+  lda w_time_mon
   inc
   cmp #13
   bmi +
@@ -294,14 +335,14 @@ time_inc_mon
   rts
 
 time_adjust_mon
-  sta time_mon
+  sta w_time_mon
   dec
   asl
   xba
   lda #$00
   xba
   tax
-  lda time_d10
+  lda w_time_d10
   cmp @time_month, x
   bcs time_mon_adjust
   rts
@@ -315,34 +356,34 @@ time_mon_adjust
   adc #$00
   plp
   bne time_mon_doadjust
-  cmp time_d1
+  cmp w_time_d1
   bcs +
 time_mon_doadjust
-  sta time_d1
+  sta w_time_d1
   dex
   lda @time_month, x
-  sta time_d10
+  sta w_time_d10
 +
   rts
 
 time_inc_year
-  lda time_y1
+  lda w_time_y1
   inc
   cmp #$0a
   bmi time_inc_y1_normal
-  stz time_y1
-  lda time_y10
+  stz w_time_y1
+  lda w_time_y10
   inc
   cmp #$0a
   bmi time_inc_y10_normal
-  stz time_y10
-  inc time_y100
+  stz w_time_y10
+  inc w_time_y100
   rts
 time_inc_y10_normal
-  sta time_y10
+  sta w_time_y10
   rts
 time_inc_y1_normal
-  sta time_y1
+  sta w_time_y1
   rts
 
 
@@ -360,24 +401,24 @@ time_key_down
   lda #$00
   xba
   tax
-  lda !time_s1, x
+  lda w_time_s1, x
   dec
   cmp #$ff
   bne time_dec_minsec1_normal
   lda #$09
-  sta !time_s1, x
-  lda !time_s10, x
+  sta w_time_s1, x
+  lda w_time_s10, x
   dec
   cmp #$ff
   bne time_dec_minsec10_normal
   lda #$05
-  sta !time_s10, x
+  sta w_time_s10, x
   bra +
 time_dec_minsec10_normal
-  sta !time_s10, x
+  sta w_time_s10, x
   bra +
 time_dec_minsec1_normal
-  sta !time_s1, x
+  sta w_time_s1, x
 +
   rts
 
@@ -395,46 +436,46 @@ time_dec_mon_jmp
 
 time_dec_year_jmp
   jsr time_dec_year
-  lda time_mon
+  lda w_time_mon
   jsr time_adjust_mon
   rts
 
 time_dec_hour
-  lda time_h1
+  lda w_time_h1
   dec
   cmp #$ff
   bne time_dec_h1_normal
-  lda time_h10
+  lda w_time_h10
   bne time_dec_h10_normal
   lda #$02
-  sta time_h10
+  sta w_time_h10
   lda #$03
-  sta time_h1
+  sta w_time_h1
   rts
 time_dec_h10_normal
   lda #$09
-  sta time_h1
-  dec time_h10
+  sta w_time_h1
+  dec w_time_h10
   rts
 time_dec_h1_normal
-  sta time_h1
+  sta w_time_h1
   rts
 
 time_dec_day
-  lda time_d10
+  lda w_time_d10
   beq +
-  lda time_d1
+  lda w_time_d1
   dec
   cmp #$ff
   bne time_dec_d1_normal
   bra time_dec_cont
-+ lda time_d1
++ lda w_time_d1
   dec
   bne time_dec_d1_normal
 time_dec_cont
-  lda time_d10
+  lda w_time_d10
   bne time_dec_d10_normal
-  lda time_mon
+  lda w_time_mon
   dec
   asl
   xba
@@ -442,26 +483,26 @@ time_dec_cont
   xba
   tax
   lda @time_month, x
-  sta time_d10
+  sta w_time_d10
   inx
   lda @time_month, x
   pha
   jsr is_leapyear_feb
   pla
   adc #$00
-  sta time_d1
+  sta w_time_d1
   rts
 time_dec_d10_normal
   lda #$09
-  sta time_d1
-  dec time_d10
+  sta w_time_d1
+  dec w_time_d10
   rts
 time_dec_d1_normal
-  sta time_d1
+  sta w_time_d1
   rts
 
 time_dec_mon
-  lda time_mon
+  lda w_time_mon
   dec
   bne +
   lda #12
@@ -470,28 +511,97 @@ time_dec_mon
   rts
 
 time_dec_year
-  lda time_y1
+  lda w_time_y1
   dec
   cmp #$ff
   bne time_dec_y1_normal
   lda #$09
-  sta time_y1
-  lda time_y10
+  sta w_time_y1
+  lda w_time_y10
   dec
   cmp #$ff
   bne time_dec_y10_normal
   lda #$09
-  sta time_y10
-  dec time_y100
+  sta w_time_y10
+  dec w_time_y100
   rts
 time_dec_y10_normal
-  sta time_y10
+  sta w_time_y10
   rts
 time_dec_y1_normal
-  sta time_y1
+  sta w_time_y1
   rts
 
+is_leapyear_feb
+  lda w_time_mon
+  cmp #$02
+  bne is_leapyear_feb_no
+  lda w_time_y10
+  asl
+  sta w_time_tmp
+  asl
+  asl
+  clc
+  adc w_time_tmp
+  clc
+  adc w_time_y1
+  sta w_time_tmp
+  and #$03
+  beq is_leapyear_4th ; every 4th year
+is_leapyear_feb_no
+  clc
   rts
+
+is_leapyear_4th       ; leapyear candidate
+  lda w_time_tmp      ; year=00?
+  beq +               ; then check century
+  sec                 ; else it's always a leapyear
+  rts
++
+  lda w_time_y100     ; century divisible by 4?
+  clc
+  adc #10
+  and #$03
+  beq is_leapyear_400th
+  clc
+  rts
+
+is_leapyear_400th
+  sec
+  rts
+
+time_make_working_copy:
+  php
+  rep #$20 : .al
+  ldy #$0000
+  ldx #$0000
+- lda [w_time_addr], y
+  sta w_time_work, x
+  inx
+  inx
+  iny
+  iny
+  cpy #$000c
+  bne -
+  plp
+  rts
+
+time_save_working_copy:
+  php
+  rep #$20 : .al
+  ldy #$0000
+  ldx #$0000
+- lda w_time_work, x
+  sta [w_time_addr], y
+  inx
+  inx
+  iny
+  iny
+  cpy #$000c
+  bne -
+  plp
+  rts
+#undef _work_vars
 
 gettime
   php
@@ -527,8 +637,16 @@ gettime
   rts
 
 rendertime
+; local variables
+#define _work_vars  $00
+; caller variables
+#define p_time_addr $00
+#define p_time_bank $02
+  AllocStack()
+  sep #$20 : .as
   ldx #!stringbuf
-  lda time_y100
+  ldy #$000b
+  lda [StackParam(p_time_addr)], y  ; y100
   and #$0f
   cmp #$0a
   bpl y_skip1
@@ -547,13 +665,15 @@ y_skip1
 y_skip2
   inx
   inx
-  lda time_y10
+  dey
+  lda [StackParam(p_time_addr)], y  ; y10
   and #$0f
   clc
   adc #$30
   sta !0,x
   inx
-  lda time_y1
+  dey
+  lda [StackParam(p_time_addr)], y  ; y1
   and #$0f
   clc
   adc #$30
@@ -562,7 +682,8 @@ y_skip2
   lda #$2d
   sta !0,x
   inx
-  lda time_mon
+  dey
+  lda [StackParam(p_time_addr)], y  ; mon
   and #$0f
   cmp #$0a
   bpl mon_skip1
@@ -584,12 +705,14 @@ mon_skip2
   lda #$2d
   sta !0,x
   inx
-  lda time_d10
+  dey
+  lda [StackParam(p_time_addr)], y  ; d10
   clc
   adc #$30
   sta !0,x
   inx
-  lda time_d1
+  dey
+  lda [StackParam(p_time_addr)], y  ; d1
   clc
   adc #$30
   sta !0,x
@@ -597,25 +720,14 @@ mon_skip2
   lda #$20
   sta !0,x
   inx
-  lda time_h10
+  dey
+  lda [StackParam(p_time_addr)], y  ; h10
   clc
   adc #$30
   sta !0,x
   inx
-  lda time_h1
-  clc
-  adc #$30
-  sta !0,x
-  inx
-  lda #$3a
-  sta !0,x
-  inx
-  lda time_m10
-  clc
-  adc #$30
-  sta !0,x
-  inx
-  lda time_m1
+  dey
+  lda [StackParam(p_time_addr)], y  ; h1
   clc
   adc #$30
   sta !0,x
@@ -623,55 +735,36 @@ mon_skip2
   lda #$3a
   sta !0,x
   inx
-  lda time_s10
+  dey
+  lda [StackParam(p_time_addr)], y  ; m10
   clc
   adc #$30
   sta !0,x
   inx
-  lda time_s1
+  dey
+  lda [StackParam(p_time_addr)], y  ; m1
+  clc
+  adc #$30
+  sta !0,x
+  inx
+  lda #$3a
+  sta !0,x
+  inx
+  dey
+  lda [StackParam(p_time_addr)], y  ; s10
+  clc
+  adc #$30
+  sta !0,x
+  inx
+  dey
+  lda [StackParam(p_time_addr)], y  ; s1
   clc
   adc #$30
   sta !0,x
   stz !1,x
+  FreeStack() : .as
   rts
-
-is_leapyear_feb
-  lda time_mon
-  cmp #$02
-  bne is_leapyear_feb_no
-  lda time_y10
-  asl
-  sta time_tmp
-  asl
-  asl
-  clc
-  adc time_tmp
-  clc
-  adc time_y1
-  sta time_tmp
-  and #$03
-  beq is_leapyear_4th ; every 4th year
-is_leapyear_feb_no
-  clc
-  rts
-
-is_leapyear_4th       ; leapyear candidate
-  lda time_tmp        ; year=00?
-  beq +               ; then check century
-  sec                 ; else it's always a leapyear
-  rts
-+
-  lda time_y100       ; century divisible by 4?
-  clc
-  adc #10
-  and #$03
-  beq is_leapyear_400th
-  clc
-  rts
-
-is_leapyear_400th
-  sec
-  rts
+#undef _work_vars
 
 settime
   lda time_y100
@@ -706,7 +799,7 @@ settime
 
 printtime:
   jsr gettime
-  jsr rendertime
+  jsr render_rtc_time
   lda listdisp
   clc
   adc #$0a
@@ -722,3 +815,32 @@ printtime:
   stz print_pal
   jsr hiprint
   rts
+
+render_rtc_time:
+  php
+  sep #$20 : .as
+  lda #^time_s1
+  pha
+  pea !time_s1
+    jsr rendertime
+  pla
+  pla
+  pla
+  plp
+  rts
+
+
+rtc_init:
+  php
+  sep #$20 : .as
+  lda #^time_s1
+  pha
+  pea !time_s1
+    jsr time_init
+  pla
+  pla
+  pla
+  bcc +
+  jsr settime
++ plp
+  rtl

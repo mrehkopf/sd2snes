@@ -347,7 +347,6 @@ uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr) {
 
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
   uint32_t count = 0;
-  uint32_t num = 0;
 
   FPGA_DESELECT();
   file_open(filename, FA_CREATE_ALWAYS | FA_WRITE);
@@ -364,7 +363,7 @@ void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
       count++;
     }
     FPGA_DESELECT();
-    num = file_write();
+    file_write();
     if(file_res) {
       uart_putc(0x30+file_res);
     }
@@ -468,7 +467,6 @@ uint64_t sram_gettime(uint32_t base_addr) {
 
 void load_dspx(const uint8_t *filename, uint8_t coretype) {
   UINT bytes_read;
-  DWORD filesize;
   uint16_t word_cnt;
   uint8_t wordsize_cnt = 0;
   uint16_t sector_remaining = 0;
@@ -492,7 +490,6 @@ void load_dspx(const uint8_t *filename, uint8_t coretype) {
   }
 
   file_open((uint8_t*)filename, FA_READ);
-  filesize = file_handle.fsize;
   if(file_res) {
     printf("Could not read %s: error %d\n", filename, file_res);
     return;

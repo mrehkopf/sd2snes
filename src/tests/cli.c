@@ -138,7 +138,7 @@ static int8_t parse_wordlist(char *wordlist) {
         return -1;
       }
 
-      if (tolower((int)c) != tolower((int)*cur)) {
+      if (tolower(c) != tolower(*cur)) {
         // Check for end-of-word
         if (cur != curchar && (*cur == ' ' || *cur == 0)) {
           // Partial match found, return that

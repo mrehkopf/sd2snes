@@ -47,6 +47,8 @@ enum system_states {
   SYS_RTC_STATUS = 0
 };
 
+FIL logfile;
+
 int main(void) {
   LPC_GPIO2->FIODIR = BV(4) | BV(5);
   LPC_GPIO1->FIODIR = BV(23) | BV(SNES_CIC_PAIR_BIT);
@@ -71,10 +73,13 @@ int main(void) {
   fpga_spi_init();
   spi_preinit();
   led_init();
+  led_std();
+  rdyled(1);
+  readled(0);
+  writeled(0);
  /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
   LPC_PINCON->PINSEL0 |= BV(20) | BV(21);                  /* MAT3.0 (FPGA clock) */
-led_pwm();
   sdn_init();
   printf("\n\nsd2snes mk.2\n============\nfw ver.: " VER "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
   printf("PCONP=%lx\n", LPC_SC->PCONP);
@@ -93,32 +98,53 @@ led_pwm();
                           "FPGA    ", "RAM     ", "SD DMA  ", "CLK     ",
                           "DAC     ", "SNES IRQ", "SNES RAM", "SNES PA "};
 
-  char *teststate_names [3] = { "no run", "\x1b[32;1mPassed\x1b[m", "\x1b[31;1mFAILED\x1b[m" };
+  char *teststate_names [3] = { "no run", "Passed", "FAILED" };
+  char *teststate_colornames [3] = { "no run", "\x1b[32;1mPassed\x1b[m", "\x1b[31;1mFAILED\x1b[m" };
 
   int testresults[12] = { NO_RUN, NO_RUN, NO_RUN, NO_RUN, NO_RUN,
                           NO_RUN, NO_RUN, NO_RUN, NO_RUN, NO_RUN,
                           NO_RUN, NO_RUN };
-
+  rdyled(0);
+  writeled(1);
+  readled(1);
+  f_open(&logfile, "/sd2snes/test_log.txt", FA_WRITE | FA_CREATE_ALWAYS);
+  rdyled(1);
+  writeled(0);
+  readled(0);
+  LOGPRINT("===log opened===\n");
+  f_sync(&logfile);
+  LOGPRINT("derp\n");
+  f_sync(&logfile);
   testresults[TEST_SD] = test_sd();
+  f_sync(&logfile);
 //testresults[TEST_USB] = test_usb();
   testresults[TEST_RTC] = test_rtc();
+  f_sync(&logfile);
   delay_ms(209);
   testresults[TEST_CIC] = test_cic();
+  f_sync(&logfile);
   testresults[TEST_FPGA] = test_fpga();
+  f_sync(&logfile);
   testresults[TEST_RAM] = test_mem();
+  f_sync(&logfile);
   testresults[TEST_SDDMA] = test_sddma();
-  printf("Loading SNES test ROM\n=====================\n");
+  f_sync(&logfile);
+  LOGPRINT("Loading SNES test ROM\n=====================\n");
+  f_sync(&logfile);
   load_rom((uint8_t*)"/sd2snes/test.bin", 0, LOADROM_WITH_RESET);
-  printf("\n\n\n");
+  LOGPRINT("\n\n\n");
   delay_ms(1000);
   testresults[TEST_CLK] = test_clk();
+  f_sync(&logfile);
   fpga_set_bram_addr(0x1fff);
   fpga_write_bram_data(0x01); // tell SNES test program to continue
   uint8_t snestest_irq_state, snestest_pa_state, snestest_mem_state, snestest_mem_bank;
   uint8_t snestest_irq_done = 0, snestest_pa_done = 0, snestest_mem_done = 0;
   uint8_t last_irq_state = 0x77, last_pa_state = 0x77, last_mem_state = 0x77, last_mem_bank = 0x77;
   uint32_t failed_addr = 0;
-  while(!(snestest_irq_done & snestest_pa_done & snestest_mem_done)) {
+  int snes_timeout = 0;
+  tick_t now = getticks();
+  while(!(snestest_irq_done & snestest_pa_done & snestest_mem_done) && !snes_timeout) {
     fpga_set_bram_addr(0);
     snestest_irq_state = fpga_read_bram_data();
     snestest_mem_state = fpga_read_bram_data();
@@ -128,7 +154,15 @@ led_pwm();
        || snestest_mem_state != last_mem_state
        || snestest_pa_state != last_pa_state
        || snestest_mem_bank != last_mem_bank) {
-      printf("SNES test status: IRQ: %02x   PA: %02x   MEM: %02x/%02x\r", snestest_irq_state, snestest_pa_state, snestest_mem_state, snestest_mem_bank);
+      LOGPRINT("SNES test status: IRQ: %02x   PA: %02x   MEM: %02x/%02x\n", snestest_irq_state, snestest_pa_state, snestest_mem_state, snestest_mem_bank);
+      f_sync(&logfile);
+      now = getticks();
+    } else {
+      /* no status reports from SNES in 5 seconds -> dead */
+      if(getticks() > now + 500) {
+        LOGPRINT("Timeout! SNES appears to be dead!\n");
+        snes_timeout = 1;
+      }
     }
     last_irq_state = snestest_irq_state;
     last_mem_state = snestest_mem_state;
@@ -139,25 +173,42 @@ led_pwm();
     if(snestest_mem_state == 0xff || snestest_mem_state == 0x5a) snestest_mem_done = 1;
     cli_entrycheck();
   }
-  printf("\n");
-  if(snestest_pa_state == 0xff) testresults[TEST_SNES_PA] = FAILED;
+  LOGPRINT("\n");
+  f_sync(&logfile);
+  if(snestest_pa_state == 0xff || !snestest_pa_done) testresults[TEST_SNES_PA] = FAILED;
   else testresults[TEST_SNES_PA] = PASSED;
-  if(snestest_irq_state == 0xff) testresults[TEST_SNES_IRQ] = FAILED;
+  if(snestest_irq_state == 0xff || !snestest_irq_done) testresults[TEST_SNES_IRQ] = FAILED;
   else testresults[TEST_SNES_IRQ] = PASSED;
-  if(snestest_mem_state == 0xff) {
+  if(!snestest_mem_done) {
+    testresults[TEST_SNES_RAM] = FAILED;
+  } else if(snestest_mem_state == 0xff) {
     testresults[TEST_SNES_RAM] = FAILED;
     fpga_set_bram_addr(4);
     failed_addr = fpga_read_bram_data();
     failed_addr |= fpga_read_bram_data() << 8;
     failed_addr |= fpga_read_bram_data() << 16;
-    printf("SNES MEM test FAILED (failed address: %06lx)\n", failed_addr);
+    LOGPRINT("SNES MEM test FAILED (failed address: %06lx)\n", failed_addr);
   }
   else testresults[TEST_SNES_RAM] = PASSED;
-  printf("\n\nTEST SUMMARY\n============\n\n");
-  printf("Test      Result\n----------------\n");
+  LOGPRINT("\n\nTEST SUMMARY\n============\n\n");
+  LOGPRINT("Test      Result\n----------------\n");
   int testcount;
   for(testcount=0; testcount < 12; testcount++) {
-    printf("%s  %s\n", testnames[testcount], teststate_names[testresults[testcount]]);
+    f_printf(&logfile, "%s  %s\n", testnames[testcount], teststate_names[testresults[testcount]]);
+    printf("%s  %s\n", testnames[testcount], teststate_colornames[testresults[testcount]]);
+  }
+  f_close(&logfile);
+  while(1) {
+    toggle_rdy_led();
+    toggle_read_led();
+    delay_ms(200);
+    toggle_read_led();
+    toggle_write_led();
+    delay_ms(200);
+    toggle_write_led();
+    toggle_rdy_led();
+    delay_ms(200);
+    cli_entrycheck();
   }
   cli_loop();
   while(1);

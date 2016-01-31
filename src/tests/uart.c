@@ -209,6 +209,8 @@ void uart_init(void) {
 
   if (div & 0xff0000) {
     UART_REGS->FDR = (div >> 16) & 0xff;
+  } else {
+    UART_REGS->FDR = 0x10;
   }
 
   /* reset and enable FIFO */

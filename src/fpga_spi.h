@@ -87,7 +87,7 @@
 #define FPGA_CMD_DSPWRITEPGM     (0xe9)
 #define FPGA_CMD_DSPWRITEDAT     (0xea)
 #define FPGA_CMD_DSPRESET        (0xeb)
-#define FPGA_CMD_DSPUNRESET      (0xec)
+#define FPGA_CMD_DACBOOST        (0xec)
 #define FPGA_CMD_SETFEATURE      (0xed)
 #define FPGA_CMD_SET213F         (0xee)
 #define FPGA_CMD_DSPFEAT         (0xef)
@@ -101,9 +101,6 @@
 void fpga_spi_init(void);
 uint8_t fpga_test(void);
 uint16_t fpga_status(void);
-void spi_fpga(void);
-void spi_sd(void);
-void spi_none(void);
 void set_mcu_addr(uint32_t);
 void set_dac_addr(uint16_t);
 void dac_play(void);
@@ -127,6 +124,7 @@ void fpga_reset_dspx_addr(void);
 void fpga_write_dspx_pgm(uint32_t data);
 void fpga_write_dspx_dat(uint16_t data);
 void fpga_dspx_reset(uint8_t reset);
+void fpga_set_dac_boost(uint8_t boost);
 void fpga_set_features(uint8_t feat);
 void fpga_set_213f(uint8_t data);
 void fpga_set_snescmd_addr(uint16_t addr);

@@ -58,8 +58,8 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0cheat\0fpgaconf\0dspfeat\0bsregs\0gameloop\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_EXIT, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16, CMD_MEMSET, CMD_CHEAT, CMD_FPGACONF, CMD_DSPFEAT, CMD_BSREGS, CMD_GAMELOOP };
+  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0cheat\0fpgaconf\0dspfeat\0bsregs\0gameloop\0dacboost\0";
+enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_EXIT, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16, CMD_MEMSET, CMD_CHEAT, CMD_FPGACONF, CMD_DSPFEAT, CMD_BSREGS, CMD_GAMELOOP, CMD_DACBOOST };
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
@@ -463,6 +463,11 @@ static void cmd_gameloop(void) {
   snes_set_mcu_cmd(SNES_CMD_GAMELOOP);
 }
 
+static void cmd_dacboost(void) {
+  int8_t boost = parse_unsigned(0, 255, 16);
+  if(boost != -1) fpga_set_dac_boost(boost);
+}
+
 /* ------------------------------------------------------------------------- */
 /*   CLI interface functions                                                 */
 /* ------------------------------------------------------------------------- */
@@ -621,6 +626,10 @@ void cli_loop(void) {
 
     case CMD_GAMELOOP:
       cmd_gameloop();
+      break;
+
+    case CMD_DACBOOST:
+      cmd_dacboost();
       break;
     }
   }
