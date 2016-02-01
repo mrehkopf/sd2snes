@@ -82,7 +82,7 @@ reg data_start_r;
 reg data_busy_r;
 reg ctrl_start_r;
 reg audio_error_r;
-reg [1:0] audio_ctrl_r;
+reg [2:0] audio_ctrl_r;
 reg [1:0] audio_status_r;
 
 initial begin
@@ -102,11 +102,11 @@ assign DBG_msu_reg_oe_falling = reg_oe_falling;
 assign DBG_msu_reg_we_rising = reg_we_rising;
 assign DBG_msu_address_ext_write_rising = msu_address_ext_write_rising;
 
-assign status_out = {msu_address_r[13], // 6
-                     audio_start_r,     // 5
-                     data_start_r,      // 4
-                     volume_start_r,    // 3
-                     audio_ctrl_r,      // 2:1
+assign status_out = {msu_address_r[13], // 7
+                     audio_start_r,     // 6
+                     data_start_r,      // 5
+                     volume_start_r,    // 4
+                     audio_ctrl_r,      // 3:1
                      ctrl_start_r};     // 0
 
 initial msu_address_r = 14'h1234;
@@ -171,7 +171,7 @@ always @(posedge clkin) begin
       end
       3'h7: begin
         if(!audio_busy_r) begin
-          audio_ctrl_r <= reg_data_in[1:0];
+          audio_ctrl_r <= reg_data_in[2:0];
           ctrl_start_r <= 1'b1;
         end
       end

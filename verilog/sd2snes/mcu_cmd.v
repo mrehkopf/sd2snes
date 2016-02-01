@@ -61,7 +61,7 @@ module mcu_cmd(
 
   // MSU data
   output [13:0] msu_addr_out,
-  input [6:0] MSU_STATUS,
+  input [7:0] MSU_STATUS,
   output [5:0] msu_status_reset_out,
   output [5:0] msu_status_set_out,
   output msu_status_reset_we,
@@ -170,7 +170,7 @@ wire mcu_nextaddr;
 
 reg DAC_STATUSr;
 reg SD_DMA_STATUSr;
-reg [6:0] MSU_STATUSr;
+reg [7:0] MSU_STATUSr;
 always @(posedge clk) begin
   DAC_STATUSr <= DAC_STATUS;
   SD_DMA_STATUSr <= SD_DMA_STATUS;
@@ -484,9 +484,9 @@ always @(posedge clk) begin
     else if (cmd_data[7:0] == 8'hF1)
       case (spi_byte_cnt[0])
         1'b1: // buffer status (1st byte)
-          MCU_DATA_IN_BUF <= {SD_DMA_STATUSr, DAC_STATUSr, MSU_STATUSr[6], 5'b0};
+          MCU_DATA_IN_BUF <= {SD_DMA_STATUSr, DAC_STATUSr, MSU_STATUSr[7], 5'b0};
         1'b0: // control status (2nd byte)
-          MCU_DATA_IN_BUF <= {2'b0, MSU_STATUSr[5:0]};
+          MCU_DATA_IN_BUF <= {1'b0, MSU_STATUSr[6:0]};
       endcase
     else if (cmd_data[7:0] == 8'hF2)
       case (spi_byte_cnt)

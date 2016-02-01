@@ -99,7 +99,7 @@ wire [10:0] dac_addr;
 wire [2:0] dac_vol_select_out;
 //wire [7:0] dac_volume;
 wire [7:0] msu_volumerq_out;
-wire [6:0] msu_status_out;
+wire [7:0] msu_status_out;
 wire [31:0] msu_addressrq_out;
 wire [15:0] msu_trackrq_out;
 wire [13:0] msu_write_addr;
