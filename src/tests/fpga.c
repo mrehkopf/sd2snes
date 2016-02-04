@@ -51,6 +51,8 @@
 #include "timer.h"
 #include "rle.h"
 
+extern FIL logfile;
+
 void fpga_set_prog_b(uint8_t val) {
   if(val)
     BITBAND(PROGBREG->FIOSET, PROGBBIT) = 1;
@@ -97,31 +99,47 @@ void fpga_pgm(uint8_t* filename) {
   uint8_t data;
   int i;
   tick_t timeout;
+  /* open configware file */
+  file_open(filename, FA_READ);
+  if(file_res) {
+    uart_putc('?');
+    uart_putc(0x30+file_res);
+    return;
+  }
+
   do {
     i=0;
-    timeout = getticks() + 100;
+    timeout = getticks() + 1;
     fpga_set_prog_b(0);
+    while(BITBAND(PROGBREG->FIOPIN, PROGBBIT)) {
+      if(getticks() > timeout) {
+        f_printf(&logfile, "PROGB is stuck high!\n");
+        f_close(&logfile);
+        led_panic(LED_PANIC_FPGA_PROGB_STUCK);
+      }
+    }
+    timeout = getticks() + 100;
     uart_putc('P');
     fpga_set_prog_b(1);
     while(!fpga_get_initb()){
       if(getticks() > timeout) {
-        printf("no response from FPGA trying to initiate configuration!\n");
-        led_panic();
+        f_printf(&logfile, "no response from FPGA trying to initiate configuration!\n");
+        f_close(&logfile);
+        led_panic(LED_PANIC_FPGA_NO_INITB);
       }
     };
+    timeout = getticks() + 100;
+    while(fpga_get_done()) {
+      if(getticks() > timeout) {
+        f_printf(&logfile, "DONE is stuck high!\n");
+        f_close(&logfile);
+        led_panic(LED_PANIC_FPGA_DONE_STUCK);
+      }
+    }
     LPC_GPIO2->FIOMASK1 = ~(BV(0));
     uart_putc('p');
 
-
-    /* open configware file */
-    file_open(filename, FA_READ);
-    if(file_res) {
-      uart_putc('?');
-      uart_putc(0x30+file_res);
-      return;
-    }
     uart_putc('C');
-
     for (;;) {
       data = rle_file_getc();
       i++;
@@ -130,14 +148,16 @@ void fpga_pgm(uint8_t* filename) {
     }
     uart_putc('c');
     file_close();
-    printf("fpga_pgm: %d bytes programmed\n", i);
+    f_printf(&logfile, "fpga_pgm: %d bytes programmed\n", i);
     delay_ms(1);
   } while (!fpga_get_done() && retries--);
   if(!fpga_get_done()) {
-    printf("FPGA failed to configure after %d tries.\n", MAXRETRIES);
-    led_panic();
+    f_printf(&logfile, "FPGA failed to configure after %d tries.\n", MAXRETRIES);
+    f_close(&logfile);
+    led_panic(LED_PANIC_FPGA_NOCONF);
   }
-  printf("FPGA configured\n");
+  f_printf(&logfile, "FPGA configured\n");
+  fpga_config = filename;
   fpga_postinit();
 }
 

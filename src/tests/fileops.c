@@ -56,10 +56,10 @@ void file_open_by_filinfo(FILINFO* fno) {
 }
 
 void file_open(uint8_t* filename, BYTE flags) {
-  if (disk_state == DISK_CHANGED) {
-    file_reinit();
-    newcard = 1;
-  }
+//  if (disk_state == DISK_CHANGED) {
+//    file_reinit();
+//    newcard = 1;
+//  }
   file_res = f_open(&file_handle, (TCHAR*)filename, flags);
   file_block_off = sizeof(file_buf);
   file_block_max = sizeof(file_buf);

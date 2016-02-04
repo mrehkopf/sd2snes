@@ -504,6 +504,8 @@ filesel_key_l:
   rts
 
 filesel_key_r:
+  stz direntry_xscroll
+  stz direntry_xscroll_state
   lda dirend_onscreen
   beq +
   jmp fileselupd_lastcursor

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "config.h"
 #include "crc.h"
+#include "crc16.h"
 #include "diskio.h"
 #include "spi.h"
 #include "timer.h"
@@ -11,6 +12,7 @@
 #include "fileops.h"
 #include "bits.h"
 #include "fpga_spi.h"
+#include "memory.h"
 
 #define MAX_CARDS 1
 
@@ -110,14 +112,17 @@
 uint8_t cmd[6]={0,0,0,0,0,0};
 uint8_t rsp[17];
 uint8_t csd[17];
+uint8_t cid[17];
+diskinfo0_t di;
 uint8_t ccs=0;
 uint32_t rca;
 
-enum trans_state { TRANS_NONE = 0, TRANS_READ, TRANS_WRITE };
+enum trans_state { TRANS_NONE = 0, TRANS_READ, TRANS_WRITE, TRANS_MID };
 enum cmd_state { CMD_RSP = 0, CMD_RSPDAT, CMD_DAT };
 
 int during_blocktrans = TRANS_NONE;
 uint32_t last_block = 0;
+uint16_t last_offset = 0;
 
 volatile int sd_changed;
 
@@ -155,6 +160,17 @@ static uint32_t getbits(void *buffer, uint16_t start, int8_t bits) {
     result = result >> -bits;
   }
   return result;
+}
+
+void sdn_checkinit(BYTE drv) {
+  if(disk_state == DISK_CHANGED) {
+    disk_initialize(drv);
+  }
+}
+
+uint8_t* sdn_getcid() {
+  sdn_checkinit(0);
+  return cid;
 }
 
 static inline void wiggle_slow_pos(uint16_t times) {
@@ -231,7 +247,6 @@ int get_and_check_datacrc(uint8_t *buf) {
   }
   if((crc0 != sdcrc0) || (crc1 != sdcrc1) || (crc2 != sdcrc2) || (crc3 != sdcrc3)) {
     printf("CRC mismatch\nSDCRC   CRC\n %04x    %04x\n %04x    %04x\n %04x    %04x\n %04x    %04x\n", sdcrc0, crc0, sdcrc1, crc1, sdcrc2, crc2, sdcrc3, crc3);
-while(1);
     return 1;
   }
   return 0;
@@ -347,7 +362,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
     default:
       rsplen = 6;
   }
-  if(dat && (buf==NULL)) {
+  if(dat && (buf==NULL) && !sd_offload) {
     printf("send_command_fast error: buf is null but data transfer expected.\n");
     return 0;
   }
@@ -374,7 +389,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
   BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 0;
 
   if(rsplen) {
-    uint32_t timeout=2000000;
+    uint32_t timeout=200000;
     /* wait for response */
     while((BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN)) && --timeout) {
       wiggle_fast_neg1();
@@ -383,7 +398,6 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
       printf("CMD%d timed out\n", cmdno);
       return 0; /* no response within timeout */
     }
-
     i=rsplen;
     uint8_t cmddata=0, datdata=0;
     while(i--) { /* process response */
@@ -448,20 +462,31 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
       state=CMD_DAT;
       j=datcnt;
       datshift=8;
+      timeout=2000000;
       DBG_SD printf("response over, waiting for data...\n");
       /* wait for data start bit on DAT0 */
       while((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) && --timeout) {
         wiggle_fast_neg1();
       }
-      DBG_SD if(!timeout) printf("timed out!\n");
+// printf("%ld\n", timeout);
+      if(!timeout) printf("timed out!\n");
       wiggle_fast_neg1(); /* eat the start bit */
       if(sd_offload) {
         if(sd_offload_partial) {
+          if(sd_offload_partial_start != 0) {
+            if(during_blocktrans == TRANS_MID) sd_offload_partial_start |= 0x8000;
+          }
+          if(sd_offload_partial_end != 512) {
+            sd_offload_partial_end |= 0x8000;
+          }
+          DBG_SD printf("new partial %d - %d\n", sd_offload_partial_start, sd_offload_partial_end);
           fpga_set_sddma_range(sd_offload_partial_start, sd_offload_partial_end);
           fpga_sddma(sd_offload_tgt, 1);
-          sd_offload_partial=0;
+//          sd_offload_partial=0;
+          last_offset=sd_offload_partial_end;
         } else {
           fpga_sddma(sd_offload_tgt, 0);
+          last_offset=0;
         }
         state=CMD_RSP;
         return rsplen;
@@ -578,12 +603,6 @@ int acmd_fast(uint8_t cmd, uint32_t param, uint8_t crc, uint8_t* dat, uint8_t* r
   return cmd_fast(cmd, param, crc, dat, rsp);
 }
 
-void sdn_checkinit(BYTE drv) {
-  if(disk_state == DISK_CHANGED) {
-    disk_initialize(drv);
-  }
-}
-
 int stream_datablock(uint8_t *buf) {
 //  uint8_t datshift=8;
   int j=512;
@@ -591,17 +610,24 @@ int stream_datablock(uint8_t *buf) {
   uint32_t timeout=1000000;
 
   DBG_SD printf("stream_datablock: wait for ready...\n");
-  while((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) && --timeout) {
-    wiggle_fast_neg1();
+  if(during_blocktrans != TRANS_MID) {
+    while((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) && --timeout) {
+      wiggle_fast_neg1();
+    }
+    DBG_SD if(!timeout) printf("timeout!\n");
+    wiggle_fast_neg1(); /* eat the start bit */
   }
-  DBG_SD if(!timeout) printf("timeout!\n");
-
-  wiggle_fast_neg1(); /* eat the start bit */
   if(sd_offload) {
     if(sd_offload_partial) {
+      if(sd_offload_partial_start != 0) {
+        if(during_blocktrans == TRANS_MID) sd_offload_partial_start |= 0x8000;
+      }
+      if(sd_offload_partial_end != 512) {
+        sd_offload_partial_end |= 0x8000;
+      }
+      DBG_SD printf("str partial %d - %d\n", sd_offload_partial_start, sd_offload_partial_end);
       fpga_set_sddma_range(sd_offload_partial_start, sd_offload_partial_end);
       fpga_sddma(sd_offload_tgt, 1);
-      sd_offload_partial=0;
     } else {
       fpga_sddma(sd_offload_tgt, 0);
     }
@@ -753,6 +779,7 @@ void send_datablock(uint8_t *buf) {
 }
 
 void read_block(uint32_t address, uint8_t *buf) {
+  DBG_SD printf("read_block addr=%08lx last_addr=%08lx  offld=%d/%d offst=%04x offed=%04x last_off=%04x\n", address, last_block, sd_offload, sd_offload_partial, sd_offload_partial_start, sd_offload_partial_end, last_offset);
   if(during_blocktrans == TRANS_READ && (last_block == address-1)) {
 //uart_putc('r');
 #ifdef CONFIG_SD_DATACRC
@@ -766,7 +793,21 @@ void read_block(uint32_t address, uint8_t *buf) {
 #else
     stream_datablock(buf);
 #endif
-    last_block=address;
+    last_block = address;
+    last_offset = sd_offload_partial_end & 0x1ff;
+    if(sd_offload_partial && sd_offload_partial_end != 512) {
+      during_blocktrans = TRANS_MID;
+    }
+    sd_offload_partial = 0;
+  } else if (during_blocktrans == TRANS_MID
+             && last_block == address
+             && last_offset == sd_offload_partial_start
+             && sd_offload_partial) {
+    sd_offload_partial_start |= 0x8000;
+    stream_datablock(buf);
+    during_blocktrans = TRANS_READ;
+    last_offset = sd_offload_partial_end & 0x1ff;
+    sd_offload_partial = 0;
   } else {
     if(during_blocktrans) {
 //      uart_putc('_');
@@ -774,7 +815,8 @@ void read_block(uint32_t address, uint8_t *buf) {
       /* send STOP_TRANSMISSION to end an open READ/WRITE_MULTIPLE_BLOCK */
       cmd_fast(STOP_TRANSMISSION, 0, 0x61, NULL, rsp);
     }
-    last_block=address;
+    during_blocktrans = TRANS_READ;
+    last_block = address;
     if(!ccs) {
       address <<= 9;
     }
@@ -786,8 +828,9 @@ void read_block(uint32_t address, uint8_t *buf) {
 #else
     cmd_fast(READ_MULTIPLE_BLOCK, address, 0, buf, rsp);
 #endif
-    during_blocktrans = TRANS_READ;
+    sd_offload_partial = 0;
   }
+//  printf("trans state = %d\n", during_blocktrans);
 }
 
 void write_block(uint32_t address, uint8_t* buf) {
@@ -814,9 +857,37 @@ void write_block(uint32_t address, uint8_t* buf) {
   }
 }
 
+/* send STOP_TRANSMISSION after multiple block write
+ * and reset during_blocktrans status */
+
+void flush_write(void) {
+  cmd_fast(STOP_TRANSMISSION, 0, 0x61, NULL, rsp);
+  wait_busy();
+  during_blocktrans = TRANS_NONE;
+}
+
 //
 // Public functions
 //
+
+DRESULT sdn_ioctl(BYTE drv, BYTE cmd, void *buffer) {
+  DRESULT res;
+  if(drv >= MAX_CARDS) {
+    res = STA_NOINIT|STA_NODISK;
+  } else {
+    switch(cmd) {
+      case CTRL_SYNC:
+        flush_write();
+        res = RES_OK;
+        break;
+
+      default:
+        res = RES_PARERR;
+    }
+  }
+  return res;
+}
+DRESULT disk_ioctl(BYTE drv, BYTE cmd, void *buffer) __attribute__ ((weak, alias("sdn_ioctl")));
 
 DRESULT sdn_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
   uint8_t sec;
@@ -833,7 +904,7 @@ DRESULT sdn_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
 }
 DRESULT disk_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sdn_read")));
 
-DRESULT sdn_initialize(BYTE drv) {
+DSTATUS sdn_initialize(BYTE drv) {
 
   uint8_t rsp[17]; /* space for response */
   int rsplen;
@@ -887,7 +958,11 @@ DRESULT sdn_initialize(BYTE drv) {
   }
 
   /* record CSD for getinfo */
-  cmd_slow(SEND_CSD, rca, 0, NULL, rsp);
+  cmd_slow(SEND_CSD, rca, 0, NULL, csd);
+  sdn_getinfo(drv, 0, &di);
+
+  /* record CID */
+  cmd_slow(SEND_CID, rca, 0, NULL, cid);
 
   /* select the card */
   if(cmd_slow(SELECT_CARD, rca, 0, NULL, rsp)) {
@@ -927,6 +1002,7 @@ void sdn_init(void) {
   BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 1;
   BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 1;
   BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN) = 1;
+  LPC_PINCON->PINMODE0 &= ~(BV(14) | BV(15));
   LPC_GPIO2->FIOPIN0 = 0x00;
   LPC_GPIO2->FIOMASK0 = ~0xf;
 }
@@ -1010,6 +1086,58 @@ void sdn_changed() {
       disk_state = DISK_REMOVED;
     }
     sd_changed = 0;
+  }
+}
+
+/* measure sd access time */
+void sdn_gettacc(uint32_t *tacc_max, uint32_t *tacc_avg) {
+  uint32_t sec1 = 0;
+  uint32_t sec2 = 0;
+  uint32_t time, time_max = 0;
+  uint32_t time_avg = 0LL;
+  uint32_t numread = 16384;
+  int i;
+  int sec_step = di.sectorcount / numread - 1;
+  if(disk_state == DISK_REMOVED) return;
+  sdn_checkinit(0);
+  for (i=0; i < 128; i++) {
+    sd_offload_tgt=2;
+    sd_offload=1;
+    sdn_read(0, NULL, 0, 1);
+    sd_offload_tgt=2;
+    sd_offload=1;
+    sdn_read(0, NULL, i*sec_step, 1);
+  }
+  for (i=0; i < numread && sram_readbyte(SRAM_CMD_ADDR) != 0x00 && disk_state != DISK_REMOVED; i++) {
+  /* reset timer */
+    LPC_RIT->RICTRL = 0;
+    sd_offload_tgt=2;
+    sd_offload=1;
+    sdn_read(0, NULL, sec1, 2);
+    sec1 += 2;
+  /* start timer */
+    LPC_RIT->RICOUNTER = 0;
+    LPC_RIT->RICTRL = BV(RITEN);
+    sd_offload_tgt=2;
+    sd_offload=1;
+    sdn_read(0, NULL, sec2, 1);
+  /* read timer */
+    time = LPC_RIT->RICOUNTER;
+/*    sd_offload_tgt=2;
+    sd_offload=1;
+    sdn_read(0, NULL, sec2, 15);*/
+    time_avg += time/16;
+    if(time > time_max) {
+      time_max = time;
+    }
+    sec2 += sec_step;
+  }
+  time_avg = time_avg / (i+1) * 16;
+  sd_offload=0;
+  LPC_RIT->RICTRL = 0;
+  if(disk_state != DISK_REMOVED) {
+    *tacc_max = time_max/(CONFIG_CPU_FREQUENCY / 1000000)-114;
+    *tacc_avg = time_avg/(CONFIG_CPU_FREQUENCY / 1000000)-114;
   }
 }
 

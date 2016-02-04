@@ -12,6 +12,17 @@
 #include "timer.h"
 #include "smc.h"
 
+#define MSU_FPGA_STATUS_SD_DMA_BUSY 0x8000
+#define MSU_FPGA_STATUS_DAC_READ_MSB 0x4000
+#define MSU_FPGA_STATUS_MSU_READ_MSB 0x2000
+#define MSU_FPGA_STATUS_AUDIO_START 0x40
+#define MSU_FPGA_STATUS_DATA_START 0x20
+#define MSU_FPGA_STATUS_CTRL_START 0x01
+
+#define MSU_FPGA_STATUS_CTRL_RESUME_FLAG_BIT 0x8
+#define MSU_FPGA_STATUS_CTRL_REPEAT_FLAG_BIT 0x4
+#define MSU_FPGA_STATUS_CTRL_PLAY_FLAG_BIT 0x2
+
 FIL msufile;
 FRESULT msu_res;
 DWORD msu_cltbl[CLTBL_SIZE] IN_AHBRAM;
@@ -24,10 +35,10 @@ uint32_t msu_loop_point = 0;
 uint32_t msu_page1_start = 0x0000;
 uint32_t msu_page2_start = 0x2000;
 uint32_t msu_page_size = 0x2000;
-uint16_t fpga_status_prev;
-uint16_t fpga_status_now;
+uint16_t fpga_status_prev = 0;
+uint16_t fpga_status_now = 0;
 
-void prepare_audio_track(uint16_t msu_track) {
+void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
   /* open file, fill buffer */
   char suffix[11];
   f_close(&file_handle);
@@ -44,7 +55,7 @@ void prepare_audio_track(uint16_t msu_track) {
     DBG_MSU1 printf("loop point: %ld samples\n", msu_loop_point);
     ff_sd_offload=1;
     sd_offload_tgt=1;
-    f_lseek(&file_handle, 8L);
+    f_lseek(&file_handle, audio_offset);
     set_dac_addr(0);
     dac_pause();
     dac_reset();
@@ -110,8 +121,8 @@ void prepare_data(uint32_t msu_offset) {
     } else printf("!!!WATWATWAT!!!\n");
   }
   /* clear bank bit to mask bank reset artifact */
-  fpga_status_now &= ~0x2000;
-  fpga_status_prev &= ~0x2000;
+  fpga_status_now &= ~MSU_FPGA_STATUS_MSU_READ_MSB;
+  fpga_status_prev &= ~MSU_FPGA_STATUS_MSU_READ_MSB;
   /* clear busy bit */
   set_msu_status(0x00, 0x10);
 }
@@ -141,6 +152,8 @@ int msu1_loop() {
   uint8_t msu_repeat = 0;
   uint16_t msu_track = 0;
   uint32_t msu_offset = 0;
+  int32_t resume_msu_track = -1;
+  uint32_t resume_msu_offset = 0;
   int msu_res;
   uint8_t cmd;
 
@@ -160,7 +173,7 @@ int msu1_loop() {
   sd_offload_tgt=2;
   f_read(&msufile, file_buf, 16384, &msu_data_bytes_read);
 
-  prepare_audio_track(0);
+  prepare_audio_track(0, 8L);
   prepare_data(0);
 /* audio_start, data_start, 0, audio_ctrl[1:0], ctrl_start */
   msu_res = SNES_RESET_NONE;
@@ -188,9 +201,9 @@ int msu1_loop() {
     fpga_status_now = fpga_status();
 
     /* Data buffer refill */
-    if((fpga_status_now & 0x2000) != (fpga_status_prev & 0x2000)) {
+    if((fpga_status_now & MSU_FPGA_STATUS_MSU_READ_MSB) != (fpga_status_prev & MSU_FPGA_STATUS_MSU_READ_MSB)) {
       DBG_MSU1 printf("data\n");
-      if(fpga_status_now & 0x2000) {
+      if(fpga_status_now & MSU_FPGA_STATUS_MSU_READ_MSB) {
         msu_addr = 0x0;
         msu_page1_start = msu_page2_start + msu_page_size;
       } else {
@@ -205,8 +218,8 @@ int msu1_loop() {
     }
 
     /* Audio buffer refill */
-    if((fpga_status_now & 0x4000) != (fpga_status_prev & 0x4000)) {
-      if(fpga_status_now & 0x4000) {
+    if((fpga_status_now & MSU_FPGA_STATUS_DAC_READ_MSB) != (fpga_status_prev & MSU_FPGA_STATUS_DAC_READ_MSB)) {
+      if(fpga_status_now & MSU_FPGA_STATUS_DAC_READ_MSB) {
         dac_addr = 0;
       } else {
         dac_addr = MSU_DAC_BUFSIZE/2;
@@ -217,22 +230,30 @@ int msu1_loop() {
       f_read(&file_handle, file_buf, MSU_DAC_BUFSIZE/2, &msu_audio_bytes_read);
     }
 
-    if(fpga_status_now & 0x0020) {
+    if(fpga_status_now & MSU_FPGA_STATUS_AUDIO_START) {
       /* get trackno */
       msu_track = get_msu_track();
       DBG_MSU1 printf("Audio requested! Track=%d\n", msu_track);
 
-      prepare_audio_track(msu_track);
+      prepare_audio_track(msu_track, (msu_track == resume_msu_track) ? resume_msu_offset : 8L);
+      if(msu_track == resume_msu_track) {
+        resume_msu_track = -1;
+      }
     }
 
-    if(fpga_status_now & 0x0010) {
+    if(fpga_status_now & MSU_FPGA_STATUS_DATA_START) {
       /* get address */
       msu_offset=get_msu_offset();
       prepare_data(msu_offset);
     }
 
-    if(fpga_status_now & 0x0001) {
-      if(fpga_status_now & 0x0004) {
+    if(fpga_status_now & MSU_FPGA_STATUS_CTRL_START) {
+      if(fpga_status_now & MSU_FPGA_STATUS_CTRL_RESUME_FLAG_BIT && !(fpga_status_now & MSU_FPGA_STATUS_CTRL_PLAY_FLAG_BIT)) {
+        resume_msu_track = msu_track;
+        resume_msu_offset = f_tell(&file_handle);
+      }
+
+      if(fpga_status_now & MSU_FPGA_STATUS_CTRL_REPEAT_FLAG_BIT) {
         msu_repeat = 1;
         set_msu_status(0x04, 0x01); /* set bit 2, reset bit 0 */
         DBG_MSU1 printf("Repeat set!\n");
@@ -242,7 +263,7 @@ int msu1_loop() {
         DBG_MSU1 printf("Repeat clear!\n");
       }
 
-      if(fpga_status_now & 0x0002) {
+      if(fpga_status_now & MSU_FPGA_STATUS_CTRL_PLAY_FLAG_BIT) {
         DBG_MSU1 printf("PLAY!\n");
         set_msu_status(0x02, 0x01); /* set bit 0, reset bit 1 */
         dac_play();

@@ -22,8 +22,10 @@ DSTATUS sdn_initialize(BYTE drv);
 DRESULT sdn_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count);
 DRESULT sdn_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count);
 DRESULT sdn_getinfo(BYTE drv, BYTE page, void *buffer);
+DRESULT sdn_ioctl(BYTE drv, BYTE cmd, void *buffer);
 
 void    sdn_changed(void);
-
+uint8_t* sdn_getcid(void);
+void    sdn_gettacc(uint32_t *tacc_max, uint32_t *tacc_avg);
 #endif
 

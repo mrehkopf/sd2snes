@@ -119,7 +119,7 @@
           6        reserved (0)
           5        MSU1 Audio request from SNES
           4        MSU1 Data request from SNES
-          3        reserved (0)
+          3        MSU1 Audio control status: 0=no resume, 1=resume
           2        MSU1 Audio control status: 0=no repeat, 1=repeat
           1        MSU1 Audio control status: 0=pause, 1=play
           0        MSU1 Audio control request

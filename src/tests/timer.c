@@ -1,6 +1,7 @@
 /* ___INGO___ */
 
 #include <arm/NXP/LPC17xx/LPC17xx.h>
+#include "power.h"
 #include "bits.h"
 #include "config.h"
 #include "timer.h"
@@ -8,15 +9,12 @@
 #include "uart.h"
 #include "sdnative.h"
 #include "snes.h"
-#include "led.h"
-/* bit definitions */
-#define RITINT 0
-#define RITEN  3
 
-#define PCRIT 16
 
 extern volatile int sd_changed;
 extern volatile int reset_changed;
+extern volatile int reset_pressed;
+
 volatile tick_t ticks;
 volatile int wokefromrit;
 
@@ -29,36 +27,15 @@ void SysTick_Handler(void) {
   ticks++;
   static uint16_t sdch_state = 0;
   static uint16_t reset_state = 0;
-  static uint16_t led_test_state = 0;
   sdch_state = (sdch_state << 1) | SDCARD_DETECT | 0xe000;
   if((sdch_state == 0xf000) || (sdch_state == 0xefff)) {
     sd_changed = 1;
   }
   reset_state = (reset_state << 1) | get_snes_reset() | 0xe000;
   if((reset_state == 0xf000) || (reset_state == 0xefff)) {
+    reset_pressed = (reset_state == 0xf000);
     reset_changed = 1;
   }
-  switch(led_test_state&0xc0) {
-    case 0xc0: led_test_state = 0; break;
-    case 0x00:
-      rdyled(1);
-      readled(0);
-      writeled(0);
-      break;
-
-    case 0x40:
-      rdyled(0);
-      readled(1);
-      writeled(0);
-      break;
-
-    case 0x80:
-      rdyled(0);
-      readled(0);
-      writeled(1);
-      break;
-  }
-//  led_test_state++;
   sdn_changed();
   SysTick_Hook();
 }

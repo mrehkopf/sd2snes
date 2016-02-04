@@ -6,8 +6,8 @@
 #include "xmodem.h"
 
 void xmodem_rxfile(FIL* fil) {
-  uint8_t rxbuf[XMODEM_BLKSIZE], sum=0, sender_sum;
-  uint8_t blknum, blknum2;
+  uint8_t rxbuf[XMODEM_BLKSIZE], sum=0/*, sender_sum*/;
+/*  uint8_t blknum, blknum2;*/
   uint8_t count;
   uint32_t totalbytes = 0;
   uint32_t totalwritten = 0;
@@ -19,13 +19,13 @@ void xmodem_rxfile(FIL* fil) {
     uart_putc(ASC_NAK);
   } while (uart_getc() != ASC_SOH);
   do {
-    blknum=uart_getc();
-    blknum2=uart_getc();
+    /*blknum=*/uart_getc();
+    /*blknum2=*/uart_getc();
     for(count=0; count<XMODEM_BLKSIZE; count++) {
       sum += rxbuf[count] = uart_getc();
       totalbytes++;
     }
-    sender_sum = uart_getc();
+    /*sender_sum =*/ uart_getc();
     res=f_write(fil, rxbuf, XMODEM_BLKSIZE, &written);
     totalwritten += written;
     uart_putc(ASC_ACK);
