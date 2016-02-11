@@ -134,6 +134,31 @@ int cfg_load() {
   return err;
 }
 
+int cfg_validity_check_recent_games() {
+  int err = 0, index, index_max, write_indices[10];
+  TCHAR fntmp[10][256];
+  file_open(LAST_FILE, FA_READ);
+  for(index = 0; index < 10 && !f_eof(&file_handle); index++) {
+    f_gets(fntmp[index], 255, &file_handle);
+  }
+  index_max = index+1;
+  file_close();
+  for(index = 0; index < index_max; index++) {
+    file_open((uint8_t*)fntmp[index], FA_READ);
+    write_indices[index] = file_status;
+    file_close();
+  }
+  file_open(LAST_FILE, FA_CREATE_ALWAYS | FA_WRITE);
+  for(index = 0; index < index_max; index++) {
+    if(write_indices[index] == FILE_OK) {
+      err = f_puts(fntmp[index], &file_handle);
+      err = f_putc(0, &file_handle);
+    }
+  }
+  file_close();
+  return err;
+}
+
 int cfg_add_last_game(uint8_t *fn) {
   int err = 0, index, index2, found = 0, foundindex = 0, written = 0;
   TCHAR fqfn[256];

@@ -53,6 +53,7 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
 int cfg_save(void);
 int cfg_load(void);
 
+int cfg_validity_check_recent_games(void);
 int cfg_add_last_game(uint8_t *fn);
 int cfg_get_last_game(uint8_t *fn, uint8_t index);
 void cfg_dump_recent_games_for_snes(uint32_t address);
