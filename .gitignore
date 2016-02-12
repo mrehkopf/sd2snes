@@ -101,12 +101,10 @@ utils/derle
 *.gvp
 *.drl
 *.cmd
-<<<<<<< HEAD
+src/utils/genhdr.o
 src/utils/genhdr
-snes/.cproject
-snes/.project
-src/.cproject
-src/.project
+src/utils/lpcchksum.o
+src/utils/lpcchksum
 src/bootldr/obj
 others/*
 verilog/*/ipcore_dir/*/*
@@ -114,8 +112,8 @@ verilog/*/_xmsgs/
 verilog/*/iseconfig/
 verilog/*/xst/
 verilog/*/xlnx_auto_0_xdb/
-=======
 .project
 .cproject
->>>>>>> 72a1859ba55291f4240732b4c07f495ce220e80c
 src/obj/sd2snes.hex
+snes/.settings/org.eclipse.cdt.core.prefs
+snes/.settings/org.eclipse.linuxtools.tools.launch.core.prefs
