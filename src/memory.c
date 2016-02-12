@@ -305,7 +305,6 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     if(romprops.ramsize_bytes) {
       sram_memset(SRAM_SAVE_ADDR, romprops.ramsize_bytes, 0);
 
-      printf("SRM file: %s\n", filename);
       load_sram(filename, SRAM_SAVE_ADDR);
       /* file not found error is ok (SRM file might not exist yet) */
       if(file_res == FR_NO_FILE) file_res = 0;
@@ -464,6 +463,7 @@ uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr) {
 uint32_t load_sram(uint8_t* filename, uint32_t base_addr) {
   char srmfile[256] = SAVE_BASEDIR;
   append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
+  printf("SRM file: %s\n", srmfile);
 
   set_mcu_addr(base_addr);
   UINT bytes_read;
