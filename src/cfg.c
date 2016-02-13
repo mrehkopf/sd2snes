@@ -138,6 +138,9 @@ int cfg_validity_check_recent_games() {
   int err = 0, index, index_max, write_indices[10];
   TCHAR fntmp[10][256];
   file_open(LAST_FILE, FA_READ);
+  if(file_status == FILE_ERR) {
+    return 0;
+  }
   for(index = 0; index < 10 && !f_eof(&file_handle); index++) {
     f_gets(fntmp[index], 255, &file_handle);
   }
