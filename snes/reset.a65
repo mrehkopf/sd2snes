@@ -38,8 +38,7 @@ NMI_ROUTINE:
   sta hdma_math+3
   bra math_cont
 lower_half
-  clc
-  sbc #110
+  sbc #111
   sta hdma_math+3
   lda #112
   sta hdma_math
