@@ -88,7 +88,7 @@ int main(void) {
  /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
   LPC_PINCON->PINSEL0 |= BV(20) | BV(21);                  /* MAT3.0 (FPGA clock) */
-led_pwm();
+  led_std();
   sdn_init();
   printf("\n\nsd2snes mk.2\n============\nfw ver.: " CONFIG_VERSION "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
 printf("PCONP=%lx\n", LPC_SC->PCONP);
