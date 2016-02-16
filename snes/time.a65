@@ -26,8 +26,10 @@ time_month
   .byt 3, 1
 
 time_init:
-#define p_time_addr $00
+#define p_time_x    $04
+#define p_time_y    $03
 #define p_time_bank $02
+#define p_time_addr $00
 #define _work_vars  $10
 #define w_time_addr $00
 #define w_time_bank $02
@@ -47,128 +49,95 @@ time_init:
 #define w_time_tmp  $0f
   AllocStack()
   sep #$20 : .as
-  lda StackParam(p_time_bank)
-  ldy StackParam(p_time_addr)
-  sta w_time_bank
-  sty w_time_addr
-  jsr time_make_working_copy
-; draw window + current time setting
-  lda #^text_clkset
-  sta window_tbank
-  ldx #!text_clkset
-  stx window_taddr
-  lda @time_win_x
-  sta window_x
-  lda @time_win_w
-  sta window_w
-  lda @time_win_y
-  sta window_y
-  lda @time_win_h
-  sta window_h
-  jsr push_window
-  jsr draw_window
-  jsr gettime
-  stz time_sel
-  stz time_exit
-  stz time_cancel
-  lda #^text_buttonB
-  sta print_bank
-  ldx #!text_buttonB
-  stx print_src
-  lda @time_win_x
-  inc
-  inc
-  sta print_x
-  lda @time_win_y
-  clc
-  adc #$5
-  sta print_y
-  lda #$01
-  sta print_pal
-  jsr hiprint
+  phb
+    lda #$80
+    pha
+    plb
+    lda StackParam(p_time_bank)
+    ldy StackParam(p_time_addr)
+    sta w_time_bank
+    sty w_time_addr
+    jsr time_make_working_copy
+    jsr gettime
+    stz time_sel
+    stz time_exit
+    stz time_cancel
 time_update
-  lda #$00
-  pha
-  rep #$20 : .al
-  tdc
-  clc
-  adc #w_time_work
-  pha
-  sep #$20 : .as
-    jsr rendertime
-  plx
-  pla
-  lda #^stringbuf
-  sta print_bank
-  ldx #!stringbuf
-  stx print_src
-  lda @time_win_x
-  clc
-  adc #$04
-  sta print_x
-  lda @time_win_y
-  clc
-  adc #$03
-  sta print_y
-  stz print_pal
-  jsr hiprint
-  lda time_sel
-  asl
-  clc
-  adc time_sel
-  xba
-  lda #$00
-  xba
-  tax
-  lda @timebox_data, x
-  clc
-  adc #$04
-  adc @time_win_x
-  sta bar_xl
-  lda @time_win_y
-  adc #$02
-  sta bar_yl
-  inx
-  lda @timebox_data, x
-  sta bar_wl
-  inx
-  lda @timebox_data, x
-  sta time_ptr
+    lda #$00
+    pha
+    rep #$20 : .al
+    tdc
+    clc
+    adc #w_time_work
+    pha
+    sep #$20 : .as
+      jsr rendertime
+    plx
+    pla
+    lda #^stringbuf
+    sta print_bank
+    ldx #!stringbuf
+    stx print_src
+    lda StackParam(p_time_x)
+    sta print_x
+    lda StackParam(p_time_y)
+    sta print_y
+    stz print_pal
+    jsr hiprint
+    lda time_sel
+    asl
+    clc
+    adc time_sel
+    xba
+    lda #$00
+    xba
+    tax
+    lda @timebox_data, x
+    clc
+    adc StackParam(p_time_x)
+    sta bar_xl
+    lda StackParam(p_time_y)
+    dec
+    sta bar_yl
+    inx
+    lda @timebox_data, x
+    sta bar_wl
+    inx
+    lda @timebox_data, x
+    sta time_ptr
 timeloop1
-  lda isr_done
-  lsr
-  bcc timeloop1
-  stz isr_done
-  jsr read_pad
-  lda pad_right
-  bne tkey_right
-  lda pad_left
-  bne tkey_left
-  lda pad_down
-  bne tkey_down
-  lda pad_up
-  bne tkey_up
-  lda pad_b
-  bne tkey_b
-  lda pad_a
-  bne tkey_a
+    lda isr_done
+    lsr
+    bcc timeloop1
+    stz isr_done
+    jsr read_pad
+    lda pad_right
+    bne tkey_right
+    lda pad_left
+    bne tkey_left
+    lda pad_down
+    bne tkey_down
+    lda pad_up
+    bne tkey_up
+    lda pad_b
+    bne tkey_b
+    lda pad_a
+    bne tkey_a
 ; do stuff
-  lda time_exit
-  bne timesave
+    lda time_exit
+    bne timesave
 ; set clock
-  lda time_cancel
-  bne timenosave
-  beq timeloop1
+    lda time_cancel
+    bne timenosave
+    beq timeloop1
 timesave
-  jsr time_save_working_copy
-  ; restore text area
-  jsr pop_window
+    jsr time_save_working_copy
+  plb
   FreeStack() : .as
   sec
   rts
 timenosave
-; restore text area
-  jsr pop_window
+  plb
   FreeStack() : .as
   clc
   rts
@@ -798,22 +767,30 @@ settime
   rts
 
 printtime:
-  jsr gettime
-  jsr render_rtc_time
-  lda listdisp
-  clc
-  adc #$0a
-  sta print_y
-  lda #$2b
-  sta print_x
-  lda #$40
-  sta print_count
-  lda #^stringbuf
-  sta print_bank
-  ldx #!stringbuf
-  stx print_src
-  stz print_pal
-  jsr hiprint
+  php
+  phb
+    sep #$20 : .as
+    lda #$80
+    pha
+    plb
+    jsr gettime
+    jsr render_rtc_time
+    lda listdisp
+    clc
+    adc #$0a
+    sta print_y
+    lda #$2b
+    sta print_x
+    lda #$40
+    sta print_count
+    lda #^stringbuf
+    sta print_bank
+    ldx #!stringbuf
+    stx print_src
+    stz print_pal
+    jsr hiprint
+  plb
+  plp
   rts
 
 render_rtc_time:
@@ -833,6 +810,27 @@ render_rtc_time:
 rtc_init:
   php
   sep #$20 : .as
+; draw window + current time setting
+  lda #^text_clkset
+  sta window_tbank
+  ldx #!text_clkset
+  stx window_taddr
+  lda @time_win_x
+  sta window_x
+  inc
+  inc
+  inc
+  pha ; p_time_x
+  lda @time_win_w
+  sta window_w
+  lda @time_win_y
+  sta window_y
+  inc
+  pha ; p_time_y
+  lda @time_win_h
+  sta window_h
+  jsr push_window
+  jsr draw_window
   lda #^time_s1
   pha
   pea !time_s1
@@ -840,7 +838,11 @@ rtc_init:
   pla
   pla
   pla
+  pla
+  pla
   bcc +
   jsr settime
-+ plp
++ ; restore text area
+  jsr pop_window
+  plp
   rtl
