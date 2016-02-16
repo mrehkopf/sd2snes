@@ -1,73 +1,79 @@
 read_pad:
   php
-  rep #$30 : .xl : .al
-  stz pad_b     ; (including y)
-  stz pad_select ; (including start)
-  stz pad_up    ; (including down)
-  stz pad_left  ; (including right)
-  stz pad_a     ; (including x)
-  stz pad_l     ; (including r)
+  phb
+    sep #$20 : .as
+    lda #$80
+    pha
+    plb
+    rep #$30 : .xl : .al
+    stz pad_b      ; (including y)
+    stz pad_select ; (including start)
+    stz pad_up     ; (including down)
+    stz pad_left   ; (including right)
+    stz pad_a      ; (including x)
+    stz pad_l      ; (including r)
 
 read_pad1
-  ldx pad1mem   ;byetUDLRaxlriiii
-  lda $4218
-  and #$000f
-  bne +
-  lda $4218
-+ sta pad1mem
-  lda $421a
-  and #$000f
-  bne +
-  lda $421a
-+ ora pad1mem
-  sta pad1mem
-  and #$0f00
-  bne read_pad1_count
-  stz pad1delay
+    ldx pad1mem   ;byetUDLRaxlriiii
+    lda $4218
+    and #$000f
+    bne +
+    lda $4218
++   sta pad1mem
+    lda $421a
+    and #$000f
+    bne +
+    lda $421a
++   ora pad1mem
+    sta pad1mem
+    and #$0f00
+    bne read_pad1_count
+    stz pad1delay
 read_pad1_cont1
-  txa
-  eor pad1mem
-  and pad1mem
-  sta pad1trig
-  lda #$0010
-  cmp pad1delay
-  bne read_pad1_cont2
-  stz pad1mem
-  lda #$000d
-  sta pad1delay
+    txa
+    eor pad1mem
+    and pad1mem
+    sta pad1trig
+    lda #$0010
+    cmp pad1delay
+    bne read_pad1_cont2
+    stz pad1mem
+    lda #$000d
+    sta pad1delay
 read_pad1_cont2
-  lda pad1trig
-  sep #$20 : .as
-  rol
-  rol pad_a
-  rol
-  rol pad_x
-  rol
-  rol pad_l
-  rol
-  rol pad_r
-  xba
-  rol
-  rol pad_b
-  rol
-  rol pad_y
-  rol
-  rol pad_select
-  rol
-  rol pad_start
-  rol
-  rol pad_up
-  rol
-  rol pad_down
-  rol
-  rol pad_left
-  rol
-  rol pad_right
+    lda pad1trig
+    sep #$20 : .as
+    rol
+    rol pad_a
+    rol
+    rol pad_x
+    rol
+    rol pad_l
+    rol
+    rol pad_r
+    xba
+    rol
+    rol pad_b
+    rol
+    rol pad_y
+    rol
+    rol pad_select
+    rol
+    rol pad_start
+    rol
+    rol pad_up
+    rol
+    rol pad_down
+    rol
+    rol pad_left
+    rol
+    rol pad_right
+  plb
   plp
   rts
 
 read_pad1_count
-  lda pad1delay
-  inc
-  sta pad1delay
-  bra read_pad1_cont1
+    lda pad1delay
+    inc
+    sta pad1delay
+    bra read_pad1_cont1
