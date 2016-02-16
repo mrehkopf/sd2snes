@@ -94,6 +94,7 @@
 #define CFG_CX4_SPEED               CFG_ADDR+$0019
 #define CFG_SKIN_NAME               CFG_ADDR+$001A
 #define CFG_CONTROL_TYPE            CFG_ADDR+$009A
+#define CFG_MSU_VOLUME_BOOST        CFG_ADDR+$009B
 
 #define WRAM_BAK                    $FF2000
 

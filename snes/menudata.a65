@@ -79,13 +79,13 @@ menu_enttab_cfg:
  .word !mtext_mm_cfg
  .byt ^mtext_mm_cfg
 ; ENTRIES
- .byt MTYPE_SUBMENU
- .word !test_mtext_title
- .byt ^test_mtext_title
- .word !menu_enttab_test
- .byt ^menu_enttab_test
- .byt 0
- .byt 0,0,0
+ ;.byt MTYPE_SUBMENU
+ ;.word !test_mtext_title
+ ;.byt ^test_mtext_title
+ ;.word !menu_enttab_test
+ ;.byt ^menu_enttab_test
+ ;.byt 0
+ ;.byt 0,0,0
 
  .byt MTYPE_FUNC
  .word !mtext_cfg_time
@@ -112,10 +112,10 @@ menu_enttab_cfg:
  .byt 0,0,0
 
  .byt MTYPE_SUBMENU
- .word !mtext_cfg_dsp
- .byt ^mtext_cfg_dsp
- .word !menu_enttab_dsp
- .byt ^menu_enttab_dsp
+ .word !mtext_cfg_chip
+ .byt ^mtext_cfg_chip
+ .word !menu_enttab_chip
+ .byt ^menu_enttab_chip
  .byt 0
  .byt 0,0,0
 
@@ -124,14 +124,6 @@ menu_enttab_cfg:
  .byt  ^mtext_cfg_ingame
  .word !menu_enttab_ingame
  .byt  ^menu_enttab_ingame
- .byt  0
- .byt  0,0,0
-
- .byt MTYPE_SUBMENU  ; FUNC?
- .word !mtext_cfg_regionpatch
- .byt  ^mtext_cfg_regionpatch
- .word !menu_enttab_regionpatch
- .byt  ^menu_enttab_regionpatch
  .byt  0
  .byt  0,0,0
 
@@ -160,17 +152,165 @@ menu_enttab_bsx:
  .word !CFG_BSX_USE_USERTIME
  .byt  ^CFG_BSX_USE_USERTIME
 
- .byt  MTYPE_FUNC
+ .byt  MTYPE_VALUE
  .word !mtext_bsx_time
  .byt  ^mtext_bsx_time
- .word !mfunc_set_bsx_time-1
- .byt  ^mfunc_set_bsx_time-1
+ .word 0
+ .byt  0
  .byt  OPTTYPE_TIME
  .word !CFG_BSX_TIME
  .byt  ^CFG_BSX_TIME
 
  .byt 0
 
+menu_enttab_browser:
+; HEADER
+ .byt  1
+ .word !mtext_cfg_browser
+ .byt  ^mtext_cfg_browser
+; ENTRIES
+ .byt  MTYPE_VALUE
+ .word !mtext_browser_sort
+ .byt  ^mtext_browser_sort
+ .word !kv_yesno
+ .byt  ^kv_yesno
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_SORT_DIRECTORIES
+ .byt  ^CFG_SORT_DIRECTORIES
+
+;.byt  MTYPE_VALUE
+;.word !mtext_browser_hide_ext
+;.byt  ^mtext_browser_hide_ext
+;.word !kv_yesno
+;.byt  ^kv_yesno
+;.byt  OPTTYPE_KVBYTE
+;.word !CFG_HIDE_EXTENSIONS
+;.byt  ^CFG_HIDE_EXTENSIONS
+
+ .byt  MTYPE_VALUE
+ .word !mtext_browser_screensaver
+ .byt  ^mtext_browser_screensaver
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_ENABLE_SCREENSAVER
+ .byt  ^CFG_ENABLE_SCREENSAVER
+
+;.byt  MTYPE_VALUE
+;.word !mtext_browser_screensaver_timeout
+;.byt  ^mtext_browser_screensaver_timeout
+;.word !kv_screensaver_timeout
+;.byt  ^kv_screensaver_timeout
+;.byt  OPTTYPE_KVBYTE
+;.word !CFG_SCREENSAVER_TIMEOUT
+;.byt  ^CFG_SCREENSAVER_TIMEOUT
+
+ .byt 0
+
+menu_enttab_chip:
+; HEADER
+ .byt 1
+ .word !mtext_cfg_chip
+ .byt  ^mtext_cfg_chip
+; ENTRIES
+ .byt  MTYPE_VALUE
+ .word !mtext_chip_cx4_speed
+ .byt  ^mtext_chip_cx4_speed
+ .word !kv_cx4_speed
+ .byt  ^kv_cx4_speed
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_CX4_SPEED
+ .byt  ^CFG_CX4_SPEED
+
+ .byt  MTYPE_VALUE
+ .word !mtext_chip_msu1_volume_boost
+ .byt  ^mtext_chip_msu1_volume_boost
+ .word !kv_volume_boost
+ .byt  ^kv_volume_boost
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_MSU_VOLUME_BOOST
+ .byt  ^CFG_MSU_VOLUME_BOOST
+
+ .byt 0
+
+menu_enttab_ingame:
+; HEADER
+ .byt 1
+ .word !mtext_cfg_ingame
+ .byt  ^mtext_cfg_ingame
+; ENTRIES
+ .byt  MTYPE_VALUE
+ .word !mtext_ingame_enable
+ .byt  ^mtext_ingame_enable
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_ENABLE_IRQ_HOOK
+ .byt  ^CFG_ENABLE_IRQ_HOOK
+
+ .byt  MTYPE_VALUE
+ .word !mtext_ingame_buttons
+ .byt  ^mtext_ingame_buttons
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_ENABLE_IRQ_BUTTONS
+ .byt  ^CFG_ENABLE_IRQ_BUTTONS
+
+ .byt  MTYPE_VALUE
+ .word !mtext_ingame_holdoff
+ .byt  ^mtext_ingame_holdoff
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_ENABLE_IRQ_HOLDOFF
+ .byt  ^CFG_ENABLE_IRQ_HOLDOFF
+
+ .byt  MTYPE_VALUE
+ .word !mtext_ingame_regionpatch
+ .byt  ^mtext_ingame_regionpatch
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_R213F_OVERRIDE
+ .byt  ^CFG_R213F_OVERRIDE
+
+ .byt 0
+
+menu_enttab_scic:
+; HEADER
+ .byt 1
+ .word !mtext_cfg_scic
+ .byt  ^mtext_cfg_scic
+; ENTRIES
+ .byt  MTYPE_VALUE
+ .word !mtext_scic_enable
+ .byt  ^mtext_scic_enable
+ .word !kv_yesno
+ .byt  ^kv_yesno
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_PAIR_MODE_ALLOWED
+ .byt  ^CFG_PAIR_MODE_ALLOWED
+
+ .byt  MTYPE_VALUE
+ .word !mtext_scic_vmode_menu
+ .byt  ^mtext_scic_vmode_menu
+ .word !kv_vmode_noauto
+ .byt  ^kv_vmode_noauto
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_VIDMODE_MENU
+ .byt  ^CFG_VIDMODE_MENU
+
+ .byt  MTYPE_VALUE
+ .word !mtext_scic_vmode_game
+ .byt  ^mtext_scic_vmode_game
+ .word !kv_vmode
+ .byt  ^kv_vmode
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_VIDMODE_GAME
+ .byt  ^CFG_VIDMODE_GAME
+
+ .byt 0
 mfunc_set_bsx_time:
   php
   sep #$20 : .as
@@ -194,15 +334,50 @@ kv_onoff:
 .word $0001, !text_on : .byt ^text_on
 .word $ffff
 
+kv_yesno:
+.word $0000, !text_no : .byt ^text_no
+.word $0001, !text_yes : .byt ^text_yes
+.word $ffff
+
 kv_vmode:
-.word $0000, !text_60Hz : .byt ^text_60Hz
-.word $0001, !text_50Hz : .byt ^text_50Hz
 .word $0002, !text_auto : .byt ^text_auto
+kv_vmode_noauto:
+.word $0001, !text_50Hz : .byt ^text_50Hz
+.word $0000, !text_60Hz : .byt ^text_60Hz
 .word $ffff
 
 kv_cx4_speed:
 .word $0000, !text_normal : .byt ^text_normal
 .word $0001, !text_fast : .byt ^text_fast
+.word $ffff
+
+kv_region:
+.word $0000, !text_off : .byt ^text_off
+.word $0001, !text_auto : .byt ^text_auto
+.word $0002, !text_pal : .byt ^text_pal
+.word $0003, !text_ntsc : .byt ^text_ntsc
+.word $ffff
+
+kv_screensaver_timeout:
+.word $0001, !text_1min : .byt ^text_1min
+.word $0002, !text_2min : .byt ^text_2min
+.word $0003, !text_3min : .byt ^text_3min
+.word $0004, !text_4min : .byt ^text_4min
+.word $0005, !text_5min : .byt ^text_5min
+.word $000a, !text_10min : .byt ^text_10min
+.word $000f, !text_15min : .byt ^text_15min
+.word $0014, !text_20min : .byt ^text_20min
+.word $001e, !text_30min : .byt ^text_30min
+.word $002d, !text_45min : .byt ^text_45min
+.word $003c, !text_60min : .byt ^text_60min
+.word $ffff
+
+kv_volume_boost:
+.word $0000, !text_off : .byt ^text_off
+.word $0001, !text_3_5db : .byt ^text_3_5db
+.word $0002, !text_6db : .byt ^text_6db
+.word $0003, !text_9_5db : .byt ^text_9_5db
+.word $0004, !text_12db : .byt ^text_12db
 .word $ffff
 
 menu_enttab_test:
@@ -269,13 +444,13 @@ test_mtext_entry_string       .byt "String Select", 0
 test_mtext_entry_kvbyte       .byt "8bit Key-Value Select", 0
 test_mtext_entry_kvword       .byt "16bit Key-Value Select", 0
 test_mtext_entry_file         .byt "File Select", 0
-test_mtext_entry_byte_ptab    .word $0000, $00ff
-test_mtext_entry_word_ptab    .word $0000, $ffff
+test_mtext_entry_byte_ptab    .word $000e, $00e9
+test_mtext_entry_word_ptab    .word $0052, $fecd
 test_mtext_entry_kvbyte_ptab  .word $0000, !text_on : .byt ^text_on
                               .word $0003, !text_off : .byt ^text_off
                               .word $0001, !text_yes : .byt ^text_yes
-                              .word $010e, !text_no : .byt ^text_no
-                              .word $0104, !text_fast : .byt ^text_fast
+                              .word $000e, !text_no : .byt ^text_no
+                              .word $0004, !text_fast : .byt ^text_fast
                               .word $ffff
 
 test_mtext_entry_kvword_ptab  .word $10f0, !text_50Hz : .byt ^text_50Hz

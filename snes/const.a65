@@ -167,12 +167,11 @@ window_wv       .byt 26
 window_ev       .byt 27
 window_tl       .byt 28
 window_tr       .byt 29
-text_clkset     .byt "Please set the clock.", 0
-text_buttonB    .byt "Dpad: sel/chg, A: OK", 0
-time_win_x      .byt 18
-time_win_y      .byt 15
-time_win_w      .byt 27
-time_win_h      .byt 7
+text_clkset     .byt "Please set the time", 0
+time_win_x      .byt 20
+time_win_y      .byt 17
+time_win_w      .byt 25
+time_win_h      .byt 3
 main_win_x      .byt 18
 main_win_y      .byt 11
 main_win_w      .byt 27
@@ -186,33 +185,36 @@ last_win_x      .byt 2
 last_win_y      .byt 12
 last_win_w      .byt 60
 
-text_ellipse    .byt 127, 128, 0
-text_mm_file    .byt "File Browser", 0
-text_mm_last    .byt "Recent games", 0
-mtext_mm_cfg    .byt "Configuration", 0
-mtext_mm_sysinfo .byt "System Information", 0
-mtext_cfg_time  .byt "Set Clock", 0
-mtext_cfg_bsx   .byt "BS-X Settings", 0
-mtext_cfg_browser .byt "Browser Settings", 0
-mtext_cfg_dsp   .byt "Chip options", 0
-mtext_cfg_ingame .byt "In-game functions", 0
-mtext_cfg_regionpatch .byt "Auto region patch", 0
-mtext_cfg_scic .byt "SuperCIC settings", 0
-mtext_bsx_timesource .byt "Satellaview clock", 0
-mtext_bsx_time  .byt "Set custom time", 0
-mtext_scic_enable .byt "Enable SuperCIC", 0
-mtext_scic_vmode_menu .byt "Menu video mode", 0
-mtext_scic_vmode_game .byt "Game video mode", 0
-mtext_browser_sort .byt "Sort directories", 0
-mtext_browser_hide_ext .byt "Hide file extensions", 0
-mtext_browser_screensaver .byt "Screensaver", 0
-mtext_ingame_enable .byt "In-game hook", 0
-mtext_ingame_buttons .byt "In-game buttons", 0
-mtext_ingame_holdoff .byt "Initial holdoff", 0
-mtext_dsp_cx4_speed .byt "Cx4 speed", 0
+text_ellipse                      .byt 127, 128, 0
+text_mm_file                      .byt "File Browser", 0
+text_mm_last                      .byt "Recent games", 0
+mtext_mm_cfg                      .byt "Configuration", 0
+mtext_mm_sysinfo                  .byt "System Information", 0
+mtext_cfg_time                    .byt "Set Clock", 0
+mtext_cfg_bsx                     .byt "BS-X Settings", 0
+mtext_cfg_browser                 .byt "Browser Settings", 0
+mtext_cfg_chip                    .byt "Chip Options", 0
+mtext_cfg_ingame                  .byt "In-game Settings", 0
+mtext_cfg_scic                    .byt "SuperCIC Settings", 0
+mtext_bsx_timesource              .byt "BS-X clock", 0
+mtext_bsx_time                    .byt "Custom time", 0
+mtext_scic_enable                 .byt "Enable SuperCIC", 0
+mtext_scic_vmode_menu             .byt "Menu video mode", 0
+mtext_scic_vmode_game             .byt "Game video mode", 0
+mtext_browser_sort                .byt "Sort directories", 0
+mtext_browser_hide_ext            .byt "Hide file extensions", 0
+mtext_browser_screensaver         .byt "Screensaver", 0
+mtext_browser_screensaver_timeout .byt "Fade screen after", 0
+mtext_ingame_enable               .byt "In-game hook", 0
+mtext_ingame_buttons              .byt "In-game buttons", 0
+mtext_ingame_holdoff              .byt "Initial holdoff", 0
+mtext_ingame_regionpatch          .byt "Auto region patch", 0
+mtext_chip_cx4_speed              .byt "Cx4 speed", 0
+mtext_chip_msu1_volume_boost      .byt "MSU-1 volume boost", 0
+
 text_statusbar_keys .byt "A:Select B:Back X:Menu", 0
-text_last       .byt "Recent games", 0
-text_system     .byt "CPU Rev.: x  PPU1 Rev.: y  PPU2 Rev.: z",0
+text_last           .byt "Recent games", 0
+text_system         .byt "CPU Rev.: x  PPU1 Rev.: y  PPU2 Rev.: z",0
 
 text_on         .byt "On", 0
 text_off        .byt "Off", 0
@@ -225,6 +227,25 @@ text_no         .byt "No", 0
 text_50Hz       .byt "50Hz", 0
 text_60Hz       .byt "60Hz", 0
 text_auto       .byt "Auto", 0
+text_pal        .byt "PAL", 0
+text_ntsc       .byt "NTSC", 0
+
+text_1min       .byt "1 min", 0
+text_2min       .byt "2 mins", 0
+text_3min       .byt "3 mins", 0
+text_4min       .byt "4 mins", 0
+text_5min       .byt "5 mins", 0
+text_10min      .byt "10 mins", 0
+text_15min      .byt "15 mins", 0
+text_20min      .byt "20 mins", 0
+text_30min      .byt "30 mins", 0
+text_45min      .byt "45 mins", 0
+text_60min      .byt "1 hour", 0
+
+text_3_5db      .byt "+3.5dBFS", 0
+text_6db        .byt "+6dBFS", 0
+text_9_5db      .byt "+9.5dBFS", 0
+text_12db       .byt "+12dBFS", 0
 
 text_spcplay    .byt "SPC Music Player", 0
 spcplay_win_x   .byt 15
