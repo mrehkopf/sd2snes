@@ -1,4 +1,20 @@
 
+killdma:
+  php
+  stz $420b
+  stz $420c
+
+  rep #$20 : .al
+  sep #$10 : .xs
+  lda #$ffff
+  ldy #$7c
+- dey
+  dey
+  sta $4300, y
+  bne -
+  plp
+  rts
+
 setup_hdma:
   sep #$20 : .as
   rep #$10 : .xl

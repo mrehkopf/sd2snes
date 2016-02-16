@@ -91,18 +91,6 @@ coldboot:       ; Regular, cold-start init
   stz $4200
   jmp @infloop  ; infinite loop in WRAM
 
-waitblank:
-  php
-  sep #$30 : .as : .xs
-- lda $4212
-  and #$80
-  bne -
-- lda $4212
-  and #$80
-  beq -
-  plp
-  rts
-
 colortest:
   sep #$20 : .as
   rep #$10 : .xl
@@ -684,21 +672,5 @@ detect_ultra16_found:
 detect_ultra16_out:
   lda #$55
   sta @$0021c0
-  plp
-  rts
-
-killdma:
-  php
-  stz $420b
-  stz $420c
-
-  rep #$20 : .al
-  sep #$10 : .xs
-  lda #$ffff
-  ldy #$7c
-- dey
-  dey
-  sta $4300, y
-  bne -
   plp
   rts

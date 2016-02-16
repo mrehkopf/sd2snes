@@ -1,6 +1,18 @@
 #include "memmap.i65"
 #include "stack.i65"
 
+waitblank:
+  php
+  sep #$30 : .as : .xs
+- lda @$004212
+  and #$80
+  bne -
+- lda @$004212
+  and #$80
+  beq -
+  plp
+  rts
+
 ; strlen
 ; arguments: DB=data bank, Y=offset (16-bit index!)
 ; return: Y=strlen
