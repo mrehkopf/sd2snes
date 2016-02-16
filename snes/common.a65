@@ -38,36 +38,36 @@ strlen:
 bin2dec16:
   phd
   phb
-  pea $0000
-  pld
-  php
-  rep #$20 : .al
-  sep #$10 : .xs
-  pha
-  ldx #$80
-  phx
-  plb
-  lda #$2020
-  sta stringbuf
-  sta stringbuf+2
-  lda #$0020
-  sta stringbuf+4
-  ldx #$04
-  pla
-- sta $4204
-  lda #$000a
-  sta $4206    ; now burn 16 cycles
-  pha : pla    ; 9
-  xba          ; 3
-  lda @$004216 ; 4 - load remainder
-  ora #$30
-  tay
-  sty stringbuf, x
-  dex
-  lda $4214 ; load quotient
-  beq +
-  bra -
-+ plp
+    pea $0000
+    pld
+    php
+    rep #$20 : .al
+    sep #$10 : .xs
+    pha
+      ldx #$80
+      phx
+      plb
+      lda #$2020
+      sta stringbuf
+      sta stringbuf+2
+      lda #$0020
+      sta stringbuf+4
+      ldx #$04
+    pla
+-   sta $4204
+    lda #$000a
+    sta $4206    ; now burn 16 cycles
+    pha : pla    ; 9
+    xba          ; 3
+    lda @$004216 ; 4 - load remainder
+    ora #$30
+    tay
+    sty stringbuf, x
+    dex
+    lda $4214 ; load quotient
+    beq +
+    bra -
++   plp
   plb
   pld
   rts
