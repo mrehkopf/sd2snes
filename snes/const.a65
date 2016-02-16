@@ -102,9 +102,9 @@ hdma_math_src
   .byt 1 ; these are filled in...
   .byt $00, $2a
   .byt 1 ; ...to move the color bar
-  .byt $00, $9f
+  .byt $00, $4f
   .byt 1
-  .byt $33, $4f
+  .byt $33, $9f
   .byt 7
   .byt $33, $40
   .byt 1
@@ -112,6 +112,10 @@ hdma_math_src
   .byt 1
   .byt $00, $e0
   .byt 0
+
+hdma_bar_color_src
+  .byt $2a, $4f, $9f, $40 ; normal color
+  .byt $36, $4f, $8a, $40 ; highlight color (active editing)
 
 oam_data_l
   .byt 88, 56, 0, $08
