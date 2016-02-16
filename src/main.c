@@ -253,12 +253,36 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
         case SNES_CMD_SET_ALLOW_PAIR:
           cfg_set_pair_mode_allowed(snes_get_mcu_param() & 0xff);
           break;
+/*        case SNES_CMD_SELECT_FILE:
+          menu_cmd_select_file();
+          cmd=0;
+          break;
+        case SNES_CMD_SELECT_LAST_FILE:
+          menu_cmd_select_last_file();
+          cmd=0;
+          break;*/
         case SNES_CMD_READDIR:
           menu_cmd_readdir();
           cmd=0; /* stay in menu loop */
           break;
         case SNES_CMD_GAMELOOP:
           /* enter game loop immediately */
+          break;
+        case SNES_CMD_SAVE_CFG:
+          /* save config */
+          cfg_get_from_menu();
+          cic_videomode(CFG.vidmode_menu);
+          cfg_save();
+          cmd=0; /* stay in menu loop */
+          break;
+        case SNES_CMD_LOAD_CHT:
+          /* load cheats */
+          cmd=0; /* stay in menu loop */
+          break;
+        case SNES_CMD_SAVE_CHT:
+          /* save cheats */
+// XXX          cheat_save_from_menu()
+          cmd=0; /* stay in menu loop */
           break;
         default:
           printf("unknown cmd: %d\n", cmd);

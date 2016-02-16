@@ -51,7 +51,7 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %s\n", CFG_BSX_USE_USERTIME, CFG.bsx_use_usertime ? "true" : "false");
   f_printf(&file_handle, "%s: %06lX%08lX\n", CFG_BSX_TIME, (uint32_t)(bcdtime>>32), (uint32_t)(bcdtime & 0xffffffffLL));
   f_puts("\n# Enable PPU region flag patching\n", &file_handle);
-  f_printf(&file_handle, "%s: %s\n", CFG_R213F_OVERRIDE, CFG.r213f_override ? "true" : "false");
+  f_printf(&file_handle, "%s: %d\n", CFG_R213F_OVERRIDE, CFG.r213f_override);
   f_puts("\n# IRQ hook related settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Overall enable IRQ hooks (required for in-game buttons & WRAM cheats)\n", CFG_ENABLE_IRQ_HOOK);
   f_printf(&file_handle, "#  %s: Enable in-game buttons (en/disable cheats, reset sd2snes...)\n", CFG_ENABLE_IRQ_BUTTONS);
@@ -200,6 +200,11 @@ void cfg_dump_recent_games_for_snes(uint32_t address) {
 /* make binary config available to menu */
 void cfg_load_to_menu() {
   sram_writeblock(&CFG, SRAM_MENU_CFG_ADDR, sizeof(cfg_t));
+}
+
+/* dump binary config from menu */
+void cfg_get_from_menu() {
+  sram_readblock(&CFG, SRAM_MENU_CFG_ADDR, sizeof(cfg_t));
 }
 
 void cfg_set_pair_mode_allowed(uint8_t allowed) {

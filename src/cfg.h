@@ -58,6 +58,7 @@ int cfg_get_last_game(uint8_t *fn, uint8_t index);
 void cfg_dump_recent_games_for_snes(uint32_t address);
 
 void cfg_load_to_menu(void);
+void cfg_get_from_menu(void);
 
 void cfg_set_vidmode_menu(cfg_vidmode_t vidmode);
 cfg_vidmode_t cfg_get_vidmode_menu(void);
