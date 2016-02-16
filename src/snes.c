@@ -348,7 +348,7 @@ uint64_t snescmd_gettime(void) {
   fpga_set_snescmd_addr(SNESCMD_MCU_PARAM);
   uint8_t data[12];
   for(int i=0; i<12; i++) {
-    data[i] = fpga_read_snescmd();
+    data[11-i] = fpga_read_snescmd();
   }
   return srtctime2bcdtime(data);
 }

@@ -124,20 +124,20 @@ void printtime(struct tm *time) {
 void bcdtime2srtctime(uint64_t bcdtime, uint8_t *srtctime) {
   uint8_t century = ((bcdtime >> 52) & 0xf) * 10
                   + ((bcdtime >> 48) & 0xf);
-  srtctime[0] = (century - 10) & 0xf;
-  srtctime[1] = (bcdtime >> 44) & 0xf;
-  srtctime[2] = (bcdtime >> 40) & 0xf;
+  srtctime[11] = (century - 10) & 0xf;
+  srtctime[10] = (bcdtime >> 44) & 0xf;
+  srtctime[9] = (bcdtime >> 40) & 0xf;
   uint8_t month = ((bcdtime >> 36) & 0xf) * 10
                 + ((bcdtime >> 32) & 0xf);
-  srtctime[3] = month;
-  srtctime[4] = (bcdtime >> 28) & 0xf;
-  srtctime[5] = (bcdtime >> 24) & 0xf;
-  srtctime[6] = (bcdtime >> 20) & 0xf;
-  srtctime[7] = (bcdtime >> 16) & 0xf;
-  srtctime[8] = (bcdtime >> 12) & 0xf;
-  srtctime[9] = (bcdtime >> 8) & 0xf;
-  srtctime[10] = (bcdtime >> 4) & 0xf;
-  srtctime[11] = bcdtime & 0xf;
+  srtctime[8] = month;
+  srtctime[7] = (bcdtime >> 28) & 0xf;
+  srtctime[6] = (bcdtime >> 24) & 0xf;
+  srtctime[5] = (bcdtime >> 20) & 0xf;
+  srtctime[4] = (bcdtime >> 16) & 0xf;
+  srtctime[3] = (bcdtime >> 12) & 0xf;
+  srtctime[2] = (bcdtime >> 8) & 0xf;
+  srtctime[1] = (bcdtime >> 4) & 0xf;
+  srtctime[0] = bcdtime & 0xf;
 }
 
 uint64_t srtctime2bcdtime(uint8_t *srtctime) {
@@ -147,7 +147,7 @@ uint64_t srtctime2bcdtime(uint8_t *srtctime) {
   uint64_t result = 0LL;
   uint8_t data;
   for(int i=0; i<12; i++) {
-    data = srtctime[i];
+    data = srtctime[11-i];
     data &= 0xf;
     switch(i) {
       case 0:
