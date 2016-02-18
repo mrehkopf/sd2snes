@@ -56,7 +56,8 @@
 #define MENU_ERR_NOIMPL    (0x3)
 #define MENU_ERR_CARDWP    (0x4)
 
-#define SNES_RESET_PULSELEN_MS (1)
+#define SNES_RELEASE_RESET_DELAY_US (2)
+#define SNES_RESET_PULSELEN_MS (5)
 
 #define SNES_BOOL_TRUE  (0x01)
 #define SNES_BOOL_FALSE (0x00)
@@ -94,6 +95,7 @@ typedef struct __attribute__ ((__packed__)) _status {
   uint8_t rtc_valid;
   uint8_t num_recent_games;
   uint8_t is_u16;
+  uint8_t u16_cfg;
 } status_t;
 
 uint8_t crc_valid;

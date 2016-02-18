@@ -300,11 +300,11 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   set_saveram_mask(rammask);
   set_rom_mask(rommask);
   readled(0);
+
   if(flags & LOADROM_WITH_SRAM) {
     if(romprops.ramsize_bytes) {
       sram_memset(SRAM_SAVE_ADDR, romprops.ramsize_bytes, 0);
-      strcpy(strrchr((char*)filename, (int)'.'), ".srm");
-      printf("SRM file: %s\n", filename);
+
       load_sram(filename, SRAM_SAVE_ADDR);
       /* file not found error is ok (SRM file might not exist yet) */
       if(file_res == FR_NO_FILE) file_res = 0;
@@ -350,7 +350,11 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     printf("resetting SNES\n");
     fpga_dspx_reset(1);
     snes_reset(1);
-    delay_ms(SNES_RESET_PULSELEN_MS);
+    if(ST.is_u16 && (ST.u16_cfg & 0x01)) {
+      delay_ms(60*SNES_RESET_PULSELEN_MS);
+    } else {
+      delay_ms(SNES_RESET_PULSELEN_MS);
+    }
     snescmd_prepare_nmihook();
     cheat_yaml_load(filename);
     cheat_yaml_save(filename);
@@ -457,14 +461,25 @@ uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr) {
 }
 
 uint32_t load_sram(uint8_t* filename, uint32_t base_addr) {
+  char srmfile[256] = SAVE_BASEDIR;
+  append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
+  printf("SRM file: %s\n", srmfile);
+
   set_mcu_addr(base_addr);
   UINT bytes_read;
   DWORD filesize;
-  file_open(filename, FA_READ);
+  file_open((uint8_t*)srmfile, FA_READ);
   filesize = file_handle.fsize;
   if(file_res) {
-    printf("load_sram: could not open %s, res=%d\n", filename, file_res);
-    return 0;
+    /* try to move srm-file from old place to new one and to load again */
+    strcpy(strrchr((char*)filename, (int)'.'), ".srm");
+    f_rename ((TCHAR*)filename, (TCHAR*)srmfile);
+    file_open((uint8_t*)srmfile, FA_READ);
+    filesize = file_handle.fsize;
+    if(file_res) {
+      printf("load_sram: could not open %s, res=%d\n", srmfile, file_res);
+      return 0;
+    }
   }
   for(;;) {
     bytes_read = file_read();
@@ -524,8 +539,11 @@ uint32_t load_bootrle(uint32_t base_addr) {
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
   uint32_t count = 0;
 
+  char srmfile[256] = SAVE_BASEDIR;
+  append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
+
   FPGA_DESELECT();
-  file_open(filename, FA_CREATE_ALWAYS | FA_WRITE);
+  file_open((uint8_t*)srmfile, FA_CREATE_ALWAYS | FA_WRITE);
   if(file_res) {
     uart_putc(0x30+file_res);
     return;

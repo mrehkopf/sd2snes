@@ -1,5 +1,4 @@
 *.cod
-*.hex
 *.lst
 *.o
 *.diff
@@ -102,3 +101,19 @@ utils/derle
 *.gvp
 *.drl
 *.cmd
+src/utils/genhdr.o
+src/utils/genhdr
+src/utils/lpcchksum.o
+src/utils/lpcchksum
+src/bootldr/obj
+others/*
+verilog/*/ipcore_dir/*/*
+verilog/*/_xmsgs/
+verilog/*/iseconfig/
+verilog/*/xst/
+verilog/*/xlnx_auto_0_xdb/
+.project
+.cproject
+src/obj/sd2snes.hex
+snes/.settings/org.eclipse.cdt.core.prefs
+snes/.settings/org.eclipse.linuxtools.tools.launch.core.prefs

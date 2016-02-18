@@ -60,6 +60,8 @@
 #define LOADROM_WITH_RESET  (2)
 #define LOADROM_WAIT_SNES   (4)
 
+#define SAVE_BASEDIR    ("/sd2snes/saves/")
+
 uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags);
 uint32_t load_spc(uint8_t* filename, uint32_t spc_data_addr, uint32_t spc_header_addr);
 uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
