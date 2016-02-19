@@ -1,9 +1,10 @@
 map:
 
-RAM:0x01~0x0f	Seed 1 (own key seed)?
-RAM:0x10	send/receive buffer?
-RAM:0x11	Stream ID received from LOCK
-RAM:0x12~0x1f	Seed 2 (Stream ID part of lock seed)?
+RAM:0x00  compare buffer for calculated stream value
+RAM:0x01-0x0f Seed 1
+RAM:0x10  send/receive buffer
+RAM:0x11  Stream ID received from LOCK
+RAM:0x12-0x1f Seed 2
 
 main:
   goto initstream;
@@ -13,64 +14,65 @@ mainloop:
 mainloop2:
   x=a;
   for(x=a; x<16; x++) {
-	main_inner1:
-	  bm=0x0;
-	  call 34b(0x00+x) // prepare next stream bit (send)
-	  bm=0x1;
-	  call 34b(0x10+x) // prepare next stream bit (recv)
-	  call 131 // bm=1; bl=0; a=P0
-	  a=P0;
-	  if(P0.0) die; // WTF? P0.0 is an output!
-	  if(P0.1) die;
-	
-	  a=0x0;
-	  a<->RAM[0x10];   // load A with next output stream bit (nibble)
-	  P0=a;            // LSB -> Key output
-	  nop;             // wait
-	  a=P0;            // read from lock
-	  P0=0;	           // clear output port
-	  RAM[0x10]=a;     // store next input stream bit in RAM
-	  bl=3; a=P3       // P3.0, which is usually UNCONNECTED,
-                           // somehow determines how to deal with
-                           // the input stream. This is SNES CIC specific.
-          // NOTE: For commonly used key operation / pin mapping we must assume
-          // that P3.0 is HIGH (1). (otherwise the key would die immediately)
-	  bl=0
-	  if(P3.0){
-	    if(RAM[0x10].1) { 		       // input stream bit set?
-	      call 159 // bm=0; bl=0; a=P0     // switch "bank"
-	      if(RAM[0x00].0) {                // matches calculated bit?
-	        goto 13d                       // then go on
-	      } else goto 157 // DIE           // else gtfo
-	    } else goto input_stream_bit_clear // input stream bit clear, check
-	  } else goto 175
-	  
-	input_stream_bit_clear:                // input stream bit cleared
-	  call 159 // bm=0; bl=0; a=P0         // switch "bank"
-	  if(RAM[0x00].0) {                    // calculated bit doesn't match?
-	    goto 157 // DIE                    // then die
-	  } else goto 17a // nop; goto 13d     // else go on
-	
-	175:
-	  if(RAM[0x10].0) {                    // this is essentially the same 
-	    call 159 // bm=0; bl=0; a=P0       // as above but 
-	    if(RAM[0x00].1) {                  // input stream bit is set in
-	      goto 13d;                        // RAM[0x10].0 instead of .1 and
-	    } else goto 157 // DIE             // calculated from RAM[0x00].1
- 	  } else {                             // instead of .0, if P3.0 is 0.
-	    call 159 // bm=0; bl=0; a=P0
-	    if(RAM[0x00].1) {
-	      goto 157 // DIE
-	    } else goto 17a // nop; goto 13d
-	  }
-	
-	13d:                                   // continue
-	  a=x;
-	  a++;                                 // loop to next of 15 stream
-	  if(!overflow) {                      // bits, afterwards:
-	    x=a;
-	    goto main_inner1;
-	  }
+  main_inner1:
+    bm=0x0;
+    call 34b(0x00+x) // prepare next stream bit (stream 1)
+    bm=0x1;
+    call 34b(0x10+x) // prepare next stream bit (stream 2)
+    call 131 // bm=1; bl=0; a=P0
+    a=P0;
+    // Die on detected high levels (usually marking a failure on
+    // the other side). Check both data lines as either may be
+    // an input at the moment.
+    if(P0.0) die;
+    if(P0.1) die;
+
+    a=0x0;
+    a<->RAM[0x10];   // load A with next output stream bit (nibble)
+    P0=a;            // LSB -> Key output
+    nop;             // wait
+    a=P0;            // read from lock
+    P0=0;            // clear output port
+    RAM[0x10]=a;     // store next input stream bit in RAM
+    bl=3; a=P3       // P3.0 is a special register that swaps the input/output
+                     // direction of P0.0 and P0.1.
+
+    bl=0
+    if(P3.0){
+      if(RAM[0x10].1) {                  // input stream bit set?
+        call 159 // bm=0; bl=0; a=P0     // switch "bank"
+        if(RAM[0x00].0) {                // matches calculated bit?
+          goto 13d                       // then go on
+        } else goto 157 // DIE           // else gtfo
+      } else goto input_stream_bit_clear // input stream bit clear, check
+    } else goto 175
+
+  input_stream_bit_clear:                // input stream bit cleared
+    call 159 // bm=0; bl=0; a=P0         // switch "bank"
+    if(RAM[0x00].0) {                    // calculated bit doesn't match?
+      goto 157 // DIE                    // then die
+    } else goto 17a // nop; goto 13d     // else go on
+
+  175:
+    if(RAM[0x10].0) {                    // this is essentially the same
+      call 159 // bm=0; bl=0; a=P0       // as above but
+      if(RAM[0x00].1) {                  // input stream bit is set in
+        goto 13d;                        // RAM[0x10].0 instead of .1 and
+      } else goto 157 // DIE             // calculated from RAM[0x00].1
+    } else {                             // instead of .0, if P3.0 is 0.
+      call 159 // bm=0; bl=0; a=P0
+      if(RAM[0x00].1) {
+        goto 157 // DIE
+      } else goto 17a // nop; goto 13d
+    }
+
+  13d:                                   // continue
+    a=x;
+    a++;                                 // loop to next of 15 stream
+    if(!overflow) {                      // bits, afterwards:
+      x=a;
+      goto main_inner1;
+    }
   } // for x=1 to 15
   (x=0)                                        // 
   call 04a // set Resets (dummy for key mode)  // output reset levels
@@ -110,7 +112,6 @@ mangle:
   bl=0x1;
   a+=RAM[bm:0x1]+1;
   RAM[bm:0x1]=a;
-    ==> RAM[bm:0x1]+=RAM[bm:0xf]+1;
   a=RAM[bm:0x1]; bl++;
   a+=RAM[bm:0x2]+1;
   a=~a;
@@ -147,10 +148,11 @@ mangle_inner1:
 return;
 
 37a:
-  
+
 34b: input x='bl'
   // take a nibble out of the seed (indexed by bm:x)
-  // and set [bm:0], i.e. RAM[0x00] or RAM[0x10] like this:
+  // set [bm:0], i.e. RAM[0x00] or RAM[0x10]
+  // and mask according to current data stream direction (P3.0)
   // if(seednibble&1) {
   //     result=0b0000;
   // } else {
@@ -164,8 +166,9 @@ return;
   a=RAM[bm:x];
   RAM[bm:0] = RAM[bm:x].0 ? 0x7 : 0x0;
 
-  a=P3; // WTF is P3????
+  a=P3; // direction register for P0
   bl=0;
+  // mask prepared bits for writing to correct output pin later
   if (P3.0==1) {
     RAM[bm:0] &= 0b1101;
   } else {
@@ -175,7 +178,6 @@ return
 
 initstream:
 if(P0.3==0) {
-  if(P0.3==0) {
     A=RAM[0x11]; RAM[0x11]=0xf
     input_stream_id_bit;
     if !(A.1) RAM[0x11]&=0b0111
@@ -186,7 +188,7 @@ if(P0.3==0) {
     input_stream_id_bit;
     if !(A.1) RAM[0x11]&=0b1011
     nop
-    
+
     RAM[0x01]=0xb;
     RAM[0x02]=0x1;
     RAM[0x03]=0x4;
@@ -219,7 +221,6 @@ if(P0.3==0) {
     RAM[0x1f]=0xc;
 
     mainloop;
-  }
 }
 
 
