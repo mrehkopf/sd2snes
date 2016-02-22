@@ -310,6 +310,8 @@ clean_list :
 	$(Q)$(REMOVE) $(OBJ)
 	$(Q)$(REMOVE) $(OBJDIR)/autoconf.h
 	$(Q)$(REMOVE) $(OBJDIR)/*.bin
+	$(Q)$(REMOVE) $(OBJDIR)/firmware.img
+	$(Q)$(REMOVE) $(OBJDIR)/.DS_Store
 	$(Q)$(REMOVE) $(LST)
 	$(Q)$(REMOVE) $(CSRC:.c=.s)
 	$(Q)$(REMOVE) $(CSRC:.c=.d)

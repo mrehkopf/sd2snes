@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Wed Sep 17 20:05:45 2014
+# Date: Wed Feb 10 08:16:35 2016
 #
 ##############################################################
 #
@@ -46,7 +46,7 @@ CSET axi_id_width=4
 CSET axi_slave_type=Memory_Slave
 CSET axi_type=AXI4_Full
 CSET byte_size=9
-CSET coe_file=cx4rom.coe
+CSET coe_file=.\cx4rom.coe
 CSET collision_warnings=ALL
 CSET component_name=cx4_datrom
 CSET disable_collision_warnings=false
@@ -102,4 +102,4 @@ CSET write_width_b=24
 MISC pkg_timestamp=2011-03-11T08:24:14Z
 # END Extra information
 GENERATE
-# CRC: 306e6f6c
+# CRC: 39f75344

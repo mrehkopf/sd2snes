@@ -50,7 +50,8 @@ volatile int reset_pressed;
 status_t ST = {
   .rtc_valid = 0xff,
   .num_recent_games = 0,
-  .is_u16 = 0
+  .is_u16 = 0,
+  .u16_cfg = 0xff
 };
 
 void prepare_reset() {
@@ -108,46 +109,64 @@ uint8_t get_snes_reset_state(void) {
   tick_t rising_ticks_tmp = getticks();
 
   static uint8_t resbutton=0, resbutton_prev=0;
-  static uint8_t pushes=0, reset_short_flag=0;
+  static uint8_t pushes=0, reset_flag=0;
 
-  uint8_t release_flag = 0;
+  uint8_t first_detection=0;
 
   uint8_t result=SNES_RESET_NONE;
 
-  /* reset had been pushed; now check if something else is holding
-     the SNES in reset */
-  if(reset_short_flag) {
+  /* first check: Had the reset been pushed?
+     If yes: - check for igr's double reset time and ...
+             - release  */
+  if(reset_flag) {
+    /* 230ms are gone (time for igr's double reset)
+       if time is exceeded, set pushes and reset_flag to zero  */
+    if(rising_ticks_tmp > rising_ticks + 22) {
+      pushes = 0;
+      reset_flag = 0;
+    }
+
+    /* release reset from the sd2snes-side */
     snes_reset(0);
-    delay_ms(SNES_RESET_PULSELEN_MS);
-  }
-  resbutton = get_snes_reset();
+    delay_us(SNES_RELEASE_RESET_DELAY_US);
 
-  if(rising_ticks_tmp > rising_ticks + 22) {/* reset push counter after 230ms (time for igr's double reset) */
-    pushes = 0;
-    reset_short_flag = 0;
   }
 
-  if(resbutton && !resbutton_prev) { /* push, reset tick-timer */
-    pushes++;
-    rising_ticks = getticks();
-  } else if(!resbutton && resbutton_prev) { /* button released */
+  /* now start new cycle */
+  resbutton = get_snes_reset(); /* SNES in reset? */
+
+  if(resbutton) { /* Yes (e.g. reset-button is pressed) */
+
     result = SNES_RESET_SHORT;
-    reset_short_flag = 1;
-    release_flag = 1;
+    reset_flag = 1;
+
+    if(!resbutton_prev) { /* push, reset tick-timer */
+      pushes++;
+      rising_ticks = getticks();
+      if(pushes == 1) {
+        first_detection = 1;
+      }
+      if(pushes == 2) { /* second push within 230ms -> initiate long reset */
+        result = SNES_RESET_LONG;
+      }
+    }
+
+    if(rising_ticks_tmp > rising_ticks + 99) { /* a (normal) long reset is detected */
+      result = SNES_RESET_LONG;
+    }
+
+   /* no need to have the reset_flag set anymore
+      also reset the number of pushes */
+    if(result == SNES_RESET_LONG){
+      pushes = 0;
+      reset_flag = 0;
+    }
   }
 
-  if(pushes == 2) {/* we had a second push  -> initiate long reset */
-    result = SNES_RESET_LONG;
-    reset_short_flag = 0;
-  }
-
-  if(resbutton && rising_ticks_tmp > rising_ticks + 99) /* a (normal) long reset detected */
-    result = SNES_RESET_LONG;
-
-  if(reset_short_flag) {
+  if(reset_flag) {
     snes_reset(1);
-    if(release_flag)
-      delay_ms(170);
+    if(first_detection)
+      delay_ms(190);
     else
       delay_ms(SNES_RESET_PULSELEN_MS);
   }

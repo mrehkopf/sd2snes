@@ -5,7 +5,7 @@
 #include "cic.h"
 
 char *cicstatenames[4] = { "CIC_OK", "CIC_FAIL", "CIC_PAIR", "CIC_SCIC" };
-char *cicstatefriendly[4] = {"Original or no CIC", "Original CIC(failed)", "SuperCIC enhanced", "SuperCIC detected, not used"};
+char *cicstatefriendly[4] = {"Original or no CIC", "Original CIC (failed)", "SuperCIC enhanced", "SuperCIC detected, not used"};
 
 void print_cic_state() {
   printf("CIC state: %s\n", get_cic_statename(get_cic_state()));

@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Sat Mar  8 21:18:02 2014
+# Date: Wed Feb 10 07:58:54 2016
 #
 ##############################################################
 #
@@ -21,7 +21,7 @@ SET addpads = false
 SET asysymbol = true
 SET busformat = BusFormatAngleBracketNotRipped
 SET createndf = false
-SET designentry = Advanced
+SET designentry = Verilog
 SET device = xc3s400
 SET devicefamily = spartan3
 SET flowvendor = Other
@@ -33,7 +33,7 @@ SET removerpms = false
 SET simulationfiles = Behavioral
 SET speedgrade = -4
 SET verilogsim = true
-SET vhdlsim = true
+SET vhdlsim = false
 # END Project Options
 # BEGIN Select
 SELECT Block_Memory_Generator xilinx.com:ip:blk_mem_gen:7.3
@@ -105,4 +105,4 @@ CSET write_width_b=24
 MISC pkg_timestamp=2012-11-19T16:22:25Z
 # END Extra information
 GENERATE
-# CRC: 7d7b5fea
+# CRC: 63068f7d

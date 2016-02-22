@@ -142,9 +142,9 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     if(firstboot) {
       cfg_load();
       cfg_save();
+      cic_init(cfg_is_pair_mode_allowed());
+      cfg_validity_check_recent_games();
     }
-    cic_init(cfg_is_pair_mode_allowed());
-    firstboot = 0;
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
     cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
 
@@ -178,6 +178,12 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     printf("SNES GO!\n");
     snes_reset(1);
     fpga_reset_srtc_state();
+    if(!firstboot) {
+      if(ST.is_u16 && (ST.u16_cfg & 0x01)) {
+        delay_ms(59*SNES_RESET_PULSELEN_MS);
+      }
+    }
+    firstboot = 0;
     delay_ms(SNES_RESET_PULSELEN_MS);
     sram_writebyte(32, SRAM_CMD_ADDR);
     if(get_cic_state() == CIC_PAIR) {
@@ -214,7 +220,6 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           get_selected_name(file_lfn);
           printf("Selected name: %s\n", file_lfn);
           cfg_add_last_game(file_lfn);
-          cfg_save();
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;
         case SNES_CMD_SETRTC:
@@ -247,7 +252,6 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           cfg_get_last_game(file_lfn, snes_get_mcu_param() & 0xff);
           printf("Selected name: %s\n", file_lfn);
           cfg_add_last_game(file_lfn);
-          cfg_save();
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;
         case SNES_CMD_SET_ALLOW_PAIR:

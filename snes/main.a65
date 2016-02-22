@@ -517,6 +517,10 @@ store_wram_routines:
   ldx #!wram_wait_mcu_src
   ldy #!WRAM_WAIT_MCU
   mvn $7e, $c0
+  lda #$007f
+  ldx #!wram_load_ultra16_cfg_src
+  ldy #!WRAM_LOAD_ULTRA16_CFG
+  mvn $7e, $c0
   plb
   plp
   rts
@@ -565,6 +569,21 @@ wram_wait_mcu_src:
 - lda @SNES_CMD
   cmp #$55
   bne -
+  rtl
+
+; *=$7ef200
+wram_load_ultra16_cfg_src:
+  .as
+  lda @$0021c1
+  and #$fe
+  sta @$0021c1
+  lda @$c70000
+  pha
+  lda @$0021c1
+  ora #$01
+  sta @$0021c1
+  pla
+  sta @ST_U16_CFG
   rtl
 
 game_handshake:
@@ -669,6 +688,10 @@ detect_ultra16:
 detect_ultra16_found:
   lda @$0021c2
   sta @ST_IS_U16
+  jsl @WRAM_LOAD_ULTRA16_CFG
+  lda @$0021c1
+  and #$fb
+  sta @$0021c1
 detect_ultra16_out:
   lda #$55
   sta @$0021c0
