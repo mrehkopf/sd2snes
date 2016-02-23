@@ -30,7 +30,7 @@ module msu(
   input reg_oe_falling,
   input reg_oe_rising,
   input reg_we_rising,
-  output [6:0] status_out,
+  output [7:0] status_out,
   output [7:0] volume_out,
   output volume_latch_out,
   output [31:0] addr_out,
