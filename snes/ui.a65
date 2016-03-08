@@ -136,42 +136,6 @@ loprint_end
   plb
   rts
 
-backup_screen:
-; MVN: X=source, Y=dest, A=count
-;      imm1=srcbk, imm2=dstbk
-  phb
-  php
-  rep #$30 : .xl : .al
-  ldx #!BG1_TILE_BUF+64*9
-  ldy #!BG1_TILE_BAK+64*9
-  lda @textdmasize
-  mvn ^BG1_TILE_BUF, ^BG1_TILE_BAK
-  ldx #!BG2_TILE_BUF+64*9
-  ldy #!BG2_TILE_BAK+64*9
-  lda @textdmasize
-  mvn ^BG2_TILE_BUF, ^BG2_TILE_BAK
-  plp
-  plb
-  rts
-
-restore_screen:
-; MVN: X=source, Y=dest, A=count
-;      imm1=srcbk, imm2=dstbk
-  phb
-  php
-  rep #$30 : .xl : .al
-  ldx #!BG1_TILE_BAK+64*9
-  ldy #!BG1_TILE_BUF+64*9
-  lda @textdmasize
-  mvn ^BG1_TILE_BAK, ^BG1_TILE_BUF
-  ldx #!BG2_TILE_BAK+64*9
-  ldy #!BG2_TILE_BUF+64*9
-  lda @textdmasize
-  mvn ^BG2_TILE_BAK, ^BG2_TILE_BUF
-  plp
-  plb
-  rts
-
 draw_window:
   phb
   php
@@ -198,8 +162,6 @@ draw_window:
   sta !stringbuf,y
   dey
   bne -
-
-
 ; print to text buffer
   lda #$03
   sta print_pal
