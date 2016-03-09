@@ -243,6 +243,7 @@ $(OBJDIR)/autoconf.h: $(CONFIG) | $(OBJDIR)
 $(OBJDIR)/%.bin: $(OBJDIR)/%.elf
 	$(E) "  BIN    $@"
 	$(Q)$(OBJCOPY) -O binary $< $@
+	../utils/lpcchksum $@
 
 $(OBJDIR)/%.hex: $(OBJDIR)/%.elf
 	$(E) "  HEX    $@"
