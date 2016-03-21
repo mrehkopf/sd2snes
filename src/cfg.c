@@ -135,7 +135,7 @@ int cfg_load() {
 }
 
 int cfg_validity_check_recent_games() {
-  int err = 0, index, index_max, write_indices[10];
+  int err = 0, index, index_max, write_indices[10], rewrite_lastfile = 0;
   TCHAR fntmp[10][256];
   file_open(LAST_FILE, FA_READ);
   if(file_status == FILE_ERR) {
@@ -144,21 +144,29 @@ int cfg_validity_check_recent_games() {
   for(index = 0; index < 10 && !f_eof(&file_handle); index++) {
     f_gets(fntmp[index], 255, &file_handle);
   }
-  index_max = index+1;
+  if(!f_eof(&file_handle))
+    index_max = 10;
+  else
+    index_max = index;
   file_close();
   for(index = 0; index < index_max; index++) {
     file_open((uint8_t*)fntmp[index], FA_READ);
     write_indices[index] = file_status;
+    if(file_status != FILE_OK)
+      rewrite_lastfile = 1;
     file_close();
   }
-  file_open(LAST_FILE, FA_CREATE_ALWAYS | FA_WRITE);
-  for(index = 0; index < index_max; index++) {
-    if(write_indices[index] == FILE_OK) {
-      err = f_puts(fntmp[index], &file_handle);
-      err = f_putc(0, &file_handle);
+  if(rewrite_lastfile) {
+    f_rename ((TCHAR*)LAST_FILE, (TCHAR*)LAST_FILE_BAK);
+    file_open(LAST_FILE, FA_CREATE_ALWAYS | FA_WRITE);
+    for(index = 0; index < index_max; index++) {
+      if(write_indices[index] == FILE_OK) {
+        err = f_puts(fntmp[index], &file_handle);
+        err = f_putc(0, &file_handle);
+      }
     }
+    file_close();
   }
-  file_close();
   return err;
 }
 

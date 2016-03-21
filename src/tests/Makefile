@@ -201,7 +201,7 @@ build: elf bin hex
 	$(E) "  SIZE   $(TARGET).elf"
 	$(Q)$(ELFSIZE)|grep -v debug
 	cp $(TARGET).bin $(OBJDIR)/firmware.img
-	utils/genhdr $(OBJDIR)/firmware.img SNSD $(CONFIG_FWVER)
+	../utils/genhdr $(OBJDIR)/firmware.img SNSD $(CONFIG_FWVER)
 
 elf: $(TARGET).elf
 bin: $(TARGET).bin
@@ -216,7 +216,7 @@ sym: $(TARGET).sym
 
 
 program: build
-	utils/lpcchksum $(TARGET).bin
+	../utils/lpcchksum $(TARGET).bin
 	openocd -f openocd-usb.cfg -f lpc1754.cfg -f flash.cfg
 
 debug: build

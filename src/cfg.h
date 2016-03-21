@@ -5,6 +5,7 @@
 
 #define CFG_FILE ("/sd2snes/config.yml")
 #define LAST_FILE ((const uint8_t*)"/sd2snes/lastgame.cfg")
+#define LAST_FILE_BAK ((const uint8_t*)"/sd2snes/~lastgame.cfg")
 
 #define CFG_VIDMODE_MENU          ("VideoModeMenu")
 #define CFG_VIDMODE_GAME          ("VideoModeGame")
