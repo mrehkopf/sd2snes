@@ -29,20 +29,20 @@ int map_action [256] = {
    52-63: logo */
 	MA_LOC, MA_LOC, MA_LOC, MA_LOC, MA_SRC, MA_SRC, MA_SRC, MA_SRC,
 	MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC,
-/* 48-51: local entries (4-bit text palette 4 - 4-bit only spare palette)
-   52-63: logo */
+/* 64-67: local entries (4-bit text palette 4 - 4-bit only spare palette)
+   68-79: logo */
 	MA_LOC, MA_LOC, MA_LOC, MA_LOC, MA_SRC, MA_SRC, MA_SRC, MA_SRC,
 	MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC,
-/* 48-51: local entries (4-bit text palette 5)
-   52-63: logo */
+/* 80-83: local entries (4-bit text palette 5)
+   84-95: logo */
 	MA_LOC, MA_LOC, MA_LOC, MA_LOC, MA_SRC, MA_SRC, MA_SRC, MA_SRC,
 	MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC,
-/* 48-51: local entries (4-bit text palette 6)
-   52-63: logo */
+/* 96-99: local entries (4-bit text palette 6)
+   100-111: logo */
 	MA_LOC, MA_LOC, MA_LOC, MA_LOC, MA_SRC, MA_SRC, MA_SRC, MA_SRC,
 	MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC,
-/* 48-51: local entries (4-bit text palette 7)
-   52-175: logo */
+/* 112-115: local entries (4-bit text palette 7)
+   116-175: logo */
 	MA_LOC, MA_LOC, MA_LOC, MA_LOC, MA_SRC, MA_SRC, MA_SRC, MA_SRC,
 	MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC,
 	MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC, MA_SRC,
@@ -70,12 +70,12 @@ int map_action [256] = {
    specified in the table above. */
 int map_idx [256] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+	0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
 	0x04, 0x05, 0x06, 0x07, 0x14, 0x15, 0x16, 0x17,
 	0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 	0x08, 0x09, 0x0a, 0x0b, 0x00, 0x01, 0x02, 0x03,
-        0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
-        0x0c, 0x0d, 0x0e, 0x0f, 0x0c, 0x0d, 0x0e, 0x0f,
+	0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+	0x0c, 0x0d, 0x0e, 0x0f, 0x0c, 0x0d, 0x0e, 0x0f,
 	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
 	0x10, 0x11, 0x12, 0x13, 0x18, 0x19, 0x1a, 0x1b,
 	0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23,
