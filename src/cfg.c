@@ -157,6 +157,7 @@ int cfg_validity_check_recent_games() {
     file_close();
   }
   if(rewrite_lastfile) {
+    f_rename ((TCHAR*)LAST_FILE, (TCHAR*)LAST_FILE_BAK);
     file_open(LAST_FILE, FA_CREATE_ALWAYS | FA_WRITE);
     for(index = 0; index < index_max; index++) {
       if(write_indices[index] == FILE_OK) {
