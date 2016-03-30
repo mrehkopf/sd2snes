@@ -190,6 +190,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       printf("PAIR MODE ENGAGED!\n");
       cic_pair(CFG.vidmode_menu, CFG.vidmode_menu);
     }
+    fpga_set_dac_boost(CFG.msu_volume_boost);
     cfg_load_to_menu();
     status_load_to_menu();
     snes_reset(0);
@@ -276,6 +277,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           /* save config */
           cfg_get_from_menu();
           cic_videomode(CFG.vidmode_menu);
+          fpga_set_dac_boost(CFG.msu_volume_boost);
           cfg_save();
           cmd=0; /* stay in menu loop */
           break;
