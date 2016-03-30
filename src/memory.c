@@ -304,8 +304,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   if(flags & LOADROM_WITH_SRAM) {
     if(romprops.ramsize_bytes) {
       sram_memset(SRAM_SAVE_ADDR, romprops.ramsize_bytes, 0);
-
-      load_sram(filename, SRAM_SAVE_ADDR);
+      migrate_and_load_srm(filename, SRAM_SAVE_ADDR);
       /* file not found error is ok (SRM file might not exist yet) */
       if(file_res == FR_NO_FILE) file_res = 0;
       saveram_crc_old = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
@@ -460,26 +459,37 @@ uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr) {
   return (uint32_t)filesize;
 }
 
-uint32_t load_sram(uint8_t* filename, uint32_t base_addr) {
-  char srmfile[256] = SAVE_BASEDIR;
-  append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
+uint32_t migrate_and_load_srm(uint8_t* filename, uint32_t base_addr) {
+  uint8_t srmfile[256] = SAVE_BASEDIR;
+  append_file_basename((char*)srmfile, (char*)filename, ".srm", sizeof(srmfile));
   printf("SRM file: %s\n", srmfile);
 
-  set_mcu_addr(base_addr);
-  UINT bytes_read;
-  DWORD filesize;
-  file_open((uint8_t*)srmfile, FA_READ);
-  filesize = file_handle.fsize;
+  uint32_t filesize;
+  /* check for SRM file in new centralized sram folder */
+  filesize = load_sram(srmfile, base_addr);
   if(file_res) {
-    /* try to move srm-file from old place to new one and to load again */
+    /* try to move SRM file from old place to new one and to load again */
     strcpy(strrchr((char*)filename, (int)'.'), ".srm");
-    f_rename ((TCHAR*)filename, (TCHAR*)srmfile);
-    file_open((uint8_t*)srmfile, FA_READ);
-    filesize = file_handle.fsize;
+    printf("%s not found, trying to load and migrate %s...\n", srmfile, filename);
+    f_rename((TCHAR*)filename, (TCHAR*)srmfile);
+    filesize = load_sram(srmfile, base_addr);
     if(file_res) {
-      printf("load_sram: could not open %s, res=%d\n", srmfile, file_res);
+      printf("migrate_and_load_sram: could not open %s, res=%d\n", srmfile, file_res);
       return 0;
     }
+  }
+  return (uint32_t)filesize;
+}
+
+uint32_t load_sram(uint8_t* filename, uint32_t base_addr) {
+  UINT bytes_read;
+  DWORD filesize;
+
+  set_mcu_addr(base_addr);
+  file_open((uint8_t*)filename, FA_READ);
+  if(file_res) {
+    printf("load_sram: could not open %s, res=%d\n", filename, file_res);
+    return 0;
   }
   for(;;) {
     bytes_read = file_read();
