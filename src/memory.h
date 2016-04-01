@@ -81,6 +81,7 @@ void sram_readblock(void* buf, uint32_t addr, uint16_t size);
 uint16_t sram_readstrn(void* buf, uint32_t addr, uint16_t size);
 void sram_readlongblock(uint32_t* buf, uint32_t addr, uint16_t count);
 void sram_writeblock(void* buf, uint32_t addr, uint16_t size);
+void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
 uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size);
 uint8_t sram_reliable(void);

@@ -545,15 +545,17 @@ uint32_t load_bootrle(uint32_t base_addr) {
   return (uint32_t)filesize;
 }
 
+void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
+    char srmfile[256] = SAVE_BASEDIR;
+    append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
+    save_sram(filename, sram_size, base_addr);
+}
 
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
   uint32_t count = 0;
 
-  char srmfile[256] = SAVE_BASEDIR;
-  append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
-
   FPGA_DESELECT();
-  file_open((uint8_t*)srmfile, FA_CREATE_ALWAYS | FA_WRITE);
+  file_open(filename, FA_CREATE_ALWAYS | FA_WRITE);
   if(file_res) {
     uart_putc(0x30+file_res);
     return;

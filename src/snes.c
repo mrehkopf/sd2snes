@@ -59,7 +59,7 @@ void prepare_reset() {
   delay_ms(SNES_RESET_PULSELEN_MS);
   if(romprops.ramsize_bytes && fpga_test() == FPGA_TEST_TOKEN) {
     writeled(1);
-    save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+    save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
     writeled(0);
   }
   rdyled(1);
@@ -202,7 +202,7 @@ uint8_t snes_main_loop() {
     if(diffcount>=1 && samecount==5) {
       printf("SaveRAM CRC: 0x%04lx; saving %s\n", saveram_crc, file_lfn);
       writeled(1);
-      save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+      save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
       last_save_failed = save_failed;
       save_failed = file_res ? 1 : 0;
       didnotsave = save_failed ? 25 : 0;
@@ -212,7 +212,7 @@ uint8_t snes_main_loop() {
       printf("periodic save (sram contents keep changing or previous save failed)\n");
       diffcount=0;
       writeled(1);
-      save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+      save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
       last_save_failed = save_failed;
       save_failed = file_res ? 1 : 0;
       didnotsave = save_failed ? 25 : 0;
