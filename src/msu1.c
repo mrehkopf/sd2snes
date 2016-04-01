@@ -295,4 +295,3 @@ int msu1_loop() {
   DBG_MSU1 printf("game\n");
   return 0;
 }
-/* END OF MSU1 STUFF */
