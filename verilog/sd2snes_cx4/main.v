@@ -223,8 +223,8 @@ wire SD_DMA_TO_ROM = (SD_DMA_STATUS && (SD_DMA_TGT == 2'b00));
 dac snes_dac(
   .clkin(CLK2),
   .sysclk(SNES_SYSCLK),
-  .mclk(DAC_MCLK),
-  .lrck(DAC_LRCK),
+  .mclk_out(DAC_MCLK),
+  .lrck_out(DAC_LRCK),
   .sdout(DAC_SDOUT),
   .we(SD_DMA_TGT==2'b01 ? SD_DMA_SRAM_WE : 1'b1),
   .pgm_address(dac_addr),
