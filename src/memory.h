@@ -64,6 +64,7 @@
 
 uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags);
 uint32_t load_spc(uint8_t* filename, uint32_t spc_data_addr, uint32_t spc_header_addr);
+uint32_t migrate_and_load_srm(uint8_t *filename, uint32_t base_addr);
 uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr);
@@ -80,6 +81,7 @@ void sram_readblock(void* buf, uint32_t addr, uint16_t size);
 uint16_t sram_readstrn(void* buf, uint32_t addr, uint16_t size);
 void sram_readlongblock(uint32_t* buf, uint32_t addr, uint16_t count);
 void sram_writeblock(void* buf, uint32_t addr, uint16_t size);
+void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
 uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size);
 uint8_t sram_reliable(void);
