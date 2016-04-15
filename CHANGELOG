@@ -109,3 +109,79 @@ v0.1.6
    - SRAM mapping for LoROM <=16Mbits now uses the entire bank instead of
      0000-7fff only. Fixes saving in some games, e.g. Ys III Wanderers from Ys
 
+v0.1.7
+======
+
+ * cheat support (YML files) with WRAM capability
+ * reworked configuration file (plain-text YML)
+ * in-game buttons
+   - L+R+Select+Start: reset game
+   - L+R+Select+X    : reset to sd2snes menu
+   - L+R+Start+Y     : kill in-game buttons (for compatibility issues)
+   - L+R+Start+X     : kill in-game buttons for 10 seconds
+ * CONFIGURATION MENU:
+   - date+time
+   - BS-X time can be toggled between real-time/custom
+   - custom date+time for Satellaview
+   - toggle screen dimming
+   - toggle directory sorting (speed-up on pre-sorted cards)
+   - MSU1 volume boost
+   - Cx4 DSP core speed
+   - in-game functions (buttons, WRAM cheats, initial holdoff "stealth")
+   - auto region patching
+   - video mode settings for SuperCIC consoles
+ * file browser:
+   - L+R can be used to move to start/end of directory listing
+   - end of directory listing is aligned so the last entry is at
+     bottom of screen
+   - Last played game is always moved to top of list of recent games
+   - on-the-fly directory browsing, no more lengthy database creation
+   - "Loading" window
+   - do not show dotfiles, hidden and system files in browser
+ * compatibility:
+   - better support for part-sized BSX dumps
+   - fix BSX detection for games with 2 startups left
+   - emulate Type1 BSX memory pack instead of Type2 (Super Bomberman 2)
+     (BSX BIOS itself crashes on Type2 packs with "copy to PSRAM" flag)
+   - initialize APU RAM to support ("fix" buggy sound routine of Soul Blader)
+   - properly de-init DMA to $ff (fix Pocky&Rocky US, SGnG, SSF2)
+   - initialize SaveRAM before running the game so we don't miss very
+     early saves
+   - enable S-RTC only when needed (fix Super Play Action Football)
+   - initialize WRAM (fix GP1 Part II)
+   - fix wrong offsets in mapper detection (fix Human Grand Prix)
+   - experimental SRAM mapping for Cx4 (for ROM hacks)
+   - sample SNES data to obtain valid data on end-of-cycle events
+     (fix driver/track glitches in Super Mario Kart)
+   - remove faulty multicycle constraints from Cx4
+     (fix random "register file error" messages)
+ * MSU1 enhancements:
+   - MSU1 volume boost
+   - MSU1 resume feature implemented (Thanks to Michaël Larouche!)
+   - interpolation filter to reduce aliasing, resulting in cleaner sound
+   - fixed DC offset where volume is applied to the waveform
+     (eliminate clicking/humming on volume change/fade)
+   - changed MSU1 audio playback rate to exactly 44100Hz to match bsnes/higan
+     implementation
+ * Ultra16 awareness (mostly thanks to borti4938!):
+   - show Ultra16 serial number and autoboot setting in the System Information
+   - support SPC player warm-boot on Ultra16 consoles
+   - prolong soft reset on Ultra16 consoles to prevent accidental entry
+     of Ultra16 menu
+   - disable auto region patching on Ultra16 consoles to prevent bus conflicts
+ * misc:
+   - rework GUI code (backbuffer stack, reentrant menus, etc.)
+   - simpler, more compatible memory sharing FSM
+   - cosmetic changes, make the GUI a bit more spiffy
+   - only reconfigure FPGA on demand (faster soft reset)
+   - on-the-fly SD card swapping supported (re-init on demand)
+   - Cx4 table ROM embedded in FPGA configuration (deprecate cx4.bin)
+   - new FatFS version
+   - moved MCU command interface from "ROM" to FPGA block RAM
+ * fixes:
+   - fix menu bug where time is displayed incorrectly (thanks to devinacker!)
+   - fix occasional FPGA lockup on power-up
+   - properly initialize MSU1 state
+   - automatically remove missing ROM files from "recent games" list
+     (Thanks to borti4938!)
+   - fix feature flag error where auto region patch was always on for Cx4
