@@ -268,9 +268,9 @@ void snes_bootprint(void* msg) {
     set_saveram_mask(0x1fff);
     set_rom_mask(0x3fffff);
     set_mapper(0x7);
-    snes_reset(0);
+    snes_reset_pulse();
     snes_boot_configured = 1;
-    sleep_ms(20);
+    sleep_ms(200);
   }
   sram_writeblock(msg, SRAM_CMD_ADDR, 33);
 }
