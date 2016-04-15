@@ -548,7 +548,7 @@ uint32_t load_bootrle(uint32_t base_addr) {
 void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
     char srmfile[256] = SAVE_BASEDIR;
     append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
-    save_sram(filename, sram_size, base_addr);
+    save_sram((uint8_t*)srmfile, sram_size, base_addr);
 }
 
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
