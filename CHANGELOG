@@ -119,6 +119,8 @@ v0.1.7
    - L+R+Select+X    : reset to sd2snes menu
    - L+R+Start+Y     : kill in-game buttons (for compatibility issues)
    - L+R+Start+X     : kill in-game buttons for 10 seconds
+   - L+R+Start+B     : disable cheats
+   - L+R+Start+A     : enable cheats
  * CONFIGURATION MENU:
    - date+time
    - BS-X time can be toggled between real-time/custom
@@ -178,6 +180,8 @@ v0.1.7
    - Cx4 table ROM embedded in FPGA configuration (deprecate cx4.bin)
    - new FatFS version
    - moved MCU command interface from "ROM" to FPGA block RAM
+   - SRM files are now saved under "sd2snes/saves/<romname>.srm". existing
+     SRM files are moved during save.
  * fixes:
    - fix menu bug where time is displayed incorrectly (thanks to devinacker!)
    - fix occasional FPGA lockup on power-up
