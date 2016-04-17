@@ -189,3 +189,12 @@ v0.1.7
    - automatically remove missing ROM files from "recent games" list
      (Thanks to borti4938!)
    - fix feature flag error where auto region patch was always on for Cx4
+
+v0.1.7a
+=======
+ * fixes:
+   - fix deadlock on MCU-SNES negotiation due to truncated bootstrap routine
+     (fixes firmware lockup on booting Zelda 3 after soft-reset)
+   - fix garbled default date for BS-X date+time (date record was backwards)
+   - fix incorrect saving of "Auto Region Patch" setting
+
