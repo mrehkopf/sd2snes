@@ -428,6 +428,7 @@ clear_vram:
 
 .byt "fadeloop"
 ; *=$002a10
+; via $7ef100
 ; acknowledge ready for ROM load
 ; wait for ACK
 ; fade screen
@@ -509,7 +510,7 @@ store_wram_routines:
   ldx #!store_blockram_routine_src
   ldy #!WRAM_STORE_BLOCKRAM_ROUTINE
   mvn $7e, $c0
-  lda #$007f
+  lda #$00ee
   ldx #!fadeloop
   ldy #!WRAM_FADELOOP
   mvn $7e, $c0
@@ -535,7 +536,7 @@ store_blockram_routine_src:
   lda #$fe
   sta infloop+1
   rep #$20 : .al
-  lda #$007f
+  lda #$00ee
   ldx #!WRAM_FADELOOP
   ldy #!BRAM_ROUTINE
   phb
@@ -563,7 +564,7 @@ wram_routine_src:
   plp
   rtl
 
-; *=$7ef180
+; *=$7ef200
 wram_wait_mcu_src:
   .as
 - lda @SNES_CMD
@@ -571,7 +572,7 @@ wram_wait_mcu_src:
   bne -
   rtl
 
-; *=$7ef200
+; *=$7ef210
 wram_load_ultra16_cfg_src:
   .as
   lda @$0021c1

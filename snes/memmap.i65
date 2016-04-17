@@ -39,8 +39,8 @@
 #define WRAM_ROUTINE                $7EF000
 #define WRAM_STORE_BLOCKRAM_ROUTINE $7EF080
 #define WRAM_FADELOOP               $7EF100
-#define WRAM_WAIT_MCU               $7EF180
-#define WRAM_LOAD_ULTRA16_CFG       $7EF200
+#define WRAM_WAIT_MCU               $7EF200
+#define WRAM_LOAD_ULTRA16_CFG       $7EF210
 
 #define FILESEL_CWD                 $FF0000
 
