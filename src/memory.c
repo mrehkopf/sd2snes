@@ -254,7 +254,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     printf("attempting to load BS data file /sd2snes/bsxpage.bin...\n");
     load_sram_offload((uint8_t*)"/sd2snes/bsxpage.bin", 0x900000);
     printf("Type: %02x\n", romprops.header.destcode);
-//  set_bsx_regs(0xc0, 0x3f);
+    set_bsx_regs(0xf6, 0x09);
     uint16_t rombase;
     if(romprops.header.ramsize & 1) {
       rombase = romprops.load_address + 0xff00;
