@@ -26,11 +26,11 @@ RESET:
 NMI_16bit:
   php
     rep #$30 : .al : .xl
-    pha: phx: phy: phd: phb
+    pha : phx : phy : phd : phb
     jsl @NMI_ROUTINE
     rep #$30 : .al : .xl
 int_exit:
-    plb: pld: ply: plx: pla
+    plb : pld : ply : plx : pla
   plp
   rti
 
@@ -66,7 +66,7 @@ NMI_8bit:
 ;*= $C0FFC0
 ;  .byt "SD2SNES MAIN MENU    "
 *= $C0FFC0
-  .byt "SD2SNES MENU v0.1.7a "
+  .byt "SD2SNES MENU v0.1.7b "
 ;       123456789012345678901  -  max 21 chars
 
 *= $C0FFD5  .byt $31 ; rom map + speed (HiROM FastROM)
