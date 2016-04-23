@@ -147,17 +147,15 @@ parameter ST4_INT1  = 10'b0000010000;
 parameter ST5_INT2  = 10'b0000100000;
 parameter ST6_INT3  = 10'b0001000000;
 
-reg [63:0] ci[2:0], ci_z1[2:0], co[2:0];
-reg [63:0] ii[2:0], io[2:0];
+reg [63:0] ci[2:0], co[2:0], io[2:0];
 reg [9:0] cicstate = 10'h200;
+wire [63:0] bufi = {{16{dac_data[31]}}, dac_data[31:16], {16{dac_data[15]}}, dac_data[15:0]};
 
 always @(posedge clkin) begin
   if(reset) begin
     cicstate <= ST0_IDLE;
     {ci[2], ci[1], ci[0]} <= 192'h0;
-    {ci_z1[2], ci_z1[1], ci_z1[0]} <= 192'h0;
     {co[2], co[1], co[0]} <= 192'h0;
-    {ii[2], ii[1], ii[0]} <= 192'h0;
     {io[2], io[1], io[0]} <= 192'h0;
   end else if(int_strobe) begin
     if(comb_strobe) cicstate <= ST1_COMB1;
@@ -167,24 +165,21 @@ always @(posedge clkin) begin
 /****** COMB STAGES ******/
       ST1_COMB1: begin
         cicstate <= ST2_COMB2;
-        ci[0] <= {{16{dac_data[31]}}, dac_data[31:16], {16{dac_data[15]}}, dac_data[15:0]};
-        ci_z1[0] <= ci[0];
-        co[0][63:32] <= ci[0][63:32] - ci_z1[0][63:32];
-        co[0][31:0] <= ci[0][31:0] - ci_z1[0][31:0];
+        ci[0] <= bufi;
+        co[0][63:32] <= bufi[63:32] - ci[0][63:32];
+        co[0][31:0] <= bufi[31:0] - ci[0][31:0];
       end
       ST2_COMB2: begin
         cicstate <= ST3_COMB3;
         ci[1] <= co[0];
-        ci_z1[1] <= ci[1];
-        co[1][63:32] <= ci[1][63:32] - ci_z1[1][63:32];
-        co[1][31:0] <= ci[1][31:0] - ci_z1[1][31:0];
+        co[1][63:32] <= co[0][63:32] - ci[1][63:32];
+        co[1][31:0] <= co[0][31:0] - ci[1][31:0];
       end
       ST3_COMB3: begin
         cicstate <= ST4_INT1;
         ci[2] <= co[1];
-        ci_z1[2] <= ci[2];
-        co[2][63:32] <= ci[2][63:32] - ci_z1[2][63:32];
-        co[2][31:0] <= ci[2][31:0] - ci_z1[2][31:0];
+        co[2][63:32] <= co[1][63:32] - ci[2][63:32];
+        co[2][31:0] <= co[1][31:0] - ci[2][31:0];
       end
 /****** INTEGRATOR STAGES ******/
       ST4_INT1: begin
@@ -256,7 +251,7 @@ always @(posedge clkin) begin
   end
 end
 
-wire signed [15:0] dac_data_ch = lrck ?  /*dac_data[31:16]*/ io[2][59:44] : /*dac_data[15:0]*/ io[2][27:12];
+wire signed [15:0] dac_data_ch = lrck ? io[2][59:44] : io[2][27:12];
 wire signed [25:0] vol_sample;
 wire signed [15:0] vol_sample_sat;
 assign vol_sample = dac_data_ch * $signed({1'b0, vol_reg});
