@@ -234,16 +234,16 @@ static void cmd_show_directory(void) {
   DIR dh;
   FILINFO finfo;
   uint8_t *name;
+  uint8_t buf[256];
+  f_getcwd((TCHAR*)buf, 255);
 
-  f_getcwd((TCHAR*)file_lfn, 255);
-
-  res = f_opendir(&dh, (TCHAR*)file_lfn);
+  res = f_opendir(&dh, (TCHAR*)buf);
   if (res != FR_OK) {
     printf("f_opendir failed, result %d\n",res);
     return;
   }
 
-  finfo.lfname = (TCHAR*)file_lfn;
+  finfo.lfname = (TCHAR*)buf;
   finfo.lfsize = 255;
 
   do {
@@ -468,6 +468,26 @@ static void cmd_dacboost(void) {
   if(boost != -1) fpga_set_dac_boost(boost);
 }
 
+static void cmd_cd(void) {
+#if _FS_RPATH
+  FRESULT res;
+  uint8_t buf[256];
+  if (strlen(curchar) == 0) {
+    f_getcwd((TCHAR*)buf, 255);
+    printf("%s\n", buf);
+  } else {
+    res = f_chdir((const TCHAR *)curchar);
+    if (res != FR_OK) {
+      printf("chdir %s failed with result %d\n",curchar,res);
+    } else {
+      printf("Ok.\n");
+    }
+  }
+#else
+  printf("cd not supported.\n");
+#endif
+}
+
 /* ------------------------------------------------------------------------- */
 /*   CLI interface functions                                                 */
 /* ------------------------------------------------------------------------- */
@@ -501,136 +521,119 @@ void cli_loop(void) {
     if (command < 0)
       continue;
 
-
-    FRESULT res;
     switch (command) {
-    case CMD_CD:
-#if _FS_RPATH
-      if (strlen(curchar) == 0) {
-        f_getcwd((TCHAR*)file_lfn, 255);
-        printf("%s\n",file_lfn);
+      case CMD_CD:
+        cmd_cd();
         break;
-      }
 
-      res = f_chdir((const TCHAR *)curchar);
-      if (res != FR_OK) {
-        printf("chdir %s failed with result %d\n",curchar,res);
-      } else {
-        printf("Ok.\n");
-      }
-#else
-      printf("cd not supported.\n");
-      res;
-#endif
-    break;
-    case CMD_RESET:
-      cmd_reset();
-      break;
+      case CMD_RESET:
+        cmd_reset();
+        break;
 
-    case CMD_SRESET:
-      cmd_sreset();
-      break;
+      case CMD_SRESET:
+        cmd_sreset();
+        break;
 
-    case CMD_DIR:
-    case CMD_LS:
-      cmd_show_directory();
-      break;
+      case CMD_DIR:
+      case CMD_LS:
+        cmd_show_directory();
+        break;
 
-    case CMD_EXIT:
-      return;
-      break;
+      case CMD_EXIT:
+        return;
+        break;
 
-    case CMD_LOADROM:
-      cmd_loadrom();
-      break;
+      case CMD_LOADROM:
+        cmd_loadrom();
+        break;
 
-    case CMD_LOADRAW:
-      cmd_loadraw();
-      break;
+      case CMD_LOADRAW:
+        cmd_loadraw();
+        break;
 
-    case CMD_SAVERAW:
-      cmd_saveraw();
-      break;
+      case CMD_SAVERAW:
+        cmd_saveraw();
+        break;
 
-    case CMD_RM:
-      cmd_rm();
-      break;
+      case CMD_RM:
+        cmd_rm();
+        break;
 
-    case CMD_MKDIR:
-      cmd_mkdir();
-      break;
+      case CMD_MKDIR:
+        cmd_mkdir();
+        break;
 
-    case CMD_D4:
-      cmd_d4();
-      break;
+      case CMD_D4:
+        cmd_d4();
+        break;
 
-    case CMD_VMODE:
-      cmd_vmode();
-      break;
+      case CMD_VMODE:
+        cmd_vmode();
+        break;
 
-    case CMD_PUT:
-      cmd_put();
-      break;
+      case CMD_PUT:
+        cmd_put();
+        break;
 
-    case CMD_MAPPER:
-      cmd_mapper();
-      break;
+      case CMD_MAPPER:
+        cmd_mapper();
+        break;
 
-    case CMD_SETTIME:
-      cmd_settime();
-      break;
+      case CMD_SETTIME:
+        cmd_settime();
+        break;
 
-    case CMD_TIME:
-      cmd_time();
-      break;
+      case CMD_TIME:
+        cmd_time();
+        break;
 
-    case CMD_TEST:
-      cmd_test();
-      break;
+      case CMD_TEST:
+        cmd_test();
+        break;
 
-    case CMD_SETFEATURE:
-      cmd_setfeature();
-      break;
+      case CMD_SETFEATURE:
+        cmd_setfeature();
+        break;
 
-    case CMD_HEXDUMP:
-      cmd_hexdump();
-      break;
+      case CMD_HEXDUMP:
+        cmd_hexdump();
+        break;
 
-    case CMD_W8:
-      cmd_w8();
-      break;
+      case CMD_W8:
+        cmd_w8();
+        break;
 
-    case CMD_W16:
-      cmd_w16();
-      break;
+      case CMD_W16:
+        cmd_w16();
+        break;
 
-    case CMD_MEMSET:
-      cmd_memset();
-      break;
+      case CMD_MEMSET:
+        cmd_memset();
+        break;
 
-    case CMD_CHEAT:
-      cmd_cheat();
-      break;
+      case CMD_CHEAT:
+        cmd_cheat();
+        break;
 
-    case CMD_FPGACONF:
-      cmd_fpgaconf();
-      break;
+      case CMD_FPGACONF:
+        cmd_fpgaconf();
+        break;
 
-    case CMD_DSPFEAT:
-      cmd_dspfeat();
-      break;
+      case CMD_DSPFEAT:
+        cmd_dspfeat();
+        break;
 
-    case CMD_BSREGS:
-      cmd_bsregs();
-      break;
+      case CMD_BSREGS:
+        cmd_bsregs();
+        break;
 
-    case CMD_GAMELOOP:
-      cmd_gameloop();
-      break;
+      case CMD_GAMELOOP:
+        cmd_gameloop();
+        break;
 
-    case CMD_DACBOOST:
-      cmd_dacboost();
-      break;
+      case CMD_DACBOOST:
+        cmd_dacboost();
+        break;
     }
   }
 }
