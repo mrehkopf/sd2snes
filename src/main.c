@@ -159,8 +159,8 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     /* disable all cheats+hooks */
     fpga_write_cheat(7, 0xf0);
     /* reset DAC */
-    dac_reset();
     dac_pause();
+    dac_reset();
     uart_putc(')');
     uart_putcrlf();
 

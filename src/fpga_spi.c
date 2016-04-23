@@ -279,7 +279,6 @@ void dac_reset() {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_DACRESETPTR);
   FPGA_TX_BYTE(0x00); /* latch reset */
-  FPGA_TX_BYTE(0x00); /* latch reset */
   FPGA_DESELECT();
 }
 

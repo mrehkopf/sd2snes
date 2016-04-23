@@ -54,8 +54,8 @@ module mcu_cmd(
   // DAC
   output [10:0] dac_addr_out,
   input DAC_STATUS,
-  output dac_play_out,
-  output dac_reset_out,
+  output reg dac_play_out = 0,
+  output reg dac_reset_out = 0,
   output reg [2:0] dac_vol_select_out = 3'b000,
   output reg dac_palmode_out = 0,
 
@@ -138,9 +138,6 @@ reg [2:0] MAPPER_BUF;
 reg [23:0] ADDR_OUT_BUF;
 reg [10:0] DAC_ADDR_OUT_BUF;
 reg [7:0] DAC_VOL_OUT_BUF;
-reg DAC_VOL_LATCH_BUF;
-reg DAC_PLAY_OUT_BUF;
-reg DAC_RESET_OUT_BUF;
 reg [13:0] MSU_ADDR_OUT_BUF;
 reg [13:0] MSU_PTR_OUT_BUF;
 reg [5:0] msu_status_set_out_buf;
@@ -209,6 +206,7 @@ end
 always @(posedge clk) begin
   snescmd_we_out <= 1'b0;
   cheat_pgm_we_out <= 1'b0;
+  dac_reset_out <= 1'b0;
   if (cmd_ready) begin
     case (cmd_data[7:4])
       4'h3: // select mapper
@@ -309,16 +307,11 @@ always @(posedge clk) begin
             msu_status_reset_we_buf <= 1'b0;
         endcase
       8'he1: // pause DAC
-        DAC_PLAY_OUT_BUF <= 1'b0;
+        dac_play_out <= 1'b0;
       8'he2: // resume DAC
-        DAC_PLAY_OUT_BUF <= 1'b1;
+        dac_play_out <= 1'b1;
       8'he3: // reset DAC (set DAC playback address = 0)
-        case (spi_byte_cnt)
-          32'h2:
-            DAC_RESET_OUT_BUF <= 1'b1;
-          32'h3:
-            DAC_RESET_OUT_BUF <= 1'b0;
-        endcase
+        dac_reset_out <= 1'b1; // reset by default value, see above
       8'he4: // reset MSU read buffer pointer
         case (spi_byte_cnt)
           32'h2: begin
@@ -591,8 +584,6 @@ assign mcu_write = SD_DMA_STATUS
 assign addr_out = ADDR_OUT_BUF;
 assign dac_addr_out = DAC_ADDR_OUT_BUF;
 assign msu_addr_out = MSU_ADDR_OUT_BUF;
-assign dac_play_out = DAC_PLAY_OUT_BUF;
-assign dac_reset_out = DAC_RESET_OUT_BUF;
 assign msu_status_reset_we = msu_status_reset_we_buf;
 assign msu_status_reset_out = msu_status_reset_out_buf;
 assign msu_status_set_out = msu_status_set_out_buf;

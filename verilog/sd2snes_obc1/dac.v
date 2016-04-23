@@ -90,9 +90,6 @@ wire vol_latch_rising = (vol_latch_reg[1:0] == 2'b01);
 reg sdout_reg;
 assign sdout = sdout_reg;
 
-reg [1:0] reset_sreg;
-wire reset_rising = (reset_sreg[1:0] == 2'b01);
-
 reg play_r;
 
 initial begin
@@ -123,7 +120,7 @@ reg int_strobe = 0, comb_strobe = 0;
 always @(posedge clkin) begin
   int_strobe <= 0;
   comb_strobe <= 0;
-  if(reset_rising) begin
+  if(reset) begin
     dac_address_r <= 0;
     phaseacc <= 0;
     subcount <= 0;
@@ -155,7 +152,7 @@ reg [63:0] ii[2:0], io[2:0];
 reg [9:0] cicstate = 10'h200;
 
 always @(posedge clkin) begin
-  if(reset_rising) begin
+  if(reset) begin
     cicstate <= ST0_IDLE;
     {ci[2], ci[1], ci[0]} <= 192'h0;
     {ci_z1[2], ci_z1[1], ci_z1[0]} <= 192'h0;
@@ -219,7 +216,6 @@ always @(posedge clkin) begin
   sclk_sreg <= {sclk_sreg[0], sclk};
   vol_latch_reg <= {vol_latch_reg[0], vol_latch};
   play_r <= play;
-  reset_sreg <= {reset_sreg[0], reset};
 end
 
 wire [9:0] vol_orig = volume + volume[7];
