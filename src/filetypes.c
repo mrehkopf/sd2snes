@@ -86,7 +86,10 @@ printf("start\n");
             /* omit entries with hidden or system attribute */
             if(fno.fattrib & (AM_HID | AM_SYS)) continue;
             if(fno.fattrib & AM_DIR) {
-              if(fn[0]=='.' && fn[1]!='.') continue; /* omit dot directories except '..' */
+              /* omit dot directories except '..' */
+              if(fn[0]=='.' && fn[1]!='.') continue;
+              /* omit sd2snes directory specifically */
+              if(!strcasecmp(fn, "sd2snes")) continue;
               snprintf(buf, sizeof(buf), " <dir>");
             } else {
               if(fn[0]=='.') continue; /* omit dot files */
