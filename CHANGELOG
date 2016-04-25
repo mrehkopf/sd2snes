@@ -198,3 +198,11 @@ v0.1.7a
    - fix garbled default date for BS-X date+time (date record was backwards)
    - fix incorrect saving of "Auto Region Patch" setting
 
+v0.1.7b
+=======
+ * sd2snes folder is always hidden again
+ * fixes:
+   - fix garbled time on initial clock setting (new unit or battery replacement)
+   - fix BS-X not booting/booting incorrectly after soft reset
+   - fix OBC1 being always disabled
+   - fix firmware crash when saving after using the serial command line
