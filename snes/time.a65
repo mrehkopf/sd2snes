@@ -57,8 +57,8 @@ time_init:
     ldy StackParam(p_time_addr)
     sta w_time_bank
     sty w_time_addr
-    jsr time_make_working_copy
     jsr gettime
+    jsr time_make_working_copy
     stz time_sel
     stz time_exit
     stz time_cancel
@@ -572,7 +572,7 @@ time_save_working_copy:
   rts
 #undef _work_vars
 
-gettime
+gettime:
   php
   sep #$20 : .as
   lda #$0d
