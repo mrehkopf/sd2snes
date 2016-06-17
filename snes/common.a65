@@ -5,11 +5,9 @@ waitblank:
   php
   sep #$30 : .as : .xs
 - lda @$004212
-  and #$80
-  bne -
+  bmi -
 - lda @$004212
-  and #$80
-  beq -
+  bpl -
   plp
   rts
 
