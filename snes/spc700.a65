@@ -1,6 +1,6 @@
 #include "memmap.i65"
 
- APU RAM init routine
+; APU RAM init routine
 apu_ram_init:
   php
   sep #$20 : .as
@@ -12,7 +12,7 @@ apu_ram_init:
   lda @apu_ram_init_code, x
   jsr spc_upload_byte
   inx
-  cpx #20
+  cpx #50
   bne -
   ldx #$0002
   stx APUIO2
@@ -26,10 +26,13 @@ apu_ram_init:
   plp
   rts
 
+; All SPC700 routines in SPC700 machine code below this line
+
 apu_ram_init_code:  ; .org $0002
+  ; part1: fill $0100-$03ff with #$aa
   .byt $e8,$aa      ; mov a, #$aa
   .byt $8d,$00      ; mov y, #$00
-  .byt $cd,$fe      ; mov x, #$fe
+  .byt $cd,$03      ; mov x, #$03
   ; loop:
   .byt $d6,$00,$01  ; mov !$0100+y, a
   .byt $fc          ; inc y
@@ -37,6 +40,18 @@ apu_ram_init_code:  ; .org $0002
   .byt $ab,$0a      ; inc loop+2
   .byt $1d          ; dec x
   .byt $d0,-11      ; bne loop
+  ; part2: zero $0400-$ffff
+  .byt $e8,$00      ; mov a, #$00
+  .byt $cd,$fc      ; mov x, #$fc
+  ; loop2:
+  .byt $d6,$00,$04  ; mov !$0400+y, a
+  .byt $fc          ; inc y
+  .byt $d0,-6       ; bne loop2
+  .byt $ab,$19      ; inc loop2+2
+  .byt $1d          ; dec x
+  .byt $d0,-11      ; bne loop2
+  ; make sure IPL ROM is mapped, reset input latches 0+1
+  .byt $8f,$90,$f1  ; mov $f1, #$90
   ; Re-run IPL
   .byt $5f,$c0,$ff  ; jmp $ffc0
 
