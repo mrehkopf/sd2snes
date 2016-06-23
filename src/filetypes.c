@@ -94,6 +94,9 @@ printf("start\n");
             } else {
               if(fn[0]=='.') continue; /* omit dot files */
               make_filesize_string(buf, fno.fsize);
+              if(CFG.hide_extensions) {
+                *(strrchr(fn, '.')) = 1;
+              }
             }
             fnlen = strlen(fn);
             if(fno.fattrib & AM_DIR) {

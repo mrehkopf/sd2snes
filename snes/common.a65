@@ -12,6 +12,7 @@ waitblank:
   rts
 
 ; strlen
+; characters 0 and 1 are considered "end of string"
 ; arguments: DB=data bank, Y=offset (16-bit index!)
 ; return: Y=strlen
 strlen:
@@ -21,6 +22,7 @@ strlen:
   phx
   ldx #$0000
 - lda !$0, y
+  lsr
   beq +
   iny
   inx

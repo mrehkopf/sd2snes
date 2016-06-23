@@ -2,6 +2,8 @@
 #include "memmap.i65"
 #include "stack.i65"
 .byt "===HIPRINT==="
+; print a string in mode 5 using pseudo-8x8 tiles on two BG layers.
+; characters 0 and 1 are considered "end of string".
 ; input:
 ; print_count
 ; print_x
@@ -58,20 +60,24 @@ hiprint:
   bcs hiprint_bg1
 hiprint_bg2
   lda [print_ptr]
-  and #$00ff
+  ror
+  and #$007f
   beq hiprint_end
-  inc print_ptr
+  rol
   asl
+  inc print_ptr
   ora print_temp
   sta !BG2_TILE_BUF, x
   dey
   beq hiprint_end
 hiprint_bg1
   lda [print_ptr]
-  and #$00ff
+  ror
+  and #$007f
   beq hiprint_end
-  inc print_ptr
+  rol
   asl
+  inc print_ptr
   ora print_temp
   sta !BG1_TILE_BUF, x
   inx
@@ -82,6 +88,7 @@ hiprint_bg1
 hiprint_end
   sep #$20 : .as
   lda [print_ptr]
+  and #$fe ; mask "soft" end of string
   sta print_over
   tya
   sec

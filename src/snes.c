@@ -25,6 +25,7 @@
 */
 
 #include <arm/NXP/LPC17xx/LPC17xx.h>
+#include <string.h>
 #include "bits.h"
 #include "config.h"
 #include "uart.h"
@@ -39,10 +40,13 @@
 #include "fpga.h"
 #include "fpga_spi.h"
 #include "rtc.h"
+#include "cfg.h"
 
 uint32_t saveram_crc, saveram_crc_old;
 extern snes_romprops_t romprops;
 extern int snes_boot_configured;
+
+extern cfg_t CFG;
 
 volatile int reset_changed;
 volatile int reset_pressed;
@@ -249,6 +253,7 @@ uint8_t menu_main_loop() {
 void get_selected_name(uint8_t* fn) {
   uint32_t cwdaddr;
   uint32_t fdaddr;
+  char *dot;
   cwdaddr = snes_get_mcu_param();
   fdaddr = snescmd_readlong(0x08);
   printf("cwd addr=%lx  fdaddr=%lx\n", cwdaddr, fdaddr);
@@ -258,6 +263,10 @@ void get_selected_name(uint8_t* fn) {
     count++;
   }
   sram_readstrn(fn+count, fdaddr+6+SRAM_MENU_ADDR, 256-count);
+  /* restore hidden file extension */
+  if(CFG.hide_extensions && (dot=strchr((char*)fn, 1))) {
+    *dot = '.';
+  }
 }
 
 void snes_bootprint(void* msg) {

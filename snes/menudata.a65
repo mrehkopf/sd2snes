@@ -178,14 +178,14 @@ menu_enttab_browser:
  .word !CFG_SORT_DIRECTORIES
  .byt  ^CFG_SORT_DIRECTORIES
 
-;.byt  MTYPE_VALUE
-;.word !mtext_browser_hide_ext
-;.byt  ^mtext_browser_hide_ext
-;.word !kv_yesno
-;.byt  ^kv_yesno
-;.byt  OPTTYPE_KVBYTE
-;.word !CFG_HIDE_EXTENSIONS
-;.byt  ^CFG_HIDE_EXTENSIONS
+ .byt  MTYPE_VALUE
+ .word !mtext_browser_hide_ext
+ .byt  ^mtext_browser_hide_ext
+ .word !kv_yesno
+ .byt  ^kv_yesno
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_HIDE_EXTENSIONS
+ .byt  ^CFG_HIDE_EXTENSIONS
 
  .byt  MTYPE_VALUE
  .word !mtext_browser_screensaver
