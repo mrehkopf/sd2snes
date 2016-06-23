@@ -193,7 +193,7 @@ void smc_id(snes_romprops_t* props) {
     case 0x21: /* HiROM */
       props->mapper_id = 0;
       /* DSP1B HiROM */
-      if(header->map == 0x31 && (header->carttype == 0x03 || header->carttype == 0x05)) {
+      if((header->map & 0xef) == 0x21 && (header->carttype == 0x03 || header->carttype == 0x05)) {
         props->has_dspx = 1;
         props->dsp_fw = DSPFW_1B;
         props->fpga_features |= FEAT_DSPX;
