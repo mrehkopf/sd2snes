@@ -8,11 +8,6 @@
 
 #define OAM_TILE_BASE               $6000
 
-#define BG1_TILE_BUF                $7EB000
-#define BG2_TILE_BUF                $7EA000
-#define BG1_TILE_BAK                $7E9000
-#define BG2_TILE_BAK                $7E8000
-
 #define MCU_CMD                     $002A00
 #define SNES_CMD                    $002A02
 #define MCU_PARAM                   $002A04
@@ -21,33 +16,44 @@
 #define WARM_COMPLEMENT             $002AF9
 #define SAVED_SP                    $002AFB
 
-#define BRAM_NMIHOOK                $002BB0
-#define NMI_VECT_ORIG               $002BC2
-#define BRAM_IRQHOOK                $002BC4
-#define IRQ_VECT_ORIG               $002BD6
 #define BRAM_PAYLOAD                $002A04
+#define BRAM_RESET_HOOK             $002A74
 #define BRAM_CHEATS                 $002B00
-#define NMI_PAD_BUTTONS             $002BA0
 #define NMI_PAD                     $002BF0
+#define NMI_CMD                     $002BF2
 #define BRAM_UNLOCK                 $002BF4
 #define MIRROR_4200                 $002BFA
+#define PAD_LATCH                   $002BFB
 #define NMI_BUTTONS_ENABLE          $002BFC
 #define NMI_VECT_DISABLE            $002BFD
 #define NMI_WRAM_PATCH_DISABLE      $002BFE
 #define NMI_WRAM_PATCH_COUNT        $002BFF
 #define NMI_WRAM_CHEATS             $002B00
+#define WINDOW_STACK_BASE           $7E2000
+
+#define BG2_TILE_BUF                $7EA000
+#define BG1_TILE_BUF                $7EB000
+
 #define WRAM_ROUTINE                $7EF000
 #define WRAM_STORE_BLOCKRAM_ROUTINE $7EF080
 #define WRAM_FADELOOP               $7EF100
 #define WRAM_WAIT_MCU               $7EF200
 #define WRAM_LOAD_ULTRA16_CFG       $7EF210
 
-#define FILESEL_CWD                 $FF0000
+#define ROOT_DIR                    $C10000
 
+#define CHEAT_ADDR                  $FC0000
+
+#define SPC_DATA                    $FD0000
+#define SPC_HEADER                  $FE0000
+#define SPC_DSP_REGS                $FE0100
+
+#define FILESEL_CWD                 $FF0000
+#define CFG_ADDR                    $FF0100
+#define ST_ADDR                     $FF1100
 #define SYSINFO_BLK                 $FF1200
 #define LAST_GAME                   $FF1420
-#define CHEAT_ADDR                  $FC0000
-#define ROOT_DIR                    $C10000
+#define WRAM_BAK                    $FF2000
 
 #define CMD_LOADROM                 $01
 #define CMD_SETRTC                  $02
@@ -73,13 +79,6 @@
 #define CMD_VMODE_50                $86
 #define CMD_VMODE_60                $87
 
-#define ST_ADDR                     $FF1100
-#define ST_RTC_VALID                ST_ADDR+$0000
-#define ST_NUM_RECENT_GAMES         ST_ADDR+$0001
-#define ST_IS_U16                   ST_ADDR+$0002
-#define ST_U16_CFG                  ST_ADDR+$0003
-
-#define CFG_ADDR                    $FF0100
 #define CFG_VIDMODE_MENU            CFG_ADDR+$0000
 #define CFG_VIDMODE_GAME            CFG_ADDR+$0001
 #define CFG_PAIR_MODE_ALLOWED       CFG_ADDR+$0002
@@ -98,7 +97,10 @@
 #define CFG_CONTROL_TYPE            CFG_ADDR+$009A
 #define CFG_MSU_VOLUME_BOOST        CFG_ADDR+$009B
 
-#define WRAM_BAK                    $FF2000
+#define ST_RTC_VALID                ST_ADDR+$0000
+#define ST_NUM_RECENT_GAMES         ST_ADDR+$0001
+#define ST_IS_U16                   ST_ADDR+$0002
+#define ST_U16_CFG                  ST_ADDR+$0003
 
 #define MTYPE_FUNC                  $01
 #define MTYPE_SUBMENU               $02
@@ -116,12 +118,6 @@
 #define VIDMODE_NTSC                $00
 #define VIDMODE_PAL                 $01
 #define VIDMODE_AUTO                $02
-
-#define SPC_DATA                    $FD0000
-#define SPC_HEADER                  $FE0000
-#define SPC_DSP_REGS                $FE0100
-
-#define WINDOW_STACK_BASE           $7E2000
 
 #define IDLE_THRES                  33000
 
