@@ -35,6 +35,8 @@ void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
   strcpy((char*)file_buf, (char*)file_lfn);
   strcpy(strrchr((char*)file_buf, (int)'.'), suffix);
   DBG_MSU1 printf("filename: %s\n", file_buf);
+  dac_pause();
+  dac_reset();
   if(f_open(&file_handle, (const TCHAR*)file_buf, FA_READ) == FR_OK) {
     file_handle.cltbl = pcm_cltbl;
     pcm_cltbl[0] = CLTBL_SIZE;
@@ -46,8 +48,6 @@ void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
     sd_offload_tgt=1;
     f_lseek(&file_handle, audio_offset);
     set_dac_addr(0);
-    dac_pause();
-    dac_reset();
     ff_sd_offload=1;
     sd_offload_tgt=1;
     f_read(&file_handle, file_buf, MSU_DAC_BUFSIZE, &msu_audio_bytes_read);
@@ -189,6 +189,11 @@ int msu1_loop() {
     cli_entrycheck();
     fpga_status_now = fpga_status();
 
+    /* ACK as fast as possible */
+    if(fpga_status_now & MSU_FPGA_STATUS_CTRL_START) {
+      set_msu_status(0x00, 0x01);
+    }
+
     /* Data buffer refill */
     if((fpga_status_now & MSU_FPGA_STATUS_MSU_READ_MSB) != (fpga_status_prev & MSU_FPGA_STATUS_MSU_READ_MSB)) {
       DBG_MSU1 printf("data\n");
@@ -244,21 +249,21 @@ int msu1_loop() {
 
       if(fpga_status_now & MSU_FPGA_STATUS_CTRL_REPEAT_FLAG_BIT) {
         msu_repeat = 1;
-        set_msu_status(0x04, 0x01); /* set bit 2, reset bit 0 */
+        set_msu_status(0x04, 0x00); /* set bit 2 */
         DBG_MSU1 printf("Repeat set!\n");
       } else {
         msu_repeat = 0;
-        set_msu_status(0x00, 0x05); /* set no bits, reset bit 0+2 */
+        set_msu_status(0x00, 0x04); /* reset bit 2 */
         DBG_MSU1 printf("Repeat clear!\n");
       }
 
       if(fpga_status_now & MSU_FPGA_STATUS_CTRL_PLAY_FLAG_BIT) {
         DBG_MSU1 printf("PLAY!\n");
-        set_msu_status(0x02, 0x01); /* set bit 0, reset bit 1 */
+        set_msu_status(0x02, 0x00); /* set bit 1 */
         dac_play();
       } else {
         DBG_MSU1 printf("PAUSE!\n");
-        set_msu_status(0x00, 0x03); /* set no bits, reset bit 1+0 */
+        set_msu_status(0x00, 0x02); /* reset bit 1 */
         dac_pause();
       }
     }
