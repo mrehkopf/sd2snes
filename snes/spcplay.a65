@@ -258,7 +258,7 @@ upload_dsp_regs:
 
   ldx #$0000
 -
-  lda @loader,x
+  lda @spc_loader,x
   jsr spc_upload_byte
   inx
   cpy #31             ; size of loader
@@ -338,7 +338,7 @@ upload_high_ram:
 
   ldx #$0000
 -
-  lda @transfer,x
+  lda @spc_transfer,x
   jsr spc_upload_byte
   inx
   cpy #43             ; size of transfer routine

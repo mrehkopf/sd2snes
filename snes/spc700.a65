@@ -55,12 +55,10 @@ apu_ram_init_code:  ; .org $0002
   ; Re-run IPL
   .byt $5f,$c0,$ff  ; jmp $ffc0
 
-
 ; SPC player code
-; All SPC700 routines in SPC700 machine code
 ; SPC loader & transfer routines by Shay Green <gblargg@gmail.com>
 
-loader              ; .org $0002
+spc_loader:         ; .org $0002
   .byt $f8,$21      ;  mov x,@loader_data
   .byt $bd          ;  mov sp,x
   .byt $cd,$22      ;  mov x,#@loader_data+1
@@ -92,7 +90,7 @@ loader              ; .org $0002
 
 ;---------------------------------------
 
-transfer            ; .org $0002
+spc_transfer:       ; .org $0002
 
   .byt $cd,$fe      ; mov x,#$fe    ; transfer 254 pages
 
