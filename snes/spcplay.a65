@@ -59,7 +59,7 @@ spcplayer:
   stz print_pal
   lda #29
   sta print_count
-  lda #17
+  lda #16
   sta print_y
   lda #17
   sta print_x
