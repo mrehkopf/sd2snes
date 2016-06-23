@@ -31,7 +31,7 @@
 
 enum filestates { FILE_OK=0, FILE_ERR, FILE_EOF };
 
-BYTE file_buf[512];
+BYTE file_buf[512] __attribute__((aligned(4)));
 FATFS fatfs;
 FIL file_handle;
 FRESULT file_res;
@@ -53,5 +53,6 @@ UINT file_writeblock(void* buf, uint32_t addr, uint16_t size);
 
 uint8_t file_getc(void);
 void append_file_basename(char *dirbase, char *filename, char *extension, int num);
+FRESULT check_or_create_folder(TCHAR *dir);
 
 #endif

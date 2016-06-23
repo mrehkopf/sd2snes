@@ -109,3 +109,36 @@ void append_file_basename(char *dirbase, char *filename, char *extension, int nu
   strncat(dirbase, append, num-strlen(dirbase));
   strcpy(strrchr(dirbase, (int)'.'), extension);
 }
+
+FRESULT check_or_create_folder(TCHAR *dir) {
+  FRESULT res;
+  FILINFO fno;
+  /* we are not interested in the file name of the existing object
+     so no extra LFN buffer needs to be allocated. */
+  fno.lfname = NULL;
+  TCHAR buf[256];
+  TCHAR *ptr = buf;
+  strncpy(buf, dir, sizeof(buf));
+  while(*(ptr++)) {
+    if(*ptr == '/') {
+      *ptr = 0;
+      res = f_stat(buf, &fno);
+      printf("checking folder %s... res=%d\n", buf, res);
+      if(res != FR_OK) {
+        res = f_mkdir(buf);
+        printf("creating folder, res=%d\n", res);
+        if(res != FR_OK) {
+          printf("FATAL: could not create folder %s\n", buf);
+          return res;
+        }
+      } else {
+        if(!(fno.fattrib & AM_DIR)) {
+          printf("FATAL: %s exists but is not a directory.\n", buf);
+          return FR_NO_PATH;
+        }
+      }
+      *ptr = '/';
+    }
+  }
+  return FR_OK;
+}

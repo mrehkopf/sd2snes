@@ -147,7 +147,7 @@ void cheat_yaml_load(uint8_t* romfilename) {
   cheat_record_t cheat;
 
   append_file_basename(line, (char*)romfilename, ".yml", sizeof(line));
-
+  check_or_create_folder(CHEAT_BASEDIR);
   printf("Cheat YAML file: %s\n", line);
   yaml_file_open(line, FA_READ);
   if(file_res) {

@@ -472,6 +472,8 @@ uint32_t migrate_and_load_srm(uint8_t* filename, uint32_t base_addr) {
     /* try to move SRM file from old place to new one and to load again */
     strcpy(strrchr((char*)filename, (int)'.'), ".srm");
     printf("%s not found, trying to load and migrate %s...\n", srmfile, filename);
+    /* check if new sram folder exists, create it if it doesn't */
+    check_or_create_folder(SAVE_BASEDIR);
     f_rename((TCHAR*)filename, (TCHAR*)srmfile);
     filesize = load_sram(srmfile, base_addr);
     if(file_res) {
@@ -548,6 +550,7 @@ uint32_t load_bootrle(uint32_t base_addr) {
 
 void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
     char srmfile[256] = SAVE_BASEDIR;
+    check_or_create_folder(SAVE_BASEDIR);
     append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
     save_sram((uint8_t*)srmfile, sram_size, base_addr);
 }
