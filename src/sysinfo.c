@@ -56,79 +56,79 @@ int write_sysinfo(int sd_measured) {
   fsfree = ((uint64_t)fsfree) * (uint64_t)fatfs.csize * 512LL / 1048576LL;
 
   len = snprintf(linebuf, sizeof(linebuf), "Firmware version: %s", CONFIG_VERSION);
+  memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
-  sram_memset(sram_addr+len, 40-len, 0x20);
   sram_addr += 40;
   len = snprintf(linebuf, sizeof(linebuf), "                                        ");
+  memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
-  sram_memset(sram_addr+len, 40-len, 0x20);
   sram_addr += 40;
   if(disk_state == DISK_REMOVED) {
     sd_measured = 0;
     sd_tacc_max = 0;
     sd_tacc_avg = 0;
     len = snprintf(linebuf, sizeof(linebuf), "                                        ");
+    memset(linebuf+len, 0x20, 40-len);
     sram_writeblock(linebuf, sram_addr, 40);
-    sram_memset(sram_addr+len, 40-len, 0x20);
     sram_addr += 40;
     len = snprintf(linebuf, sizeof(linebuf), "                                        ");
+    memset(linebuf+len, 0x20, 40-len);
     sram_writeblock(linebuf, sram_addr, 40);
-    sram_memset(sram_addr+len, 40-len, 0x20);
     sram_addr += 40;
     len = snprintf(linebuf, sizeof(linebuf), "         *** SD Card removed ***        ");
+    memset(linebuf+len, 0x20, 40-len);
     sram_writeblock(linebuf, sram_addr, 40);
-    sram_memset(sram_addr+len, 40-len, 0x20);
     sram_addr += 40;
     len = snprintf(linebuf, sizeof(linebuf), "                                        ");
+    memset(linebuf+len, 0x20, 40-len);
     sram_writeblock(linebuf, sram_addr, 40);
-    sram_memset(sram_addr+len, 40-len, 0x20);
     sram_addr += 40;
     len = snprintf(linebuf, sizeof(linebuf), "                                        ");
+    memset(linebuf+len, 0x20, 40-len);
     sram_writeblock(linebuf, sram_addr, 40);
-    sram_memset(sram_addr+len, 40-len, 0x20);
     sram_addr += 40;
     sd_ok = 0;
   } else {
     len = snprintf(linebuf, sizeof(linebuf), "SD Maker/OEM:    0x%02x, \"%c%c\"", sd_cid[1], sd_cid[2], sd_cid[3]);
+    memset(linebuf+len, 0x20, 40-len);
     sram_writeblock(linebuf, sram_addr, 40);
-    sram_memset(sram_addr+len, 40-len, 0x20);
     sram_addr += 40;
     len = snprintf(linebuf, sizeof(linebuf), "SD Product Name: \"%c%c%c%c%c\", Rev. %d.%d", sd_cid[4], sd_cid[5], sd_cid[6], sd_cid[7], sd_cid[8], sd_cid[9]>>4, sd_cid[9]&15);
+    memset(linebuf+len, 0x20, 40-len);
     sram_writeblock(linebuf, sram_addr, 40);
-    sram_memset(sram_addr+len, 40-len, 0x20);
     sram_addr += 40;
     len = snprintf(linebuf, sizeof(linebuf), "SD Serial No.:   %02x%02x%02x%02x, Mfd. %d/%02d", sd_cid[10], sd_cid[11], sd_cid[12], sd_cid[13], 2000+((sd_cid[14]&15)<<4)+(sd_cid[15]>>4), sd_cid[15]&15);
+    memset(linebuf+len, 0x20, 40-len);
     sram_writeblock(linebuf, sram_addr, 40);
-    sram_memset(sram_addr+len, 40-len, 0x20);
     sram_addr += 40;
     if(sd_tacc_max) {
       len = snprintf(linebuf, sizeof(linebuf), "SD acc. time: %ld.%03ld / %ld.%03ld ms avg/max", sd_tacc_avg_int, sd_tacc_avg_frac, sd_tacc_max_int, sd_tacc_max_frac);
     } else {
       len = snprintf(linebuf, sizeof(linebuf), "SD acc. time: measuring\x7f\x80  ");
     }
+    memset(linebuf+len, 0x20, 40-len);
     sram_writeblock(linebuf, sram_addr, 40);
-    sram_memset(sram_addr+len, 40-len, 0x20);
     sram_addr += 40;
     len = snprintf(linebuf, sizeof(linebuf), "Card usage: %ldMB / %ldMB", fssize-fsfree, fssize);
+    memset(linebuf+len, 0x20, 40-len);
     sram_writeblock(linebuf, sram_addr, 40);
-    sram_memset(sram_addr+len, 40-len, 0x20);
     sram_addr += 40;
     sd_ok = 1;
   }
   len = snprintf(linebuf, sizeof(linebuf), "                                        ");
+  memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
-  sram_memset(sram_addr+len, 40-len, 0x20);
   sram_addr += 40;
   len = snprintf(linebuf, sizeof(linebuf), "CIC state: %s", get_cic_statefriendlyname(get_cic_state()));
+  memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
-  sram_memset(sram_addr+len, 40-len, 0x20);
   sram_addr += 40;
   if(sysclk == -1)
     len = snprintf(linebuf, sizeof(linebuf), "SNES master clock: measuring\x7f\x80");
   else
     len = snprintf(linebuf, sizeof(linebuf), "SNES master clock: %ldHz    ", get_snes_sysclk());
+  memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
-  sram_memset(sram_addr+len, 40-len, 0x20);
   sram_addr += 40;
   if(ST.is_u16) {
     if(ST.u16_cfg & 0x01) {
@@ -139,12 +139,12 @@ int write_sysinfo(int sd_measured) {
   } else {
     len = snprintf(linebuf, sizeof(linebuf), "                                        ");
   }
+  memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
-  sram_memset(sram_addr+len, 40-len, 0x20);
   sram_addr += 40;
   len = snprintf(linebuf, sizeof(linebuf), "                                        ");
+  memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
-  sram_memset(sram_addr+len, 40-len, 0x20);
   sram_hexdump(SRAM_SYSINFO_ADDR, 13*40);
   if(sysclk != -1 && sd_ok && !sd_measured){
     sdn_gettacc(&sd_tacc_max, &sd_tacc_avg);
