@@ -75,8 +75,7 @@
 #define SNESCMD_NMI_ENABLE_BUTTONS   (0x2bfc)
 #define SNESCMD_NMI_DISABLE_WRAM     (0x2bfe)
 #define SNESCMD_NMI_WRAM_PATCH_COUNT (0x2bff)
-#define SNESCMD_HOOKS                (0x2bb0)
-#define SNESCMD_WRAM_CHEATS          (0x2b00)
+#define SNESCMD_WRAM_CHEATS          (0x2a90)
 
 #define ASM_LDA_IMM      (0xa9)
 #define ASM_STA_ABSLONG  (0x8f)

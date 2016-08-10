@@ -1,133 +1,76 @@
 #include "memmap.i65"
 
-; *=$2BB0
+; *=$2A04
 nmihook:
   php
-  rep #$30 : .al : .xl
+  rep #$20 : .al
   pha
   lda @$004218
   sta @NMI_PAD
-  jsr BRAM_PAYLOAD
-  pla
-  plp
-  jmp $ffff
-; *=2BC4
-irqhook:
-  php
-  rep #$30 : .al : .xl
-  pha
-  lda @$004218
-  sta @NMI_PAD
-  jsr BRAM_PAYLOAD
-  pla
-  plp
-  jmp $ffff
-
-; *=$2A04
-nmi_payload:
   phb
-  phk
-  plb
-  phx
-  phy
   phd
   lda #$2b00
   tcd
-  lda #$7548
-  sta <BRAM_UNLOCK
-  lda #$7a72
-  sta <BRAM_UNLOCK+2
-; backup vectors
   sep #$20 : .as
-  lda #$01
-  sta <NMI_VECT_DISABLE ; disable vector patching
-; fill in jump addresses above ("$ffff")
-  ldx $ffea
-  stx <NMI_VECT_ORIG
-  ldx $ffee
-  stx <IRQ_VECT_ORIG
-  stz <NMI_VECT_DISABLE
 ; skip in-game buttons if disabled
   lda <NMI_BUTTONS_ENABLE
   beq nmi_patches
-; read controller
+; read controller auto read flag
   lda <MIRROR_4200
-  lsr
 ; auto read is active, so we reuse the early snapshot taken
-  bcs nmi_autoread
+  bmi nmi_pad_getcmd
 ; no auto read; read the controller manually
+; only read when no read in progress by game (do not disrupt game's readout)
+  bit <PAD_LATCH
+  bmi nmi_pad_getcmd
+  phk
+  plb
+  lda #$01
+  sta $4016
   stz $4016
-  lda #$11
-  sta $4016
-  dec
-  sta $4016
-  ldx #$0008
-- lda $4016
-  ror
-  rol <NMI_PAD
-  dex
-  bne -
+  rep #$10 : .xl
+  phx
   ldx #$0008
 - lda $4016
   ror
   rol <NMI_PAD+1
   dex
   bne -
-  bra nmi_pad_shortcut
-nmi_autoread:
-  ldx #$0000
-nmi_pad_shortcut:
-  ldy <NMI_PAD
+  ldx #$0008
+- lda $4016
+  ror
+  rol <NMI_PAD
+  dex
+  bne -
+  plx
+nmi_pad_getcmd:
+; button combination -> command is mapped by FPGA
+  lda <NMI_CMD
   beq nmi_patches
-; check button combinations
-; L+R+Start+Select : $3030
-; L+R+Select+X     : $2070
-; L+R+Start+A      : $10b0
-; L+R+Start+B      : $9030
-; L+R+Start+Y      : $5030
-; L+R+Start+X      : $1070
-nmi_pad_loop:
-  ldy <NMI_PAD_BUTTONS, x
-  cpy <NMI_PAD
-  beq nmi_pad_found
-  cpx #$000a
-  beq nmi_patches
-  inx
-  inx
-  bra nmi_pad_loop
-nmi_pad_found:
-  txa
-  lsr
-  ora #$80
-  sta !MCU_CMD
-  cmp #$83
+  sta @MCU_CMD
+  cmp #$83 ; disable WRAM patching
   beq nmi_disable_wram
-  cmp #$82
+  cmp #$82 ; enable WRAM patching
   bne nmi_patches
 nmi_enable_wram:
   lda #$00
 nmi_disable_wram:
   sta <NMI_WRAM_PATCH_DISABLE
 nmi_patches:
-; WRAM patches
-; maybe make this speedcode after switching to ca65
-; snescom can't handle relocation
 ; skip WRAM patching if disabled
   lda <NMI_WRAM_PATCH_DISABLE
   bne nmi_exit
 ; skip WRAM patching if there are no cheats
-  sep #$10 : .xs
-  ldy <NMI_WRAM_PATCH_COUNT
+  lda <NMI_WRAM_PATCH_COUNT
   beq nmi_exit
   jsr NMI_WRAM_CHEATS
 nmi_exit:
 ; clean up
-  lda $ffea ; get another 72 cycles of BRAM visibility
-  stz <BRAM_UNLOCK ; disable BRAM visibility for game
+  stz <NMI_VECT_DISABLE
   pld
-  rep #$30 : .al : .xl
-  ply
-  plx
+  rep #$20 : .al
   plb
-  rts
+  pla
+  plp
+  jmp ($ff77) ; '77' is replaced by FPGA depending on hook entry
 .byt "bram_end"

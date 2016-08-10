@@ -1,16 +1,12 @@
 #include "memmap.i65"
 #include "dma.i65"
-.word nmi_payload
+.word nmihook
 GAME_MAIN:
   sep #$20 : .as
   stz $4200     ; inhibit VBlank NMI
   lda #$01
   sta $420d
   rep #$20 : .al
-  lda #$7548
-  sta @BRAM_UNLOCK
-  lda #$7a72
-  sta @BRAM_UNLOCK+2
   lda #$0000
   sta @MCU_CMD  ; clear MCU command register
   rep #$20 : .al
