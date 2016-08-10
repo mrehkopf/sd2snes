@@ -26,6 +26,7 @@
 #define CHEAT_BASEDIR   ("/sd2snes/cheats/")
 
 #define CHEAT_FLAG_ENABLE (0x80)
+#define CHEAT_NUM_CODES_PER_CHEAT (40)
 
 typedef union _cheat_patch_record {
   struct __attribute__ ((__packed__)) _patch_fields {
@@ -38,9 +39,9 @@ typedef union _cheat_patch_record {
 
 typedef struct __attribute__ ((__packed__)) _cheat_record {
   uint8_t flags;
-  char description[40];
+  char description[254];
   uint8_t numpatches;
-  cheat_patch_record_t patches[10];
+  cheat_patch_record_t patches[40];
 } cheat_record_t;
 
 /* deploy all cheats to SNES code / FPGA */
@@ -56,8 +57,8 @@ void cheat_program_rom_cheat(int index, cheat_patch_record_t *cheat);
 void cheat_program_ram_cheat(int index, cheat_patch_record_t *cheat);
 
 /* load CHT file to RAM */
-void cheat_load_to_menu(uint8_t index, cheat_record_t *cheat);
-void cheat_save_from_menu(uint8_t index, cheat_record_t *cheat);
+void cheat_load_to_menu(int index, cheat_record_t *cheat);
+void cheat_save_from_menu(int index, cheat_record_t *cheat);
 
 /* enable/disable ROM cheats + hooks */
 void cheat_enable(int enable);

@@ -42,7 +42,8 @@
 
 #define ROOT_DIR                    $C10000
 
-#define CHEAT_ADDR                  $FC0000
+#define NUM_CHEATS                  $CFFFFE
+#define CHEAT_ADDR                  $D00000
 
 #define SPC_DATA                    $FD0000
 #define SPC_HEADER                  $FE0000

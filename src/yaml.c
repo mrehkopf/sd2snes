@@ -143,7 +143,7 @@ int yaml_get_next(yaml_token_t *tok) {
   ystate.flags &= ~(YAML_FLAG_REWIND_LINE | YAML_FLAG_REWIND_TOKEN);
 
   type = YAML_UNKNOWN;
-  DBG_YAML printf("indent: %d; token: %s; pstate: %d -> ", indent, token, ystate.state);
+  DBG_YAML printf("indent: %d; state.depth: %d; token: %s; pstate: %d -> ", indent, ystate.depth, token, ystate.state);
   switch (ystate.state) {
     case YAML_PSTATE_NONE:
       if(!strncmp(token, "---", 3)) {
@@ -175,6 +175,7 @@ int yaml_get_next(yaml_token_t *tok) {
         type = YAML_KEY;
         ystate.delim = YAML_DELIM_VALUE;
         ystate.state = YAML_PSTATE_VALUE;
+        ystate.depth = indent;
         strncpy(tok->stringvalue, token, YAML_BUFLEN);
       }
       break;
@@ -182,11 +183,19 @@ int yaml_get_next(yaml_token_t *tok) {
       ystate.delim = YAML_DELIM_KEY;
       ystate.state = YAML_PSTATE_KEY;
       if(!strncmp(token, "- ", 2)) {
-        type = YAML_LIST_START;
-        ystate.delim = YAML_DELIM_VALUE;
-        ystate.state = YAML_PSTATE_LIST_MULTILINE;
-        ystate.flags |= YAML_FLAG_REWIND_LINE;
-        ystate.depth = indent;
+        if(indent >= ystate.depth) {
+          type = YAML_LIST_START;
+          ystate.delim = YAML_DELIM_VALUE;
+          ystate.state = YAML_PSTATE_LIST_MULTILINE;
+          ystate.flags |= YAML_FLAG_REWIND_LINE;
+          ystate.depth = indent;
+        } else {
+        /* this isn't a list item anymore, re-run state machine on this line */
+          ystate.flags |= YAML_FLAG_REWIND_LINE;
+          ystate.delim = YAML_DELIM_KEY;
+          ystate.state = YAML_PSTATE_KEY;
+          type = YAML_NONE;
+        }
       } else if(*token == '[') {
         /* go to sub state */
         type = YAML_LIST_START;
