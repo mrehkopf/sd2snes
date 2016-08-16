@@ -3,6 +3,7 @@
 /* clock.c: PLL, CCLK, PCLK controls */
 
 #include <arm/NXP/LPC17xx/LPC17xx.h>
+#include "config.h"
 #include "clock.h"
 #include "bits.h"
 #include "uart.h"
@@ -45,9 +46,9 @@ void clock_init() {
  */
   enableMainOsc();
   setClkSrc(CLKSRC_MAINOSC);
-  setPLL0MultPrediv(43, 2);
+  setPLL0MultPrediv(CONFIG_CLK_MULT, CONFIG_CLK_PREDIV);
   enablePLL0();
-  setCCLKDiv(6);
+  setCCLKDiv(CONFIG_CLK_CCLKDIV);
   connectPLL0();
 
 

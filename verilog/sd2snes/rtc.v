@@ -42,7 +42,7 @@ reg [31:0] tick_cnt;
 
 always @(posedge clkin) begin
   tick_cnt <= tick_cnt + 1;
-  if((tick_cnt == 21500000) || pgm_we_rising) tick_cnt <= 0;
+  if((tick_cnt == 24000000) || pgm_we_rising) tick_cnt <= 0;
 end
 
 assign rtc_data = rtc_data_out_r;
