@@ -435,7 +435,8 @@ reg [23:0] cpu_romaddr;
 reg [23:0] cpu_ramaddr;
 reg [23:0] cpu_acch;
 reg [23:0] cpu_accl;
-reg [23:0] cpu_mul_src;
+reg [23:0] cpu_mul_a;
+reg [23:0] cpu_mul_b;
 reg [24:0] cpu_alu_res;
 reg [23:0] cpu_dummy;
 reg [23:0] cpu_tmp;
@@ -486,7 +487,7 @@ reg op_p;
 reg op_call;
 reg op_jump;
 reg condtrue;
-reg [2:0] mul_wait = MUL_DELAY;
+reg mul_strobe = 0;
 
 always @(posedge CLK) begin
   if(cpu_go_en_r) cx4_busy[BUSY_CPU] <= 1'b1;
@@ -506,6 +507,7 @@ reg jp_docache;
 initial jp_docache = 1'b0;
 
 always @(posedge CLK) begin
+  mul_strobe <= 1'b0;
   case(CPU_STATE)
     ST_CPU_IDLE: begin
       if(cpu_go_en_r) begin
@@ -544,23 +546,28 @@ always @(posedge CLK) begin
           endcase
         end
         OP_LD, OP_ALU, OP_MUL, OP_CMP, OP_SEX: begin
-          if(op_imm) cpu_idb <= {16'b0, op_param};
-          else casex(op_param)
-            8'h00: cpu_idb <= cpu_a;
-            8'h01: cpu_idb <= cpu_acch;
-            8'h02: cpu_idb <= cpu_accl;
-            8'h03: cpu_idb <= cpu_busdata;
-            8'h08: cpu_idb <= cpu_romdata;
-            8'h0c: cpu_idb <= cpu_ramdata;
-            8'h13: cpu_idb <= cpu_busaddr;
-            8'h1c: cpu_idb <= cpu_ramaddr;
-            8'h5x: cpu_idb <= const[op_param[3:0]];
-            8'h6x: cpu_idb <= {gpr[op_param[3:0]*3+2],
-                               gpr[op_param[3:0]*3+1],
-                               gpr[op_param[3:0]*3]};
-            default: cpu_idb <= 24'b0;
-          endcase
-			 mul_wait <= MUL_DELAY;
+          if(op == OP_MUL) begin
+            mul_strobe <= 1'b1;
+          end
+          if(op_imm) begin
+            cpu_idb <= {16'b0, op_param};
+          end else begin
+            casex(op_param)
+              8'h00: cpu_idb <= cpu_a;
+              8'h01: cpu_idb <= cpu_mul_result[47:24];
+              8'h02: cpu_idb <= cpu_mul_result[23:0];
+              8'h03: cpu_idb <= cpu_busdata;
+              8'h08: cpu_idb <= cpu_romdata;
+              8'h0c: cpu_idb <= cpu_ramdata;
+              8'h13: cpu_idb <= cpu_busaddr;
+              8'h1c: cpu_idb <= cpu_ramaddr;
+              8'h5x: cpu_idb <= const[op_param[3:0]];
+              8'h6x: cpu_idb <= {gpr[op_param[3:0]*3+2],
+                                 gpr[op_param[3:0]*3+1],
+                                 gpr[op_param[3:0]*3]};
+              default: cpu_idb <= 24'b0;
+            endcase
+          end
         end
         OP_ST: begin
           cpu_idb <= cpu_a;
@@ -569,8 +576,8 @@ always @(posedge CLK) begin
           cpu_idb <= cpu_a;
           casex(op_param)
             8'h00: cpu_tmp <= cpu_a;
-            8'h01: cpu_tmp <= cpu_acch;
-            8'h02: cpu_tmp <= cpu_accl;
+//            8'h01: cpu_tmp <= cpu_acch;
+//            8'h02: cpu_tmp <= cpu_accl;
             8'h03: cpu_tmp <= cpu_busdata;
             8'h08: cpu_tmp <= cpu_romdata;
             8'h0c: cpu_tmp <= cpu_ramdata;
@@ -653,8 +660,8 @@ always @(posedge CLK) begin
         end
         OP_ST, OP_SWP: begin
           casex(op_param)
-            8'h01: cpu_acch <= cpu_idb;
-            8'h02: cpu_accl <= cpu_idb;
+//            8'h01: cpu_acch <= cpu_idb;
+//            8'h02: cpu_accl <= cpu_idb;
             8'h08: cpu_romdata <= cpu_idb;
             8'h0c: cpu_ramdata <= cpu_idb;
             8'h13: cpu_busaddr <= cpu_idb;
@@ -704,11 +711,6 @@ always @(posedge CLK) begin
             5'b11011: cpu_alu_res <= cpu_a << cpu_idb;
           endcase
         end
-		  OP_MUL: begin
-			 mul_wait <= mul_wait - 3'h1;
-			 if(mul_wait == 3'h0) CPU_STATE <= ST_CPU_3;
-			 else CPU_STATE <= ST_CPU_2;
-		  end
       endcase
     end
     ST_CPU_3: begin
@@ -740,32 +742,38 @@ always @(posedge CLK) begin
             end
           endcase
         end
-        OP_MUL: begin
-          cpu_acch <= cpu_mul_result[47:24];
-          cpu_accl <= cpu_mul_result[23:0];
-          fl_z <= (cpu_mul_result == 48'b0);
-          fl_n <= cpu_mul_result[47];
-        end
       endcase
       cpu_op <= cpu_op_w;
 
       casex(cpu_op_w[15:11])
-        5'b00x01, 5'b00x10, 5'b00100, 5'b00111: begin
-          cpu_wait <= 8'h06;
+        5'b00100: begin // SKIP
+          cpu_wait <= 8'h03;
           CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
         end
-        5'b01110, 5'b01101, 5'b11101: begin
-          cpu_wait <= 8'h02;
+        5'b00111: begin // RT
+          cpu_wait <= 8'h03;
           CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
         end
-        /*5'b10011: begin
-        cpu_wait <= 8'h02;
-         CPU_STATE <= ST_CPU_4;
-      end
-        5'b01000: begin
-        cpu_wait <= 8'h0e;
-         CPU_STATE <= ST_CPU_4;
-      end*/
+        5'b00x01, 5'b00x10: begin // JP
+          if(cpu_op_w[13]) begin // CALL
+            cpu_wait <= 8'h03;
+          end else begin
+            cpu_wait <= 8'h03;
+          end
+          CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
+        end
+/*        5'b01110, 5'b01101, 5'b11101: begin // RDROM, RDRAM, WRRAM
+          cpu_wait <= 8'h03;
+          CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
+        end
+/*        5'b10011: begin // MUL
+          cpu_wait <= 8'h03;
+          CPU_STATE <= ST_CPU_4;
+        end*/
+/*        5'b01000: begin // BUSRD
+          cpu_wait <= 8'h03;
+          CPU_STATE <= ST_CPU_4;
+        end*/
         default: begin
           cpu_wait <= 8'h00;
           CPU_STATE <= ST_CPU_0;
@@ -867,6 +875,14 @@ always @(posedge CLK) begin
   else if(GPR_WR_EN) gpr[ADDR[5:0]] <= DI;
 end
 
+// external multiplier
+always @(posedge CLK) begin
+  if(mul_strobe) begin
+    cpu_mul_a <= cpu_a;
+    cpu_mul_b <= cpu_idb;
+  end
+end
+
 /***************************
  =========== MEM ===========
  ***************************/
@@ -901,8 +917,8 @@ cx4_pgmrom cx4_pgmrom (
 
 cx4_mul cx4_mul (
   .clk(CLK), // input clk
-  .a(cpu_a), // input [23 : 0] a
-  .b(cpu_idb), // input [23 : 0] b
+  .a(cpu_mul_a), // input [23 : 0] a
+  .b(cpu_mul_b), // input [23 : 0] b
   .p(cpu_mul_result) // output [47 : 0] p
 );
 endmodule
