@@ -28,7 +28,7 @@
       <association xil_pn:name="Implementation" xil_pn:seqID="6"/>
     </file>
     <file xil_pn:name="dac.v" xil_pn:type="FILE_VERILOG">
-      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="2"/>
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="0"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="16"/>
     </file>
     <file xil_pn:name="dcm.v" xil_pn:type="FILE_VERILOG">
@@ -86,7 +86,7 @@
       <association xil_pn:name="Implementation" xil_pn:seqID="1"/>
     </file>
     <file xil_pn:name="ipcore_dir/dac_buf.xco" xil_pn:type="FILE_COREGEN">
-      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="1"/>
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="0"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="5"/>
     </file>
     <file xil_pn:name="ipcore_dir/msu_databuf.xco" xil_pn:type="FILE_COREGEN">
@@ -101,7 +101,7 @@
       <association xil_pn:name="Implementation" xil_pn:seqID="14"/>
     </file>
     <file xil_pn:name="cheat.v" xil_pn:type="FILE_VERILOG">
-      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="0"/>
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="1"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="17"/>
     </file>
     <file xil_pn:name="ipcore_dir/snescmd_buf.xise" xil_pn:type="FILE_COREGENISE">
@@ -264,7 +264,7 @@
     <property xil_pn:name="Number of Paths in Error/Verbose Report Post Trace" xil_pn:value="3" xil_pn:valueState="default"/>
     <property xil_pn:name="Optimization Effort" xil_pn:value="High" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Optimization Goal" xil_pn:value="Speed" xil_pn:valueState="default"/>
-    <property xil_pn:name="Optimization Strategy (Cover Mode)" xil_pn:value="Speed" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Optimization Strategy (Cover Mode)" xil_pn:value="Area" xil_pn:valueState="default"/>
     <property xil_pn:name="Optimize Instantiated Primitives" xil_pn:value="true" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Other Bitgen Command Line Options" xil_pn:value="" xil_pn:valueState="default"/>
     <property xil_pn:name="Other Compiler Options" xil_pn:value="" xil_pn:valueState="default"/>
@@ -291,7 +291,7 @@
     <property xil_pn:name="Overwrite Compiled Libraries" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Pack I/O Registers into IOBs" xil_pn:value="Auto" xil_pn:valueState="default"/>
     <property xil_pn:name="Pack I/O Registers/Latches into IOBs" xil_pn:value="For Inputs and Outputs" xil_pn:valueState="non-default"/>
-    <property xil_pn:name="Package" xil_pn:value="pq208" xil_pn:valueState="default"/>
+    <property xil_pn:name="Package" xil_pn:value="pq208" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Perform Advanced Analysis" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Perform Advanced Analysis Post Trace" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Perform Timing-Driven Packing and Placement" xil_pn:value="true" xil_pn:valueState="non-default"/>
@@ -310,6 +310,7 @@
     <property xil_pn:name="Process window" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Produce Verbose Report" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Project Description" xil_pn:value="" xil_pn:valueState="default"/>
+    <property xil_pn:name="Project Generator" xil_pn:value="ProjNav" xil_pn:valueState="default"/>
     <property xil_pn:name="Property Specification in Project File" xil_pn:value="Store all values" xil_pn:valueState="default"/>
     <property xil_pn:name="RAM Extraction" xil_pn:value="true" xil_pn:valueState="default"/>
     <property xil_pn:name="RAM Style" xil_pn:value="Auto" xil_pn:valueState="default"/>
@@ -429,7 +430,7 @@
     <!--                                                                                  -->
     <!-- The following properties are for internal use only. These should not be modified.-->
     <!--                                                                                  -->
-    <property xil_pn:name="PROP_BehavioralSimTop" xil_pn:value="Module|dac" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="PROP_BehavioralSimTop" xil_pn:value="Module|cheat" xil_pn:valueState="non-default"/>
     <property xil_pn:name="PROP_DesignName" xil_pn:value="sd2snes" xil_pn:valueState="non-default"/>
     <property xil_pn:name="PROP_DevFamilyPMName" xil_pn:value="spartan3" xil_pn:valueState="default"/>
     <property xil_pn:name="PROP_FPGAConfiguration" xil_pn:value="FPGAConfiguration" xil_pn:valueState="default"/>

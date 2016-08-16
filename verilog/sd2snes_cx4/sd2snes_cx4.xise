@@ -252,8 +252,8 @@
     <property xil_pn:name="Number of Paths in Error/Verbose Report" xil_pn:value="30" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Number of Paths in Error/Verbose Report Post Trace" xil_pn:value="3" xil_pn:valueState="default"/>
     <property xil_pn:name="Optimization Effort" xil_pn:value="High" xil_pn:valueState="non-default"/>
-    <property xil_pn:name="Optimization Goal" xil_pn:value="Speed" xil_pn:valueState="default"/>
-    <property xil_pn:name="Optimization Strategy (Cover Mode)" xil_pn:value="Speed" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Optimization Goal" xil_pn:value="Area" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Optimization Strategy (Cover Mode)" xil_pn:value="Area" xil_pn:valueState="default"/>
     <property xil_pn:name="Optimize Instantiated Primitives" xil_pn:value="true" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Other Bitgen Command Line Options" xil_pn:value="" xil_pn:valueState="default"/>
     <property xil_pn:name="Other Compiler Options" xil_pn:value="" xil_pn:valueState="default"/>
@@ -362,8 +362,8 @@
     <property xil_pn:name="Specify Top Level Instance Names Post-Route" xil_pn:value="work.updtest" xil_pn:valueState="default"/>
     <property xil_pn:name="Specify Top Level Instance Names Post-Translate" xil_pn:value="work.updtest" xil_pn:valueState="default"/>
     <property xil_pn:name="Speed Grade" xil_pn:value="-4" xil_pn:valueState="non-default"/>
-    <property xil_pn:name="Starting Placer Cost Table (1-100) Map" xil_pn:value="1" xil_pn:valueState="default"/>
-    <property xil_pn:name="Starting Placer Cost Table (1-100) Par" xil_pn:value="1" xil_pn:valueState="default"/>
+    <property xil_pn:name="Starting Placer Cost Table (1-100) Map" xil_pn:value="5" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Starting Placer Cost Table (1-100) Par" xil_pn:value="5" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Structure window" xil_pn:value="true" xil_pn:valueState="default"/>
     <property xil_pn:name="Synthesis Tool" xil_pn:value="XST (VHDL/Verilog)" xil_pn:valueState="default"/>
     <property xil_pn:name="Target Simulator" xil_pn:value="Please Specify" xil_pn:valueState="default"/>
