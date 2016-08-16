@@ -73,4 +73,14 @@ nmi_exit:
   pla
   plp
   jmp ($ff77) ; '77' is replaced by FPGA depending on hook entry
+
+resethook: ; EMULATION MODE
+  .as : .xs
+- lda $4212
+  bpl -
+- lda $4212
+  bmi -
+  stz NMI_VECT_DISABLE
+  jmp ($fffc)
+
 .byt "bram_end"
