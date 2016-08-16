@@ -39,7 +39,7 @@ always @(posedge clk) sysclk_sreg <= {sysclk_sreg[0], sysclk};
 wire sysclk_rising = (sysclk_sreg == 2'b01);
 
 always @(posedge clk) begin
-  if(sysclk_counter < 96000000) begin
+  if(sysclk_counter < 80000000) begin
     sysclk_counter <= sysclk_counter + 1;
     if(sysclk_rising) sysclk_value <= sysclk_value + 1;
   end else begin

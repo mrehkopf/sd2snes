@@ -250,7 +250,7 @@ end
 always @(posedge clk) begin
   if((snescmd_unlock & snescmd_wr_strobe & ~|SNES_ADDR[8:0] & (SNES_DATA == 8'h85))
      | (holdoff_enable & SNES_reset_strobe)) begin
-    hook_enable_count <= 30'd860000000;
+    hook_enable_count <= 30'd800000000;
   end else if (|hook_enable_count) begin
     hook_enable_count <= hook_enable_count - 1;
   end
