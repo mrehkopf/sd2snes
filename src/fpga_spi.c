@@ -129,7 +129,7 @@
    ==========================================================================
          7         -
          6         -
-         5         -
+         5         enable permanent snescmd unlock (during load handshake)
          4         enable $213F override
          3         enable MSU1 registers
          2         enable SRTC registers

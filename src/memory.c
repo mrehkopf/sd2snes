@@ -217,6 +217,9 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   smc_id(&romprops);
   file_close();
 
+  if(filename == (uint8_t*)"/sd2snes/menu.bin") {
+    fpga_set_features(romprops.fpga_features | FEAT_CMD_UNLOCK);
+  }
   /* TODO check prerequisites and set error code here */
   if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x55);
   /* reconfigure FPGA if necessary */
@@ -226,6 +229,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   if(romprops.fpga_conf) {
     printf("reconfigure FPGA with %s...\n", romprops.fpga_conf);
     fpga_pgm((uint8_t*)romprops.fpga_conf);
+    fpga_set_features(romprops.fpga_features | FEAT_CMD_UNLOCK);
   }
   if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x77);
   set_mcu_addr(base_addr + romprops.load_address);
@@ -325,7 +329,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     romprops.fpga_features |= FEAT_213F; /* e.g. for general consoles */
   }
   fpga_set_213f(romprops.region);
-  fpga_set_features(romprops.fpga_features);
+//  fpga_set_features(romprops.fpga_features);
   fpga_set_dspfeat(romprops.fpga_dspfeat);
   dac_pause();
   dac_reset();
@@ -360,6 +364,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     cheat_yaml_load(filename);
 // XXX    cheat_yaml_save(filename);
     cheat_program();
+    fpga_set_features(romprops.fpga_features);
     snes_reset(0);
     fpga_dspx_reset(0);
   }

@@ -34,7 +34,10 @@ module address(
   output cx4_enable,
   output cx4_vect_enable,
   output r213f_enable,
-  output snescmd_enable
+  output snescmd_enable,
+  output nmicmd_enable,
+  output return_vector_enable,
+  output pad_latch_enable
 );
 
 parameter [2:0]
@@ -56,7 +59,7 @@ assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
 assign IS_SAVERAM = |SAVERAM_MASK & (&SNES_ADDR[22:20] & ~SNES_ADDR[15] & (SNES_ADDR[19:16] < 4'b1110));
 
 assign SRAM_SNES_ADDR = IS_SAVERAM
-                        ? (24'hE00000 | ({SNES_ADDR[19:16], SNES_ADDR[14:0]} 
+                        ? (24'hE00000 | ({SNES_ADDR[19:16], SNES_ADDR[14:0]}
                          & SAVERAM_MASK))
                         : ({2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]}
                          & ROM_MASK);
@@ -79,4 +82,7 @@ assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 9'h3f);
 
 assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);
 
+assign nmicmd_enable = (SNES_ADDR == 24'h002BF2);
+assign return_vector_enable = (SNES_ADDR == 24'h002A72);
+assign pad_latch_enable = (SNES_ADDR == 24'h002BFB);
 endmodule
