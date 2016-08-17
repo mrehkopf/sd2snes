@@ -1,117 +1,51 @@
-v0.1.1
-======
-
- * initial public release
-
-
-v0.1.1a (bugfix release)
-========================
-
- * Fixes:
-   - SuperCIC pair mode was erroneously enabled in firmware binary
-   - SNES menu crashed on empty database
-
-
-v0.1.2
-======
-
- * New menu entry: "System Information"
- * Auto region override (eliminate "This game pak is not designed..." messages)
- * Improved mapper detection (fixes Batman vs. Joker and many PD ROMs)
- * Improved data streaming performance
-   (should reduce MSU1 errors with some cards)
- * A and B buttons swapped in menu to match common key mappings
- * Fixes:
-   - MSU1: Stop audio playback on end of audio file
-
-
-v0.1.3
-======
-
- * Updated logo gfx with new version from klaptra
- * Updated font to distinguish between 1 and I
- * Menu layout adjusted to move status line up by 4 scanlines
- * Run previously loaded game by pressing Start in the menu
- * Auto-scroll file names that do not fit the screen
- * SD access time measurement on System Information screen (takes a while!)
- * Cx4 memory map: mirror ROM to 40-7e/c0-ff (fixes MMX3 Zero patch)
- * Some FPGA configuration error detection (mainly useful for hardware diag)
- * Fixes:
-   - FPGA-side SD clock pullup (increases reliability with some cards)
+v0.1.7c
+=======
+ * reversed changelog order =)
+ * reworked the in-game hook code, with more help from the FPGA, to
+   significantly reduce CPU footprint. This improves hook compatibility
+   with a variety of games.
+ * in-game hook: avoid disruption of manual controller reads
+   (fixes controls in Super Star Wars games)
+ * new option: "Hide file extensions" (effective after next directory change)
+ * do not silently fail to load saved games when the sd2snes/saves folder does
+   not exist (create the folder instead)
+ * do not silently fail to save cheat files when the sd2snes/cheats folder
+   does not exist (create the folder instead)
+ * Cx4 core now runs at exactly 20Mhz
+ * fixes:
+   - MSU1: avoid missed control register status changes on rapid rewrites
+     (fixes FF3 Dancing Mad, Zelda FMV missing audio)
+   - fix $213f register patch timing (hopefully)
+   - fix DSP1 header detection (fixes Ballz 3D JPN)
+   - add reset hook to boot games on start of frame only (fixes Boogerman PAL)
+   - clear entire SPC700 RAM (do not spare IPL area) - fixes echo artifacts
+     in many games
+ * minor cosmetic changes
+   - resize SPC player loading window
+   - prevent flickering letters on System Information screen
 
 
-v0.1.4
-======
-
- * SPC Player (contributed by necronomfive/blargg)
- * System Information screen now shows CPU/PPU revision (contributed by necronomfive)
- * Satellaview: basic data transmission packet support (makes some more games boot, thanks to LuigiBlood for assistance and sample data packets)
- * Number of supported files increased to 50000 per card / 16380 per directory
- * Slight speedup of menu text rendering
- * Reduce load time of menu
- * Adjust Cx4 timing to be more faithful
-   (Mega Man now defeats the boss in attract mode in Mega Man X2)
- * adapt ROM mirroring size to file size if header information is invalid
-   (fixes Super Noah's Ark 3D, possibly others)
- * MSU1 interface changes suggested by byuu:
-   - Data offset 0 and audio track 0 are automatically requested on reset.
-     This causes the busy flags to become 0 shortly after reset/startup.
-   - $2000 bit 3 is now "audio error", becomes valid after "audio busy" -> 0
-     set when an error occurred while preparing playback of the requested audio track
- * write LED stays on when SRAM content changes constantly
- * Fixes:
-   - fix empty save files on FAT16 / incorrect free cluster count on FAT32
-   - correct directory sorting (force parent directory at top of list)
-   - fix text corruption when entering a directory with a scrollable name
-   - fix files/dirs count in system information
-   - make 'sd2snes' directory hiding case-insensitive
-   - improve DAC I²S timing
-   - fix occasional palette corruption in menu
-   - fix SD clock glitch on ROM loading (occasional glitches/crashes)
-   - fix memory write timing on ROM loading (occasional glitches/crashes)
-   - fix SPI timing (ROMs not loading; System Information not working)
-   - properly synchronize SNES control signals (occasional glitches/crashes)
-   - fix floating IRQ output (occasional glitches/slowdowns)
+v0.1.7b
+=======
+ * sd2snes folder is always hidden again
+ * fixes:
+   - fix garbled time on initial clock setting (new unit or battery replacement)
+   - fix BS-X not booting/booting incorrectly after soft reset
+   - fix OBC1 being always disabled
+   - fix firmware crash when saving after using the serial command line
 
 
-v0.1.4a (bugfix release)
-========================
+v0.1.7a
+=======
+ * fixes:
+   - fix deadlock on MCU-SNES negotiation due to truncated bootstrap routine
+     (fixes firmware lockup on booting Zelda 3 after soft-reset)
+   - fix garbled default date for BS-X date+time (date record was backwards)
+   - fix incorrect saving of "Auto Region Patch" setting
 
- * Fix DMA initialization in the menu (could cause sprite corruption in some games)
-
-
-v0.1.5
-======
-
- * Sort directories by entire file name instead of first 20 characters only
- * Correctly map SRAM larger than 8192 bytes (HiROM) / 32768 bytes (LoROM)
-   (fixes Dezaemon, Ongaku Tsukuuru - Kanadeeru)
- * SPC player: fix soft fade-in (first note cut off) on S-APU consoles
-   (1CHIP / some Jr.)
- * More accurate BS-X memory map
- * Ignore input from non-standard controllers (Super Scope, Mouse etc.)
- * Fixes:
-   - minor memory access timing tweaks
-     (should help with occasional glitches on some systems)
-
-v0.1.6
-======
-
- * OBC1 support (Metal Combat: Falcon's Revenge works)
- * menu now displays the 10 most recently played games instead of one
- * hidden and system files are now ignored in the file browser
- * some minor internal changes for convenience of development
- * Fixes:
-   - partial-size BS dumps should now load correctly
-   - fixed a PSRAM mapping bug in the new BS-X mapping logic that caused
-     graphical corruption on some games (notably Treasure Conflix garbled
-     sprites)
-   - SRAM mapping for LoROM <=16Mbits now uses the entire bank instead of
-     0000-7fff only. Fixes saving in some games, e.g. Ys III Wanderers from Ys
 
 v0.1.7
 ======
-
  * cheat support (YML files) with WRAM capability
  * reworked configuration file (plain-text YML)
  * in-game buttons
@@ -145,7 +79,7 @@ v0.1.7
    - fix BSX detection for games with 2 startups left
    - emulate Type1 BSX memory pack instead of Type2 (Super Bomberman 2)
      (BSX BIOS itself crashes on Type2 packs with "copy to PSRAM" flag)
-   - initialize APU RAM to support ("fix" buggy sound routine of Soul Blader)
+   - initialize APU RAM to support ("fix") buggy sound routine of Soul Blader
    - properly de-init DMA to $ff (fix Pocky&Rocky US, SGnG, SSF2)
    - initialize SaveRAM before running the game so we don't miss very
      early saves
@@ -190,19 +124,107 @@ v0.1.7
      (Thanks to borti4938!)
    - fix feature flag error where auto region patch was always on for Cx4
 
-v0.1.7a
-=======
- * fixes:
-   - fix deadlock on MCU-SNES negotiation due to truncated bootstrap routine
-     (fixes firmware lockup on booting Zelda 3 after soft-reset)
-   - fix garbled default date for BS-X date+time (date record was backwards)
-   - fix incorrect saving of "Auto Region Patch" setting
 
-v0.1.7b
-=======
- * sd2snes folder is always hidden again
- * fixes:
-   - fix garbled time on initial clock setting (new unit or battery replacement)
-   - fix BS-X not booting/booting incorrectly after soft reset
-   - fix OBC1 being always disabled
-   - fix firmware crash when saving after using the serial command line
+v0.1.6
+======
+ * OBC1 support (Metal Combat: Falcon's Revenge works)
+ * menu now displays the 10 most recently played games instead of one
+ * hidden and system files are now ignored in the file browser
+ * some minor internal changes for convenience of development
+ * Fixes:
+   - partial-size BS dumps should now load correctly
+   - fixed a PSRAM mapping bug in the new BS-X mapping logic that caused
+     graphical corruption on some games (notably Treasure Conflix garbled
+     sprites)
+   - SRAM mapping for LoROM <=16Mbits now uses the entire bank instead of
+     0000-7fff only. Fixes saving in some games, e.g. Ys III Wanderers from Ys
+
+
+v0.1.5
+======
+ * Sort directories by entire file name instead of first 20 characters only
+ * Correctly map SRAM larger than 8192 bytes (HiROM) / 32768 bytes (LoROM)
+   (fixes Dezaemon, Ongaku Tsukuuru - Kanadeeru)
+ * SPC player: fix soft fade-in (first note cut off) on S-APU consoles
+   (1CHIP / some Jr.)
+ * More accurate BS-X memory map
+ * Ignore input from non-standard controllers (Super Scope, Mouse etc.)
+ * Fixes:
+   - minor memory access timing tweaks
+     (should help with occasional glitches on some systems)
+
+
+v0.1.4a (bugfix release)
+========================
+ * Fix DMA initialization in the menu (could cause sprite corruption in some games)
+
+
+v0.1.4
+======
+ * SPC Player (contributed by necronomfive/blargg)
+ * System Information screen now shows CPU/PPU revision (contributed by necronomfive)
+ * Satellaview: basic data transmission packet support (makes some more games boot, thanks to LuigiBlood for assistance and sample data packets)
+ * Number of supported files increased to 50000 per card / 16380 per directory
+ * Slight speedup of menu text rendering
+ * Reduce load time of menu
+ * Adjust Cx4 timing to be more faithful
+   (Mega Man now defeats the boss in attract mode in Mega Man X2)
+ * adapt ROM mirroring size to file size if header information is invalid
+   (fixes Super Noah's Ark 3D, possibly others)
+ * MSU1 interface changes suggested by byuu:
+   - Data offset 0 and audio track 0 are automatically requested on reset.
+     This causes the busy flags to become 0 shortly after reset/startup.
+   - $2000 bit 3 is now "audio error", becomes valid after "audio busy" -> 0
+     set when an error occurred while preparing playback of the requested audio track
+ * write LED stays on when SRAM content changes constantly
+ * Fixes:
+   - fix empty save files on FAT16 / incorrect free cluster count on FAT32
+   - correct directory sorting (force parent directory at top of list)
+   - fix text corruption when entering a directory with a scrollable name
+   - fix files/dirs count in system information
+   - make 'sd2snes' directory hiding case-insensitive
+   - improve DAC I²S timing
+   - fix occasional palette corruption in menu
+   - fix SD clock glitch on ROM loading (occasional glitches/crashes)
+   - fix memory write timing on ROM loading (occasional glitches/crashes)
+   - fix SPI timing (ROMs not loading; System Information not working)
+   - properly synchronize SNES control signals (occasional glitches/crashes)
+   - fix floating IRQ output (occasional glitches/slowdowns)
+
+
+v0.1.3
+======
+ * Updated logo gfx with new version from klaptra
+ * Updated font to distinguish between 1 and I
+ * Menu layout adjusted to move status line up by 4 scanlines
+ * Run previously loaded game by pressing Start in the menu
+ * Auto-scroll file names that do not fit the screen
+ * SD access time measurement on System Information screen (takes a while!)
+ * Cx4 memory map: mirror ROM to 40-7e/c0-ff (fixes MMX3 Zero patch)
+ * Some FPGA configuration error detection (mainly useful for hardware diag)
+ * Fixes:
+   - FPGA-side SD clock pullup (increases reliability with some cards)
+
+
+v0.1.2
+======
+ * New menu entry: "System Information"
+ * Auto region override (eliminate "This game pak is not designed..." messages)
+ * Improved mapper detection (fixes Batman vs. Joker and many PD ROMs)
+ * Improved data streaming performance
+   (should reduce MSU1 errors with some cards)
+ * A and B buttons swapped in menu to match common key mappings
+ * Fixes:
+   - MSU1: Stop audio playback on end of audio file
+
+
+v0.1.1a (bugfix release)
+========================
+ * Fixes:
+   - SuperCIC pair mode was erroneously enabled in firmware binary
+   - SNES menu crashed on empty database
+
+
+v0.1.1
+======
+ * initial public release
