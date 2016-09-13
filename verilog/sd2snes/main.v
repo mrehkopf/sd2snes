@@ -232,9 +232,9 @@ parameter ST_MCU_RD_END  = 5'b00100;
 parameter ST_MCU_WR_ADDR = 5'b01000;
 parameter ST_MCU_WR_END  = 5'b10000;
 
-parameter SNES_DEAD_TIMEOUT = 17'd86000; // 1ms
+parameter SNES_DEAD_TIMEOUT = 17'd96000; // 1ms
 
-parameter ROM_CYCLE_LEN = 4'd7;
+parameter ROM_CYCLE_LEN = 4'd8;
 
 reg [4:0] STATE;
 initial STATE = ST_IDLE;
