@@ -59,8 +59,9 @@ void cheat_program() {
   cheat_irq_enable(CFG.enable_irq_hook);
   cheat_holdoff_enable(CFG.enable_irq_holdoff);
   cheat_buttons_enable(CFG.enable_irq_buttons);
-
+  cheat_wram_present(wram_index);
 }
+
 void cheat_program_single(cheat_patch_record_t *cheat) {
   uint8_t is_wram_cheat;
   /* determine ROM or WRAM cheat */
@@ -106,38 +107,48 @@ void cheat_save_from_menu(int index, cheat_record_t *cheat) {
 }
 
 void cheat_enable(int enable) {
-  uint8_t flags;
+  uint16_t flags;
   /* switch ROM cheats */
   printf("cheat_enable->%d\n", enable);
-  flags = (enable ? 0x01 : 0x10);
+  flags = (enable ? 0x0001 : 0x0100);
   fpga_write_cheat(7, flags);
   /* switch WRAM cheats */
   snescmd_writebyte(enable ? 0 : 1, SNESCMD_NMI_DISABLE_WRAM);
 }
 
 void cheat_nmi_enable(int enable) {
-  uint8_t flags;
+  uint16_t flags;
   printf("nmi_enable->%d\n", enable);
-  flags = (enable ? 0x02 : 0x20);
+  flags = (enable ? 0x0002 : 0x0200);
   fpga_write_cheat(7, flags);
 }
 
 void cheat_irq_enable(int enable) {
-  uint8_t flags;
+  uint16_t flags;
   printf("irq_enable->%d\n", enable);
-  flags = (enable ? 0x04 : 0x40);
+  flags = (enable ? 0x0004 : 0x0400);
   fpga_write_cheat(7, flags);
 }
 
 void cheat_holdoff_enable(int enable) {
-  uint8_t flags;
+  uint16_t flags;
   printf("holdoff_enable->%d\n", enable);
-  flags = (enable ? 0x08 : 0x80);
+  flags = (enable ? 0x0008 : 0x0800);
   fpga_write_cheat(7, flags);
 }
 
 void cheat_buttons_enable(int enable) {
-  snescmd_writebyte(enable, SNESCMD_NMI_ENABLE_BUTTONS);
+  uint16_t flags;
+  printf("buttons_enable->%d\n", enable);
+  flags = (enable ? 0x0010 : 0x1000);
+  fpga_write_cheat(7, flags);
+}
+
+void cheat_wram_present(int enable) {
+  uint16_t flags;
+  printf("wram_present->%d\n", enable);
+  flags = (enable ? 0x0020 : 0x2000);
+  fpga_write_cheat(7, flags);
 }
 
 /* read cheats from YAML file to ROM for menu usage */

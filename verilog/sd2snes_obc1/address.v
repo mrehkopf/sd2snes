@@ -35,7 +35,8 @@ module address(
   output snescmd_enable,
   output nmicmd_enable,
   output return_vector_enable,
-  output pad_latch_enable,
+  output branch1_enable,
+  output branch2_enable,
   output obc1_enable
 );
 
@@ -110,6 +111,7 @@ assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 assign obc1_enable = (~SNES_ADDR[22]) & (SNES_ADDR[15:11] == 5'b01111);
 assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);
 assign nmicmd_enable = (SNES_ADDR == 24'h002BF2);
-assign return_vector_enable = (SNES_ADDR == 24'h002A72);
-assign pad_latch_enable = (SNES_ADDR == 24'h002BFB);
+assign return_vector_enable = (SNES_ADDR == 24'h002A5A);
+assign branch1_enable = (SNES_ADDR == 24'h002A13);
+assign branch2_enable = (SNES_ADDR == 24'h002A4D);
 endmodule

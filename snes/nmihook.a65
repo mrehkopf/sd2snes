@@ -5,24 +5,36 @@ nmihook:
   php
   rep #$20 : .al
   pha
-  lda @$004218
+  lda @$004218 ; initial backup as early as possible
   sta @NMI_PAD
+  sep #$20 : .as
+- bra -        ; branch1 filled in by FPGA
+; rules for branch tgt:
+;        if (buttons disabled OR manual read in progress) AND wram patching enabled: nmi_patches
+;        if (buttons disabled OR manual read in progress) AND wram patching disabled: nmi_exit
+;        if buttons enabled AND AJR enabled AND CMD != 0: nmi_echocmd
+;        if buttons enabled AND AJR enabled AND CMD == 0 AND wram patching enabled: nmi_patches
+;        if buttons enabled AND AJR enabled AND CMD == 0 AND wram patching disabled: nmi_exit
+;        if buttons enabled AND AJR disabled: nmi_manual_read
+
+; FPGA state:
+;        - wram patching enabled (MCU side: cheats enabled AND wram cheats present) AND wram gate
+;        - wram patching gate (FPGA side toggle)
+;        - buttons enabled
+;        - manual read in progress
+;        - AJR enabled
+
+; wram patching gate (same as cheat enable):
+;        - if buttons enabled and CMD = $83: disable
+;        - if buttons enabled and CMD = $82: enable
+
+nmi_manual_read:
   phb
   phd
-  lda #$2b00
+  lda #$2b
+  xba
+  lda #$00
   tcd
-  sep #$20 : .as
-; skip in-game buttons if disabled
-  lda <NMI_BUTTONS_ENABLE
-  beq nmi_patches
-; read controller auto read flag
-  lda <MIRROR_4200
-; auto read is active, so we reuse the early snapshot taken
-  bmi nmi_pad_getcmd
-; no auto read; read the controller manually
-; only read when no read in progress by game (do not disrupt game's readout)
-  bit <PAD_LATCH
-  bmi nmi_pad_getcmd
   phk
   plb
   lda #$01
@@ -43,36 +55,34 @@ nmihook:
   dex
   bne -
   plx
-nmi_pad_getcmd:
+  pld
+  plb
 ; button combination -> command is mapped by FPGA
-  lda <NMI_CMD
-  beq nmi_patches
+nmi_echocmd: ; echo cmd to MCU for misc handling
+  lda @NMI_CMD
   sta @MCU_CMD
-  cmp #$83 ; disable WRAM patching
-  beq nmi_disable_wram
-  cmp #$82 ; enable WRAM patching
-  bne nmi_patches
-nmi_enable_wram:
-  lda #$00
-nmi_disable_wram:
-  sta <NMI_WRAM_PATCH_DISABLE
+; 2nd branch point to determine whether to jump to WRAM cheats,
+; halt system (for reset), or continue
+- bra - ; nmi_patches, nmi_stop, or nmi_exit
 nmi_patches:
-; skip WRAM patching if disabled
-  lda <NMI_WRAM_PATCH_DISABLE
-  bne nmi_exit
-; skip WRAM patching if there are no cheats
-  lda <NMI_WRAM_PATCH_COUNT
-  beq nmi_exit
   jsr NMI_WRAM_CHEATS
 nmi_exit:
 ; clean up
-  stz <NMI_VECT_DISABLE
-  pld
+  sta @NMI_VECT_DISABLE
   rep #$20 : .al
-  plb
   pla
   plp
   jmp ($ff77) ; '77' is replaced by FPGA depending on hook entry
+
+nmi_stop:
+  sei
+  sep #$20 : .as
+  phk
+  plb
+  stz $4200
+  lda #$80
+  sta $2100
+- bra -
 
 resethook: ; EMULATION MODE
   .as : .xs

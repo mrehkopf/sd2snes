@@ -30,8 +30,10 @@ module cheat(
   input nmicmd_enable,
   input return_vector_enable,
   input reset_vector_enable,
-  input pad_latch_enable,
+  input branch1_enable,
+  input branch2_enable,
   input pad_latch,
+  input snes_ajr,
   input SNES_cycle_start,
   input [2:0] pgm_idx,
   input pgm_we,
@@ -47,6 +49,9 @@ reg cheat_enable = 0;
 reg nmi_enable = 0;
 reg irq_enable = 0;
 reg holdoff_enable = 0; // temp disable hooks after reset
+reg buttons_enable = 0;
+reg wram_present = 0;
+wire branch_wram = cheat_enable & wram_present;
 
 reg auto_nmi_enable = 1;
 reg auto_irq_enable = 0;
@@ -79,6 +84,9 @@ assign snescmd_unlock = snescmd_unlock_r;
 reg [7:0] nmicmd = 0;
 reg [7:0] return_vector = 8'hea;
 
+reg [7:0] branch1_offset = 8'h00;
+reg [7:0] branch2_offset = 8'h00;
+
 reg [15:0] pad_data = 0;
 
 wire [5:0] cheat_match_bits ={(cheat_enable_mask[5] & (SNES_ADDR == cheat_addr[5])),
@@ -107,13 +115,14 @@ assign data_out = cheat_match_bits[0] ? cheat_data[0]
                 : cheat_match_bits[5] ? cheat_data[5]
                 : nmi_match_bits[1] ? 8'h04
                 : irq_match_bits[1] ? 8'h04
-                : rst_match_bits[1] ? 8'h74
+                : rst_match_bits[1] ? 8'h6b
                 : nmicmd_enable ? nmicmd
                 : return_vector_enable ? return_vector
-                : pad_latch_enable ? {pad_latch, 7'b0}
+                : branch1_enable ? branch1_offset
+                : branch2_enable ? branch2_offset
                 : 8'h2a;
 
-assign cheat_hit = (snescmd_unlock & hook_enable_sync & (nmicmd_enable | return_vector_enable | pad_latch_enable))
+assign cheat_hit = (snescmd_unlock & hook_enable_sync & (nmicmd_enable | return_vector_enable | branch1_enable | branch2_enable))
                    | (reset_unlock & rst_addr_match)
                    | (cheat_enable & cheat_addr_match)
                    | (hook_enable_sync & (((auto_nmi_enable_sync & nmi_enable) & nmi_addr_match & vector_unlock)
@@ -180,33 +189,36 @@ reg snescmd_unlock_disable = 0;
 always @(posedge clk) begin
   if(SNES_reset_strobe) begin
     snescmd_unlock_r <= 0;
-  end
-  if(SNES_rd_strobe) begin
-    if(hook_enable_sync & (nmi_enable | irq_enable) & (nmi_match_bits[1] | irq_match_bits[1]) & cpu_push_cnt == 4) begin
-      // remember where we came from (IRQ/NMI) for hook exit
-      return_vector <= SNES_ADDR[7:0];
-      snescmd_unlock_r <= 1;
-    end
-    if(rst_match_bits[1]) begin
-      snescmd_unlock_r <= 1;
-    end
-  end
-  // give some time to exit snescmd memory and jump to original vector
-  if(SNES_cycle_start) begin
-    if(snescmd_unlock_disable) begin
-      if(|snescmd_unlock_disable_countdown) begin
-        snescmd_unlock_disable_countdown <= snescmd_unlock_disable_countdown - 1;
-      end else if(snescmd_unlock_disable_countdown == 0) begin
-        snescmd_unlock_r <= 0;
-        snescmd_unlock_disable <= 0;
+    snescmd_unlock_disable <= 0;
+  end else begin
+    if(SNES_rd_strobe) begin
+      if(hook_enable_sync & (nmi_enable | irq_enable) & (nmi_match_bits[1] | irq_match_bits[1]) & cpu_push_cnt == 4) begin
+        // remember where we came from (IRQ/NMI) for hook exit
+        return_vector <= SNES_ADDR[7:0];
+        snescmd_unlock_r <= 1;
+      end
+      if(rst_match_bits[1]) begin
+        snescmd_unlock_r <= 1;
       end
     end
-  end
-  if(snescmd_unlock_disable_strobe) begin
-    snescmd_unlock_disable_countdown <= 7'd72;
-    snescmd_unlock_disable <= 1;
+    // give some time to exit snescmd memory and jump to original vector
+    if(SNES_cycle_start) begin
+      if(snescmd_unlock_disable) begin
+        if(|snescmd_unlock_disable_countdown) begin
+          snescmd_unlock_disable_countdown <= snescmd_unlock_disable_countdown - 1;
+        end else if(snescmd_unlock_disable_countdown == 0) begin
+          snescmd_unlock_r <= 0;
+          snescmd_unlock_disable <= 0;
+        end
+      end
+    end
+    if(snescmd_unlock_disable_strobe) begin
+      snescmd_unlock_disable_countdown <= 7'd72;
+      snescmd_unlock_disable <= 1;
+    end
   end
 end
+
 
 always @(posedge clk) usage_count <= usage_count - 1;
 
@@ -250,35 +262,41 @@ end
 always @(posedge clk) begin
   if((snescmd_unlock & snescmd_wr_strobe & ~|SNES_ADDR[8:0] & (SNES_DATA == 8'h85))
      | (holdoff_enable & SNES_reset_strobe)) begin
-    hook_enable_count <= 30'd800000000;
+    hook_enable_count <= 30'd960000000;
   end else if (|hook_enable_count) begin
     hook_enable_count <= hook_enable_count - 1;
   end
 end
 
 always @(posedge clk) begin
-  snescmd_unlock_disable_strobe <= 1'b0;
-  if(snescmd_unlock & snescmd_wr_strobe) begin
-    if(~|SNES_ADDR[8:0]) begin
-      case(SNES_DATA)
-        8'h82: cheat_enable <= 1;
-        8'h83: cheat_enable <= 0;
-        8'h84: {nmi_enable, irq_enable} <= 2'b00;
-      endcase
-    end else if(SNES_ADDR[8:0] == 9'h1fd) begin
-      snescmd_unlock_disable_strobe <= 1'b1;
-    end
-  end else if(pgm_we) begin
-    if(pgm_idx < 6) begin
-      cheat_addr[pgm_idx] <= pgm_in[31:8];
-      cheat_data[pgm_idx] <= pgm_in[7:0];
-    end else if(pgm_idx == 6) begin // set rom patch enable
-      cheat_enable_mask <= pgm_in[5:0];
-    end else if(pgm_idx == 7) begin // set/reset global enable / hooks
-    // pgm_in[7:4] are reset bit flags
-    // pgm_in[3:0] are set bit flags
-      {holdoff_enable, irq_enable, nmi_enable, cheat_enable} <= ({holdoff_enable, irq_enable, nmi_enable, cheat_enable} & ~pgm_in[7:4])
-                                                                 | pgm_in[3:0];
+  if(SNES_reset_strobe) begin
+    snescmd_unlock_disable_strobe <= 1'b0;
+  end else begin
+    snescmd_unlock_disable_strobe <= 1'b0;
+    if(snescmd_unlock & snescmd_wr_strobe) begin
+      if(~|SNES_ADDR[8:0]) begin
+        case(SNES_DATA)
+          8'h82: cheat_enable <= 1;
+          8'h83: cheat_enable <= 0;
+          8'h84: {nmi_enable, irq_enable} <= 2'b00;
+        endcase
+      end else if(SNES_ADDR[8:0] == 9'h1fd) begin
+        snescmd_unlock_disable_strobe <= 1'b1;
+      end
+    end else if(pgm_we) begin
+      if(pgm_idx < 6) begin
+        cheat_addr[pgm_idx] <= pgm_in[31:8];
+        cheat_data[pgm_idx] <= pgm_in[7:0];
+      end else if(pgm_idx == 6) begin // set rom patch enable
+        cheat_enable_mask <= pgm_in[5:0];
+      end else if(pgm_idx == 7) begin // set/reset global enable / hooks
+      // pgm_in[7:4] are reset bit flags
+      // pgm_in[3:0] are set bit flags
+        {wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
+         <= ({wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
+          & ~pgm_in[13:8])
+          | pgm_in[5:0];
+      end
     end
   end
 end
@@ -303,14 +321,56 @@ end
 
 always @* begin
   case(pad_data)
-    16'h3030: nmicmd <= 8'h80;
-    16'h2070: nmicmd <= 8'h81;
-    16'h10b0: nmicmd <= 8'h82;
-    16'h9030: nmicmd <= 8'h83;
-    16'h5030: nmicmd <= 8'h84;
-    16'h1070: nmicmd <= 8'h85;
-    default: nmicmd <= 8'h00;
+    16'h3030: nmicmd = 8'h80;
+    16'h2070: nmicmd = 8'h81;
+    16'h10b0: nmicmd = 8'h82;
+    16'h9030: nmicmd = 8'h83;
+    16'h5030: nmicmd = 8'h84;
+    16'h1070: nmicmd = 8'h85;
+    default: nmicmd = 8'h00;
   endcase
+end
+
+always @* begin
+  if(buttons_enable) begin
+    if(snes_ajr) begin
+      if(nmicmd) begin
+        branch1_offset = 8'h30;   // nmi_echocmd
+      end else begin
+        if(branch_wram) begin
+          branch1_offset = 8'h3a; // nmi_patches
+        end else begin
+          branch1_offset = 8'h3d; // nmi_exit
+        end
+      end
+    end else begin
+      if(pad_latch) begin
+        if(branch_wram) begin
+          branch1_offset = 8'h3a; // nmi_patches
+        end else begin
+          branch1_offset = 8'h3d; // nmi_exit
+        end
+      end else begin
+        branch1_offset = 8'h00;   // continue with MJR
+      end
+    end
+  end else begin
+    if(branch_wram) begin
+      branch1_offset = 8'h3a;     // nmi_patches
+    end else begin
+      branch1_offset = 8'h3d;     // nmi_exit
+    end
+  end
+end
+
+always @* begin
+  if(nmicmd == 8'h81) begin
+    branch2_offset = 8'h0e;       // nmi_stop
+  end else if(branch_wram) begin
+    branch2_offset = 8'h00;       // nmi_patches
+  end else begin
+    branch2_offset = 8'h03;       // nmi_exit
+  end
 end
 
 endmodule

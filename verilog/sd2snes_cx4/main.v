@@ -395,7 +395,8 @@ address snes_addr(
   .snescmd_enable(snescmd_enable),
   .nmicmd_enable(nmicmd_enable),
   .return_vector_enable(return_vector_enable),
-  .pad_latch_enable(pad_latch_enable)
+  .branch1_enable(branch1_enable),
+  .branch2_enable(branch2_enable)
 );
 
 assign DCM_RST=0;
@@ -429,6 +430,8 @@ cx4 snes_cx4 (
 reg pad_latch = 0;
 reg [4:0] pad_cnt = 0;
 
+reg snes_ajr = 0;
+
 cheat snes_cheat(
   .clk(CLK2),
   .SNES_ADDR(SNES_ADDR),
@@ -441,8 +444,10 @@ cheat snes_cheat(
   .snescmd_enable(snescmd_enable),
   .nmicmd_enable(nmicmd_enable),
   .return_vector_enable(return_vector_enable),
-  .pad_latch_enable(pad_latch_enable),
+  .branch1_enable(branch1_enable),
+  .branch2_enable(branch2_enable),
   .pad_latch(pad_latch),
+  .snes_ajr(snes_ajr),
   .pgm_idx(cheat_pgm_idx),
   .pgm_we(cheat_pgm_we),
   .pgm_in(cheat_pgm_data),
@@ -464,6 +469,12 @@ initial r213f_delay = 3'b000;
 
 wire snoop_4200_enable = {SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h04200;
 wire r4016_enable = {SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h04016;
+
+always @(posedge CLK2) begin
+  if(SNES_WR_end & snoop_4200_enable) begin
+    snes_ajr <= SNES_DATA[0];
+  end
+end
 
 always @(posedge CLK2) begin
   if(SNES_WR_end & r4016_enable) begin
@@ -668,13 +679,11 @@ assign SNES_IRQ = 1'b0;
 
 assign p113_out = 1'b0;
 
-wire [8:0] snescmd_addra = snoop_4200_enable ? 9'h1fa : SNES_ADDR[8:0];
-
 snescmd_buf snescmd (
   .clka(CLK2), // input clka
-  .wea(SNES_WR_end & (((snescmd_unlock | feat_cmd_unlock) & snescmd_enable) | snoop_4200_enable)), // input [0 : 0] wea
-  .addra(snescmd_addra), // input [8 : 0] addra
-  .dina(snoop_4200_enable ? {SNES_DATA[0], 3'b000, SNES_DATA[7], 1'b0, SNES_DATA[5:4]} : SNES_DATA), // input [7 : 0] dina
+  .wea(SNES_WR_end & ((snescmd_unlock | feat_cmd_unlock) & snescmd_enable)), // input [0 : 0] wea
+  .addra(SNES_ADDR[8:0]), // input [8 : 0] addra
+  .dina(SNES_DATA), // input [7 : 0] dina
   .douta(snescmd_dout), // output [7 : 0] douta
   .clkb(CLK2), // input clkb
   .web(snescmd_we_mcu), // input [0 : 0] web
