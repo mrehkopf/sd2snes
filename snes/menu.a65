@@ -991,6 +991,7 @@ menu_value_dialog_u8_set:
       lda w_work_value
       sta [w_value_addr]
       bra menu_value_dialog_u8_cont
+menu_value_dialog_u8_print:
 +     rep #$20 : .al
       lda w_work_value
       and #$00ff
@@ -1005,6 +1006,8 @@ menu_value_dialog_u8_set:
         lda bar_yl
         inc
         sta print_y
+        lda #$01
+        sta print_pal
         jsr hiprint
       plb
       brl -
@@ -1116,6 +1119,7 @@ menu_value_dialog_u16_set:
       lda w_work_value
       sta [w_value_addr]
       bra menu_value_dialog_u16_cont
+menu_value_dialog_u16_print:
 +     rep #$20 : .al
       lda w_work_value
       jsr bin2dec16
@@ -1129,6 +1133,8 @@ menu_value_dialog_u16_set:
         lda bar_yl
         inc
         sta print_y
+        lda #$01
+        sta @print_pal
         jsr hiprint
       plb
       rep #$20 : .al
@@ -1230,6 +1236,8 @@ menu_value_dialog_kv8_cancel:
       sep #$20 : .as
       lda !$4, y
       sta @print_bank
+      lda #$01
+      sta @print_pal
       phy
       phb
         ldy w_label_addr
