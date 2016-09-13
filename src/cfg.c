@@ -230,7 +230,7 @@ void cfg_dump_recent_games_for_snes(uint32_t address) {
   file_open(LAST_FILE, FA_READ);
   for(index = 0; index < 10 && !f_eof(&file_handle); index++) {
     f_gets(fntmp, 255, &file_handle);
-    sram_writeblock(strrchr((const char*)fntmp, '/')+1, address+256*index, 256);
+    sram_writestrn(strrchr((const char*)fntmp, '/')+1, address+256*index, 256);
   }
   ST.num_recent_games = index;
   file_close();
