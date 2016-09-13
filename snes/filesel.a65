@@ -191,6 +191,8 @@ redraw_filelist
   ldy #$0000
   sty dirptr_idx
   sty direntry_fits_idx
+  sty direntry_xscroll
+  sty direntry_xscroll_state
   stz dirend_idx
   stz dirend_onscreen
 redraw_filelist_loop
