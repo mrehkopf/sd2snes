@@ -105,14 +105,15 @@ spc_transfer:       ; .org $0002
   .byt $e4,$f7      ;  mov a,$f7  ; tell S-CPU we're ready for more
   .byt $cb,$f7      ;  mov $f7,Y
   .byt $d6,$c0,$02  ; mov3: mov !$02c0+y,a
+  .byt $00          ;  nop ; give some time for S-CPU HDMA / WRAM refresh
   .byt $dc          ;  dec y
-  .byt $10,-25      ;  bpl quad
+  .byt $10,-26      ;  bpl quad
 ; Increment MSBs of addresses
   .byt $ab,$0a      ;  inc mov0+2
   .byt $ab,$0f      ;  inc mov1+2
   .byt $ab,$14      ;  inc mov2+2
   .byt $ab,$1b      ;  inc mov3+2
   .byt $1d          ;  dec x
-  .byt $d0,-38      ;  bne page
+  .byt $d0,-39      ;  bne page
 ; Rerun loader
   .byt $5f,$c0,$ff  ;  jmp $ffc0

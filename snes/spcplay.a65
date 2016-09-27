@@ -239,7 +239,6 @@ spc700_load:
   jsr upload_high_ram ; Upload 63.5K of SPC700 ram
   jsr upload_low_ram  ; Upload rest of ram
   jsr restore_final   ; Restore SPC700 state & start execution
-
   lda #$81            ; VBlank NMI + Auto Joypad Read
   sta $4200           ; enable V-BLANK NMI
   cli
@@ -341,7 +340,7 @@ upload_high_ram:
   lda @spc_transfer,x
   jsr spc_upload_byte
   inx
-  cpy #43             ; size of transfer routine
+  cpy #44             ; size of transfer routine
   bne -
 
   ldx #$023f          ; prepare transfer address
@@ -660,10 +659,10 @@ exec_instr:
 ; isn't needed, as this avoids such tight timing
 ; requirements.
 
-;  phd                 ; 4
-;  pld                 ; 5
-;  phd                 ; 4
-;  pld                 ; 5
+  phd                 ; 4
+  pld                 ; 5
+  phd                 ; 4
+  pld                 ; 5
 
 ; Patch loop to skip first two bytes
   lda #$fe            ; 16
