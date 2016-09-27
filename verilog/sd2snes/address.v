@@ -23,6 +23,7 @@ module address(
   input [2:0] MAPPER,       // MCU detected mapper
   input [23:0] SNES_ADDR,   // requested address from SNES
   input [7:0] SNES_PA,      // peripheral address from SNES
+  input SNES_ROMSEL,        // ROMSEL from SNES
   output [23:0] ROM_ADDR,   // Address to request from SRAM0
   output ROM_HIT,           // enable SRAM0
   output IS_SAVERAM,        // address/CS mapped as SRAM?
@@ -119,7 +120,7 @@ wire BSX_IS_PSRAM = BSX_PSRAM_LOHI
                          &(~(SNES_ADDR[19] & bsx_regs[2])))
                        | (bsx_regs[2]
                           ? (SNES_ADDR[22:21] == 2'b01 & SNES_ADDR[15:13] == 3'b011)
-                          : (&SNES_ADDR[22:20] & ~SNES_ADDR[15]))
+                          : (~SNES_ROMSEL & &SNES_ADDR[22:20] & ~SNES_ADDR[15]))
                        );
 
 wire BSX_IS_CARTROM = ((bsx_regs[7] & (SNES_ADDR[23:22] == 2'b00))
@@ -135,9 +136,7 @@ wire BSX_IS_HOLE = BSX_HOLE_LOHI
 assign bsx_tristate = (MAPPER == 3'b011) & ~BSX_IS_CARTROM & ~BSX_IS_PSRAM & BSX_IS_HOLE;
 
 assign IS_WRITABLE = IS_SAVERAM
-                     |((MAPPER == 3'b011)
-                       ? BSX_IS_PSRAM
-                       : 1'b0);
+                     |((MAPPER == 3'b011) & BSX_IS_PSRAM);
 
 wire [23:0] BSX_ADDR = bsx_regs[2] ? {1'b0, SNES_ADDR[22:0]}
                                    : {2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]};
