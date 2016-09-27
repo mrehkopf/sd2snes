@@ -264,11 +264,12 @@ spcstart_win_y  .byt 13
 spcstart_win_w  .byt 44
 spcstart_win_h  .byt 9
 
-text_loading    .byt "Loading", 127, 128, 0
-loading_win_x   .byt 26
-loading_win_y   .byt 15
-loading_win_w   .byt 13
-loading_win_h   .byt 3
+text_loading    .byt "Loading", 127, 128, "                        ",0
+text_saving     .byt "Saving", 127, 128, "                         ",0
+loading_win_x   .byt 2
+loading_win_y   .byt 28
+loading_win_w   .byt 34
+loading_win_h   .byt 1
 
 cheat_tab_head  .byt "Name                  Address  Cmp  Data  Enable", 0
 cheat_tab_line  .byt 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24

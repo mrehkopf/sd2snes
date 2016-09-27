@@ -299,25 +299,17 @@ draw_loading_window:
   rep #$10 : .xl
   lda @loading_win_x
   sta window_x
-  lda @loading_win_y
+  sta print_x
+  lda listdisp
+  clc
+  adc #$0a
   sta window_y
+  sta print_y
   lda @loading_win_w
   sta window_w
   lda @loading_win_h
   sta window_h
   jsr push_window
-  lda #^zero
-  sta window_tbank
-  ldx #!zero
-  stx window_taddr
-  jsr draw_window
-  lda @loading_win_x
-  inc
-  inc
-  sta print_x
-  lda @loading_win_y
-  inc
-  sta print_y
   lda #^text_loading
   sta print_bank
   ldx #!text_loading
