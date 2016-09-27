@@ -264,7 +264,7 @@ void get_selected_name(uint8_t* fn) {
   }
   sram_readstrn(fn+count, fdaddr+6+SRAM_MENU_ADDR, 256-count);
   /* restore hidden file extension */
-  if(CFG.hide_extensions && (dot=strchr((char*)fn, 1))) {
+  if((dot=strchr((char*)fn, 1))) {
     *dot = '.';
   }
 }
