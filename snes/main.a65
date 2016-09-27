@@ -621,7 +621,7 @@ game_handshake_error:
 wait_mcu_ready:
   php
   sep #$20 : .as
-  lda #$ff
+  lda #$00
   sta @MCU_CMD
 - lda @SNES_CMD
   cmp #$55
