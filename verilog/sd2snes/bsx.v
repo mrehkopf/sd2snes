@@ -264,7 +264,7 @@ always @(posedge clkin) begin
           flash_status_r <= 0;
         end else if((reg_data_in == 8'hff) & ~flash_we_r) begin
           flash_ovr_r <= 0;
-          flash_we_r <= 0;          
+          flash_we_r <= 0;
         end else if(reg_data_in[7:1] == 7'b0111000 || ((flash_cmd0 == 8'h38 && reg_data_in == 8'hd0) & ~flash_we_r)) begin
           flash_ovr_r <= 1;
           flash_status_r <= 1;
