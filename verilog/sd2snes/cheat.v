@@ -162,7 +162,10 @@ always @(posedge clk) begin
   if(SNES_reset_strobe) begin
     vector_unlock_r <= 2'b00;
   end else if(SNES_rd_strobe) begin
-    if(hook_enable_sync & (nmi_enable | irq_enable) & (nmi_match_bits[1] | irq_match_bits[1]) & cpu_push_cnt == 4) begin
+    if(hook_enable_sync
+      & ((auto_nmi_enable_sync & nmi_enable & nmi_match_bits[1])
+        |(auto_irq_enable_sync & irq_enable & irq_match_bits[1]))
+      & cpu_push_cnt == 4) begin
       vector_unlock_r <= 2'b11;
     end else if(|vector_unlock_r) begin
       vector_unlock_r <= vector_unlock_r - 1;
@@ -192,7 +195,10 @@ always @(posedge clk) begin
     snescmd_unlock_disable <= 0;
   end else begin
     if(SNES_rd_strobe) begin
-      if(hook_enable_sync & (nmi_enable | irq_enable) & (nmi_match_bits[1] | irq_match_bits[1]) & cpu_push_cnt == 4) begin
+      if(hook_enable_sync
+        & ((auto_nmi_enable_sync & nmi_enable & nmi_match_bits[1])
+          |(auto_irq_enable_sync & irq_enable & irq_match_bits[1]))
+        & cpu_push_cnt == 4) begin
         // remember where we came from (IRQ/NMI) for hook exit
         return_vector <= SNES_ADDR[7:0];
         snescmd_unlock_r <= 1;
