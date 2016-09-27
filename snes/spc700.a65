@@ -12,7 +12,7 @@ apu_ram_init:
   lda @apu_ram_init_code, x
   jsr spc_upload_byte
   inx
-  cpx #50
+  cpx #38
   bne -
   ldx #$0002
   stx APUIO2
