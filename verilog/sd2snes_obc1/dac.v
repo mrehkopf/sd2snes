@@ -76,9 +76,9 @@ reg [1:0] mclk_sreg;
 reg [1:0] lrck_sreg;
 reg [1:0] sclk_sreg;
 
-assign mclk_out = ~mclk_sreg[1];
-assign lrck_out = lrck_sreg[1];
-assign sclk_out = sclk_sreg[1];
+assign mclk_out = mclk;
+assign lrck_out = lrck;
+assign sclk_out = sclk;
 
 wire lrck_rising = (lrck_sreg[1:0] == 2'b01);
 wire lrck_falling = (lrck_sreg[1:0] == 2'b10);
