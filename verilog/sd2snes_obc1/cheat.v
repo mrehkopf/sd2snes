@@ -197,7 +197,7 @@ always @(posedge clk) begin
         return_vector <= SNES_ADDR[7:0];
         snescmd_unlock_r <= 1;
       end
-      if(rst_match_bits[1]) begin
+      if(rst_match_bits[1] & |reset_unlock_r) begin
         snescmd_unlock_r <= 1;
       end
     end
