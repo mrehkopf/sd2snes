@@ -608,7 +608,7 @@ assign ROM_BLE = !ROM_ADDR0;
 
 assign SNES_DATABUS_OE = obc1_enable ? 1'b0 :
                          msu_enable ? 1'b0 :
-                         snescmd_enable ? ((~(snescmd_unlock | feat_cmd_unlock) | SNES_READ) & SNES_WRITE) :
+                         snescmd_enable ? (~(snescmd_unlock | feat_cmd_unlock) | (SNES_READ & SNES_WRITE)) :
                          r213f_enable & !SNES_PARD ? 1'b0 :
                          snoop_4200_enable ? SNES_WRITE
                          : ((IS_ROM & SNES_CS)

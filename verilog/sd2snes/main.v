@@ -734,7 +734,7 @@ assign SNES_DATABUS_OE = (dspx_enable | dspx_dp_enable) ? 1'b0 :
                          msu_enable ? 1'b0 :
                          bsx_data_ovr ? (SNES_READ & SNES_WRITE) :
                          srtc_enable ? (SNES_READ & SNES_WRITE) :
-                         snescmd_enable ? ((~(snescmd_unlock | feat_cmd_unlock) | SNES_READ) & SNES_WRITE) :
+                         snescmd_enable ? (~(snescmd_unlock | feat_cmd_unlock) | (SNES_READ & SNES_WRITE)) :
                          bs_page_enable ? (SNES_READ) :
                          r213f_enable & !SNES_PARD ? 1'b0 :
                          snoop_4200_enable ? SNES_WRITE :

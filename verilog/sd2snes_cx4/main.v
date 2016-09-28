@@ -665,7 +665,7 @@ assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
                          (cx4_active & cx4_vect_enable) ? 1'b0 :
                          r213f_enable & !SNES_PARD ? 1'b0 :
                          snoop_4200_enable ? SNES_WRITE :
-                         snescmd_enable ? ((~(snescmd_unlock | feat_cmd_unlock) | SNES_READ) & SNES_WRITE) :
+                         snescmd_enable ? (~(snescmd_unlock | feat_cmd_unlock) | (SNES_READ & SNES_WRITE)) :
                          ((IS_ROM & SNES_CS)
                           |(!IS_ROM & !IS_SAVERAM & !IS_WRITABLE)
                           |(SNES_READ & SNES_WRITE)
