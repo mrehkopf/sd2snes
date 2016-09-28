@@ -117,3 +117,7 @@ verilog/*/xlnx_auto_0_xdb/
 src/obj/sd2snes.hex
 snes/.settings/org.eclipse.cdt.core.prefs
 snes/.settings/org.eclipse.linuxtools.tools.launch.core.prefs
+cic/supercic/supercic-key.hex
+cic/supercic/supercic-lock.hex
+contrib/*
+docs/*
