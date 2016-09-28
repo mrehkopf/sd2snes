@@ -20,7 +20,6 @@
 module address(
   input CLK,
   input [23:0] SNES_ADDR,   // requested address from SNES
-  input SNES_CS,            // "CART" pin from SNES (active low)
   output [23:0] ROM_ADDR,   // Address to request from SRAM0
   output ROM_HIT,           // enable SRAM0
   output IS_SAVERAM,        // address/CS mapped as SRAM?
