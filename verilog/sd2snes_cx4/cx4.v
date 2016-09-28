@@ -747,7 +747,7 @@ always @(posedge CLK) begin
 
       casex(cpu_op_w[15:11])
         5'b00100: begin // SKIP
-          cpu_wait <= 8'h03;
+          cpu_wait <= 8'h01;
           CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
         end
         5'b00111: begin // RT
