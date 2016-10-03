@@ -474,6 +474,9 @@ fadeloop_start
   sta $420b
 ; fill bank $7f
   sta $420b
+; reset PPU2 H/V odd/even read flag
+; (fix for uninitialized $213c/$213d reads)
+  lda $213f
 ; fix for uninitialized DMA transfers
   rep #$20 : .al
   lda #$ffff
