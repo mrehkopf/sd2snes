@@ -1,3 +1,44 @@
+v0.1.7d
+=======
+ * reworked the in-game hook code again, squeezing out a couple more CPU
+   cycles - compatibility improved further
+ * BS-X: new bsx page file by LuigiBlood!
+   - contains a proper channel map, notably fixes Fuurai no Shiren: Surara o
+     sukue and most likely more games
+   - enables a great number of town features
+ * BS-X: better detection for script-type ROMs (e.g. various magazines)
+ * Cx4 SKIP instruction timing sped up a bit. Core felt a bit too slow.
+   (this is a makeshift "fix" until I implement the proper Cx4 instruction
+    timing I recently figured out)
+ * fixes:
+   - fixed occasional black screen after soft reset (L+R+Select+Start)
+   - in-game hook memory area visibility quirks fixed in various situations,
+     notably fixes BS Kirby no Omochabako: Pinball
+   - BS-X: fix PSRAM corruption on SNES WRAM writes, fixes a number of
+     games, notably BS Kirby no Omochabako: Pinball (tough one)
+   - PPU2 H/V count odd/even read flag is reset on ROM load, this fixes
+     games that depend on it when run after games that leave it in a dirty
+     state - notably audio glitches and freezes in Super Punch-Out when run
+     after Fuurai no Shiren.
+   - SPC Player: Fixed a long-standing transfer corruption bug that occurred
+     because the original bulk transfer routine didn't account for CPU stalls
+     by HDMA (which is abundant in the sd2snes menu). This fixes occasionally
+     missing instruments, corrupted samples etc.
+   - fixed an occasional deadlock on bootup where the menu would hang at the
+     "Loading..." screen.
+   - fixed hard freeze when selecting a file immediately after disabling the
+     "Hide file extensions" option
+   - fixed persistent hard freeze in recent games list handling when running
+     games with long path names (> ~120 characters)
+   - revert DAC I2S timing to pre-v0.1.7c behaviour, hopefully reducing audio
+     glitches for sd2snes Rev.G units
+   - fixed corrupted file list display after playing an SPC file with a
+     scrolled file name
+ * cosmetic changes:
+   - "Loading" window is replaced by status bar notification to be less
+     disruptive with very short load times
+   - configuration settings no longer have the wrong color when changed
+
 v0.1.7c
 =======
  * reversed changelog order =)
