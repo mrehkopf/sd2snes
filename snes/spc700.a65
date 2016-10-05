@@ -12,7 +12,7 @@ apu_ram_init:
   lda @apu_ram_init_code, x
   jsr spc_upload_byte
   inx
-  cpx #43
+  cpx #35
   bne -
   ldx #$0002
   stx APUIO2
@@ -50,11 +50,6 @@ apu_ram_init_code:  ; .org $0002
   .byt $ab,$19      ; inc loop2+2
   .byt $1d          ; dec x
   .byt $d0,-11      ; bne loop2
-  ; make sure IPL ROM is mapped, reset input+output registers
-  .byt $20          ; clrp
-  .byt $8f,$b0,$f1  ; mov $f1, #$b0
-  .byt $da,$f4      ; mov $f4, ya (= 0)
-  .byt $da,$f6      ; mov $f6, ya
   ; Re-run IPL
   .byt $5f,$c0,$ff  ; jmp $ffc0
 
