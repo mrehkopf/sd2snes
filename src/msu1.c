@@ -36,6 +36,7 @@ void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
   DBG_MSU1 printf("filename: %s\n", file_buf);
   dac_pause();
   dac_reset();
+  set_msu_status(MSU_SNES_STATUS_CLEAR_AUDIO_PLAY | MSU_SNES_STATUS_CLEAR_AUDIO_REPEAT);
   if(f_open(&file_handle, (const TCHAR*)file_buf, FA_READ) == FR_OK) {
     file_handle.cltbl = pcm_cltbl;
     pcm_cltbl[0] = CLTBL_SIZE;
