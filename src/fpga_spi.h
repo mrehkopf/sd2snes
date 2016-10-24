@@ -109,7 +109,7 @@ void dac_pause(void);
 void dac_reset(void);
 void msu_reset(uint16_t);
 void set_msu_addr(uint16_t);
-void set_msu_status(uint8_t set, uint8_t reset);
+void set_msu_status(uint16_t status);
 void set_saveram_mask(uint32_t);
 void set_rom_mask(uint32_t);
 void set_mapper(uint8_t val);

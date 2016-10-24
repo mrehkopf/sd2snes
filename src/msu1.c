@@ -16,14 +16,13 @@ FIL msufile;
 FRESULT msu_res;
 DWORD msu_cltbl[CLTBL_SIZE] IN_AHBRAM;
 DWORD pcm_cltbl[CLTBL_SIZE] IN_AHBRAM;
-UINT msu_audio_bytes_read = 1024;
+UINT msu_audio_bytes_read = MSU_DAC_BUFSIZE / 2;
 UINT msu_data_bytes_read = 1;
 
 extern snes_romprops_t romprops;
 uint32_t msu_loop_point = 0;
 uint32_t msu_page1_start = 0x0000;
 uint32_t msu_page2_start = 0x2000;
-uint32_t msu_page_size = 0x2000;
 uint16_t fpga_status_prev = 0;
 uint16_t fpga_status_now = 0;
 
@@ -41,8 +40,8 @@ void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
     file_handle.cltbl = pcm_cltbl;
     pcm_cltbl[0] = CLTBL_SIZE;
     f_lseek(&file_handle, CREATE_LINKMAP);
-    f_lseek(&file_handle, 4L);
-    f_read(&file_handle, &msu_loop_point, 4, &msu_audio_bytes_read);
+    f_lseek(&file_handle, MSU_PCM_OFFSET_LOOPPOINT);
+    f_read(&file_handle, &msu_loop_point, sizeof(msu_loop_point), &msu_audio_bytes_read);
     DBG_MSU1 printf("loop point: %ld samples\n", msu_loop_point);
     ff_sd_offload=1;
     sd_offload_tgt=1;
@@ -51,24 +50,24 @@ void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
     ff_sd_offload=1;
     sd_offload_tgt=1;
     f_read(&file_handle, file_buf, MSU_DAC_BUFSIZE, &msu_audio_bytes_read);
-    /* clear busy bit */
-    set_msu_status(0x00, 0x28); /* set no bits, reset audio_busy + audio_error */
+    /* reset audio_busy + audio_error */
+    set_msu_status(MSU_SNES_STATUS_CLEAR_AUDIO_BUSY | MSU_SNES_STATUS_CLEAR_AUDIO_ERROR);
   } else {
     f_close(&file_handle);
-    set_msu_status(0x08, 0x20); /* reset audio_busy, set audio_error */
+    /* reset audio_busy, set audio_error */
+    set_msu_status(MSU_SNES_STATUS_CLEAR_AUDIO_BUSY | MSU_SNES_STATUS_SET_AUDIO_ERROR);
   }
 }
 
 void prepare_data(uint32_t msu_offset) {
   DBG_MSU1 printf("Data requested! Offset=%08lx page1=%08lx page2=%08lx\n", msu_offset, msu_page1_start, msu_page2_start);
   if(   ((msu_offset < msu_page1_start)
-     || (msu_offset >= msu_page1_start + msu_page_size))
+     || (msu_offset >= msu_page1_start + MSU_DATA_BUFSIZE / 2))
      && ((msu_offset < msu_page2_start)
-     || (msu_offset >= msu_page2_start + msu_page_size))) {
+     || (msu_offset >= msu_page2_start + MSU_DATA_BUFSIZE / 2))) {
     DBG_MSU1 printf("offset %08lx out of range (%08lx-%08lx, %08lx-%08lx), reload\n", msu_offset, msu_page1_start,
-           msu_page1_start+msu_page_size-1, msu_page2_start, msu_page2_start+msu_page_size-1);
-    /* "cache miss" */
-    /* fill buffer */
+           msu_page1_start + MSU_DATA_BUFSIZE / 2 - 1, msu_page2_start, msu_page2_start + MSU_DATA_BUFSIZE / 2 - 1);
+    /* "cache miss" - fill buffer */
     set_msu_addr(0x0);
     sd_offload_tgt=2;
     ff_sd_offload=1;
@@ -76,35 +75,35 @@ void prepare_data(uint32_t msu_offset) {
     DBG_MSU1 printf("seek to %08lx, res = %d\n", msu_offset, msu_res);
     sd_offload_tgt=2;
     ff_sd_offload=1;
-    msu_res = f_read(&msufile, file_buf, 16384, &msu_data_bytes_read);
+    msu_res = f_read(&msufile, file_buf, MSU_DATA_BUFSIZE, &msu_data_bytes_read);
     DBG_MSU1 printf("read res = %d\n", msu_res);
     DBG_MSU1 printf("read %d bytes\n", msu_data_bytes_read);
     msu_reset(0x0);
     msu_page1_start = msu_offset;
-    msu_page2_start = msu_offset + msu_page_size;
+    msu_page2_start = msu_offset + MSU_DATA_BUFSIZE / 2;
   } else {
-    if (msu_offset >= msu_page1_start && msu_offset <= msu_page1_start + msu_page_size) {
+    if (msu_offset >= msu_page1_start && msu_offset <= msu_page1_start + MSU_DATA_BUFSIZE / 2) {
       msu_reset(0x0000 + msu_offset - msu_page1_start);
       DBG_MSU1 printf("inside page1, new offset: %08lx\n", 0x0000 + msu_offset-msu_page1_start);
-      if(!(msu_page2_start == msu_page1_start + msu_page_size)) {
-        set_msu_addr(0x2000);
+      if(!(msu_page2_start == msu_page1_start + MSU_DATA_BUFSIZE / 2)) {
+        set_msu_addr(MSU_DATA_BUFSIZE / 2);
         sd_offload_tgt=2;
         ff_sd_offload=1;
-        f_read(&msufile, file_buf, 8192, &msu_data_bytes_read);
+        f_read(&msufile, file_buf, MSU_DATA_BUFSIZE / 2, &msu_data_bytes_read);
         DBG_MSU1 printf("next page dirty (was: %08lx), loaded page2 (start now: ", msu_page2_start);
-        msu_page2_start = msu_page1_start + msu_page_size;
+        msu_page2_start = msu_page1_start + MSU_DATA_BUFSIZE / 2;
         DBG_MSU1 printf("%08lx)\n", msu_page2_start);
       }
-    } else if (msu_offset >= msu_page2_start && msu_offset <= msu_page2_start + msu_page_size) {
+    } else if (msu_offset >= msu_page2_start && msu_offset <= msu_page2_start + MSU_DATA_BUFSIZE / 2) {
       DBG_MSU1 printf("inside page2, new offset: %08lx\n", 0x2000 + msu_offset-msu_page2_start);
       msu_reset(0x2000 + msu_offset - msu_page2_start);
-      if(!(msu_page1_start == msu_page2_start + msu_page_size)) {
+      if(!(msu_page1_start == msu_page2_start + MSU_DATA_BUFSIZE / 2)) {
         set_msu_addr(0x0);
         sd_offload_tgt=2;
         ff_sd_offload=1;
-        f_read(&msufile, file_buf, 8192, &msu_data_bytes_read);
+        f_read(&msufile, file_buf, MSU_DATA_BUFSIZE / 2, &msu_data_bytes_read);
         DBG_MSU1 printf("next page dirty (was: %08lx), loaded page1 (start now: ", msu_page1_start);
-        msu_page1_start = msu_page2_start + msu_page_size;
+        msu_page1_start = msu_page2_start + MSU_DATA_BUFSIZE / 2;
         DBG_MSU1 printf("%08lx)\n", msu_page1_start);
       }
     } else printf("!!!WATWATWAT!!!\n");
@@ -113,7 +112,7 @@ void prepare_data(uint32_t msu_offset) {
   fpga_status_now &= ~MSU_FPGA_STATUS_MSU_READ_MSB;
   fpga_status_prev &= ~MSU_FPGA_STATUS_MSU_READ_MSB;
   /* clear busy bit */
-  set_msu_status(0x00, 0x10);
+  set_msu_status(MSU_SNES_STATUS_CLEAR_DATA_BUSY);
 }
 
 int msu1_check(uint8_t* filename) {
@@ -147,7 +146,7 @@ int msu1_loop() {
   uint8_t cmd;
 
   msu_page1_start = 0x0000;
-  msu_page2_start = 0x2000;
+  msu_page2_start = MSU_DATA_BUFSIZE / 2;
 
   set_dac_addr(dac_addr);
   dac_pause();
@@ -160,9 +159,9 @@ int msu1_loop() {
   f_lseek(&msufile, 0L);
   ff_sd_offload=1;
   sd_offload_tgt=2;
-  f_read(&msufile, file_buf, 16384, &msu_data_bytes_read);
+  f_read(&msufile, file_buf, MSU_DATA_BUFSIZE, &msu_data_bytes_read);
 
-  prepare_audio_track(0, 8L);
+  prepare_audio_track(0, MSU_PCM_OFFSET_WAVEDATA);
   prepare_data(0);
 /* audio_start, data_start, 0, audio_ctrl[1:0], ctrl_start */
   msu_res = SNES_RESET_NONE;
@@ -191,7 +190,7 @@ int msu1_loop() {
 
     /* ACK as fast as possible */
     if(fpga_status_now & MSU_FPGA_STATUS_CTRL_START) {
-      set_msu_status(0x00, 0x01);
+      set_msu_status(MSU_INT_STATUS_CLEAR_CTRL_PENDING);
     }
 
     /* Data buffer refill */
@@ -199,15 +198,15 @@ int msu1_loop() {
       DBG_MSU1 printf("data\n");
       if(fpga_status_now & MSU_FPGA_STATUS_MSU_READ_MSB) {
         msu_addr = 0x0;
-        msu_page1_start = msu_page2_start + msu_page_size;
+        msu_page1_start = msu_page2_start + MSU_DATA_BUFSIZE / 2;
       } else {
-        msu_addr = 0x2000;
-        msu_page2_start = msu_page1_start + msu_page_size;
+        msu_addr = MSU_DATA_BUFSIZE / 2;
+        msu_page2_start = msu_page1_start + MSU_DATA_BUFSIZE / 2;
       }
       set_msu_addr(msu_addr);
-      sd_offload_tgt=2;
-      ff_sd_offload=1;
-      msu_res = f_read(&msufile, file_buf, 8192, &msu_data_bytes_read);
+      sd_offload_tgt = 2;
+      ff_sd_offload = 1;
+      msu_res = f_read(&msufile, file_buf, MSU_DATA_BUFSIZE / 2, &msu_data_bytes_read);
       DBG_MSU1 printf("data buffer refilled. res=%d page1=%08lx page2=%08lx\n", msu_res, msu_page1_start, msu_page2_start);
     }
 
@@ -216,12 +215,12 @@ int msu1_loop() {
       if(fpga_status_now & MSU_FPGA_STATUS_DAC_READ_MSB) {
         dac_addr = 0;
       } else {
-        dac_addr = MSU_DAC_BUFSIZE/2;
+        dac_addr = MSU_DAC_BUFSIZE / 2;
       }
       set_dac_addr(dac_addr);
-      sd_offload_tgt=1;
-      ff_sd_offload=1;
-      f_read(&file_handle, file_buf, MSU_DAC_BUFSIZE/2, &msu_audio_bytes_read);
+      sd_offload_tgt = 1;
+      ff_sd_offload = 1;
+      f_read(&file_handle, file_buf, MSU_DAC_BUFSIZE / 2, &msu_audio_bytes_read);
     }
 
     if(fpga_status_now & MSU_FPGA_STATUS_AUDIO_START) {
@@ -229,7 +228,7 @@ int msu1_loop() {
       msu_track = get_msu_track();
       DBG_MSU1 printf("Audio requested! Track=%d\n", msu_track);
 
-      prepare_audio_track(msu_track, (msu_track == resume_msu_track) ? resume_msu_offset : 8L);
+      prepare_audio_track(msu_track, (msu_track == resume_msu_track) ? resume_msu_offset : MSU_PCM_OFFSET_WAVEDATA);
       if(msu_track == resume_msu_track) {
         resume_msu_track = -1;
       }
@@ -249,21 +248,21 @@ int msu1_loop() {
 
       if(fpga_status_now & MSU_FPGA_STATUS_CTRL_REPEAT_FLAG_BIT) {
         msu_repeat = 1;
-        set_msu_status(0x04, 0x00); /* set bit 2 */
+        set_msu_status(MSU_SNES_STATUS_SET_AUDIO_REPEAT);
         DBG_MSU1 printf("Repeat set!\n");
       } else {
         msu_repeat = 0;
-        set_msu_status(0x00, 0x04); /* reset bit 2 */
+        set_msu_status(MSU_SNES_STATUS_CLEAR_AUDIO_REPEAT);
         DBG_MSU1 printf("Repeat clear!\n");
       }
 
       if(fpga_status_now & MSU_FPGA_STATUS_CTRL_PLAY_FLAG_BIT) {
         DBG_MSU1 printf("PLAY!\n");
-        set_msu_status(0x02, 0x00); /* set bit 1 */
+        set_msu_status(MSU_SNES_STATUS_SET_AUDIO_PLAY);
         dac_play();
       } else {
         DBG_MSU1 printf("PAUSE!\n");
-        set_msu_status(0x00, 0x02); /* reset bit 1 */
+        set_msu_status(MSU_SNES_STATUS_CLEAR_AUDIO_PLAY);
         dac_pause();
       }
     }
@@ -278,12 +277,12 @@ int msu1_loop() {
         DBG_MSU1 printf("loop\n");
         ff_sd_offload=1;
         sd_offload_tgt=1;
-        f_lseek(&file_handle, 8L+msu_loop_point*4);
+        f_lseek(&file_handle, MSU_PCM_OFFSET_WAVEDATA + msu_loop_point * 4);
         ff_sd_offload=1;
         sd_offload_tgt=1;
         f_read(&file_handle, file_buf, (MSU_DAC_BUFSIZE / 2) - msu_audio_bytes_read, &msu_audio_bytes_read);
       } else {
-        set_msu_status(0x00, 0x02); /* clear play bit */
+        set_msu_status(MSU_SNES_STATUS_CLEAR_AUDIO_PLAY);
         dac_pause();
       }
       msu_audio_bytes_read = MSU_DAC_BUFSIZE;

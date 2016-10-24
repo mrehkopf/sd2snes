@@ -292,11 +292,11 @@ void msu_reset(uint16_t address) {
   FPGA_DESELECT();
 }
 
-void set_msu_status(uint8_t set, uint8_t reset) {
+void set_msu_status(uint16_t status) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_MSUSETBITS);
-  FPGA_TX_BYTE(set);
-  FPGA_TX_BYTE(reset);
+  FPGA_TX_BYTE(status & 0xff);
+  FPGA_TX_BYTE((status >> 8) & 0xff);
   FPGA_TX_BYTE(0x00); /* latch reset */
   FPGA_DESELECT();
 }
