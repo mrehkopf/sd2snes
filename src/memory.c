@@ -277,9 +277,9 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   if(romprops.mapper_id==3) {
     printf("BSX Flash cart image\n");
     printf("attempting to load BSX BIOS /sd2snes/bsxbios.bin...\n");
-    load_sram_offload((uint8_t*)"/sd2snes/bsxbios.bin", 0x800000);
+    load_sram_offload((uint8_t*)"/sd2snes/bsxbios.bin", 0x800000, LOADRAM_AUTOSKIP_HEADER);
     printf("attempting to load BS data file /sd2snes/bsxpage.bin...\n");
-    load_sram_offload((uint8_t*)"/sd2snes/bsxpage.bin", 0x900000);
+    load_sram_offload((uint8_t*)"/sd2snes/bsxpage.bin", 0x900000, 0);
     printf("Type: %02x\n", romprops.header.destcode);
     set_bsx_regs(0xf6, 0x09);
     uint16_t rombase;
@@ -473,12 +473,20 @@ uint32_t load_spc(uint8_t* filename, uint32_t spc_data_addr, uint32_t spc_header
   return (uint32_t)filesize;
 }
 
-uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr) {
+uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   set_mcu_addr(base_addr);
   UINT bytes_read;
   DWORD filesize;
   file_open(filename, FA_READ);
   filesize = file_handle.fsize;
+  if(file_res) return 0;
+  if(flags & LOADRAM_AUTOSKIP_HEADER) {
+    if((filesize & 0xffff) == 0x200) {
+      ff_sd_offload=1;
+      f_lseek(&file_handle, 0x200L);
+      printf("load_sram_offload: skipping 512b header\n");
+    }
+  }
   if(file_res) return 0;
   for(;;) {
     ff_sd_offload=1;

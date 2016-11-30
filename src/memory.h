@@ -61,13 +61,15 @@
 #define LOADROM_WITH_RESET  (2)
 #define LOADROM_WAIT_SNES   (4)
 
+#define LOADRAM_AUTOSKIP_HEADER (1)
+
 #define SAVE_BASEDIR    ("/sd2snes/saves/")
 
 uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags);
 uint32_t load_spc(uint8_t* filename, uint32_t spc_data_addr, uint32_t spc_header_addr);
 uint32_t migrate_and_load_srm(uint8_t *filename, uint32_t base_addr);
 uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
-uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr);
+uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr, uint8_t flags);
 uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr);
 uint32_t load_bootrle(uint32_t base_addr);
 void load_dspx(const uint8_t* filename, uint8_t st0010);
