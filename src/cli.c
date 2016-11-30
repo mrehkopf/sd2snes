@@ -445,7 +445,12 @@ void cmd_test(void) {
 }
 
 void cmd_fpgaconf(void) {
-  fpga_pgm((uint8_t*)curchar);
+  if(!strncmp(curchar, "ROM", 3)) {
+    fpga_rompgm();
+    set_rom_mask(0x3fffff);
+  } else {
+    fpga_pgm((uint8_t*)curchar);
+  }
 }
 
 void cmd_dspfeat(void) {
