@@ -90,6 +90,8 @@ resethook: ; EMULATION MODE
   bpl -
 - lda $4212
   bmi -
+  lda $213f
+  bmi resethook
   stz NMI_VECT_DISABLE
   jmp ($fffc)
 
