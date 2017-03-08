@@ -41,12 +41,11 @@ filesel_init:
   rts
 
 fileselloop:
-fileselloop_s1
   sep #$20 : .as
   rep #$10 : .xl
   lda isr_done
   lsr
-  bcc fileselloop_s1
+  bcc fileselloop
   stz isr_done
   jsr printtime
   jsr filesel_updates ; update stuff, check keys etc
@@ -54,13 +53,13 @@ fileselloop_s1
   cmp #$01
   beq fileselloop_redraw ; then do
   jsr scroll_direntry
-  bra fileselloop_s1
+  bra fileselloop
 fileselloop_redraw
   stz filesel_dirty
   jsr filesel_statusbar
   jsr filesel_redraw
   jsr filesel_cleanup ; update phase 2
-  bra fileselloop_s1
+  bra fileselloop
   rts
 
 filesel_cleanup:
