@@ -21,8 +21,6 @@ dma_mode	.byt 0
 
 ;----------state information----------
 isr_done	.byt 0  ; isr done flag
-;----------menu layout/system constants (224/448)
-textdmasize	.word 0 ; number of bytes to copy each frame
 
 infloop		.byt 0,0  ; to be filled w/ 80 FE
 

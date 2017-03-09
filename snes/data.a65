@@ -87,11 +87,8 @@ mm_sel          .byt 0
 ;--
 num_recent_games .byt 0
 recent_sel      .byt 0
-;----------menu layout/system constants (224/448)
-vidmode         .byt 0  ; 0=224, 1=448
+;----------menu layout/system constants
 listdisp        .word 0 ; number of displayable list entries
-textdmasize     .word 0 ; number of bytes to copy each frame
-barstep         .byt 0  ; step size for bar
 
 ;-misc
 testvar         .word 0,0,0,0

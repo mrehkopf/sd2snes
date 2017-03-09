@@ -204,7 +204,7 @@ spc_key_b:
   rep #$20 : .al
   tsc
   sta @SAVED_SP        ; Save SP for later re-entry
-  lda #$fa50          ; Write reset signature
+  lda #$fa50           ; Write reset signature
   sta @WARM_SIGNATURE
   eor #$ffff
   sta @WARM_COMPLEMENT

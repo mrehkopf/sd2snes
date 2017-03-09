@@ -786,18 +786,13 @@ setup_224:
 setup_224_adjsel
   sta filesel_sel
 +
-  lda #18*64
-  sta textdmasize
   sep #$20 : .as
   lda #$0b
   sta $2110
   lda #$00
   sta $2110
-  lda #$00
-  sta barstep
   ora #$08
   sta $2133
-  stz vidmode
   lda #$01
   sta filesel_dirty
   lda #^space64
@@ -840,8 +835,6 @@ filesel_statusbar
   lda listdisp
   clc
   adc #$0a
-  clc
-  adc vidmode
   sta @print_y
   jsr hiprint
   plp
