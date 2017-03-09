@@ -15,8 +15,8 @@ GAME_MAIN:
 	sta $420d ; fast cpu
 	jsr setup_gfx
 	jsr colortest
-	jsr setup_hdma
 	jsr screen_init
+	jsr setup_hdma
 	sep #$20 : .as
 -	jsr msu1init
 	cli
@@ -26,7 +26,7 @@ GAME_MAIN:
 	bra -
 
 killdma:
-	stz $420b
+;	stz $420b
 	stz $420c
 	rts
 
@@ -98,8 +98,8 @@ screen_init:
 ;	lda #$01		;enable clipping for BG1
 ;	sta $212e
 	stz $2121		;reset CGRAM ptr
-	lda #$0f
-	sta $2100		;screen on, full brightness
+;	lda #$0f
+;	sta $2100		;screen on, full brightness
 	rts
 
 snes_init:

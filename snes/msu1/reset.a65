@@ -11,24 +11,24 @@
 ; NMI - called on VBlank
 NMI_ROUTINE:
 	php
-        sep #$20 : .as
+	sep #$20 : .as
 	pha
-        lda $4210	; ack interrupt
+	lda $4210	; ack interrupt
 ;	lda #$0e
 ;	sta $420c  ; enable HDMA ch. 1-3
 	pla
 	plp
-        rtl
+	rtl
 
 ; IRQ - called when triggered
 IRQ_ROUTINE:
 	php
-        sep #$20 : .as
+	sep #$20 : .as
 	pha
-        lda $4211  ;Acknowledge irq
+	lda $4211  ;Acknowledge irq
 	lda #$01
 	sta isr_flag
 	pla
 	plp
-        rtl
+	rtl
 

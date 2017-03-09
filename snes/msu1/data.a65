@@ -1,3 +1,4 @@
+*=$7E0000
 .data
 
 dispcnt		.byt 0

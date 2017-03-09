@@ -1,6 +1,15 @@
 ; This file is part of the snescom-asm demo - a demo of how to build a SNES program.
 ; See http://bisqwit.iki.fi/source/snescom.html for details.
 
+; fill whole area beforehand so the linker does not create multiple
+; objects from it. (necessary for map creation)
+
+*= $C0FF00
+  .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
 ; Begin assembling to this address.
 *= $C0FF00
 

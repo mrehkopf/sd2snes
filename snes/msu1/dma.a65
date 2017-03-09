@@ -19,33 +19,34 @@ dma0:
 setup_hdma:
 	sep #$20 : .as
 	rep #$10 : .xl
-	stz $420b
-	stz $420c
+;	stz $420b
+;	stz $420c
 
 	lda #$00		;A to B; direct; 1x single reg
-	sta $4310		;ch. 1 for blanking
-	lda #$00		;2100 = inidisp
+	sta $4310		;ch. 1 for tilemap switch
+	lda #$07		;2107 = BG1 Tilemap Address
 	sta $4311
-	lda #^hdma_blank
-	ldy #!hdma_blank
+	lda #^hdma_tilemap
+	ldy #!hdma_tilemap
 	sty $4312
 	sta $4314
 
-	lda #$00		;A to B; direct; 1x single reg
-	sta $4320		;ch. 2 for tilemap switch
-	lda #$07		;2107 = BG1 Tilemap Address
+	lda #$03		;A to B; direct; 2x 2x single reg
+	sta $4320		;ch. 2 for scroll
+	lda #$0d		;210d = BG1HOFS
 	sta $4321
-	lda #^hdma_tilemap
-	ldy #!hdma_tilemap
+	lda #^hdma_scroll
+	ldy #!hdma_scroll
 	sty $4322
 	sta $4324
 
-	lda #$03		;A to B; direct; 2x 2x single reg
-	sta $4330		;ch. 3 for scroll
-	lda #$0d		;210d = BG1HOFS
+; BLANKING CHANNEL MUST NOT BE A DIRECT NEIGHBOUR OF THE GPDMA CHANNEL.
+	lda #$00		;A to B; direct; 1x single reg
+	sta $4330		;ch. 3 for blanking
+	lda #$00		;2100 = inidisp
 	sta $4331
-	lda #^hdma_scroll
-	ldy #!hdma_scroll
+	lda #^hdma_blank
+	ldy #!hdma_blank
 	sty $4332
 	sta $4334
 
