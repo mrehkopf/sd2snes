@@ -9,6 +9,9 @@
 ; 3 bytes  long pointer to routine / submenu structure / preset table
 ; 1 byte   data type of parameter (see below)
 ; 3 bytes  long pointer to parameter value (of data type above)
+; 3 bytes  long pointer to text description of item
+; 3 bytes  long pointer to post-hook function (no return value)
+; 3 bytes  long pointer to isEnabled function (c=0: disabled, c=1: enabled)
 
 ; entry types:
 ; 00  termination
@@ -324,6 +327,14 @@ mfunc_set_bsx_time:
   plp
   rtl
 
+mfunc_isenabled_always:
+  sec
+  rtl
+
+mfunc_isenabled_never:
+  clc
+  rtl
+
 kv_bsx_timesource:
 .word $0000, !text_rtc : .byt ^text_rtc
 .word $0001, !text_custom : .byt ^text_custom
@@ -335,6 +346,11 @@ kv_onoff:
 .word $ffff
 
 kv_yesno:
+.word $0000, !text_no : .byt ^text_no
+.word $0001, !text_yes : .byt ^text_yes
+.word $ffff
+
+kv_scic_yesno:
 .word $0000, !text_no : .byt ^text_no
 .word $0001, !text_yes : .byt ^text_yes
 .word $ffff
