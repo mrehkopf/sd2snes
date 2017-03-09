@@ -72,19 +72,19 @@ wire mclk = cnt[2]; // mclk = clk/8
 wire lrck = cnt[8]; // lrck = mclk/64
 wire sclk = cnt[3]; // sclk = lrck*32
 
-reg [1:0] mclk_sreg;
-reg [1:0] lrck_sreg;
+reg [2:0] mclk_sreg;
+reg [2:0] lrck_sreg;
 reg [1:0] sclk_sreg;
 
-assign mclk_out = mclk;
-assign lrck_out = lrck;
-assign sclk_out = sclk;
+assign mclk_out = ~mclk_sreg[2];
+assign lrck_out = lrck_sreg[2];
+assign sclk_out = sclk_sreg[1];
 
-wire lrck_rising = (lrck_sreg[1:0] == 2'b01);
-wire lrck_falling = (lrck_sreg[1:0] == 2'b10);
+wire lrck_rising = ({lrck_sreg[0],lrck} == 2'b01);
+wire lrck_falling = ({lrck_sreg[0],lrck} == 2'b10);
 
-wire sclk_rising = (sclk_sreg[1:0] == 2'b01);
-wire sclk_falling = (sclk_sreg[1:0] == 2'b10);
+wire sclk_rising = ({sclk_sreg[0],sclk} == 2'b01);
+wire sclk_falling = ({sclk_sreg[0],sclk} == 2'b10);
 
 wire vol_latch_rising = (vol_latch_reg[1:0] == 2'b01);
 reg sdout_reg;
@@ -206,8 +206,8 @@ end
 
 always @(posedge clkin) begin
   cnt <= cnt + 1;
-  mclk_sreg <= {mclk_sreg[0], mclk};
-  lrck_sreg <= {lrck_sreg[0], lrck};
+  mclk_sreg <= {mclk_sreg[1:0], mclk};
+  lrck_sreg <= {lrck_sreg[1:0], lrck};
   sclk_sreg <= {sclk_sreg[0], sclk};
   vol_latch_reg <= {vol_latch_reg[0], vol_latch};
   play_r <= play;
