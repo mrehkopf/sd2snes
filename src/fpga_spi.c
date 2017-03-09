@@ -72,7 +72,7 @@
 
         E1        -             pause DAC
         E2        -             resume/play DAC
-        E3        -             reset DAC playback pointer (0)
+        E3        hhll          set DAC playback pointer
         E4        hhll          set MSU read pointer
 
         E5        tt{7}         set RTC (SPC7110 format + 1000s of year,
@@ -275,10 +275,11 @@ void dac_pause() {
   FPGA_DESELECT();
 }
 
-void dac_reset() {
+void dac_reset(uint16_t address) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(FPGA_CMD_DACRESETPTR);
-  FPGA_TX_BYTE(0x00); /* latch reset */
+  FPGA_TX_BYTE(FPGA_CMD_DACSETPTR);
+  FPGA_TX_BYTE((address>>8) & 0xff); /* address hi */
+  FPGA_TX_BYTE(address & 0xff);      /* address lo */
   FPGA_DESELECT();
 }
 
@@ -287,8 +288,6 @@ void msu_reset(uint16_t address) {
   FPGA_TX_BYTE(FPGA_CMD_MSUSETPTR);
   FPGA_TX_BYTE((address>>8) & 0xff); /* address hi */
   FPGA_TX_BYTE(address & 0xff);      /* address lo */
-  FPGA_TX_BYTE(0x00);                /* latch reset */
-  FPGA_TX_BYTE(0x00);                /* latch reset */
   FPGA_DESELECT();
 }
 

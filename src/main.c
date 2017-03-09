@@ -160,7 +160,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     fpga_write_cheat(7, 0x3f00);
     /* reset DAC */
     dac_pause();
-    dac_reset();
+    dac_reset(0);
     uart_putc(')');
     uart_putcrlf();
 

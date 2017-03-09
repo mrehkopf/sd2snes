@@ -79,7 +79,7 @@
 #define FPGA_CMD_MSUSETBITS      (0xe0)
 #define FPGA_CMD_DACPAUSE        (0xe1)
 #define FPGA_CMD_DACPLAY         (0xe2)
-#define FPGA_CMD_DACRESETPTR     (0xe3)
+#define FPGA_CMD_DACSETPTR       (0xe3)
 #define FPGA_CMD_MSUSETPTR       (0xe4)
 #define FPGA_CMD_RTCSET          (0xe5)
 #define FPGA_CMD_BSXSETBITS      (0xe6)
@@ -106,7 +106,7 @@ void set_mcu_addr(uint32_t);
 void set_dac_addr(uint16_t);
 void dac_play(void);
 void dac_pause(void);
-void dac_reset(void);
+void dac_reset(uint16_t);
 void msu_reset(uint16_t);
 void set_msu_addr(uint16_t);
 void set_msu_status(uint16_t status);

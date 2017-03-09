@@ -356,7 +356,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
 //  fpga_set_features(romprops.fpga_features);
   fpga_set_dspfeat(romprops.fpga_dspfeat);
   dac_pause();
-  dac_reset();
+  dac_reset(0);
   if(get_cic_state() == CIC_PAIR) {
     if(filename != (uint8_t*)"/sd2snes/menu.bin") {
       if(CFG.vidmode_game == VIDMODE_AUTO) {

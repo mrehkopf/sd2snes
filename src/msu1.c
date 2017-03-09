@@ -27,6 +27,9 @@ uint16_t fpga_status_prev = 0;
 uint16_t fpga_status_now = 0;
 
 void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
+  uint32_t audio_sect = audio_offset & ~0x1ff;
+  uint32_t audio_sect_offset_sample = (audio_offset & 0x1ff) >> 2;
+  DBG_MSU1 printf("offset=%08lx sect=%08lx sample=%08lx\n", audio_offset, audio_sect, audio_sect_offset_sample);
   /* open file, fill buffer */
   char suffix[11];
   f_close(&file_handle);
@@ -35,7 +38,7 @@ void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
   strcpy(strrchr((char*)file_buf, (int)'.'), suffix);
   DBG_MSU1 printf("filename: %s\n", file_buf);
   dac_pause();
-  dac_reset();
+  dac_reset(audio_sect_offset_sample);
   set_msu_status(MSU_SNES_STATUS_CLEAR_AUDIO_PLAY | MSU_SNES_STATUS_CLEAR_AUDIO_REPEAT);
   if(f_open(&file_handle, (const TCHAR*)file_buf, FA_READ) == FR_OK) {
     file_handle.cltbl = pcm_cltbl;
@@ -46,7 +49,7 @@ void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
     DBG_MSU1 printf("loop point: %ld samples\n", msu_loop_point);
     ff_sd_offload=1;
     sd_offload_tgt=1;
-    f_lseek(&file_handle, audio_offset);
+    f_lseek(&file_handle, audio_sect);
     set_dac_addr(0);
     ff_sd_offload=1;
     sd_offload_tgt=1;
@@ -61,6 +64,9 @@ void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
 }
 
 void prepare_data(uint32_t msu_offset) {
+  uint32_t msu_sect = msu_offset & ~0x1ff;
+  uint32_t msu_sect_offset = msu_offset & 0x1ff;
+
   DBG_MSU1 printf("Data requested! Offset=%08lx page1=%08lx page2=%08lx\n", msu_offset, msu_page1_start, msu_page2_start);
   if(   ((msu_offset < msu_page1_start)
      || (msu_offset >= msu_page1_start + MSU_DATA_BUFSIZE / 2))
@@ -72,16 +78,16 @@ void prepare_data(uint32_t msu_offset) {
     set_msu_addr(0x0);
     sd_offload_tgt=2;
     ff_sd_offload=1;
-    msu_res = f_lseek(&msufile, msu_offset);
-    DBG_MSU1 printf("seek to %08lx, res = %d\n", msu_offset, msu_res);
+    msu_res = f_lseek(&msufile, msu_sect);
+    DBG_MSU1 printf("seek to %08lx, res = %d\n", msu_sect, msu_res);
     sd_offload_tgt=2;
     ff_sd_offload=1;
     msu_res = f_read(&msufile, file_buf, MSU_DATA_BUFSIZE, &msu_data_bytes_read);
     DBG_MSU1 printf("read res = %d\n", msu_res);
     DBG_MSU1 printf("read %d bytes\n", msu_data_bytes_read);
-    msu_reset(0x0);
-    msu_page1_start = msu_offset;
-    msu_page2_start = msu_offset + MSU_DATA_BUFSIZE / 2;
+    msu_reset(msu_sect_offset);
+    msu_page1_start = msu_sect;
+    msu_page2_start = msu_sect + MSU_DATA_BUFSIZE / 2;
   } else {
     if (msu_offset >= msu_page1_start && msu_offset <= msu_page1_start + MSU_DATA_BUFSIZE / 2) {
       msu_reset(0x0000 + msu_offset - msu_page1_start);
@@ -151,7 +157,7 @@ int msu1_loop() {
 
   set_dac_addr(dac_addr);
   dac_pause();
-  dac_reset();
+  dac_reset(0);
 
   set_msu_addr(0x0);
   msu_reset(0x0);
@@ -213,6 +219,7 @@ int msu1_loop() {
 
     /* Audio buffer refill */
     if((fpga_status_now & MSU_FPGA_STATUS_DAC_READ_MSB) != (fpga_status_prev & MSU_FPGA_STATUS_DAC_READ_MSB)) {
+      DBG_MSU1 printf("audio\n");
       if(fpga_status_now & MSU_FPGA_STATUS_DAC_READ_MSB) {
         dac_addr = 0;
       } else {
