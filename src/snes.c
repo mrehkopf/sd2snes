@@ -281,6 +281,7 @@ void snes_bootprint(void* msg) {
     snes_boot_configured = 1;
     sleep_ms(200);
   }
+  printf("snes_bootprint: \"%s\"\n", (char*)msg);
   sram_writeblock(msg, SRAM_CMD_ADDR, 33);
 }
 
