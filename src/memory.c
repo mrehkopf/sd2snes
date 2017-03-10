@@ -330,7 +330,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
 
   if(flags & LOADROM_WITH_SRAM) {
     if(romprops.ramsize_bytes) {
-      sram_memset(SRAM_SAVE_ADDR, romprops.ramsize_bytes, 0);
+      sram_memset(SRAM_SAVE_ADDR, romprops.ramsize_bytes, 0xFF);
       migrate_and_load_srm(filename, SRAM_SAVE_ADDR);
       /* file not found error is ok (SRM file might not exist yet) */
       if(file_res == FR_NO_FILE) file_res = 0;
