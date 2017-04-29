@@ -2,6 +2,7 @@ How to build:
 
 a) Build requirements
  * make
+ * libc6-devel (or other supplier of stdlib headers)
  * Cortex M3 toolchain
  * snescom/sneslink
  * Xilinx FPGA synthesis tool (e.g. ISE WebPack)
@@ -10,8 +11,8 @@ a) Build requirements
 b) Cortex M3 toolchain
  * obtain the cm3-toolchain builder:
    git clone http://snowcat.de/toolchain-cm3.git/
- * build the cm3-toolchain. Some tools, libraries, and headers are required,
-   including but probably not limited to:
+ * build the cm3-toolchain. As you are basically building gcc, some tools,
+   libraries, and headers are required, including but probably not limited to:
     - libz-dev
     - libcloog-ppl-dev
     - texinfo
@@ -32,10 +33,10 @@ b) Cortex M3 toolchain
    The Makefile will install immediately so make sure you can write to the
    installation directory.
 
-c) snescom/sneslink
+c) snescom/sneslink 1.7.4.1
  * http://bisqwit.iki.fi/source/snescom.html
 
-d) ISE WebPack
+d) ISE WebPack 14.7
  * http://www.xilinx.com/products/design-tools/ise-design-suite/ise-webpack.htm
 
 e) PIC assembler
@@ -80,7 +81,18 @@ Compile the RLE compressor in utils/rle.c:
 
 Load verilog/sd2snes/sd2snes.xise in Xilinx ISE (or create your own project).
 Target is a XC3S400-4PQ208.
-Generate the programming file and compress it using utils/rle.c:
+
+IP cores are distributed as source configuration files only. Prior to
+compiling for the first time you must select the FPGA part ("xc3s400-4pq208")
+in the Implementation view at the upper left-hand corner, then invoke
+"Regenerate All Cores" from the Design tab below. Under some circumstances
+this seems to fail, in which case you need to double-click each core in the
+hierarchy (the light bulb icons), then click "Generate" in the configuration
+dialog that comes up.
+
+Afterwards select "main.v" and run "Generate Programming File" from the
+Design tab below. It is called "main.bit" and resides in the project's root.
+Compress it using utils/rle.c:
  $ rle main.bit fpga_base.bit
 
 Copy fpga_base.bit to <sdcard>/sd2snes/fpga_base.bit
