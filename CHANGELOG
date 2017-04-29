@@ -1,3 +1,19 @@
+v0.1.7e
+=======
+ * fix critical DAC timing quirk causing audio distortion with MSU1
+ * fix clock glitch on SD card access leading to audio/video distortion
+   with MSU1 in rare cases
+ * properly map SRAM to banks f0-ff instead of f0-fd in Mode 20 ("LoROM")
+   memory map
+ * add support for headered bsxbios.bin
+ * Slight SD Card read performance optimization for MSU1
+   (try and avoid unaligned reads)
+ * Change initial SRAM fill value (by devinacker)
+   - fixes Ken Griffey Jr., Ou-chan, possibly other games that handle
+     checksums badly
+ * Always start game on PPU2 field 0
+   - Theoretical compatibility improvement
+
 v0.1.7d
 =======
  * reworked the in-game hook code again, squeezing out a couple more CPU
