@@ -51,13 +51,13 @@ wire [23:0] SRAM_SNES_ADDR;
 /* Cx4 mapper:
    - LoROM (extended to 00-7d, 80-ff)
    - MMIO @ 6000-7fff
-   - SRAM @ 70-7d/80-ff:0000-7fff
+   - SRAM @ 70-77:0000-7fff
  */
 
 assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
                  |(SNES_ADDR[22]));
 
-assign IS_SAVERAM = |SAVERAM_MASK & (&SNES_ADDR[22:20] & ~SNES_ADDR[15] & (SNES_ADDR[19:16] < 4'b1110));
+assign IS_SAVERAM = |SAVERAM_MASK & (~SNES_ADDR[23] & &SNES_ADDR[22:20] & ~SNES_ADDR[19] & ~SNES_ADDR[15]);
 
 assign SRAM_SNES_ADDR = IS_SAVERAM
                         ? (24'hE00000 | ({SNES_ADDR[19:16], SNES_ADDR[14:0]}

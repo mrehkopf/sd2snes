@@ -89,11 +89,11 @@ assign IS_SAVERAM = SAVERAM_MASK[0]
                          & &SNES_ADDR[14:13]
                          & !SNES_ADDR[15]
                         )
-/*  LoROM:   SRAM @ Bank 0x70-0x7d, 0xf0-0xfd
+/*  LoROM:   SRAM @ Bank 0x70-0x7d, 0xf0-0xff
  *  Offset 0000-7fff for ROM >= 32 MBit, otherwise 0000-ffff */
                       :(MAPPER == 3'b001)
                       ? (&SNES_ADDR[22:20]
-                         & (SNES_ADDR[19:16] < 4'b1110)
+                         & (~SNES_ROMSEL)
                          & (~SNES_ADDR[15] | ~ROM_MASK[21])
                         )
 /*  BS-X: SRAM @ Bank 0x10-0x17 Offset 5000-5fff */
