@@ -24,8 +24,8 @@ module mcu_cmd(
   input param_ready,
   input [7:0] cmd_data,
   input [7:0] param_data,
-  output mcu_rrq,
-  output mcu_wrq,
+  output reg mcu_rrq = 0,
+  output reg mcu_wrq = 0,
   input mcu_rq_rdy,
   output [7:0] mcu_data_out,
   input [7:0] mcu_data_in,
@@ -119,54 +119,22 @@ always @(posedge clk) begin
   mcu_nextaddr_buf <= {mcu_nextaddr_buf[1:0], mcu_rq_rdy};
 end
 
-parameter ST_RQ = 2'b01;
-parameter ST_IDLE = 2'b10;
-
-reg [1:0] rrq_state;
-initial rrq_state = ST_IDLE;
-reg mcu_rrq_r;
-
-reg [1:0] wrq_state;
-initial wrq_state = ST_IDLE;
-reg mcu_wrq_r;
-
 always @(posedge clk) begin
-  case(rrq_state)
-    ST_IDLE: begin
-      if((param_ready | cmd_ready) && cmd_data[7:4] == 4'h8) begin
-        mcu_rrq_r <= 1'b1;
-        rrq_state <= ST_RQ;
-      end else
-        rrq_state <= ST_IDLE;
-    end
-    ST_RQ: begin
-      mcu_rrq_r <= 1'b0;
-      rrq_state <= ST_IDLE;
-    end
-  endcase
+  mcu_rrq <= 1'b0;
+  if((param_ready | cmd_ready) && cmd_data[7:4] == 4'h8) begin
+    mcu_rrq <= 1'b1;
+  end
 end
 
 always @(posedge clk) begin
-  case(wrq_state)
-    ST_IDLE: begin
-      if(param_ready && cmd_data[7:4] == 4'h9) begin
-        mcu_wrq_r <= 1'b1;
-        wrq_state <= ST_RQ;
-      end else
-        wrq_state <= ST_IDLE;
-    end
-    ST_RQ: begin
-      mcu_wrq_r <= 1'b0;
-      wrq_state <= ST_IDLE;
-    end
-  endcase
+  mcu_wrq <= 1'b0;
+  if(param_ready && cmd_data[7:4] == 4'h9) begin
+    mcu_wrq <= 1'b1;
+  end
 end
 
 // trigger for nextaddr
 assign mcu_nextaddr = mcu_nextaddr_buf == 2'b01;
-
-assign mcu_rrq = mcu_rrq_r;
-assign mcu_wrq = mcu_wrq_r;
 
 assign addr_out = ADDR_OUT_BUF;
 
