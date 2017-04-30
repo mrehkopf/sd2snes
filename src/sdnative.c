@@ -480,15 +480,16 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
           }
           if(sd_offload_partial_end != 512) {
             sd_offload_partial_end |= 0x8000;
+            during_blocktrans = TRANS_MID;
           }
           DBG_SD_OFFLOAD printf("new partial %d - %d\n", sd_offload_partial_start, sd_offload_partial_end);
           fpga_set_sddma_range(sd_offload_partial_start, sd_offload_partial_end);
           fpga_sddma(sd_offload_tgt, 1);
 //          sd_offload_partial=0;
-          last_offset=sd_offload_partial_end;
+          last_offset = sd_offload_partial_end & 0x1ff;
         } else {
           fpga_sddma(sd_offload_tgt, 0);
-          last_offset=0;
+          last_offset = 0;
         }
         state=CMD_RSP;
         return rsplen;
