@@ -9,6 +9,12 @@
 #define DBG_SD while(0)
 #endif
 
+#ifdef DEBUG_SD_OFFLOAD
+#define DBG_SD_OFFLOAD
+#else
+#define DBG_SD_OFFLOAD while(0)
+#endif
+
 #include "diskio.h"
 
 #define CRC_ERROR        (0xf000)

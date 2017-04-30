@@ -5,6 +5,7 @@
 
 // #define DEBUG_FS
 // #define DEBUG_SD
+// #define DEBUG_SD_OFFLOAD
 // #define DEBUG_IRQ
 // #define DEBUG_MSU1
 // #define DEBUG_YAML
@@ -74,7 +75,7 @@
 
 #define QSORT_MAXELEM             2048
 #define SORT_STRLEN               256
-#define CLTBL_SIZE		  100
+#define CLTBL_SIZE                100
 
 #define DIR_FILE_MAX              16380
 

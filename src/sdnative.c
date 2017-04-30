@@ -481,7 +481,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
           if(sd_offload_partial_end != 512) {
             sd_offload_partial_end |= 0x8000;
           }
-          DBG_SD printf("new partial %d - %d\n", sd_offload_partial_start, sd_offload_partial_end);
+          DBG_SD_OFFLOAD printf("new partial %d - %d\n", sd_offload_partial_start, sd_offload_partial_end);
           fpga_set_sddma_range(sd_offload_partial_start, sd_offload_partial_end);
           fpga_sddma(sd_offload_tgt, 1);
 //          sd_offload_partial=0;
@@ -627,7 +627,7 @@ int stream_datablock(uint8_t *buf) {
       if(sd_offload_partial_end != 512) {
         sd_offload_partial_end |= 0x8000;
       }
-      DBG_SD printf("str partial %d - %d\n", sd_offload_partial_start, sd_offload_partial_end);
+      DBG_SD_OFFLOAD printf("str partial %d - %d\n", sd_offload_partial_start, sd_offload_partial_end);
       fpga_set_sddma_range(sd_offload_partial_start, sd_offload_partial_end);
       fpga_sddma(sd_offload_tgt, 1);
     } else {
@@ -781,7 +781,7 @@ void send_datablock(uint8_t *buf) {
 }
 
 void read_block(uint32_t address, uint8_t *buf) {
-  DBG_SD printf("read_block addr=%08lx last_addr=%08lx  offld=%d/%d offst=%04x offed=%04x last_off=%04x\n", address, last_block, sd_offload, sd_offload_partial, sd_offload_partial_start, sd_offload_partial_end, last_offset);
+  DBG_SD_OFFLOAD printf("read_block trans=%d addr=%08lx last_addr=%08lx  offld=%d/%d offst=%04x offed=%04x last_off=%04x\n", during_blocktrans, address, last_block, sd_offload, sd_offload_partial, sd_offload_partial_start, sd_offload_partial_end, last_offset);
   if(during_blocktrans == TRANS_READ && (last_block == address-1)) {
 //uart_putc('r');
 #ifdef CONFIG_SD_DATACRC
@@ -813,7 +813,7 @@ void read_block(uint32_t address, uint8_t *buf) {
   } else {
     if(during_blocktrans) {
 //      uart_putc('_');
-//printf("nonseq read (%lx -> %lx), restarting transmission\n", last_block, address);
+      DBG_SD_OFFLOAD printf("nonseq read (%lx -> %lx), restarting transmission\n", last_block, address);
       /* send STOP_TRANSMISSION to end an open READ/WRITE_MULTIPLE_BLOCK */
       cmd_fast(STOP_TRANSMISSION, 0, 0x61, NULL, rsp);
     }

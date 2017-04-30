@@ -235,6 +235,7 @@ uint16_t fpga_status() {
 }
 
 void fpga_set_sddma_range(uint16_t start, uint16_t end) {
+  DBG_SD_OFFLOAD printf("FPGA set partial range %u - %u\n", start, end);
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_SDDMA_RANGE);
   FPGA_TX_BYTE(start>>8);
@@ -252,13 +253,13 @@ void fpga_sddma(uint8_t tgt, uint8_t partial) {
   FPGA_DESELECT();
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_GETSTATUS);
-  DBG_SD printf("FPGA DMA request sent, wait for completion...");
+  DBG_SD_OFFLOAD printf("FPGA DMA tgt=%u partial=%u, wait for completion...", tgt, partial);
   while(FPGA_RX_BYTE() & 0x80) {
     FPGA_RX_BYTE(); /* eat the 2nd status byte */
   }
-  DBG_SD printf("...complete\n");
-  FPGA_DESELECT();
   BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 1;
+  DBG_SD_OFFLOAD printf("...complete\n");
+  FPGA_DESELECT();
 }
 
 void dac_play() {
