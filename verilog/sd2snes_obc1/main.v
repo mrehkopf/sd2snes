@@ -378,6 +378,7 @@ address snes_addr(
   .featurebits(featurebits),
   .SNES_ADDR(SNES_ADDR), // requested address from SNES
   .SNES_PA(SNES_PA),
+  .SNES_ROMSEL(SNES_ROMSEL),
   .ROM_ADDR(MAPPED_SNES_ADDR),   // Address to request from SRAM (active low)
   .ROM_HIT(ROM_HIT),
   .IS_SAVERAM(IS_SAVERAM),
@@ -450,7 +451,7 @@ reg [1:0] r213f_state;
 initial r213fr = 8'h55;
 initial r213f_forceread = 0;
 initial r213f_state = 2'b01;
-initial r213f_delay = 3'b011;
+initial r213f_delay = 3'b000;
 
 wire snoop_4200_enable = {SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h04200;
 wire r4016_enable = {SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h04016;
