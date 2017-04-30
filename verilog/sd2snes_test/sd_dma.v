@@ -54,6 +54,8 @@ wire SD_DMA_EN_rising = (SD_DMA_ENr [1:0] == 2'b01);
 reg SD_DMA_STATUSr;
 assign SD_DMA_STATUS = SD_DMA_STATUSr;
 
+reg SD_DMA_CLKMASKr = 1'b1;
+
 // we need 1042 cycles (startbit + 1024 nibbles + 16 crc + stopbit)
 reg [10:0] cyclecnt;
 initial cyclecnt = 11'd0;
@@ -77,8 +79,7 @@ always @(posedge CLK)
   if(SD_DMA_EN_rising) SD_CLKr <= 2'b11;
   else SD_CLKr <= {SD_CLKr[0], clkcnt[1]};
 
-
-assign SD_CLK = SD_DMA_STATUSr ? SD_CLKr[1] : 1'bZ;
+assign SD_CLK = SD_DMA_CLKMASKr ? 1'bZ : SD_CLKr[1];
 
 always @(posedge CLK) begin
   if(SD_DMA_EN_rising) begin
@@ -89,6 +90,14 @@ always @(posedge CLK) begin
   else if (SD_DMA_DONE_rising) SD_DMA_STATUSr <= 1'b0;
 end
 
+always @(posedge CLK) begin
+  if(SD_DMA_EN_rising) begin
+    SD_DMA_CLKMASKr <= 1'b0;
+  end
+  else if (SD_DMA_DONEr) begin
+    SD_DMA_CLKMASKr <= 1'b1;
+  end
+end
 always @(posedge CLK) begin
   if(cyclecnt == 1042) SD_DMA_DONEr <= 1;
   else SD_DMA_DONEr <= 0;
