@@ -58,6 +58,7 @@ module mcu_cmd(
   output reg dac_reset_out = 0,
   output reg [2:0] dac_vol_select_out = 3'b000,
   output reg dac_palmode_out = 0,
+  output reg [8:0] dac_ptr_out = 0,
 
   // MSU data
   output [13:0] msu_addr_out,
@@ -273,7 +274,14 @@ always @(posedge clk) begin
       8'he2: // resume DAC
         dac_play_out <= 1'b1;
       8'he3: // reset DAC (set DAC playback address = 0)
-        dac_reset_out <= 1'b1; // reset by default value, see above
+        case (spi_byte_cnt)
+          32'h2:
+            dac_ptr_out[8] <= param_data[0];
+          32'h3: begin
+            dac_ptr_out[7:0] <= param_data;
+            dac_reset_out <= 1'b1; // reset by default value, see above
+          end
+        endcase
       8'he4: // reset MSU read buffer pointer
         case (spi_byte_cnt)
           32'h2: begin

@@ -27,6 +27,7 @@ module dac(
   input[7:0] volume,
   input vol_latch,
   input [2:0] vol_select,
+  input [8:0] dac_address_ext,
   input play,
   input reset,
   input palmode,
@@ -121,7 +122,7 @@ always @(posedge clkin) begin
   int_strobe <= 0;
   comb_strobe <= 0;
   if(reset) begin
-    dac_address_r <= 0;
+    dac_address_r <= dac_address_ext;
     phaseacc <= 0;
     subcount <= 0;
   end else if(sysclk_rising) begin
