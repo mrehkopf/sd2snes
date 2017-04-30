@@ -219,7 +219,6 @@ int msu1_loop() {
 
     /* Audio buffer refill */
     if((fpga_status_now & MSU_FPGA_STATUS_DAC_READ_MSB) != (fpga_status_prev & MSU_FPGA_STATUS_DAC_READ_MSB)) {
-      DBG_MSU1 printf("audio\n");
       if(fpga_status_now & MSU_FPGA_STATUS_DAC_READ_MSB) {
         dac_addr = 0;
       } else {
@@ -281,6 +280,7 @@ int msu1_loop() {
     if(msu_audio_bytes_read < MSU_DAC_BUFSIZE / 2) {
       ff_sd_offload=0;
       sd_offload=0;
+      DBG_MSU1 printf("wanted %u bytes, got %u (EOF)\n", MSU_DAC_BUFSIZE / 2, msu_audio_bytes_read);
       if(msu_repeat) {
         DBG_MSU1 printf("loop\n");
         ff_sd_offload=1;
@@ -288,6 +288,7 @@ int msu1_loop() {
         f_lseek(&file_handle, MSU_PCM_OFFSET_WAVEDATA + msu_loop_point * 4);
         ff_sd_offload=1;
         sd_offload_tgt=1;
+        DBG_MSU1 printf("---filling rest of buffer from loop point for %u bytes\n", (MSU_DAC_BUFSIZE / 2) - msu_audio_bytes_read);
         f_read(&file_handle, file_buf, (MSU_DAC_BUFSIZE / 2) - msu_audio_bytes_read, &msu_audio_bytes_read);
       } else {
         set_msu_status(MSU_SNES_STATUS_CLEAR_AUDIO_PLAY);
