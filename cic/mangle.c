@@ -63,25 +63,31 @@ void mangle(unsigned char* data) {
 }
 
 int main(void) {
+	unsigned char *label[2];
 	unsigned char restart=1;
-	unsigned char keyseed[16]= {0x0, // dummy
-			   0xb,0x1,0x4,0xf,
-			   0x4,0xb,0x5,0x7,
-			   0xf,0xd,0x6,0x1,
-			   0xe,0x9,0x8};
+	unsigned char keyseed[16]={0x0, // dummy
+				 0xb,0x1,0x4,0xf,
+				 0x4,0xb,0x5,0x7,
+				 0xf,0xd,0x6,0x1,
+				 0xe,0x9,0x8};
 	unsigned char lockseed[16]={0x0, // dummy
-			   0x0,0x9,0xa,0x1,
-			   0x8,0x5,0xf,0x1,
-			   0x1,0xe,0x1,0x0,
-			   0xd,0xe,0xc};
+				 0xf,0x9,0xa,0x1,
+				 0x8,0x5,0xf,0x1,
+				 0x1,0xe,0x1,0x0,
+				 0xd,0xe,0xc};
 
+	printf("initial seeds:\n");
 	printseed(keyseed);
 	printseed(lockseed);
 	printf("\n");
 
+	label[0] = "LockInKeyOut";
+	label[1] = "LockOutKeyIn";
 while(1) {
 	printf("\n");
+	printf("D0[%s]: ", label[0]);
 	printstream(keyseed, restart);
+	printf("D1[%s]: ", label[1]);
 	printstream(lockseed, restart);
 	mangle(keyseed);
 	mangle(keyseed);
@@ -90,9 +96,16 @@ while(1) {
 	mangle(lockseed);
 	mangle(lockseed);
 
-//	printseed(keyseed);
-//	printseed(lockseed);
+//printseed(keyseed);
+//printseed(lockseed);
 	restart=lockseed[7];
+	if(lockseed[7] & 1) {
+		label[0] = "LockOutKeyIn";
+		label[1] = "LockInKeyOut";
+	} else {
+		label[0] = "LockInKeyOut";
+		label[1] = "LockOutKeyIn";
+	}
 //	lockseed[3]=lockseed[7];
 	if(!restart)restart=1;
 //	printf("send %d-15\n", restart);
