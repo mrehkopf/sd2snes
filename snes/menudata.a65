@@ -1,8 +1,11 @@
 ; menu entry structure:
+
+; HEADER SIZE: 4 bytes
 ; HEADER:
 ; 1 byte   line spacing for menu display
 ; 3 bytes  long pointer to menu window title
-;
+
+; ENTRY SIZE: 20 bytes
 ; ENTRIES:
 ; 1 byte   entry type (see below)
 ; 3 bytes  long pointer to menu entry text

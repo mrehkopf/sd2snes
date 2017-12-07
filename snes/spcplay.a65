@@ -2,7 +2,7 @@
 
 ; SPC Player
 ; SPC700 transfer and IO routines by Shay Green <gblargg@gmail.com>
-; minor corrections by Maximilian Rehkopf<otakon@gmx.net>
+; minor corrections by Maximilian Rehkopf <otakon@gmx.net>
 
 spcplayer:
   php

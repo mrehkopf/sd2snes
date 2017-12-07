@@ -38,7 +38,7 @@ setup_hdma:
   sta $4314
 
   lda #$02      ;A to B; direct; 2x single reg
-  sta $4320     ;we use ch. 2 for color data
+  sta $4320     ;ch. 2 for color data
   lda #$22      ;2122 = CG RAM
   sta $4321     ;dest: CG RAM
   lda #^hdma_pal
