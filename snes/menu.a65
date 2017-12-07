@@ -120,7 +120,7 @@ show_menu:
 ; x: offset of menu structure
 ; db: bank of menu structure
 ; local vars:
-#define _work_vars      $0c
+#define _locals         $0c
 #define w_numentries    $00
 #define w_max_lbl_len   $02
 #define w_max_opt_len   $04
@@ -314,7 +314,7 @@ show_menu_editvalue:
       plb
     ply
     jmp show_menu_cont
-#undef _work_vars
+#undef _locals
 
 ; params:
 ; x: offset of menu structure
@@ -326,7 +326,7 @@ show_menu_editvalue:
 .byt "MENU_MEASURE"
 menu_measure:
 ; local variables
-#define _work_vars      $02
+#define _locals         $02
 #define w_max_kv_len    $00
 ; ==== return variables (same as parameter variables at the caller)
 #define r_numentries    $00
@@ -485,11 +485,11 @@ menu_meas_opt_set:
   and #$00ff
   plp
   rts
-#undef _work_vars
+#undef _locals
 
 .byt "MENU_PRINT_ENTRIES"
 menu_print_entries:
-#define _work_vars      $00
+#define _locals         $00
 ; params
 ; x: address of menu entry structure
 ; db: bank of menu entry structure
@@ -566,7 +566,7 @@ menu_print_ent_loop:
 menu_print_ent_out:
   FreeStack()
   rts
-#undef _work_vars
+#undef _locals
 
 .byt "MENU_PRINT_OPT_STRING"
 menu_print_opt_string_none:
@@ -575,7 +575,7 @@ menu_print_opt_string:
 ; params
 ; x: address of menu entry structure
 ; db: bank of menu entry structure
-#define _work_vars   $0b
+#define _locals      $0b
 #define w_entry_addr $00
 #define w_entry_bank $02
 #define w_kvpar_addr $03
@@ -808,7 +808,7 @@ menu_kv_lookup_out:
     pla
   plp
   rts
-#undef _work_vars
+#undef _locals
 
 ; menu_edit_value
 ; show a select/edit dialog depending on data type
@@ -819,8 +819,8 @@ menu_kv_lookup_out:
 ; x: address of menu entry
 .byt "MENU_EDIT_VALUE"
 menu_edit_value:
-; local variables (also available to callees above "#undef _work_vars")
-#define _work_vars      $0d
+; local variables (also available to callees above "#undef _locals")
+#define _locals         $0d
 #define w_preset_addr   $00
 #define w_preset_bank   $02
 #define w_value_addr    $03
@@ -1290,7 +1290,7 @@ menu_value_dialog_time_cancel:
   plp
   clc
   rts
-#undef _work_vars
+#undef _locals
 
 ; jump table to different data type edit dialogs
 menu_tab_edit_value_dialogs:

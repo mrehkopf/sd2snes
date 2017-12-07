@@ -10,7 +10,7 @@
 : phd \
 : tsc \
 : sec \
-: sbc imm(_work_vars) \
+: sbc imm(_locals) \
 : tcs \
 : inc \
 : tcd
@@ -21,9 +21,10 @@
   tsc \
 : rep imm($20) : .al \
 : clc \
-: adc imm(_work_vars) \
+: adc imm(_locals) \
 : tcs \
 : pld \
 : plp
 
-#define StackParam(offset) _work_vars+offset+$02+$02+$01
+#define StackParam(offset) _locals+offset+$02+$02+$01
+#define StackParamFar(offset) _locals+offset+$03+$02+$01

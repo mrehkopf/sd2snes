@@ -30,7 +30,7 @@ time_init:
 #define p_time_y    $03
 #define p_time_bank $02
 #define p_time_addr $00
-#define _work_vars  $10
+#define _locals     $10
 #define w_time_addr $00
 #define w_time_bank $02
 #define w_time_work $03
@@ -570,7 +570,7 @@ time_save_working_copy:
   bne -
   plp
   rts
-#undef _work_vars
+#undef _locals
 
 gettime:
   php
@@ -607,7 +607,7 @@ gettime:
 
 rendertime
 ; local variables
-#define _work_vars  $00
+#define _locals     $00
 ; caller variables
 #define p_time_addr $00
 #define p_time_bank $02
@@ -733,7 +733,7 @@ mon_skip2
   stz !1,x
   FreeStack() : .as
   rts
-#undef _work_vars
+#undef _locals
 
 settime
   lda time_y100
