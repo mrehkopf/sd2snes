@@ -37,6 +37,15 @@ module gsu(
   output DBG
 );
 
+// temporaries
+integer i;
+reg [15:0] reg_tmp;
+
+//-------------------------------------------------------------------
+// PARAMETERS
+//-------------------------------------------------------------------
+parameter NUM_GPR = 16;
+
 //-------------------------------------------------------------------
 // STATE
 //-------------------------------------------------------------------
@@ -89,6 +98,38 @@ gsu_cache cache (
 //-------------------------------------------------------------------
 // MMIO
 //-------------------------------------------------------------------
+// This handles all state read and write.  The main execution pipeline
+// feeds intermediate results back here.
+always @(posedge CLK) begin
+  if (RST) begin
+    for (i = 0; i < NUM_GPR; i = i + 1) begin
+      REG_r[i] <= 0;
+    end
+    
+    SFR_r   <= 0;
+    BRAMR_r <= 0;
+    PBR_r   <= 0;
+    ROMBR_r <= 0;
+    CFGR_r  <= 0;
+    SCBR_r  <= 0;
+    CLSR_r  <= 0;
+    SCMR_r  <= 0;
+    VCR_r   <= 4;
+    RAMBR_r <= 0;
+    
+    COLR_r  <= 0;
+    POR_r   <= 0;
+    SREG_r  <= 0;
+    DREG_r  <= 0;
+    
+    ROMRDBUF_r <= 0;
+    RAMWRBUF_r <= 0;
+    RAMADDR_r  <= 0;
+  end
+  else begin
+    
+  end
+end
 
 //-------------------------------------------------------------------
 // EXECUTION PIPELINE
