@@ -31,6 +31,18 @@ module gsu(
   output        DATA_ENABLE,
   output [7:0]  DATA_OUT,
   
+  // RAM interface
+  output        ROM_BUS_RRQ,
+  output        ROM_BUS_WRQ,
+  output [23:0] ROM_BUS_ADDR,
+  input  [7:0]  ROM_BUS_RDDATA,
+  output [7:0]  ROM_BUS_WRDATA,
+  
+  // ACTIVE interface
+  output        ACTIVE,
+  output        RON,
+  output        RAN,
+  
   // State debug read interface
   input  [9:0]  PGM_ADDR, // [9:0]
   output [7:0]  PGM_DATA, // [7:0]
@@ -107,6 +119,7 @@ parameter
   ADDR_SCMR  = 8'h3A,
   ADDR_VCR   = 8'h3B,
   ADDR_RAMBR = 8'h3C,
+  ADDR_CBR   = 8'h3E,
   
   ADDR_CACHE_BASE = 10'h100
   ;
@@ -151,7 +164,7 @@ assign SFR_IH   = SFR_r[11];
 assign SFR_B    = SFR_r[12];
 assign SFR_IRQ  = SFR_r[15];
 
-assign BRAM_EN  = BRAM_r[0];
+assign BRAMR_EN = BRAMR_r[0];
 
 assign CFGR_MS0 = CFGR_r[5];
 assign CFGR_IRQ = CFGR_r[7];
@@ -250,9 +263,23 @@ always @(posedge CLK) begin
   end
   else begin
     if (SFR_GO) begin
-      // need to handle reads and writes to select registers otherwise SFX chip has control
+      // TODO: need to handle SFX writes.  Can the compiler detect conditions resulting in mutually exclusive writes if they are different blocks?
+      if (SNES_WR_end & ENABLE) begin
+        casex (SNES_ADDR[7:0])
+          ADDR_SFR  : SFR_r[6:1] <= data_in_r[6:1];
+          ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {data_in_r[7],data_in_r[4:0]};
+          ADDR_SCMR : SCMR_r[5:0] <= data_in_r[5:0];
+        endcase
+      end
+      else if (SNES_RD_start & ENABLE) begin
+        casex (SNES_ADDR[7:0])
+          ADDR_SFR  : begin data_enable_r <= 1; data_out_r <= SFR_r[7:0]; end
+          ADDR_SFR+1: begin data_enable_r <= 1; data_out_r <= SFR_r[15:8]; end
+          ADDR_VCR  : begin data_enable_r <= 1; data_out_r <= VCR_r; end
+        endcase
+      end
     end
-    else if (gsu_enable) begin
+    else if (ENABLE) begin
       if (SNES_RD_start) begin
         if (~|SNES_ADDR[9:8]) begin
           casex (SNES_ADDR[7:0])
@@ -260,7 +287,7 @@ always @(posedge CLK) begin
             ADDR_GPRH : begin data_enable_r <= 1; data_out_r <= REG_r[SNES_ADDR[4:1]][15:8]; end
           
             ADDR_SFR  : begin data_enable_r <= 1; data_out_r <= SFR_r[7:0]; end
-            ADRR_SFR+1: begin data_enable_r <= 1; data_out_r <= SFR_r[15:8]; end
+            ADDR_SFR+1: begin data_enable_r <= 1; data_out_r <= SFR_r[15:8]; end
             //ADDR_BRAMR: begin data_enable_r <= 1; data_out_r <= BRAMR_r; end
             ADDR_PBR  : begin data_enable_r <= 1; data_out_r <= PBR_r; end
             ADDR_ROMBR: begin data_enable_r <= 1; data_out_r <= ROMBR_r; end
@@ -286,7 +313,7 @@ always @(posedge CLK) begin
             ADDR_GPRH : REG_r[SNES_ADDR[4:1]] <= {data_in_r,data_flop_r};
           
             ADDR_SFR  : SFR_r[6:1] <= data_in_r[6:1];
-            ADRR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {data_in_r[7],data_in_r[4:0]};
+            ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {data_in_r[7],data_in_r[4:0]};
             ADDR_BRAMR: BRAMR_r[0] <= data_in_r[0];
             ADDR_PBR  : PBR_r <= data_in_r;
             //ADDR_ROMBR: ROMBR_r <= data_in_r;
@@ -304,16 +331,21 @@ always @(posedge CLK) begin
           cache_mmio_wren_r <= 1;
           cache_mmio_wrdata_r <= data_in_r;
           cache_mmio_addr_r <= {~addr_in_r[8],addr_in_r[7:0]};
-        end        
+        end
       end
     end
     else begin
       if (data_enable_r) data_out_r <= cache_rddata;
       data_enable_r <= 0;
-      cache_wren_r <= 0;
+      cache_mmio_wren_r <= 0;
     end
   end
 end
+
+//-------------------------------------------------------------------
+// MEMORY READ PIPELINE
+//-------------------------------------------------------------------
+
 
 //-------------------------------------------------------------------
 // CACHE PIPELINE
