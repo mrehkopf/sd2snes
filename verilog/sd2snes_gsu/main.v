@@ -416,6 +416,7 @@ gsu snes_gsu (
   .DATA_OUT(GSU_SNES_DATA_OUT),
   
   // RAM interface
+  .ROM_BUS_RDY(GSU_RDY),
   .ROM_BUS_RRQ(GSU_RRQ),
   .ROM_BUS_WRQ(GSU_WRQ),
   .ROM_BUS_ADDR(GSU_ADDR),
@@ -424,8 +425,6 @@ gsu snes_gsu (
   
   // ACTIVE interface
   .ACTIVE(GSU_ACTIVE),
-  .RON(GSU_RON),
-  .RAN(GSU_RAN),
   
   // State debug read interface
   .PGM_ADDR(GSU_PGM_ADDR), // [9:0]
@@ -685,7 +684,7 @@ reg GSU_RD_PENDr; initial GSU_RD_PENDr = 0;
 reg GSU_WR_PENDr; initial GSU_WR_PENDr = 0;
 reg [23:0] GSU_ROM_ADDRr;
 
-reg RQ_GSU_RDYr; initial RQ_GSU_RDYr = 0;
+reg RQ_GSU_RDYr; initial RQ_GSU_RDYr = 1;
 assign GSU_RDY = RQ_GSU_RDYr;
 
 wire GSU_WR_HIT = |(STATE & ST_GSU_WR_ADDR);

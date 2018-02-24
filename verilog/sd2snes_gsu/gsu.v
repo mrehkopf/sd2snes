@@ -32,6 +32,7 @@ module gsu(
   output [7:0]  DATA_OUT,
   
   // RAM interface
+  input         ROM_BUS_RDY,
   output        ROM_BUS_RRQ,
   output        ROM_BUS_WRQ,
   output [23:0] ROM_BUS_ADDR,
@@ -40,8 +41,6 @@ module gsu(
   
   // ACTIVE interface
   output        ACTIVE,
-  output        RON,
-  output        RAN,
   
   // State debug read interface
   input  [9:0]  PGM_ADDR, // [9:0]
@@ -123,6 +122,13 @@ parameter
   
   ADDR_CACHE_BASE = 10'h100
   ;
+
+//-------------------------------------------------------------------
+// FLOPS
+//-------------------------------------------------------------------
+reg cache_rom_rd_r; initial cache_rom_rd_r = 0;
+reg gsu_rom_rd_r; initial gsu_rom_rd_r = 0;
+reg gsu_rom_wr_r; initial gsu_rom_wr_r = 0;
 
 //-------------------------------------------------------------------
 // STATE
@@ -345,7 +351,59 @@ end
 //-------------------------------------------------------------------
 // MEMORY READ PIPELINE
 //-------------------------------------------------------------------
+parameter
+  ST_ROM_IDLE = 4'b0001,
+  ST_ROM_RD   = 4'b0010,
+  ST_ROM_WR   = 4'b0100,
+  ST_ROM_END  = 4'b1000
+  ;
+reg [3:0] ROM_STATE; initial ROM_STATE = ST_ROM_IDLE;
+reg rom_bus_rrq_r; initial rom_bus_rrq_r = 0;
+reg rom_bus_wrq_r; initial rom_bus_wrq_r = 0;
+reg [23:0] rom_bus_addr_r;
+reg [7:0] rom_bus_data_r;
 
+// since this is the only bus available to 
+always @(posedge CLK) begin
+  case (ROM_STATE)
+    ST_ROM_IDLE: begin
+      // TODO: determine if the cache can make demand fetches
+      if (cache_rom_rd_r) begin
+        rom_bus_rrq_r <= 1;
+        rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
+        ROM_STATE <= ST_ROM_RD;
+      end
+      else if (gsu_rom_rd_r) begin
+        rom_bus_rrq_r <= 1;
+        rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
+        ROM_STATE <= ST_ROM_RD;
+      end
+      else if (gsu_rom_wr_r) begin
+        rom_bus_wrq_r <= 1;
+        rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
+        rom_bus_data_r <= 0; // TODO: data to write
+        ROM_STATE <= ST_ROM_WR;
+      end
+    end
+    ST_ROM_RD: begin
+      if (ROM_BUS_RDY) begin
+        rom_bus_data_r <= ROM_BUS_RDDATA;
+        ROM_STATE <= ST_ROM_END;
+      end
+    end
+    ST_ROM_WR: begin
+      if (ROM_BUS_RDY) ROM_STATE <= ST_ROM_END;
+    end
+    ST_ROM_END: begin
+      ROM_STATE <= ST_ROM_IDLE;
+    end
+  endcase
+end
+
+assign ROM_BUS_RRQ = rom_bus_rrq_r;
+assign ROM_BUS_WRQ = rom_bus_wrq_r;
+assign ROM_BUS_ADDR = rom_bus_addr_r;
+assign ROM_BUS_WRDATA = rom_bus_data_r;
 
 //-------------------------------------------------------------------
 // CACHE PIPELINE
