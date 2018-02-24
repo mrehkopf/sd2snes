@@ -41,18 +41,24 @@ module gsu_cache(
   wea,
   addra,
   dina,
+  douta,
   clkb,
+  web,
   addrb,
+  dinb,
   doutb
 );
 
 input clka;
 input [0 : 0] wea;
 input [8 : 0] addra;
-input [7 : 0] dina;
+input [15 : 0] dina;
+output [15 : 0] douta;
 input clkb;
+input [0 : 0] web;
 input [8 : 0] addrb;
-output [7 : 0] doutb;
+input [15 : 0] dinb;
+output [15 : 0] doutb;
 
 // synthesis translate_off
 
@@ -90,13 +96,13 @@ output [7 : 0] doutb;
     .C_INITB_VAL("0"),
     .C_INTERFACE_TYPE(0),
     .C_LOAD_INIT_FILE(0),
-    .C_MEM_TYPE(1),
+    .C_MEM_TYPE(2),
     .C_MUX_PIPELINE_STAGES(0),
     .C_PRIM_TYPE(1),
     .C_READ_DEPTH_A(512),
     .C_READ_DEPTH_B(512),
-    .C_READ_WIDTH_A(8),
-    .C_READ_WIDTH_B(8),
+    .C_READ_WIDTH_A(16),
+    .C_READ_WIDTH_B(16),
     .C_RST_PRIORITY_A("CE"),
     .C_RST_PRIORITY_B("CE"),
     .C_RST_TYPE("SYNC"),
@@ -115,8 +121,8 @@ output [7 : 0] doutb;
     .C_WRITE_DEPTH_B(512),
     .C_WRITE_MODE_A("WRITE_FIRST"),
     .C_WRITE_MODE_B("WRITE_FIRST"),
-    .C_WRITE_WIDTH_A(8),
-    .C_WRITE_WIDTH_B(8),
+    .C_WRITE_WIDTH_A(16),
+    .C_WRITE_WIDTH_B(16),
     .C_XDEVICEFAMILY("spartan3")
   )
   inst (
@@ -124,18 +130,18 @@ output [7 : 0] doutb;
     .WEA(wea),
     .ADDRA(addra),
     .DINA(dina),
+    .DOUTA(douta),
     .CLKB(clkb),
+    .WEB(web),
     .ADDRB(addrb),
+    .DINB(dinb),
     .DOUTB(doutb),
     .RSTA(),
     .ENA(),
     .REGCEA(),
-    .DOUTA(),
     .RSTB(),
     .ENB(),
     .REGCEB(),
-    .WEB(),
-    .DINB(),
     .INJECTSBITERR(),
     .INJECTDBITERR(),
     .SBITERR(),

@@ -392,7 +392,7 @@ spi snes_spi(
   .bit_cnt(spi_bit_cnt)
 );
 
-// GSU (superfx) chip
+// GSU (superfx)
 gsu snes_gsu (
   .RST(SNES_reset_strobe),
   .CLK(CLK2),
@@ -402,8 +402,9 @@ gsu snes_gsu (
   .SNES_RD_start(SNES_RD_start),
   .SNES_WR_end(SNES_WR_end),
   .SNES_ADDR(SNES_ADDR),
-  .GSU_DATA_IN(GSU_SNES_DATA_IN),
-  .GSU_DATA_OUT(GSU_SNES_DATA_OUT),
+  .DATA_IN(GSU_SNES_DATA_IN),
+  .DATA_OUT_ENABLE(gsu_data_enable),
+  .DATA_OUT(GSU_SNES_DATA_OUT),
   
   // State debug read interface
   .PGM_ADDR(GSU_PGM_ADDR), // [9:0]
@@ -636,7 +637,7 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
 //                                  :dspx_enable ? DSPX_SNES_DATA_OUT
 //                                  :dspx_dp_enable ? DSPX_SNES_DATA_OUT
                                     msu_enable ? MSU_SNES_DATA_OUT
-                                  : gsu_enable ? GSU_SNES_DATA_OUT
+                                  : gsu_data_enable ? GSU_SNES_DATA_OUT
 //                                  :bsx_data_ovr ? BSX_SNES_DATA_OUT
                                   :(cheat_hit & ~feat_cmd_unlock) ? cheat_data_out
                                   :((snescmd_unlock | feat_cmd_unlock) & snescmd_enable) ? snescmd_dout
