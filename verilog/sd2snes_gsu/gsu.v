@@ -156,7 +156,7 @@ parameter
   // MOV
   // MOVE/MOVES use WITH/TO and WITH/FROM
   OP_IBT           = 8'hAx,
-  OP_IWT           = 8'hFx,
+  OP_IWT           = 8'hFx, // LEA
   // load from ROM
   OP_GETB          = 8'hEF,
   // load from RAM
