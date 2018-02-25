@@ -280,9 +280,13 @@ assign POR_OBJ  = POR_r[4];
 // Cache
 //-------------------------------------------------------------------
 // GSU/SNES interface
-reg        cache_mmio_wren_r;
+reg        cache_mmio_wren_r; initial cache_mmio_wren_r = 0;
 reg  [7:0] cache_mmio_wrdata_r;
 reg  [8:0] cache_mmio_addr_r;
+
+reg        cache_gsu_wren_r; initial cache_gsu_wren_r = 0;
+reg  [7:0] cache_gsu_wrdata_r;
+reg  [8:0] cache_gsu_addr_r;
 
 wire       cache_wren;
 wire [8:0] cache_addr;
@@ -294,9 +298,10 @@ wire [8:0] debug_cache_addr;
 wire [7:0] debug_cache_wrdata;
 wire [7:0] debug_cache_rddata;
 
-assign cache_wren = cache_mmio_wren_r;
-assign cache_addr = cache_mmio_addr_r;
-assign cache_wrdata = cache_mmio_wrdata_r;
+assign cache_wren   = SFR_GO ? cache_gsu_wren_r   : cache_mmio_wren_r;
+assign cache_addr   = SFR_GO ? cache_gsu_addr_r   : cache_mmio_addr_r;
+assign cache_wrdata = SFR_GO ? cache_gsu_wrdata_r : cache_mmio_wrdata_r;
+
 assign debug_cache_wren = 0;
 
 gsu_cache cache (
@@ -513,6 +518,10 @@ assign ROM_BUS_WRDATA = rom_bus_data_r;
 // The cache holds instructions to execute and is accesible by the GSU
 // using a PC of 0-$1FF.  It is true dual port to support debug reads
 // and writes.
+
+// The fetch pipeline has a few modes:
+// - Cache hit
+// - ROM fill (into cache if offset)
 parameter
   ST_FETCH_IDLE  = 4'b0001,
   ST_FETCH_CACHE = 4'b0010,
@@ -520,12 +529,28 @@ parameter
   ST_FETCH_WAIT  = 4'b1000
   ;
 reg [3:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
+
+// output to execute
 reg [7:0] fetch_opbuffer_r; initial fetch_opbuffer_r = OP_NOP;
 
 // The ROM/RAM should be dedicated to the GSU whenever it wants to do a fetch
 always @(posedge CLK) begin
-  case (ROM_STATE)
+  case (FETCH_STATE)
     ST_FETCH_IDLE: begin
+      // align to GSU clock
+      if (SFR_GO & gsu_clock_en) begin
+        FETCH_STATE <= ST_FETCH_CACHE;
+        
+        // TODO: set initial cache address to fetch from
+        //cache_gsu_addr_r <= REG_r[R15][8:0];
+      end
+    end
+    ST_FETCH_CACHE: begin
+      // 1 of 4 (check if cache hit)
+    end
+    ST_FETCH_ROM: begin
+    end
+    ST_FETCH_WAIT: begin
     end
   endcase
 end
