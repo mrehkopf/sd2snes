@@ -123,12 +123,96 @@ parameter
   ADDR_CACHE_BASE = 10'h100
   ;
 
+// instructions
+parameter
+  OP_STOP          = 8'h00,
+  OP_NOP           = 8'h01,
+  OP_CACHE         = 8'h02,
+  
+  // bra (no reset state)
+  OP_BRA           = 8'h05,
+  OP_BGE           = 8'h06,
+  OP_BLT           = 8'h07,
+  OP_BNE           = 8'h08,
+  OP_BEQ           = 8'h09,
+  OP_BPL           = 8'h0A,
+  OP_BMI           = 8'h0B,
+  OP_BCC           = 8'h0C,
+  OP_BCS           = 8'h0D,
+  OP_BVC           = 8'h0E,
+  OP_BVS           = 8'h0F,
+  // jmps/loops
+  OP_LINK_JMP_LJMP = 8'h9x,
+  OP_LOOP          = 8'h3C,
+  
+  // prefix (also see branch) no reset state
+  OP_ALT1          = 8'h3D,
+  OP_ALT2          = 8'h3E,
+  OP_ALT3          = 8'h3F,
+  OP_TO            = 8'h1x,
+  OP_WITH          = 8'h2x,
+  OP_FROM          = 8'hBx,
+  
+  // MOV
+  // MOVE/MOVES use WITH/TO and WITH/FROM
+  OP_IBT           = 8'hAx,
+  OP_IWT           = 8'hFx,
+  // load from ROM
+  OP_GETB          = 8'hEF,
+  // load from RAM
+  OP_LD            = 8'h4x, // 4 opcodes
+  OP_ST            = 8'h3x, // 4 opcodes
+  OP_SBK           = 8'h90,
+  OP_GETC_RAMB_ROMB= 8'hDF,
+  
+  // BITMAP
+  OP_CMODE_COLOR   = 8'h4E,
+  OP_PLOT_RPIX     = 8'h4C,
+  
+  // ALU
+  OP_ADD           = 8'h5x,
+  OP_SUB           = 8'h6x,
+  OP_AND_BIC       = 8'h7x,
+  OP_OR_XOR        = 8'hCx,
+  OP_NOT           = 8'h4F,
+  
+  // ROTATE/SHIFT/INC/DEC
+  OP_LSR           = 8'h03,
+  OP_ASR_DIV2      = 8'h96,
+  OP_ROL           = 8'h04,
+  OP_ROR           = 8'h97,
+  OP_INC           = 8'hDx,
+  OP_DEC           = 8'hEx,
+  
+  // BYTE
+  OP_SWAP          = 8'h4D,
+  OP_SEX           = 8'h95,
+  OP_LOB           = 8'h9E,
+  OP_HIB           = 8'hC0,
+  OP_MERGE         = 8'h70,
+  
+  // MULTIPLY
+  OP_FMULT_LMULT   = 8'h9F,
+  OP_MULT_MULT     = 8'h8x
+  
+  ;
+
 //-------------------------------------------------------------------
 // FLOPS
 //-------------------------------------------------------------------
 reg cache_rom_rd_r; initial cache_rom_rd_r = 0;
 reg gsu_rom_rd_r; initial gsu_rom_rd_r = 0;
-reg gsu_rom_wr_r; initial gsu_rom_wr_r = 0;
+reg gsu_ram_rd_r; initial gsu_ram_rd_r = 0;
+reg gsu_ram_wr_r; initial gsu_ram_wr_r = 0;
+
+reg [1:0] gsu_cycle_r; initial gsu_cycle_r = 0;
+
+always @(posedge CLK) gsu_cycle_r <= gsu_cycle_r + 1;
+
+// Assert clock enable every 4 FPGA clocks.  Delays are calculated in
+// terms of GSU clocks so this is used to align transitions and
+// operate counters.
+assign gsu_clock_en = &gsu_cycle_r;
 
 //-------------------------------------------------------------------
 // STATE
@@ -352,33 +436,40 @@ end
 // MEMORY READ PIPELINE
 //-------------------------------------------------------------------
 parameter
-  ST_ROM_IDLE = 4'b0001,
-  ST_ROM_RD   = 4'b0010,
-  ST_ROM_WR   = 4'b0100,
-  ST_ROM_END  = 4'b1000
+  ST_ROM_IDLE = 5'b00001,
+  ST_ROM_RD   = 5'b00010,
+  ST_ROM_WR   = 5'b00100,
+  ST_ROM_WAIT = 5'b01000,
+  ST_ROM_END  = 5'b10000
   ;
 reg [3:0] ROM_STATE; initial ROM_STATE = ST_ROM_IDLE;
 reg rom_bus_rrq_r; initial rom_bus_rrq_r = 0;
 reg rom_bus_wrq_r; initial rom_bus_wrq_r = 0;
 reg [23:0] rom_bus_addr_r;
 reg [7:0] rom_bus_data_r;
+reg [3:0] rom_waitcnt_r;
 
-// since this is the only bus available to 
+// The ROM/RAM should be dedicated to the GSU whenever it wants to do a fetch
 always @(posedge CLK) begin
   case (ROM_STATE)
     ST_ROM_IDLE: begin
       // TODO: determine if the cache can make demand fetches
-      if (cache_rom_rd_r) begin
+      if (cache_rom_rd_r & SCMR_RON) begin
         rom_bus_rrq_r <= 1;
         rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
         ROM_STATE <= ST_ROM_RD;
       end
-      else if (gsu_rom_rd_r) begin
+      else if (gsu_rom_rd_r & SCMR_RON) begin
         rom_bus_rrq_r <= 1;
         rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
         ROM_STATE <= ST_ROM_RD;
       end
-      else if (gsu_rom_wr_r) begin
+      else if (gsu_ram_rd_r & SCMR_RAN) begin
+        rom_bus_rrq_r <= 1;
+        rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
+        ROM_STATE <= ST_ROM_RD;
+      end
+      else if (gsu_ram_wr_r & SCMR_RAN) begin
         rom_bus_wrq_r <= 1;
         rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
         rom_bus_data_r <= 0; // TODO: data to write
@@ -388,11 +479,19 @@ always @(posedge CLK) begin
     ST_ROM_RD: begin
       if (ROM_BUS_RDY) begin
         rom_bus_data_r <= ROM_BUS_RDDATA;
-        ROM_STATE <= ST_ROM_END;
+        rom_waitcnt_r <= 0;  // TODO: figure out how much timing has to be padded in.
+        ROM_STATE <= ST_ROM_WAIT;
       end
     end
     ST_ROM_WR: begin
-      if (ROM_BUS_RDY) ROM_STATE <= ST_ROM_END;
+      if (ROM_BUS_RDY) begin
+        rom_waitcnt_r <= 0;  // TODO: figure out how much timing has to be padded in.
+        ROM_STATE <= ST_ROM_WAIT;
+      end
+    end
+    ST_ROM_WAIT: begin
+      if (|rom_waitcnt_r) rom_waitcnt_r <= rom_waitcnt_r - 1;
+      else ROM_STATE <= ST_ROM_END;
     end
     ST_ROM_END: begin
       ROM_STATE <= ST_ROM_IDLE;
@@ -406,11 +505,30 @@ assign ROM_BUS_ADDR = rom_bus_addr_r;
 assign ROM_BUS_WRDATA = rom_bus_data_r;
 
 //-------------------------------------------------------------------
-// CACHE PIPELINE
+// FETCH PIPELINE
 //-------------------------------------------------------------------
+// The frontend of the pipeline starts with the fetch operation which
+// is pipelined relative to execute and operates a clock ahead.
+
 // The cache holds instructions to execute and is accesible by the GSU
 // using a PC of 0-$1FF.  It is true dual port to support debug reads
 // and writes.
+parameter
+  ST_FETCH_IDLE  = 4'b0001,
+  ST_FETCH_CACHE = 4'b0010,
+  ST_FETCH_ROM   = 4'b0100,
+  ST_FETCH_WAIT  = 4'b1000
+  ;
+reg [3:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
+reg [7:0] fetch_opbuffer_r; initial fetch_opbuffer_r = OP_NOP;
+
+// The ROM/RAM should be dedicated to the GSU whenever it wants to do a fetch
+always @(posedge CLK) begin
+  case (ROM_STATE)
+    ST_FETCH_IDLE: begin
+    end
+  endcase
+end
 
 //-------------------------------------------------------------------
 // EXECUTION PIPELINE
