@@ -76,6 +76,17 @@ module mcu_cmd(
   output [9:0] gsu_addr_out,
   input [7:0] gsu_data,
 
+  // REG (generic)
+  // data inputs
+  input [7:0] gsu_config_data_in,
+  // data output
+  output [7:0] reg_group_out,
+  output [7:0] reg_index_out,
+  output [7:0] reg_value_out,
+  output [7:0] reg_invmask_out,
+  output       reg_we_out,
+  output [7:0] reg_read_out,
+
 //  // BS-X
 //  output [7:0] bsx_regs_reset_out,
 //  output [7:0] bsx_regs_set_out,
@@ -147,6 +158,16 @@ reg [5:0] msu_status_set_out_buf;
 reg [5:0] msu_status_reset_out_buf;
 reg msu_status_reset_we_buf = 0;
 reg MSU_RESET_OUT_BUF;
+
+reg [7:0] group_out_buf; initial group_out_buf = 8'hFF;
+reg [7:0] index_out_buf; initial index_out_buf = 8'hFF;
+reg [7:0] value_out_buf; initial value_out_buf = 8'hFF;
+reg [7:0] invmask_out_buf; initial invmask_out_buf = 8'hFF;
+reg [7:0] group_read_buf; initial group_read_buf = 8'hFF;
+reg [7:0] index_read_buf; initial index_read_buf = 8'hFF;
+reg [7:0] temp_read_buf; initial temp_read_buf = 8'hFF;
+
+reg reg_we_buf; initial reg_we_buf = 0;
 
 //reg [55:0] rtc_data_out_buf;
 //reg rtc_pgm_we_buf;
@@ -357,6 +378,29 @@ always @(posedge clk) begin
         featurebits_out <= param_data;
       8'hee:
         region_out <= param_data[0];
+      8'hFD: // handles all group, index, value, invmask writes.  unit is responsible for decoding group for match
+        case (spi_byte_cnt)
+          32'h2: begin
+            group_out_buf <= param_data;
+          end
+          32'h3: begin
+            index_out_buf <= param_data;
+          end
+          32'h4: begin
+            value_out_buf <= param_data;
+          end
+          32'h5: begin
+            invmask_out_buf <= param_data;
+            reg_we_buf <= 1;
+          end
+          32'h6: begin
+            reg_we_buf <= 0;
+            group_out_buf <= 8'hFF;
+            index_out_buf <= 8'hFF;
+            value_out_buf <= 8'hFF;
+            invmask_out_buf <= 8'hFF;
+          end
+        endcase
     endcase
   end
 end
@@ -468,6 +512,19 @@ always @(posedge clk) begin
         32'h5:
           MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[7:0];
       endcase
+    else if (cmd_data[7:0] == 8'hFC)
+      case (spi_byte_cnt)
+        32'h2: begin
+          group_read_buf <= param_data;
+        end
+        32'h3: begin
+          index_read_buf <= param_data;
+        end
+        32'h4: begin
+          if (group_read_buf == 8'h03) MCU_DATA_IN_BUF <= gsu_config_data_in;
+          else                         MCU_DATA_IN_BUF <= 0;
+        end
+      endcase 
     else if (cmd_data[7:0] == 8'hFF)
       MCU_DATA_IN_BUF <= param_data;
     else if (cmd_data[7:0] == 8'hD1)
@@ -527,6 +584,13 @@ assign mcu_data_out = SD_DMA_STATUS ? SD_DMA_SRAM_DATA : MCU_DATA_OUT_BUF;
 assign mcu_mapper = MAPPER_BUF;
 assign rom_mask_out = ROM_MASK;
 assign saveram_mask_out = SAVERAM_MASK;
+
+assign reg_group_out = group_out_buf;
+assign reg_index_out = index_out_buf;
+assign reg_value_out = value_out_buf;
+assign reg_invmask_out = invmask_out_buf;
+assign reg_we_out = reg_we_buf;
+assign reg_read_out = index_read_buf;
 
 assign DBG_mcu_nextaddr = mcu_nextaddr;
 endmodule

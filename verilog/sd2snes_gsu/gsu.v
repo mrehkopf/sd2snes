@@ -45,7 +45,17 @@ module gsu(
   // State debug read interface
   input  [9:0]  PGM_ADDR, // [9:0]
   output [7:0]  PGM_DATA, // [7:0]
-  
+
+  // config interface
+  input [7:0] reg_group_in,
+  input [7:0] reg_index_in,
+  input [7:0] reg_value_in,
+  input [7:0] reg_invmask_in,
+  input       reg_we_in,
+  input [7:0] reg_read_in,
+  output[7:0] config_data_out,
+  // config interface
+
   output DBG
 );
 
@@ -196,6 +206,27 @@ parameter
   OP_MULT_MULT     = 8'h8x
   
   ;
+
+//-------------------------------------------------------------------
+// CONFIG
+//-------------------------------------------------------------------
+
+parameter CONFIG_REGISTERS = 2;
+reg [7:0] config_r[CONFIG_REGISTERS-1:0]; initial for (i = 0; i < CONFIG_REGISTERS; i = i + 1) config_r[i] = 8'h00;
+
+always @(posedge CLK) begin
+  if (RST) begin
+    for (i = 0; i < CONFIG_REGISTERS; i = i + 1) config_r[i] <= 8'h00;
+  end
+  else if (reg_we_in && (reg_group_in == 8'h03)) begin
+    if (reg_index_in < CONFIG_REGISTERS) config_r[reg_index_in] <= (config_r[reg_index_in] & reg_invmask_in) | (reg_value_in & ~reg_invmask_in);
+  end
+end
+
+assign config_data_out = config_r[reg_read_in];
+
+wire       CONFIG_STEP_ENABLED = config_r[0][0];
+wire [7:0] CONFIG_STEP_COUNT   = config_r[1];
 
 //-------------------------------------------------------------------
 // FLOPS
@@ -523,41 +554,52 @@ assign ROM_BUS_WRDATA = rom_bus_data_r;
 // - Cache hit
 // - ROM fill (into cache if offset)
 parameter
-  ST_FETCH_IDLE  = 4'b0001,
-  ST_FETCH_CACHE = 4'b0010,
-  ST_FETCH_ROM   = 4'b0100,
-  ST_FETCH_WAIT  = 4'b1000
+  ST_FETCH_IDLE   = 4'b0001,
+  ST_FETCH_LOOKUP = 4'b0010,
+  ST_FETCH_FILL   = 4'b0100,
+  ST_FETCH_WAIT   = 4'b1000
   ;
 reg [3:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
 
-// output to execute
-reg [7:0] fetch_opbuffer_r; initial fetch_opbuffer_r = OP_NOP;
+// The fetch pipe and execution pipe are synchronized via the opbuffer.
+// Fetch operates one byte ahead of the 
+reg [7:0] opbuffer_r[1:0]; initial for (i = 0; i < 2; i = i + 1) opbuffer_r[i] = OP_NOP;
+reg       opbuffer_ptr_r; initial opbuffer_ptr_r = 0;
 
-// The ROM/RAM should be dedicated to the GSU whenever it wants to do a fetch
+
 always @(posedge CLK) begin
-  case (FETCH_STATE)
-    ST_FETCH_IDLE: begin
-      // align to GSU clock
-      if (SFR_GO & gsu_clock_en) begin
-        FETCH_STATE <= ST_FETCH_CACHE;
+  if (RST) begin
+    opbuffer_r[0] <= OP_NOP;
+    opbuffer_ptr_r <= 0;
+  end
+  else begin
+    case (FETCH_STATE)
+      ST_FETCH_IDLE: begin
+        // align to GSU clock
+        if (SFR_GO & gsu_clock_en) begin
+          FETCH_STATE <= ST_FETCH_LOOKUP;
         
-        // TODO: set initial cache address to fetch from
-        //cache_gsu_addr_r <= REG_r[R15][8:0];
+          // TODO: set initial cache address to fetch from
+          //cache_gsu_addr_r <= REG_r[R15][8:0];
+        end
       end
-    end
-    ST_FETCH_CACHE: begin
-      // 1 of 4 (check if cache hit)
-    end
-    ST_FETCH_ROM: begin
-    end
-    ST_FETCH_WAIT: begin
-    end
-  endcase
+      ST_FETCH_LOOKUP: begin
+        // 1 of 4 (check if cache hit)
+      end
+      ST_FETCH_FILL: begin
+      end
+      ST_FETCH_WAIT: begin
+      end
+    endcase
+  end
 end
 
 //-------------------------------------------------------------------
 // EXECUTION PIPELINE
 //-------------------------------------------------------------------
+
+// step counter
+reg [7:0] step_count_r; initial step_count_r = 0;
 
 //-------------------------------------------------------------------
 // DEBUG OUTPUT

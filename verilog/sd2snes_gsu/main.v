@@ -163,6 +163,16 @@ wire [8:0] snescmd_addr_mcu;
 wire [7:0] snescmd_data_out_mcu;
 wire [7:0] snescmd_data_in_mcu;
 
+// config
+wire [7:0] reg_group;
+wire [7:0] reg_index;
+wire [7:0] reg_value;
+wire [7:0] reg_invmask;
+wire       reg_we;
+wire [7:0] reg_read;
+// unit level configuration output
+wire [7:0] gsu_config_data;
+
 reg [7:0] SNES_PARDr;
 reg [7:0] SNES_READr;
 reg [7:0] SNES_WRITEr;
@@ -179,9 +189,10 @@ reg free_strobe = 0;
 
 wire SNES_PARD_start = ((SNES_PARDr[6:1] | SNES_PARDr[7:2]) == 6'b111110);
 wire SNES_RD_start = ((SNES_READr[6:1] | SNES_READr[7:2]) == 6'b111100);
-wire SNES_RD_end = ((SNES_READr[6:1] & SNES_READr[7:2]) == 6'b000001);
-wire SNES_WR_end = ((SNES_WRITEr[6:1] & SNES_WRITEr[7:2]) == 6'b000001);
-wire SNES_cycle_start = ((SNES_CPU_CLKr[7:2] & SNES_CPU_CLKr[6:1]) == 6'b000011);
+//wire SNES_RD_end = ((SNES_READr[6:1] & SNES_READr[7:2]) == 6'b000001);
+//wire SNES_WR_end = ((SNES_WRITEr[6:1] & SNES_WRITEr[7:2]) == 6'b000001);
+reg SNES_RD_end; always @(posedge CLK2) SNES_RD_end <= ((SNES_READr[5:0] & SNES_READr[6:1]) == 6'b000001);
+reg SNES_WR_end; always @(posedge CLK2) SNES_WR_end <= ((SNES_WRITEr[5:0] & SNES_WRITEr[6:1]) == 6'b000001);wire SNES_cycle_start = ((SNES_CPU_CLKr[7:2] & SNES_CPU_CLKr[6:1]) == 6'b000011);
 wire SNES_cycle_end = ((SNES_CPU_CLKr[7:2] | SNES_CPU_CLKr[6:1]) == 6'b111000);
 wire SNES_WRITE = SNES_WRITEr[2] & SNES_WRITEr[1];
 wire SNES_READ = SNES_READr[2] & SNES_READr[1];
@@ -429,7 +440,16 @@ gsu snes_gsu (
   // State debug read interface
   .PGM_ADDR(GSU_PGM_ADDR), // [9:0]
   .PGM_DATA(GSU_PGM_DATA), // [7:0]
-  
+
+  // config
+  .reg_group_in(reg_group),
+  .reg_index_in(reg_index),
+  .reg_value_in(reg_value),
+  .reg_invmask_in(reg_invmask),
+  .reg_we_in(reg_we),
+  .reg_read_in(reg_read),
+  .config_data_out(gsu_config_data),
+
   .DBG(DBG_GSU)
 );
 
@@ -524,6 +544,16 @@ mcu_cmd snes_mcu_cmd(
 //  .dspx_dat_addr_out(dspx_dat_addr),
 //  .dspx_dat_we_out(dspx_dat_we),
 //  .dspx_reset_out(dspx_reset),
+  // config
+  .reg_group_out(reg_group),
+  .reg_index_out(reg_index),
+  .reg_value_out(reg_value),
+  .reg_invmask_out(reg_invmask),
+  .reg_we_out(reg_we),
+  .reg_read_out(reg_read),
+  // vv config data in vv
+  .gsu_config_data_in(gsu_config_data),
+  // ^^ config data in ^^
   .featurebits_out(featurebits),
   .mcu_rrq(MCU_RRQ),
   .mcu_wrq(MCU_WRQ),
