@@ -334,6 +334,7 @@ assign cache_addr   = SFR_GO ? cache_gsu_addr_r   : cache_mmio_addr_r;
 assign cache_wrdata = SFR_GO ? cache_gsu_wrdata_r : cache_mmio_wrdata_r;
 
 assign debug_cache_wren = 0;
+assign debug_cache_addr = {~PGM_ADDR[8],PGM_ADDR[7:0]};
 
 gsu_cache cache (
   .clka(CLK), // input clka
@@ -550,7 +551,9 @@ assign ROM_BUS_WRDATA = rom_bus_data_r;
 // using a PC of 0-$1FF.  It is true dual port to support debug reads
 // and writes.
 
-// The fetch pipeline has a few modes:
+// The fetch pipeline is composed primarily of the cache lookup state machine
+// which can access the cache once per GSU clock.  It synchronizes with the
+// 4x FPGA clock and the execution pipeline.  It does this 
 // - Cache hit
 // - ROM fill (into cache if offset)
 parameter
@@ -604,7 +607,42 @@ reg [7:0] step_count_r; initial step_count_r = 0;
 //-------------------------------------------------------------------
 // DEBUG OUTPUT
 //-------------------------------------------------------------------
+reg [7:0] pgmdata_out; //initial pgmdata_out_r = 0;
 
+// TODO: also map other non-visible state
+always @(REG_r[0], REG_r[1], REG_r[2], REG_r[3], REG_r[4], REG_r[5], REG_r[6], REG_r[7],
+         REG_r[8], REG_r[9], REG_r[10], REG_r[11], REG_r[12], REG_r[13], REG_r[14], REG_r[15]
+         //SFR_r, BRAMR_r, PBR_r, ROMBR_r, CFGR_r, SCBR_r, CLSR_r, SCMR_r, VCR_r, RAMBR_r, CBR_r
+        ) begin
+  casex (PGM_ADDR[9:0])
+    ADDR_GPRL : pgmdata_out = REG_r[PGM_ADDR[4:1]][7:0];
+    ADDR_GPRH : pgmdata_out = REG_r[PGM_ADDR[4:1]][15:8];          
+    ADDR_SFR  : pgmdata_out = SFR_r[7:0];
+    ADDR_SFR+1: pgmdata_out = SFR_r[15:8];
+    ADDR_BRAMR: pgmdata_out = BRAMR_r;
+    ADDR_PBR  : pgmdata_out = PBR_r;
+    ADDR_ROMBR: pgmdata_out = ROMBR_r;
+    ADDR_CFGR : pgmdata_out = CFGR_r;
+    ADDR_SCBR : pgmdata_out = SCBR_r;
+    ADDR_CLSR : pgmdata_out = CLSR_r;
+    ADDR_SCMR : pgmdata_out = SCMR_r;
+    ADDR_VCR  : pgmdata_out = VCR_r;
+    ADDR_RAMBR: pgmdata_out = RAMBR_r;
+    ADDR_CBR+0: pgmdata_out = CBR_r[7:0];
+    ADDR_CBR+1: pgmdata_out = CBR_r[15:8];
+    10'h40    : pgmdata_out = COLR_r;
+    10'h41    : pgmdata_out = POR_r;
+    10'h42    : pgmdata_out = SREG_r;
+    10'h43    : pgmdata_out = DREG_r;
+    10'h44    : pgmdata_out = ROMRDBUF_r;
+    10'h45    : pgmdata_out = RAMWRBUF_r;
+    10'h46    : pgmdata_out = RAMADDR_r[7:0];
+    10'h47    : pgmdata_out = RAMADDR_r[15:8];
+    
+    10'h1xx,
+    10'h2xx   : pgmdata_out = debug_cache_rddata;
+  endcase
+end
 
 //-------------------------------------------------------------------
 // MISC OUTPUTS
@@ -612,5 +650,7 @@ reg [7:0] step_count_r; initial step_count_r = 0;
 assign DBG = 0;
 assign DATA_ENABLE = data_enable_r;
 assign DATA_OUT = data_out_r;
+
+assign PGM_DATA = pgmdata_out;
 
 endmodule
