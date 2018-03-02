@@ -62,7 +62,7 @@ module gsu(
 
 // temporaries
 integer i;
-reg [15:0] reg_tmp;
+wire pipeline_advance;
 
 //-------------------------------------------------------------------
 // INPUTS
@@ -305,6 +305,22 @@ assign POR_FNB  = POR_r[3];
 assign POR_OBJ  = POR_r[4];
 
 //-------------------------------------------------------------------
+// PIPELINE IO
+//-------------------------------------------------------------------
+// Fetch -> Execute
+
+// The fetch pipe and execution pipe are synchronized via the opbuf.
+// Fetch operates one byte ahead of execution.
+reg [7:0] i2r_op_r[1:0]; initial for (i = 0; i < 2; i = i + 1) i2r_op_r[i] = OP_NOP;
+reg       i2r_ptr_r; initial i2r_ptr_r = 0;
+
+// Execute -> RegisterFile
+
+reg       e2r_val_r;
+reg       e2r_dreg_r;
+reg [7:0] e2r_data_r;
+
+//-------------------------------------------------------------------
 // FIXME: Pixel Buffer
 //-------------------------------------------------------------------
 
@@ -362,9 +378,6 @@ gsu_cache cache (
 reg        data_enable_r;
 reg [7:0]  data_out_r;
 reg [7:0]  data_flop_r;
-
-reg        update_pc_val;
-reg [15:0] update_pc_r;
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -431,7 +444,26 @@ always @(posedge CLK) begin
   
     if (SFR_GO) begin
       // TODO: figure out how to deal with conflicts between SFX and SNES.
+      // handle GSU register writes
+      if (pipeline_advance) begin
+        // branches either only write R15 or cause an increment
+        if (e2r_val_r) begin
+          if (e2r_dreg_r == R15) begin
+            REG_r[e2r_dreg_r] <= e2r_data_r;
+          end
+          else begin
+            REG_r[e2r_dreg_r] <= e2r_data_r;
+            REG_r[R15] <= REG_r[R15] + 1;
+          end
+        end
+        else begin
+          REG_r[R15] <= REG_r[R15] + 1;
+        end
+      end
+      
+      // handle the select set of R and W registers the snes has access to.
       if (SNES_WR_end & ENABLE & ({addr_in_r[9:1],1'b0} == ADDR_SFR || addr_in_r[9:0] == ADDR_SCMR)) begin
+        // FIXME: need to handle conflicts with GSU writes to these registers.
         casex (addr_in_r[7:0])
           ADDR_SFR  : SFR_r[6:1] <= data_in_r[6:1];
           ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {data_in_r[7],data_in_r[4:0]};
@@ -445,10 +477,7 @@ always @(posedge CLK) begin
           ADDR_VCR  : data_out_r <= VCR_r;
         endcase
       end
-      else begin
-        // handle GSU register writes
-        //if (update_pc_val_r) REG_r[R15] <= update_pc_r;
-      end
+      
     end
     else if (ENABLE) begin
       if (SNES_RD_start) begin
@@ -581,18 +610,11 @@ assign ROM_BUS_WRDATA = rom_bus_data_r;
 // COMMON PIPELINE
 //-------------------------------------------------------------------
 
-// The fetch pipe and execution pipe are synchronized via the opbuffer.
-// Fetch operates one byte ahead of execution.
-reg [7:0] opbuffer_r[1:0]; initial for (i = 0; i < 2; i = i + 1) opbuffer_r[i] = OP_NOP;
-reg       opbuffer_ptr_r; initial opbuffer_ptr_r = 0;
-
 // step counter for pipelines
 reg [7:0] step_count_r; initial step_count_r = 0;
 
 reg [3:0] fetch_waitcnt_r;
 reg [3:0] exe_waitcnt_r;
-
-reg pipeline_advance = 0;
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -644,8 +666,8 @@ always @(posedge CLK) begin
   if (RST) begin
     FETCH_STATE <= ST_FETCH_IDLE;
 
-    opbuffer_r[0] <= OP_NOP;
-    opbuffer_ptr_r <= 0;
+    i2r_op_r[0] <= OP_NOP;
+    i2r_ptr_r <= 0;
   end
   else begin
     case (FETCH_STATE)
@@ -678,9 +700,8 @@ always @(posedge CLK) begin
           if (|fetch_waitcnt_r) fetch_waitcnt_r <= fetch_waitcnt_r - 1;
           else if (pipeline_advance) begin
             // TODO: fetch address increment
-            //REG_r[R15] <= REG_r[R15] + 1;
-            opbuffer_r[~opbuffer_ptr_r] <= fetch_data_r;
-            opbuffer_ptr_r <= ~opbuffer_ptr_r;
+            i2r_op_r[~i2r_ptr_r] <= fetch_data_r;
+            i2r_ptr_r <= ~i2r_ptr_r;
             
             if (SFR_GO) FETCH_STATE <= ST_FETCH_LOOKUP;
             else        FETCH_STATE <= ST_FETCH_IDLE;
@@ -727,6 +748,8 @@ always @(posedge CLK) begin
     endcase
   end
 end
+
+assign pipeline_advance = gsu_clock_en & ~|fetch_waitcnt_r & ~|exe_waitcnt_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT);
 
 //-------------------------------------------------------------------
 // DEBUG OUTPUT
