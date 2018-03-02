@@ -420,6 +420,7 @@ gsu snes_gsu (
   // MMIO interface
   .ENABLE(gsu_enable),
   .SNES_RD_start(SNES_RD_start),
+  .SNES_WR_start(SNES_WR_start),
   .SNES_WR_end(SNES_WR_end),
   .SNES_ADDR(SNES_ADDR),
   .DATA_IN(GSU_SNES_DATA_IN),
@@ -882,7 +883,7 @@ assign ROM_BLE = !ROM_ADDR0;
 
 assign SNES_DATABUS_OE = //(dspx_enable | dspx_dp_enable) ? 1'b0 :
                          msu_enable ? 1'b0 :
-                         gsu_data_enable ? 1'b0 :
+                         gsu_enable ? 1'b0 :
 //                         bsx_data_ovr ? (SNES_READ & SNES_WRITE) :
 //                         srtc_enable ? (SNES_READ & SNES_WRITE) :
                          snescmd_enable ? (~(snescmd_unlock | feat_cmd_unlock) | (SNES_READ & SNES_WRITE)) :

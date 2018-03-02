@@ -25,6 +25,7 @@ module gsu(
   // MMIO interface
   input         ENABLE,
   input         SNES_RD_start,
+  input         SNES_WR_start,
   input         SNES_WR_end,
   input  [23:0] SNES_ADDR,
   input  [7:0]  DATA_IN,
@@ -358,9 +359,12 @@ gsu_cache cache (
 //-------------------------------------------------------------------
 // This handles all state read and write.  The main execution pipeline
 // feeds intermediate results back here.
-reg       data_enable_r;
-reg [7:0] data_out_r;
-reg [7:0] data_flop_r;
+reg        data_enable_r;
+reg [7:0]  data_out_r;
+reg [7:0]  data_flop_r;
+
+reg        update_pc_val;
+reg [15:0] update_pc_r;
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -388,59 +392,95 @@ always @(posedge CLK) begin
     RAMWRBUF_r <= 0;
     RAMADDR_r  <= 0;
     
+    data_enable_r <= 0;
     data_flop_r <= 0;
     cache_mmio_wren_r <= 0;
   end
   else begin
+    // True data enable.  This assumes we need unmapped read addresses to be openbus.
+    if (ENABLE) begin
+      if (SNES_RD_start) begin
+        if (~|addr_in_r[9:8]) begin
+          casex (addr_in_r[7:0])
+            ADDR_GPRL : if (~SFR_GO) data_enable_r <= 1;
+            ADDR_GPRH : if (~SFR_GO) data_enable_r <= 1;
+          
+            ADDR_SFR  : data_enable_r <= 1;
+            ADDR_SFR+1: data_enable_r <= 1;
+            //ADDR_BRAMR: begin data_enable_r <= 1; data_out_r <= BRAMR_r; end
+            ADDR_PBR  : if (~SFR_GO) data_enable_r <= 1;
+            ADDR_ROMBR: if (~SFR_GO) data_enable_r <= 1;
+            //ADDR_CFGR : begin data_enable_r <= 1; data_out_r <= CFGR_r; end
+            //ADDR_SCBR : begin data_enable_r <= 1; data_out_r <= SCBR_r; end
+            //ADDR_CLSR : begin data_enable_r <= 1; data_out_r <= CLSR_r; end
+            //ADDR_SCMR : begin data_enable_r <= 1; data_out_r <= SCMR_r; end
+            ADDR_VCR  : data_enable_r <= 1;
+            ADDR_RAMBR: if (~SFR_GO) data_enable_r <= 1;
+            ADDR_CBR+0: if (~SFR_GO) data_enable_r <= 1;
+            ADDR_CBR+1: if (~SFR_GO) data_enable_r <= 1;
+          endcase
+        end
+        else begin
+          data_enable_r <= 1;
+        end
+      end
+    end
+    else begin
+      data_enable_r <= 0;
+    end
+  
     if (SFR_GO) begin
-      // TODO: need to handle SFX writes.  Can the compiler detect conditions resulting in mutually exclusive writes if they are different blocks?
-      if (SNES_WR_end & ENABLE) begin
-        casex (SNES_ADDR[7:0])
+      // TODO: figure out how to deal with conflicts between SFX and SNES.
+      if (SNES_WR_end & ENABLE & ({addr_in_r[9:1],1'b0} == ADDR_SFR || addr_in_r[9:0] == ADDR_SCMR)) begin
+        casex (addr_in_r[7:0])
           ADDR_SFR  : SFR_r[6:1] <= data_in_r[6:1];
           ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {data_in_r[7],data_in_r[4:0]};
           ADDR_SCMR : SCMR_r[5:0] <= data_in_r[5:0];
         endcase
       end
       else if (SNES_RD_start & ENABLE) begin
-        casex (SNES_ADDR[7:0])
-          ADDR_SFR  : begin data_enable_r <= 1; data_out_r <= SFR_r[7:0]; end
-          ADDR_SFR+1: begin data_enable_r <= 1; data_out_r <= SFR_r[15:8]; end
-          ADDR_VCR  : begin data_enable_r <= 1; data_out_r <= VCR_r; end
+        casex (addr_in_r[7:0])
+          ADDR_SFR  : data_out_r <= SFR_r[7:0];
+          ADDR_SFR+1: data_out_r <= SFR_r[15:8];
+          ADDR_VCR  : data_out_r <= VCR_r;
         endcase
+      end
+      else begin
+        // handle GSU register writes
+        //if (update_pc_val_r) REG_r[R15] <= update_pc_r;
       end
     end
     else if (ENABLE) begin
       if (SNES_RD_start) begin
-        if (~|SNES_ADDR[9:8]) begin
-          casex (SNES_ADDR[7:0])
-            ADDR_GPRL : begin data_enable_r <= 1; data_out_r <= REG_r[SNES_ADDR[4:1]][7:0]; end
-            ADDR_GPRH : begin data_enable_r <= 1; data_out_r <= REG_r[SNES_ADDR[4:1]][15:8]; end
+        if (~|addr_in_r[9:8]) begin
+          casex (addr_in_r[7:0])
+            ADDR_GPRL : data_out_r <= REG_r[addr_in_r[4:1]][7:0];
+            ADDR_GPRH : data_out_r <= REG_r[addr_in_r[4:1]][15:8];
           
-            ADDR_SFR  : begin data_enable_r <= 1; data_out_r <= SFR_r[7:0]; end
-            ADDR_SFR+1: begin data_enable_r <= 1; data_out_r <= SFR_r[15:8]; end
-            //ADDR_BRAMR: begin data_enable_r <= 1; data_out_r <= BRAMR_r; end
-            ADDR_PBR  : begin data_enable_r <= 1; data_out_r <= PBR_r; end
-            ADDR_ROMBR: begin data_enable_r <= 1; data_out_r <= ROMBR_r; end
-            //ADDR_CFGR : begin data_enable_r <= 1; data_out_r <= CFGR_r; end
-            //ADDR_SCBR : begin data_enable_r <= 1; data_out_r <= SCBR_r; end
-            //ADDR_CLSR : begin data_enable_r <= 1; data_out_r <= CLSR_r; end
-            //ADDR_SCMR : begin data_enable_r <= 1; data_out_r <= SCMR_r; end
-            ADDR_VCR  : begin data_enable_r <= 1; data_out_r <= VCR_r; end
-            ADDR_RAMBR: begin data_enable_r <= 1; data_out_r <= RAMBR_r; end
-            ADDR_CBR+0: begin data_enable_r <= 1; data_out_r <= CBR_r[7:0]; end
-            ADDR_CBR+1: begin data_enable_r <= 1; data_out_r <= CBR_r[15:8]; end
+            ADDR_SFR  : data_out_r <= SFR_r[7:0];
+            ADDR_SFR+1: data_out_r <= SFR_r[15:8];
+            //ADDR_BRAMR: data_out_r <= BRAMR_r;
+            ADDR_PBR  : data_out_r <= PBR_r;
+            ADDR_ROMBR: data_out_r <= ROMBR_r;
+            //ADDR_CFGR : data_out_r <= CFGR_r;
+            //ADDR_SCBR : data_out_r <= SCBR_r;
+            //ADDR_CLSR : data_out_r <= CLSR_r;
+            //ADDR_SCMR : data_out_r <= SCMR_r;
+            ADDR_VCR  : data_out_r <= VCR_r;
+            ADDR_RAMBR: data_out_r <= RAMBR_r;
+            ADDR_CBR+0: data_out_r <= CBR_r[7:0];
+            ADDR_CBR+1: data_out_r <= CBR_r[15:8];
           endcase
         end
         else begin
-          data_enable_r <= 1;
           cache_mmio_addr_r <= {~addr_in_r[8],addr_in_r[7:0]};
         end
       end
       else if (SNES_WR_end) begin
-        if (~|SNES_ADDR[9:8]) begin
-          casex (SNES_ADDR[7:0])
+        if (~|addr_in_r[9:8]) begin
+          casex (addr_in_r[7:0])
             ADDR_GPRL : data_flop_r <= data_in_r;
-            ADDR_GPRH : REG_r[SNES_ADDR[4:1]] <= {data_in_r,data_flop_r};
+            ADDR_GPRH : begin REG_r[addr_in_r[4:1]] <= {data_in_r,data_flop_r}; if (addr_in_r[4:1] == R15) SFR_r[5] <= 1; end
           
             ADDR_SFR  : SFR_r[6:1] <= data_in_r[6:1];
             ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {data_in_r[7],data_in_r[4:0]};
@@ -466,7 +506,6 @@ always @(posedge CLK) begin
     end
     else begin
       if (data_enable_r) data_out_r <= cache_rddata;
-      data_enable_r <= 0;
       cache_mmio_wren_r <= 0;
     end
   end
@@ -539,6 +578,37 @@ assign ROM_BUS_ADDR = rom_bus_addr_r;
 assign ROM_BUS_WRDATA = rom_bus_data_r;
 
 //-------------------------------------------------------------------
+// COMMON PIPELINE
+//-------------------------------------------------------------------
+
+// The fetch pipe and execution pipe are synchronized via the opbuffer.
+// Fetch operates one byte ahead of execution.
+reg [7:0] opbuffer_r[1:0]; initial for (i = 0; i < 2; i = i + 1) opbuffer_r[i] = OP_NOP;
+reg       opbuffer_ptr_r; initial opbuffer_ptr_r = 0;
+
+// step counter for pipelines
+reg [7:0] step_count_r; initial step_count_r = 0;
+
+reg [3:0] fetch_waitcnt_r;
+reg [3:0] exe_waitcnt_r;
+
+reg pipeline_advance = 0;
+
+always @(posedge CLK) begin
+  if (RST) begin
+    fetch_waitcnt_r <= 0;
+    exe_waitcnt_r <= 0;
+  end
+  else begin
+    // decrement delay counters
+    if (gsu_clock_en) begin
+      if (|fetch_waitcnt_r) fetch_waitcnt_r <= fetch_waitcnt_r - 1;
+      if (|exe_waitcnt_r)   exe_waitcnt_r   <= exe_waitcnt_r - 1;
+    end
+  end
+end
+
+//-------------------------------------------------------------------
 // FETCH PIPELINE
 //-------------------------------------------------------------------
 // The frontend of the pipeline starts with the fetch operation which
@@ -562,22 +632,18 @@ parameter
   ;
 reg [4:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
 
-// The fetch pipe and execution pipe are synchronized via the opbuffer.
-// Fetch operates one byte ahead of the 
-reg [7:0] opbuffer_r[1:0]; initial for (i = 0; i < 2; i = i + 1) opbuffer_r[i] = OP_NOP;
-reg       opbuffer_ptr_r; initial opbuffer_ptr_r = 0;
-
 // Fetch operations
 // - Check if cache hit (use valid bits) or !cache address
 // - if miss or no allocate then load miss pipeline
 // - read data out of cache or from fill
 // - wait for cycles to expire and edge
 
-reg [3:0] fetch_waitcnt_r;
 reg [15:0] cache_offset;
 reg [7:0] fetch_data_r;
 always @(posedge CLK) begin
   if (RST) begin
+    FETCH_STATE <= ST_FETCH_IDLE;
+
     opbuffer_r[0] <= OP_NOP;
     opbuffer_ptr_r <= 0;
   end
@@ -610,10 +676,11 @@ always @(posedge CLK) begin
       ST_FETCH_WAIT: begin
         if (gsu_clock_en) begin
           if (|fetch_waitcnt_r) fetch_waitcnt_r <= fetch_waitcnt_r - 1;
-          else if (1'b1 /*TODO: EXE ready*/) begin
+          else if (pipeline_advance) begin
             // TODO: fetch address increment
             //REG_r[R15] <= REG_r[R15] + 1;
             opbuffer_r[~opbuffer_ptr_r] <= fetch_data_r;
+            opbuffer_ptr_r <= ~opbuffer_ptr_r;
             
             if (SFR_GO) FETCH_STATE <= ST_FETCH_LOOKUP;
             else        FETCH_STATE <= ST_FETCH_IDLE;
@@ -627,9 +694,39 @@ end
 //-------------------------------------------------------------------
 // EXECUTION PIPELINE
 //-------------------------------------------------------------------
+parameter
+  ST_EXE_IDLE      = 6'b000001,
+  
+  ST_EXE_DECODE    = 6'b000010,
+  ST_EXE_REGREAD   = 6'b000100,
+  ST_EXE_EXECUTE   = 6'b001000,
+  ST_EXE_WRITEBACK = 6'b010000,
+  ST_EXE_WAIT      = 6'b100000
+  ;
+reg [4:0] EXE_STATE; initial EXE_STATE = ST_EXE_IDLE;
 
-// step counter
-reg [7:0] step_count_r; initial step_count_r = 0;
+reg [7:0] exe_data_r;
+always @(posedge CLK) begin
+  if (RST) begin
+    EXE_STATE <= ST_EXE_IDLE;
+  end
+  else begin
+    case (EXE_STATE)
+      ST_EXE_IDLE: begin
+        // align to GSU clock.  Sinks up with fetch.
+        if (SFR_GO & gsu_clock_en) begin
+          EXE_STATE <= ST_EXE_DECODE;
+        end
+      end
+      ST_EXE_DECODE: begin
+        // determine operands
+      end
+      ST_EXE_WAIT: begin
+      end
+      
+    endcase
+  end
+end
 
 //-------------------------------------------------------------------
 // DEBUG OUTPUT
@@ -642,8 +739,8 @@ always @(REG_r[0], REG_r[1], REG_r[2], REG_r[3], REG_r[4], REG_r[5], REG_r[6], R
          //SFR_r, BRAMR_r, PBR_r, ROMBR_r, CFGR_r, SCBR_r, CLSR_r, SCMR_r, VCR_r, RAMBR_r, CBR_r
         ) begin
   casex (PGM_ADDR[9:0])
-    {2'h0,ADDR_GPRL } : pgmdata_out = REG_r[SNES_ADDR[4:1]][7:0];
-    {2'h0,ADDR_GPRH } : pgmdata_out = REG_r[SNES_ADDR[4:1]][15:8];          
+    {2'h0,ADDR_GPRL } : pgmdata_out = REG_r[PGM_ADDR[4:1]][7:0];
+    {2'h0,ADDR_GPRH } : pgmdata_out = REG_r[PGM_ADDR[4:1]][15:8];          
     {2'h0,ADDR_SFR  } : pgmdata_out = SFR_r[7:0];
     {2'h0,ADDR_SFR+1} : pgmdata_out = SFR_r[15:8];
     {2'h0,ADDR_BRAMR} : pgmdata_out = BRAMR_r;
@@ -672,6 +769,8 @@ always @(REG_r[0], REG_r[1], REG_r[2], REG_r[3], REG_r[4], REG_r[5], REG_r[6], R
     10'h2xx           : pgmdata_out = debug_cache_rddata;
     
     // TODO: add more internal temps @ $300+
+    
+    default           : pgmdata_out = 8'hFF;
   endcase
 end
 
