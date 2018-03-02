@@ -336,6 +336,9 @@ assign cache_wrdata = SFR_GO ? cache_gsu_wrdata_r : cache_mmio_wrdata_r;
 assign debug_cache_wren = 0;
 assign debug_cache_addr = {~PGM_ADDR[8],PGM_ADDR[7:0]};
 
+// valid bits
+reg [31:0] cache_val_r; initial cache_val_r = 0;
+
 gsu_cache cache (
   .clka(CLK), // input clka
   .wea(cache_wren), // input [0 : 0] wea
@@ -484,7 +487,7 @@ reg rom_bus_rrq_r; initial rom_bus_rrq_r = 0;
 reg rom_bus_wrq_r; initial rom_bus_wrq_r = 0;
 reg [23:0] rom_bus_addr_r;
 reg [7:0] rom_bus_data_r;
-reg [3:0] rom_waitcnt_r;
+//reg [3:0] rom_waitcnt_r;
 
 // The ROM/RAM should be dedicated to the GSU whenever it wants to do a fetch
 always @(posedge CLK) begin
@@ -516,19 +519,13 @@ always @(posedge CLK) begin
     ST_ROM_RD: begin
       if (ROM_BUS_RDY) begin
         rom_bus_data_r <= ROM_BUS_RDDATA;
-        rom_waitcnt_r <= 0;  // TODO: figure out how much timing has to be padded in.
-        ROM_STATE <= ST_ROM_WAIT;
+        ROM_STATE <= ST_ROM_END;
       end
     end
     ST_ROM_WR: begin
       if (ROM_BUS_RDY) begin
-        rom_waitcnt_r <= 0;  // TODO: figure out how much timing has to be padded in.
-        ROM_STATE <= ST_ROM_WAIT;
+        ROM_STATE <= ST_ROM_END;
       end
-    end
-    ST_ROM_WAIT: begin
-      if (|rom_waitcnt_r) rom_waitcnt_r <= rom_waitcnt_r - 1;
-      else ROM_STATE <= ST_ROM_END;
     end
     ST_ROM_END: begin
       ROM_STATE <= ST_ROM_IDLE;
@@ -557,19 +554,28 @@ assign ROM_BUS_WRDATA = rom_bus_data_r;
 // - Cache hit
 // - ROM fill (into cache if offset)
 parameter
-  ST_FETCH_IDLE   = 4'b0001,
-  ST_FETCH_LOOKUP = 4'b0010,
-  ST_FETCH_FILL   = 4'b0100,
-  ST_FETCH_WAIT   = 4'b1000
+  ST_FETCH_IDLE   = 5'b00001,
+  ST_FETCH_LOOKUP = 5'b00010,
+  ST_FETCH_HIT    = 5'b00100,
+  ST_FETCH_FILL   = 5'b01000,
+  ST_FETCH_WAIT   = 5'b10000
   ;
-reg [3:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
+reg [4:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
 
 // The fetch pipe and execution pipe are synchronized via the opbuffer.
 // Fetch operates one byte ahead of the 
 reg [7:0] opbuffer_r[1:0]; initial for (i = 0; i < 2; i = i + 1) opbuffer_r[i] = OP_NOP;
 reg       opbuffer_ptr_r; initial opbuffer_ptr_r = 0;
 
+// Fetch operations
+// - Check if cache hit (use valid bits) or !cache address
+// - if miss or no allocate then load miss pipeline
+// - read data out of cache or from fill
+// - wait for cycles to expire and edge
 
+reg [3:0] fetch_waitcnt_r;
+reg [15:0] cache_offset;
+reg [7:0] fetch_data_r;
 always @(posedge CLK) begin
   if (RST) begin
     opbuffer_r[0] <= OP_NOP;
@@ -581,17 +587,38 @@ always @(posedge CLK) begin
         // align to GSU clock
         if (SFR_GO & gsu_clock_en) begin
           FETCH_STATE <= ST_FETCH_LOOKUP;
-        
-          // TODO: set initial cache address to fetch from
-          //cache_gsu_addr_r <= REG_r[R15][8:0];
         end
       end
       ST_FETCH_LOOKUP: begin
-        // 1 of 4 (check if cache hit)
+        // check if cache hit
+        cache_offset = REG_r[R15][15:0] - CBR_r;
+        if (~|cache_offset[15:9] & cache_val_r[cache_offset[12:4]]) begin
+          cache_gsu_addr_r <= REG_r[R15][8:0];
+          fetch_waitcnt_r <= 0;
+          FETCH_STATE <= ST_FETCH_HIT;
+        end
+        else begin
+          // TODO: fill address
+          fetch_waitcnt_r <= 1;
+          FETCH_STATE <= ST_FETCH_FILL;
+        end
       end
-      ST_FETCH_FILL: begin
+      ST_FETCH_HIT: begin
+        fetch_data_r <= cache_rddata;
+        FETCH_STATE <= ST_FETCH_WAIT;
       end
       ST_FETCH_WAIT: begin
+        if (gsu_clock_en) begin
+          if (|fetch_waitcnt_r) fetch_waitcnt_r <= fetch_waitcnt_r - 1;
+          else if (1'b1 /*TODO: EXE ready*/) begin
+            // TODO: fetch address increment
+            //REG_r[R15] <= REG_r[R15] + 1;
+            opbuffer_r[~opbuffer_ptr_r] <= fetch_data_r;
+            
+            if (SFR_GO) FETCH_STATE <= ST_FETCH_LOOKUP;
+            else        FETCH_STATE <= ST_FETCH_IDLE;
+          end
+        end
       end
     endcase
   end
@@ -615,32 +642,36 @@ always @(REG_r[0], REG_r[1], REG_r[2], REG_r[3], REG_r[4], REG_r[5], REG_r[6], R
          //SFR_r, BRAMR_r, PBR_r, ROMBR_r, CFGR_r, SCBR_r, CLSR_r, SCMR_r, VCR_r, RAMBR_r, CBR_r
         ) begin
   casex (PGM_ADDR[9:0])
-    ADDR_GPRL : pgmdata_out = REG_r[PGM_ADDR[4:1]][7:0];
-    ADDR_GPRH : pgmdata_out = REG_r[PGM_ADDR[4:1]][15:8];          
-    ADDR_SFR  : pgmdata_out = SFR_r[7:0];
-    ADDR_SFR+1: pgmdata_out = SFR_r[15:8];
-    ADDR_BRAMR: pgmdata_out = BRAMR_r;
-    ADDR_PBR  : pgmdata_out = PBR_r;
-    ADDR_ROMBR: pgmdata_out = ROMBR_r;
-    ADDR_CFGR : pgmdata_out = CFGR_r;
-    ADDR_SCBR : pgmdata_out = SCBR_r;
-    ADDR_CLSR : pgmdata_out = CLSR_r;
-    ADDR_SCMR : pgmdata_out = SCMR_r;
-    ADDR_VCR  : pgmdata_out = VCR_r;
-    ADDR_RAMBR: pgmdata_out = RAMBR_r;
-    ADDR_CBR+0: pgmdata_out = CBR_r[7:0];
-    ADDR_CBR+1: pgmdata_out = CBR_r[15:8];
-    10'h40    : pgmdata_out = COLR_r;
-    10'h41    : pgmdata_out = POR_r;
-    10'h42    : pgmdata_out = SREG_r;
-    10'h43    : pgmdata_out = DREG_r;
-    10'h44    : pgmdata_out = ROMRDBUF_r;
-    10'h45    : pgmdata_out = RAMWRBUF_r;
-    10'h46    : pgmdata_out = RAMADDR_r[7:0];
-    10'h47    : pgmdata_out = RAMADDR_r[15:8];
+    {2'h0,ADDR_GPRL } : pgmdata_out = REG_r[SNES_ADDR[4:1]][7:0];
+    {2'h0,ADDR_GPRH } : pgmdata_out = REG_r[SNES_ADDR[4:1]][15:8];          
+    {2'h0,ADDR_SFR  } : pgmdata_out = SFR_r[7:0];
+    {2'h0,ADDR_SFR+1} : pgmdata_out = SFR_r[15:8];
+    {2'h0,ADDR_BRAMR} : pgmdata_out = BRAMR_r;
+    {2'h0,ADDR_PBR  } : pgmdata_out = PBR_r;
+    {2'h0,ADDR_ROMBR} : pgmdata_out = ROMBR_r;
+    {2'h0,ADDR_CFGR } : pgmdata_out = CFGR_r;
+    {2'h0,ADDR_SCBR } : pgmdata_out = SCBR_r;
+    {2'h0,ADDR_CLSR } : pgmdata_out = CLSR_r;
+    {2'h0,ADDR_SCMR } : pgmdata_out = SCMR_r;
+    {2'h0,ADDR_VCR  } : pgmdata_out = VCR_r;
+    {2'h0,ADDR_RAMBR} : pgmdata_out = RAMBR_r;
+    {2'h0,ADDR_CBR+0} : pgmdata_out = CBR_r[7:0];
+    {2'h0,ADDR_CBR+1} : pgmdata_out = CBR_r[15:8];
+    10'h40            : pgmdata_out = COLR_r;
+    10'h41            : pgmdata_out = POR_r;
+    10'h42            : pgmdata_out = SREG_r;
+    10'h43            : pgmdata_out = DREG_r;
+    10'h44            : pgmdata_out = ROMRDBUF_r;
+    10'h45            : pgmdata_out = RAMWRBUF_r;
+    10'h46            : pgmdata_out = RAMADDR_r[7:0];
+    10'h47            : pgmdata_out = RAMADDR_r[15:8];
+
+    // TODO: add more internal temps @ $80
     
     10'h1xx,
-    10'h2xx   : pgmdata_out = debug_cache_rddata;
+    10'h2xx           : pgmdata_out = debug_cache_rddata;
+    
+    // TODO: add more internal temps @ $300+
   endcase
 end
 
