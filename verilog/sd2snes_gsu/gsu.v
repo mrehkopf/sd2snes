@@ -63,6 +63,7 @@ module gsu(
 // temporaries
 integer i;
 wire pipeline_advance;
+wire op_complete;
 
 //-------------------------------------------------------------------
 // INPUTS
@@ -318,8 +319,17 @@ reg        i2e_ptr_r; initial i2e_ptr_r = 0;
 
 // Execute -> RegisterFile
 reg        e2r_val_r;
-reg        e2r_dreg_r;
+reg [3:0]  e2r_dest_r;
 reg [7:0]  e2r_data_r;
+// non dest registers to update
+reg [1:0]  e2r_alt_r;
+reg        e2r_z_r;
+reg        e2r_cy_r;
+reg        e2r_s_r;
+reg        e2r_ov_r;
+reg        e2r_b_r;
+reg [3:0]  e2r_sreg_r;
+reg [3:0]  e2r_dreg_r;
 
 // Fetch -> Common
 reg        i2c_waitcnt_val_r; initial i2c_waitcnt_val_r = 0;
@@ -424,26 +434,22 @@ always @(posedge CLK) begin
       if (SNES_RD_start) begin
         if (~|addr_in_r[9:8]) begin
           casex (addr_in_r[7:0])
-            ADDR_GPRL : if (~SFR_GO) data_enable_r <= 1;
-            ADDR_GPRH : if (~SFR_GO) data_enable_r <= 1;
+            ADDR_GPRL : begin data_out_r <= REG_r[addr_in_r[4:1]][7:0];  if (~SFR_GO) data_enable_r <= 1; end
+            ADDR_GPRH : begin data_out_r <= REG_r[addr_in_r[4:1]][15:8]; if (~SFR_GO) data_enable_r <= 1; end
           
-            ADDR_SFR  : data_enable_r <= 1;
-            ADDR_SFR+1: data_enable_r <= 1;
-            //ADDR_BRAMR: begin data_enable_r <= 1; data_out_r <= BRAMR_r; end
-            ADDR_PBR  : if (~SFR_GO) data_enable_r <= 1;
-            ADDR_ROMBR: if (~SFR_GO) data_enable_r <= 1;
-            //ADDR_CFGR : begin data_enable_r <= 1; data_out_r <= CFGR_r; end
-            //ADDR_SCBR : begin data_enable_r <= 1; data_out_r <= SCBR_r; end
-            //ADDR_CLSR : begin data_enable_r <= 1; data_out_r <= CLSR_r; end
-            //ADDR_SCMR : begin data_enable_r <= 1; data_out_r <= SCMR_r; end
-            ADDR_VCR  : data_enable_r <= 1;
-            ADDR_RAMBR: if (~SFR_GO) data_enable_r <= 1;
-            ADDR_CBR+0: if (~SFR_GO) data_enable_r <= 1;
-            ADDR_CBR+1: if (~SFR_GO) data_enable_r <= 1;
+            ADDR_SFR  : begin data_out_r <= SFR_r[7:0];  data_enable_r <= 1; end
+            ADDR_SFR+1: begin data_out_r <= SFR_r[15:8]; data_enable_r <= 1; end
+            ADDR_PBR  : begin data_out_r <= PBR_r;       if (~SFR_GO) data_enable_r <= 1; end
+            ADDR_ROMBR: begin data_out_r <= ROMBR_r;     if (~SFR_GO) data_enable_r <= 1; end
+            ADDR_VCR  : begin data_out_r <= VCR_r;       data_enable_r <= 1; end
+            ADDR_RAMBR: begin data_out_r <= RAMBR_r;     if (~SFR_GO) data_enable_r <= 1; end
+            ADDR_CBR+0: begin data_out_r <= CBR_r[7:0];  if (~SFR_GO) data_enable_r <= 1; end
+            ADDR_CBR+1: begin data_out_r <= CBR_r[15:8]; if (~SFR_GO) data_enable_r <= 1; end
           endcase
         end
         else begin
           data_enable_r <= 1;
+          cache_mmio_addr_r <= {~addr_in_r[8],addr_in_r[7:0]};
         end
       end
     end
@@ -457,21 +463,26 @@ always @(posedge CLK) begin
       if (pipeline_advance) begin
         // branches either only write R15 or cause an increment
         if (e2r_val_r) begin
-          if (e2r_dreg_r == R15) begin
-            REG_r[e2r_dreg_r] <= e2r_data_r;
+          if (e2r_dest_r == R15) begin
+            REG_r[e2r_dest_r] <= e2r_data_r;
           end
           else begin
-            REG_r[e2r_dreg_r] <= e2r_data_r;
+            REG_r[e2r_dest_r] <= e2r_data_r;
             REG_r[R15] <= REG_r[R15] + 1;
           end
         end
         else begin
           REG_r[R15] <= REG_r[R15] + 1;
         end
-      end
-      
+        
+        if (op_complete) begin
+          SFR_r[9:8] <= e2r_alt_r;
+          SREG_r <= e2r_sreg_r;
+          DREG_r <= e2r_dreg_r;
+        end
+      end        
       // handle the select set of R and W registers the snes has access to.
-      if (SNES_WR_end & ENABLE & ({addr_in_r[9:1],1'b0} == ADDR_SFR || addr_in_r[9:0] == ADDR_SCMR)) begin
+      else if (SNES_WR_end & ENABLE & ({addr_in_r[9:1],1'b0} == ADDR_SFR || addr_in_r[9:0] == ADDR_SCMR)) begin
         // FIXME: need to handle conflicts with GSU writes to these registers.
         casex (addr_in_r[7:0])
           ADDR_SFR  : SFR_r[6:1] <= data_in_r[6:1];
@@ -479,42 +490,9 @@ always @(posedge CLK) begin
           ADDR_SCMR : SCMR_r[5:0] <= data_in_r[5:0];
         endcase
       end
-      else if (SNES_RD_start & ENABLE) begin
-        casex (addr_in_r[7:0])
-          ADDR_SFR  : data_out_r <= SFR_r[7:0];
-          ADDR_SFR+1: data_out_r <= SFR_r[15:8];
-          ADDR_VCR  : data_out_r <= VCR_r;
-        endcase
-      end
-      
     end
     else if (ENABLE) begin
-      if (SNES_RD_start) begin
-        if (~|addr_in_r[9:8]) begin
-          casex (addr_in_r[7:0])
-            ADDR_GPRL : data_out_r <= REG_r[addr_in_r[4:1]][7:0];
-            ADDR_GPRH : data_out_r <= REG_r[addr_in_r[4:1]][15:8];
-          
-            ADDR_SFR  : data_out_r <= SFR_r[7:0];
-            ADDR_SFR+1: data_out_r <= SFR_r[15:8];
-            //ADDR_BRAMR: data_out_r <= BRAMR_r;
-            ADDR_PBR  : data_out_r <= PBR_r;
-            ADDR_ROMBR: data_out_r <= ROMBR_r;
-            //ADDR_CFGR : data_out_r <= CFGR_r;
-            //ADDR_SCBR : data_out_r <= SCBR_r;
-            //ADDR_CLSR : data_out_r <= CLSR_r;
-            //ADDR_SCMR : data_out_r <= SCMR_r;
-            ADDR_VCR  : data_out_r <= VCR_r;
-            ADDR_RAMBR: data_out_r <= RAMBR_r;
-            ADDR_CBR+0: data_out_r <= CBR_r[7:0];
-            ADDR_CBR+1: data_out_r <= CBR_r[15:8];
-          endcase
-        end
-        else begin
-          cache_mmio_addr_r <= {~addr_in_r[8],addr_in_r[7:0]};
-        end
-      end
-      else if (SNES_WR_end) begin
+      if (SNES_WR_end) begin
         if (~|addr_in_r[9:8]) begin
           casex (addr_in_r[7:0])
             ADDR_GPRL : data_flop_r <= data_in_r;
@@ -772,14 +750,16 @@ reg [7:0]  EXE_STATE; initial EXE_STATE = ST_EXE_IDLE;
 
 reg [7:0]  exe_data_r;
 reg        exe_branch_r;
-reg [15:0] exe_branchtarget_r;
-reg [1:0]  exe_alt_r;
-reg [3:0]  exe_sreg_r;
-reg [3:0]  exe_dreg_r;
 
 reg [7:0]  exe_opcode_r;
 reg [15:0] exe_operand_r;
 reg [1:0]  exe_operandcnt_r;
+reg [15:0] exe_src_r;
+reg [15:0] exe_srcn_r;
+
+reg [15:0] exe_n;
+reg [15:0] exe_result;
+reg        exe_carry;
 
 wire [7:0] exe_op = i2e_op_r[i2e_ptr_r];
 
@@ -787,9 +767,19 @@ always @(posedge CLK) begin
   if (RST) begin
     EXE_STATE <= ST_EXE_IDLE;
     
-    exe_alt_r  <= 0;
-    exe_sreg_r <= 0;
-    exe_dreg_r <= 0;
+    e2r_alt_r  <= 0;
+    e2r_sreg_r <= 0;
+    e2r_dreg_r <= 0;
+    e2r_z_r    <= 0;
+    e2r_cy_r   <= 0;
+    e2r_s_r    <= 0;
+    e2r_ov_r   <= 0;
+    e2r_b_r    <= 0;
+
+    e2r_val_r <= 0;
+    
+    exe_operandcnt_r <= 0;
+    
   end
   else begin
     case (EXE_STATE)
@@ -836,36 +826,213 @@ always @(posedge CLK) begin
             OP_BVC           : exe_branch_r <= (~SFR_OV);
             OP_BVS           : exe_branch_r <= ( SFR_OV);
             
-            OP_ALT1          : exe_alt_r <= 1;
-            OP_ALT2          : exe_alt_r <= 2;
-            OP_ALT3          : exe_alt_r <= 3;
-            OP_TO            : exe_dreg_r <= exe_op[3:0];
-            OP_WITH          : begin exe_sreg_r <= exe_op[3:0]; exe_dreg_r <= exe_op[3:0]; end
-            OP_FROM          : exe_sreg_r <= exe_op[3:0];
+            OP_ALT1          : e2r_alt_r <= 1;
+            OP_ALT2          : e2r_alt_r <= 2;
+            OP_ALT3          : e2r_alt_r <= 3;
+            OP_TO            : e2r_dreg_r <= exe_op[3:0];
+            OP_WITH          : begin e2r_sreg_r <= exe_op[3:0]; e2r_dreg_r <= exe_op[3:0]; end
+            OP_FROM          : e2r_sreg_r <= exe_op[3:0];
             
-            default          : begin exe_alt_r <= 0; exe_sreg_r <= 0; exe_dreg_r <= 0; end
+            default          : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; end
           endcase
         end
         else begin
           exe_operand_r <= {exe_operand_r[7:0],exe_op};
         end
         
+        // get previous values for defaults
+        e2r_z_r    <= SFR_Z;
+        e2r_cy_r   <= SFR_CY;
+        e2r_s_r    <= SFR_S;
+        e2r_ov_r   <= SFR_OV;
+        e2r_b_r    <= SFR_B;
+        
+        // get default destination
+        e2r_dest_r <= DREG_r;
+        
+        // get register sources
+        exe_src_r <= REG_r[SREG_r];
+        exe_srcn_r <= REG_r[exe_op[3:0]];
+        
         EXE_STATE <= ST_EXE_EXECUTE;
       end
       ST_EXE_EXECUTE: begin
-        if (~|exe_operandcnt_r) begin          
+        if (op_complete) begin          
           if (exe_branch_r) begin
             // calculate branch target
             e2r_val_r <= 1;
-            e2r_dreg_r <= R15;
+            e2r_dest_r <= R15;
             e2r_data_r <= REG_r[R15] + {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
             
             exe_branch_r <= 0;
           end
           else begin
-            e2r_val_r <= 0;
-            e2r_dreg_r <= 0;
-            e2r_data_r <= 0;
+            casex (exe_opcode_r)
+              // ALU
+              OP_ADD           : begin 
+                exe_n      = SFR_ALT2 ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+                {exe_carry,exe_result} = exe_src_r + exe_n + (SFR_ALT1 & SFR_CY);
+                
+                e2r_val_r <= 1;
+                // e2r_dest_r <= DREG_r; // standard dest
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_ov_r   <= (exe_src_r[15] ^ exe_result[15]) & (exe_n[15] ^ exe_result[15]);
+                e2r_s_r    <= exe_result[15];
+                e2r_cy_r   <= exe_carry;
+              end
+              OP_SUB           : begin
+                exe_n      = (~SFR_ALT1 & SFR_ALT2) ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+                {exe_carry,exe_result} = exe_src_r - exe_n - (SFR_ALT1 & ~SFR_ALT2 & ~SFR_CY);
+                
+                // CMP doesn't output the result
+                e2r_val_r <= ~(SFR_ALT1 & SFR_ALT2);
+                // e2r_dest_r <= DREG_r; // standard dest
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_ov_r   <= (exe_src_r[15] ^ exe_result[15]) & (exe_src_r[15] ^ exe_n[15]);
+                e2r_s_r    <= exe_result[15];
+                e2r_cy_r   <= ~exe_carry;
+              end
+              OP_AND_BIC       : begin
+                exe_n      = SFR_ALT2 ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+                exe_result = exe_src_r & exe_n;
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+              end
+              OP_OR_XOR        : begin
+                exe_n      = SFR_ALT2 ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+                exe_result = SFR_ALT1 ? exe_src_r ^ exe_n : exe_src_r | exe_n;
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];                
+              end
+              OP_NOT           : begin
+                exe_result = ~exe_srcn_r;
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+              end
+              
+              // ROTATE/SHIFT/INC/DEC
+              OP_LSR           : begin
+                exe_result = {1'b0,exe_srcn_r[15:1]};
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+                e2r_cy_r   <= exe_srcn_r[0];
+              end
+              OP_ASR_DIV2      : begin
+              end
+              OP_ROL           : begin
+                exe_result = {exe_srcn_r[14:0],SFR_CY};
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+                e2r_cy_r   <= exe_srcn_r[15];
+              end
+              OP_ROR           : begin
+                exe_result = {SFR_CY,exe_srcn_r[15:1]};
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+                e2r_cy_r   <= exe_srcn_r[0];
+              end
+              OP_INC           : begin
+                exe_result = exe_srcn_r + 1;
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+              end
+              OP_DEC           : begin
+                exe_result = exe_srcn_r - 1;
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+              end
+              
+              // BYTE
+              OP_SWAP          : begin
+                exe_result = {exe_srcn_r[7:0],exe_srcn_r[15:8]};
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+              end
+              OP_SEX           : begin
+                exe_result = {{8{exe_srcn_r[7]}},exe_srcn_r[7:0]};
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+              end
+              OP_LOB           : begin
+                exe_result = {8'h00,exe_srcn_r[7:0]};
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[7];
+              end
+              OP_HIB           : begin
+                exe_result = {8'h00,exe_srcn_r[15:8]};
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[7];
+              end
+              OP_MERGE         : begin
+                exe_result = {REG_r[R7][15:8],REG_r[R8][15:8]};
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= exe_result & 16'hF0F0;
+                e2r_ov_r   <= exe_result & 16'hC0C0;
+                e2r_s_r    <= exe_result & 16'h8080;
+                e2r_cy_r   <= exe_result & 16'hE0E0;
+              end
+              
+              // MULTIPLY
+              OP_FMULT_LMULT   : begin
+              end
+              OP_MULT_MULT     : begin
+              end
+            endcase
           end
         end
 
@@ -873,6 +1040,8 @@ always @(posedge CLK) begin
       end
       ST_EXE_WAIT: begin
         if (pipeline_advance) begin
+          if (|exe_operandcnt_r) exe_operandcnt_r <= exe_operandcnt_r - 1;
+        
           if (SFR_GO) EXE_STATE <= ST_EXE_DECODE;
           else        EXE_STATE <= ST_EXE_IDLE;
           
@@ -885,6 +1054,7 @@ always @(posedge CLK) begin
 end
 
 assign pipeline_advance = gsu_clock_en & ~|fetch_waitcnt_r & ~|exe_waitcnt_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
+assign op_complete = ~|exe_operandcnt_r;
 
 //-------------------------------------------------------------------
 // DEBUG OUTPUT
@@ -893,8 +1063,12 @@ reg [7:0] pgmdata_out; //initial pgmdata_out_r = 0;
 
 // TODO: also map other non-visible state
 always @(REG_r[0], REG_r[1], REG_r[2], REG_r[3], REG_r[4], REG_r[5], REG_r[6], REG_r[7],
-         REG_r[8], REG_r[9], REG_r[10], REG_r[11], REG_r[12], REG_r[13], REG_r[14], REG_r[15]
-         //SFR_r, BRAMR_r, PBR_r, ROMBR_r, CFGR_r, SCBR_r, CLSR_r, SCMR_r, VCR_r, RAMBR_r, CBR_r
+         REG_r[8], REG_r[9], REG_r[10], REG_r[11], REG_r[12], REG_r[13], REG_r[14], REG_r[15],
+         SFR_r, BRAMR_r, PBR_r, ROMBR_r, CFGR_r, SCBR_r, CLSR_r, SCMR_r, VCR_r, RAMBR_r, CBR_r, RAMADDR_r,
+         config_r[0], config_r[1],
+         FETCH_STATE, EXE_STATE, FILL_STATE,
+         i2e_op_r[0], i2e_op_r[1],
+         debug_cache_rddata
         ) begin
   casex (PGM_ADDR[9:0])
     {2'h0,ADDR_GPRL } : pgmdata_out = REG_r[PGM_ADDR[4:1]][7:0];
@@ -930,11 +1104,11 @@ always @(REG_r[0], REG_r[1], REG_r[2], REG_r[3], REG_r[4], REG_r[5], REG_r[6], R
     10'h300           : pgmdata_out = FETCH_STATE;
     // exe state
     10'h320           : pgmdata_out = EXE_STATE;
-    10'h321           : pgmdata_out = i2e_op_r[i2e_ptr_r];
-    10'h322           : pgmdata_out = exe_opcode_r;
-    10'h323           : pgmdata_out = exe_operand_r[7:0];
-    10'h324           : pgmdata_out = exe_operand_r[15:8];
-    10'h325           : pgmdata_out = exe_operandcnt_r;
+    //10'h321           : pgmdata_out = i2e_op_r[i2e_ptr_r];
+    //10'h322           : pgmdata_out = exe_opcode_r;
+    //10'h323           : pgmdata_out = exe_operand_r[7:0];
+    //10'h324           : pgmdata_out = exe_operand_r[15:8];
+    //10'h325           : pgmdata_out = exe_operandcnt_r;
     // cache state
     //10'h340
     // fill state
