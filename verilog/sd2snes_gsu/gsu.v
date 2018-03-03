@@ -687,6 +687,7 @@ reg [7:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
 
 reg [7:0] fetch_data_r;
 
+// Need to check if we are within 512B of the address
 wire[15:0] cache_offset = REG_r[R15][15:0] - CBR_r;
 wire       cache_hit = (~|cache_offset[15:9] & cache_val_r[cache_offset[12:4]]);
 
@@ -767,12 +768,28 @@ parameter
   //ST_EXE_WRITEBACK = 6'b010000,
   ST_EXE_WAIT      = 8'b00100000
   ;
-reg [7:0] EXE_STATE; initial EXE_STATE = ST_EXE_IDLE;
+reg [7:0]  EXE_STATE; initial EXE_STATE = ST_EXE_IDLE;
 
-reg [7:0] exe_data_r;
+reg [7:0]  exe_data_r;
+reg        exe_branch_r;
+reg [15:0] exe_branchtarget_r;
+reg [1:0]  exe_alt_r;
+reg [3:0]  exe_sreg_r;
+reg [3:0]  exe_dreg_r;
+
+reg [7:0]  exe_opcode_r;
+reg [15:0] exe_operand_r;
+reg [1:0]  exe_operandcnt_r;
+
+wire [7:0] exe_op = i2e_op_r[i2e_ptr_r];
+
 always @(posedge CLK) begin
   if (RST) begin
     EXE_STATE <= ST_EXE_IDLE;
+    
+    exe_alt_r  <= 0;
+    exe_sreg_r <= 0;
+    exe_dreg_r <= 0;
   end
   else begin
     case (EXE_STATE)
@@ -783,20 +800,83 @@ always @(posedge CLK) begin
         end
       end
       ST_EXE_DECODE: begin
-        // determine operands
+        if (~|exe_operandcnt_r) begin
+          exe_opcode_r <= exe_op;
+          exe_operand_r <= 0;
+        
+          // calculate operands
+          casex (exe_op)
+            OP_BRA,
+            OP_BGE,
+            OP_BLT,
+            OP_BNE,
+            OP_BEQ,
+            OP_BPL,
+            OP_BMI,
+            OP_BCC,
+            OP_BCS,
+            OP_BVC,
+            OP_BVS : exe_operandcnt_r <= 1;
+            
+            OP_IBT : exe_operandcnt_r <= 1;
+            OP_IWT : exe_operandcnt_r <= 2;
+          endcase
+
+          // handle prefixes
+          casex (exe_op)
+            OP_BRA           : exe_branch_r <= 1;
+            OP_BGE           : exe_branch_r <= ( SFR_S == SFR_OV);
+            OP_BLT           : exe_branch_r <= ( SFR_S != SFR_OV);
+            OP_BNE           : exe_branch_r <= (~SFR_Z);   
+            OP_BEQ           : exe_branch_r <= ( SFR_Z);
+            OP_BPL           : exe_branch_r <= (~SFR_S);
+            OP_BMI           : exe_branch_r <= ( SFR_S);
+            OP_BCC           : exe_branch_r <= (~SFR_CY);
+            OP_BCS           : exe_branch_r <= ( SFR_CY);
+            OP_BVC           : exe_branch_r <= (~SFR_OV);
+            OP_BVS           : exe_branch_r <= ( SFR_OV);
+            
+            OP_ALT1          : exe_alt_r <= 1;
+            OP_ALT2          : exe_alt_r <= 2;
+            OP_ALT3          : exe_alt_r <= 3;
+            OP_TO            : exe_dreg_r <= exe_op[3:0];
+            OP_WITH          : begin exe_sreg_r <= exe_op[3:0]; exe_dreg_r <= exe_op[3:0]; end
+            OP_FROM          : exe_sreg_r <= exe_op[3:0];
+            
+            default          : begin exe_alt_r <= 0; exe_sreg_r <= 0; exe_dreg_r <= 0; end
+          endcase
+        end
+        else begin
+          exe_operand_r <= {exe_operand_r[7:0],exe_op};
+        end
+        
         EXE_STATE <= ST_EXE_EXECUTE;
       end
       ST_EXE_EXECUTE: begin
+        if (~|exe_operandcnt_r) begin          
+          if (exe_branch_r) begin
+            // calculate branch target
+            e2r_val_r <= 1;
+            e2r_dreg_r <= R15;
+            e2r_data_r <= REG_r[R15] + {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
+            
+            exe_branch_r <= 0;
+          end
+          else begin
+            e2r_val_r <= 0;
+            e2r_dreg_r <= 0;
+            e2r_data_r <= 0;
+          end
+        end
+
         EXE_STATE <= ST_EXE_WAIT;
-        
-        e2r_val_r <= 0;
-        e2r_dreg_r <= 0;
-        e2r_data_r <= 0;
       end
       ST_EXE_WAIT: begin
         if (pipeline_advance) begin
           if (SFR_GO) EXE_STATE <= ST_EXE_DECODE;
           else        EXE_STATE <= ST_EXE_IDLE;
+          
+          e2r_val_r <= 0;
         end
       end
       
@@ -851,6 +931,10 @@ always @(REG_r[0], REG_r[1], REG_r[2], REG_r[3], REG_r[4], REG_r[5], REG_r[6], R
     // exe state
     10'h320           : pgmdata_out = EXE_STATE;
     10'h321           : pgmdata_out = i2e_op_r[i2e_ptr_r];
+    10'h322           : pgmdata_out = exe_opcode_r;
+    10'h323           : pgmdata_out = exe_operand_r[7:0];
+    10'h324           : pgmdata_out = exe_operand_r[15:8];
+    10'h325           : pgmdata_out = exe_operandcnt_r;
     // cache state
     //10'h340
     // fill state
