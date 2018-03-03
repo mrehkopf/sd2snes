@@ -154,38 +154,38 @@ parameter
   OP_BVC           = 8'h0E,
   OP_BVS           = 8'h0F,
   // jmps/loops
-  OP_LINK_JMP_LJMP = 8'h9x,
+  OP_LINK_JMP_LJMP = 8'h9x, // To bottom
   OP_LOOP          = 8'h3C,
   
   // prefix (also see branch) no reset state
   OP_ALT1          = 8'h3D,
   OP_ALT2          = 8'h3E,
   OP_ALT3          = 8'h3F,
-  OP_TO            = 8'h1x,
-  OP_WITH          = 8'h2x,
-  OP_FROM          = 8'hBx,
+  OP_TO            = 8'h1x, // ok
+  OP_WITH          = 8'h2x, // ok
+  OP_FROM          = 8'hBx, // ok
   
   // MOV
   // MOVE/MOVES use WITH/TO and WITH/FROM
-  OP_IBT           = 8'hAx,
-  OP_IWT           = 8'hFx, // LEA
+  OP_IBT           = 8'hAx, // ok
+  OP_IWT           = 8'hFx, // LEA // ok
   // load from ROM
   OP_GETB          = 8'hEF,
   // load from RAM
-  OP_LD            = 8'h4x, // 4 opcodes
-  OP_ST            = 8'h3x, // 4 opcodes
-  OP_SBK           = 8'h90,
-  OP_GETC_RAMB_ROMB= 8'hDF,
+  OP_LD            = 8'h4x, // 4 opcodes // to bottom
+  OP_ST            = 8'h3x, // 4 opcodes // to bottom
+  OP_SBK           = 8'h90, // Above LINK/JMP
+  OP_GETC_RAMB_ROMB= 8'hDF, // Above INC
   
   // BITMAP
   OP_CMODE_COLOR   = 8'h4E,
   OP_PLOT_RPIX     = 8'h4C,
   
   // ALU
-  OP_ADD           = 8'h5x,
-  OP_SUB           = 8'h6x,
-  OP_AND_BIC       = 8'h7x,
-  OP_OR_XOR        = 8'hCx,
+  OP_ADD           = 8'h5x, // ok
+  OP_SUB           = 8'h6x, // ok
+  OP_AND_BIC       = 8'h7x, // ok
+  OP_OR_XOR        = 8'hCx, // bottom
   OP_NOT           = 8'h4F,
   
   // ROTATE/SHIFT/INC/DEC
@@ -193,15 +193,15 @@ parameter
   OP_ASR_DIV2      = 8'h96,
   OP_ROL           = 8'h04,
   OP_ROR           = 8'h97,
-  OP_INC           = 8'hDx,
-  OP_DEC           = 8'hEx,
+  OP_INC           = 8'hDx, // bottom
+  OP_DEC           = 8'hEx, // bottom
   
   // BYTE
   OP_SWAP          = 8'h4D,
   OP_SEX           = 8'h95,
   OP_LOB           = 8'h9E,
-  OP_HIB           = 8'hC0,
-  OP_MERGE         = 8'h70,
+  OP_HIB           = 8'hC0, // Above OR/XOR
+  OP_MERGE         = 8'h70, // Above AND
   
   // MULTIPLY
   OP_FMULT_LMULT   = 8'h9F,
@@ -320,7 +320,7 @@ reg        i2e_ptr_r; initial i2e_ptr_r = 0;
 // Execute -> RegisterFile
 reg        e2r_val_r;
 reg [3:0]  e2r_dest_r;
-reg [7:0]  e2r_data_r;
+reg [15:0] e2r_data_r;
 // non dest registers to update
 reg [1:0]  e2r_alt_r;
 reg        e2r_z_r;
@@ -328,6 +328,7 @@ reg        e2r_cy_r;
 reg        e2r_s_r;
 reg        e2r_ov_r;
 reg        e2r_b_r;
+reg        e2r_g_r;
 reg [3:0]  e2r_sreg_r;
 reg [3:0]  e2r_dreg_r;
 
@@ -407,13 +408,13 @@ always @(posedge CLK) begin
     SFR_r   <= 0;
     BRAMR_r <= 0;
     PBR_r   <= 0;
-    ROMBR_r <= 0;
+    //ROMBR_r <= 0;
     CFGR_r  <= 0;
     SCBR_r  <= 0;
     CLSR_r  <= 0;
     SCMR_r  <= 0;
     VCR_r   <= 4;
-    RAMBR_r <= 0;
+    //RAMBR_r <= 0;
     
     COLR_r  <= 0;
     POR_r   <= 0;
@@ -476,9 +477,17 @@ always @(posedge CLK) begin
         end
         
         if (op_complete) begin
+          // TODO: R, IL,IH, IRQ
+          SFR_r[1]   <= e2r_z_r;
+          SFR_r[2]   <= e2r_cy_r;
+          SFR_r[3]   <= e2r_s_r;
+          SFR_r[4]   <= e2r_ov_r;
+          SFR_r[5]   <= e2r_g_r;
           SFR_r[9:8] <= e2r_alt_r;
-          SREG_r <= e2r_sreg_r;
-          DREG_r <= e2r_dreg_r;
+          SFR_r[12]  <= e2r_b_r;
+          
+          SREG_r     <= e2r_sreg_r;
+          DREG_r     <= e2r_dreg_r;
         end
       end        
       // handle the select set of R and W registers the snes has access to.
@@ -748,7 +757,6 @@ parameter
   ;
 reg [7:0]  EXE_STATE; initial EXE_STATE = ST_EXE_IDLE;
 
-reg [7:0]  exe_data_r;
 reg        exe_branch_r;
 
 reg [7:0]  exe_opcode_r;
@@ -775,6 +783,7 @@ always @(posedge CLK) begin
     e2r_s_r    <= 0;
     e2r_ov_r   <= 0;
     e2r_b_r    <= 0;
+    e2r_g_r    <= 0;
 
     e2r_val_r <= 0;
     
@@ -826,14 +835,14 @@ always @(posedge CLK) begin
             OP_BVC           : exe_branch_r <= (~SFR_OV);
             OP_BVS           : exe_branch_r <= ( SFR_OV);
             
-            OP_ALT1          : e2r_alt_r <= 1;
-            OP_ALT2          : e2r_alt_r <= 2;
-            OP_ALT3          : e2r_alt_r <= 3;
+            OP_ALT1          : begin e2r_alt_r <= 1; e2r_b_r <= 0; end
+            OP_ALT2          : begin e2r_alt_r <= 2; e2r_b_r <= 0; end
+            OP_ALT3          : begin e2r_alt_r <= 3; e2r_b_r <= 0; end
             OP_TO            : e2r_dreg_r <= exe_op[3:0];
-            OP_WITH          : begin e2r_sreg_r <= exe_op[3:0]; e2r_dreg_r <= exe_op[3:0]; end
+            OP_WITH          : begin e2r_sreg_r <= exe_op[3:0]; e2r_dreg_r <= exe_op[3:0]; e2r_b_r <= 1; end
             OP_FROM          : e2r_sreg_r <= exe_op[3:0];
             
-            default          : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; end
+            default          : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= SFR_B; end
           endcase
         end
         else begin
@@ -845,7 +854,8 @@ always @(posedge CLK) begin
         e2r_cy_r   <= SFR_CY;
         e2r_s_r    <= SFR_S;
         e2r_ov_r   <= SFR_OV;
-        e2r_b_r    <= SFR_B;
+        //e2r_b_r    <= SFR_B;
+        e2r_g_r    <= SFR_G;
         
         // get default destination
         e2r_dest_r <= DREG_r;
@@ -868,6 +878,40 @@ always @(posedge CLK) begin
           end
           else begin
             casex (exe_opcode_r)
+              OP_STOP           : begin
+                e2r_g_r <= 0;
+              end
+              OP_NOP            : begin end
+              OP_CACHE          : begin
+                if (REG_r[R15][15:4] != CBR_r[15:4]) begin
+                  CBR_r[15:4] <= REG_r[R15][15:4];
+                  cache_val_r <= 0;
+                end
+              end
+
+              OP_ALT1           : begin end
+              OP_ALT2           : begin end
+              OP_ALT3           : begin end
+              OP_TO             : begin end
+              OP_WITH           : begin end
+              OP_FROM           : begin end
+              
+              OP_IBT            : begin end
+              OP_IWT            : begin end
+              OP_GETB           : begin end
+              OP_SBK            : begin end
+              OP_GETC_RAMB_ROMB : begin 
+                if      (SFR_ALT1 & SFR_ALT2) ROMBR_r    <= exe_src_r;
+                else if (SFR_ALT2)            RAMBR_r[0] <= exe_src_r[0];
+                // TODO: fix GETC
+                else if (~SFR_ALT2)           COLR_r     <= 0;
+              end
+
+              OP_LOOP           : begin end
+
+              OP_CMODE_COLOR    : begin end
+              OP_PLOT_RPIX      : begin end
+
               // ALU
               OP_ADD           : begin 
                 exe_n      = SFR_ALT2 ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
@@ -928,7 +972,7 @@ always @(posedge CLK) begin
               
               // ROTATE/SHIFT/INC/DEC
               OP_LSR           : begin
-                exe_result = {1'b0,exe_srcn_r[15:1]};
+                exe_result = {1'b0,exe_src_r[15:1]};
                 
                 e2r_val_r  <= 1;
                 e2r_data_r <= exe_result;
@@ -938,9 +982,17 @@ always @(posedge CLK) begin
                 e2r_cy_r   <= exe_srcn_r[0];
               end
               OP_ASR_DIV2      : begin
+                exe_result = {exe_src_r[15],exe_src_r[15:1]};
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= (SFR_ALT1 & (&exe_src_r))? 0 : exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+                e2r_cy_r   <= exe_result[0]; // unique to look at result for ASR/DIV2
               end
               OP_ROL           : begin
-                exe_result = {exe_srcn_r[14:0],SFR_CY};
+                exe_result = {exe_src_r[14:0],SFR_CY};
                 
                 e2r_val_r  <= 1;
                 e2r_data_r <= exe_result;
@@ -950,7 +1002,7 @@ always @(posedge CLK) begin
                 e2r_cy_r   <= exe_srcn_r[15];
               end
               OP_ROR           : begin
-                exe_result = {SFR_CY,exe_srcn_r[15:1]};
+                exe_result = {SFR_CY,exe_src_r[15:1]};
                 
                 e2r_val_r  <= 1;
                 e2r_data_r <= exe_result;
@@ -959,28 +1011,10 @@ always @(posedge CLK) begin
                 e2r_s_r    <= exe_result[15];
                 e2r_cy_r   <= exe_srcn_r[0];
               end
-              OP_INC           : begin
-                exe_result = exe_srcn_r + 1;
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
-              end
-              OP_DEC           : begin
-                exe_result = exe_srcn_r - 1;
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
-              end
               
               // BYTE
               OP_SWAP          : begin
-                exe_result = {exe_srcn_r[7:0],exe_srcn_r[15:8]};
+                exe_result = {exe_src_r[7:0],exe_src_r[15:8]};
                 
                 e2r_val_r  <= 1;
                 e2r_data_r <= exe_result;
@@ -989,7 +1023,7 @@ always @(posedge CLK) begin
                 e2r_s_r    <= exe_result[15];
               end
               OP_SEX           : begin
-                exe_result = {{8{exe_srcn_r[7]}},exe_srcn_r[7:0]};
+                exe_result = {{8{exe_src_r[7]}},exe_src_r[7:0]};
                 
                 e2r_val_r  <= 1;
                 e2r_data_r <= exe_result;
@@ -998,7 +1032,7 @@ always @(posedge CLK) begin
                 e2r_s_r    <= exe_result[15];
               end
               OP_LOB           : begin
-                exe_result = {8'h00,exe_srcn_r[7:0]};
+                exe_result = {8'h00,exe_src_r[7:0]};
                 
                 e2r_val_r  <= 1;
                 e2r_data_r <= exe_result;
@@ -1007,7 +1041,7 @@ always @(posedge CLK) begin
                 e2r_s_r    <= exe_result[7];
               end
               OP_HIB           : begin
-                exe_result = {8'h00,exe_srcn_r[15:8]};
+                exe_result = {8'h00,exe_src_r[15:8]};
                 
                 e2r_val_r  <= 1;
                 e2r_data_r <= exe_result;
@@ -1032,6 +1066,33 @@ always @(posedge CLK) begin
               end
               OP_MULT_MULT     : begin
               end
+              
+              // Overlapping
+              OP_LINK_JMP_LJMP : begin
+              end
+              OP_LD            : begin
+              end
+              OP_ST            : begin
+              end
+              OP_INC           : begin
+                exe_result = exe_srcn_r + 1;
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+              end
+              OP_DEC           : begin
+                exe_result = exe_srcn_r - 1;
+                
+                e2r_val_r  <= 1;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+              end
+              
             endcase
           end
         end
@@ -1104,11 +1165,11 @@ always @(REG_r[0], REG_r[1], REG_r[2], REG_r[3], REG_r[4], REG_r[5], REG_r[6], R
     10'h300           : pgmdata_out = FETCH_STATE;
     // exe state
     10'h320           : pgmdata_out = EXE_STATE;
-    //10'h321           : pgmdata_out = i2e_op_r[i2e_ptr_r];
-    //10'h322           : pgmdata_out = exe_opcode_r;
-    //10'h323           : pgmdata_out = exe_operand_r[7:0];
-    //10'h324           : pgmdata_out = exe_operand_r[15:8];
-    //10'h325           : pgmdata_out = exe_operandcnt_r;
+    10'h321           : pgmdata_out = i2e_op_r[i2e_ptr_r];
+    10'h322           : pgmdata_out = exe_opcode_r;
+    10'h323           : pgmdata_out = exe_operand_r[7:0];
+    10'h324           : pgmdata_out = exe_operand_r[15:8];
+    10'h325           : pgmdata_out = exe_operandcnt_r;
     // cache state
     //10'h340
     // fill state
