@@ -378,7 +378,7 @@ always @(posedge clk) begin
         featurebits_out <= param_data;
       8'hee:
         region_out <= param_data[0];
-      8'hFD: // handles all group, index, value, invmask writes.  unit is responsible for decoding group for match
+      8'hFA: // handles all group, index, value, invmask writes.  unit is responsible for decoding group for match
         case (spi_byte_cnt)
           32'h2: begin
             group_out_buf <= param_data;
@@ -512,7 +512,7 @@ always @(posedge clk) begin
         32'h5:
           MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[7:0];
       endcase
-    else if (cmd_data[7:0] == 8'hFC)
+    else if (cmd_data[7:0] == 8'hF9)
       case (spi_byte_cnt)
         32'h2: begin
           group_read_buf <= param_data;

@@ -226,7 +226,7 @@ end
 
 assign config_data_out = config_r[reg_read_in];
 
-wire       CONFIG_STEP_ENABLED = config_r[0][0];
+wire       CONFIG_STEP_ENABLED = config_r[0][0] | 1'b1; // FIXME: temporary enable
 wire [7:0] CONFIG_STEP_COUNT   = config_r[1];
 
 //-------------------------------------------------------------------
@@ -308,17 +308,23 @@ assign POR_OBJ  = POR_r[4];
 // PIPELINE IO
 //-------------------------------------------------------------------
 // Fetch -> Execute
-
 // The fetch pipe and execution pipe are synchronized via the opbuf.
 // Fetch operates one byte ahead of execution.
-reg [7:0] i2r_op_r[1:0]; initial for (i = 0; i < 2; i = i + 1) i2r_op_r[i] = OP_NOP;
-reg       i2r_ptr_r; initial i2r_ptr_r = 0;
+reg [7:0]  i2e_op_r[1:0]; initial for (i = 0; i < 2; i = i + 1) i2e_op_r[i] = OP_NOP;
+reg        i2e_ptr_r; initial i2e_ptr_r = 0;
 
 // Execute -> RegisterFile
+reg        e2r_val_r;
+reg        e2r_dreg_r;
+reg [7:0]  e2r_data_r;
 
-reg       e2r_val_r;
-reg       e2r_dreg_r;
-reg [7:0] e2r_data_r;
+// Fetch -> Common
+reg        i2c_waitcnt_val_r; initial i2c_waitcnt_val_r = 0;
+reg        i2c_waitcnt_r;
+
+// Execute -> Common
+reg        e2c_waitcnt_val_r; initial e2c_waitcnt_val_r = 0;
+reg        e2c_waitcnt_r;
 
 //-------------------------------------------------------------------
 // FIXME: Pixel Buffer
@@ -611,7 +617,7 @@ assign ROM_BUS_WRDATA = rom_bus_data_r;
 //-------------------------------------------------------------------
 
 // step counter for pipelines
-reg [7:0] step_count_r; initial step_count_r = 0;
+reg [7:0] stepcnt_r; initial stepcnt_r = 0;
 
 reg [3:0] fetch_waitcnt_r;
 reg [3:0] exe_waitcnt_r;
@@ -620,13 +626,18 @@ always @(posedge CLK) begin
   if (RST) begin
     fetch_waitcnt_r <= 0;
     exe_waitcnt_r <= 0;
+    
+    stepcnt_r <= 0;
   end
   else begin
     // decrement delay counters
-    if (gsu_clock_en) begin
-      if (|fetch_waitcnt_r) fetch_waitcnt_r <= fetch_waitcnt_r - 1;
-      if (|exe_waitcnt_r)   exe_waitcnt_r   <= exe_waitcnt_r - 1;
-    end
+    if (i2c_waitcnt_val_r) fetch_waitcnt_r <= i2c_waitcnt_r;
+    else if (gsu_clock_en & |fetch_waitcnt_r) fetch_waitcnt_r <= fetch_waitcnt_r - 1;
+
+    if (e2c_waitcnt_val_r) exe_waitcnt_r <= e2c_waitcnt_r;
+    else if (gsu_clock_en & |exe_waitcnt_r) exe_waitcnt_r <= exe_waitcnt_r - 1;
+    
+    if (pipeline_advance) stepcnt_r <= CONFIG_STEP_COUNT;
   end
 end
 
@@ -652,7 +663,7 @@ parameter
   ST_FETCH_FILL   = 5'b01000,
   ST_FETCH_WAIT   = 5'b10000
   ;
-reg [4:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
+reg [7:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
 
 // Fetch operations
 // - Check if cache hit (use valid bits) or !cache address
@@ -660,14 +671,19 @@ reg [4:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
 // - read data out of cache or from fill
 // - wait for cycles to expire and edge
 
-reg [15:0] cache_offset;
 reg [7:0] fetch_data_r;
+
+wire[15:0] cache_offset = REG_r[R15][15:0] - CBR_r;
+wire       cache_hit = (~|cache_offset[15:9] & cache_val_r[cache_offset[12:4]]);
+
+assign     i2c_setcnt = cache_hit & |(FETCH_STATE & ST_FETCH_LOOKUP);
+
 always @(posedge CLK) begin
   if (RST) begin
     FETCH_STATE <= ST_FETCH_IDLE;
 
-    i2r_op_r[0] <= OP_NOP;
-    i2r_ptr_r <= 0;
+    i2e_op_r[0] <= OP_NOP;
+    i2e_ptr_r <= 0;
   end
   else begin
     case (FETCH_STATE)
@@ -679,33 +695,38 @@ always @(posedge CLK) begin
       end
       ST_FETCH_LOOKUP: begin
         // check if cache hit
-        cache_offset = REG_r[R15][15:0] - CBR_r;
-        if (~|cache_offset[15:9] & cache_val_r[cache_offset[12:4]]) begin
+        if (cache_hit) begin
+          i2c_waitcnt_val_r <= 1;
+          i2c_waitcnt_r <= 0;
           cache_gsu_addr_r <= REG_r[R15][8:0];
-          fetch_waitcnt_r <= 0;
           FETCH_STATE <= ST_FETCH_HIT;
         end
         else begin
           // TODO: fill address
-          fetch_waitcnt_r <= 1;
+          i2c_waitcnt_val_r <= 1;
+          i2c_waitcnt_r <= 1;
           FETCH_STATE <= ST_FETCH_FILL;
         end
       end
       ST_FETCH_HIT: begin
+        i2c_waitcnt_val_r <= 0;
         fetch_data_r <= cache_rddata;
         FETCH_STATE <= ST_FETCH_WAIT;
       end
+      ST_FETCH_FILL: begin
+        // TODO: get correct data from ROM
+        i2c_waitcnt_val_r <= 0;
+        fetch_data_r <= OP_NOP;
+        FETCH_STATE <= ST_FETCH_WAIT;
+      end
       ST_FETCH_WAIT: begin
-        if (gsu_clock_en) begin
-          if (|fetch_waitcnt_r) fetch_waitcnt_r <= fetch_waitcnt_r - 1;
-          else if (pipeline_advance) begin
-            // TODO: fetch address increment
-            i2r_op_r[~i2r_ptr_r] <= fetch_data_r;
-            i2r_ptr_r <= ~i2r_ptr_r;
-            
-            if (SFR_GO) FETCH_STATE <= ST_FETCH_LOOKUP;
-            else        FETCH_STATE <= ST_FETCH_IDLE;
-          end
+        if (pipeline_advance) begin
+          // TODO: fetch address increment
+          i2e_op_r[~i2e_ptr_r] <= fetch_data_r;
+          i2e_ptr_r <= ~i2e_ptr_r;
+
+          if (SFR_GO) FETCH_STATE <= ST_FETCH_LOOKUP;
+          else        FETCH_STATE <= ST_FETCH_IDLE;
         end
       end
     endcase
@@ -721,10 +742,10 @@ parameter
   ST_EXE_DECODE    = 6'b000010,
   ST_EXE_REGREAD   = 6'b000100,
   ST_EXE_EXECUTE   = 6'b001000,
-  ST_EXE_WRITEBACK = 6'b010000,
+  //ST_EXE_WRITEBACK = 6'b010000,
   ST_EXE_WAIT      = 6'b100000
   ;
-reg [4:0] EXE_STATE; initial EXE_STATE = ST_EXE_IDLE;
+reg [7:0] EXE_STATE; initial EXE_STATE = ST_EXE_IDLE;
 
 reg [7:0] exe_data_r;
 always @(posedge CLK) begin
@@ -741,15 +762,27 @@ always @(posedge CLK) begin
       end
       ST_EXE_DECODE: begin
         // determine operands
+        EXE_STATE <= ST_EXE_EXECUTE;
+      end
+      ST_EXE_EXECUTE: begin
+        EXE_STATE <= ST_EXE_WAIT;
+        
+        e2r_val_r <= 0;
+        e2r_dreg_r <= 0;
+        e2r_data_r <= 0;
       end
       ST_EXE_WAIT: begin
+        if (pipeline_advance) begin
+          if (SFR_GO) EXE_STATE <= ST_EXE_DECODE;
+          else        EXE_STATE <= ST_EXE_IDLE;
+        end
       end
       
     endcase
   end
 end
 
-assign pipeline_advance = gsu_clock_en & ~|fetch_waitcnt_r & ~|exe_waitcnt_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT);
+assign pipeline_advance = gsu_clock_en & ~|fetch_waitcnt_r & ~|exe_waitcnt_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
 
 //-------------------------------------------------------------------
 // DEBUG OUTPUT
@@ -791,7 +824,21 @@ always @(REG_r[0], REG_r[1], REG_r[2], REG_r[3], REG_r[4], REG_r[5], REG_r[6], R
     10'h1xx,
     10'h2xx           : pgmdata_out = debug_cache_rddata;
     
-    // TODO: add more internal temps @ $300+
+    // fetch state
+    10'h300           : pgmdata_out = FETCH_STATE;
+    // exe state
+    10'h320           : pgmdata_out = EXE_STATE;
+    10'h321           : pgmdata_out = i2e_op_r[i2e_ptr_r];
+    // cache state
+    //10'h340
+    // fill state
+    //10'h360
+    // interface state
+    10'h380           : pgmdata_out = i2e_op_r[0];
+    10'h381           : pgmdata_out = i2e_op_r[1];
+    // config state
+    10'h3A0           : pgmdata_out = config_r[0];
+    10'h3A1           : pgmdata_out = config_r[1];
     
     default           : pgmdata_out = 8'hFF;
   endcase
