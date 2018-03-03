@@ -855,7 +855,7 @@ always @(posedge CLK) begin
         e2r_s_r    <= SFR_S;
         e2r_ov_r   <= SFR_OV;
         //e2r_b_r    <= SFR_B;
-        e2r_g_r    <= SFR_G;
+        e2r_g_r    <= SFR_GO;
         
         // get default destination
         e2r_dest_r <= DREG_r;
@@ -879,6 +879,7 @@ always @(posedge CLK) begin
           else begin
             casex (exe_opcode_r)
               OP_STOP           : begin
+                // TODO: deal with interrupts and other stuff here
                 e2r_g_r <= 0;
               end
               OP_NOP            : begin end
@@ -961,7 +962,7 @@ always @(posedge CLK) begin
                 e2r_s_r    <= exe_result[15];                
               end
               OP_NOT           : begin
-                exe_result = ~exe_srcn_r;
+                exe_result = ~exe_src_r;
                 
                 e2r_val_r  <= 1;
                 e2r_data_r <= exe_result;
@@ -979,7 +980,7 @@ always @(posedge CLK) begin
                 
                 e2r_z_r    <= ~|exe_result;
                 e2r_s_r    <= exe_result[15];
-                e2r_cy_r   <= exe_srcn_r[0];
+                e2r_cy_r   <= exe_src_r[0];
               end
               OP_ASR_DIV2      : begin
                 exe_result = {exe_src_r[15],exe_src_r[15:1]};
@@ -999,7 +1000,7 @@ always @(posedge CLK) begin
                 
                 e2r_z_r    <= ~|exe_result;
                 e2r_s_r    <= exe_result[15];
-                e2r_cy_r   <= exe_srcn_r[15];
+                e2r_cy_r   <= exe_src_r[15];
               end
               OP_ROR           : begin
                 exe_result = {SFR_CY,exe_src_r[15:1]};
@@ -1009,7 +1010,7 @@ always @(posedge CLK) begin
                 
                 e2r_z_r    <= ~|exe_result;
                 e2r_s_r    <= exe_result[15];
-                e2r_cy_r   <= exe_srcn_r[0];
+                e2r_cy_r   <= exe_src_r[0];
               end
               
               // BYTE
