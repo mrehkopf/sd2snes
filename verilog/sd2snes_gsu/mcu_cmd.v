@@ -126,10 +126,10 @@ module mcu_cmd(
   // cheat configuration
   output reg [7:0] cheat_pgm_idx_out,
   output reg [31:0] cheat_pgm_data_out,
-  output reg cheat_pgm_we_out
+  output reg cheat_pgm_we_out,
 //
 //  // DSP core features
-//  output reg [15:0] dsp_feat_out = 16'h0000
+  output reg [15:0] dsp_feat_out = 16'h0000
 );
 
 initial begin
@@ -169,8 +169,8 @@ reg [7:0] temp_read_buf; initial temp_read_buf = 8'hFF;
 
 reg reg_we_buf; initial reg_we_buf = 0;
 
-//reg [55:0] rtc_data_out_buf;
-//reg rtc_pgm_we_buf;
+reg [55:0] rtc_data_out_buf;
+reg rtc_pgm_we_buf;
 
 reg [31:0] SNES_SYSCLK_FREQ_BUF;
 
@@ -179,6 +179,8 @@ reg [7:0] MCU_DATA_IN_BUF;
 reg [2:0] mcu_nextaddr_buf;
 
 wire mcu_nextaddr;
+
+reg [7:0] dsp_feat_tmp;
 
 reg DAC_STATUSr;
 reg SD_DMA_STATUSr;
@@ -348,27 +350,27 @@ always @(posedge clk) begin
             MSU_RESET_OUT_BUF <= 1'b1;
           end
         endcase
-//      8'he5:
-//        case (spi_byte_cnt)
-//          32'h2:
-//            rtc_data_out_buf[55:48] <= param_data;
-//          32'h3:
-//            rtc_data_out_buf[47:40] <= param_data;
-//          32'h4:
-//            rtc_data_out_buf[39:32] <= param_data;
-//          32'h5:
-//            rtc_data_out_buf[31:24] <= param_data;
-//          32'h6:
-//            rtc_data_out_buf[23:16] <= param_data;
-//          32'h7:
-//            rtc_data_out_buf[15:8] <= param_data;
-//          32'h8: begin
-//            rtc_data_out_buf[7:0] <= param_data;
-//            rtc_pgm_we_buf <= 1'b1;
-//          end
-//          32'h9:
-//            rtc_pgm_we_buf <= 1'b0;
-//        endcase
+      8'he5:
+        case (spi_byte_cnt)
+          32'h2:
+            rtc_data_out_buf[55:48] <= param_data;
+          32'h3:
+            rtc_data_out_buf[47:40] <= param_data;
+          32'h4:
+            rtc_data_out_buf[39:32] <= param_data;
+          32'h5:
+            rtc_data_out_buf[31:24] <= param_data;
+          32'h6:
+            rtc_data_out_buf[23:16] <= param_data;
+          32'h7:
+            rtc_data_out_buf[15:8] <= param_data;
+          32'h8: begin
+            rtc_data_out_buf[7:0] <= param_data;
+            rtc_pgm_we_buf <= 1'b1;
+          end
+          32'h9:
+            rtc_pgm_we_buf <= 1'b0;
+        endcase
       8'hec:
         begin // set DAC properties
           dac_vol_select_out <= param_data[2:0];
@@ -378,7 +380,14 @@ always @(posedge clk) begin
         featurebits_out <= param_data;
       8'hee:
         region_out <= param_data[0];
-      8'hFD: // handles all group, index, value, invmask writes.  unit is responsible for decoding group for match
+      8'hef:
+        case (spi_byte_cnt)
+          32'h2: dsp_feat_tmp <= param_data[7:0];
+          32'h3: begin
+            dsp_feat_out <= {dsp_feat_tmp, param_data[7:0]};
+          end
+        endcase
+      8'hfa: // handles all group, index, value, invmask writes.  unit is responsible for decoding group for match
         case (spi_byte_cnt)
           32'h2: begin
             group_out_buf <= param_data;
@@ -512,7 +521,7 @@ always @(posedge clk) begin
         32'h5:
           MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[7:0];
       endcase
-    else if (cmd_data[7:0] == 8'hFC)
+    else if (cmd_data[7:0] == 8'hF9)
       case (spi_byte_cnt)
         32'h2: begin
           group_read_buf <= param_data;

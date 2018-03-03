@@ -237,6 +237,9 @@ reg gsu_rom_rd_r; initial gsu_rom_rd_r = 0;
 reg gsu_ram_rd_r; initial gsu_ram_rd_r = 0;
 reg gsu_ram_wr_r; initial gsu_ram_wr_r = 0;
 
+reg [23:0] cache_rom_addr_r;
+reg [23:0] data_rom_addr_r;
+
 reg [1:0] gsu_cycle_r; initial gsu_cycle_r = 0;
 
 always @(posedge CLK) gsu_cycle_r <= gsu_cycle_r + 1;
@@ -278,7 +281,7 @@ assign SFR_CY   = SFR_r[2];
 assign SFR_S    = SFR_r[3];
 assign SFR_OV   = SFR_r[4];
 assign SFR_GO   = SFR_r[5];
-assign SFR_R    = SFR_r[6];
+assign SFR_RR   = SFR_r[6];
 assign SFR_ALT1 = SFR_r[8];
 assign SFR_ALT2 = SFR_r[9];
 assign SFR_IL   = SFR_r[10];
@@ -547,72 +550,6 @@ always @(posedge CLK) begin
 end
 
 //-------------------------------------------------------------------
-// MEMORY READ PIPELINE
-//-------------------------------------------------------------------
-parameter
-  ST_ROM_IDLE = 5'b00001,
-  ST_ROM_RD   = 5'b00010,
-  ST_ROM_WR   = 5'b00100,
-  ST_ROM_WAIT = 5'b01000,
-  ST_ROM_END  = 5'b10000
-  ;
-reg [3:0] ROM_STATE; initial ROM_STATE = ST_ROM_IDLE;
-reg rom_bus_rrq_r; initial rom_bus_rrq_r = 0;
-reg rom_bus_wrq_r; initial rom_bus_wrq_r = 0;
-reg [23:0] rom_bus_addr_r;
-reg [7:0] rom_bus_data_r;
-//reg [3:0] rom_waitcnt_r;
-
-// The ROM/RAM should be dedicated to the GSU whenever it wants to do a fetch
-always @(posedge CLK) begin
-  case (ROM_STATE)
-    ST_ROM_IDLE: begin
-      // TODO: determine if the cache can make demand fetches
-      if (cache_rom_rd_r & SCMR_RON) begin
-        rom_bus_rrq_r <= 1;
-        rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
-        ROM_STATE <= ST_ROM_RD;
-      end
-      else if (gsu_rom_rd_r & SCMR_RON) begin
-        rom_bus_rrq_r <= 1;
-        rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
-        ROM_STATE <= ST_ROM_RD;
-      end
-      else if (gsu_ram_rd_r & SCMR_RAN) begin
-        rom_bus_rrq_r <= 1;
-        rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
-        ROM_STATE <= ST_ROM_RD;
-      end
-      else if (gsu_ram_wr_r & SCMR_RAN) begin
-        rom_bus_wrq_r <= 1;
-        rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
-        rom_bus_data_r <= 0; // TODO: data to write
-        ROM_STATE <= ST_ROM_WR;
-      end
-    end
-    ST_ROM_RD: begin
-      if (ROM_BUS_RDY) begin
-        rom_bus_data_r <= ROM_BUS_RDDATA;
-        ROM_STATE <= ST_ROM_END;
-      end
-    end
-    ST_ROM_WR: begin
-      if (ROM_BUS_RDY) begin
-        ROM_STATE <= ST_ROM_END;
-      end
-    end
-    ST_ROM_END: begin
-      ROM_STATE <= ST_ROM_IDLE;
-    end
-  endcase
-end
-
-assign ROM_BUS_RRQ = rom_bus_rrq_r;
-assign ROM_BUS_WRQ = rom_bus_wrq_r;
-assign ROM_BUS_ADDR = rom_bus_addr_r;
-assign ROM_BUS_WRDATA = rom_bus_data_r;
-
-//-------------------------------------------------------------------
 // COMMON PIPELINE
 //-------------------------------------------------------------------
 
@@ -642,6 +579,83 @@ always @(posedge CLK) begin
 end
 
 //-------------------------------------------------------------------
+// MEMORY READ PIPELINE
+//-------------------------------------------------------------------
+parameter
+  ST_FILL_IDLE      = 8'b00000001,
+  ST_FILL_FETCH_RD  = 8'b00000010,
+  ST_FILL_DATA_RD   = 8'b00000100,
+  ST_FILL_DATA_WR   = 8'b00001000,
+  ST_FILL_FETCH_END = 8'b00010000,
+  ST_FILL_DATA_END  = 8'b00100000
+  ;
+reg [7:0] FILL_STATE; initial FILL_STATE = ST_FILL_IDLE;
+reg rom_bus_rrq_r; initial rom_bus_rrq_r = 0;
+reg rom_bus_wrq_r; initial rom_bus_wrq_r = 0;
+reg [23:0] rom_bus_addr_r;
+reg [7:0] rom_bus_data_r;
+//reg [3:0] rom_waitcnt_r;
+
+// The ROM/RAM should be dedicated to the GSU whenever it wants to do a fetch
+always @(posedge CLK) begin
+  if (RST) begin
+    FILL_STATE <= ST_FILL_IDLE;
+    
+    gsu_rom_rd_r <= 0; // FIXME:
+    gsu_ram_rd_r <= 0; // FIXME:
+    gsu_ram_wr_r <= 0; // FIXME:
+  end
+  else begin
+    case (FILL_STATE)
+      ST_FILL_IDLE: begin
+        // TODO: determine if the cache can make demand fetches
+        if (gsu_rom_rd_r & SCMR_RON) begin
+          rom_bus_rrq_r <= 1;
+          rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
+          FILL_STATE <= ST_FILL_DATA_RD;
+        end
+        else if (gsu_ram_rd_r & SCMR_RAN) begin
+          rom_bus_rrq_r <= 1;
+          rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
+          FILL_STATE <= ST_FILL_DATA_RD;
+        end
+        else if (gsu_ram_wr_r & SCMR_RAN) begin
+          rom_bus_wrq_r <= 1;
+          rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
+          rom_bus_data_r <= 0; // TODO: data to write
+          FILL_STATE <= ST_FILL_DATA_WR;
+        end
+        else if (cache_rom_rd_r & SCMR_RON) begin
+          rom_bus_rrq_r <= 1;
+          rom_bus_addr_r <= cache_rom_addr_r;
+          FILL_STATE <= ST_FILL_FETCH_RD;
+        end
+      end
+      ST_FILL_FETCH_RD,
+      ST_FILL_DATA_RD,
+      ST_FILL_DATA_WR: begin
+        rom_bus_rrq_r <= 0;
+        rom_bus_wrq_r <= 0;
+        
+        if (~(rom_bus_rrq_r | rom_bus_wrq_r) & ROM_BUS_RDY) begin
+          rom_bus_data_r <= ROM_BUS_RDDATA;
+          FILL_STATE <= (|(FILL_STATE & ST_FILL_FETCH_RD)) ? ST_FILL_FETCH_END : ST_FILL_DATA_END;
+        end
+      end
+      ST_FILL_FETCH_END,
+      ST_FILL_DATA_END: begin
+        FILL_STATE <= ST_FILL_IDLE;
+      end
+    endcase
+  end
+end
+
+assign ROM_BUS_RRQ = rom_bus_rrq_r;
+assign ROM_BUS_WRQ = rom_bus_wrq_r;
+assign ROM_BUS_ADDR = rom_bus_addr_r;
+assign ROM_BUS_WRDATA = rom_bus_data_r;
+
+//-------------------------------------------------------------------
 // FETCH PIPELINE
 //-------------------------------------------------------------------
 // The frontend of the pipeline starts with the fetch operation which
@@ -657,11 +671,11 @@ end
 // - Cache hit
 // - ROM fill (into cache if offset)
 parameter
-  ST_FETCH_IDLE   = 5'b00001,
-  ST_FETCH_LOOKUP = 5'b00010,
-  ST_FETCH_HIT    = 5'b00100,
-  ST_FETCH_FILL   = 5'b01000,
-  ST_FETCH_WAIT   = 5'b10000
+  ST_FETCH_IDLE   = 8'b00000001,
+  ST_FETCH_LOOKUP = 8'b00000010,
+  ST_FETCH_HIT    = 8'b00000100,
+  ST_FETCH_FILL   = 8'b00001000,
+  ST_FETCH_WAIT   = 8'b00010000
   ;
 reg [7:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
 
@@ -704,7 +718,11 @@ always @(posedge CLK) begin
         else begin
           // TODO: fill address
           i2c_waitcnt_val_r <= 1;
-          i2c_waitcnt_r <= 1;
+          i2c_waitcnt_r <= 4; // TODO: account for slow clock.
+          
+          cache_rom_rd_r <= 1;
+          cache_rom_addr_r <= (PBR_r < 8'h60) ? (PBR_r[6] ? {PBR_r,REG_r[R15]} : {PBR_r[4:0],REG_r[R15][14:0]}) : 24'hE00000 + {PBR_r[4:0],REG_r[R15]};
+          
           FETCH_STATE <= ST_FETCH_FILL;
         end
       end
@@ -716,8 +734,12 @@ always @(posedge CLK) begin
       ST_FETCH_FILL: begin
         // TODO: get correct data from ROM
         i2c_waitcnt_val_r <= 0;
-        fetch_data_r <= OP_NOP;
-        FETCH_STATE <= ST_FETCH_WAIT;
+        cache_rom_rd_r <= 0;
+        
+        if (|(FILL_STATE & ST_FILL_FETCH_END)) begin
+          fetch_data_r <= rom_bus_data_r;
+          FETCH_STATE <= ST_FETCH_WAIT;
+        end
       end
       ST_FETCH_WAIT: begin
         if (pipeline_advance) begin
@@ -737,13 +759,13 @@ end
 // EXECUTION PIPELINE
 //-------------------------------------------------------------------
 parameter
-  ST_EXE_IDLE      = 6'b000001,
+  ST_EXE_IDLE      = 8'b00000001,
   
-  ST_EXE_DECODE    = 6'b000010,
-  ST_EXE_REGREAD   = 6'b000100,
-  ST_EXE_EXECUTE   = 6'b001000,
+  ST_EXE_DECODE    = 8'b00000010,
+  ST_EXE_REGREAD   = 8'b00000100,
+  ST_EXE_EXECUTE   = 8'b00001000,
   //ST_EXE_WRITEBACK = 6'b010000,
-  ST_EXE_WAIT      = 6'b100000
+  ST_EXE_WAIT      = 8'b00100000
   ;
 reg [7:0] EXE_STATE; initial EXE_STATE = ST_EXE_IDLE;
 
@@ -832,13 +854,15 @@ always @(REG_r[0], REG_r[1], REG_r[2], REG_r[3], REG_r[4], REG_r[5], REG_r[6], R
     // cache state
     //10'h340
     // fill state
-    //10'h360
+    //10'h360           : pgmdata_out = cache_rom_rd_r;
     // interface state
     10'h380           : pgmdata_out = i2e_op_r[0];
     10'h381           : pgmdata_out = i2e_op_r[1];
     // config state
     10'h3A0           : pgmdata_out = config_r[0];
     10'h3A1           : pgmdata_out = config_r[1];
+
+    10'h3C0           : pgmdata_out = FILL_STATE;
     
     default           : pgmdata_out = 8'hFF;
   endcase
@@ -852,5 +876,7 @@ assign DATA_ENABLE = data_enable_r;
 assign DATA_OUT = data_out_r;
 
 assign PGM_DATA = pgmdata_out;
+
+assign ACTIVE = ~|(FILL_STATE & ST_FILL_IDLE);
 
 endmodule
