@@ -588,8 +588,8 @@ always @(posedge CLK) begin
   if (RST) begin
     FILL_STATE <= ST_FILL_IDLE;
     
-    //gsu_rom_rd_r <= 0; // FIXME:
-    gsu_ram_rd_r <= 0; // FIXME:
+    gsu_rom_rd_r <= 0; // FIXME:
+    //gsu_ram_rd_r <= 0; // FIXME:
     gsu_ram_wr_r <= 0; // FIXME:
   end
   else begin
@@ -686,6 +686,9 @@ always @(posedge CLK) begin
 
     i2e_op_r[0] <= OP_NOP;
     i2e_ptr_r <= 0;
+    
+    i2c_waitcnt_val_r <= 0;
+    cache_rom_rd_r <= 0;
   end
   else begin
     case (FETCH_STATE)
@@ -791,6 +794,10 @@ always @(posedge CLK) begin
     
     exe_opsize_r <= 0;
     
+    data_rom_addr_r <= 0;
+
+    e2c_waitcnt_val_r <= 0;
+    gsu_ram_rd_r <= 0;
   end
   else begin
     case (EXE_STATE)
