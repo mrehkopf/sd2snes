@@ -21,7 +21,10 @@
 module gsu(
   input         RST,
   input         CLK,
-  
+
+  input [23:0] SAVERAM_MASK,
+  input [23:0] ROM_MASK,
+
   // MMIO interface
   input         ENABLE,
   input         SNES_RD_start,
@@ -714,7 +717,8 @@ always @(posedge CLK) begin
           i2c_waitcnt_r <= 4; // TODO: account for slow clock.
           
           cache_rom_rd_r <= 1;
-          cache_rom_addr_r <= (PBR_r < 8'h60) ? (PBR_r[6] ? {PBR_r,REG_r[R15]} : {PBR_r[4:0],REG_r[R15][14:0]}) : 24'hE00000 + {PBR_r[4:0],REG_r[R15]};
+          cache_rom_addr_r <= (PBR_r < 8'h60) ? ((PBR_r[6] ? {PBR_r,REG_r[R15]} : {PBR_r[4:0],REG_r[R15][14:0]}) & ROM_MASK)
+                                              : 24'hE00000 + ({PBR_r[4:0],REG_r[R15]} & SAVERAM_MASK);
           
           FETCH_STATE <= ST_FETCH_FILL;
         end

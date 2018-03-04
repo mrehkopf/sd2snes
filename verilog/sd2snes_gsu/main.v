@@ -417,6 +417,9 @@ gsu snes_gsu (
   .RST(SNES_reset_strobe),
   .CLK(CLK2),
   
+  .SAVERAM_MASK(SAVERAM_MASK),
+  .ROM_MASK(ROM_MASK),
+  
   // MMIO interface
   .ENABLE(gsu_enable),
   .SNES_RD_start(SNES_RD_start),
