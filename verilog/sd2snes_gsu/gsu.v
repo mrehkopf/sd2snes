@@ -128,7 +128,7 @@ parameter
   ADDR_SFR   = 8'h30,
   ADDR_BRAMR = 8'h33,
   ADDR_PBR   = 8'h34,
-  ADDR_ROMBR = 8'h35,
+  ADDR_ROMBR = 8'h36,
   ADDR_CFGR  = 8'h37,
   ADDR_SCBR  = 8'h38,
   ADDR_CLSR  = 8'h39,
@@ -159,38 +159,38 @@ parameter
   OP_BVC           = 8'h0E,
   OP_BVS           = 8'h0F,
   // jmps/loops
-  OP_LINK_JMP_LJMP = 8'h9x, // To bottom
+  //OP_LINK_JMP_LJMP = 8'h9x, // conflict with lots
   OP_LOOP          = 8'h3C,
   
   // prefix (also see branch) no reset state
   OP_ALT1          = 8'h3D,
   OP_ALT2          = 8'h3E,
   OP_ALT3          = 8'h3F,
-  OP_TO            = 8'h1x, // ok
-  OP_WITH          = 8'h2x, // ok
-  OP_FROM          = 8'hBx, // ok
+  OP_TO            = 8'h1x,
+  OP_WITH          = 8'h2x,
+  OP_FROM          = 8'hBx,
   
   // MOV
   // MOVE/MOVES use WITH/TO and WITH/FROM
-  OP_IBT           = 8'hAx, // bottom
-  OP_IWT           = 8'hFx, // LEA // bottom
+  OP_IBT           = 8'hAx,
+  OP_IWT           = 8'hFx,
   // load from ROM
   OP_GETB          = 8'hEF,
   // load from RAM
-  OP_LD            = 8'h4x, // 4 opcodes // to bottom
-  OP_ST            = 8'h3x, // 4 opcodes // to bottom
-  OP_SBK           = 8'h90, // Above LINK/JMP
-  OP_GETC_RAMB_ROMB= 8'hDF, // Above INC
+  OP_LD            = 8'h4x, // 4C, 4D, 4E, 4F conflict
+  OP_ST            = 8'h3x, // 3C, 3D, 3E, 3F conflict
+  OP_SBK           = 8'h90,
+  OP_GETC_RAMB_ROMB= 8'hDF,
   
   // BITMAP
   OP_CMODE_COLOR   = 8'h4E,
   OP_PLOT_RPIX     = 8'h4C,
   
   // ALU
-  OP_ADD           = 8'h5x, // ok
-  OP_SUB           = 8'h6x, // ok
-  OP_AND_BIC       = 8'h7x, // ok
-  OP_OR_XOR        = 8'hCx, // bottom
+  OP_ADD           = 8'h5x,
+  OP_SUB           = 8'h6x,
+  //OP_AND_BIC       = 8'h7x, // 70 conflict
+  //OP_OR_XOR        = 8'hCx, // C0 conflict
   OP_NOT           = 8'h4F,
   
   // ROTATE/SHIFT/INC/DEC
@@ -198,15 +198,15 @@ parameter
   OP_ASR_DIV2      = 8'h96,
   OP_ROL           = 8'h04,
   OP_ROR           = 8'h97,
-  OP_INC           = 8'hDx, // bottom
-  OP_DEC           = 8'hEx, // bottom
+  OP_INC           = 8'hDx,
+  OP_DEC           = 8'hEx,
   
   // BYTE
   OP_SWAP          = 8'h4D,
   OP_SEX           = 8'h95,
   OP_LOB           = 8'h9E,
-  OP_HIB           = 8'hC0, // Above OR/XOR
-  OP_MERGE         = 8'h70, // Above AND
+  OP_HIB           = 8'hC0,
+  OP_MERGE         = 8'h70,
   
   // MULTIPLY
   OP_FMULT_LMULT   = 8'h9F,
@@ -929,13 +929,6 @@ always @(posedge CLK) begin
                 end
               end
               
-              OP_GETC_RAMB_ROMB : begin 
-                if      (SFR_ALT1 & SFR_ALT2) ROMBR_r    <= exe_src_r;
-                else if (SFR_ALT2)            RAMBR_r[0] <= exe_src_r[0];
-                // TODO: fix GETC
-                else if (~SFR_ALT2)           COLR_r     <= 0;
-              end
-
               OP_LOOP           : begin end
 
               OP_CMODE_COLOR    : begin end
@@ -969,7 +962,8 @@ always @(posedge CLK) begin
                 e2r_s_r    <= exe_result[15];
                 e2r_cy_r   <= ~exe_carry;
               end
-              OP_AND_BIC       : begin
+              //OP_AND_BIC       : begin
+              8'h71, 8'h72, 8'h73, 8'h74, 8'h75, 8'h76, 8'h77, 8'h78, 8'h79, 8'h7A, 8'h7B, 8'h7C, 8'h7D, 8'h7E, 8'h7F : begin 
                 exe_n      = SFR_ALT2 ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
                 exe_result = exe_src_r & exe_n;
                 
@@ -979,7 +973,8 @@ always @(posedge CLK) begin
                 e2r_z_r    <= ~|exe_result;
                 e2r_s_r    <= exe_result[15];
               end
-              OP_OR_XOR        : begin
+              //OP_OR_XOR        : begin
+              8'hC1, 8'hC2, 8'hC3, 8'hC4, 8'hC5, 8'hC6, 8'hC7, 8'hC8, 8'hC9, 8'hCA, 8'hCB, 8'hCC, 8'hCD, 8'hCE, 8'hCF : begin 
                 exe_n      = SFR_ALT2 ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
                 exe_result = SFR_ALT1 ? exe_src_r ^ exe_n : exe_src_r | exe_n;
                 
@@ -1098,22 +1093,34 @@ always @(posedge CLK) begin
               
               // Overlapping
               OP_INC           : begin
-                exe_result = exe_srcn_r + 1;
+                // OP_GETC_RAMB_ROMB
+                if (&exe_opcode_r[3:0]) begin 
+                  if      (SFR_ALT1 & SFR_ALT2) ROMBR_r    <= exe_src_r;
+                  else if (SFR_ALT2)            RAMBR_r[0] <= exe_src_r[0];
+                  // TODO: fix GETC
+                  else if (~SFR_ALT2)           COLR_r     <= 0;
+                end
+                else begin
+                  exe_result = exe_srcn_r + 1;
                 
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
+                  e2r_val_r  <= 1;
+                  e2r_data_r <= exe_result;
                 
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
+                  e2r_z_r    <= ~|exe_result;
+                  e2r_s_r    <= exe_result[15];
+                end
               end
               OP_DEC           : begin
-                exe_result = exe_srcn_r - 1;
+                // skip GETB
+                if (~&exe_opcode_r[3:0]) begin
+                  exe_result = exe_srcn_r - 1;
                 
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
+                  e2r_val_r  <= 1;
+                  e2r_data_r <= exe_result;
                 
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
+                  e2r_z_r    <= ~|exe_result;
+                  e2r_s_r    <= exe_result[15];
+                end
               end
               
             endcase
@@ -1174,12 +1181,30 @@ always @(posedge CLK) begin
             OP_GETB           : begin end
             OP_SBK            : begin end
             OP_LD            : begin
-              EXE_STATE <= ST_EXE_WAIT;
+              if (&exe_opcode_r[3:2]) begin
+                // LOOP, ALT1, ALT2, ALT3
+                EXE_STATE <= ST_EXE_WAIT;
+              end
+              else begin
+                EXE_STATE <= ST_EXE_WAIT;
+              end
             end
             OP_ST            : begin
-              EXE_STATE <= ST_EXE_WAIT;
+              if (&exe_opcode_r[3:2]) begin
+                // LOOP, ALT1, ALT2, ALT3
+                EXE_STATE <= ST_EXE_WAIT;
+              end
+              else begin
+                EXE_STATE <= ST_EXE_WAIT;
+              end
             end
-            OP_LINK_JMP_LJMP : begin
+            // LINK
+            8'h91, 8'h92, 8'h93, 8'h94: begin
+                EXE_STATE <= ST_EXE_WAIT;
+            end
+            // JMP/LJMP
+            8'h98, 8'h99, 8'h9A, 8'h9B, 8'h9C, 8'h9D: begin
+                EXE_STATE <= ST_EXE_WAIT;
             end
             default: EXE_STATE <= ST_EXE_WAIT;
           endcase
