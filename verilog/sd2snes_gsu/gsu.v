@@ -167,8 +167,8 @@ parameter
   
   // MOV
   // MOVE/MOVES use WITH/TO and WITH/FROM
-  OP_IBT           = 8'hAx, // ok
-  OP_IWT           = 8'hFx, // LEA // ok
+  OP_IBT           = 8'hAx, // bottom
+  OP_IWT           = 8'hFx, // LEA // bottom
   // load from ROM
   OP_GETB          = 8'hEF,
   // load from RAM
@@ -588,7 +588,7 @@ always @(posedge CLK) begin
   if (RST) begin
     FILL_STATE <= ST_FILL_IDLE;
     
-    gsu_rom_rd_r <= 0; // FIXME:
+    //gsu_rom_rd_r <= 0; // FIXME:
     gsu_ram_rd_r <= 0; // FIXME:
     gsu_ram_wr_r <= 0; // FIXME:
   end
@@ -603,7 +603,7 @@ always @(posedge CLK) begin
         end
         else if (gsu_ram_rd_r & SCMR_RAN) begin
           rom_bus_rrq_r <= 1;
-          rom_bus_addr_r <= 0; // TODO: get correct cache address for demand fetch
+          rom_bus_addr_r <= data_rom_addr_r; // TODO: get correct cache address for demand fetch
           FILL_STATE <= ST_FILL_DATA_RD;
         end
         else if (gsu_ram_wr_r & SCMR_RAN) begin
@@ -752,8 +752,9 @@ parameter
   ST_EXE_DECODE    = 8'b00000010,
   ST_EXE_REGREAD   = 8'b00000100,
   ST_EXE_EXECUTE   = 8'b00001000,
-  //ST_EXE_WRITEBACK = 6'b010000,
-  ST_EXE_WAIT      = 8'b00100000
+  ST_EXE_LOAD      = 8'b00010000,
+  ST_EXE_STORE     = 8'b00100000,
+  ST_EXE_WAIT      = 8'b01000000
   ;
 reg [7:0]  EXE_STATE; initial EXE_STATE = ST_EXE_IDLE;
 
@@ -761,13 +762,14 @@ reg        exe_branch_r;
 
 reg [7:0]  exe_opcode_r;
 reg [15:0] exe_operand_r;
-reg [1:0]  exe_operandcnt_r;
+reg [1:0]  exe_opsize_r;
 reg [15:0] exe_src_r;
 reg [15:0] exe_srcn_r;
 
 reg [15:0] exe_n;
 reg [15:0] exe_result;
 reg        exe_carry;
+reg        exe_memory;
 
 wire [7:0] exe_op = i2e_op_r[i2e_ptr_r];
 
@@ -787,7 +789,7 @@ always @(posedge CLK) begin
 
     e2r_val_r <= 0;
     
-    exe_operandcnt_r <= 0;
+    exe_opsize_r <= 0;
     
   end
   else begin
@@ -799,7 +801,7 @@ always @(posedge CLK) begin
         end
       end
       ST_EXE_DECODE: begin
-        if (~|exe_operandcnt_r) begin
+        if (~|exe_opsize_r) begin
           exe_opcode_r <= exe_op;
           exe_operand_r <= 0;
         
@@ -815,10 +817,11 @@ always @(posedge CLK) begin
             OP_BCC,
             OP_BCS,
             OP_BVC,
-            OP_BVS : exe_operandcnt_r <= 1;
-            
-            OP_IBT : exe_operandcnt_r <= 1;
-            OP_IWT : exe_operandcnt_r <= 2;
+            OP_BVS : exe_opsize_r <= 2;
+           
+            OP_IBT : exe_opsize_r <= 2;
+            OP_IWT : exe_opsize_r <= 3;
+            default: exe_opsize_r <= 1;
           endcase
 
           // handle prefixes
@@ -838,9 +841,9 @@ always @(posedge CLK) begin
             OP_ALT1          : begin e2r_alt_r <= 1; e2r_b_r <= 0; end
             OP_ALT2          : begin e2r_alt_r <= 2; e2r_b_r <= 0; end
             OP_ALT3          : begin e2r_alt_r <= 3; e2r_b_r <= 0; end
-            OP_TO            : e2r_dreg_r <= exe_op[3:0];
+            OP_TO            : if (~SFR_B) e2r_dreg_r <= exe_op[3:0];
             OP_WITH          : begin e2r_sreg_r <= exe_op[3:0]; e2r_dreg_r <= exe_op[3:0]; e2r_b_r <= 1; end
-            OP_FROM          : e2r_sreg_r <= exe_op[3:0];
+            OP_FROM          : if (~SFR_B) e2r_sreg_r <= exe_op[3:0];
             
             default          : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= SFR_B; end
           endcase
@@ -867,7 +870,9 @@ always @(posedge CLK) begin
         EXE_STATE <= ST_EXE_EXECUTE;
       end
       ST_EXE_EXECUTE: begin
-        if (op_complete) begin          
+        if (op_complete) begin
+          exe_memory = 0;
+
           if (exe_branch_r) begin
             // calculate branch target
             e2r_val_r <= 1;
@@ -893,12 +898,69 @@ always @(posedge CLK) begin
               OP_ALT1           : begin end
               OP_ALT2           : begin end
               OP_ALT3           : begin end
-              OP_TO             : begin end
+              OP_TO             : begin
+                if (SFR_B) begin
+                  e2r_val_r  <= 1;
+                  e2r_dest_r <= exe_opcode_r[3:0]; // uses N as destination
+                  e2r_data_r <= exe_src_r;                  
+                end
+              end
               OP_WITH           : begin end
-              OP_FROM           : begin end
+              OP_FROM           : begin
+                if (SFR_B) begin
+                  exe_result = exe_srcn_r; // uses N as source
+                
+                  e2r_val_r  <= 1;
+                  e2r_data_r <= exe_result;
+
+                  e2r_z_r    <= ~|exe_result;
+                  e2r_ov_r   <= exe_result[7];
+                  e2r_s_r    <= exe_result[15];
+                end
+              end
               
-              OP_IBT            : begin end
-              OP_IWT            : begin end
+              OP_IBT            : begin
+                if (SFR_ALT1) begin
+                  // LMS Rn, (2*imm8)
+                  exe_memory = 1;
+                  
+                  e2c_waitcnt_val_r <= 1;
+                  e2c_waitcnt_r <= 4; // TODO: account for slow clock.
+          
+                  gsu_ram_rd_r <= 1;
+                  data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],7'h00,exe_operand_r[7:0],1'b0};
+                end
+                else if (SFR_ALT2) begin
+                  // SMS (2*imm8), Rn
+                  //exe_memory = 1;
+                end
+                else begin
+                  e2r_val_r    <= 1;
+                  e2r_dest_r   <= exe_opcode_r[3:0];
+                  e2r_data_r   <= {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
+                end
+              end
+              OP_IWT            : begin
+                if (SFR_ALT1) begin
+                  // LM Rn, (imm)
+                  exe_memory = 1;
+
+                  e2c_waitcnt_val_r <= 1;
+                  e2c_waitcnt_r <= 4; // TODO: account for slow clock.
+          
+                  gsu_ram_rd_r <= 1;
+                  data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_operand_r};
+                end
+                else if (SFR_ALT2) begin
+                  // SM (imm), Rn
+                  //exe_memory = 1;
+                end
+                else begin
+                  e2r_val_r    <= 1;
+                  e2r_dest_r   <= exe_opcode_r[3:0];
+                  e2r_data_r   <= exe_operand_r;
+                end
+              end
               OP_GETB           : begin end
               OP_SBK            : begin end
               OP_GETC_RAMB_ROMB : begin 
@@ -1072,8 +1134,10 @@ always @(posedge CLK) begin
               OP_LINK_JMP_LJMP : begin
               end
               OP_LD            : begin
+                //exe_memory = 1;
               end
               OP_ST            : begin
+                //exe_memory = 1;
               end
               OP_INC           : begin
                 exe_result = exe_srcn_r + 1;
@@ -1098,11 +1162,20 @@ always @(posedge CLK) begin
           end
         end
 
-        EXE_STATE <= ST_EXE_WAIT;
+        EXE_STATE <= exe_memory ? ST_EXE_LOAD : ST_EXE_WAIT;
+      end
+      ST_EXE_LOAD: begin
+        e2c_waitcnt_val_r <= 0;
+        gsu_ram_rd_r <= 0;
+        
+        if (|(FILL_STATE & ST_FILL_DATA_END)) begin
+          e2r_data_r <= rom_bus_data_r;
+          EXE_STATE <= ST_EXE_WAIT;
+        end
       end
       ST_EXE_WAIT: begin
         if (pipeline_advance) begin
-          if (|exe_operandcnt_r) exe_operandcnt_r <= exe_operandcnt_r - 1;
+          if (|exe_opsize_r) exe_opsize_r <= exe_opsize_r - 1;
         
           if (SFR_GO) EXE_STATE <= ST_EXE_DECODE;
           else        EXE_STATE <= ST_EXE_IDLE;
@@ -1116,7 +1189,7 @@ always @(posedge CLK) begin
 end
 
 assign pipeline_advance = gsu_clock_en & ~|fetch_waitcnt_r & ~|exe_waitcnt_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
-assign op_complete = ~|exe_operandcnt_r;
+assign op_complete = exe_opsize_r == 1;
 
 //-------------------------------------------------------------------
 // DEBUG OUTPUT
@@ -1170,7 +1243,7 @@ always @(REG_r[0], REG_r[1], REG_r[2], REG_r[3], REG_r[4], REG_r[5], REG_r[6], R
     10'h322           : pgmdata_out = exe_opcode_r;
     10'h323           : pgmdata_out = exe_operand_r[7:0];
     10'h324           : pgmdata_out = exe_operand_r[15:8];
-    10'h325           : pgmdata_out = exe_operandcnt_r;
+    10'h325           : pgmdata_out = exe_opsize_r;
     // cache state
     //10'h340
     // fill state
