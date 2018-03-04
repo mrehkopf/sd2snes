@@ -68,12 +68,14 @@ wire op_complete;
 //-------------------------------------------------------------------
 // INPUTS
 //-------------------------------------------------------------------
-reg [7:0] data_in_r;
+reg [7:0]  data_in_r;
 reg [23:0] addr_in_r;
+reg        enable_r;
 
 always @(posedge CLK) begin
   data_in_r <= DATA_IN;
   addr_in_r <= SNES_ADDR;
+  enable_r  <= ENABLE;
 end
 
 //-------------------------------------------------------------------
@@ -431,7 +433,7 @@ always @(posedge CLK) begin
   end
   else begin
     // True data enable.  This assumes we need unmapped read addresses to be openbus.
-    if (ENABLE) begin
+    if (enable_r) begin
       if (SNES_RD_start) begin
         if (~|addr_in_r[9:8]) begin
           casex (addr_in_r[7:0])
@@ -491,7 +493,7 @@ always @(posedge CLK) begin
         end
       end        
       // handle the select set of R and W registers the snes has access to.
-      else if (SNES_WR_end & ENABLE & ({addr_in_r[9:1],1'b0} == ADDR_SFR || addr_in_r[9:0] == ADDR_SCMR)) begin
+      else if (SNES_WR_end & enable_r & ({addr_in_r[9:1],1'b0} == ADDR_SFR || addr_in_r[9:0] == ADDR_SCMR)) begin
         // FIXME: need to handle conflicts with GSU writes to these registers.
         casex (addr_in_r[7:0])
           ADDR_SFR  : SFR_r[6:1] <= data_in_r[6:1];
@@ -500,7 +502,7 @@ always @(posedge CLK) begin
         endcase
       end
     end
-    else if (ENABLE) begin
+    else if (enable_r) begin
       if (SNES_WR_end) begin
         if (~|addr_in_r[9:8]) begin
           casex (addr_in_r[7:0])
@@ -725,9 +727,9 @@ always @(posedge CLK) begin
       ST_FETCH_FILL: begin
         // TODO: get correct data from ROM
         i2c_waitcnt_val_r <= 0;
-        cache_rom_rd_r <= 0;
         
         if (|(FILL_STATE & ST_FILL_FETCH_END)) begin
+          cache_rom_rd_r <= 0;
           fetch_data_r <= rom_bus_data_r;
           FETCH_STATE <= ST_FETCH_WAIT;
         end
@@ -750,14 +752,14 @@ end
 // EXECUTION PIPELINE
 //-------------------------------------------------------------------
 parameter
-  ST_EXE_IDLE      = 8'b00000001,
+  ST_EXE_IDLE        = 8'b00000001,
   
-  ST_EXE_DECODE    = 8'b00000010,
-  ST_EXE_REGREAD   = 8'b00000100,
-  ST_EXE_EXECUTE   = 8'b00001000,
-  ST_EXE_LOAD      = 8'b00010000,
-  ST_EXE_STORE     = 8'b00100000,
-  ST_EXE_WAIT      = 8'b01000000
+  ST_EXE_DECODE      = 8'b00000010,
+  ST_EXE_REGREAD     = 8'b00000100,
+  ST_EXE_EXECUTE     = 8'b00001000,
+  ST_EXE_MEMORY      = 8'b00010000,
+  ST_EXE_MEMORY_WAIT = 8'b00100000,
+  ST_EXE_WAIT        = 8'b01000000
   ;
 reg [7:0]  EXE_STATE; initial EXE_STATE = ST_EXE_IDLE;
 
@@ -772,7 +774,6 @@ reg [15:0] exe_srcn_r;
 reg [15:0] exe_n;
 reg [15:0] exe_result;
 reg        exe_carry;
-reg        exe_memory;
 
 wire [7:0] exe_op = i2e_op_r[i2e_ptr_r];
 
@@ -878,8 +879,6 @@ always @(posedge CLK) begin
       end
       ST_EXE_EXECUTE: begin
         if (op_complete) begin
-          exe_memory = 0;
-
           if (exe_branch_r) begin
             // calculate branch target
             e2r_val_r <= 1;
@@ -894,7 +893,7 @@ always @(posedge CLK) begin
                 // TODO: deal with interrupts and other stuff here
                 e2r_g_r <= 0;
               end
-              OP_NOP            : begin end
+              //OP_NOP            : begin end
               OP_CACHE          : begin
                 if (REG_r[R15][15:4] != CBR_r[15:4]) begin
                   CBR_r[15:4] <= REG_r[R15][15:4];
@@ -926,50 +925,6 @@ always @(posedge CLK) begin
                 end
               end
               
-              OP_IBT            : begin
-                if (SFR_ALT1) begin
-                  // LMS Rn, (2*imm8)
-                  exe_memory = 1;
-                  
-                  e2c_waitcnt_val_r <= 1;
-                  e2c_waitcnt_r <= 4; // TODO: account for slow clock.
-          
-                  gsu_ram_rd_r <= 1;
-                  data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],7'h00,exe_operand_r[7:0],1'b0};
-                end
-                else if (SFR_ALT2) begin
-                  // SMS (2*imm8), Rn
-                  //exe_memory = 1;
-                end
-                else begin
-                  e2r_val_r    <= 1;
-                  e2r_dest_r   <= exe_opcode_r[3:0];
-                  e2r_data_r   <= {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
-                end
-              end
-              OP_IWT            : begin
-                if (SFR_ALT1) begin
-                  // LM Rn, (imm)
-                  exe_memory = 1;
-
-                  e2c_waitcnt_val_r <= 1;
-                  e2c_waitcnt_r <= 4; // TODO: account for slow clock.
-          
-                  gsu_ram_rd_r <= 1;
-                  data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_operand_r};
-                end
-                else if (SFR_ALT2) begin
-                  // SM (imm), Rn
-                  //exe_memory = 1;
-                end
-                else begin
-                  e2r_val_r    <= 1;
-                  e2r_dest_r   <= exe_opcode_r[3:0];
-                  e2r_data_r   <= exe_operand_r;
-                end
-              end
-              OP_GETB           : begin end
-              OP_SBK            : begin end
               OP_GETC_RAMB_ROMB : begin 
                 if      (SFR_ALT1 & SFR_ALT2) ROMBR_r    <= exe_src_r;
                 else if (SFR_ALT2)            RAMBR_r[0] <= exe_src_r[0];
@@ -1138,14 +1093,6 @@ always @(posedge CLK) begin
               end
               
               // Overlapping
-              OP_LINK_JMP_LJMP : begin
-              end
-              OP_LD            : begin
-                //exe_memory = 1;
-              end
-              OP_ST            : begin
-                //exe_memory = 1;
-              end
               OP_INC           : begin
                 exe_result = exe_srcn_r + 1;
                 
@@ -1169,13 +1116,77 @@ always @(posedge CLK) begin
           end
         end
 
-        EXE_STATE <= exe_memory ? ST_EXE_LOAD : ST_EXE_WAIT;
+        EXE_STATE <= ST_EXE_MEMORY;
       end
-      ST_EXE_LOAD: begin
+      ST_EXE_MEMORY: begin
+        if (op_complete) begin
+          casex (exe_opcode_r)
+            OP_IBT           : begin
+              if (SFR_ALT1) begin
+                // LMS Rn, (2*imm8)
+                //exe_memory = 1;
+                e2r_val_r    <= 1;
+                 
+                e2c_waitcnt_val_r <= 1;
+                e2c_waitcnt_r <= 4; // TODO: account for slow clock.
+          
+                gsu_ram_rd_r <= 1;
+                data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],7'h00,exe_operand_r[7:0],1'b0};
+                EXE_STATE <= ST_EXE_MEMORY_WAIT;
+              end
+              else if (SFR_ALT2) begin
+                // SMS (2*imm8), Rn
+                //exe_memory = 1;
+                EXE_STATE <= ST_EXE_WAIT;
+              end
+              else begin
+                e2r_val_r    <= 1;
+                e2r_dest_r   <= exe_opcode_r[3:0];
+                e2r_data_r   <= {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
+              end
+            end
+            OP_IWT           : begin
+              if (SFR_ALT1) begin
+                // LM Rn, (imm)
+                e2r_val_r    <= 1;
+
+                e2c_waitcnt_val_r <= 1;
+                e2c_waitcnt_r <= 4; // TODO: account for slow clock.
+          
+                gsu_ram_rd_r <= 1;
+                data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_operand_r};
+                EXE_STATE <= ST_EXE_MEMORY_WAIT;
+              end
+              else if (SFR_ALT2) begin
+                // SM (imm), Rn
+                EXE_STATE <= ST_EXE_WAIT;
+              end
+              else begin
+                e2r_val_r    <= 1;
+                e2r_dest_r   <= exe_opcode_r[3:0];
+                e2r_data_r   <= exe_operand_r;
+              end
+            end
+            OP_GETB           : begin end
+            OP_SBK            : begin end
+            OP_LD            : begin
+              EXE_STATE <= ST_EXE_WAIT;
+            end
+            OP_ST            : begin
+              EXE_STATE <= ST_EXE_WAIT;
+            end
+            OP_LINK_JMP_LJMP : begin
+            end
+            default: EXE_STATE <= ST_EXE_WAIT;
+          endcase
+        end
+        else EXE_STATE <= ST_EXE_WAIT;
+      end
+      ST_EXE_MEMORY_WAIT: begin
         e2c_waitcnt_val_r <= 0;
-        gsu_ram_rd_r <= 0;
         
         if (|(FILL_STATE & ST_FILL_DATA_END)) begin
+          gsu_ram_rd_r <= 0;
           e2r_data_r <= rom_bus_data_r;
           EXE_STATE <= ST_EXE_WAIT;
         end
@@ -1201,70 +1212,78 @@ assign op_complete = exe_opsize_r == 1;
 //-------------------------------------------------------------------
 // DEBUG OUTPUT
 //-------------------------------------------------------------------
-reg [7:0] pgmdata_out; //initial pgmdata_out_r = 0;
+reg [7:0]  pgmdata_out; //initial pgmdata_out_r = 0;
+//reg [15:0] debug_reg_r;
+//
+//always @(CLK) begin
+//  debug_reg_r <= REG_r[PGM_ADDR[4:1]];
+//end
 
 // TODO: also map other non-visible state
-always @(REG_r[0], REG_r[1], REG_r[2], REG_r[3], REG_r[4], REG_r[5], REG_r[6], REG_r[7],
-         REG_r[8], REG_r[9], REG_r[10], REG_r[11], REG_r[12], REG_r[13], REG_r[14], REG_r[15],
-         SFR_r, BRAMR_r, PBR_r, ROMBR_r, CFGR_r, SCBR_r, CLSR_r, SCMR_r, VCR_r, RAMBR_r, CBR_r, RAMADDR_r,
-         config_r[0], config_r[1],
-         FETCH_STATE, EXE_STATE, FILL_STATE,
-         i2e_op_r[0], i2e_op_r[1],
-         debug_cache_rddata
-        ) begin
+//always @(REG_r[0], REG_r[1], REG_r[2], REG_r[3], REG_r[4], REG_r[5], REG_r[6], REG_r[7],
+//         REG_r[8], REG_r[9], REG_r[10], REG_r[11], REG_r[12], REG_r[13], REG_r[14], REG_r[15],
+//         SFR_r, BRAMR_r, PBR_r, ROMBR_r, CFGR_r, SCBR_r, CLSR_r, SCMR_r, VCR_r, RAMBR_r, CBR_r, RAMADDR_r,
+//         config_r[0], config_r[1],
+//         FETCH_STATE, EXE_STATE, FILL_STATE,
+//         i2e_op_r[0], i2e_op_r[1],
+//         debug_cache_rddata
+//        ) begin
+always @(CLK) begin
   casex (PGM_ADDR[9:0])
-    {2'h0,ADDR_GPRL } : pgmdata_out = REG_r[PGM_ADDR[4:1]][7:0];
-    {2'h0,ADDR_GPRH } : pgmdata_out = REG_r[PGM_ADDR[4:1]][15:8];          
-    {2'h0,ADDR_SFR  } : pgmdata_out = SFR_r[7:0];
-    {2'h0,ADDR_SFR+1} : pgmdata_out = SFR_r[15:8];
-    {2'h0,ADDR_BRAMR} : pgmdata_out = BRAMR_r;
-    {2'h0,ADDR_PBR  } : pgmdata_out = PBR_r;
-    {2'h0,ADDR_ROMBR} : pgmdata_out = ROMBR_r;
-    {2'h0,ADDR_CFGR } : pgmdata_out = CFGR_r;
-    {2'h0,ADDR_SCBR } : pgmdata_out = SCBR_r;
-    {2'h0,ADDR_CLSR } : pgmdata_out = CLSR_r;
-    {2'h0,ADDR_SCMR } : pgmdata_out = SCMR_r;
-    {2'h0,ADDR_VCR  } : pgmdata_out = VCR_r;
-    {2'h0,ADDR_RAMBR} : pgmdata_out = RAMBR_r;
-    {2'h0,ADDR_CBR+0} : pgmdata_out = CBR_r[7:0];
-    {2'h0,ADDR_CBR+1} : pgmdata_out = CBR_r[15:8];
-    10'h40            : pgmdata_out = COLR_r;
-    10'h41            : pgmdata_out = POR_r;
-    10'h42            : pgmdata_out = SREG_r;
-    10'h43            : pgmdata_out = DREG_r;
-    10'h44            : pgmdata_out = ROMRDBUF_r;
-    10'h45            : pgmdata_out = RAMWRBUF_r;
-    10'h46            : pgmdata_out = RAMADDR_r[7:0];
-    10'h47            : pgmdata_out = RAMADDR_r[15:8];
+    {2'h0,ADDR_GPRL } : pgmdata_out <= REG_r[PGM_ADDR[4:1]][7:0];
+    {2'h0,ADDR_GPRH } : pgmdata_out <= REG_r[PGM_ADDR[4:1]][15:8];          
+    //{2'h0,ADDR_GPRL } : pgmdata_out = debug_reg_r[7:0];
+    //{2'h0,ADDR_GPRH } : pgmdata_out = debug_reg_r[15:8];          
+    {2'h0,ADDR_SFR  } : pgmdata_out <= SFR_r[7:0];
+    {2'h0,ADDR_SFR+1} : pgmdata_out <= SFR_r[15:8];
+    {2'h0,ADDR_BRAMR} : pgmdata_out <= BRAMR_r;
+    {2'h0,ADDR_PBR  } : pgmdata_out <= PBR_r;
+    {2'h0,ADDR_ROMBR} : pgmdata_out <= ROMBR_r;
+    {2'h0,ADDR_CFGR } : pgmdata_out <= CFGR_r;
+    {2'h0,ADDR_SCBR } : pgmdata_out <= SCBR_r;
+    {2'h0,ADDR_CLSR } : pgmdata_out <= CLSR_r;
+    {2'h0,ADDR_SCMR } : pgmdata_out <= SCMR_r;
+    {2'h0,ADDR_VCR  } : pgmdata_out <= VCR_r;
+    {2'h0,ADDR_RAMBR} : pgmdata_out <= RAMBR_r;
+    {2'h0,ADDR_CBR+0} : pgmdata_out <= CBR_r[7:0];
+    {2'h0,ADDR_CBR+1} : pgmdata_out <= CBR_r[15:8];
+    10'h40            : pgmdata_out <= COLR_r;
+    10'h41            : pgmdata_out <= POR_r;
+    10'h42            : pgmdata_out <= SREG_r;
+    10'h43            : pgmdata_out <= DREG_r;
+    10'h44            : pgmdata_out <= ROMRDBUF_r;
+    10'h45            : pgmdata_out <= RAMWRBUF_r;
+    10'h46            : pgmdata_out <= RAMADDR_r[7:0];
+    10'h47            : pgmdata_out <= RAMADDR_r[15:8];
 
     // TODO: add more internal temps @ $80
     
     10'h1xx,
-    10'h2xx           : pgmdata_out = debug_cache_rddata;
+    10'h2xx           : pgmdata_out <= debug_cache_rddata;
     
     // fetch state
-    10'h300           : pgmdata_out = FETCH_STATE;
+    10'h300           : pgmdata_out <= FETCH_STATE;
     // exe state
-    10'h320           : pgmdata_out = EXE_STATE;
-    10'h321           : pgmdata_out = i2e_op_r[i2e_ptr_r];
-    10'h322           : pgmdata_out = exe_opcode_r;
-    10'h323           : pgmdata_out = exe_operand_r[7:0];
-    10'h324           : pgmdata_out = exe_operand_r[15:8];
-    10'h325           : pgmdata_out = exe_opsize_r;
+    10'h320           : pgmdata_out <= EXE_STATE;
+    10'h321           : pgmdata_out <= i2e_op_r[i2e_ptr_r];
+    10'h322           : pgmdata_out <= exe_opcode_r;
+    10'h323           : pgmdata_out <= exe_operand_r[7:0];
+    10'h324           : pgmdata_out <= exe_operand_r[15:8];
+    10'h325           : pgmdata_out <= exe_opsize_r;
     // cache state
     //10'h340
     // fill state
     //10'h360           : pgmdata_out = cache_rom_rd_r;
     // interface state
-    10'h380           : pgmdata_out = i2e_op_r[0];
-    10'h381           : pgmdata_out = i2e_op_r[1];
+    10'h380           : pgmdata_out <= i2e_op_r[0];
+    10'h381           : pgmdata_out <= i2e_op_r[1];
     // config state
-    10'h3A0           : pgmdata_out = config_r[0];
-    10'h3A1           : pgmdata_out = config_r[1];
+    10'h3A0           : pgmdata_out <= config_r[0];
+    10'h3A1           : pgmdata_out <= config_r[1];
 
-    10'h3C0           : pgmdata_out = FILL_STATE;
+    10'h3C0           : pgmdata_out <= FILL_STATE;
     
-    default           : pgmdata_out = 8'hFF;
+    default           : pgmdata_out <= 8'hFF;
   endcase
 end
 
