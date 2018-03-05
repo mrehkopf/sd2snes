@@ -39,9 +39,10 @@ module gsu(
   input         ROM_BUS_RDY,
   output        ROM_BUS_RRQ,
   output        ROM_BUS_WRQ,
+  output        ROM_BUS_WORD,
   output [23:0] ROM_BUS_ADDR,
-  input  [7:0]  ROM_BUS_RDDATA,
-  output [7:0]  ROM_BUS_WRDATA,
+  input  [15:0] ROM_BUS_RDDATA,
+  output [15:0] ROM_BUS_WRDATA,
   
   // ACTIVE interface
   output        ACTIVE,
@@ -242,6 +243,10 @@ reg cache_rom_rd_r; initial cache_rom_rd_r = 0;
 reg gsu_rom_rd_r; initial gsu_rom_rd_r = 0;
 reg gsu_ram_rd_r; initial gsu_ram_rd_r = 0;
 reg gsu_ram_wr_r; initial gsu_ram_wr_r = 0;
+
+reg cache_rom_word_r;
+reg gsu_rom_word_r;
+reg gsu_ram_word_r;
 
 reg [23:0] cache_rom_addr_r;
 reg [23:0] data_rom_addr_r;
@@ -585,7 +590,8 @@ reg [7:0] FILL_STATE; initial FILL_STATE = ST_FILL_IDLE;
 reg rom_bus_rrq_r; initial rom_bus_rrq_r = 0;
 reg rom_bus_wrq_r; initial rom_bus_wrq_r = 0;
 reg [23:0] rom_bus_addr_r;
-reg [7:0] rom_bus_data_r;
+reg [15:0] rom_bus_data_r;
+reg        rom_bus_word_r;
 //reg [3:0] rom_waitcnt_r;
 
 // The ROM/RAM should be dedicated to the GSU whenever it wants to do a fetch
@@ -594,7 +600,6 @@ always @(posedge CLK) begin
     FILL_STATE <= ST_FILL_IDLE;
     
     gsu_rom_rd_r <= 0; // FIXME:
-    //gsu_ram_rd_r <= 0; // FIXME:
     gsu_ram_wr_r <= 0; // FIXME:
   end
   else begin
@@ -608,6 +613,7 @@ always @(posedge CLK) begin
         end
         else if (gsu_ram_rd_r & SCMR_RAN) begin
           rom_bus_rrq_r <= 1;
+          rom_bus_word_r <= gsu_ram_word_r;
           rom_bus_addr_r <= data_rom_addr_r; // TODO: get correct cache address for demand fetch
           FILL_STATE <= ST_FILL_DATA_RD;
         end
@@ -620,6 +626,7 @@ always @(posedge CLK) begin
         else if (cache_rom_rd_r & SCMR_RON) begin
           rom_bus_rrq_r <= 1;
           rom_bus_addr_r <= cache_rom_addr_r;
+          rom_bus_word_r <= cache_rom_word_r;
           FILL_STATE <= ST_FILL_FETCH_RD;
         end
       end
@@ -644,6 +651,7 @@ end
 
 assign ROM_BUS_RRQ = rom_bus_rrq_r;
 assign ROM_BUS_WRQ = rom_bus_wrq_r;
+assign ROM_BUS_WORD = rom_bus_word_r;
 assign ROM_BUS_ADDR = rom_bus_addr_r;
 assign ROM_BUS_WRDATA = rom_bus_data_r;
 
@@ -717,6 +725,8 @@ always @(posedge CLK) begin
           i2c_waitcnt_r <= 4; // TODO: account for slow clock.
           
           cache_rom_rd_r <= 1;
+          cache_rom_word_r <= 1;
+
           cache_rom_addr_r <= (PBR_r < 8'h60) ? ((PBR_r[6] ? {PBR_r,REG_r[R15]} : {PBR_r[4:0],REG_r[R15][14:0]}) & ROM_MASK)
                                               : 24'hE00000 + ({PBR_r[4:0],REG_r[R15]} & SAVERAM_MASK);
           
@@ -1142,6 +1152,8 @@ always @(posedge CLK) begin
                 e2c_waitcnt_r <= 4; // TODO: account for slow clock.
           
                 gsu_ram_rd_r <= 1;
+                gsu_ram_word_r <= 1;
+
                 data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],7'h00,exe_operand_r[7:0],1'b0};
                 EXE_STATE <= ST_EXE_MEMORY_WAIT;
               end
@@ -1162,9 +1174,11 @@ always @(posedge CLK) begin
                 e2r_val_r    <= 1;
 
                 e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= 4; // TODO: account for slow clock.
+                e2c_waitcnt_r <= 12-1; // TODO: account for slow clock.
           
                 gsu_ram_rd_r <= 1;
+                gsu_ram_word_r <= 1;
+
                 data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_operand_r};
                 EXE_STATE <= ST_EXE_MEMORY_WAIT;
               end
@@ -1257,7 +1271,7 @@ reg [7:0]  pgmdata_out; //initial pgmdata_out_r = 0;
 //         i2e_op_r[0], i2e_op_r[1],
 //         debug_cache_rddata
 //        ) begin
-always @(CLK) begin
+always @(posedge CLK) begin
   casex (PGM_ADDR[9:0])
     {2'h0,ADDR_GPRL } : pgmdata_out <= REG_r[PGM_ADDR[4:1]][7:0];
     {2'h0,ADDR_GPRH } : pgmdata_out <= REG_r[PGM_ADDR[4:1]][15:8];          
@@ -1286,6 +1300,21 @@ always @(CLK) begin
     10'h47            : pgmdata_out <= RAMADDR_r[15:8];
 
     // TODO: add more internal temps @ $80
+    10'h80            : pgmdata_out <= SFR_Z;
+    10'h81            : pgmdata_out <= SFR_CY;
+    10'h82            : pgmdata_out <= SFR_S;
+    10'h83            : pgmdata_out <= SFR_OV;
+    10'h84            : pgmdata_out <= SFR_GO;
+    10'h85            : pgmdata_out <= SFR_RR;
+    10'h86            : pgmdata_out <= SFR_ALT1;
+    10'h87            : pgmdata_out <= SFR_ALT2;
+    10'h88            : pgmdata_out <= SFR_IL;
+    10'h89            : pgmdata_out <= SFR_IH;
+    10'h8A            : pgmdata_out <= SFR_B;
+    10'h8B            : pgmdata_out <= SCMR_MD;
+    10'h8C            : pgmdata_out <= SCMR_HT;
+    10'h8D            : pgmdata_out <= SCMR_RAN;
+    10'h8E            : pgmdata_out <= SCMR_RON;
     
     10'h1xx,
     10'h2xx           : pgmdata_out <= debug_cache_rddata;
@@ -1302,7 +1331,7 @@ always @(CLK) begin
     // cache state
     //10'h340
     // fill state
-    //10'h360           : pgmdata_out = cache_rom_rd_r;
+    10'h360           : pgmdata_out <= cache_rom_rd_r;
     // interface state
     10'h380           : pgmdata_out <= i2e_op_r[0];
     10'h381           : pgmdata_out <= i2e_op_r[1];
