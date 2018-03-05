@@ -1212,7 +1212,7 @@ always @(posedge CLK) begin
               gsu_ram_rd_r <= 1;
               gsu_ram_word_r <= 1; // load for cache
 
-              data_rom_addr_r <= {ROMBR_r,REG_r[R14]};
+              data_rom_addr_r <= ((PBR_r[6] ? {ROMBR_r,REG_r[R14]} : {ROMBR_r[4:0],REG_r[R14][14:0]}) & ROM_MASK);
 
               EXE_STATE <= ST_EXE_MEMORY_WAIT;
             end
