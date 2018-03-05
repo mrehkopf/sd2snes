@@ -251,6 +251,7 @@ reg gsu_ram_word_r;
 reg [23:0] cache_rom_addr_r;
 reg [23:0] data_rom_addr_r;
 
+reg [31:0] gsu_cycle_cnt_r; initial gsu_cycle_cnt_r = 0;
 reg [1:0] gsu_cycle_r; initial gsu_cycle_r = 0;
 
 always @(posedge CLK) gsu_cycle_r <= gsu_cycle_r + 1;
@@ -259,6 +260,8 @@ always @(posedge CLK) gsu_cycle_r <= gsu_cycle_r + 1;
 // terms of GSU clocks so this is used to align transitions and
 // operate counters.
 assign gsu_clock_en = &gsu_cycle_r;
+
+always @(posedge CLK) if (RST) gsu_cycle_cnt_r <= 0; else if (gsu_clock_en) gsu_cycle_cnt_r <= gsu_cycle_cnt_r + 1;
 
 //-------------------------------------------------------------------
 // STATE
@@ -783,6 +786,7 @@ reg [7:0]  exe_opcode_r;
 reg [15:0] exe_operand_r;
 reg [1:0]  exe_opsize_r;
 reg [15:0] exe_src_r;
+reg [15:0] exe_dst_r;
 reg [15:0] exe_srcn_r;
 
 reg [15:0] exe_n;
@@ -887,6 +891,7 @@ always @(posedge CLK) begin
         
         // get register sources
         exe_src_r <= REG_r[SREG_r];
+        exe_dst_r <= REG_r[DREG_r];
         exe_srcn_r <= REG_r[exe_op[3:0]];
         
         EXE_STATE <= ST_EXE_EXECUTE;
@@ -1114,6 +1119,7 @@ always @(posedge CLK) begin
                   exe_result = exe_srcn_r + 1;
                 
                   e2r_val_r  <= 1;
+                  e2r_dest_r <= exe_opcode_r[3:0]; // uses N as destination                  
                   e2r_data_r <= exe_result;
                 
                   e2r_z_r    <= ~|exe_result;
@@ -1126,6 +1132,7 @@ always @(posedge CLK) begin
                   exe_result = exe_srcn_r - 1;
                 
                   e2r_val_r  <= 1;
+                  e2r_dest_r <= exe_opcode_r[3:0]; // uses N as destination
                   e2r_data_r <= exe_result;
                 
                   e2r_z_r    <= ~|exe_result;
@@ -1147,8 +1154,9 @@ always @(posedge CLK) begin
                 // LMS Rn, (2*imm8)
                 //exe_memory = 1;
                 e2r_val_r    <= 1;
+                e2r_dest_r   <= exe_opcode_r[3:0];
                  
-                e2c_waitcnt_val_r <= 1;
+                e2c_waitcnt_val_r <= 7-1;
                 e2c_waitcnt_r <= 4; // TODO: account for slow clock.
           
                 gsu_ram_rd_r <= 1;
@@ -1172,9 +1180,10 @@ always @(posedge CLK) begin
               if (SFR_ALT1) begin
                 // LM Rn, (imm)
                 e2r_val_r    <= 1;
+                e2r_dest_r   <= exe_opcode_r[3:0];
 
                 e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= 12-1; // TODO: account for slow clock.
+                e2c_waitcnt_r <= 7-1; // TODO: account for slow clock.
           
                 gsu_ram_rd_r <= 1;
                 gsu_ram_word_r <= 1;
@@ -1192,15 +1201,39 @@ always @(posedge CLK) begin
                 e2r_data_r   <= exe_operand_r;
               end
             end
-            OP_GETB           : begin end
-            OP_SBK            : begin end
+            OP_GETB          : begin
+              e2r_val_r    <= 1;
+                 
+              e2c_waitcnt_val_r <= 1;
+              // TODO: add 16b cache latencies
+              e2c_waitcnt_r <= 6-1; // TODO: account for slow clock.
+
+              // TODO: decide if we need separate state machines for this
+              gsu_ram_rd_r <= 1;
+              gsu_ram_word_r <= 1; // load for cache
+
+              data_rom_addr_r <= {ROMBR_r,REG_r[R14]};
+
+              EXE_STATE <= ST_EXE_MEMORY_WAIT;
+            end
+            OP_SBK           : begin end
             OP_LD            : begin
               if (&exe_opcode_r[3:2]) begin
                 // LOOP, ALT1, ALT2, ALT3
                 EXE_STATE <= ST_EXE_WAIT;
               end
               else begin
-                EXE_STATE <= ST_EXE_WAIT;
+                e2r_val_r    <= 1;
+                 
+                e2c_waitcnt_val_r <= 1;
+                e2c_waitcnt_r <= SFR_ALT1 ? 4-1 : 6-1; // TODO: account for slow clock.
+
+                gsu_ram_rd_r <= 1;
+                gsu_ram_word_r <= ~SFR_ALT1;
+
+                data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_srcn_r};
+
+                EXE_STATE <= ST_EXE_MEMORY_WAIT;
               end
             end
             OP_ST            : begin
@@ -1230,7 +1263,9 @@ always @(posedge CLK) begin
         
         if (|(FILL_STATE & ST_FILL_DATA_END)) begin
           gsu_ram_rd_r <= 0;
-          e2r_data_r <= rom_bus_data_r;
+          // byte loads do zero extension
+          if (exe_opcode_r == OP_GETB) e2r_data_r <= (SFR_ALT1 & SFR_ALT2) ? {{8{rom_bus_data_r[7]}},rom_bus_data_r[7:0]} : SFR_ALT2 ? {exe_dst_r[15:8],rom_bus_data_r[7:0]} : SFR_ALT1 ? {rom_bus_data_r[7:0],exe_dst_r[7:0]} : {8'h00,rom_bus_data_r[7:0]};
+          else                         e2r_data_r <= {(gsu_ram_word_r ? rom_bus_data_r[15:8] : 8'h00),rom_bus_data_r[7:0]};
           EXE_STATE <= ST_EXE_WAIT;
         end
       end
@@ -1340,6 +1375,12 @@ always @(posedge CLK) begin
     10'h3A1           : pgmdata_out <= config_r[1];
 
     10'h3C0           : pgmdata_out <= FILL_STATE;
+    
+    // misc
+    10'h3E0           : pgmdata_out <= gsu_cycle_cnt_r[31:24];
+    10'h3E1           : pgmdata_out <= gsu_cycle_cnt_r[23:16];
+    10'h3E2           : pgmdata_out <= gsu_cycle_cnt_r[15: 8];
+    10'h3E3           : pgmdata_out <= gsu_cycle_cnt_r[ 7: 0];
     
     default           : pgmdata_out <= 8'hFF;
   endcase

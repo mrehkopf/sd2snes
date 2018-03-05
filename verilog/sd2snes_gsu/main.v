@@ -735,6 +735,9 @@ assign ROM_ADDR0 = (SD_DMA_TO_ROM) ? MCU_ADDR[0] : GSU_HIT ? GSU_ROM_ADDRr[0] : 
 reg[17:0] SNES_DEAD_CNTr;
 initial SNES_DEAD_CNTr = 0;
 
+reg ROM_ADDR0_r;
+always @(posedge CLK2) ROM_ADDR0_r <= ROM_ADDR0;
+
 always @(posedge CLK2) begin
   if(MCU_RRQ) begin
     MCU_RD_PENDr <= 1'b1;
@@ -830,7 +833,7 @@ always @(posedge CLK2) begin
       STATE <= ST_GSU_RD_ADDR;
       ST_MEM_DELAYr <= ST_MEM_DELAYr - 1;
       if(ST_MEM_DELAYr == 0) STATE <= ST_GSU_RD_END;
-      GSU_DINr <= (ROM_ADDR0 ? ROM_DATA[15:0] : {ROM_DATA[7:0],ROM_DATA[15:8]});
+      GSU_DINr <= (ROM_ADDR0_r ? ROM_DATA[15:0] : {ROM_DATA[7:0],ROM_DATA[15:8]});
     end
     ST_GSU_WR_ADDR: begin
       STATE <= ST_GSU_WR_ADDR;
