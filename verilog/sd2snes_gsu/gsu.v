@@ -75,11 +75,13 @@ wire op_complete;
 reg [7:0]  data_in_r;
 reg [23:0] addr_in_r;
 reg        enable_r;
+reg [9:0]  pgm_addr_r;
 
 always @(posedge CLK) begin
-  data_in_r <= DATA_IN;
-  addr_in_r <= SNES_ADDR;
-  enable_r  <= ENABLE;
+  data_in_r  <= DATA_IN;
+  addr_in_r  <= SNES_ADDR;
+  enable_r   <= ENABLE;
+  pgm_addr_r <= PGM_ADDR;
 end
 
 //-------------------------------------------------------------------
@@ -344,6 +346,7 @@ reg        i2e_ptr_r; initial i2e_ptr_r = 0;
 reg        e2r_val_r;
 reg [3:0]  e2r_destnum_r;
 reg [15:0] e2r_data_r;
+reg [1:0]  e2r_mask_r;
 // non dest registers to update
 reg [1:0]  e2r_alt_r;
 reg        e2r_z_r;
@@ -394,7 +397,7 @@ assign cache_addr   = SFR_GO ? cache_gsu_addr_r   : cache_mmio_addr_r;
 assign cache_wrdata = SFR_GO ? cache_gsu_wrdata_r : cache_mmio_wrdata_r;
 
 assign debug_cache_wren = 0;
-assign debug_cache_addr = {~PGM_ADDR[8],PGM_ADDR[7:0]};
+assign debug_cache_addr = {~pgm_addr_r[8],pgm_addr_r[7:0]};
 
 // valid bits
 reg [31:0] cache_val_r; initial cache_val_r = 0;
@@ -424,9 +427,9 @@ reg [7:0]  data_flop_r;
 
 always @(posedge CLK) begin
   if (RST) begin
-    for (i = 0; i < NUM_GPR; i = i + 1) begin
-      REG_r[i] <= 0;
-    end
+    //for (i = 0; i < NUM_GPR; i = i + 1) begin
+    //  REG_r[i] <= 0;
+    //end
     
     SFR_r   <= 0;
     BRAMR_r <= 0;
@@ -491,7 +494,8 @@ always @(posedge CLK) begin
             REG_r[e2r_destnum_r] <= e2r_data_r;
           end
           else begin
-            REG_r[e2r_destnum_r] <= e2r_data_r;
+            if (~e2r_mask_r[1]) REG_r[e2r_destnum_r][15:8] <= e2r_data_r[15:8];
+            if (~e2r_mask_r[0]) REG_r[e2r_destnum_r][7:0] <= e2r_data_r[7:0];
             REG_r[R15] <= REG_r[R15] + 1;
           end
         end
@@ -795,6 +799,9 @@ reg [1:0]  exe_opsize_r;
 reg [15:0] exe_src_r;
 reg [15:0] exe_dst_r;
 reg [15:0] exe_srcn_r;
+reg        exe_alt1_r;
+reg        exe_alt2_r;
+reg        exe_cy_r;
 
 reg [15:0] exe_n;
 reg [15:0] exe_result;
@@ -817,6 +824,7 @@ always @(posedge CLK) begin
     e2r_g_r    <= 0;
 
     e2r_val_r <= 0;
+    e2r_mask_r <= 0;
     
     exe_opsize_r <= 0;
     
@@ -896,9 +904,12 @@ always @(posedge CLK) begin
         // get default destination
         e2r_destnum_r <= DREG_r;
         
+        exe_alt1_r <= SFR_ALT1;
+        exe_alt2_r <= SFR_ALT2;
+        exe_cy_r   <= SFR_CY;
         // get register sources
         exe_src_r <= REG_r[SREG_r];
-        exe_dst_r <= REG_r[DREG_r];
+        //exe_dst_r <= REG_r[DREG_r];
         exe_srcn_r <= REG_r[exe_op[3:0]];
         
         EXE_STATE <= ST_EXE_EXECUTE;
@@ -958,8 +969,8 @@ always @(posedge CLK) begin
 
               // ALU
               OP_ADD           : begin 
-                exe_n      = SFR_ALT2 ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
-                {exe_carry,exe_result} = exe_src_r + exe_n + (SFR_ALT1 & SFR_CY);
+                exe_n      = exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+                {exe_carry,exe_result} = exe_src_r + exe_n + (exe_alt1_r & exe_cy_r);
                 
                 e2r_val_r <= 1;
                 // e2r_destnum_r <= DREG_r; // standard dest
@@ -971,11 +982,11 @@ always @(posedge CLK) begin
                 e2r_cy_r   <= exe_carry;
               end
               OP_SUB           : begin
-                exe_n      = (~SFR_ALT1 & SFR_ALT2) ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
-                {exe_carry,exe_result} = exe_src_r - exe_n - (SFR_ALT1 & ~SFR_ALT2 & ~SFR_CY);
+                exe_n      = (~exe_alt1_r & exe_alt2_r) ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+                {exe_carry,exe_result} = exe_src_r - exe_n - (exe_alt1_r & ~exe_alt2_r & ~exe_cy_r);
                 
                 // CMP doesn't output the result
-                e2r_val_r <= ~(SFR_ALT1 & SFR_ALT2);
+                e2r_val_r <= ~(exe_alt1_r & exe_alt2_r);
                 // e2r_destnum_r <= DREG_r; // standard dest
                 e2r_data_r <= exe_result;
                 
@@ -986,7 +997,7 @@ always @(posedge CLK) begin
               end
               //OP_AND_BIC       : begin
               8'h71, 8'h72, 8'h73, 8'h74, 8'h75, 8'h76, 8'h77, 8'h78, 8'h79, 8'h7A, 8'h7B, 8'h7C, 8'h7D, 8'h7E, 8'h7F : begin 
-                exe_n      = SFR_ALT2 ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+                exe_n      = exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
                 exe_result = exe_src_r & exe_n;
                 
                 e2r_val_r  <= 1;
@@ -997,8 +1008,8 @@ always @(posedge CLK) begin
               end
               //OP_OR_XOR        : begin
               8'hC1, 8'hC2, 8'hC3, 8'hC4, 8'hC5, 8'hC6, 8'hC7, 8'hC8, 8'hC9, 8'hCA, 8'hCB, 8'hCC, 8'hCD, 8'hCE, 8'hCF : begin 
-                exe_n      = SFR_ALT2 ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
-                exe_result = SFR_ALT1 ? exe_src_r ^ exe_n : exe_src_r | exe_n;
+                exe_n      = exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+                exe_result = exe_alt1_r ? exe_src_r ^ exe_n : exe_src_r | exe_n;
                 
                 e2r_val_r  <= 1;
                 e2r_data_r <= exe_result;
@@ -1031,14 +1042,14 @@ always @(posedge CLK) begin
                 exe_result = {exe_src_r[15],exe_src_r[15:1]};
                 
                 e2r_val_r  <= 1;
-                e2r_data_r <= (SFR_ALT1 & (&exe_src_r))? 0 : exe_result;
+                e2r_data_r <= (exe_alt1_r & (&exe_src_r))? 0 : exe_result;
                 
                 e2r_z_r    <= ~|exe_result;
                 e2r_s_r    <= exe_result[15];
                 e2r_cy_r   <= exe_result[0]; // unique to look at result for ASR/DIV2
               end
               OP_ROL           : begin
-                exe_result = {exe_src_r[14:0],SFR_CY};
+                exe_result = {exe_src_r[14:0],exe_cy_r};
                 
                 e2r_val_r  <= 1;
                 e2r_data_r <= exe_result;
@@ -1048,7 +1059,7 @@ always @(posedge CLK) begin
                 e2r_cy_r   <= exe_src_r[15];
               end
               OP_ROR           : begin
-                exe_result = {SFR_CY,exe_src_r[15:1]};
+                exe_result = {exe_cy_r,exe_src_r[15:1]};
                 
                 e2r_val_r  <= 1;
                 e2r_data_r <= exe_result;
@@ -1117,10 +1128,10 @@ always @(posedge CLK) begin
               OP_INC           : begin
                 // OP_GETC_RAMB_ROMB
                 if (&exe_opcode_r[3:0]) begin 
-                  if      (SFR_ALT1 & SFR_ALT2) ROMBR_r    <= exe_src_r;
-                  else if (SFR_ALT2)            RAMBR_r[0] <= exe_src_r[0];
+                  if      (exe_alt1_r & exe_alt2_r)   ROMBR_r    <= exe_src_r;
+                  else if (exe_alt2_r)                RAMBR_r[0] <= exe_src_r[0];
                   // TODO: fix GETC
-                  else if (~SFR_ALT2)           COLR_r     <= 0;
+                  else if (~exe_alt1_r & ~exe_alt2_r) COLR_r     <= 0;
                 end
                 else begin
                   exe_result = exe_srcn_r + 1;
@@ -1157,7 +1168,7 @@ always @(posedge CLK) begin
         if (op_complete) begin
           casex (exe_opcode_r)
             OP_IBT           : begin
-              if (SFR_ALT1) begin
+              if (exe_alt1_r) begin
                 // LMS Rn, (2*imm8)
                 //exe_memory = 1;
                 e2r_val_r    <= 1;
@@ -1172,7 +1183,7 @@ always @(posedge CLK) begin
                 data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],7'h00,exe_operand_r[7:0],1'b0};
                 EXE_STATE <= ST_EXE_MEMORY_WAIT;
               end
-              else if (SFR_ALT2) begin
+              else if (exe_alt2_r) begin
                 // SMS (2*imm8), Rn
                 //exe_memory = 1;
                 EXE_STATE <= ST_EXE_WAIT;
@@ -1184,7 +1195,7 @@ always @(posedge CLK) begin
               end
             end
             OP_IWT           : begin
-              if (SFR_ALT1) begin
+              if (exe_alt1_r) begin
                 // LM Rn, (imm)
                 e2r_val_r    <= 1;
                 e2r_destnum_r   <= exe_opcode_r[3:0];
@@ -1198,7 +1209,7 @@ always @(posedge CLK) begin
                 data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_operand_r};
                 EXE_STATE <= ST_EXE_MEMORY_WAIT;
               end
-              else if (SFR_ALT2) begin
+              else if (exe_alt2_r) begin
                 // SM (imm), Rn
                 EXE_STATE <= ST_EXE_WAIT;
               end
@@ -1209,20 +1220,20 @@ always @(posedge CLK) begin
               end
             end
             OP_GETB          : begin
-//              e2r_val_r    <= 1;
-//                 
-//              e2c_waitcnt_val_r <= 1;
-//              // TODO: add 16b cache latencies
-//              e2c_waitcnt_r <= 6-1; // TODO: account for slow clock.
-//
-//              // TODO: decide if we need separate state machines for this
-//              gsu_ram_rd_r <= 1;
-//              gsu_ram_word_r <= 1; // load for cache
-//
-//              data_rom_addr_r <= ((PBR_r[6] ? {ROMBR_r,REG_r[R14]} : {ROMBR_r[4:0],REG_r[R14][14:0]}) & ROM_MASK);
-//
-//              EXE_STATE <= ST_EXE_MEMORY_WAIT;
-              EXE_STATE <= ST_EXE_WAIT;
+              e2r_val_r    <= 1;
+
+              e2c_waitcnt_val_r <= 1;
+              // TODO: add 16b cache latencies
+              e2c_waitcnt_r <= 6-1; // TODO: account for slow clock.
+
+              // TODO: decide if we need separate state machines for this
+              gsu_ram_rd_r <= 1;
+              gsu_ram_word_r <= 1; // load for cache
+
+              data_rom_addr_r <= ((ROMBR_r[6] ? {ROMBR_r,REG_r[R14]} : {ROMBR_r[4:0],REG_r[R14][14:0]}) & ROM_MASK);
+
+              EXE_STATE <= ST_EXE_MEMORY_WAIT;
+              //EXE_STATE <= ST_EXE_WAIT;
             end
             OP_SBK           : begin end
             OP_LD            : begin
@@ -1273,7 +1284,10 @@ always @(posedge CLK) begin
         if (|(FILL_STATE & ST_FILL_DATA_END)) begin
           gsu_ram_rd_r <= 0;
           // byte loads do zero extension
-          if (exe_opcode_r == OP_GETB) e2r_data_r <= (SFR_ALT1 & SFR_ALT2) ? {{8{rom_bus_data_r[7]}},rom_bus_data_r[7:0]} : SFR_ALT2 ? {exe_dst_r[15:8],rom_bus_data_r[7:0]} : SFR_ALT1 ? {rom_bus_data_r[7:0],exe_dst_r[7:0]} : {8'h00,rom_bus_data_r[7:0]};
+          if (exe_opcode_r == OP_GETB) begin
+            e2r_data_r <= (exe_alt1_r & exe_alt2_r) ? {{8{rom_bus_data_r[7]}},rom_bus_data_r[7:0]} : exe_alt2_r ? {8'h00,rom_bus_data_r[7:0]} : exe_alt1_r ? {rom_bus_data_r[7:0],8'h00} : {8'h00,rom_bus_data_r[7:0]};
+            e2r_mask_r <= {(~exe_alt1_r & exe_alt2_r),(exe_alt1_r & ~exe_alt2_r)};
+          end
           else                         e2r_data_r <= {(gsu_ram_word_r ? rom_bus_data_r[15:8] : 8'h00),rom_bus_data_r[7:0]};
           EXE_STATE <= ST_EXE_WAIT;
         end
@@ -1286,6 +1300,7 @@ always @(posedge CLK) begin
           else        EXE_STATE <= ST_EXE_IDLE;
           
           e2r_val_r <= 0;
+          e2r_mask_r <= 0;
         end
       end
       
@@ -1316,9 +1331,9 @@ reg [7:0]  pgmdata_out; //initial pgmdata_out_r = 0;
 //         debug_cache_rddata
 //        ) begin
 always @(posedge CLK) begin
-  casex (PGM_ADDR[9:0])
-    {2'h0,ADDR_GPRL } : pgmdata_out <= REG_r[PGM_ADDR[4:1]][7:0];
-    {2'h0,ADDR_GPRH } : pgmdata_out <= REG_r[PGM_ADDR[4:1]][15:8];          
+  casex (pgm_addr_r)
+    {2'h0,ADDR_GPRL } : pgmdata_out <= REG_r[pgm_addr_r[4:1]][7:0];
+    {2'h0,ADDR_GPRH } : pgmdata_out <= REG_r[pgm_addr_r[4:1]][15:8];          
     //{2'h0,ADDR_GPRL } : pgmdata_out = debug_reg_r[7:0];
     //{2'h0,ADDR_GPRH } : pgmdata_out = debug_reg_r[15:8];          
     {2'h0,ADDR_SFR  } : pgmdata_out <= SFR_r[7:0];
