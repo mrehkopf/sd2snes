@@ -254,6 +254,9 @@ reg [23:0] data_rom_addr_r;
 reg [31:0] gsu_cycle_cnt_r; initial gsu_cycle_cnt_r = 0;
 reg [1:0] gsu_cycle_r; initial gsu_cycle_r = 0;
 
+// step counter for pipelines
+reg [7:0] stepcnt_r; initial stepcnt_r = 0;
+
 always @(posedge CLK) gsu_cycle_r <= gsu_cycle_r + 1;
 
 // Assert clock enable every 4 FPGA clocks.  Delays are calculated in
@@ -261,7 +264,14 @@ always @(posedge CLK) gsu_cycle_r <= gsu_cycle_r + 1;
 // operate counters.
 assign gsu_clock_en = &gsu_cycle_r;
 
-always @(posedge CLK) if (RST) gsu_cycle_cnt_r <= 0; else if (gsu_clock_en) gsu_cycle_cnt_r <= gsu_cycle_cnt_r + 1;
+always @(posedge CLK) begin
+  if (RST) begin
+    gsu_cycle_cnt_r <= 0;
+  end
+  else if (gsu_clock_en & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT))) begin
+    gsu_cycle_cnt_r <= gsu_cycle_cnt_r + 1;
+  end
+end
 
 //-------------------------------------------------------------------
 // STATE
@@ -332,7 +342,7 @@ reg        i2e_ptr_r; initial i2e_ptr_r = 0;
 
 // Execute -> RegisterFile
 reg        e2r_val_r;
-reg [3:0]  e2r_dest_r;
+reg [3:0]  e2r_destnum_r;
 reg [15:0] e2r_data_r;
 // non dest registers to update
 reg [1:0]  e2r_alt_r;
@@ -347,11 +357,11 @@ reg [3:0]  e2r_dreg_r;
 
 // Fetch -> Common
 reg        i2c_waitcnt_val_r; initial i2c_waitcnt_val_r = 0;
-reg        i2c_waitcnt_r;
+reg [3:0]  i2c_waitcnt_r;
 
 // Execute -> Common
 reg        e2c_waitcnt_val_r; initial e2c_waitcnt_val_r = 0;
-reg        e2c_waitcnt_r;
+reg [3:0]  e2c_waitcnt_r;
 
 //-------------------------------------------------------------------
 // FIXME: Pixel Buffer
@@ -477,11 +487,11 @@ always @(posedge CLK) begin
       if (pipeline_advance) begin
         // branches either only write R15 or cause an increment
         if (e2r_val_r) begin
-          if (e2r_dest_r == R15) begin
-            REG_r[e2r_dest_r] <= e2r_data_r;
+          if (e2r_destnum_r == R15) begin
+            REG_r[e2r_destnum_r] <= e2r_data_r;
           end
           else begin
-            REG_r[e2r_dest_r] <= e2r_data_r;
+            REG_r[e2r_destnum_r] <= e2r_data_r;
             REG_r[R15] <= REG_r[R15] + 1;
           end
         end
@@ -552,9 +562,6 @@ end
 //-------------------------------------------------------------------
 // COMMON PIPELINE
 //-------------------------------------------------------------------
-
-// step counter for pipelines
-reg [7:0] stepcnt_r; initial stepcnt_r = 0;
 
 reg [3:0] fetch_waitcnt_r;
 reg [3:0] exe_waitcnt_r;
@@ -887,7 +894,7 @@ always @(posedge CLK) begin
         e2r_g_r    <= SFR_GO;
         
         // get default destination
-        e2r_dest_r <= DREG_r;
+        e2r_destnum_r <= DREG_r;
         
         // get register sources
         exe_src_r <= REG_r[SREG_r];
@@ -901,7 +908,7 @@ always @(posedge CLK) begin
           if (exe_branch_r) begin
             // calculate branch target
             e2r_val_r <= 1;
-            e2r_dest_r <= R15;
+            e2r_destnum_r <= R15;
             e2r_data_r <= REG_r[R15] + {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
             
             exe_branch_r <= 0;
@@ -926,7 +933,7 @@ always @(posedge CLK) begin
               OP_TO             : begin
                 if (SFR_B) begin
                   e2r_val_r  <= 1;
-                  e2r_dest_r <= exe_opcode_r[3:0]; // uses N as destination
+                  e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination
                   e2r_data_r <= exe_src_r;                  
                 end
               end
@@ -955,7 +962,7 @@ always @(posedge CLK) begin
                 {exe_carry,exe_result} = exe_src_r + exe_n + (SFR_ALT1 & SFR_CY);
                 
                 e2r_val_r <= 1;
-                // e2r_dest_r <= DREG_r; // standard dest
+                // e2r_destnum_r <= DREG_r; // standard dest
                 e2r_data_r <= exe_result;
                 
                 e2r_z_r    <= ~|exe_result;
@@ -969,7 +976,7 @@ always @(posedge CLK) begin
                 
                 // CMP doesn't output the result
                 e2r_val_r <= ~(SFR_ALT1 & SFR_ALT2);
-                // e2r_dest_r <= DREG_r; // standard dest
+                // e2r_destnum_r <= DREG_r; // standard dest
                 e2r_data_r <= exe_result;
                 
                 e2r_z_r    <= ~|exe_result;
@@ -1119,7 +1126,7 @@ always @(posedge CLK) begin
                   exe_result = exe_srcn_r + 1;
                 
                   e2r_val_r  <= 1;
-                  e2r_dest_r <= exe_opcode_r[3:0]; // uses N as destination                  
+                  e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination                  
                   e2r_data_r <= exe_result;
                 
                   e2r_z_r    <= ~|exe_result;
@@ -1132,7 +1139,7 @@ always @(posedge CLK) begin
                   exe_result = exe_srcn_r - 1;
                 
                   e2r_val_r  <= 1;
-                  e2r_dest_r <= exe_opcode_r[3:0]; // uses N as destination
+                  e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination
                   e2r_data_r <= exe_result;
                 
                   e2r_z_r    <= ~|exe_result;
@@ -1154,7 +1161,7 @@ always @(posedge CLK) begin
                 // LMS Rn, (2*imm8)
                 //exe_memory = 1;
                 e2r_val_r    <= 1;
-                e2r_dest_r   <= exe_opcode_r[3:0];
+                e2r_destnum_r   <= exe_opcode_r[3:0];
                  
                 e2c_waitcnt_val_r <= 7-1;
                 e2c_waitcnt_r <= 4; // TODO: account for slow clock.
@@ -1172,7 +1179,7 @@ always @(posedge CLK) begin
               end
               else begin
                 e2r_val_r    <= 1;
-                e2r_dest_r   <= exe_opcode_r[3:0];
+                e2r_destnum_r   <= exe_opcode_r[3:0];
                 e2r_data_r   <= {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
               end
             end
@@ -1180,7 +1187,7 @@ always @(posedge CLK) begin
               if (SFR_ALT1) begin
                 // LM Rn, (imm)
                 e2r_val_r    <= 1;
-                e2r_dest_r   <= exe_opcode_r[3:0];
+                e2r_destnum_r   <= exe_opcode_r[3:0];
 
                 e2c_waitcnt_val_r <= 1;
                 e2c_waitcnt_r <= 7-1; // TODO: account for slow clock.
@@ -1197,44 +1204,46 @@ always @(posedge CLK) begin
               end
               else begin
                 e2r_val_r    <= 1;
-                e2r_dest_r   <= exe_opcode_r[3:0];
+                e2r_destnum_r   <= exe_opcode_r[3:0];
                 e2r_data_r   <= exe_operand_r;
               end
             end
             OP_GETB          : begin
-              e2r_val_r    <= 1;
-                 
-              e2c_waitcnt_val_r <= 1;
-              // TODO: add 16b cache latencies
-              e2c_waitcnt_r <= 6-1; // TODO: account for slow clock.
-
-              // TODO: decide if we need separate state machines for this
-              gsu_ram_rd_r <= 1;
-              gsu_ram_word_r <= 1; // load for cache
-
-              data_rom_addr_r <= ((PBR_r[6] ? {ROMBR_r,REG_r[R14]} : {ROMBR_r[4:0],REG_r[R14][14:0]}) & ROM_MASK);
-
-              EXE_STATE <= ST_EXE_MEMORY_WAIT;
+//              e2r_val_r    <= 1;
+//                 
+//              e2c_waitcnt_val_r <= 1;
+//              // TODO: add 16b cache latencies
+//              e2c_waitcnt_r <= 6-1; // TODO: account for slow clock.
+//
+//              // TODO: decide if we need separate state machines for this
+//              gsu_ram_rd_r <= 1;
+//              gsu_ram_word_r <= 1; // load for cache
+//
+//              data_rom_addr_r <= ((PBR_r[6] ? {ROMBR_r,REG_r[R14]} : {ROMBR_r[4:0],REG_r[R14][14:0]}) & ROM_MASK);
+//
+//              EXE_STATE <= ST_EXE_MEMORY_WAIT;
+              EXE_STATE <= ST_EXE_WAIT;
             end
             OP_SBK           : begin end
             OP_LD            : begin
-              if (&exe_opcode_r[3:2]) begin
-                // LOOP, ALT1, ALT2, ALT3
-                EXE_STATE <= ST_EXE_WAIT;
-              end
-              else begin
-                e2r_val_r    <= 1;
-                 
-                e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= SFR_ALT1 ? 4-1 : 6-1; // TODO: account for slow clock.
-
-                gsu_ram_rd_r <= 1;
-                gsu_ram_word_r <= ~SFR_ALT1;
-
-                data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_srcn_r};
-
-                EXE_STATE <= ST_EXE_MEMORY_WAIT;
-              end
+//              if (&exe_opcode_r[3:2]) begin
+//                // LOOP, ALT1, ALT2, ALT3
+//                EXE_STATE <= ST_EXE_WAIT;
+//              end
+//              else begin
+//                e2r_val_r    <= 1;
+//                 
+//                e2c_waitcnt_val_r <= 1;
+//                e2c_waitcnt_r <= SFR_ALT1 ? 4-1 : 6-1; // TODO: account for slow clock.
+//
+//                gsu_ram_rd_r <= 1;
+//                gsu_ram_word_r <= ~SFR_ALT1;
+//
+//                data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_srcn_r};
+//
+//                EXE_STATE <= ST_EXE_MEMORY_WAIT;
+//              end
+              EXE_STATE <= ST_EXE_WAIT;
             end
             OP_ST            : begin
               if (&exe_opcode_r[3:2]) begin
@@ -1356,13 +1365,23 @@ always @(posedge CLK) begin
     
     // fetch state
     10'h300           : pgmdata_out <= FETCH_STATE;
+    10'h301           : pgmdata_out <= fetch_waitcnt_r;
     // exe state
     10'h320           : pgmdata_out <= EXE_STATE;
-    10'h321           : pgmdata_out <= i2e_op_r[i2e_ptr_r];
+    10'h321           : pgmdata_out <= exe_waitcnt_r;
     10'h322           : pgmdata_out <= exe_opcode_r;
     10'h323           : pgmdata_out <= exe_operand_r[7:0];
     10'h324           : pgmdata_out <= exe_operand_r[15:8];
     10'h325           : pgmdata_out <= exe_opsize_r;
+    10'h326           : pgmdata_out <= e2r_destnum_r;
+
+    10'h330           : pgmdata_out <= exe_src_r[7:0];
+    10'h331           : pgmdata_out <= exe_src_r[15:8];
+    10'h332           : pgmdata_out <= exe_srcn_r[7:0];
+    10'h333           : pgmdata_out <= exe_srcn_r[15:8];
+    10'h334           : pgmdata_out <= exe_dst_r[7:0];
+    10'h335           : pgmdata_out <= exe_dst_r[15:8];
+
     // cache state
     //10'h340
     // fill state
