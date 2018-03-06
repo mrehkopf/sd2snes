@@ -38,6 +38,14 @@ module dac(
   output DAC_STATUS
 );
 
+//`define DAC 1
+
+`ifndef DAC
+assign sdout = 0;
+assign mclk_out = 0;
+assign lrck_out = 0;
+assign DAC_STATUS = 0;
+`else
 reg[8:0] dac_address_r;
 reg[8:0] dac_address_r_sync;
 wire[8:0] dac_address = dac_address_r_sync;
@@ -271,5 +279,6 @@ always @(posedge clkin) begin
     end
   end
 end
+`endif
 
 endmodule

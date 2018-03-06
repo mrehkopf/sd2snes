@@ -496,27 +496,41 @@ always @(posedge CLK) begin
           cache_mmio_addr_r <= {~addr_in_r[8],addr_in_r[7:0]};
         end
       end
+      else if (cache_mmio_wren_r) begin
+        data_out_r <= cache_rddata;
+        cache_mmio_wren_r <= 0;
+      end
     end
     else begin
       data_enable_r <= 0;
     end
   
     // Register Write
-    snes_write_r <= SNES_WR_end & enable_r & ({addr_in_r[9:1],1'b0} == ADDR_SFR || addr_in_r[9:0] == ADDR_SCMR || ~SFR_GO);
+    snes_write_r <= SNES_WR_end && enable_r && ({addr_in_r[9:1],1'b0} == ADDR_SFR || addr_in_r[9:0] == ADDR_SCMR || !SFR_GO);
   
     // TODO: figure out how to deal with conflicts between SFX and SNES.
     // handle GSU register writes
     if (pipeline_advance | snes_write_r) begin
       // handle GPR
       if (e2r_val_r) begin
-        if (e2r_destnum_r == R15) begin
-          REG_r[e2r_destnum_r] <= e2r_data_r;
-        end
-        else begin
-          if (~e2r_mask_r[1]) REG_r[e2r_destnum_r][15:8] <= e2r_data_r[15:8];
-          if (~e2r_mask_r[0]) REG_r[e2r_destnum_r][7:0]  <= e2r_data_r[7:0];
-          if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1;
-        end
+        case (e2r_destnum_r)
+          R0 : begin if (~e2r_mask_r[1]) REG_r[R0 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R0 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R1 : begin if (~e2r_mask_r[1]) REG_r[R1 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R1 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R2 : begin if (~e2r_mask_r[1]) REG_r[R2 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R2 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R3 : begin if (~e2r_mask_r[1]) REG_r[R3 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R3 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R4 : begin if (~e2r_mask_r[1]) REG_r[R4 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R4 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R5 : begin if (~e2r_mask_r[1]) REG_r[R5 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R5 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R6 : begin if (~e2r_mask_r[1]) REG_r[R6 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R6 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R7 : begin if (~e2r_mask_r[1]) REG_r[R7 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R7 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R8 : begin if (~e2r_mask_r[1]) REG_r[R8 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R8 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R9 : begin if (~e2r_mask_r[1]) REG_r[R9 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R9 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R10: begin if (~e2r_mask_r[1]) REG_r[R10][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R10][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R11: begin if (~e2r_mask_r[1]) REG_r[R11][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R11][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R12: begin if (~e2r_mask_r[1]) REG_r[R12][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R12][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R13: begin if (~e2r_mask_r[1]) REG_r[R13][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R13][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R14: begin if (~e2r_mask_r[1]) REG_r[R14][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R14][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R15: REG_r[R15] <= e2r_data_r;
+        endcase
       end
       else if (SFR_GO) begin
         REG_r[R15] <= REG_r[R15] + 1;
@@ -606,10 +620,6 @@ always @(posedge CLK) begin
 //        end
 //      end
 //    end
-    else begin
-      if (data_enable_r) data_out_r <= cache_rddata;
-      cache_mmio_wren_r <= 0;
-    end
   end
 end
 
@@ -638,7 +648,7 @@ always @(posedge CLK) begin
     
     if (pipeline_advance) stepcnt_r <= CONFIG_STEP_COUNT;
     
-    waitcnt_zero_r <= ~|fetch_waitcnt_r & ~|exe_waitcnt_r;
+    //waitcnt_zero_r <= ~|fetch_waitcnt_r & ~|exe_waitcnt_r;
   end
 end
 
@@ -895,7 +905,7 @@ always @(posedge CLK) begin
         end
         
         // handle snes writes
-        e2r_val_r  <= SNES_WR_end & enable_r & addr_in_r[0] & ~|addr_in_r[9:6];
+        e2r_val_r  <= SNES_WR_end & enable_r & addr_in_r[0] & ~|addr_in_r[9:5];
         e2r_data_r <= {data_in_r,data_flop_r};
         e2r_mask_r <= 0;
         e2r_destnum_r <= addr_in_r[4:1];
@@ -997,9 +1007,6 @@ always @(posedge CLK) begin
                 end
               end
 
-              OP_ALT1           : begin end
-              OP_ALT2           : begin end
-              OP_ALT3           : begin end
               OP_TO             : begin
                 if (SFR_B) begin
                   e2r_val_r  <= 1;
@@ -1183,38 +1190,33 @@ always @(posedge CLK) begin
               OP_MULT_MULT     : begin
               end
               
-              // Overlapping
-              OP_INC           : begin
-                // OP_GETC_RAMB_ROMB
-                if (&exe_opcode_r[3:0]) begin 
-                  if      (exe_alt1_r & exe_alt2_r)   ROMBR_r    <= exe_src_r;
-                  else if (exe_alt2_r)                RAMBR_r[0] <= exe_src_r[0];
-                  // TODO: fix GETC
-                  else if (~exe_alt1_r & ~exe_alt2_r) COLR_r     <= 0;
-                end
-                else begin
-                  exe_result = exe_srcn_r + 1;
-                
-                  e2r_val_r  <= 1;
-                  e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination                  
-                  e2r_data_r <= exe_result;
-                
-                  e2r_z_r    <= ~|exe_result;
-                  e2r_s_r    <= exe_result[15];
-                end
+              OP_GETC_RAMB_ROMB: begin
+                if      (exe_alt1_r & exe_alt2_r)   ROMBR_r    <= exe_src_r;
+                else if (exe_alt2_r)                RAMBR_r[0] <= exe_src_r[0];
+                // TODO: fix GETC
+                else if (~exe_alt1_r & ~exe_alt2_r) COLR_r     <= 0;
               end
-              OP_DEC           : begin
-                // skip GETB
-                if (~&exe_opcode_r[3:0]) begin
-                  exe_result = exe_srcn_r - 1;
+              //OP_INC           : begin
+              8'hD0, 8'hD1, 8'hD2, 8'hD3, 8'hD4, 8'hD5, 8'hD6, 8'hD7, 8'hD8, 8'hD9, 8'hDA, 8'hDB, 8'hDC, 8'hDD, 8'hDE: begin
+                exe_result = exe_srcn_r + 1;
                 
-                  e2r_val_r  <= 1;
-                  e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination
-                  e2r_data_r <= exe_result;
+                e2r_val_r  <= 1;
+                e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination                  
+                e2r_data_r <= exe_result;
                 
-                  e2r_z_r    <= ~|exe_result;
-                  e2r_s_r    <= exe_result[15];
-                end
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+              end
+              //OP_DEC           : begin
+              8'hE0, 8'hE1, 8'hE2, 8'hE3, 8'hE4, 8'hE5, 8'hE6, 8'hE7, 8'hE8, 8'hE9, 8'hEA, 8'hEB, 8'hEC, 8'hED, 8'hEE: begin
+                exe_result = exe_srcn_r - 1;
+                
+                e2r_val_r  <= 1;
+                e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
               end
               
             endcase
@@ -1295,34 +1297,24 @@ always @(posedge CLK) begin
               //EXE_STATE <= ST_EXE_WAIT;
             end
             OP_SBK           : begin end
-            OP_LD            : begin
-//              if (&exe_opcode_r[3:2]) begin
-//                // LOOP, ALT1, ALT2, ALT3
-//                EXE_STATE <= ST_EXE_WAIT;
-//              end
-//              else begin
-//                e2r_val_r    <= 1;
+            //OP_LD            : begin
+            8'h40, 8'h41, 8'h42, 8'h43, 8'h44, 8'h45, 8'h46, 8'h47, 8'h48, 8'h49, 8'h4A, 8'h4B: begin
+//              e2r_val_r    <= 1;
 //                 
-//                e2c_waitcnt_val_r <= 1;
-//                e2c_waitcnt_r <= SFR_ALT1 ? 4-1 : 6-1; // TODO: account for slow clock.
+//              e2c_waitcnt_val_r <= 1;
+//              e2c_waitcnt_r <= SFR_ALT1 ? 4-1 : 6-1; // TODO: account for slow clock.
 //
-//                gsu_ram_rd_r <= 1;
-//                gsu_ram_word_r <= ~SFR_ALT1;
+//              gsu_ram_rd_r <= 1;
+//              gsu_ram_word_r <= ~SFR_ALT1;
 //
-//                data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_srcn_r};
+//              data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_srcn_r};
 //
-//                EXE_STATE <= ST_EXE_MEMORY_WAIT;
-//              end
+//              EXE_STATE <= ST_EXE_MEMORY_WAIT;
               EXE_STATE <= ST_EXE_WAIT;
             end
-            OP_ST            : begin
-              if (&exe_opcode_r[3:2]) begin
-                // LOOP, ALT1, ALT2, ALT3
-                EXE_STATE <= ST_EXE_WAIT;
-              end
-              else begin
-                EXE_STATE <= ST_EXE_WAIT;
-              end
+            //OP_ST            : begin
+            8'h30, 8'h31, 8'h32, 8'h33, 8'h34, 8'h35, 8'h36, 8'h37, 8'h38, 8'h39, 8'h3A, 8'h3B: begin
+              EXE_STATE <= ST_EXE_WAIT;
             end
             // LINK
             8'h91, 8'h92, 8'h93, 8'h94: begin
@@ -1367,7 +1359,7 @@ always @(posedge CLK) begin
   end
 end
 
-assign pipeline_advance = gsu_clock_en & waitcnt_zero_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
+assign pipeline_advance = gsu_clock_en & ~|fetch_waitcnt_r & ~|exe_waitcnt_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
 assign op_complete = exe_opsize_r == 1;
 
 //-------------------------------------------------------------------
@@ -1474,6 +1466,8 @@ always @(posedge CLK) begin
     10'h3E1           : pgmdata_out <= gsu_cycle_cnt_r[23:16];
     10'h3E2           : pgmdata_out <= gsu_cycle_cnt_r[15: 8];
     10'h3E3           : pgmdata_out <= gsu_cycle_cnt_r[ 7: 0];
+    10'h3E4           : pgmdata_out <= snes_write_r;
+    10'h3E5           : pgmdata_out <= pipeline_advance;
     
     default           : pgmdata_out <= 8'hFF;
   endcase
