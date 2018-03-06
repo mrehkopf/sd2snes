@@ -260,6 +260,7 @@ reg        gsu_clock_en;
 
 // step counter for pipelines
 reg [7:0] stepcnt_r; initial stepcnt_r = 0;
+reg       step_r; initial step_r = 0;
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -280,7 +281,7 @@ always @(posedge CLK) begin
   if (RST) begin
     gsu_cycle_cnt_r <= 0;
   end
-  else if (gsu_clock_en & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT))) begin
+  else if (gsu_clock_en & step_r) begin
     gsu_cycle_cnt_r <= gsu_cycle_cnt_r + 1;
   end
 end
@@ -356,7 +357,11 @@ reg        i2e_ptr_r; initial i2e_ptr_r = 0;
 reg        e2r_val_r;
 reg [3:0]  e2r_destnum_r;
 reg [15:0] e2r_data_r;
+reg [15:0] e2r_r15_r;
 reg [1:0]  e2r_mask_r;
+reg        e2r_loop_r;
+reg        e2r_ljmp_r;
+reg [15:0] e2r_pbr_r;
 // non dest registers to update
 reg [1:0]  e2r_alt_r;
 reg        e2r_z_r;
@@ -526,10 +531,10 @@ always @(posedge CLK) begin
           R9 : begin if (~e2r_mask_r[1]) REG_r[R9 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R9 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
           R10: begin if (~e2r_mask_r[1]) REG_r[R10][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R10][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
           R11: begin if (~e2r_mask_r[1]) REG_r[R11][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R11][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R12: begin if (~e2r_mask_r[1]) REG_r[R12][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R12][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R12: begin if (~e2r_mask_r[1]) REG_r[R12][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R12][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= e2r_loop_r ? REG_r[R13] : (REG_r[R15] + 1); end
           R13: begin if (~e2r_mask_r[1]) REG_r[R13][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R13][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
           R14: begin if (~e2r_mask_r[1]) REG_r[R14][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R14][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R15: REG_r[R15] <= e2r_data_r;
+          R15: REG_r[R15] <= e2r_r15_r;
         endcase
       end
       else if (SFR_GO) begin
@@ -577,49 +582,11 @@ always @(posedge CLK) begin
           
         SREG_r     <= e2r_sreg_r;
         DREG_r     <= e2r_dreg_r;
+        if (e2r_ljmp_r) PBR_r <= e2r_pbr_r;
       end
       
       if (snes_write_r) data_flop_r <= data_in_r;
-    end        
-//      // handle the select set of R and W registers the snes has access to.
-//      else if (SNES_WR_end & enable_r & ({addr_in_r[9:1],1'b0} == ADDR_SFR || addr_in_r[9:0] == ADDR_SCMR)) begin
-//        // FIXME: need to handle conflicts with GSU writes to these registers.
-//        casex (addr_in_r[7:0])
-//          ADDR_SFR  : SFR_r[6:1] <= data_in_r[6:1];
-//          ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {data_in_r[7],data_in_r[4:0]};
-//          ADDR_SCMR : SCMR_r[5:0] <= data_in_r[5:0];
-//        endcase
-//      end
-//    end
-//    else if (enable_r) begin
-//      if (SNES_WR_end) begin
-//        if (~|addr_in_r[9:8]) begin
-//          casex (addr_in_r[7:0])
-//            ADDR_GPRL : data_flop_r <= data_in_r;
-//            ADDR_GPRH : begin REG_r[addr_in_r[4:1]] <= {data_in_r,data_flop_r}; if (addr_in_r[4:1] == R15) SFR_r[5] <= 1; end
-//          
-//            ADDR_SFR  : SFR_r[6:1] <= data_in_r[6:1];
-//            ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {data_in_r[7],data_in_r[4:0]};
-//            ADDR_BRAMR: BRAMR_r[0] <= data_in_r[0];
-//            ADDR_PBR  : PBR_r <= data_in_r;
-//            //ADDR_ROMBR: ROMBR_r <= data_in_r;
-//            ADDR_CFGR : {CFGR_r[7],CFGR_r[5]} <= {data_in_r[7],data_in_r[5]};
-//            ADDR_SCBR : SCBR_r <= data_in_r;
-//            ADDR_CLSR : CLSR_r[0] <= data_in_r[0];
-//            ADDR_SCMR : SCMR_r[5:0] <= data_in_r[5:0];
-//            //ADDR_VCR  : VCR_r <= data_in_r;
-//            //ADDR_RAMBR: RAMBR_r[0] <= data_in_r[0];
-//            //ADDR_CBR+0: CBR_r[7:4] <= data_in_r[7:4];
-//            //ADDR_CBR+1: CBR_r[15:8] <= data_in_r;
-//          endcase
-//        end
-//        else begin
-//          cache_mmio_wren_r <= 1;
-//          cache_mmio_wrdata_r <= data_in_r;
-//          cache_mmio_addr_r <= {~addr_in_r[8],addr_in_r[7:0]};
-//        end
-//      end
-//    end
+    end
   end
 end
 
@@ -637,6 +604,7 @@ always @(posedge CLK) begin
     waitcnt_zero_r <= 0;
     
     stepcnt_r <= 0;
+    step_r <= 0;
   end
   else begin
     // decrement delay counters
@@ -646,9 +614,9 @@ always @(posedge CLK) begin
     if (e2c_waitcnt_val_r) exe_waitcnt_r <= e2c_waitcnt_r;
     else if (gsu_clock_en & |exe_waitcnt_r) exe_waitcnt_r <= exe_waitcnt_r - 1;
     
+    step_r <= (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));    
     if (pipeline_advance) stepcnt_r <= CONFIG_STEP_COUNT;
-    
-    //waitcnt_zero_r <= ~|fetch_waitcnt_r & ~|exe_waitcnt_r;
+    waitcnt_zero_r <= ~|fetch_waitcnt_r & ~|exe_waitcnt_r;
   end
 end
 
@@ -888,6 +856,8 @@ always @(posedge CLK) begin
 
     e2r_val_r <= 0;
     e2r_mask_r <= 0;
+    e2r_loop_r <= 0;
+    e2r_ljmp_r <= 0;
     
     exe_opsize_r <= 0;
     
@@ -989,7 +959,7 @@ always @(posedge CLK) begin
             // calculate branch target
             e2r_val_r <= 1;
             e2r_destnum_r <= R15;
-            e2r_data_r <= REG_r[R15] + {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
+            e2r_r15_r <= REG_r[R15] + {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
             
             exe_branch_r <= 0;
           end
@@ -1028,7 +998,18 @@ always @(posedge CLK) begin
                 end
               end
               
-              OP_LOOP           : begin end
+              OP_LOOP           : begin
+                exe_result = REG_r[R12] - 1;
+                
+                e2r_val_r  <= 1;
+                e2r_destnum_r <= R12;
+                e2r_data_r <= exe_result;
+                
+                e2r_z_r    <= ~|exe_result;
+                e2r_s_r    <= exe_result[15];
+                
+                e2r_loop_r <= 1;                
+              end
 
               OP_CMODE_COLOR    : begin end
               OP_PLOT_RPIX      : begin end
@@ -1299,18 +1280,18 @@ always @(posedge CLK) begin
             OP_SBK           : begin end
             //OP_LD            : begin
             8'h40, 8'h41, 8'h42, 8'h43, 8'h44, 8'h45, 8'h46, 8'h47, 8'h48, 8'h49, 8'h4A, 8'h4B: begin
-//              e2r_val_r    <= 1;
-//                 
-//              e2c_waitcnt_val_r <= 1;
-//              e2c_waitcnt_r <= SFR_ALT1 ? 4-1 : 6-1; // TODO: account for slow clock.
-//
-//              gsu_ram_rd_r <= 1;
-//              gsu_ram_word_r <= ~SFR_ALT1;
-//
-//              data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_srcn_r};
-//
-//              EXE_STATE <= ST_EXE_MEMORY_WAIT;
-              EXE_STATE <= ST_EXE_WAIT;
+              e2r_val_r    <= 1;
+                 
+              e2c_waitcnt_val_r <= 1;
+              e2c_waitcnt_r <= exe_alt1_r ? 4-1 : 6-1; // TODO: account for slow clock.
+
+              gsu_ram_rd_r <= 1;
+              gsu_ram_word_r <= ~exe_alt1_r;
+
+              data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_srcn_r};
+
+              EXE_STATE <= ST_EXE_MEMORY_WAIT;
+              //EXE_STATE <= ST_EXE_WAIT;
             end
             //OP_ST            : begin
             8'h30, 8'h31, 8'h32, 8'h33, 8'h34, 8'h35, 8'h36, 8'h37, 8'h38, 8'h39, 8'h3A, 8'h3B: begin
@@ -1318,11 +1299,31 @@ always @(posedge CLK) begin
             end
             // LINK
             8'h91, 8'h92, 8'h93, 8'h94: begin
-                EXE_STATE <= ST_EXE_WAIT;
+              exe_result = REG_r[R15] + exe_opcode_r[3:0];
+                
+              e2r_val_r  <= 1;
+              e2r_destnum_r <= R11;
+              e2r_data_r <= exe_result;
+              
+              EXE_STATE <= ST_EXE_WAIT;
             end
             // JMP/LJMP
             8'h98, 8'h99, 8'h9A, 8'h9B, 8'h9C, 8'h9D: begin
-                EXE_STATE <= ST_EXE_WAIT;
+              e2r_val_r <= 1;
+              e2r_destnum_r <= R15;
+
+              if (exe_alt1_r) begin
+                // LJMP
+                e2r_r15_r   <= exe_src_r;
+                e2r_ljmp_r  <= 1; // write PBR with srcn
+                e2r_pbr_r   <= exe_srcn_r;
+                CBR_r[15:4] <= exe_src_r[15:4];
+                cache_val_r <= 0;
+              end
+              else begin
+                // JMP
+                e2r_r15_r   <= exe_srcn_r;
+              end
             end
             default: EXE_STATE <= ST_EXE_WAIT;
           endcase
@@ -1350,8 +1351,10 @@ always @(posedge CLK) begin
           if (SFR_GO) EXE_STATE <= ST_EXE_DECODE;
           else        EXE_STATE <= ST_EXE_IDLE;
           
-          e2r_val_r <= 0;
+          e2r_val_r  <= 0;
           e2r_mask_r <= 0;
+          e2r_loop_r <= 0;
+          e2r_ljmp_r <= 0;
         end
       end
       
@@ -1359,7 +1362,8 @@ always @(posedge CLK) begin
   end
 end
 
-assign pipeline_advance = gsu_clock_en & ~|fetch_waitcnt_r & ~|exe_waitcnt_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
+//assign pipeline_advance = gsu_clock_en & ~|fetch_waitcnt_r & ~|exe_waitcnt_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
+assign pipeline_advance = gsu_clock_en & waitcnt_zero_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
 assign op_complete = exe_opsize_r == 1;
 
 //-------------------------------------------------------------------
