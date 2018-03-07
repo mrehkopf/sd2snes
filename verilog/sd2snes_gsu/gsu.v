@@ -213,7 +213,7 @@ parameter
   
   // MULTIPLY
   OP_FMULT_LMULT   = 8'h9F,
-  OP_MULT_MULT     = 8'h8x
+  OP_MULT_UMULT    = 8'h8x
   
   ;
 
@@ -358,6 +358,7 @@ reg        e2r_val_r;
 reg [3:0]  e2r_destnum_r;
 reg [15:0] e2r_data_r;
 reg [15:0] e2r_r15_r;
+reg [15:0] e2r_r4_r;
 reg [1:0]  e2r_mask_r;
 reg        e2r_loop_r;
 reg        e2r_ljmp_r;
@@ -833,10 +834,17 @@ reg [15:0] exe_srcn_r;
 reg        exe_alt1_r;
 reg        exe_alt2_r;
 reg        exe_cy_r;
+reg [15:0] exe_mult_srca_r;
+reg [15:0] exe_mult_srcb_r;
+reg        exe_mult_r;
 
 reg [15:0] exe_n;
 reg [15:0] exe_result;
 reg        exe_carry;
+
+wire [31:0] exe_fmult_out;
+wire [15:0] exe_mult_out;
+wire [15:0] exe_umult_out;
 
 wire [7:0] exe_op = i2e_op_r[i2e_ptr_r];
 
@@ -1167,8 +1175,14 @@ always @(posedge CLK) begin
               
               // MULTIPLY
               OP_FMULT_LMULT   : begin
+                exe_mult_r      <= 1;
+                exe_mult_srca_r <= exe_src_r;
+                exe_mult_srcb_r <= REG_r[R6];
               end
-              OP_MULT_MULT     : begin
+              OP_MULT_UMULT    : begin
+                exe_mult_r      <= 1;
+                exe_mult_srca_r <= exe_src_r;
+                exe_mult_srcb_r <= exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
               end
               
               OP_GETC_RAMB_ROMB: begin
@@ -1209,6 +1223,34 @@ always @(posedge CLK) begin
       ST_EXE_MEMORY: begin
         if (op_complete) begin
           casex (exe_opcode_r)
+            OP_FMULT_LMULT   : begin
+              e2r_val_r      <= 1;
+              
+              e2r_data_r     <= exe_fmult_out[31:16];
+              e2r_r4_r       <= exe_fmult_out[15:0];
+              
+              e2r_z_r        <= ~|exe_fmult_out[31:16];
+              e2r_s_r        <= exe_fmult_out[31];
+              e2r_cy_r       <= exe_fmult_out[15];
+              
+              e2c_waitcnt_val_r <= 1;
+              e2c_waitcnt_r     <= 8-1; // TODO: account for slow clock and multiplier.
+              // TODO: figure out how to write to R4.  Have plenty of cycles to do it.
+            end
+            OP_MULT_UMULT    : begin
+              exe_result = exe_alt1_r ? exe_umult_out : exe_mult_out;
+            
+              e2r_val_r      <= 1;
+              
+              e2r_data_r     <= exe_result;
+              
+              e2r_z_r        <= ~|exe_result;
+              e2r_s_r        <= exe_result[15];
+              
+              e2c_waitcnt_val_r <= 1;
+              e2c_waitcnt_r     <= 2-1; // TODO: account for slow clock and multiplier.
+            end
+          
             OP_IBT           : begin
               if (exe_alt1_r) begin
                 // LMS Rn, (2*imm8)
@@ -1355,6 +1397,7 @@ always @(posedge CLK) begin
           e2r_mask_r <= 0;
           e2r_loop_r <= 0;
           e2r_ljmp_r <= 0;
+          exe_mult_r <= 0;
         end
       end
       
@@ -1365,6 +1408,28 @@ end
 //assign pipeline_advance = gsu_clock_en & ~|fetch_waitcnt_r & ~|exe_waitcnt_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
 assign pipeline_advance = gsu_clock_en & waitcnt_zero_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
 assign op_complete = exe_opsize_r == 1;
+
+// Multipliers
+gsu_fmult gsu_fmult(
+  .clk(CLK),
+  .a(exe_mult_srca_r[15:0]),
+  .b(exe_mult_srcb_r[15:0]),
+  .p(exe_fmult_out)
+);
+
+gsu_mult gsu_mult(
+  .clk(CLK),
+  .a(exe_mult_srca_r[7:0]),
+  .b(exe_mult_srcb_r[7:0]),
+  .p(exe_mult_out)
+);
+
+gsu_umult gsu_umult(
+  .clk(CLK),
+  .a(exe_mult_srca_r[7:0]),
+  .b(exe_mult_srcb_r[7:0]),
+  .p(exe_umult_out)
+);
 
 //-------------------------------------------------------------------
 // DEBUG OUTPUT
