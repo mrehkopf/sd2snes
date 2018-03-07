@@ -363,6 +363,10 @@ reg [1:0]  e2r_mask_r;
 reg        e2r_loop_r;
 reg        e2r_ljmp_r;
 reg [15:0] e2r_pbr_r;
+reg        e2r_wpor_r;
+reg [7:0]  e2r_por_r;
+reg        e2r_wcolr_r;
+reg [7:0]  e2r_colr_r;
 // non dest registers to update
 reg [1:0]  e2r_alt_r;
 reg        e2r_z_r;
@@ -371,6 +375,7 @@ reg        e2r_s_r;
 reg        e2r_ov_r;
 reg        e2r_b_r;
 reg        e2r_g_r;
+reg        e2r_irq_r;
 reg [3:0]  e2r_sreg_r;
 reg [3:0]  e2r_dreg_r;
 
@@ -580,10 +585,13 @@ always @(posedge CLK) begin
         SFR_r[5]   <= e2r_g_r;
         SFR_r[9:8] <= e2r_alt_r;
         SFR_r[12]  <= e2r_b_r;
+        SFR_r[15]  <= e2r_irq_r;
           
         SREG_r     <= e2r_sreg_r;
         DREG_r     <= e2r_dreg_r;
         if (e2r_ljmp_r) PBR_r <= e2r_pbr_r;
+        if (e2r_wpor_r) POR_r <= e2r_por_r;
+        if (e2r_wcolr_r) COLR_r <= e2r_colr_r;
       end
       
       if (snes_write_r) data_flop_r <= data_in_r;
@@ -866,6 +874,8 @@ always @(posedge CLK) begin
     e2r_mask_r <= 0;
     e2r_loop_r <= 0;
     e2r_ljmp_r <= 0;
+    e2r_wpor_r <= 0;
+    e2r_wcolr_r <= 0;
     
     exe_opsize_r <= 0;
     
@@ -976,6 +986,7 @@ always @(posedge CLK) begin
               OP_STOP           : begin
                 // TODO: deal with interrupts and other stuff here
                 e2r_g_r <= 0;
+                e2r_irq_r <= 1;
               end
               //OP_NOP            : begin end
               OP_CACHE          : begin
@@ -1019,7 +1030,16 @@ always @(posedge CLK) begin
                 e2r_loop_r <= 1;                
               end
 
-              OP_CMODE_COLOR    : begin end
+              OP_CMODE_COLOR    : begin
+                if (exe_alt1_r) begin
+                  e2r_wpor_r <= 1;
+                  e2r_por_r  <= {3'h0,exe_src_r[4:0]};
+                end
+                else begin
+                  e2r_wcolr_r <= 1;
+                  e2r_colr_r  <= exe_src_r[7:0];
+                end
+              end
               OP_PLOT_RPIX      : begin end
 
               // ALU
@@ -1398,6 +1418,8 @@ always @(posedge CLK) begin
           e2r_loop_r <= 0;
           e2r_ljmp_r <= 0;
           exe_mult_r <= 0;
+          e2r_wpor_r <= 0;
+          e2r_wcolr_r <= 0;
         end
       end
       
