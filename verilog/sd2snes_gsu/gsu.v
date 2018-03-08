@@ -1331,7 +1331,7 @@ always @(posedge CLK) begin
                 // TODO: do we need to handle misaligned data in a special way?
                 gsu_ram_wr_r <= 1;
                 gsu_ram_word_r <= 1;
-                gsu_ram_data_r <= exe_src_r;
+                gsu_ram_data_r <= exe_srcn_r;
 
                 data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],7'h00,exe_operand_r[7:0],1'b0};
                 EXE_STATE <= ST_EXE_MEMORY_WAIT;
@@ -1340,6 +1340,7 @@ always @(posedge CLK) begin
                 e2r_val_r    <= 1;
                 e2r_destnum_r   <= exe_opcode_r[3:0];
                 e2r_data_r   <= {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
+                EXE_STATE <= ST_EXE_WAIT;
               end
             end
             OP_IWT           : begin
@@ -1366,7 +1367,7 @@ always @(posedge CLK) begin
                 // TODO: do we need to handle misaligned data in a special way?
                 gsu_ram_wr_r <= 1;
                 gsu_ram_word_r <= 1;
-                gsu_ram_data_r <= exe_src_r;
+                gsu_ram_data_r <= exe_srcn_r;
 
                 data_rom_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_operand_r};
                 EXE_STATE <= ST_EXE_MEMORY_WAIT;
@@ -1375,6 +1376,7 @@ always @(posedge CLK) begin
                 e2r_val_r    <= 1;
                 e2r_destnum_r   <= exe_opcode_r[3:0];
                 e2r_data_r   <= exe_operand_r;
+                EXE_STATE <= ST_EXE_WAIT;
               end
             end
             OP_GETB          : begin
@@ -1473,6 +1475,7 @@ always @(posedge CLK) begin
         
         if (|(FILL_STATE & ST_FILL_DATA_END)) begin
           gsu_ram_rd_r <= 0;
+          gsu_ram_wr_r <= 0;
           // byte loads do zero extension
           if (exe_opcode_r == OP_GETB) begin
             e2r_data_r <= (exe_alt1_r & exe_alt2_r) ? {{8{rom_bus_data_r[7]}},rom_bus_data_r[7:0]} : exe_alt2_r ? {8'h00,rom_bus_data_r[7:0]} : exe_alt1_r ? {rom_bus_data_r[7:0],8'h00} : {8'h00,rom_bus_data_r[7:0]};
@@ -1496,19 +1499,19 @@ always @(posedge CLK) begin
         
           if (SFR_GO) EXE_STATE <= ST_EXE_DECODE;
           else        EXE_STATE <= ST_EXE_IDLE;
-          
-          e2r_val_r  <= 0;
-          e2r_mask_r <= 0;
-          e2r_loop_r <= 0;
-          e2r_ljmp_r <= 0;
-          exe_mult_r <= 0;
-          e2r_wpor_r <= 0;
-          e2r_wcolr_r <= 0;
-          
+                    
           if (op_complete) begin
             // get next instruction byte
             exe_opcode_r <= fetch_data_r;//i2e_op_r[~i2e_ptr_r];
             exe_operand_r <= 0;
+
+            e2r_val_r  <= 0;
+            e2r_mask_r <= 0;
+            e2r_loop_r <= 0;
+            e2r_ljmp_r <= 0;
+            exe_mult_r <= 0;
+            e2r_wpor_r <= 0;
+            e2r_wcolr_r <= 0;
           end
           
           exe_byte_r <= fetch_data_r;
@@ -1629,13 +1632,22 @@ always @(posedge CLK) begin
     10'h331           : pgmdata_out <= exe_src_r[15:8];
     10'h332           : pgmdata_out <= exe_srcn_r[7:0];
     10'h333           : pgmdata_out <= exe_srcn_r[15:8];
-    10'h334           : pgmdata_out <= exe_dst_r[7:0];
-    10'h335           : pgmdata_out <= exe_dst_r[15:8];
+    10'h334           : pgmdata_out <= e2r_data_r[7:0];
+    10'h335           : pgmdata_out <= e2r_data_r[15:8];
 
     // cache state
     //10'h340
     // fill state
-    10'h360           : pgmdata_out <= cache_rom_rd_r;
+    10'h360           : pgmdata_out <= ROM_BUS_RDY;
+    10'h368           : pgmdata_out <= cache_rom_rd_r;
+    10'h370           : pgmdata_out <= gsu_ram_rd_r;
+    10'h371           : pgmdata_out <= data_rom_addr_r[7:0];
+    10'h372           : pgmdata_out <= data_rom_addr_r[15:8];
+    10'h373           : pgmdata_out <= data_rom_addr_r[23:16];
+    10'h374           : pgmdata_out <= gsu_ram_data_r[7:0];
+    10'h375           : pgmdata_out <= gsu_ram_data_r[15:8];
+    10'h376           : pgmdata_out <= rom_bus_data_r[7:0];
+    10'h377           : pgmdata_out <= rom_bus_data_r[15:8];
     // interface state
     10'h380           : pgmdata_out <= i2e_op_r[0];
     10'h381           : pgmdata_out <= i2e_op_r[1];
