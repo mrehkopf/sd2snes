@@ -683,7 +683,7 @@ always @(posedge CLK) begin
       ST_ROM_DATA_RD: begin
         rom_bus_rrq_r <= 0;
         
-        if (~(rom_bus_rrq_r | rom_bus_wrq_r) & ROM_BUS_RDY) begin
+        if (~rom_bus_rrq_r & ROM_BUS_RDY) begin
           rom_bus_data_r <= ROM_BUS_RDDATA;
           ROM_STATE <= (|(ROM_STATE & ST_ROM_FETCH_RD)) ? ST_ROM_FETCH_END : ST_ROM_DATA_END;
         end
@@ -701,7 +701,7 @@ assign ROM_BUS_WORD = rom_bus_word_r;
 assign ROM_BUS_ADDR = rom_bus_addr_r;
 
 //-------------------------------------------------------------------
-// ROM PIPELINE
+// RAM PIPELINE
 //-------------------------------------------------------------------
 parameter
   ST_RAM_IDLE      = 8'b00000001,
@@ -735,7 +735,7 @@ always @(posedge CLK) begin
           ram_bus_word_r <= exe_word_r;
           ram_bus_addr_r <= exe_addr_r; // TODO: get correct cache address for demand fetch
           RAMADDR_r <= exe_addr_r[15:0];
-          ROM_STATE <= ST_ROM_DATA_RD;
+          RAM_STATE <= ST_RAM_DATA_RD;
         end
         else if (exe_ram_wr_r & SCMR_RAN) begin
           ram_bus_wrq_r <= 1;
