@@ -250,21 +250,23 @@ always @(posedge CLK2) begin
   SNES_DATAr[0] <= SNES_DATA;
 end
 
-parameter ST_IDLE        = 9'b000000001;
-parameter ST_MCU_RD_ADDR = 9'b000000010;
-parameter ST_MCU_RD_END  = 9'b000000100;
-parameter ST_MCU_WR_ADDR = 9'b000001000;
-parameter ST_MCU_WR_END  = 9'b000010000;
-parameter ST_GSU_RD_ADDR = 9'b000100000;
-parameter ST_GSU_RD_END  = 9'b001000000;
-parameter ST_GSU_WR_ADDR = 9'b010000000;
-parameter ST_GSU_WR_END  = 9'b100000000;
+parameter ST_IDLE            = 11'b00000000001;
+parameter ST_MCU_RD_ADDR     = 11'b00000000010;
+parameter ST_MCU_RD_END      = 11'b00000000100;
+parameter ST_MCU_WR_ADDR     = 11'b00000001000;
+parameter ST_MCU_WR_END      = 11'b00000010000;
+parameter ST_GSU_ROM_RD_ADDR = 11'b00000100000;
+parameter ST_GSU_ROM_RD_END  = 11'b00001000000;
+parameter ST_GSU_RAM_RD_ADDR = 11'b00010000000;
+parameter ST_GSU_RAM_RD_END  = 11'b00100000000;
+parameter ST_GSU_RAM_WR_ADDR = 11'b01000000000;
+parameter ST_GSU_RAM_WR_END  = 11'b10000000000;
 
 parameter SNES_DEAD_TIMEOUT = 17'd96000; // 1ms
 
 parameter ROM_CYCLE_LEN = 4'd6;
 
-reg [8:0] STATE;
+reg [10:0] STATE;
 initial STATE = ST_IDLE;
 
 //assign DSPX_SNES_DATA_IN = BUS_DATA;
@@ -409,10 +411,14 @@ spi snes_spi(
 );
 
 // GSU ROM access
-reg [15:0]  GSU_DINr;
-wire [23:0] GSU_ADDR;
-wire [15:0] GSU_DOUT;
-wire        GSU_WORD;
+reg  [15:0] GSU_ROM_DINr;
+wire [23:0] GSU_ROM_ADDR;
+wire        GSU_ROM_WORD;
+
+reg  [15:0] GSU_RAM_DINr;
+wire [23:0] GSU_RAM_ADDR;
+wire [15:0] GSU_RAM_DOUT;
+wire        GSU_RAM_WORD;
 
 // GSU (superfx)
 gsu snes_gsu (
@@ -432,14 +438,21 @@ gsu snes_gsu (
   .DATA_ENABLE(gsu_data_enable),
   .DATA_OUT(GSU_SNES_DATA_OUT),
   
+  // ROM interface
+  .ROM_BUS_RDY(GSU_ROM_RDY),
+  .ROM_BUS_RRQ(GSU_ROM_RRQ),
+  .ROM_BUS_WORD(GSU_ROM_WORD),
+  .ROM_BUS_ADDR(GSU_ROM_ADDR),
+  .ROM_BUS_RDDATA(GSU_ROM_DINr),
+
   // RAM interface
-  .ROM_BUS_RDY(GSU_RDY),
-  .ROM_BUS_RRQ(GSU_RRQ),
-  .ROM_BUS_WRQ(GSU_WRQ),
-  .ROM_BUS_WORD(GSU_WORD),
-  .ROM_BUS_ADDR(GSU_ADDR),
-  .ROM_BUS_RDDATA(GSU_DINr),
-  .ROM_BUS_WRDATA(GSU_DOUT),
+  .RAM_BUS_RDY(GSU_RAM_RDY),
+  .RAM_BUS_RRQ(GSU_RAM_RRQ),
+  .RAM_BUS_WRQ(GSU_RAM_WRQ),
+  .RAM_BUS_WORD(GSU_RAM_WORD),
+  .RAM_BUS_ADDR(GSU_RAM_ADDR),
+  .RAM_BUS_RDDATA(GSU_RAM_DINr),
+  .RAM_BUS_WRDATA(GSU_RAM_DOUT),
   
   // ACTIVE interface
   .ACTIVE(GSU_ACTIVE),
@@ -716,22 +729,34 @@ wire MCU_WR_HIT = |(STATE & ST_MCU_WR_ADDR);
 wire MCU_RD_HIT = |(STATE & ST_MCU_RD_ADDR);
 wire MCU_HIT = MCU_WR_HIT | MCU_RD_HIT;
 
-// GSU
-reg GSU_RD_PENDr; initial GSU_RD_PENDr = 0;
-reg GSU_WR_PENDr; initial GSU_WR_PENDr = 0;
+// GSU ROM
+reg GSU_ROM_RD_PENDr; initial GSU_ROM_RD_PENDr = 0;
+reg GSU_ROM_WR_PENDr; initial GSU_ROM_WR_PENDr = 0;
 reg [23:0] GSU_ROM_ADDRr;
 reg [15:0] GSU_ROM_DATAr;
 reg        GSU_ROM_WORDr;
 
-reg RQ_GSU_RDYr; initial RQ_GSU_RDYr = 1;
-assign GSU_RDY = RQ_GSU_RDYr;
+reg RQ_GSU_ROM_RDYr; initial RQ_GSU_ROM_RDYr = 1;
+assign GSU_ROM_RDY = RQ_GSU_ROM_RDYr;
 
-wire GSU_WR_HIT = |(STATE & ST_GSU_WR_ADDR);
-wire GSU_RD_HIT = |(STATE & ST_GSU_RD_ADDR);
-wire GSU_HIT = GSU_WR_HIT | GSU_RD_HIT;
+wire GSU_ROM_HIT = |(STATE & ST_GSU_ROM_RD_ADDR);
 
-assign ROM_ADDR  = (SD_DMA_TO_ROM) ? MCU_ADDR[23:1] : GSU_HIT ? GSU_ROM_ADDRr[23:1] : MCU_HIT ? ROM_ADDRr[23:1] : MAPPED_SNES_ADDR[23:1];
-assign ROM_ADDR0 = (SD_DMA_TO_ROM) ? MCU_ADDR[0] : GSU_HIT ? GSU_ROM_ADDRr[0] : MCU_HIT ? ROM_ADDRr[0] : MAPPED_SNES_ADDR[0];
+// GSU RAM
+reg GSU_RAM_RD_PENDr; initial GSU_RAM_RD_PENDr = 0;
+reg GSU_RAM_WR_PENDr; initial GSU_RAM_WR_PENDr = 0;
+reg [23:0] GSU_RAM_ADDRr;
+reg [15:0] GSU_RAM_DATAr;
+reg        GSU_RAM_WORDr;
+
+reg RQ_GSU_RAM_RDYr; initial RQ_GSU_RAM_RDYr = 1;
+assign GSU_RAM_RDY = RQ_GSU_RAM_RDYr;
+
+wire GSU_RAM_WR_HIT = |(STATE & ST_GSU_RAM_WR_ADDR);
+wire GSU_RAM_RD_HIT = |(STATE & ST_GSU_RAM_RD_ADDR);
+wire GSU_RAM_HIT    = GSU_RAM_WR_HIT | GSU_RAM_RD_HIT;
+
+assign ROM_ADDR  = (SD_DMA_TO_ROM) ? MCU_ADDR[23:1] : GSU_ROM_HIT ? GSU_ROM_ADDRr[23:1] : GSU_RAM_HIT ? GSU_RAM_ADDRr[23:1] : MCU_HIT ? ROM_ADDRr[23:1] : MAPPED_SNES_ADDR[23:1];
+assign ROM_ADDR0 = (SD_DMA_TO_ROM) ? MCU_ADDR[0]    : GSU_ROM_HIT ? GSU_ROM_ADDRr[0]    : GSU_RAM_HIT ? GSU_RAM_ADDRr[0]    : MCU_HIT ? ROM_ADDRr[0]    : MAPPED_SNES_ADDR[0];
 
 reg[17:0] SNES_DEAD_CNTr;
 initial SNES_DEAD_CNTr = 0;
@@ -756,24 +781,35 @@ always @(posedge CLK2) begin
 end
 
 always @(posedge CLK2) begin
-  if(GSU_RRQ) begin
-    GSU_RD_PENDr <= 1'b1;
-    RQ_GSU_RDYr <= 1'b0;
-    GSU_ROM_ADDRr <= GSU_ADDR;
-    GSU_ROM_WORDr <= GSU_WORD;
-  end else if(GSU_WRQ) begin
-    GSU_WR_PENDr <= 1'b1;
-    RQ_GSU_RDYr <= 1'b0;
-    GSU_ROM_ADDRr <= GSU_ADDR;
-    GSU_ROM_WORDr <= GSU_WORD;
-    GSU_ROM_DATAr <= GSU_DOUT;
-  end else if(STATE & (ST_GSU_RD_END | ST_GSU_WR_END)) begin
-    GSU_RD_PENDr <= 1'b0;
-    GSU_WR_PENDr <= 1'b0;
-    RQ_GSU_RDYr <= 1'b1;
+  if(GSU_ROM_RRQ) begin
+    GSU_ROM_RD_PENDr <= 1'b1;
+    RQ_GSU_ROM_RDYr <= 1'b0;
+    GSU_ROM_ADDRr <= GSU_ROM_ADDR;
+    GSU_ROM_WORDr <= GSU_ROM_WORD;
+  end else if(STATE & ST_GSU_ROM_RD_END) begin
+    GSU_ROM_RD_PENDr <= 1'b0;
+    RQ_GSU_ROM_RDYr <= 1'b1;
   end
 end
 
+always @(posedge CLK2) begin
+  if(GSU_RAM_RRQ) begin
+    GSU_RAM_RD_PENDr <= 1'b1;
+    RQ_GSU_RAM_RDYr <= 1'b0;
+    GSU_RAM_ADDRr <= GSU_RAM_ADDR;
+    GSU_RAM_WORDr <= GSU_RAM_WORD;
+  end else if(GSU_RAM_WRQ) begin
+    GSU_RAM_WR_PENDr <= 1'b1;
+    RQ_GSU_RAM_RDYr <= 1'b0;
+    GSU_RAM_ADDRr <= GSU_RAM_ADDR;
+    GSU_RAM_WORDr <= GSU_RAM_WORD;
+    GSU_RAM_DATAr <= GSU_RAM_DOUT;
+  end else if(STATE & (ST_GSU_RAM_RD_END | ST_GSU_RAM_WR_END)) begin
+    GSU_RAM_RD_PENDr <= 1'b0;
+    GSU_RAM_WR_PENDr <= 1'b0;
+    RQ_GSU_RAM_RDYr <= 1'b1;
+  end
+end
 
 always @(posedge CLK2) begin
   if(~SNES_CPU_CLKr[1]) SNES_DEAD_CNTr <= SNES_DEAD_CNTr + 1;
@@ -797,14 +833,16 @@ always @(posedge CLK2) begin
       STATE <= ST_IDLE;
       
       if (GSU_ACTIVE) begin
-        if (GSU_RD_PENDr) begin
-          STATE <= ST_GSU_RD_ADDR;
-          // TODO: can extend the delay here to pad out the timing
+        if (GSU_ROM_RD_PENDr) begin
+          STATE <= ST_GSU_ROM_RD_ADDR;
           ST_MEM_DELAYr <= ROM_CYCLE_LEN;
         end
-        else if (GSU_WR_PENDr) begin
-          STATE <= ST_GSU_WR_ADDR;
-          // TODO: can extend the delay here to pad out the timing
+        else if (GSU_RAM_RD_PENDr) begin
+          STATE <= ST_GSU_RAM_RD_ADDR;
+          ST_MEM_DELAYr <= ROM_CYCLE_LEN;
+        end
+        else if (GSU_RAM_WR_PENDr) begin
+          STATE <= ST_GSU_RAM_WR_ADDR;
           ST_MEM_DELAYr <= ROM_CYCLE_LEN;
         end
       end
@@ -830,18 +868,24 @@ always @(posedge CLK2) begin
       ST_MEM_DELAYr <= ST_MEM_DELAYr - 1;
       if(ST_MEM_DELAYr == 0) STATE <= ST_MCU_WR_END;
     end
-    ST_GSU_RD_ADDR: begin
-      STATE <= ST_GSU_RD_ADDR;
+    ST_GSU_ROM_RD_ADDR: begin
+      STATE <= ST_GSU_ROM_RD_ADDR;
       ST_MEM_DELAYr <= ST_MEM_DELAYr - 1;
-      if(ST_MEM_DELAYr == 0) STATE <= ST_GSU_RD_END;
-      GSU_DINr <= (ROM_ADDR0_r ? ROM_DATA[15:0] : {ROM_DATA[7:0],ROM_DATA[15:8]});
+      if(ST_MEM_DELAYr == 0) STATE <= ST_GSU_ROM_RD_END;
+      GSU_ROM_DINr <= (ROM_ADDR0_r ? ROM_DATA[15:0] : {ROM_DATA[7:0],ROM_DATA[15:8]});
     end
-    ST_GSU_WR_ADDR: begin
-      STATE <= ST_GSU_WR_ADDR;
+    ST_GSU_RAM_RD_ADDR: begin
+      STATE <= ST_GSU_RAM_RD_ADDR;
       ST_MEM_DELAYr <= ST_MEM_DELAYr - 1;
-      if(ST_MEM_DELAYr == 0) STATE <= ST_GSU_WR_END;
+      if(ST_MEM_DELAYr == 0) STATE <= ST_GSU_RAM_RD_END;
+      GSU_RAM_DINr <= (ROM_ADDR0_r ? ROM_DATA[15:0] : {ROM_DATA[7:0],ROM_DATA[15:8]});
     end
-    ST_MCU_RD_END, ST_MCU_WR_END, ST_GSU_RD_END, ST_GSU_WR_END: begin
+    ST_GSU_RAM_WR_ADDR: begin
+      STATE <= ST_GSU_RAM_WR_ADDR;
+      ST_MEM_DELAYr <= ST_MEM_DELAYr - 1;
+      if(ST_MEM_DELAYr == 0) STATE <= ST_GSU_RAM_WR_END;
+    end
+    ST_MCU_RD_END, ST_MCU_WR_END, ST_GSU_ROM_RD_END, ST_GSU_RAM_RD_END, ST_GSU_RAM_WR_END: begin
       STATE <= ST_IDLE;
     end
   endcase
@@ -866,19 +910,19 @@ reg MCU_WRITE_1;
 always @(posedge CLK2) MCU_WRITE_1<= MCU_WRITE;
 
 // odd addresses xxx1
-assign ROM_DATA[7:0] = (ROM_ADDR0 || (!SD_DMA_TO_ROM && GSU_HIT && GSU_ROM_WORDr))
+assign ROM_DATA[7:0] = (ROM_ADDR0 || (!SD_DMA_TO_ROM && GSU_RAM_WR_HIT && GSU_RAM_WORDr))
                        ?(SD_DMA_TO_ROM ? (!MCU_WRITE_1 ? MCU_DOUT : 8'bZ)
-                                       : GSU_WR_HIT ? (ROM_ADDR0 ? GSU_ROM_DATAr[7:0] : GSU_ROM_DATAr[15:8])
+                                       : GSU_RAM_WR_HIT ? (ROM_ADDR0 ? GSU_RAM_DATAr[7:0] : GSU_RAM_DATAr[15:8])
                                        : (ROM_HIT & ~SNES_WRITE) ? SNES_DATA
                                        : MCU_WR_HIT ? MCU_DOUT : 8'bZ
                         )
                        :8'bZ;
 
 // even addresses xxx0
-assign ROM_DATA[15:8] = (ROM_ADDR0 && !(!SD_DMA_TO_ROM && GSU_HIT && GSU_ROM_WORDr))
+assign ROM_DATA[15:8] = (ROM_ADDR0 && !(!SD_DMA_TO_ROM && GSU_RAM_WR_HIT && GSU_RAM_WORDr))
                         ? 8'bZ
                         :(SD_DMA_TO_ROM ? (!MCU_WRITE_1 ? MCU_DOUT : 8'bZ)
-                                        : GSU_WR_HIT ? (ROM_ADDR0 ? GSU_ROM_DATAr[15:8] : GSU_ROM_DATAr[7:0])
+                                        : GSU_RAM_WR_HIT ? (ROM_ADDR0 ? GSU_RAM_DATAr[15:8] : GSU_RAM_DATAr[7:0])
                                         : (ROM_HIT & ~SNES_WRITE) ? SNES_DATA
                                         : MCU_WR_HIT ? MCU_DOUT
                                         : 8'bZ
@@ -886,7 +930,7 @@ assign ROM_DATA[15:8] = (ROM_ADDR0 && !(!SD_DMA_TO_ROM && GSU_HIT && GSU_ROM_WOR
 
 assign ROM_WE = SD_DMA_TO_ROM
                 ?MCU_WRITE
-                : GSU_WR_HIT ? 1'b0
+                : GSU_RAM_WR_HIT ? 1'b0
                 : (ROM_HIT & IS_WRITABLE & SNES_CPU_CLK) ? SNES_WRITE
                 : MCU_WR_HIT ? 1'b0
                 : 1'b1;
@@ -897,8 +941,8 @@ assign ROM_OE = 1'b0;
 assign ROM_CE = 1'b0;
 
 // force word enable for GSU
-assign ROM_BHE =  ROM_ADDR0 && !(!SD_DMA_TO_ROM && GSU_HIT && GSU_ROM_WORDr);
-assign ROM_BLE = !ROM_ADDR0 && !(!SD_DMA_TO_ROM && GSU_HIT && GSU_ROM_WORDr);
+assign ROM_BHE =  ROM_ADDR0 && !(!SD_DMA_TO_ROM && GSU_ROM_HIT && GSU_ROM_WORDr) && !(!SD_DMA_TO_ROM && GSU_RAM_HIT && GSU_RAM_WORDr);
+assign ROM_BLE = !ROM_ADDR0 && !(!SD_DMA_TO_ROM && GSU_ROM_HIT && GSU_ROM_WORDr) && !(!SD_DMA_TO_ROM && GSU_RAM_HIT && GSU_RAM_WORDr);
 
 assign SNES_DATABUS_OE = //(dspx_enable | dspx_dp_enable) ? 1'b0 :
                          msu_enable ? 1'b0 :
