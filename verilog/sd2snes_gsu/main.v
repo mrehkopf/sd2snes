@@ -265,6 +265,7 @@ parameter ST_GSU_RAM_WR_END  = 11'b10000000000;
 parameter SNES_DEAD_TIMEOUT = 17'd96000; // 1ms
 
 parameter ROM_CYCLE_LEN = 4'd6;
+//parameter ROM_CYCLE_LEN = 4'd7; // 6 seems too tight
 
 reg [10:0] STATE;
 initial STATE = ST_IDLE;
@@ -781,7 +782,11 @@ always @(posedge CLK2) begin
 end
 
 always @(posedge CLK2) begin
-  if(GSU_ROM_RRQ) begin
+  if (SNES_reset_strobe) begin
+    GSU_ROM_RD_PENDr <= 1'b0;
+    RQ_GSU_ROM_RDYr <= 1'b1;  
+  end
+  else if(GSU_ROM_RRQ) begin
     GSU_ROM_RD_PENDr <= 1'b1;
     RQ_GSU_ROM_RDYr <= 1'b0;
     GSU_ROM_ADDRr <= GSU_ROM_ADDR;
@@ -793,7 +798,12 @@ always @(posedge CLK2) begin
 end
 
 always @(posedge CLK2) begin
-  if(GSU_RAM_RRQ) begin
+  if (SNES_reset_strobe) begin
+    GSU_RAM_RD_PENDr <= 1'b0;
+    GSU_RAM_WR_PENDr <= 1'b0;
+    RQ_GSU_RAM_RDYr <= 1'b1;
+  end
+  else if(GSU_RAM_RRQ) begin
     GSU_RAM_RD_PENDr <= 1'b1;
     RQ_GSU_RAM_RDYr <= 1'b0;
     GSU_RAM_ADDRr <= GSU_RAM_ADDR;
