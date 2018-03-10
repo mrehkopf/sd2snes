@@ -720,6 +720,9 @@ always @(posedge CLK) begin
   if (RST) begin
     RAM_STATE <= ST_RAM_IDLE;
     
+    ram_bus_rrq_r <= 0;
+    ram_bus_wrq_r <= 0;
+    
     RAMWRBUF_r <= 0;
     RAMADDR_r  <= 0;
   end
@@ -756,7 +759,7 @@ always @(posedge CLK) begin
         ram_bus_rrq_r <= 0;
         ram_bus_wrq_r <= 0;
         
-        if (~(ram_bus_rrq_r | ram_bus_wrq_r) & RAM_BUS_RDY) begin
+        if ((~ram_bus_rrq_r & ~ram_bus_wrq_r) & RAM_BUS_RDY) begin
           ram_bus_data_r <= RAM_BUS_RDDATA;
           RAM_STATE <= (|(RAM_STATE & ST_RAM_FETCH_RD)) ? ST_RAM_FETCH_END : ST_RAM_DATA_END;
         end
@@ -951,6 +954,11 @@ always @(posedge CLK) begin
     e2r_ljmp_r <= 0;
     e2r_wpor_r <= 0;
     e2r_wcolr_r <= 0;
+
+    e2r_data_r <= 0;
+    e2r_mask_r <= 0;
+    e2r_r15_r <= 0;
+    e2r_r4_r <= 0;
     
     exe_branch_r <= 0;
     exe_opcode_r <= `OP_NOP;
@@ -1009,14 +1017,14 @@ always @(posedge CLK) begin
             `OP_ALT1          : begin e2r_alt_r <= 1; e2r_b_r <= 0; end
             `OP_ALT2          : begin e2r_alt_r <= 2; e2r_b_r <= 0; end
             `OP_ALT3          : begin e2r_alt_r <= 3; e2r_b_r <= 0; end
-            `OP_TO           : if (~SFR_B) e2r_dreg_r <= exe_opcode_r[3:0];
-            `OP_WITH         : begin e2r_sreg_r <= exe_opcode_r[3:0]; e2r_dreg_r <= exe_opcode_r[3:0]; e2r_b_r <= 1; end
-            `OP_FROM         : if (~SFR_B) e2r_sreg_r <= exe_opcode_r[3:0];
+            `OP_TO            : if (~SFR_B) e2r_dreg_r <= exe_opcode_r[3:0];
+            `OP_WITH          : begin e2r_sreg_r <= exe_opcode_r[3:0]; e2r_dreg_r <= exe_opcode_r[3:0]; e2r_b_r <= 1; end
+            `OP_FROM          : if (~SFR_B) e2r_sreg_r <= exe_opcode_r[3:0];
 
             // generate dithered color value for PLOT
             `OP_PLOT_RPIX     : if (~exe_alt1_r & POR_DTH & ~&SCMR_MD) exe_colr_r <= {4'h0, ((REG_r[R1] ^ REG_r[R2]) ? exe_colr_r[7:4] : exe_colr_r[3:0])};
             
-            default          : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= SFR_B; end
+            default           : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= SFR_B; end
           endcase
         end
         else begin
@@ -1582,18 +1590,19 @@ always @(posedge CLK) begin
           exe_ram_rd_r <= 0;
           exe_ram_wr_r <= 0;
           // byte loads do zero extension
-          if (exe_opcode_r == `OP_GETB) begin
-            e2r_data_r <= (exe_alt1_r & exe_alt2_r) ? {{8{rom_bus_data_r[7]}},rom_bus_data_r[7:0]} : exe_alt2_r ? {8'h00,rom_bus_data_r[7:0]} : exe_alt1_r ? {rom_bus_data_r[7:0],8'h00} : {8'h00,rom_bus_data_r[7:0]};
-            e2r_mask_r <= {(~exe_alt1_r & exe_alt2_r),(exe_alt1_r & ~exe_alt2_r)};
-          end
-          else if (exe_opcode_r == `OP_GETC_RAMB_ROMB) begin
-            if (~exe_alt1_r & ~exe_alt2_r) begin
-              e2r_colr_r  <= POR_HN ? {COLR_r[7:4],ram_bus_data_r[7:4]} : POR_FHN ? {COLR_r[7:4],ram_bus_data_r[3:0]} : ram_bus_data_r[7:0];
+          
+          case (exe_opcode_r)
+            `OP_GETB: begin
+              e2r_data_r <= (exe_alt1_r & exe_alt2_r) ? {{8{rom_bus_data_r[7]}},rom_bus_data_r[7:0]} : exe_alt2_r ? {8'h00,rom_bus_data_r[7:0]} : exe_alt1_r ? {rom_bus_data_r[7:0],8'h00} : {8'h00,rom_bus_data_r[7:0]};
+              e2r_mask_r <= {(~exe_alt1_r & exe_alt2_r),(exe_alt1_r & ~exe_alt2_r)};
             end
-          end
-          else begin
-            e2r_data_r <= {(exe_word_r ? ram_bus_data_r[15:8] : 8'h00),ram_bus_data_r[7:0]};
-          end
+            `OP_GETC_RAMB_ROMB: begin
+              if (~exe_alt1_r & ~exe_alt2_r) begin
+                e2r_colr_r  <= POR_HN ? {COLR_r[7:4],ram_bus_data_r[7:4]} : POR_FHN ? {COLR_r[7:4],ram_bus_data_r[3:0]} : ram_bus_data_r[7:0];
+              end
+            end
+            default: e2r_data_r <= exe_word_r ? ram_bus_data_r[15:0] : {8'h00,ram_bus_data_r[7:0]};
+          endcase
             
           EXE_STATE <= ST_EXE_WAIT;
         end
@@ -1602,6 +1611,7 @@ always @(posedge CLK) begin
         if (pipeline_advance) begin
           if (|exe_opsize_r) exe_opsize_r <= exe_opsize_r - 1;
         
+          // TODO: check if we should look at the current instruction or next.  Probably current due to delay slot so this is buggy.
           if (SFR_GO) EXE_STATE <= ST_EXE_DECODE;
           else        EXE_STATE <= ST_EXE_IDLE;
                     
