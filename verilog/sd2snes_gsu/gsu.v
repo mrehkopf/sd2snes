@@ -150,95 +150,72 @@ parameter
   ADDR_CACHE_BASE = 10'h100
   ;
 
-// multi match defines
-`define OP_TO    8'h10,8'h11,8'h12,8'h13,8'h14,8'h15,8'h16,8'h17,8'h18,8'h19,8'h1A,8'h1B,8'h1C,8'h1D,8'h1E,8'h1F
-`define OP_WITH  8'h20,8'h21,8'h22,8'h23,8'h24,8'h25,8'h26,8'h27,8'h28,8'h29,8'h2A,8'h2B,8'h2C,8'h2D,8'h2E,8'h2F
-`define OP_FROM  8'hB0,8'hB1,8'hB2,8'hB3,8'hB4,8'hB5,8'hB6,8'hB7,8'hB8,8'hB9,8'hBA,8'hBB,8'hBC,8'hBD,8'hBE,8'hBF
-`define OP_LD    8'h40,8'h41,8'h42,8'h43,8'h44,8'h45,8'h46,8'h47,8'h48,8'h49,8'h4A,8'h4B
-`define OP_ST    8'h30,8'h31,8'h32,8'h33,8'h34,8'h35,8'h36,8'h37,8'h38,8'h39,8'h3A,8'h3B
-`define OP_ADD   8'h50,8'h51,8'h52,8'h53,8'h54,8'h55,8'h56,8'h57,8'h58,8'h59,8'h5A,8'h5B,8'h5C,8'h5D,8'h5E,8'h5F
-`define OP_SUB   8'h60,8'h61,8'h62,8'h63,8'h64,8'h65,8'h66,8'h67,8'h68,8'h69,8'h6A,8'h6B,8'h6C,8'h6D,8'h6E,8'h6F
-`define OP_AND_BIC     8'h71,8'h72,8'h73,8'h74,8'h75,8'h76,8'h77,8'h78,8'h79,8'h7A,8'h7B,8'h7C,8'h7D,8'h7E,8'h7F
-`define OP_OR_XOR      8'hC1,8'hC2,8'hC3,8'hC4,8'hC5,8'hC6,8'hC7,8'hC8,8'hC9,8'hCA,8'hCB,8'hCC,8'hCD,8'hCE,8'hCF
-`define OP_INC   8'hD0,8'hD1,8'hD2,8'hD3,8'hD4,8'hD5,8'hD6,8'hD7,8'hD8,8'hD9,8'hDA,8'hDB,8'hDC,8'hDD,8'hDE
-`define OP_DEC   8'hE0,8'hE1,8'hE2,8'hE3,8'hE4,8'hE5,8'hE6,8'hE7,8'hE8,8'hE9,8'hEA,8'hEB,8'hEC,8'hED,8'hEE
-`define OP_MULT  8'h80,8'h81,8'h82,8'h83,8'h84,8'h85,8'h86,8'h87,8'h88,8'h89,8'h8A,8'h8B,8'h8C,8'h8D,8'h8E,8'h8F
-`define OP_LINK        8'h91,8'h92,8'h93,8'h94
-`define OP_JMP_LJMP                                              8'h98,8'h99,8'h9A,8'h9B,8'h9C,8'h9D,8'h9E
-
-// instructions
-parameter
-  OP_STOP          = 8'h00,
-  OP_NOP           = 8'h01,
-  OP_CACHE         = 8'h02,
-  
-  // bra (no reset state)
-  OP_BRA           = 8'h05,
-  OP_BGE           = 8'h06,
-  OP_BLT           = 8'h07,
-  OP_BNE           = 8'h08,
-  OP_BEQ           = 8'h09,
-  OP_BPL           = 8'h0A,
-  OP_BMI           = 8'h0B,
-  OP_BCC           = 8'h0C,
-  OP_BCS           = 8'h0D,
-  OP_BVC           = 8'h0E,
-  OP_BVS           = 8'h0F,
-  // jmps/loops
-  //OP_LINK_JMP_LJMP = 8'h9x, // conflict with lots
-  OP_LOOP          = 8'h3C,
-  
-  // prefix (also see branch) no reset state
-  OP_ALT1          = 8'h3D,
-  OP_ALT2          = 8'h3E,
-  OP_ALT3          = 8'h3F,
-  //OP_TO            = 8'h1x,
-  //OP_WITH          = 8'h2x,
-  //OP_FROM          = 8'hBx,
-  
-  // MOV
-  // MOVE/MOVES use WITH/TO and WITH/FROM
-  OP_IBT           = 8'hAx,
-  OP_IWT           = 8'hFx,
-  // load from ROM
-  OP_GETB          = 8'hEF,
-  // load from RAM
-  OP_LD            = 8'h4x, // 4C, 4D, 4E, 4F conflict
-  OP_ST            = 8'h3x, // 3C, 3D, 3E, 3F conflict
-  OP_SBK           = 8'h90,
-  OP_GETC_RAMB_ROMB= 8'hDF,
-  
-  // BITMAP
-  OP_CMODE_COLOR   = 8'h4E,
-  OP_PLOT_RPIX     = 8'h4C,
-  
-  // ALU
-  //OP_ADD           = 8'h5x,
-  //OP_SUB           = 8'h6x,
-  //OP_AND_BIC       = 8'h7x, // 70 conflict
-  //OP_OR_XOR        = 8'hCx, // C0 conflict
-  OP_NOT           = 8'h4F,
-  
-  // ROTATE/SHIFT/INC/DEC
-  OP_LSR           = 8'h03,
-  OP_ASR_DIV2      = 8'h96,
-  OP_ROL           = 8'h04,
-  OP_ROR           = 8'h97,
-  //OP_INC           = 8'hDx,
-  //OP_DEC           = 8'hEx,
-  
-  // BYTE
-  OP_SWAP          = 8'h4D,
-  OP_SEX           = 8'h95,
-  OP_LOB           = 8'h9E,
-  OP_HIB           = 8'hC0,
-  OP_MERGE         = 8'h70,
-  
-  // MULTIPLY
-  OP_FMULT_LMULT   = 8'h9F
-  //OP_MULT_UMULT    = 8'h8x
-  
-  ;
+//---
+// Instructions
+//---
+// special
+`define OP_STOP          8'h00
+`define OP_NOP           8'h01
+`define OP_CACHE         8'h02
+// branches (no reset state)
+`define OP_BRA           8'h05
+`define OP_BGE           8'h06
+`define OP_BLT           8'h07
+`define OP_BNE           8'h08
+`define OP_BEQ           8'h09
+`define OP_BPL           8'h0A
+`define OP_BMI           8'h0B
+`define OP_BCC           8'h0C
+`define OP_BCS           8'h0D
+`define OP_BVC           8'h0E
+`define OP_BVS           8'h0F
+`define OP_LOOP          8'h3C
+// prefix (also see branch) no reset state
+`define OP_ALT1          8'h3D
+`define OP_ALT2          8'h3E
+`define OP_ALT3          8'h3F
+`define OP_TO            8'h10,8'h11,8'h12,8'h13,8'h14,8'h15,8'h16,8'h17,8'h18,8'h19,8'h1A,8'h1B,8'h1C,8'h1D,8'h1E,8'h1F
+`define OP_WITH          8'h20,8'h21,8'h22,8'h23,8'h24,8'h25,8'h26,8'h27,8'h28,8'h29,8'h2A,8'h2B,8'h2C,8'h2D,8'h2E,8'h2F
+`define OP_FROM          8'hB0,8'hB1,8'hB2,8'hB3,8'hB4,8'hB5,8'hB6,8'hB7,8'hB8,8'hB9,8'hBA,8'hBB,8'hBC,8'hBD,8'hBE,8'hBF 
+// mov
+// move/moves paired with/to/from
+`define OP_IBT           8'hA0,8'hA1,8'hA2,8'hA3,8'hA4,8'hA5,8'hA6,8'hA7,8'hA8,8'hA9,8'hAA,8'hAB,8'hAC,8'hAD,8'hAE,8'hAF
+`define OP_IWT           8'hF0,8'hF1,8'hF2,8'hF3,8'hF4,8'hF5,8'hF6,8'hF7,8'hF8,8'hF9,8'hFA,8'hFB,8'hFC,8'hFD,8'hFE,8'hFF
+// load from ROM
+`define OP_GETB          8'hEF
+// load from RAM
+`define OP_LD            8'h40,8'h41,8'h42,8'h43,8'h44,8'h45,8'h46,8'h47,8'h48,8'h49,8'h4A,8'h4B
+`define OP_ST            8'h30,8'h31,8'h32,8'h33,8'h34,8'h35,8'h36,8'h37,8'h38,8'h39,8'h3A,8'h3B
+`define OP_SBK           8'h90
+`define OP_GETC_RAMB_ROMB 8'hDF
+// bitmap
+`define OP_CMODE_COLOR   8'h4E
+`define OP_PLOT_RPIX     8'h4C
+// alu
+`define OP_ADD           8'h50,8'h51,8'h52,8'h53,8'h54,8'h55,8'h56,8'h57,8'h58,8'h59,8'h5A,8'h5B,8'h5C,8'h5D,8'h5E,8'h5F
+`define OP_SUB           8'h60,8'h61,8'h62,8'h63,8'h64,8'h65,8'h66,8'h67,8'h68,8'h69,8'h6A,8'h6B,8'h6C,8'h6D,8'h6E,8'h6F
+`define OP_AND_BIC       8'h71,8'h72,8'h73,8'h74,8'h75,8'h76,8'h77,8'h78,8'h79,8'h7A,8'h7B,8'h7C,8'h7D,8'h7E,8'h7F
+`define OP_OR_XOR        8'hC1,8'hC2,8'hC3,8'hC4,8'hC5,8'hC6,8'hC7,8'hC8,8'hC9,8'hCA,8'hCB,8'hCC,8'hCD,8'hCE,8'hCF
+`define OP_NOT           8'h4F
+// rotate/shift/inc/dec
+`define OP_LSR           8'h03
+`define OP_ASR_DIV2      8'h96
+`define OP_ROL           8'h04
+`define OP_ROR           8'h97
+`define OP_INC           8'hD0,8'hD1,8'hD2,8'hD3,8'hD4,8'hD5,8'hD6,8'hD7,8'hD8,8'hD9,8'hDA,8'hDB,8'hDC,8'hDD,8'hDE
+`define OP_DEC           8'hE0,8'hE1,8'hE2,8'hE3,8'hE4,8'hE5,8'hE6,8'hE7,8'hE8,8'hE9,8'hEA,8'hEB,8'hEC,8'hED,8'hEE
+// byte
+`define OP_SWAP          8'h4D
+`define OP_SEX           8'h95
+`define OP_LOB           8'h9E
+`define OP_HIB           8'hC0
+`define OP_MERGE         8'h70
+// multiply
+`define OP_FMULT_LMULT   8'h9F
+`define OP_MULT          8'h80,8'h81,8'h82,8'h83,8'h84,8'h85,8'h86,8'h87,8'h88,8'h89,8'h8A,8'h8B,8'h8C,8'h8D,8'h8E,8'h8F
+// jump
+`define OP_LINK          8'h91,8'h92,8'h93,8'h94
+`define OP_JMP_LJMP      8'h98,8'h99,8'h9A,8'h9B,8'h9C,8'h9D,8'h9E
 
 //-------------------------------------------------------------------
 // CONFIG
@@ -379,8 +356,8 @@ assign POR_OBJ  = POR_r[4];
 // Fetch -> Execute
 // The fetch pipe and execution pipe are synchronized via the opbuf.
 // Fetch operates one byte ahead of execution.
-reg [7:0]  i2e_op_r[1:0]; initial for (i = 0; i < 2; i = i + 1) i2e_op_r[i] = OP_NOP;
-reg        i2e_ptr_r; initial i2e_ptr_r = 0;
+//reg [7:0]  i2e_op_r[1:0]; initial for (i = 0; i < 2; i = i + 1) i2e_op_r[i] = `OP_NOP;
+//reg        i2e_ptr_r; initial i2e_ptr_r = 0;
 
 // Execute -> RegisterFile
 reg        e2r_val_r;
@@ -840,8 +817,8 @@ always @(posedge CLK) begin
   if (RST) begin
     FETCH_STATE <= ST_FETCH_IDLE;
 
-    i2e_op_r[0] <= OP_NOP;
-    i2e_ptr_r <= 0;
+    //i2e_op_r[0] <= `OP_NOP;
+    //i2e_ptr_r <= 0;
     
     i2c_waitcnt_val_r <= 0;
     cache_rom_rd_r <= 0;
@@ -897,8 +874,8 @@ always @(posedge CLK) begin
       ST_FETCH_WAIT: begin
         if (pipeline_advance) begin
           // TODO: fetch address increment
-          i2e_op_r[~i2e_ptr_r] <= fetch_data_r;
-          i2e_ptr_r <= ~i2e_ptr_r;
+          //i2e_op_r[~i2e_ptr_r] <= fetch_data_r;
+          //i2e_ptr_r <= ~i2e_ptr_r;
 
           if (SFR_GO) FETCH_STATE <= ST_FETCH_LOOKUP;
           else        FETCH_STATE <= ST_FETCH_IDLE;
@@ -976,7 +953,7 @@ always @(posedge CLK) begin
     e2r_wcolr_r <= 0;
     
     exe_branch_r <= 0;
-    exe_opcode_r <= OP_NOP;
+    exe_opcode_r <= `OP_NOP;
     exe_byte_r <= 0;
     exe_opsize_r <= 0;
     exe_operand_r <= 0;
@@ -1009,46 +986,35 @@ always @(posedge CLK) begin
         
           // calculate operands
           case (exe_opcode_r)
-            OP_BRA,
-            OP_BGE,
-            OP_BLT,
-            OP_BNE,
-            OP_BEQ,
-            OP_BPL,
-            OP_BMI,
-            OP_BCC,
-            OP_BCS,
-            OP_BVC,
-            OP_BVS : exe_opsize_r <= 2;
-           
-            OP_IBT : exe_opsize_r <= 2;
-            OP_IWT : exe_opsize_r <= 3;
+            `OP_BRA,`OP_BGE,`OP_BLT,`OP_BNE,`OP_BEQ,`OP_BPL,`OP_BMI,`OP_BCC,`OP_BCS,`OP_BVC,`OP_BVS : exe_opsize_r <= 2;
+            `OP_IBT: exe_opsize_r <= 2;
+            `OP_IWT: exe_opsize_r <= 3;
             default: exe_opsize_r <= 1;
           endcase
 
           // handle prefixes
           case (exe_opcode_r)
-            OP_BRA           : exe_branch_r <= 1;
-            OP_BGE           : exe_branch_r <= ( SFR_S == SFR_OV);
-            OP_BLT           : exe_branch_r <= ( SFR_S != SFR_OV);
-            OP_BNE           : exe_branch_r <= (~SFR_Z);   
-            OP_BEQ           : exe_branch_r <= ( SFR_Z);
-            OP_BPL           : exe_branch_r <= (~SFR_S);
-            OP_BMI           : exe_branch_r <= ( SFR_S);
-            OP_BCC           : exe_branch_r <= (~SFR_CY);
-            OP_BCS           : exe_branch_r <= ( SFR_CY);
-            OP_BVC           : exe_branch_r <= (~SFR_OV);
-            OP_BVS           : exe_branch_r <= ( SFR_OV);
+            `OP_BRA           : exe_branch_r <= 1;
+            `OP_BGE           : exe_branch_r <= ( SFR_S == SFR_OV);
+            `OP_BLT           : exe_branch_r <= ( SFR_S != SFR_OV);
+            `OP_BNE           : exe_branch_r <= (~SFR_Z);   
+            `OP_BEQ           : exe_branch_r <= ( SFR_Z);
+            `OP_BPL           : exe_branch_r <= (~SFR_S);
+            `OP_BMI           : exe_branch_r <= ( SFR_S);
+            `OP_BCC           : exe_branch_r <= (~SFR_CY);
+            `OP_BCS           : exe_branch_r <= ( SFR_CY);
+            `OP_BVC           : exe_branch_r <= (~SFR_OV);
+            `OP_BVS           : exe_branch_r <= ( SFR_OV);
             
-            OP_ALT1          : begin e2r_alt_r <= 1; e2r_b_r <= 0; end
-            OP_ALT2          : begin e2r_alt_r <= 2; e2r_b_r <= 0; end
-            OP_ALT3          : begin e2r_alt_r <= 3; e2r_b_r <= 0; end
+            `OP_ALT1          : begin e2r_alt_r <= 1; e2r_b_r <= 0; end
+            `OP_ALT2          : begin e2r_alt_r <= 2; e2r_b_r <= 0; end
+            `OP_ALT3          : begin e2r_alt_r <= 3; e2r_b_r <= 0; end
             `OP_TO           : if (~SFR_B) e2r_dreg_r <= exe_opcode_r[3:0];
             `OP_WITH         : begin e2r_sreg_r <= exe_opcode_r[3:0]; e2r_dreg_r <= exe_opcode_r[3:0]; e2r_b_r <= 1; end
             `OP_FROM         : if (~SFR_B) e2r_sreg_r <= exe_opcode_r[3:0];
 
             // generate dithered color value for PLOT
-            OP_PLOT_RPIX     : if (~exe_alt1_r & POR_DTH & ~&SCMR_MD) exe_colr_r <= {4'h0, ((REG_r[R1] ^ REG_r[R2]) ? exe_colr_r[7:4] : exe_colr_r[3:0])};
+            `OP_PLOT_RPIX     : if (~exe_alt1_r & POR_DTH & ~&SCMR_MD) exe_colr_r <= {4'h0, ((REG_r[R1] ^ REG_r[R2]) ? exe_colr_r[7:4] : exe_colr_r[3:0])};
             
             default          : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= SFR_B; end
           endcase
@@ -1087,7 +1053,7 @@ always @(posedge CLK) begin
       ST_EXE_EXECUTE: begin
         if (op_complete) begin
           case (exe_opcode_r)
-            OP_BRA,OP_BGE,OP_BLT,OP_BNE,OP_BEQ,OP_BPL,OP_BMI,OP_BCC,OP_BCS,OP_BVC,OP_BVS: begin
+            `OP_BRA,`OP_BGE,`OP_BLT,`OP_BNE,`OP_BEQ,`OP_BPL,`OP_BMI,`OP_BCC,`OP_BCS,`OP_BVC,`OP_BVS: begin
               if (exe_branch_r) begin
                 // calculate branch target
                 e2r_val_r <= 1;
@@ -1097,13 +1063,13 @@ always @(posedge CLK) begin
                 exe_branch_r <= 0;
               end
             end          
-            OP_STOP           : begin
+            `OP_STOP           : begin
               // TODO: deal with interrupts and other stuff here
               e2r_g_r <= 0;
               e2r_irq_r <= 1;
             end
             //OP_NOP            : begin end
-            OP_CACHE          : begin
+            `OP_CACHE          : begin
               if (REG_r[R15][15:4] != CBR_r[15:4]) begin
                 CBR_r[15:4] <= REG_r[R15][15:4];
                 cache_val_r <= 0;
@@ -1131,7 +1097,7 @@ always @(posedge CLK) begin
               end
             end
             
-            OP_LOOP           : begin
+            `OP_LOOP           : begin
               exe_result = REG_r[R12] - 1;
               
               e2r_val_r  <= 1;
@@ -1144,7 +1110,7 @@ always @(posedge CLK) begin
               e2r_loop_r <= 1;                
             end
 
-            OP_CMODE_COLOR    : begin
+            `OP_CMODE_COLOR    : begin
               if (exe_alt1_r) begin
                 e2r_wpor_r <= 1;
                 e2r_por_r  <= {3'h0,exe_src_r[4:0]};
@@ -1154,7 +1120,7 @@ always @(posedge CLK) begin
                 e2r_colr_r  <= POR_HN ? {COLR_r[7:4],exe_src_r[7:4]} : POR_FHN ? {COLR_r[7:4],exe_src_r[3:0]} : exe_src_r[7:0];
               end
             end
-            OP_PLOT_RPIX      : begin
+            `OP_PLOT_RPIX      : begin
               if (exe_alt1_r) begin
                 // RPIX
                 if (|PIXBUF_VAL_r[0] | |PIXBUF_VAL_r[1]) begin
@@ -1240,7 +1206,7 @@ always @(posedge CLK) begin
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];                
             end
-            OP_NOT           : begin
+            `OP_NOT           : begin
               exe_result = ~exe_src_r;
               
               e2r_val_r  <= 1;
@@ -1251,7 +1217,7 @@ always @(posedge CLK) begin
             end
             
             // ROTATE/SHIFT/INC/DEC
-            OP_LSR           : begin
+            `OP_LSR           : begin
               exe_result = {1'b0,exe_src_r[15:1]};
               
               e2r_val_r  <= 1;
@@ -1261,7 +1227,7 @@ always @(posedge CLK) begin
               e2r_s_r    <= exe_result[15];
               e2r_cy_r   <= exe_src_r[0];
             end
-            OP_ASR_DIV2      : begin
+            `OP_ASR_DIV2      : begin
               exe_result = {exe_src_r[15],exe_src_r[15:1]};
               
               e2r_val_r  <= 1;
@@ -1271,7 +1237,7 @@ always @(posedge CLK) begin
               e2r_s_r    <= exe_result[15];
               e2r_cy_r   <= exe_result[0]; // unique to look at result for ASR/DIV2
             end
-            OP_ROL           : begin
+            `OP_ROL           : begin
               exe_result = {exe_src_r[14:0],exe_cy_r};
               
               e2r_val_r  <= 1;
@@ -1281,7 +1247,7 @@ always @(posedge CLK) begin
               e2r_s_r    <= exe_result[15];
               e2r_cy_r   <= exe_src_r[15];
             end
-            OP_ROR           : begin
+            `OP_ROR           : begin
               exe_result = {exe_cy_r,exe_src_r[15:1]};
               
               e2r_val_r  <= 1;
@@ -1293,7 +1259,7 @@ always @(posedge CLK) begin
             end
             
             // BYTE
-            OP_SWAP          : begin
+            `OP_SWAP          : begin
               exe_result = {exe_src_r[7:0],exe_src_r[15:8]};
               
               e2r_val_r  <= 1;
@@ -1302,7 +1268,7 @@ always @(posedge CLK) begin
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];
             end
-            OP_SEX           : begin
+            `OP_SEX           : begin
               exe_result = {{8{exe_src_r[7]}},exe_src_r[7:0]};
               
               e2r_val_r  <= 1;
@@ -1311,7 +1277,7 @@ always @(posedge CLK) begin
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];
             end
-            OP_LOB           : begin
+            `OP_LOB           : begin
               exe_result = {8'h00,exe_src_r[7:0]};
               
               e2r_val_r  <= 1;
@@ -1320,7 +1286,7 @@ always @(posedge CLK) begin
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[7];
             end
-            OP_HIB           : begin
+            `OP_HIB           : begin
               exe_result = {8'h00,exe_src_r[15:8]};
               
               e2r_val_r  <= 1;
@@ -1329,7 +1295,7 @@ always @(posedge CLK) begin
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[7];
             end
-            OP_MERGE         : begin
+            `OP_MERGE         : begin
               exe_result = {REG_r[R7][15:8],REG_r[R8][15:8]};
               
               e2r_val_r  <= 1;
@@ -1342,7 +1308,7 @@ always @(posedge CLK) begin
             end
             
             // MULTIPLY
-            OP_FMULT_LMULT   : begin
+            `OP_FMULT_LMULT   : begin
               exe_mult_r      <= 1;
               exe_mult_srca_r <= exe_src_r;
               exe_mult_srcb_r <= REG_r[R6];
@@ -1353,7 +1319,7 @@ always @(posedge CLK) begin
               exe_mult_srcb_r <= exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
             end
             
-            OP_GETC_RAMB_ROMB: begin
+            `OP_GETC_RAMB_ROMB: begin
               if      (exe_alt1_r & exe_alt2_r)   ROMBR_r    <= exe_src_r;
               else if (exe_alt2_r)                RAMBR_r[0] <= exe_src_r[0];
             end
@@ -1386,7 +1352,7 @@ always @(posedge CLK) begin
       ST_EXE_MEMORY: begin
         if (op_complete) begin
           case (exe_opcode_r)
-            OP_PLOT_RPIX      : begin
+            `OP_PLOT_RPIX      : begin
               if (exe_alt1_r) begin
                 // RPIX
               end
@@ -1396,7 +1362,7 @@ always @(posedge CLK) begin
                 // TODO: flush operation.
               end
             end
-            OP_GETC_RAMB_ROMB: begin
+            `OP_GETC_RAMB_ROMB: begin
               if (~exe_alt1_r & ~exe_alt2_r) begin
                 //e2r_val_r    <= 1;
                 e2r_wcolr_r <= 1;
@@ -1414,7 +1380,7 @@ always @(posedge CLK) begin
               end
               else EXE_STATE <= ST_EXE_WAIT;
             end
-            OP_FMULT_LMULT   : begin
+            `OP_FMULT_LMULT   : begin
               e2r_val_r      <= 1;
               
               e2r_data_r     <= exe_fmult_out[31:16];
@@ -1446,7 +1412,7 @@ always @(posedge CLK) begin
               EXE_STATE <= ST_EXE_WAIT;
             end
           
-            OP_IBT           : begin
+            `OP_IBT          : begin
               if (exe_alt1_r) begin
                 // LMS Rn, (2*imm8)
                 //exe_memory = 1;
@@ -1483,7 +1449,7 @@ always @(posedge CLK) begin
                 EXE_STATE <= ST_EXE_WAIT;
               end
             end
-            OP_IWT           : begin
+            `OP_IWT          : begin
               if (exe_alt1_r) begin
                 // LM Rn, (imm)
                 e2r_val_r    <= 1;
@@ -1519,7 +1485,7 @@ always @(posedge CLK) begin
                 EXE_STATE <= ST_EXE_WAIT;
               end
             end
-            OP_GETB          : begin
+            `OP_GETB          : begin
               e2r_val_r    <= 1;
 
               e2c_waitcnt_val_r <= 1;
@@ -1535,7 +1501,7 @@ always @(posedge CLK) begin
               EXE_STATE <= ST_EXE_MEMORY_WAIT;
               //EXE_STATE <= ST_EXE_WAIT;
             end
-            OP_SBK           : begin
+            `OP_SBK           : begin
               e2c_waitcnt_val_r <= 1;
               e2c_waitcnt_r <= 7-1; // TODO: account for slow clock.
           
@@ -1616,11 +1582,11 @@ always @(posedge CLK) begin
           exe_ram_rd_r <= 0;
           exe_ram_wr_r <= 0;
           // byte loads do zero extension
-          if (exe_opcode_r == OP_GETB) begin
+          if (exe_opcode_r == `OP_GETB) begin
             e2r_data_r <= (exe_alt1_r & exe_alt2_r) ? {{8{rom_bus_data_r[7]}},rom_bus_data_r[7:0]} : exe_alt2_r ? {8'h00,rom_bus_data_r[7:0]} : exe_alt1_r ? {rom_bus_data_r[7:0],8'h00} : {8'h00,rom_bus_data_r[7:0]};
             e2r_mask_r <= {(~exe_alt1_r & exe_alt2_r),(exe_alt1_r & ~exe_alt2_r)};
           end
-          else if (exe_opcode_r == OP_GETC_RAMB_ROMB) begin
+          else if (exe_opcode_r == `OP_GETC_RAMB_ROMB) begin
             if (~exe_alt1_r & ~exe_alt2_r) begin
               e2r_colr_r  <= POR_HN ? {COLR_r[7:4],ram_bus_data_r[7:4]} : POR_FHN ? {COLR_r[7:4],ram_bus_data_r[3:0]} : ram_bus_data_r[7:0];
             end
@@ -1779,8 +1745,8 @@ always @(posedge CLK) begin
     10'h378           : pgmdata_out <= ram_bus_data_r[7:0];
     10'h379           : pgmdata_out <= ram_bus_data_r[15:8];
     // interface state
-    10'h380           : pgmdata_out <= i2e_op_r[0];
-    10'h381           : pgmdata_out <= i2e_op_r[1];
+    //10'h380           : pgmdata_out <= i2e_op_r[0];
+    //10'h381           : pgmdata_out <= i2e_op_r[1];
     // config state
     10'h3A0           : pgmdata_out <= config_r[0];
     10'h3A1           : pgmdata_out <= config_r[1];
