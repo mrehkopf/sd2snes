@@ -975,6 +975,7 @@ always @(posedge CLK) begin
     e2r_wpor_r <= 0;
     e2r_wcolr_r <= 0;
     
+    exe_branch_r <= 0;
     exe_opcode_r <= OP_NOP;
     exe_byte_r <= 0;
     exe_opsize_r <= 0;
@@ -1085,299 +1086,299 @@ always @(posedge CLK) begin
       end
       ST_EXE_EXECUTE: begin
         if (op_complete) begin
-          if (exe_branch_r) begin
-            // calculate branch target
-            e2r_val_r <= 1;
-            e2r_destnum_r <= R15;
-            e2r_r15_r <= REG_r[R15] + {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
-            
-            exe_branch_r <= 0;
-          end
-          else begin
-            case (exe_opcode_r)
-              OP_STOP           : begin
-                // TODO: deal with interrupts and other stuff here
-                e2r_g_r <= 0;
-                e2r_irq_r <= 1;
-              end
-              //OP_NOP            : begin end
-              OP_CACHE          : begin
-                if (REG_r[R15][15:4] != CBR_r[15:4]) begin
-                  CBR_r[15:4] <= REG_r[R15][15:4];
-                  cache_val_r <= 0;
-                end
-              end
-
-              `OP_TO            : begin
-                if (SFR_B) begin
-                  e2r_val_r  <= 1;
-                  e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination
-                  e2r_data_r <= exe_src_r;                  
-                end
-              end
-              `OP_WITH          : begin end
-              `OP_FROM          : begin
-                if (SFR_B) begin
-                  exe_result = exe_srcn_r; // uses N as source
-                
-                  e2r_val_r  <= 1;
-                  e2r_data_r <= exe_result;
-
-                  e2r_z_r    <= ~|exe_result;
-                  e2r_ov_r   <= exe_result[7];
-                  e2r_s_r    <= exe_result[15];
-                end
-              end
-              
-              OP_LOOP           : begin
-                exe_result = REG_r[R12] - 1;
-                
-                e2r_val_r  <= 1;
-                e2r_destnum_r <= R12;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
-                
-                e2r_loop_r <= 1;                
-              end
-
-              OP_CMODE_COLOR    : begin
-                if (exe_alt1_r) begin
-                  e2r_wpor_r <= 1;
-                  e2r_por_r  <= {3'h0,exe_src_r[4:0]};
-                end
-                else begin
-                  e2r_wcolr_r <= 1;
-                  e2r_colr_r  <= POR_HN ? {COLR_r[7:4],exe_src_r[7:4]} : POR_FHN ? {COLR_r[7:4],exe_src_r[3:0]} : exe_src_r[7:0];
-                end
-              end
-              OP_PLOT_RPIX      : begin
-                if (exe_alt1_r) begin
-                  // RPIX
-                  if (|PIXBUF_VAL_r[0] | |PIXBUF_VAL_r[1]) begin
-                    // flush
-                    exe_plot_flushstate_r <= 0;
-                    EXE_STATE <= ST_EXE_MEMORY;
-                  end
-                end
-                else begin
-                  // PLOT
-                  e2r_val_r <= 1;
-                  e2r_data_r <= REG_r[R1] + 1;
-
-                  // setup new flush state
-                  exe_plot_flushstate_r <= 0;
-                  
-                  if (!POR_TRS && ((SCMR_MD == 3) ? (POR_FHN ? (exe_colr_r[3:0] == 0) : (exe_colr_r == 0)) : (exe_colr_r[3:0] == 0))) begin
-                    // no output written
-                    EXE_STATE <= ST_EXE_WAIT;
-                  end
-                  else if (PIXBUF_OFFSET_r[0] != exe_plot_offset_r) begin
-                    // flush
-                    EXE_STATE <= ST_EXE_MEMORY;
-                  end
-                  else begin
-                    // write
-                    PIXBUF_r[0][exe_plot_index_r]  <= exe_colr_r;
-                    PIXBUF_VAL_r[0][exe_plot_index_r] <= 1;
-                    
-                    exe_plot_done_r <= 1;
-                    
-                    // check for flush
-                    EXE_STATE <= ST_EXE_MEMORY;
-                  end
-                end
-              end
-
-              // ALU
-              `OP_ADD          : begin 
-                exe_n      = exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
-                {exe_carry,exe_result} = exe_src_r + exe_n + (exe_alt1_r & exe_cy_r);
-                
+          case (exe_opcode_r)
+            OP_BRA,OP_BGE,OP_BLT,OP_BNE,OP_BEQ,OP_BPL,OP_BMI,OP_BCC,OP_BCS,OP_BVC,OP_BVS: begin
+              if (exe_branch_r) begin
+                // calculate branch target
                 e2r_val_r <= 1;
-                // e2r_destnum_r <= DREG_r; // standard dest
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_ov_r   <= (exe_src_r[15] ^ exe_result[15]) & (exe_n[15] ^ exe_result[15]);
-                e2r_s_r    <= exe_result[15];
-                e2r_cy_r   <= exe_carry;
+                e2r_destnum_r <= R15;
+                e2r_r15_r <= REG_r[R15] + {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
+          
+                exe_branch_r <= 0;
               end
-              `OP_SUB          : begin
-                exe_n      = (~exe_alt1_r & exe_alt2_r) ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
-                {exe_carry,exe_result} = exe_src_r - exe_n - (exe_alt1_r & ~exe_alt2_r & ~exe_cy_r);
-                
-                // CMP doesn't output the result
-                e2r_val_r <= ~(exe_alt1_r & exe_alt2_r);
-                // e2r_destnum_r <= DREG_r; // standard dest
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_ov_r   <= (exe_src_r[15] ^ exe_result[15]) & (exe_src_r[15] ^ exe_n[15]);
-                e2r_s_r    <= exe_result[15];
-                e2r_cy_r   <= ~exe_carry;
+            end          
+            OP_STOP           : begin
+              // TODO: deal with interrupts and other stuff here
+              e2r_g_r <= 0;
+              e2r_irq_r <= 1;
+            end
+            //OP_NOP            : begin end
+            OP_CACHE          : begin
+              if (REG_r[R15][15:4] != CBR_r[15:4]) begin
+                CBR_r[15:4] <= REG_r[R15][15:4];
+                cache_val_r <= 0;
               end
-              `OP_AND_BIC      : begin
-                exe_n      = exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
-                exe_result = exe_src_r & exe_n;
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
-              end
-              `OP_OR_XOR       : begin
-                exe_n      = exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
-                exe_result = exe_alt1_r ? exe_src_r ^ exe_n : exe_src_r | exe_n;
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];                
-              end
-              OP_NOT           : begin
-                exe_result = ~exe_src_r;
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
-              end
-              
-              // ROTATE/SHIFT/INC/DEC
-              OP_LSR           : begin
-                exe_result = {1'b0,exe_src_r[15:1]};
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
-                e2r_cy_r   <= exe_src_r[0];
-              end
-              OP_ASR_DIV2      : begin
-                exe_result = {exe_src_r[15],exe_src_r[15:1]};
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= (exe_alt1_r & (&exe_src_r))? 0 : exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
-                e2r_cy_r   <= exe_result[0]; // unique to look at result for ASR/DIV2
-              end
-              OP_ROL           : begin
-                exe_result = {exe_src_r[14:0],exe_cy_r};
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
-                e2r_cy_r   <= exe_src_r[15];
-              end
-              OP_ROR           : begin
-                exe_result = {exe_cy_r,exe_src_r[15:1]};
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
-                e2r_cy_r   <= exe_src_r[0];
-              end
-              
-              // BYTE
-              OP_SWAP          : begin
-                exe_result = {exe_src_r[7:0],exe_src_r[15:8]};
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
-              end
-              OP_SEX           : begin
-                exe_result = {{8{exe_src_r[7]}},exe_src_r[7:0]};
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
-              end
-              OP_LOB           : begin
-                exe_result = {8'h00,exe_src_r[7:0]};
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[7];
-              end
-              OP_HIB           : begin
-                exe_result = {8'h00,exe_src_r[15:8]};
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[7];
-              end
-              OP_MERGE         : begin
-                exe_result = {REG_r[R7][15:8],REG_r[R8][15:8]};
-                
-                e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= exe_result & 16'hF0F0;
-                e2r_ov_r   <= exe_result & 16'hC0C0;
-                e2r_s_r    <= exe_result & 16'h8080;
-                e2r_cy_r   <= exe_result & 16'hE0E0;
-              end
-              
-              // MULTIPLY
-              OP_FMULT_LMULT   : begin
-                exe_mult_r      <= 1;
-                exe_mult_srca_r <= exe_src_r;
-                exe_mult_srcb_r <= REG_r[R6];
-              end
-              `OP_MULT         : begin
-                exe_mult_r      <= 1;
-                exe_mult_srca_r <= exe_src_r;
-                exe_mult_srcb_r <= exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
-              end
-              
-              OP_GETC_RAMB_ROMB: begin
-                if      (exe_alt1_r & exe_alt2_r)   ROMBR_r    <= exe_src_r;
-                else if (exe_alt2_r)                RAMBR_r[0] <= exe_src_r[0];
-              end
-              `OP_INC          : begin
-                exe_result = exe_srcn_r + 1;
-                
-                e2r_val_r  <= 1;
-                e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination                  
-                e2r_data_r <= exe_result;
-                
-                e2r_z_r    <= ~|exe_result;
-                e2r_s_r    <= exe_result[15];
-              end
-              `OP_DEC          : begin
-                exe_result = exe_srcn_r - 1;
-                
+            end
+
+            `OP_TO            : begin
+              if (SFR_B) begin
                 e2r_val_r  <= 1;
                 e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination
+                e2r_data_r <= exe_src_r;                  
+              end
+            end
+            `OP_WITH          : begin end
+            `OP_FROM          : begin
+              if (SFR_B) begin
+                exe_result = exe_srcn_r; // uses N as source
+              
+                e2r_val_r  <= 1;
                 e2r_data_r <= exe_result;
-                
+
                 e2r_z_r    <= ~|exe_result;
+                e2r_ov_r   <= exe_result[7];
                 e2r_s_r    <= exe_result[15];
               end
+            end
+            
+            OP_LOOP           : begin
+              exe_result = REG_r[R12] - 1;
               
-            endcase
-          end
+              e2r_val_r  <= 1;
+              e2r_destnum_r <= R12;
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[15];
+              
+              e2r_loop_r <= 1;                
+            end
+
+            OP_CMODE_COLOR    : begin
+              if (exe_alt1_r) begin
+                e2r_wpor_r <= 1;
+                e2r_por_r  <= {3'h0,exe_src_r[4:0]};
+              end
+              else begin
+                e2r_wcolr_r <= 1;
+                e2r_colr_r  <= POR_HN ? {COLR_r[7:4],exe_src_r[7:4]} : POR_FHN ? {COLR_r[7:4],exe_src_r[3:0]} : exe_src_r[7:0];
+              end
+            end
+            OP_PLOT_RPIX      : begin
+              if (exe_alt1_r) begin
+                // RPIX
+                if (|PIXBUF_VAL_r[0] | |PIXBUF_VAL_r[1]) begin
+                  // flush
+                  exe_plot_flushstate_r <= 0;
+                  EXE_STATE <= ST_EXE_MEMORY;
+                end
+              end
+              else begin
+                // PLOT
+                e2r_val_r <= 1;
+                e2r_data_r <= REG_r[R1] + 1;
+
+                // setup new flush state
+                exe_plot_flushstate_r <= 0;
+                
+                if (!POR_TRS && ((SCMR_MD == 3) ? (POR_FHN ? (exe_colr_r[3:0] == 0) : (exe_colr_r == 0)) : (exe_colr_r[3:0] == 0))) begin
+                  // no output written
+                  EXE_STATE <= ST_EXE_WAIT;
+                end
+                else if (PIXBUF_OFFSET_r[0] != exe_plot_offset_r) begin
+                  // flush
+                  EXE_STATE <= ST_EXE_MEMORY;
+                end
+                else begin
+                  // write
+                  PIXBUF_r[0][exe_plot_index_r]  <= exe_colr_r;
+                  PIXBUF_VAL_r[0][exe_plot_index_r] <= 1;
+                  
+                  exe_plot_done_r <= 1;
+                  
+                  // check for flush
+                  EXE_STATE <= ST_EXE_MEMORY;
+                end
+              end
+            end
+
+            // ALU
+            `OP_ADD          : begin 
+              exe_n      = exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+              {exe_carry,exe_result} = exe_src_r + exe_n + (exe_alt1_r & exe_cy_r);
+              
+              e2r_val_r <= 1;
+              // e2r_destnum_r <= DREG_r; // standard dest
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_ov_r   <= (exe_src_r[15] ^ exe_result[15]) & (exe_n[15] ^ exe_result[15]);
+              e2r_s_r    <= exe_result[15];
+              e2r_cy_r   <= exe_carry;
+            end
+            `OP_SUB          : begin
+              exe_n      = (~exe_alt1_r & exe_alt2_r) ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+              {exe_carry,exe_result} = exe_src_r - exe_n - (exe_alt1_r & ~exe_alt2_r & ~exe_cy_r);
+              
+              // CMP doesn't output the result
+              e2r_val_r <= ~(exe_alt1_r & exe_alt2_r);
+              // e2r_destnum_r <= DREG_r; // standard dest
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_ov_r   <= (exe_src_r[15] ^ exe_result[15]) & (exe_src_r[15] ^ exe_n[15]);
+              e2r_s_r    <= exe_result[15];
+              e2r_cy_r   <= ~exe_carry;
+            end
+            `OP_AND_BIC      : begin
+              exe_n      = exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+              exe_result = exe_src_r & exe_n;
+              
+              e2r_val_r  <= 1;
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[15];
+            end
+            `OP_OR_XOR       : begin
+              exe_n      = exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+              exe_result = exe_alt1_r ? exe_src_r ^ exe_n : exe_src_r | exe_n;
+              
+              e2r_val_r  <= 1;
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[15];                
+            end
+            OP_NOT           : begin
+              exe_result = ~exe_src_r;
+              
+              e2r_val_r  <= 1;
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[15];
+            end
+            
+            // ROTATE/SHIFT/INC/DEC
+            OP_LSR           : begin
+              exe_result = {1'b0,exe_src_r[15:1]};
+              
+              e2r_val_r  <= 1;
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[15];
+              e2r_cy_r   <= exe_src_r[0];
+            end
+            OP_ASR_DIV2      : begin
+              exe_result = {exe_src_r[15],exe_src_r[15:1]};
+              
+              e2r_val_r  <= 1;
+              e2r_data_r <= (exe_alt1_r & (&exe_src_r))? 0 : exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[15];
+              e2r_cy_r   <= exe_result[0]; // unique to look at result for ASR/DIV2
+            end
+            OP_ROL           : begin
+              exe_result = {exe_src_r[14:0],exe_cy_r};
+              
+              e2r_val_r  <= 1;
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[15];
+              e2r_cy_r   <= exe_src_r[15];
+            end
+            OP_ROR           : begin
+              exe_result = {exe_cy_r,exe_src_r[15:1]};
+              
+              e2r_val_r  <= 1;
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[15];
+              e2r_cy_r   <= exe_src_r[0];
+            end
+            
+            // BYTE
+            OP_SWAP          : begin
+              exe_result = {exe_src_r[7:0],exe_src_r[15:8]};
+              
+              e2r_val_r  <= 1;
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[15];
+            end
+            OP_SEX           : begin
+              exe_result = {{8{exe_src_r[7]}},exe_src_r[7:0]};
+              
+              e2r_val_r  <= 1;
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[15];
+            end
+            OP_LOB           : begin
+              exe_result = {8'h00,exe_src_r[7:0]};
+              
+              e2r_val_r  <= 1;
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[7];
+            end
+            OP_HIB           : begin
+              exe_result = {8'h00,exe_src_r[15:8]};
+              
+              e2r_val_r  <= 1;
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[7];
+            end
+            OP_MERGE         : begin
+              exe_result = {REG_r[R7][15:8],REG_r[R8][15:8]};
+              
+              e2r_val_r  <= 1;
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= exe_result & 16'hF0F0;
+              e2r_ov_r   <= exe_result & 16'hC0C0;
+              e2r_s_r    <= exe_result & 16'h8080;
+              e2r_cy_r   <= exe_result & 16'hE0E0;
+            end
+            
+            // MULTIPLY
+            OP_FMULT_LMULT   : begin
+              exe_mult_r      <= 1;
+              exe_mult_srca_r <= exe_src_r;
+              exe_mult_srcb_r <= REG_r[R6];
+            end
+            `OP_MULT         : begin
+              exe_mult_r      <= 1;
+              exe_mult_srca_r <= exe_src_r;
+              exe_mult_srcb_r <= exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+            end
+            
+            OP_GETC_RAMB_ROMB: begin
+              if      (exe_alt1_r & exe_alt2_r)   ROMBR_r    <= exe_src_r;
+              else if (exe_alt2_r)                RAMBR_r[0] <= exe_src_r[0];
+            end
+            `OP_INC          : begin
+              exe_result = exe_srcn_r + 1;
+              
+              e2r_val_r  <= 1;
+              e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination                  
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[15];
+            end
+            `OP_DEC          : begin
+              exe_result = exe_srcn_r - 1;
+              
+              e2r_val_r  <= 1;
+              e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination
+              e2r_data_r <= exe_result;
+              
+              e2r_z_r    <= ~|exe_result;
+              e2r_s_r    <= exe_result[15];
+            end
+            
+          endcase
         end
 
         EXE_STATE <= ST_EXE_MEMORY;
@@ -1640,6 +1641,7 @@ always @(posedge CLK) begin
                     
           if (op_complete) begin
             // get next instruction byte
+            exe_branch_r <= 0;
             exe_opcode_r <= fetch_data_r;//i2e_op_r[~i2e_ptr_r];
             exe_operand_r <= 0;
 
