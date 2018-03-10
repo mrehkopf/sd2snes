@@ -150,6 +150,22 @@ parameter
   ADDR_CACHE_BASE = 10'h100
   ;
 
+// multi match defines
+`define OP_TO    8'h10,8'h11,8'h12,8'h13,8'h14,8'h15,8'h16,8'h17,8'h18,8'h19,8'h1A,8'h1B,8'h1C,8'h1D,8'h1E,8'h1F
+`define OP_WITH  8'h20,8'h21,8'h22,8'h23,8'h24,8'h25,8'h26,8'h27,8'h28,8'h29,8'h2A,8'h2B,8'h2C,8'h2D,8'h2E,8'h2F
+`define OP_FROM  8'hB0,8'hB1,8'hB2,8'hB3,8'hB4,8'hB5,8'hB6,8'hB7,8'hB8,8'hB9,8'hBA,8'hBB,8'hBC,8'hBD,8'hBE,8'hBF
+`define OP_LD    8'h40,8'h41,8'h42,8'h43,8'h44,8'h45,8'h46,8'h47,8'h48,8'h49,8'h4A,8'h4B
+`define OP_ST    8'h30,8'h31,8'h32,8'h33,8'h34,8'h35,8'h36,8'h37,8'h38,8'h39,8'h3A,8'h3B
+`define OP_ADD   8'h50,8'h51,8'h52,8'h53,8'h54,8'h55,8'h56,8'h57,8'h58,8'h59,8'h5A,8'h5B,8'h5C,8'h5D,8'h5E,8'h5F
+`define OP_SUB   8'h60,8'h61,8'h62,8'h63,8'h64,8'h65,8'h66,8'h67,8'h68,8'h69,8'h6A,8'h6B,8'h6C,8'h6D,8'h6E,8'h6F
+`define OP_AND_BIC     8'h71,8'h72,8'h73,8'h74,8'h75,8'h76,8'h77,8'h78,8'h79,8'h7A,8'h7B,8'h7C,8'h7D,8'h7E,8'h7F
+`define OP_OR_XOR      8'hC1,8'hC2,8'hC3,8'hC4,8'hC5,8'hC6,8'hC7,8'hC8,8'hC9,8'hCA,8'hCB,8'hCC,8'hCD,8'hCE,8'hCF
+`define OP_INC   8'hD0,8'hD1,8'hD2,8'hD3,8'hD4,8'hD5,8'hD6,8'hD7,8'hD8,8'hD9,8'hDA,8'hDB,8'hDC,8'hDD,8'hDE
+`define OP_DEC   8'hE0,8'hE1,8'hE2,8'hE3,8'hE4,8'hE5,8'hE6,8'hE7,8'hE8,8'hE9,8'hEA,8'hEB,8'hEC,8'hED,8'hEE
+`define OP_MULT  8'h80,8'h81,8'h82,8'h83,8'h84,8'h85,8'h86,8'h87,8'h88,8'h89,8'h8A,8'h8B,8'h8C,8'h8D,8'h8E,8'h8F
+`define OP_LINK        8'h91,8'h92,8'h93,8'h94
+`define OP_JMP_LJMP                                              8'h98,8'h99,8'h9A,8'h9B,8'h9C,8'h9D,8'h9E
+
 // instructions
 parameter
   OP_STOP          = 8'h00,
@@ -176,9 +192,9 @@ parameter
   OP_ALT1          = 8'h3D,
   OP_ALT2          = 8'h3E,
   OP_ALT3          = 8'h3F,
-  OP_TO            = 8'h1x,
-  OP_WITH          = 8'h2x,
-  OP_FROM          = 8'hBx,
+  //OP_TO            = 8'h1x,
+  //OP_WITH          = 8'h2x,
+  //OP_FROM          = 8'hBx,
   
   // MOV
   // MOVE/MOVES use WITH/TO and WITH/FROM
@@ -197,8 +213,8 @@ parameter
   OP_PLOT_RPIX     = 8'h4C,
   
   // ALU
-  OP_ADD           = 8'h5x,
-  OP_SUB           = 8'h6x,
+  //OP_ADD           = 8'h5x,
+  //OP_SUB           = 8'h6x,
   //OP_AND_BIC       = 8'h7x, // 70 conflict
   //OP_OR_XOR        = 8'hCx, // C0 conflict
   OP_NOT           = 8'h4F,
@@ -208,8 +224,8 @@ parameter
   OP_ASR_DIV2      = 8'h96,
   OP_ROL           = 8'h04,
   OP_ROR           = 8'h97,
-  OP_INC           = 8'hDx,
-  OP_DEC           = 8'hEx,
+  //OP_INC           = 8'hDx,
+  //OP_DEC           = 8'hEx,
   
   // BYTE
   OP_SWAP          = 8'h4D,
@@ -219,8 +235,8 @@ parameter
   OP_MERGE         = 8'h70,
   
   // MULTIPLY
-  OP_FMULT_LMULT   = 8'h9F,
-  OP_MULT_UMULT    = 8'h8x
+  OP_FMULT_LMULT   = 8'h9F
+  //OP_MULT_UMULT    = 8'h8x
   
   ;
 
@@ -320,6 +336,10 @@ reg [7:0]  DREG_r;
 reg [7:0]  ROMRDBUF_r;
 reg [15:0] RAMWRBUF_r; // FIXME: this should be 8b
 reg [15:0] RAMADDR_r;
+
+reg [7:0]  PIXBUF_VAL_r[1:0];
+reg [15:0] PIXBUF_OFFSET_r[1:0];
+reg [7:0]  PIXBUF_r[1:0][7:0];
 
 // Important breakouts
 assign SFR_Z    = SFR_r[1];
@@ -917,6 +937,7 @@ reg        exe_cy_r;
 reg [15:0] exe_mult_srca_r;
 reg [15:0] exe_mult_srcb_r;
 reg        exe_mult_r;
+reg [7:0]  exe_colr_r;
 
 reg [15:0] exe_n;
 reg [15:0] exe_result;
@@ -927,6 +948,10 @@ wire [15:0] exe_mult_out;
 wire [15:0] exe_umult_out;
 
 reg [7:0]  exe_byte_r;
+reg        exe_plot_done_r;
+reg [15:0] exe_plot_offset_r;
+reg [2:0]  exe_plot_index_r;
+reg [2:0]  exe_plot_flushstate_r;
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -960,6 +985,8 @@ always @(posedge CLK) begin
     e2c_waitcnt_val_r <= 0;
     exe_ram_rd_r <= 0;
     exe_ram_wr_r <= 0;
+    
+    for (i = 0; i < 2; i = i + 1) PIXBUF_VAL_r[i] <= 0;
   end
   else begin
     case (EXE_STATE)
@@ -980,7 +1007,7 @@ always @(posedge CLK) begin
         if (~|exe_opsize_r) begin
         
           // calculate operands
-          casex (exe_opcode_r)
+          case (exe_opcode_r)
             OP_BRA,
             OP_BGE,
             OP_BLT,
@@ -999,7 +1026,7 @@ always @(posedge CLK) begin
           endcase
 
           // handle prefixes
-          casex (exe_opcode_r)
+          case (exe_opcode_r)
             OP_BRA           : exe_branch_r <= 1;
             OP_BGE           : exe_branch_r <= ( SFR_S == SFR_OV);
             OP_BLT           : exe_branch_r <= ( SFR_S != SFR_OV);
@@ -1015,9 +1042,12 @@ always @(posedge CLK) begin
             OP_ALT1          : begin e2r_alt_r <= 1; e2r_b_r <= 0; end
             OP_ALT2          : begin e2r_alt_r <= 2; e2r_b_r <= 0; end
             OP_ALT3          : begin e2r_alt_r <= 3; e2r_b_r <= 0; end
-            OP_TO            : if (~SFR_B) e2r_dreg_r <= exe_opcode_r[3:0];
-            OP_WITH          : begin e2r_sreg_r <= exe_opcode_r[3:0]; e2r_dreg_r <= exe_opcode_r[3:0]; e2r_b_r <= 1; end
-            OP_FROM          : if (~SFR_B) e2r_sreg_r <= exe_opcode_r[3:0];
+            `OP_TO           : if (~SFR_B) e2r_dreg_r <= exe_opcode_r[3:0];
+            `OP_WITH         : begin e2r_sreg_r <= exe_opcode_r[3:0]; e2r_dreg_r <= exe_opcode_r[3:0]; e2r_b_r <= 1; end
+            `OP_FROM         : if (~SFR_B) e2r_sreg_r <= exe_opcode_r[3:0];
+
+            // generate dithered color value for PLOT
+            OP_PLOT_RPIX     : if (~exe_alt1_r & POR_DTH & ~&SCMR_MD) exe_colr_r <= {4'h0, ((REG_r[R1] ^ REG_r[R2]) ? exe_colr_r[7:4] : exe_colr_r[3:0])};
             
             default          : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= SFR_B; end
           endcase
@@ -1045,6 +1075,11 @@ always @(posedge CLK) begin
         exe_src_r <= REG_r[SREG_r];
         //exe_dst_r <= REG_r[DREG_r];
         exe_srcn_r <= REG_r[exe_opcode_r[3:0]];
+        exe_colr_r <= COLR_r;
+       
+        exe_plot_done_r <= 0;
+        exe_plot_offset_r <= {REG_r[R2][10:0],5'h00} + {3'h0,REG_r[R1][15:3]};
+        exe_plot_index_r  <= REG_r[R1][2:0] ^ 3'b111;
         
         EXE_STATE <= ST_EXE_EXECUTE;
       end
@@ -1059,7 +1094,7 @@ always @(posedge CLK) begin
             exe_branch_r <= 0;
           end
           else begin
-            casex (exe_opcode_r)
+            case (exe_opcode_r)
               OP_STOP           : begin
                 // TODO: deal with interrupts and other stuff here
                 e2r_g_r <= 0;
@@ -1073,15 +1108,15 @@ always @(posedge CLK) begin
                 end
               end
 
-              OP_TO             : begin
+              `OP_TO            : begin
                 if (SFR_B) begin
                   e2r_val_r  <= 1;
                   e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination
                   e2r_data_r <= exe_src_r;                  
                 end
               end
-              OP_WITH           : begin end
-              OP_FROM           : begin
+              `OP_WITH          : begin end
+              `OP_FROM          : begin
                 if (SFR_B) begin
                   exe_result = exe_srcn_r; // uses N as source
                 
@@ -1117,10 +1152,46 @@ always @(posedge CLK) begin
                   e2r_colr_r  <= POR_HN ? {COLR_r[7:4],exe_src_r[7:4]} : POR_FHN ? {COLR_r[7:4],exe_src_r[3:0]} : exe_src_r[7:0];
                 end
               end
-              OP_PLOT_RPIX      : begin end
+              OP_PLOT_RPIX      : begin
+                if (exe_alt1_r) begin
+                  // RPIX
+                  if (|PIXBUF_VAL_r[0] | |PIXBUF_VAL_r[1]) begin
+                    // flush
+                    exe_plot_flushstate_r <= 0;
+                    EXE_STATE <= ST_EXE_MEMORY;
+                  end
+                end
+                else begin
+                  // PLOT
+                  e2r_val_r <= 1;
+                  e2r_data_r <= REG_r[R1] + 1;
+
+                  // setup new flush state
+                  exe_plot_flushstate_r <= 0;
+                  
+                  if (!POR_TRS && ((SCMR_MD == 3) ? (POR_FHN ? (exe_colr_r[3:0] == 0) : (exe_colr_r == 0)) : (exe_colr_r[3:0] == 0))) begin
+                    // no output written
+                    EXE_STATE <= ST_EXE_WAIT;
+                  end
+                  else if (PIXBUF_OFFSET_r[0] != exe_plot_offset_r) begin
+                    // flush
+                    EXE_STATE <= ST_EXE_MEMORY;
+                  end
+                  else begin
+                    // write
+                    PIXBUF_r[0][exe_plot_index_r]  <= exe_colr_r;
+                    PIXBUF_VAL_r[0][exe_plot_index_r] <= 1;
+                    
+                    exe_plot_done_r <= 1;
+                    
+                    // check for flush
+                    EXE_STATE <= ST_EXE_MEMORY;
+                  end
+                end
+              end
 
               // ALU
-              OP_ADD           : begin 
+              `OP_ADD          : begin 
                 exe_n      = exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
                 {exe_carry,exe_result} = exe_src_r + exe_n + (exe_alt1_r & exe_cy_r);
                 
@@ -1133,7 +1204,7 @@ always @(posedge CLK) begin
                 e2r_s_r    <= exe_result[15];
                 e2r_cy_r   <= exe_carry;
               end
-              OP_SUB           : begin
+              `OP_SUB          : begin
                 exe_n      = (~exe_alt1_r & exe_alt2_r) ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
                 {exe_carry,exe_result} = exe_src_r - exe_n - (exe_alt1_r & ~exe_alt2_r & ~exe_cy_r);
                 
@@ -1147,8 +1218,7 @@ always @(posedge CLK) begin
                 e2r_s_r    <= exe_result[15];
                 e2r_cy_r   <= ~exe_carry;
               end
-              //OP_AND_BIC       : begin
-              8'h71, 8'h72, 8'h73, 8'h74, 8'h75, 8'h76, 8'h77, 8'h78, 8'h79, 8'h7A, 8'h7B, 8'h7C, 8'h7D, 8'h7E, 8'h7F : begin 
+              `OP_AND_BIC      : begin
                 exe_n      = exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
                 exe_result = exe_src_r & exe_n;
                 
@@ -1158,8 +1228,7 @@ always @(posedge CLK) begin
                 e2r_z_r    <= ~|exe_result;
                 e2r_s_r    <= exe_result[15];
               end
-              //OP_OR_XOR        : begin
-              8'hC1, 8'hC2, 8'hC3, 8'hC4, 8'hC5, 8'hC6, 8'hC7, 8'hC8, 8'hC9, 8'hCA, 8'hCB, 8'hCC, 8'hCD, 8'hCE, 8'hCF : begin 
+              `OP_OR_XOR       : begin
                 exe_n      = exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
                 exe_result = exe_alt1_r ? exe_src_r ^ exe_n : exe_src_r | exe_n;
                 
@@ -1276,7 +1345,7 @@ always @(posedge CLK) begin
                 exe_mult_srca_r <= exe_src_r;
                 exe_mult_srcb_r <= REG_r[R6];
               end
-              OP_MULT_UMULT    : begin
+              `OP_MULT         : begin
                 exe_mult_r      <= 1;
                 exe_mult_srca_r <= exe_src_r;
                 exe_mult_srcb_r <= exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
@@ -1286,8 +1355,7 @@ always @(posedge CLK) begin
                 if      (exe_alt1_r & exe_alt2_r)   ROMBR_r    <= exe_src_r;
                 else if (exe_alt2_r)                RAMBR_r[0] <= exe_src_r[0];
               end
-              //OP_INC           : begin
-              8'hD0, 8'hD1, 8'hD2, 8'hD3, 8'hD4, 8'hD5, 8'hD6, 8'hD7, 8'hD8, 8'hD9, 8'hDA, 8'hDB, 8'hDC, 8'hDD, 8'hDE: begin
+              `OP_INC          : begin
                 exe_result = exe_srcn_r + 1;
                 
                 e2r_val_r  <= 1;
@@ -1297,8 +1365,7 @@ always @(posedge CLK) begin
                 e2r_z_r    <= ~|exe_result;
                 e2r_s_r    <= exe_result[15];
               end
-              //OP_DEC           : begin
-              8'hE0, 8'hE1, 8'hE2, 8'hE3, 8'hE4, 8'hE5, 8'hE6, 8'hE7, 8'hE8, 8'hE9, 8'hEA, 8'hEB, 8'hEC, 8'hED, 8'hEE: begin
+              `OP_DEC          : begin
                 exe_result = exe_srcn_r - 1;
                 
                 e2r_val_r  <= 1;
@@ -1317,7 +1384,17 @@ always @(posedge CLK) begin
       end
       ST_EXE_MEMORY: begin
         if (op_complete) begin
-          casex (exe_opcode_r)
+          case (exe_opcode_r)
+            OP_PLOT_RPIX      : begin
+              if (exe_alt1_r) begin
+                // RPIX
+              end
+              else begin
+                // PLOT
+                
+                // TODO: flush operation.
+              end
+            end
             OP_GETC_RAMB_ROMB: begin
               if (~exe_alt1_r & ~exe_alt2_r) begin
                 //e2r_val_r    <= 1;
@@ -1352,7 +1429,7 @@ always @(posedge CLK) begin
               
               EXE_STATE <= ST_EXE_WAIT;
             end
-            OP_MULT_UMULT    : begin
+            `OP_MULT         : begin
               exe_result = exe_alt1_r ? exe_umult_out : exe_mult_out;
             
               e2r_val_r      <= 1;
@@ -1391,7 +1468,7 @@ always @(posedge CLK) begin
           
                 // TODO: this really does a byte at a time.
                 // TODO: do we need to handle misaligned data in a special way?
-                exe_ram_rd_r <= 1;
+                exe_ram_wr_r <= 1;
                 exe_word_r <= 1;
                 exe_data_r <= exe_srcn_r;
 
@@ -1427,7 +1504,7 @@ always @(posedge CLK) begin
           
                 // TODO: this really does a byte at a time.
                 // TODO: do we need to handle misaligned data in a special way?
-                exe_ram_rd_r <= 1;
+                exe_ram_wr_r <= 1;
                 exe_word_r <= 1;
                 exe_data_r <= exe_srcn_r;
 
@@ -1470,8 +1547,7 @@ always @(posedge CLK) begin
               exe_addr_r <= {8'hE0,RAMADDR_r};
               EXE_STATE <= ST_EXE_MEMORY_WAIT;
             end
-            //OP_LD            : begin
-            8'h40, 8'h41, 8'h42, 8'h43, 8'h44, 8'h45, 8'h46, 8'h47, 8'h48, 8'h49, 8'h4A, 8'h4B: begin
+            `OP_LD           : begin
               e2r_val_r    <= 1;
                  
               e2c_waitcnt_val_r <= 1;
@@ -1485,8 +1561,7 @@ always @(posedge CLK) begin
               EXE_STATE <= ST_EXE_MEMORY_WAIT;
               //EXE_STATE <= ST_EXE_WAIT;
             end
-            //OP_ST            : begin
-            8'h30, 8'h31, 8'h32, 8'h33, 8'h34, 8'h35, 8'h36, 8'h37, 8'h38, 8'h39, 8'h3A, 8'h3B: begin
+            `OP_ST           : begin
               e2c_waitcnt_val_r <= 1;
               e2c_waitcnt_r <= exe_alt1_r ? 4-1 : 6-1; // TODO: account for slow clock.
 
@@ -1500,7 +1575,7 @@ always @(posedge CLK) begin
               //EXE_STATE <= ST_EXE_WAIT;
             end
             // LINK
-            8'h91, 8'h92, 8'h93, 8'h94: begin
+            `OP_LINK         : begin
               exe_result = REG_r[R15] + exe_opcode_r[3:0];
                 
               e2r_val_r  <= 1;
@@ -1510,7 +1585,7 @@ always @(posedge CLK) begin
               EXE_STATE <= ST_EXE_WAIT;
             end
             // JMP/LJMP
-            8'h98, 8'h99, 8'h9A, 8'h9B, 8'h9C, 8'h9D: begin
+            `OP_JMP_LJMP     : begin
               e2r_val_r <= 1;
               e2r_destnum_r <= R15;
 
@@ -1535,7 +1610,7 @@ always @(posedge CLK) begin
       ST_EXE_MEMORY_WAIT: begin
         e2c_waitcnt_val_r <= 0;
         
-        if (|(ROM_STATE & ST_ROM_DATA_END) | |(RAM_STATE & ST_RAM_DATA_END)) begin
+        if ((|(ROM_STATE & ST_ROM_DATA_END)) | (|(RAM_STATE & ST_RAM_DATA_END))) begin
           exe_rom_rd_r <= 0;
           exe_ram_rd_r <= 0;
           exe_ram_wr_r <= 0;
