@@ -931,7 +931,11 @@ reg [7:0]  exe_byte_r;
 reg        exe_plot_done_r;
 reg [15:0] exe_plot_offset_r;
 reg [2:0]  exe_plot_index_r;
-reg [2:0]  exe_plot_flushstate_r;
+reg        exe_plot_flush_r;
+reg        exe_plot_flushbuf_r;
+reg [2:0]  exe_plot_flushindex_r;
+reg [3:0]  exe_plot_bpp_r;
+reg [15:0] exe_plot_char_r[1:0];
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -1055,6 +1059,20 @@ always @(posedge CLK) begin
         exe_plot_offset_r <= {REG_r[R2][10:0],5'h00} + {3'h0,REG_r[R1][15:3]};
         exe_plot_index_r  <= REG_r[R1][2:0] ^ 3'b111;
         
+        // plot character number
+        // x - [4:0],000
+        // y - [12:5]
+        for (i = 0; i < 2; i = i + 1) begin
+          case (SCMR_HT | {2{POR_OBJ}})
+            0: exe_plot_char_r[i] <= {PIXBUF_OFFSET_r[i][4:0],4'b0000} + PIXBUF_OFFSET_r[i][12:8];
+            1: exe_plot_char_r[i] <= {PIXBUF_OFFSET_r[i][4:0],4'b0000} + {PIXBUF_OFFSET_r[i][4:0],4'b00} + PIXBUF_OFFSET_r[i][12:8];
+            2: exe_plot_char_r[i] <= {PIXBUF_OFFSET_r[i][4:0],4'b0000} + {PIXBUF_OFFSET_r[i][4:0],4'b000} + PIXBUF_OFFSET_r[i][12:8];
+            3: exe_plot_char_r[i] <= {PIXBUF_OFFSET_r[i][12],PIXBUF_OFFSET_r[i][4],PIXBUF_OFFSET_r[i][11:8],PIXBUF_OFFSET_r[i][3:0]};
+          endcase
+        end
+        
+        exe_plot_bpp_r <= {&SCMR_MD, ^SCMR_MD, ~|SCMR_MD, 1'b0};
+        
         EXE_STATE <= ST_EXE_EXECUTE;
       end
       ST_EXE_EXECUTE: begin
@@ -1132,27 +1150,35 @@ always @(posedge CLK) begin
                 // RPIX
                 if (|PIXBUF_VALID_r[0] | |PIXBUF_VALID_r[1]) begin
                   // flush
-                  exe_plot_flushstate_r <= 0;
+                  exe_plot_flush_r <= 1;
+                  exe_plot_flushbuf_r <= ~|PIXBUF_VALID_r[0];
+                  exe_plot_flushindex_r <= 0;
                   EXE_STATE <= ST_EXE_MEMORY;
+                end
+                else begin
+                  // RPIX operation
+                  exe_plot_flush_r <= 0;
+                  EXE_STATE <= ST_EXE_WAIT;
                 end
               end
               else begin
                 // PLOT
                 e2r_val_r <= 1;
                 e2r_data_r <= REG_r[R1] + 1;
-
-                // setup new flush state
-                exe_plot_flushstate_r <= 0;
                 
                 if (!POR_TRS && ((SCMR_MD == 3) ? (POR_FHN ? (exe_colr_r[3:0] == 0) : (exe_colr_r == 0)) : (exe_colr_r[3:0] == 0))) begin
                   // no output written
+                  exe_plot_flush_r <= 0;
                   EXE_STATE <= ST_EXE_WAIT;
                 end
                 else if (PIXBUF_OFFSET_r[0] != exe_plot_offset_r) begin
                   // flush
+                  exe_plot_flush_r <= 1;
+                  exe_plot_flushbuf_r <= 0;
+                  exe_plot_flushindex_r <= 0;
                   EXE_STATE <= ST_EXE_MEMORY;
                 end
-                else begin
+                else if (~exe_plot_done_r) begin
                   // write
                   PIXBUF_r[0][exe_plot_index_r]  <= exe_colr_r;
                   PIXBUF_VALID_r[0][exe_plot_index_r] <= 1;
@@ -1160,7 +1186,13 @@ always @(posedge CLK) begin
                   exe_plot_done_r <= 1;
                   
                   // check for flush
-                  EXE_STATE <= ST_EXE_MEMORY;
+                  exe_plot_flush_r <= &(PIXBUF_VALID_r[0] | (1<<exe_plot_index_r));
+                  exe_plot_flushbuf_r <= 0;
+                  exe_plot_flushindex_r <= 0;
+                  EXE_STATE <= (&PIXBUF_VALID_r[0]) ? ST_EXE_MEMORY : ST_EXE_WAIT;
+                end
+                else begin
+                  // copy PIXBUF if we get back here
                 end
               end
             end
@@ -1360,13 +1392,13 @@ always @(posedge CLK) begin
         if (op_complete) begin
           case (exe_opcode_r)
             `OP_PLOT_RPIX      : begin
-              if (exe_alt1_r) begin
-                // RPIX
+              // TODO: add 6 cycles for read
+              if (exe_alt1_r & ~exe_plot_flush_r) begin
+                // RPIX read.  Remember current count.  Account for clock advance.
               end
               else begin
-                // PLOT
-                
-                // TODO: flush operation.
+                // TODO: add 1 cycle for miss, add 6 cycles for hit.  Remember current count.  Account for clock advance.
+                // Flush
               end
             end
             `OP_GETC_RAMB_ROMB: begin
@@ -1697,10 +1729,10 @@ always @(posedge CLK) begin
     10'h46            : pgmdata_out <= RAMADDR_r[7:0];
     10'h47            : pgmdata_out <= RAMADDR_r[15:8];
 
-    10'h50,10'h58     : pgmdata_out <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
-    10'h51,10'h59     : pgmdata_out <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
-    10'h6x            : pgmdata_out <= PIXBUF_VALID_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
-    10'h7x            : pgmdata_out <= PIXBUF_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
+    //10'h50,10'h58     : pgmdata_out <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
+    //10'h51,10'h59     : pgmdata_out <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
+    //10'h6x            : pgmdata_out <= PIXBUF_VALID_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
+    //10'h7x            : pgmdata_out <= PIXBUF_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
 
     // TODO: add more internal temps @ $80
     10'h80            : pgmdata_out <= SFR_Z;
