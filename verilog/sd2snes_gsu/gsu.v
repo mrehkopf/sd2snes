@@ -314,7 +314,7 @@ reg [7:0]  ROMRDBUF_r;
 reg [15:0] RAMWRBUF_r; // FIXME: this should be 8b
 reg [15:0] RAMADDR_r;
 
-reg [7:0]  PIXBUF_VAL_r[1:0];
+reg [7:0]  PIXBUF_VALID_r[1:0];
 reg [15:0] PIXBUF_OFFSET_r[1:0];
 reg [7:0]  PIXBUF_r[1:0][7:0];
 
@@ -972,7 +972,7 @@ always @(posedge CLK) begin
     exe_ram_rd_r <= 0;
     exe_ram_wr_r <= 0;
     
-    for (i = 0; i < 2; i = i + 1) PIXBUF_VAL_r[i] <= 0;
+    for (i = 0; i < 2; i = i + 1) PIXBUF_VALID_r[i] <= 0;
   end
   else begin
     case (EXE_STATE)
@@ -1022,7 +1022,7 @@ always @(posedge CLK) begin
             `OP_FROM          : if (~SFR_B) e2r_sreg_r <= exe_opcode_r[3:0];
 
             // generate dithered color value for PLOT
-            `OP_PLOT_RPIX     : if (~exe_alt1_r & POR_DTH & ~&SCMR_MD) exe_colr_r <= {4'h0, ((REG_r[R1] ^ REG_r[R2]) ? exe_colr_r[7:4] : exe_colr_r[3:0])};
+            `OP_PLOT_RPIX     : if (~exe_alt1_r & POR_DTH & ~&SCMR_MD) exe_colr_r <= {4'h0, ((REG_r[R1] ^ REG_r[R2]) ? COLR_r[7:4] : COLR_r[3:0])}; else exe_colr_r <= COLR_r;
             
             default           : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= SFR_B; end
           endcase
@@ -1050,7 +1050,6 @@ always @(posedge CLK) begin
         exe_src_r <= REG_r[SREG_r];
         //exe_dst_r <= REG_r[DREG_r];
         exe_srcn_r <= REG_r[exe_opcode_r[3:0]];
-        exe_colr_r <= COLR_r;
        
         exe_plot_done_r <= 0;
         exe_plot_offset_r <= {REG_r[R2][10:0],5'h00} + {3'h0,REG_r[R1][15:3]};
@@ -1131,7 +1130,7 @@ always @(posedge CLK) begin
             `OP_PLOT_RPIX      : begin
               if (exe_alt1_r) begin
                 // RPIX
-                if (|PIXBUF_VAL_r[0] | |PIXBUF_VAL_r[1]) begin
+                if (|PIXBUF_VALID_r[0] | |PIXBUF_VALID_r[1]) begin
                   // flush
                   exe_plot_flushstate_r <= 0;
                   EXE_STATE <= ST_EXE_MEMORY;
@@ -1156,7 +1155,7 @@ always @(posedge CLK) begin
                 else begin
                   // write
                   PIXBUF_r[0][exe_plot_index_r]  <= exe_colr_r;
-                  PIXBUF_VAL_r[0][exe_plot_index_r] <= 1;
+                  PIXBUF_VALID_r[0][exe_plot_index_r] <= 1;
                   
                   exe_plot_done_r <= 1;
                   
@@ -1697,6 +1696,11 @@ always @(posedge CLK) begin
     10'h45            : pgmdata_out <= RAMWRBUF_r;
     10'h46            : pgmdata_out <= RAMADDR_r[7:0];
     10'h47            : pgmdata_out <= RAMADDR_r[15:8];
+
+    10'h50,10'h58     : pgmdata_out <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
+    10'h51,10'h59     : pgmdata_out <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
+    10'h6x            : pgmdata_out <= PIXBUF_VALID_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
+    10'h7x            : pgmdata_out <= PIXBUF_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
 
     // TODO: add more internal temps @ $80
     10'h80            : pgmdata_out <= SFR_Z;
