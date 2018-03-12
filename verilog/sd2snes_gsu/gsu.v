@@ -53,6 +53,7 @@ module gsu(
   
   // ACTIVE interface
   output        ACTIVE,
+  output        IRQ,
   
   // State debug read interface
   input  [9:0]  PGM_ADDR, // [9:0]
@@ -362,6 +363,7 @@ assign POR_OBJ  = POR_r[4];
 // Execute -> RegisterFile
 reg        e2r_val_r;
 reg [3:0]  e2r_destnum_r;
+reg [15:0] e2r_data_pre_r;
 reg [15:0] e2r_data_r;
 reg [15:0] e2r_r15_r;
 reg [15:0] e2r_r4_r;
@@ -543,10 +545,10 @@ always @(posedge CLK) begin
           R9 : begin if (~e2r_mask_r[1]) REG_r[R9 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R9 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
           R10: begin if (~e2r_mask_r[1]) REG_r[R10][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R10][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
           R11: begin if (~e2r_mask_r[1]) REG_r[R11][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R11][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R12: begin if (~e2r_mask_r[1]) REG_r[R12][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R12][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= e2r_loop_r ? REG_r[R13] : (REG_r[R15] + 1); end
+          R12: begin if (~e2r_mask_r[1]) REG_r[R12][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R12][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= e2r_loop_r ? REG_r[R13] : REG_r[R15] + 1; end
           R13: begin if (~e2r_mask_r[1]) REG_r[R13][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R13][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
           R14: begin if (~e2r_mask_r[1]) REG_r[R14][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R14][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R15: REG_r[R15] <= e2r_r15_r;
+          R15: REG_r[R15] <= {(~e2r_mask_r[1] ? e2r_data_r[15:8] : REG_r[R15][15:8]), (~e2r_mask_r[0] ? e2r_data_r[7:0] : REG_r[R15][7:0])};
         endcase
       end
       else if (SFR_GO) begin
@@ -592,7 +594,7 @@ always @(posedge CLK) begin
         SFR_r[9:8] <= e2r_alt_r;
         SFR_r[12]  <= e2r_b_r;
         SFR_r[15]  <= e2r_irq_r;
-          
+
         SREG_r     <= e2r_sreg_r;
         DREG_r     <= e2r_dreg_r;
         if (e2r_ljmp_r) PBR_r <= e2r_pbr_r;
@@ -601,6 +603,9 @@ always @(posedge CLK) begin
       end
       
       if (snes_write_r) data_flop_r <= data_in_r;
+    end
+    else if (enable_r & SNES_RD_start) begin
+      if (addr_in_r[9:0] == {2'h0,ADDR_SFR+1}) SFR_r[15] <= 0;
     end
   end
 end
@@ -906,6 +911,7 @@ reg [7:0]  EXE_STATE; initial EXE_STATE = ST_EXE_IDLE;
 reg        exe_branch_r;
 
 reg [7:0]  exe_opcode_r;
+reg        exe_operand_valid_r;
 reg [15:0] exe_operand_r;
 reg [1:0]  exe_opsize_r;
 reg [15:0] exe_src_r;
@@ -960,6 +966,7 @@ always @(posedge CLK) begin
     e2r_wcolr_r <= 0;
 
     e2r_data_r <= 0;
+    e2r_data_pre_r <= 0;
     e2r_mask_r <= 0;
     e2r_r15_r <= 0;
     e2r_r4_r <= 0;
@@ -969,6 +976,7 @@ always @(posedge CLK) begin
     exe_byte_r <= 0;
     exe_opsize_r <= 0;
     exe_operand_r <= 0;
+    exe_operand_valid_r <= 0;
     
     exe_addr_r <= 0;
 
@@ -989,7 +997,7 @@ always @(posedge CLK) begin
         // handle snes writes
         e2r_val_r  <= SNES_WR_end & enable_r & addr_in_r[0] & ~|addr_in_r[9:5];
         e2r_data_r <= {data_in_r,data_flop_r};
-        e2r_r15_r  <= {data_in_r,data_flop_r};
+        //e2r_r15_r  <= {data_in_r,data_flop_r};
         e2r_mask_r <= 0;
         e2r_destnum_r <= addr_in_r[4:1];
       end
@@ -1028,13 +1036,14 @@ always @(posedge CLK) begin
             // generate dithered color value for PLOT
             `OP_PLOT_RPIX     : if (~exe_alt1_r & POR_DTH & ~&SCMR_MD) exe_colr_r <= {4'h0, ((REG_r[R1] ^ REG_r[R2]) ? COLR_r[7:4] : COLR_r[3:0])}; else exe_colr_r <= COLR_r;
             
-            default           : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= SFR_B; end
+            default           : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= 0; end
           endcase
         end
         else begin
-          exe_operand_r <= {exe_operand_r[7:0],exe_byte_r};
+          exe_operand_valid_r <= 1;
+          exe_operand_r <= exe_operand_valid_r ? {exe_byte_r,exe_operand_r[7:0]} : {8'h00,exe_byte_r};
         end
-        
+
         // get previous values for defaults
         e2r_z_r    <= SFR_Z;
         e2r_cy_r   <= SFR_CY;
@@ -1046,6 +1055,7 @@ always @(posedge CLK) begin
         
         // get default destination
         e2r_destnum_r <= DREG_r;
+        e2r_r15_r <= REG_r[R15];
         
         exe_alt1_r <= SFR_ALT1;
         exe_alt2_r <= SFR_ALT2;
@@ -1083,7 +1093,7 @@ always @(posedge CLK) begin
                 // calculate branch target
                 e2r_val_r <= 1;
                 e2r_destnum_r <= R15;
-                e2r_r15_r <= REG_r[R15] + {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
+                e2r_data_pre_r <= e2r_r15_r + {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
           
                 exe_branch_r <= 0;
               end
@@ -1095,8 +1105,8 @@ always @(posedge CLK) begin
             end
             //OP_NOP            : begin end
             `OP_CACHE          : begin
-              if (REG_r[R15][15:4] != CBR_r[15:4]) begin
-                CBR_r[15:4] <= REG_r[R15][15:4];
+              if (e2r_r15_r[15:4] != CBR_r[15:4]) begin
+                CBR_r[15:4] <= e2r_r15_r[15:4];
                 cache_val_r <= 0;
               end
             end
@@ -1105,7 +1115,10 @@ always @(posedge CLK) begin
               if (SFR_B) begin
                 e2r_val_r  <= 1;
                 e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination
-                e2r_data_r <= exe_src_r;                  
+                e2r_data_pre_r <= exe_src_r;
+                
+                // reset
+                e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= 0;
               end
             end
             `OP_WITH          : begin end
@@ -1114,11 +1127,14 @@ always @(posedge CLK) begin
                 exe_result = exe_srcn_r; // uses N as source
               
                 e2r_val_r  <= 1;
-                e2r_data_r <= exe_result;
+                e2r_data_pre_r <= exe_result;
 
                 e2r_z_r    <= ~|exe_result;
                 e2r_ov_r   <= exe_result[7];
                 e2r_s_r    <= exe_result[15];
+
+                // reset
+                e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= 0;
               end
             end
             
@@ -1127,12 +1143,12 @@ always @(posedge CLK) begin
               
               e2r_val_r  <= 1;
               e2r_destnum_r <= R12;
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];
               
-              e2r_loop_r <= 1;                
+              e2r_loop_r <= REG_r[R12] != 1;
             end
 
             `OP_CMODE_COLOR    : begin
@@ -1164,7 +1180,7 @@ always @(posedge CLK) begin
               else begin
                 // PLOT
                 e2r_val_r <= 1;
-                e2r_data_r <= REG_r[R1] + 1;
+                e2r_data_pre_r <= REG_r[R1] + 1;
                 
                 if (!POR_TRS && ((SCMR_MD == 3) ? (POR_FHN ? (exe_colr_r[3:0] == 0) : (exe_colr_r == 0)) : (exe_colr_r[3:0] == 0))) begin
                   // no output written
@@ -1204,7 +1220,7 @@ always @(posedge CLK) begin
               
               e2r_val_r <= 1;
               // e2r_destnum_r <= DREG_r; // standard dest
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_ov_r   <= (exe_src_r[15] ^ exe_result[15]) & (exe_n[15] ^ exe_result[15]);
@@ -1218,7 +1234,7 @@ always @(posedge CLK) begin
               // CMP doesn't output the result
               e2r_val_r <= ~(exe_alt1_r & exe_alt2_r);
               // e2r_destnum_r <= DREG_r; // standard dest
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_ov_r   <= (exe_src_r[15] ^ exe_result[15]) & (exe_src_r[15] ^ exe_n[15]);
@@ -1230,7 +1246,7 @@ always @(posedge CLK) begin
               exe_result = exe_src_r & exe_n;
               
               e2r_val_r  <= 1;
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];
@@ -1240,7 +1256,7 @@ always @(posedge CLK) begin
               exe_result = exe_alt1_r ? exe_src_r ^ exe_n : exe_src_r | exe_n;
               
               e2r_val_r  <= 1;
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];                
@@ -1249,7 +1265,7 @@ always @(posedge CLK) begin
               exe_result = ~exe_src_r;
               
               e2r_val_r  <= 1;
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];
@@ -1260,7 +1276,7 @@ always @(posedge CLK) begin
               exe_result = {1'b0,exe_src_r[15:1]};
               
               e2r_val_r  <= 1;
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];
@@ -1270,7 +1286,7 @@ always @(posedge CLK) begin
               exe_result = {exe_src_r[15],exe_src_r[15:1]};
               
               e2r_val_r  <= 1;
-              e2r_data_r <= (exe_alt1_r & (&exe_src_r))? 0 : exe_result;
+              e2r_data_pre_r <= (exe_alt1_r & (&exe_src_r))? 0 : exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];
@@ -1280,7 +1296,7 @@ always @(posedge CLK) begin
               exe_result = {exe_src_r[14:0],exe_cy_r};
               
               e2r_val_r  <= 1;
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];
@@ -1290,7 +1306,7 @@ always @(posedge CLK) begin
               exe_result = {exe_cy_r,exe_src_r[15:1]};
               
               e2r_val_r  <= 1;
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];
@@ -1302,7 +1318,7 @@ always @(posedge CLK) begin
               exe_result = {exe_src_r[7:0],exe_src_r[15:8]};
               
               e2r_val_r  <= 1;
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];
@@ -1311,7 +1327,7 @@ always @(posedge CLK) begin
               exe_result = {{8{exe_src_r[7]}},exe_src_r[7:0]};
               
               e2r_val_r  <= 1;
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];
@@ -1320,7 +1336,7 @@ always @(posedge CLK) begin
               exe_result = {8'h00,exe_src_r[7:0]};
               
               e2r_val_r  <= 1;
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[7];
@@ -1329,7 +1345,7 @@ always @(posedge CLK) begin
               exe_result = {8'h00,exe_src_r[15:8]};
               
               e2r_val_r  <= 1;
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[7];
@@ -1338,7 +1354,7 @@ always @(posedge CLK) begin
               exe_result = {REG_r[R7][15:8],REG_r[R8][15:8]};
               
               e2r_val_r  <= 1;
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= exe_result & 16'hF0F0;
               e2r_ov_r   <= exe_result & 16'hC0C0;
@@ -1367,7 +1383,7 @@ always @(posedge CLK) begin
               
               e2r_val_r  <= 1;
               e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination                  
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];
@@ -1377,10 +1393,36 @@ always @(posedge CLK) begin
               
               e2r_val_r  <= 1;
               e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination
-              e2r_data_r <= exe_result;
+              e2r_data_pre_r <= exe_result;
               
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[15];
+            end
+            // LINK
+            `OP_LINK         : begin
+              exe_result = e2r_r15_r + exe_opcode_r[3:0];
+                
+              e2r_val_r  <= 1;
+              e2r_destnum_r <= R11;
+              e2r_data_pre_r <= exe_result;
+            end
+            // JMP/LJMP
+            `OP_JMP_LJMP     : begin
+              e2r_val_r <= 1;
+              e2r_destnum_r <= R15;
+
+              if (exe_alt1_r) begin
+                // LJMP
+                e2r_data_pre_r   <= exe_src_r;
+                e2r_ljmp_r  <= 1; // write PBR with srcn
+                e2r_pbr_r   <= exe_srcn_r;
+                CBR_r[15:4] <= exe_src_r[15:4];
+                cache_val_r <= 0;
+              end
+              else begin
+                // JMP
+                e2r_data_pre_r   <= exe_srcn_r;
+              end
             end
             
           endcase
@@ -1580,38 +1622,16 @@ always @(posedge CLK) begin
               EXE_STATE <= ST_EXE_MEMORY_WAIT;
               //EXE_STATE <= ST_EXE_WAIT;
             end
-            // LINK
-            `OP_LINK         : begin
-              exe_result = REG_r[R15] + exe_opcode_r[3:0];
-                
-              e2r_val_r  <= 1;
-              e2r_destnum_r <= R11;
-              e2r_data_r <= exe_result;
-              
+            default: begin
+              e2r_data_r <= e2r_data_pre_r;
               EXE_STATE <= ST_EXE_WAIT;
             end
-            // JMP/LJMP
-            `OP_JMP_LJMP     : begin
-              e2r_val_r <= 1;
-              e2r_destnum_r <= R15;
-
-              if (exe_alt1_r) begin
-                // LJMP
-                e2r_r15_r   <= exe_src_r;
-                e2r_ljmp_r  <= 1; // write PBR with srcn
-                e2r_pbr_r   <= exe_srcn_r;
-                CBR_r[15:4] <= exe_src_r[15:4];
-                cache_val_r <= 0;
-              end
-              else begin
-                // JMP
-                e2r_r15_r   <= exe_srcn_r;
-              end
-            end
-            default: EXE_STATE <= ST_EXE_WAIT;
           endcase
         end
-        else EXE_STATE <= ST_EXE_WAIT;
+        else begin
+          e2r_data_r <= e2r_data_pre_r;
+          EXE_STATE <= ST_EXE_WAIT;
+        end
       end
       ST_EXE_MEMORY_WAIT: begin
         e2c_waitcnt_val_r <= 0;
@@ -1651,6 +1671,7 @@ always @(posedge CLK) begin
             exe_branch_r <= 0;
             exe_opcode_r <= fetch_data_r;//i2e_op_r[~i2e_ptr_r];
             exe_operand_r <= 0;
+            exe_operand_valid_r <= 0;
 
             e2r_val_r  <= 0;
             e2r_mask_r <= 0;
@@ -1699,118 +1720,237 @@ gsu_umult gsu_umult(
 //-------------------------------------------------------------------
 // DEBUG OUTPUT
 //-------------------------------------------------------------------
+reg [7:0]  pgmpre_out[3:0];
 reg [7:0]  pgmdata_out; //initial pgmdata_out_r = 0;
 
+
 always @(posedge CLK) begin
-  casex (pgm_addr_r)
-    {2'h0,ADDR_GPRL } : pgmdata_out <= REG_r[pgm_addr_r[4:1]][7:0];
-    {2'h0,ADDR_GPRH } : pgmdata_out <= REG_r[pgm_addr_r[4:1]][15:8];          
-    //{2'h0,ADDR_GPRL } : pgmdata_out = debug_reg_r[7:0];
-    //{2'h0,ADDR_GPRH } : pgmdata_out = debug_reg_r[15:8];          
-    {2'h0,ADDR_SFR  } : pgmdata_out <= SFR_r[7:0];
-    {2'h0,ADDR_SFR+1} : pgmdata_out <= SFR_r[15:8];
-    {2'h0,ADDR_BRAMR} : pgmdata_out <= BRAMR_r;
-    {2'h0,ADDR_PBR  } : pgmdata_out <= PBR_r;
-    {2'h0,ADDR_ROMBR} : pgmdata_out <= ROMBR_r;
-    {2'h0,ADDR_CFGR } : pgmdata_out <= CFGR_r;
-    {2'h0,ADDR_SCBR } : pgmdata_out <= SCBR_r;
-    {2'h0,ADDR_CLSR } : pgmdata_out <= CLSR_r;
-    {2'h0,ADDR_SCMR } : pgmdata_out <= SCMR_r;
-    {2'h0,ADDR_VCR  } : pgmdata_out <= VCR_r;
-    {2'h0,ADDR_RAMBR} : pgmdata_out <= RAMBR_r;
-    {2'h0,ADDR_CBR+0} : pgmdata_out <= CBR_r[7:0];
-    {2'h0,ADDR_CBR+1} : pgmdata_out <= CBR_r[15:8];
-    10'h40            : pgmdata_out <= COLR_r;
-    10'h41            : pgmdata_out <= POR_r;
-    10'h42            : pgmdata_out <= SREG_r;
-    10'h43            : pgmdata_out <= DREG_r;
-    10'h44            : pgmdata_out <= ROMRDBUF_r;
-    10'h45            : pgmdata_out <= RAMWRBUF_r;
-    10'h46            : pgmdata_out <= RAMADDR_r[7:0];
-    10'h47            : pgmdata_out <= RAMADDR_r[15:8];
+  pgmdata_out <= pgmpre_out[pgm_addr_r[9:8]];
 
-    //10'h50,10'h58     : pgmdata_out <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
-    //10'h51,10'h59     : pgmdata_out <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
-    //10'h6x            : pgmdata_out <= PIXBUF_VALID_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
-    //10'h7x            : pgmdata_out <= PIXBUF_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
+  case (pgm_addr_r[9:8])
+    2'h0: casex (pgm_addr_r[7:0])
+      ADDR_GPRL        : pgmpre_out[0] <= REG_r[pgm_addr_r[4:1]][7:0];
+      ADDR_GPRH        : pgmpre_out[0] <= REG_r[pgm_addr_r[4:1]][15:8];          
+      ADDR_SFR         : pgmpre_out[0] <= SFR_r[7:0];
+      ADDR_SFR+1       : pgmpre_out[0] <= SFR_r[15:8];
+      ADDR_BRAMR       : pgmpre_out[0] <= BRAMR_r;
+      ADDR_PBR         : pgmpre_out[0] <= PBR_r;
+      ADDR_ROMBR       : pgmpre_out[0] <= ROMBR_r;
+      ADDR_CFGR        : pgmpre_out[0] <= CFGR_r;
+      ADDR_SCBR        : pgmpre_out[0] <= SCBR_r;
+      ADDR_CLSR        : pgmpre_out[0] <= CLSR_r;
+      ADDR_SCMR        : pgmpre_out[0] <= SCMR_r;
+      ADDR_VCR         : pgmpre_out[0] <= VCR_r;
+      ADDR_RAMBR       : pgmpre_out[0] <= RAMBR_r;
+      ADDR_CBR+0       : pgmpre_out[0] <= CBR_r[7:0];
+      ADDR_CBR+1       : pgmpre_out[0] <= CBR_r[15:8];
+      8'h40            : pgmpre_out[0] <= COLR_r;
+      8'h41            : pgmpre_out[0] <= POR_r;
+      8'h42            : pgmpre_out[0] <= SREG_r;
+      8'h43            : pgmpre_out[0] <= DREG_r;
+      8'h44            : pgmpre_out[0] <= ROMRDBUF_r;
+      8'h45            : pgmpre_out[0] <= RAMWRBUF_r;
+      8'h46            : pgmpre_out[0] <= RAMADDR_r[7:0];
+      8'h47            : pgmpre_out[0] <= RAMADDR_r[15:8];
+  
+      8'h50,8'h58      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
+      8'h51,8'h59      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
+      8'h6x            : pgmpre_out[0] <= PIXBUF_VALID_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
+      8'h7x            : pgmpre_out[0] <= PIXBUF_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
+  
+      // TODO: add more internal temps @ $80
+      8'h80            : pgmpre_out[0] <= SFR_Z;
+      8'h81            : pgmpre_out[0] <= SFR_CY;
+      8'h82            : pgmpre_out[0] <= SFR_S;
+      8'h83            : pgmpre_out[0] <= SFR_OV;
+      8'h84            : pgmpre_out[0] <= SFR_GO;
+      8'h85            : pgmpre_out[0] <= SFR_RR;
+      8'h86            : pgmpre_out[0] <= SFR_ALT1;
+      8'h87            : pgmpre_out[0] <= SFR_ALT2;
+      8'h88            : pgmpre_out[0] <= SFR_IL;
+      8'h89            : pgmpre_out[0] <= SFR_IH;
+      8'h8A            : pgmpre_out[0] <= SFR_B;
+      8'h8B            : pgmpre_out[0] <= SCMR_MD;
+      8'h8C            : pgmpre_out[0] <= SCMR_HT;
+      8'h8D            : pgmpre_out[0] <= SCMR_RAN;
+      8'h8E            : pgmpre_out[0] <= SCMR_RON;
 
-    // TODO: add more internal temps @ $80
-    10'h80            : pgmdata_out <= SFR_Z;
-    10'h81            : pgmdata_out <= SFR_CY;
-    10'h82            : pgmdata_out <= SFR_S;
-    10'h83            : pgmdata_out <= SFR_OV;
-    10'h84            : pgmdata_out <= SFR_GO;
-    10'h85            : pgmdata_out <= SFR_RR;
-    10'h86            : pgmdata_out <= SFR_ALT1;
-    10'h87            : pgmdata_out <= SFR_ALT2;
-    10'h88            : pgmdata_out <= SFR_IL;
-    10'h89            : pgmdata_out <= SFR_IH;
-    10'h8A            : pgmdata_out <= SFR_B;
-    10'h8B            : pgmdata_out <= SCMR_MD;
-    10'h8C            : pgmdata_out <= SCMR_HT;
-    10'h8D            : pgmdata_out <= SCMR_RAN;
-    10'h8E            : pgmdata_out <= SCMR_RON;
-    
-    10'h1xx,
-    10'h2xx           : pgmdata_out <= debug_cache_rddata;
-    
-    // fetch state
-    10'h300           : pgmdata_out <= FETCH_STATE;
-    10'h301           : pgmdata_out <= fetch_waitcnt_r;
-    // exe state
-    10'h320           : pgmdata_out <= EXE_STATE;
-    10'h321           : pgmdata_out <= exe_waitcnt_r;
-    10'h322           : pgmdata_out <= exe_opcode_r;
-    10'h323           : pgmdata_out <= exe_operand_r[7:0];
-    10'h324           : pgmdata_out <= exe_operand_r[15:8];
-    10'h325           : pgmdata_out <= exe_opsize_r;
-    10'h326           : pgmdata_out <= e2r_destnum_r;
-
-    10'h330           : pgmdata_out <= exe_src_r[7:0];
-    10'h331           : pgmdata_out <= exe_src_r[15:8];
-    10'h332           : pgmdata_out <= exe_srcn_r[7:0];
-    10'h333           : pgmdata_out <= exe_srcn_r[15:8];
-    10'h334           : pgmdata_out <= e2r_data_r[7:0];
-    10'h335           : pgmdata_out <= e2r_data_r[15:8];
-
-    // cache state
-    //10'h340
-    // fill state
-    10'h360           : pgmdata_out <= ROM_BUS_RDY;
-    10'h368           : pgmdata_out <= cache_rom_rd_r;
-    10'h369           : pgmdata_out <= cache_ram_rd_r;
-    10'h36F           : pgmdata_out <= exe_rom_rd_r;
-    10'h370           : pgmdata_out <= exe_ram_rd_r;
-    10'h371           : pgmdata_out <= exe_addr_r[7:0];
-    10'h372           : pgmdata_out <= exe_addr_r[15:8];
-    10'h373           : pgmdata_out <= exe_addr_r[23:16];
-    10'h374           : pgmdata_out <= exe_data_r[7:0];
-    10'h375           : pgmdata_out <= exe_data_r[15:8];
-    10'h376           : pgmdata_out <= rom_bus_data_r[7:0];
-    10'h377           : pgmdata_out <= rom_bus_data_r[15:8];
-    10'h378           : pgmdata_out <= ram_bus_data_r[7:0];
-    10'h379           : pgmdata_out <= ram_bus_data_r[15:8];
-    // interface state
-    //10'h380           : pgmdata_out <= i2e_op_r[0];
-    //10'h381           : pgmdata_out <= i2e_op_r[1];
-    // config state
-    10'h3A0           : pgmdata_out <= config_r[0];
-    10'h3A1           : pgmdata_out <= config_r[1];
-
-    10'h3C0           : pgmdata_out <= ROM_STATE;
-    10'h3C1           : pgmdata_out <= RAM_STATE;
-    
-    // misc
-    10'h3E0           : pgmdata_out <= gsu_cycle_cnt_r[31:24];
-    10'h3E1           : pgmdata_out <= gsu_cycle_cnt_r[23:16];
-    10'h3E2           : pgmdata_out <= gsu_cycle_cnt_r[15: 8];
-    10'h3E3           : pgmdata_out <= gsu_cycle_cnt_r[ 7: 0];
-    10'h3E4           : pgmdata_out <= snes_write_r;
-    10'h3E5           : pgmdata_out <= pipeline_advance;
-    
-    default           : pgmdata_out <= 8'hFF;
+      default          : pgmpre_out[0] <= 8'hFF;
+    endcase
+    2'h1: pgmpre_out[1] <= debug_cache_rddata;
+    2'h2: pgmpre_out[2] <= debug_cache_rddata;
+    2'h3: casex (pgm_addr_r[7:0])      
+      // fetch state
+      8'h00           : pgmpre_out[3] <= FETCH_STATE;
+      8'h01           : pgmpre_out[3] <= fetch_waitcnt_r;
+      // exe state
+      8'h20           : pgmpre_out[3] <= EXE_STATE;
+      8'h21           : pgmpre_out[3] <= exe_waitcnt_r;
+      8'h22           : pgmpre_out[3] <= exe_opcode_r;
+      8'h23           : pgmpre_out[3] <= exe_operand_r[7:0];
+      8'h24           : pgmpre_out[3] <= exe_operand_r[15:8];
+      8'h25           : pgmpre_out[3] <= exe_opsize_r;
+      8'h26           : pgmpre_out[3] <= e2r_destnum_r;
+  
+      8'h30           : pgmpre_out[3] <= exe_src_r[7:0];
+      8'h31           : pgmpre_out[3] <= exe_src_r[15:8];
+      8'h32           : pgmpre_out[3] <= exe_srcn_r[7:0];
+      8'h33           : pgmpre_out[3] <= exe_srcn_r[15:8];
+      8'h34           : pgmpre_out[3] <= e2r_data_r[7:0];
+      8'h35           : pgmpre_out[3] <= e2r_data_r[15:8];
+  
+      // cache state
+      //8'h40
+      // fill state
+      8'h60           : pgmpre_out[3] <= ROM_BUS_RDY;
+      8'h68           : pgmpre_out[3] <= cache_rom_rd_r;
+      8'h69           : pgmpre_out[3] <= cache_ram_rd_r;
+      8'h6F           : pgmpre_out[3] <= exe_rom_rd_r;
+      8'h70           : pgmpre_out[3] <= exe_ram_rd_r;
+      8'h71           : pgmpre_out[3] <= exe_addr_r[7:0];
+      8'h72           : pgmpre_out[3] <= exe_addr_r[15:8];
+      8'h73           : pgmpre_out[3] <= exe_addr_r[23:16];
+      8'h74           : pgmpre_out[3] <= exe_data_r[7:0];
+      8'h75           : pgmpre_out[3] <= exe_data_r[15:8];
+      8'h76           : pgmpre_out[3] <= rom_bus_data_r[7:0];
+      8'h77           : pgmpre_out[3] <= rom_bus_data_r[15:8];
+      8'h78           : pgmpre_out[3] <= ram_bus_data_r[7:0];
+      8'h79           : pgmpre_out[3] <= ram_bus_data_r[15:8];
+      // interface state
+      //8'h80           : pgmpre_out[3] <= i2e_op_r[0];
+      //8'h81           : pgmpre_out[3] <= i2e_op_r[1];
+      // config state
+      8'hA0           : pgmpre_out[3] <= config_r[0];
+      8'hA1           : pgmpre_out[3] <= config_r[1];
+  
+      8'hC0           : pgmpre_out[3] <= ROM_STATE;
+      8'hC1           : pgmpre_out[3] <= RAM_STATE;
+      
+      // misc
+      8'hE0           : pgmpre_out[3] <= gsu_cycle_cnt_r[31:24];
+      8'hE1           : pgmpre_out[3] <= gsu_cycle_cnt_r[23:16];
+      8'hE2           : pgmpre_out[3] <= gsu_cycle_cnt_r[15: 8];
+      8'hE3           : pgmpre_out[3] <= gsu_cycle_cnt_r[ 7: 0];
+      8'hE4           : pgmpre_out[3] <= snes_write_r;
+      8'hE5           : pgmpre_out[3] <= pipeline_advance;
+      
+      default           : pgmpre_out[3] <= 8'hFF;
+    endcase
   endcase
 end
+
+
+
+//always @(posedge CLK) begin
+//  casex (pgm_addr_r)
+//    {2'h0,ADDR_GPRL } : pgmdata_out <= REG_r[pgm_addr_r[4:1]][7:0];
+//    {2'h0,ADDR_GPRH } : pgmdata_out <= REG_r[pgm_addr_r[4:1]][15:8];          
+//    //{2'h0,ADDR_GPRL } : pgmdata_out = debug_reg_r[7:0];
+//    //{2'h0,ADDR_GPRH } : pgmdata_out = debug_reg_r[15:8];          
+//    {2'h0,ADDR_SFR  } : pgmdata_out <= SFR_r[7:0];
+//    {2'h0,ADDR_SFR+1} : pgmdata_out <= SFR_r[15:8];
+//    {2'h0,ADDR_BRAMR} : pgmdata_out <= BRAMR_r;
+//    {2'h0,ADDR_PBR  } : pgmdata_out <= PBR_r;
+//    {2'h0,ADDR_ROMBR} : pgmdata_out <= ROMBR_r;
+//    {2'h0,ADDR_CFGR } : pgmdata_out <= CFGR_r;
+//    {2'h0,ADDR_SCBR } : pgmdata_out <= SCBR_r;
+//    {2'h0,ADDR_CLSR } : pgmdata_out <= CLSR_r;
+//    {2'h0,ADDR_SCMR } : pgmdata_out <= SCMR_r;
+//    {2'h0,ADDR_VCR  } : pgmdata_out <= VCR_r;
+//    {2'h0,ADDR_RAMBR} : pgmdata_out <= RAMBR_r;
+//    {2'h0,ADDR_CBR+0} : pgmdata_out <= CBR_r[7:0];
+//    {2'h0,ADDR_CBR+1} : pgmdata_out <= CBR_r[15:8];
+//    10'h40            : pgmdata_out <= COLR_r;
+//    10'h41            : pgmdata_out <= POR_r;
+//    10'h42            : pgmdata_out <= SREG_r;
+//    10'h43            : pgmdata_out <= DREG_r;
+//    10'h44            : pgmdata_out <= ROMRDBUF_r;
+//    10'h45            : pgmdata_out <= RAMWRBUF_r;
+//    10'h46            : pgmdata_out <= RAMADDR_r[7:0];
+//    10'h47            : pgmdata_out <= RAMADDR_r[15:8];
+//
+//    //10'h50,10'h58     : pgmdata_out <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
+//    //10'h51,10'h59     : pgmdata_out <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
+//    //10'h6x            : pgmdata_out <= PIXBUF_VALID_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
+//    //10'h7x            : pgmdata_out <= PIXBUF_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
+//
+//    // TODO: add more internal temps @ $80
+//    10'h80            : pgmdata_out <= SFR_Z;
+//    10'h81            : pgmdata_out <= SFR_CY;
+//    10'h82            : pgmdata_out <= SFR_S;
+//    10'h83            : pgmdata_out <= SFR_OV;
+//    10'h84            : pgmdata_out <= SFR_GO;
+//    10'h85            : pgmdata_out <= SFR_RR;
+//    10'h86            : pgmdata_out <= SFR_ALT1;
+//    10'h87            : pgmdata_out <= SFR_ALT2;
+//    10'h88            : pgmdata_out <= SFR_IL;
+//    10'h89            : pgmdata_out <= SFR_IH;
+//    10'h8A            : pgmdata_out <= SFR_B;
+//    10'h8B            : pgmdata_out <= SCMR_MD;
+//    10'h8C            : pgmdata_out <= SCMR_HT;
+//    10'h8D            : pgmdata_out <= SCMR_RAN;
+//    10'h8E            : pgmdata_out <= SCMR_RON;
+//    
+//    10'h1xx,
+//    10'h2xx           : pgmdata_out <= debug_cache_rddata;
+//    
+//    // fetch state
+//    10'h300           : pgmdata_out <= FETCH_STATE;
+//    10'h301           : pgmdata_out <= fetch_waitcnt_r;
+//    // exe state
+//    10'h320           : pgmdata_out <= EXE_STATE;
+//    10'h321           : pgmdata_out <= exe_waitcnt_r;
+//    10'h322           : pgmdata_out <= exe_opcode_r;
+//    10'h323           : pgmdata_out <= exe_operand_r[7:0];
+//    10'h324           : pgmdata_out <= exe_operand_r[15:8];
+//    10'h325           : pgmdata_out <= exe_opsize_r;
+//    10'h326           : pgmdata_out <= e2r_destnum_r;
+//
+//    10'h330           : pgmdata_out <= exe_src_r[7:0];
+//    10'h331           : pgmdata_out <= exe_src_r[15:8];
+//    10'h332           : pgmdata_out <= exe_srcn_r[7:0];
+//    10'h333           : pgmdata_out <= exe_srcn_r[15:8];
+//    10'h334           : pgmdata_out <= e2r_data_r[7:0];
+//    10'h335           : pgmdata_out <= e2r_data_r[15:8];
+//
+//    // cache state
+//    //10'h340
+//    // fill state
+//    10'h360           : pgmdata_out <= ROM_BUS_RDY;
+//    10'h368           : pgmdata_out <= cache_rom_rd_r;
+//    10'h369           : pgmdata_out <= cache_ram_rd_r;
+//    10'h36F           : pgmdata_out <= exe_rom_rd_r;
+//    10'h370           : pgmdata_out <= exe_ram_rd_r;
+//    10'h371           : pgmdata_out <= exe_addr_r[7:0];
+//    10'h372           : pgmdata_out <= exe_addr_r[15:8];
+//    10'h373           : pgmdata_out <= exe_addr_r[23:16];
+//    10'h374           : pgmdata_out <= exe_data_r[7:0];
+//    10'h375           : pgmdata_out <= exe_data_r[15:8];
+//    10'h376           : pgmdata_out <= rom_bus_data_r[7:0];
+//    10'h377           : pgmdata_out <= rom_bus_data_r[15:8];
+//    10'h378           : pgmdata_out <= ram_bus_data_r[7:0];
+//    10'h379           : pgmdata_out <= ram_bus_data_r[15:8];
+//    // interface state
+//    //10'h380           : pgmdata_out <= i2e_op_r[0];
+//    //10'h381           : pgmdata_out <= i2e_op_r[1];
+//    // config state
+//    10'h3A0           : pgmdata_out <= config_r[0];
+//    10'h3A1           : pgmdata_out <= config_r[1];
+//
+//    10'h3C0           : pgmdata_out <= ROM_STATE;
+//    10'h3C1           : pgmdata_out <= RAM_STATE;
+//    
+//    // misc
+//    10'h3E0           : pgmdata_out <= gsu_cycle_cnt_r[31:24];
+//    10'h3E1           : pgmdata_out <= gsu_cycle_cnt_r[23:16];
+//    10'h3E2           : pgmdata_out <= gsu_cycle_cnt_r[15: 8];
+//    10'h3E3           : pgmdata_out <= gsu_cycle_cnt_r[ 7: 0];
+//    10'h3E4           : pgmdata_out <= snes_write_r;
+//    10'h3E5           : pgmdata_out <= pipeline_advance;
+//    
+//    default           : pgmdata_out <= 8'hFF;
+//  endcase
+//end
 
 //-------------------------------------------------------------------
 // MISC OUTPUTS

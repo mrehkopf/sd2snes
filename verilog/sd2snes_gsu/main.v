@@ -457,6 +457,7 @@ gsu snes_gsu (
   
   // ACTIVE interface
   .ACTIVE(GSU_ACTIVE),
+  .IRQ(GSU_IRQ),
   
   // State debug read interface
   .PGM_ADDR(GSU_PGM_ADDR), // [9:0]
@@ -973,7 +974,7 @@ assign SNES_DATABUS_DIR = (~SNES_READ | (~SNES_PARD & (r213f_enable)))
                            ? 1'b1 ^ (r213f_forceread & r213f_enable & ~SNES_PARD)
                            : 1'b0;
 
-assign SNES_IRQ = 1'b0;
+assign SNES_IRQ = GSU_IRQ;//1'b0;
 
 assign p113_out = 1'b0;
 

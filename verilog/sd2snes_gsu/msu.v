@@ -48,6 +48,24 @@ module msu(
   output DBG_msu_address_ext_write_rising
 );
 
+//`define MSU 1
+
+`ifndef MSU
+assign reg_data_out = 0;
+
+assign status_out = 0;
+assign volume_out = 0;
+assign volume_latch_out = 0;
+assign addr_out = 0;
+assign track_out = 0;
+
+assign DBG_msu_reg_oe_rising = 0;
+assign DBG_msu_reg_oe_falling = 0;
+assign DBG_msu_reg_we_rising = 0;
+assign DBG_msu_address = 0;
+assign DBG_msu_address_ext_write_rising = 0;
+`else
+
 reg [1:0] status_reset_we_r;
 always @(posedge clkin) status_reset_we_r = {status_reset_we_r[0], status_reset_we};
 wire status_reset_en = (status_reset_we_r == 2'b01);
@@ -188,6 +206,6 @@ always @(posedge clkin) begin
     volume_start_r <= 1'b0;
   end
 end
-
+`endif
 
 endmodule
