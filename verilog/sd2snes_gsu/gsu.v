@@ -222,7 +222,39 @@ parameter
 // CONFIG
 //-------------------------------------------------------------------
 
-parameter CONFIG_REGISTERS = 2;
+// C0 Control
+// 0 - Go (1) 
+// 1 - MatchFullInst
+
+// C1 StepControl
+// [7:0] StepCount
+
+// C2 BreakpointControl
+// 0 - BreakOnInstRdByteWatch
+// 1 - BreakOnDataRdByteWatch
+// 2 - BreakOnDataWrByteWatch
+// 3 - BreakOnInstRdAddrWatch
+// 4 - BreakOnDataRdAddrWatch
+// 5 - BreakOnDataWrAddrWatch
+// 6 - BreakOnStop
+// 7 - BreakOnError
+
+// C3 ???
+
+// C4 DataWatch
+// [7:0] DataWatch
+
+// C5-C7 AddrWatch (little endian)
+// [23:0] AddrWatch
+
+// breakpoint state
+reg         brk_inst_rd_addr; initial brk_inst_rd_addr = 0;
+reg         brk_data_rd_addr; initial brk_data_rd_addr = 0;
+reg         brk_data_wr_addr; initial brk_data_wr_addr = 0;
+reg         brk_stop;         initial brk_stop = 0;
+reg         brk_error;        initial brk_error = 0;
+
+parameter CONFIG_REGISTERS = 8;
 reg [7:0] config_r[CONFIG_REGISTERS-1:0]; initial for (i = 0; i < CONFIG_REGISTERS; i = i + 1) config_r[i] = 8'h00;
 
 always @(posedge CLK) begin
@@ -232,12 +264,30 @@ always @(posedge CLK) begin
   else if (reg_we_in && (reg_group_in == 8'h03)) begin
     if (reg_index_in < CONFIG_REGISTERS) config_r[reg_index_in] <= (config_r[reg_index_in] & reg_invmask_in) | (reg_value_in & ~reg_invmask_in);
   end
+  else begin
+    // TODO: figure out how to do the data compares on time without getting false matches
+    config_r[0][0] <= ~|(config_r[2] & {brk_error,brk_stop,brk_data_wr_addr,brk_data_rd_addr,brk_inst_rd_addr,1'b0,1'b0,1'b0});
+  end
 end
 
 assign config_data_out = config_r[reg_read_in];
 
-wire       CONFIG_STEP_ENABLED = config_r[0][0] | 1'b1; // FIXME: temporary enable
-wire [7:0] CONFIG_STEP_COUNT   = config_r[1];
+wire        CONFIG_CONTROL_ENABLED       = config_r[0][0];
+wire        CONFIG_CONTROL_MATCHFULLINST = config_r[0][1];
+
+wire [7:0]  CONFIG_STEP_COUNT   = config_r[1];
+wire [7:0]  CONFIG_DATA_WATCH   = config_r[4];
+wire [23:0] CONFIG_ADDR_WATCH   = {config_r[7],config_r[6],config_r[5]};
+
+// breakpoint state
+//reg         brk_inst_rd_byte; initial brk_inst_rd_byte = 0;
+//reg         brk_data_rd_byte; initial brk_data_rd_byte = 0;
+//reg         brk_data_wr_byte; initial brk_data_wr_byte = 0;
+//reg         brk_inst_rd_addr; initial brk_inst_rd_addr = 0;
+//reg         brk_data_rd_addr; initial brk_data_rd_addr = 0;
+//reg         brk_data_wr_addr; initial brk_data_wr_addr = 0;
+//reg         brk_stop;         initial brk_stop = 0;
+//reg         brk_error;        initial brk_error = 0;
 
 //-------------------------------------------------------------------
 // FLOPS
@@ -396,10 +446,6 @@ reg        e2c_waitcnt_val_r; initial e2c_waitcnt_val_r = 0;
 reg [3:0]  e2c_waitcnt_r;
 
 reg waitcnt_zero_r;
-
-//-------------------------------------------------------------------
-// FIXME: Pixel Buffer
-//-------------------------------------------------------------------
 
 //-------------------------------------------------------------------
 // Cache
@@ -634,7 +680,9 @@ always @(posedge CLK) begin
     if (e2c_waitcnt_val_r) exe_waitcnt_r <= e2c_waitcnt_r;
     else if (gsu_clock_en & |exe_waitcnt_r) exe_waitcnt_r <= exe_waitcnt_r - 1;
     
-    step_r <= (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));    
+    // ok to advance to next instruction byte
+    step_r <= CONFIG_CONTROL_ENABLED | (~op_complete & CONFIG_CONTROL_MATCHFULLINST) | (stepcnt_r != CONFIG_STEP_COUNT);
+    
     if (pipeline_advance) stepcnt_r <= CONFIG_STEP_COUNT;
     waitcnt_zero_r <= ~|fetch_waitcnt_r & ~|exe_waitcnt_r;
   end
@@ -943,6 +991,8 @@ reg [2:0]  exe_plot_flushindex_r;
 reg [3:0]  exe_plot_bpp_r;
 reg [15:0] exe_plot_char_r[1:0];
 
+reg        exe_error;
+
 always @(posedge CLK) begin
   if (RST) begin
     EXE_STATE <= ST_EXE_IDLE;
@@ -985,6 +1035,8 @@ always @(posedge CLK) begin
     exe_ram_wr_r <= 0;
     
     for (i = 0; i < 2; i = i + 1) PIXBUF_VALID_r[i] <= 0;
+    
+    exe_error <= 0;
   end
   else begin
     case (EXE_STATE)
@@ -1687,6 +1739,24 @@ always @(posedge CLK) begin
       end
       
     endcase
+  end
+end
+
+// breakpoint hooks
+always @(posedge CLK) begin
+  if (RST) begin
+    brk_inst_rd_addr <= 0;
+    brk_data_rd_addr <= 0;
+    brk_data_wr_addr <= 0;
+    brk_stop         <= 0;
+    brk_error        <= 0;
+  end
+  else begin
+    brk_inst_rd_addr <= (cache_ram_rd_r && (cache_addr_r == CONFIG_ADDR_WATCH) || cache_rom_rd_r && (cache_addr_r == CONFIG_ADDR_WATCH));
+    brk_data_rd_addr <= (exe_ram_rd_r   && (exe_addr_r   == CONFIG_ADDR_WATCH) || exe_rom_rd_r   && (exe_addr_r   == CONFIG_ADDR_WATCH));
+    brk_data_wr_addr <= (exe_ram_wr_r   && (exe_addr_r   == CONFIG_ADDR_WATCH));
+    brk_stop         <= exe_opcode_r == `OP_STOP;
+    brk_error        <= exe_error; // FIXME: set this state based on opcode or other error condition
   end
 end
 
