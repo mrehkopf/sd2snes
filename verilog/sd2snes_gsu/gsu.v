@@ -248,6 +248,9 @@ parameter
 // [23:0] AddrWatch
 
 // breakpoint state
+reg         brk_inst_rd_byte; initial brk_inst_rd_byte = 0;
+reg         brk_data_rd_byte; initial brk_data_rd_byte = 0;
+reg         brk_data_wr_byte; initial brk_data_wr_byte = 0;
 reg         brk_inst_rd_addr; initial brk_inst_rd_addr = 0;
 reg         brk_data_rd_addr; initial brk_data_rd_addr = 0;
 reg         brk_data_wr_addr; initial brk_data_wr_addr = 0;
@@ -266,7 +269,7 @@ always @(posedge CLK) begin
   end
   else begin
     // TODO: figure out how to do the data compares on time without getting false matches
-    config_r[0][0] <= ~|(config_r[2] & {brk_error,brk_stop,brk_data_wr_addr,brk_data_rd_addr,brk_inst_rd_addr,1'b0,1'b0,1'b0});
+    config_r[0][0] <= config_r[0][0] & ~|(config_r[2] & {brk_error,brk_stop,brk_data_wr_addr,brk_data_rd_addr,brk_inst_rd_addr,brk_data_wr_byte,brk_data_rd_byte,brk_inst_rd_byte});
   end
 end
 
@@ -681,7 +684,7 @@ always @(posedge CLK) begin
     else if (gsu_clock_en & |exe_waitcnt_r) exe_waitcnt_r <= exe_waitcnt_r - 1;
     
     // ok to advance to next instruction byte
-    step_r <= CONFIG_CONTROL_ENABLED | (~op_complete & CONFIG_CONTROL_MATCHFULLINST) | (stepcnt_r != CONFIG_STEP_COUNT);
+    step_r <= CONFIG_CONTROL_ENABLED || (~op_complete && CONFIG_CONTROL_MATCHFULLINST) || (stepcnt_r != CONFIG_STEP_COUNT);
     
     if (pipeline_advance) stepcnt_r <= CONFIG_STEP_COUNT;
     waitcnt_zero_r <= ~|fetch_waitcnt_r & ~|exe_waitcnt_r;
@@ -990,6 +993,9 @@ reg        exe_plot_flushbuf_r;
 reg [2:0]  exe_plot_flushindex_r;
 reg [3:0]  exe_plot_bpp_r;
 reg [15:0] exe_plot_char_r[1:0];
+
+reg [7:0]  exe_plot_data_r;
+reg [15:0] exe_plot_addr_r;
 
 reg        exe_error;
 
@@ -1493,6 +1499,21 @@ always @(posedge CLK) begin
               else begin
                 // TODO: add 1 cycle for miss, add 6 cycles for hit.  Remember current count.  Account for clock advance.
                 // Flush
+                if (e2c_waitcnt_r <= 1) begin
+                  e2c_waitcnt_val_r <= 1;
+                  // TODO: add 16b cache latencies
+                  // TODO: cumulative latency.  Should we stall to avoid overflowing this counter?
+                  e2c_waitcnt_r <= 6; // TODO: account for slow clock.
+                  
+                  exe_ram_wr_r <= 1;
+                  exe_word_r <= 0;
+                  // TODO: get data and address
+                  exe_data_r <= exe_plot_data_r;
+
+                  exe_addr_r <= exe_plot_addr_r;
+
+                  EXE_STATE <= ST_EXE_MEMORY_WAIT;                  
+                end
               end
             end
             `OP_GETC_RAMB_ROMB: begin
@@ -1742,9 +1763,24 @@ always @(posedge CLK) begin
   end
 end
 
-// breakpoint hooks
+// breakpoints
+reg      brk_inst_rd_rom_m1;
+reg      brk_inst_rd_ram_m1;
+reg      brk_data_rd_rom_m1;
+reg      brk_data_rd_ram_m1;
+reg      brk_data_wr_ram_m1;
 always @(posedge CLK) begin
   if (RST) begin
+    brk_inst_rd_rom_m1 <= 0;
+    brk_inst_rd_ram_m1 <= 0;
+    brk_data_rd_rom_m1 <= 0;
+    brk_data_rd_ram_m1 <= 0;
+    brk_data_wr_ram_m1 <= 0;
+
+    brk_inst_rd_byte <= 0;
+    brk_data_rd_byte <= 0;
+    brk_data_wr_byte <= 0;
+
     brk_inst_rd_addr <= 0;
     brk_data_rd_addr <= 0;
     brk_data_wr_addr <= 0;
@@ -1752,6 +1788,16 @@ always @(posedge CLK) begin
     brk_error        <= 0;
   end
   else begin
+    brk_inst_rd_rom_m1 <= (|(ROM_STATE & ST_ROM_FETCH_RD)) && !rom_bus_rrq_r && ROM_BUS_RDY;
+    brk_inst_rd_ram_m1 <= (|(RAM_STATE & ST_RAM_FETCH_RD)) && !ram_bus_rrq_r && RAM_BUS_RDY;
+    brk_data_rd_rom_m1 <= (|(ROM_STATE & ST_ROM_DATA_RD)) && !rom_bus_rrq_r && ROM_BUS_RDY;
+    brk_data_rd_ram_m1 <= (|(RAM_STATE & ST_RAM_DATA_RD)) && !ram_bus_rrq_r && RAM_BUS_RDY;
+    brk_data_wr_ram_m1 <= (|(RAM_STATE & ST_RAM_DATA_WR)) && !ram_bus_wrq_r && RAM_BUS_RDY;
+
+    brk_inst_rd_byte <= pipeline_advance ? 0 : brk_inst_rd_rom_m1 ? (rom_bus_data_r == CONFIG_DATA_WATCH) : brk_inst_rd_ram_m1 ? (ram_bus_data_r == CONFIG_DATA_WATCH) : brk_inst_rd_byte;
+    brk_data_rd_byte <= pipeline_advance ? 0 : brk_data_rd_rom_m1 ? (rom_bus_data_r == CONFIG_DATA_WATCH) : brk_data_rd_ram_m1 ? (ram_bus_data_r == CONFIG_DATA_WATCH) : brk_data_rd_byte;
+    brk_data_wr_byte <= pipeline_advance ? 0                                                              : brk_data_wr_ram_m1 ? (RAMWRBUF_r     == CONFIG_DATA_WATCH) : brk_data_wr_byte;
+  
     brk_inst_rd_addr <= (cache_ram_rd_r && (cache_addr_r == CONFIG_ADDR_WATCH) || cache_rom_rd_r && (cache_addr_r == CONFIG_ADDR_WATCH));
     brk_data_rd_addr <= (exe_ram_rd_r   && (exe_addr_r   == CONFIG_ADDR_WATCH) || exe_rom_rd_r   && (exe_addr_r   == CONFIG_ADDR_WATCH));
     brk_data_wr_addr <= (exe_ram_wr_r   && (exe_addr_r   == CONFIG_ADDR_WATCH));
@@ -1892,6 +1938,12 @@ always @(posedge CLK) begin
       // config state
       8'hA0           : pgmpre_out[3] <= config_r[0];
       8'hA1           : pgmpre_out[3] <= config_r[1];
+      8'hA2           : pgmpre_out[3] <= config_r[2];
+      8'hA3           : pgmpre_out[3] <= config_r[3];
+      8'hA4           : pgmpre_out[3] <= config_r[4];
+      8'hA5           : pgmpre_out[3] <= config_r[5];
+      8'hA6           : pgmpre_out[3] <= config_r[6];
+      8'hA7           : pgmpre_out[3] <= config_r[7];
   
       8'hC0           : pgmpre_out[3] <= ROM_STATE;
       8'hC1           : pgmpre_out[3] <= RAM_STATE;
@@ -1908,119 +1960,6 @@ always @(posedge CLK) begin
     endcase
   endcase
 end
-
-
-
-//always @(posedge CLK) begin
-//  casex (pgm_addr_r)
-//    {2'h0,ADDR_GPRL } : pgmdata_out <= REG_r[pgm_addr_r[4:1]][7:0];
-//    {2'h0,ADDR_GPRH } : pgmdata_out <= REG_r[pgm_addr_r[4:1]][15:8];          
-//    //{2'h0,ADDR_GPRL } : pgmdata_out = debug_reg_r[7:0];
-//    //{2'h0,ADDR_GPRH } : pgmdata_out = debug_reg_r[15:8];          
-//    {2'h0,ADDR_SFR  } : pgmdata_out <= SFR_r[7:0];
-//    {2'h0,ADDR_SFR+1} : pgmdata_out <= SFR_r[15:8];
-//    {2'h0,ADDR_BRAMR} : pgmdata_out <= BRAMR_r;
-//    {2'h0,ADDR_PBR  } : pgmdata_out <= PBR_r;
-//    {2'h0,ADDR_ROMBR} : pgmdata_out <= ROMBR_r;
-//    {2'h0,ADDR_CFGR } : pgmdata_out <= CFGR_r;
-//    {2'h0,ADDR_SCBR } : pgmdata_out <= SCBR_r;
-//    {2'h0,ADDR_CLSR } : pgmdata_out <= CLSR_r;
-//    {2'h0,ADDR_SCMR } : pgmdata_out <= SCMR_r;
-//    {2'h0,ADDR_VCR  } : pgmdata_out <= VCR_r;
-//    {2'h0,ADDR_RAMBR} : pgmdata_out <= RAMBR_r;
-//    {2'h0,ADDR_CBR+0} : pgmdata_out <= CBR_r[7:0];
-//    {2'h0,ADDR_CBR+1} : pgmdata_out <= CBR_r[15:8];
-//    10'h40            : pgmdata_out <= COLR_r;
-//    10'h41            : pgmdata_out <= POR_r;
-//    10'h42            : pgmdata_out <= SREG_r;
-//    10'h43            : pgmdata_out <= DREG_r;
-//    10'h44            : pgmdata_out <= ROMRDBUF_r;
-//    10'h45            : pgmdata_out <= RAMWRBUF_r;
-//    10'h46            : pgmdata_out <= RAMADDR_r[7:0];
-//    10'h47            : pgmdata_out <= RAMADDR_r[15:8];
-//
-//    //10'h50,10'h58     : pgmdata_out <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
-//    //10'h51,10'h59     : pgmdata_out <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
-//    //10'h6x            : pgmdata_out <= PIXBUF_VALID_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
-//    //10'h7x            : pgmdata_out <= PIXBUF_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
-//
-//    // TODO: add more internal temps @ $80
-//    10'h80            : pgmdata_out <= SFR_Z;
-//    10'h81            : pgmdata_out <= SFR_CY;
-//    10'h82            : pgmdata_out <= SFR_S;
-//    10'h83            : pgmdata_out <= SFR_OV;
-//    10'h84            : pgmdata_out <= SFR_GO;
-//    10'h85            : pgmdata_out <= SFR_RR;
-//    10'h86            : pgmdata_out <= SFR_ALT1;
-//    10'h87            : pgmdata_out <= SFR_ALT2;
-//    10'h88            : pgmdata_out <= SFR_IL;
-//    10'h89            : pgmdata_out <= SFR_IH;
-//    10'h8A            : pgmdata_out <= SFR_B;
-//    10'h8B            : pgmdata_out <= SCMR_MD;
-//    10'h8C            : pgmdata_out <= SCMR_HT;
-//    10'h8D            : pgmdata_out <= SCMR_RAN;
-//    10'h8E            : pgmdata_out <= SCMR_RON;
-//    
-//    10'h1xx,
-//    10'h2xx           : pgmdata_out <= debug_cache_rddata;
-//    
-//    // fetch state
-//    10'h300           : pgmdata_out <= FETCH_STATE;
-//    10'h301           : pgmdata_out <= fetch_waitcnt_r;
-//    // exe state
-//    10'h320           : pgmdata_out <= EXE_STATE;
-//    10'h321           : pgmdata_out <= exe_waitcnt_r;
-//    10'h322           : pgmdata_out <= exe_opcode_r;
-//    10'h323           : pgmdata_out <= exe_operand_r[7:0];
-//    10'h324           : pgmdata_out <= exe_operand_r[15:8];
-//    10'h325           : pgmdata_out <= exe_opsize_r;
-//    10'h326           : pgmdata_out <= e2r_destnum_r;
-//
-//    10'h330           : pgmdata_out <= exe_src_r[7:0];
-//    10'h331           : pgmdata_out <= exe_src_r[15:8];
-//    10'h332           : pgmdata_out <= exe_srcn_r[7:0];
-//    10'h333           : pgmdata_out <= exe_srcn_r[15:8];
-//    10'h334           : pgmdata_out <= e2r_data_r[7:0];
-//    10'h335           : pgmdata_out <= e2r_data_r[15:8];
-//
-//    // cache state
-//    //10'h340
-//    // fill state
-//    10'h360           : pgmdata_out <= ROM_BUS_RDY;
-//    10'h368           : pgmdata_out <= cache_rom_rd_r;
-//    10'h369           : pgmdata_out <= cache_ram_rd_r;
-//    10'h36F           : pgmdata_out <= exe_rom_rd_r;
-//    10'h370           : pgmdata_out <= exe_ram_rd_r;
-//    10'h371           : pgmdata_out <= exe_addr_r[7:0];
-//    10'h372           : pgmdata_out <= exe_addr_r[15:8];
-//    10'h373           : pgmdata_out <= exe_addr_r[23:16];
-//    10'h374           : pgmdata_out <= exe_data_r[7:0];
-//    10'h375           : pgmdata_out <= exe_data_r[15:8];
-//    10'h376           : pgmdata_out <= rom_bus_data_r[7:0];
-//    10'h377           : pgmdata_out <= rom_bus_data_r[15:8];
-//    10'h378           : pgmdata_out <= ram_bus_data_r[7:0];
-//    10'h379           : pgmdata_out <= ram_bus_data_r[15:8];
-//    // interface state
-//    //10'h380           : pgmdata_out <= i2e_op_r[0];
-//    //10'h381           : pgmdata_out <= i2e_op_r[1];
-//    // config state
-//    10'h3A0           : pgmdata_out <= config_r[0];
-//    10'h3A1           : pgmdata_out <= config_r[1];
-//
-//    10'h3C0           : pgmdata_out <= ROM_STATE;
-//    10'h3C1           : pgmdata_out <= RAM_STATE;
-//    
-//    // misc
-//    10'h3E0           : pgmdata_out <= gsu_cycle_cnt_r[31:24];
-//    10'h3E1           : pgmdata_out <= gsu_cycle_cnt_r[23:16];
-//    10'h3E2           : pgmdata_out <= gsu_cycle_cnt_r[15: 8];
-//    10'h3E3           : pgmdata_out <= gsu_cycle_cnt_r[ 7: 0];
-//    10'h3E4           : pgmdata_out <= snes_write_r;
-//    10'h3E5           : pgmdata_out <= pipeline_advance;
-//    
-//    default           : pgmdata_out <= 8'hFF;
-//  endcase
-//end
 
 //-------------------------------------------------------------------
 // MISC OUTPUTS
