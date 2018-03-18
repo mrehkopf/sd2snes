@@ -7,7 +7,7 @@
 // \   \   \/     Version: P.20131013
 //  \   \         Application: netgen
 //  /   /         Filename: gsu_fmult.v
-// /___/   /\     Timestamp: Tue Mar 06 20:06:00 2018
+// /___/   /\     Timestamp: Sat Mar 17 21:19:32 2018
 // \   \  /  \ 
 //  \___\/\___\
 //             
@@ -34,286 +34,25 @@
 `timescale 1 ns/1 ps
 
 module gsu_fmult (
-  clk, p, a, b
+p, a, b
 )/* synthesis syn_black_box syn_noprune=1 */;
-  input clk;
   output [31 : 0] p;
   input [15 : 0] a;
   input [15 : 0] b;
   
   // synthesis translate_off
   
-  wire \blk00000001/sig00000041 ;
-  wire \blk00000001/sig00000040 ;
-  wire \blk00000001/sig0000003f ;
-  wire \blk00000001/sig0000003e ;
-  wire \blk00000001/sig0000003d ;
-  wire \blk00000001/sig0000003c ;
-  wire \blk00000001/sig0000003b ;
-  wire \blk00000001/sig0000003a ;
-  wire \blk00000001/sig00000039 ;
-  wire \blk00000001/sig00000038 ;
-  wire \blk00000001/sig00000037 ;
-  wire \blk00000001/sig00000036 ;
-  wire \blk00000001/sig00000035 ;
-  wire \blk00000001/sig00000034 ;
-  wire \blk00000001/sig00000033 ;
-  wire \blk00000001/sig00000032 ;
-  wire \blk00000001/sig00000031 ;
-  wire \blk00000001/sig00000030 ;
-  wire \blk00000001/sig0000002f ;
-  wire \blk00000001/sig0000002e ;
-  wire \blk00000001/sig0000002d ;
-  wire \blk00000001/sig0000002c ;
-  wire \blk00000001/sig0000002b ;
-  wire \blk00000001/sig0000002a ;
-  wire \blk00000001/sig00000029 ;
-  wire \blk00000001/sig00000028 ;
-  wire \blk00000001/sig00000027 ;
-  wire \blk00000001/sig00000026 ;
-  wire \blk00000001/sig00000025 ;
-  wire \blk00000001/sig00000024 ;
-  wire \blk00000001/sig00000023 ;
-  wire \blk00000001/sig00000022 ;
-  wire \NLW_blk00000001/blk00000022_P<34>_UNCONNECTED ;
-  wire \NLW_blk00000001/blk00000022_P<33>_UNCONNECTED ;
-  wire \NLW_blk00000001/blk00000022_P<32>_UNCONNECTED ;
-  wire \NLW_blk00000001/blk00000022_P<31>_UNCONNECTED ;
-  MULT18X18   \blk00000001/blk00000022  (
+  wire \NLW_blk00000001/blk00000002_P<34>_UNCONNECTED ;
+  wire \NLW_blk00000001/blk00000002_P<33>_UNCONNECTED ;
+  wire \NLW_blk00000001/blk00000002_P<32>_UNCONNECTED ;
+  wire \NLW_blk00000001/blk00000002_P<31>_UNCONNECTED ;
+  MULT18X18   \blk00000001/blk00000002  (
     .A({a[15], a[15], a[15], a[14], a[13], a[12], a[11], a[10], a[9], a[8], a[7], a[6], a[5], a[4], a[3], a[2], a[1], a[0]}),
     .B({b[15], b[15], b[15], b[14], b[13], b[12], b[11], b[10], b[9], b[8], b[7], b[6], b[5], b[4], b[3], b[2], b[1], b[0]}),
-    .P({\blk00000001/sig0000003a , \NLW_blk00000001/blk00000022_P<34>_UNCONNECTED , \NLW_blk00000001/blk00000022_P<33>_UNCONNECTED , 
-\NLW_blk00000001/blk00000022_P<32>_UNCONNECTED , \NLW_blk00000001/blk00000022_P<31>_UNCONNECTED , \blk00000001/sig00000039 , \blk00000001/sig00000037 
-, \blk00000001/sig00000036 , \blk00000001/sig00000035 , \blk00000001/sig00000034 , \blk00000001/sig00000033 , \blk00000001/sig00000032 , 
-\blk00000001/sig00000031 , \blk00000001/sig00000030 , \blk00000001/sig0000002f , \blk00000001/sig0000002e , \blk00000001/sig0000002c , 
-\blk00000001/sig0000002b , \blk00000001/sig0000002a , \blk00000001/sig00000029 , \blk00000001/sig00000028 , \blk00000001/sig00000027 , 
-\blk00000001/sig00000026 , \blk00000001/sig00000025 , \blk00000001/sig00000024 , \blk00000001/sig00000023 , \blk00000001/sig00000041 , 
-\blk00000001/sig00000040 , \blk00000001/sig0000003f , \blk00000001/sig0000003e , \blk00000001/sig0000003d , \blk00000001/sig0000003c , 
-\blk00000001/sig0000003b , \blk00000001/sig00000038 , \blk00000001/sig0000002d , \blk00000001/sig00000022 })
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000021  (
-    .C(clk),
-    .D(\blk00000001/sig0000003a ),
-    .Q(p[31])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000020  (
-    .C(clk),
-    .D(\blk00000001/sig00000039 ),
-    .Q(p[30])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk0000001f  (
-    .C(clk),
-    .D(\blk00000001/sig00000037 ),
-    .Q(p[29])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk0000001e  (
-    .C(clk),
-    .D(\blk00000001/sig00000036 ),
-    .Q(p[28])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk0000001d  (
-    .C(clk),
-    .D(\blk00000001/sig00000035 ),
-    .Q(p[27])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk0000001c  (
-    .C(clk),
-    .D(\blk00000001/sig00000034 ),
-    .Q(p[26])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk0000001b  (
-    .C(clk),
-    .D(\blk00000001/sig00000033 ),
-    .Q(p[25])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk0000001a  (
-    .C(clk),
-    .D(\blk00000001/sig00000032 ),
-    .Q(p[24])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000019  (
-    .C(clk),
-    .D(\blk00000001/sig00000031 ),
-    .Q(p[23])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000018  (
-    .C(clk),
-    .D(\blk00000001/sig00000030 ),
-    .Q(p[22])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000017  (
-    .C(clk),
-    .D(\blk00000001/sig0000002f ),
-    .Q(p[21])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000016  (
-    .C(clk),
-    .D(\blk00000001/sig0000002e ),
-    .Q(p[20])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000015  (
-    .C(clk),
-    .D(\blk00000001/sig0000002c ),
-    .Q(p[19])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000014  (
-    .C(clk),
-    .D(\blk00000001/sig0000002b ),
-    .Q(p[18])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000013  (
-    .C(clk),
-    .D(\blk00000001/sig0000002a ),
-    .Q(p[17])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000012  (
-    .C(clk),
-    .D(\blk00000001/sig00000029 ),
-    .Q(p[16])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000011  (
-    .C(clk),
-    .D(\blk00000001/sig00000028 ),
-    .Q(p[15])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000010  (
-    .C(clk),
-    .D(\blk00000001/sig00000027 ),
-    .Q(p[14])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk0000000f  (
-    .C(clk),
-    .D(\blk00000001/sig00000026 ),
-    .Q(p[13])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk0000000e  (
-    .C(clk),
-    .D(\blk00000001/sig00000025 ),
-    .Q(p[12])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk0000000d  (
-    .C(clk),
-    .D(\blk00000001/sig00000024 ),
-    .Q(p[11])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk0000000c  (
-    .C(clk),
-    .D(\blk00000001/sig00000023 ),
-    .Q(p[10])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk0000000b  (
-    .C(clk),
-    .D(\blk00000001/sig00000041 ),
-    .Q(p[9])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk0000000a  (
-    .C(clk),
-    .D(\blk00000001/sig00000040 ),
-    .Q(p[8])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000009  (
-    .C(clk),
-    .D(\blk00000001/sig0000003f ),
-    .Q(p[7])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000008  (
-    .C(clk),
-    .D(\blk00000001/sig0000003e ),
-    .Q(p[6])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000007  (
-    .C(clk),
-    .D(\blk00000001/sig0000003d ),
-    .Q(p[5])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000006  (
-    .C(clk),
-    .D(\blk00000001/sig0000003c ),
-    .Q(p[4])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000005  (
-    .C(clk),
-    .D(\blk00000001/sig0000003b ),
-    .Q(p[3])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000004  (
-    .C(clk),
-    .D(\blk00000001/sig00000038 ),
-    .Q(p[2])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000003  (
-    .C(clk),
-    .D(\blk00000001/sig0000002d ),
-    .Q(p[1])
-  );
-  FD #(
-    .INIT ( 1'b0 ))
-  \blk00000001/blk00000002  (
-    .C(clk),
-    .D(\blk00000001/sig00000022 ),
-    .Q(p[0])
+    .P({p[31], \NLW_blk00000001/blk00000002_P<34>_UNCONNECTED , \NLW_blk00000001/blk00000002_P<33>_UNCONNECTED , 
+\NLW_blk00000001/blk00000002_P<32>_UNCONNECTED , \NLW_blk00000001/blk00000002_P<31>_UNCONNECTED , p[30], p[29], p[28], p[27], p[26], p[25], p[24], 
+p[23], p[22], p[21], p[20], p[19], p[18], p[17], p[16], p[15], p[14], p[13], p[12], p[11], p[10], p[9], p[8], p[7], p[6], p[5], p[4], p[3], p[2], p[1]
+, p[0]})
   );
 
 // synthesis translate_on

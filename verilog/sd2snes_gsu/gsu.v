@@ -216,7 +216,7 @@ parameter
 `define OP_MULT          8'h80,8'h81,8'h82,8'h83,8'h84,8'h85,8'h86,8'h87,8'h88,8'h89,8'h8A,8'h8B,8'h8C,8'h8D,8'h8E,8'h8F
 // jump
 `define OP_LINK          8'h91,8'h92,8'h93,8'h94
-`define OP_JMP_LJMP      8'h98,8'h99,8'h9A,8'h9B,8'h9C,8'h9D,8'h9E
+`define OP_JMP_LJMP      8'h98,8'h99,8'h9A,8'h9B,8'h9C,8'h9D
 
 //-------------------------------------------------------------------
 // CONFIG
@@ -275,8 +275,8 @@ end
 
 assign config_data_out = config_r[reg_read_in];
 
-wire        CONFIG_CONTROL_ENABLED       = config_r[0][0];
-wire        CONFIG_CONTROL_MATCHFULLINST = config_r[0][1];
+assign      CONFIG_CONTROL_ENABLED       = config_r[0][0];
+assign      CONFIG_CONTROL_MATCHFULLINST = config_r[0][1];
 
 wire [7:0]  CONFIG_STEP_COUNT   = config_r[1];
 wire [7:0]  CONFIG_DATA_WATCH   = config_r[4];
@@ -688,9 +688,9 @@ always @(posedge CLK) begin
     else if (gsu_clock_en & |exe_waitcnt_r) exe_waitcnt_r <= exe_waitcnt_r - 1;
     
     // ok to advance to next instruction byte
-    step_r <= CONFIG_CONTROL_ENABLED || (~op_complete && CONFIG_CONTROL_MATCHFULLINST) || (stepcnt_r != CONFIG_STEP_COUNT);
+    step_r <= CONFIG_CONTROL_ENABLED | (~op_complete & CONFIG_CONTROL_MATCHFULLINST) | (stepcnt_r != CONFIG_STEP_COUNT);
     
-    if (pipeline_advance) stepcnt_r <= CONFIG_STEP_COUNT;
+    if (pipeline_advance & (op_complete | ~CONFIG_CONTROL_MATCHFULLINST)) stepcnt_r <= CONFIG_STEP_COUNT;
     waitcnt_zero_r <= ~|fetch_waitcnt_r & ~|exe_waitcnt_r;
   end
 end
@@ -978,6 +978,7 @@ reg        exe_cy_r;
 reg [15:0] exe_mult_srca_r;
 reg [15:0] exe_mult_srcb_r;
 reg [7:0]  exe_colr_r;
+reg        exe_zs_r;
 
 reg [15:0] exe_n;
 reg [15:0] exe_result;
@@ -1027,7 +1028,8 @@ always @(posedge CLK) begin
     e2r_lmult_r <= 0;
     e2r_wpor_r <= 0;
     e2r_wcolr_r <= 0;
-
+    exe_zs_r <= 0;
+    
     e2r_data_r <= 0;
     e2r_data_pre_r <= 0;
     e2r_mask_r <= 0;
@@ -1067,8 +1069,9 @@ always @(posedge CLK) begin
         e2r_destnum_r <= addr_in_r[4:1];
       end
       ST_EXE_DECODE: begin
-        if (~|exe_opsize_r) begin
-        
+        if (~|exe_opsize_r) begin      
+          exe_zs_r <= 0;
+
           // calculate operands
           case (exe_opcode_r)
             `OP_BRA,`OP_BGE,`OP_BLT,`OP_BNE,`OP_BEQ,`OP_BPL,`OP_BMI,`OP_BCC,`OP_BCS,`OP_BVC,`OP_BVS : exe_opsize_r <= 2;
@@ -1197,9 +1200,10 @@ always @(posedge CLK) begin
                 e2r_val_r  <= 1;
                 e2r_data_pre_r <= exe_result;
 
-                e2r_z_r    <= ~|exe_result;
+                exe_zs_r <= 1;
+                //e2r_z_r    <= ~|exe_result;
+                //e2r_s_r    <= exe_result[15];
                 e2r_ov_r   <= exe_result[7];
-                e2r_s_r    <= exe_result[15];
 
                 // reset
                 e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= 0;
@@ -1213,8 +1217,9 @@ always @(posedge CLK) begin
               e2r_destnum_r <= R12;
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
-              e2r_s_r    <= exe_result[15];
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
               
               e2r_loop_r <= REG_r[R12] != 1;
             end
@@ -1298,9 +1303,10 @@ always @(posedge CLK) begin
               // e2r_destnum_r <= DREG_r; // standard dest
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
               e2r_ov_r   <= (exe_src_r[15] ^ exe_result[15]) & (exe_n[15] ^ exe_result[15]);
-              e2r_s_r    <= exe_result[15];
               e2r_cy_r   <= exe_carry;
             end
             `OP_SUB          : begin
@@ -1312,9 +1318,10 @@ always @(posedge CLK) begin
               // e2r_destnum_r <= DREG_r; // standard dest
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
               e2r_ov_r   <= (exe_src_r[15] ^ exe_result[15]) & (exe_src_r[15] ^ exe_n[15]);
-              e2r_s_r    <= exe_result[15];
               e2r_cy_r   <= ~exe_carry;
             end
             `OP_AND_BIC      : begin
@@ -1324,8 +1331,9 @@ always @(posedge CLK) begin
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
-              e2r_s_r    <= exe_result[15];
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
             end
             `OP_OR_XOR       : begin
               exe_n      = exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
@@ -1334,8 +1342,9 @@ always @(posedge CLK) begin
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
-              e2r_s_r    <= exe_result[15];                
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
             end
             `OP_NOT           : begin
               exe_result = ~exe_src_r;
@@ -1343,8 +1352,9 @@ always @(posedge CLK) begin
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
-              e2r_s_r    <= exe_result[15];
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
             end
             
             // ROTATE/SHIFT/INC/DEC
@@ -1354,8 +1364,9 @@ always @(posedge CLK) begin
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
-              e2r_s_r    <= exe_result[15];
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
               e2r_cy_r   <= exe_src_r[0];
             end
             `OP_ASR_DIV2      : begin
@@ -1364,8 +1375,9 @@ always @(posedge CLK) begin
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
-              e2r_s_r    <= exe_result[15];
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
               e2r_cy_r   <= exe_src_r[0];
             end
             `OP_ROL           : begin
@@ -1374,8 +1386,9 @@ always @(posedge CLK) begin
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
-              e2r_s_r    <= exe_result[15];
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
               e2r_cy_r   <= exe_src_r[15];
             end
             `OP_ROR           : begin
@@ -1384,8 +1397,9 @@ always @(posedge CLK) begin
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
-              e2r_s_r    <= exe_result[15];
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
               e2r_cy_r   <= exe_src_r[0];
             end
             
@@ -1396,8 +1410,9 @@ always @(posedge CLK) begin
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
-              e2r_s_r    <= exe_result[15];
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
             end
             `OP_SEX           : begin
               exe_result = {{8{exe_src_r[7]}},exe_src_r[7:0]};
@@ -1405,8 +1420,9 @@ always @(posedge CLK) begin
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
-              e2r_s_r    <= exe_result[15];
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
             end
             `OP_LOB           : begin
               exe_result = {8'h00,exe_src_r[7:0]};
@@ -1431,15 +1447,6 @@ always @(posedge CLK) begin
               
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
-              
-              //e2r_z_r    <= |(exe_result & 16'hF0F0);
-              //e2r_ov_r   <= |(exe_result & 16'hC0C0);
-              //e2r_s_r    <= |(exe_result & 16'h8080);
-              //e2r_cy_r   <= |(exe_result & 16'hE0E0);
-              //e2r_z_r    <= |({exe_result[15:12],exe_result[7:4]});
-              //e2r_ov_r   <= |({exe_result[15:14],exe_result[7:6]});
-              //e2r_s_r    <= |({exe_result[15:15],exe_result[7:7]});
-              //e2r_cy_r   <= |({exe_result[15:13],exe_result[7:5]});
             end
             
             // MULTIPLY
@@ -1463,8 +1470,9 @@ always @(posedge CLK) begin
               e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination                  
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
-              e2r_s_r    <= exe_result[15];
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
             end
             `OP_DEC          : begin
               exe_result = exe_srcn_r - 1;
@@ -1473,8 +1481,9 @@ always @(posedge CLK) begin
               e2r_destnum_r <= exe_opcode_r[3:0]; // uses N as destination
               e2r_data_pre_r <= exe_result;
               
-              e2r_z_r    <= ~|exe_result;
-              e2r_s_r    <= exe_result[15];
+              exe_zs_r <= 1;
+              //e2r_z_r    <= ~|exe_result;
+              //e2r_s_r    <= exe_result[15];
             end
             // LINK
             `OP_LINK         : begin
@@ -1745,6 +1754,12 @@ always @(posedge CLK) begin
               EXE_STATE <= ST_EXE_WAIT;
             end
             default: begin
+              if (exe_zs_r) begin
+                e2r_z_r    <= ~|e2r_data_pre_r;
+                e2r_s_r    <= e2r_data_pre_r[15];
+                exe_zs_r   <= 0;
+              end
+            
               e2r_data_r <= e2r_data_pre_r;
               EXE_STATE <= ST_EXE_WAIT;
             end
@@ -1774,13 +1789,18 @@ always @(posedge CLK) begin
                 e2r_colr_r  <= POR_HN ? {COLR_r[7:4],ram_bus_data_r[7:4]} : POR_FHN ? {COLR_r[7:4],ram_bus_data_r[3:0]} : ram_bus_data_r[7:0];
               end
             end
-            default: e2r_data_r <= exe_word_r ? ram_bus_data_r[15:0] : {8'h00,ram_bus_data_r[7:0]};
+            default: begin
+              e2r_data_r <= exe_word_r ? ram_bus_data_r[15:0] : {8'h00,ram_bus_data_r[7:0]};
+              exe_plot_data_r <= exe_word_r ? ram_bus_data_r[15:0] : {8'h00,ram_bus_data_r[7:0]};
+            end
           endcase
             
           EXE_STATE <= (exe_opcode_r == `OP_PLOT_RPIX) ? ST_EXE_MEMORY : ST_EXE_WAIT;
         end
       end
       ST_EXE_WAIT: begin
+        e2c_waitcnt_val_r <= 0;
+
         if (pipeline_advance) begin
           if (|exe_opsize_r) exe_opsize_r <= exe_opsize_r - 1;
         
@@ -1794,6 +1814,7 @@ always @(posedge CLK) begin
             exe_opcode_r <= fetch_data_r;//i2e_op_r[~i2e_ptr_r];
             exe_operand_r <= 0;
             exe_operand_valid_r <= 0;
+            exe_zs_r <= 0;
 
             e2r_val_r  <= 0;
             e2r_mask_r <= 0;
@@ -1866,21 +1887,21 @@ assign op_complete = exe_opsize_r == 1;
 
 // Multipliers
 gsu_fmult gsu_fmult(
-  .clk(CLK),
+  //.clk(CLK),
   .a(exe_mult_srca_r[15:0]),
   .b(exe_mult_srcb_r[15:0]),
   .p(exe_fmult_out)
 );
 
 gsu_mult gsu_mult(
-  .clk(CLK),
+  //.clk(CLK),
   .a(exe_mult_srca_r[7:0]),
   .b(exe_mult_srcb_r[7:0]),
   .p(exe_mult_out)
 );
 
 gsu_umult gsu_umult(
-  .clk(CLK),
+  //.clk(CLK),
   .a(exe_mult_srca_r[7:0]),
   .b(exe_mult_srcb_r[7:0]),
   .p(exe_umult_out)
