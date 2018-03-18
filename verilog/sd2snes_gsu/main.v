@@ -218,9 +218,29 @@ wire ROM_HIT;
 
 assign DCM_RST=0;
 
+// gsu state
+wire GSU_GO;
+wire GSU_RON;
+wire GSU_RAN;
+wire IS_SAVERAM;
+
+reg GSU_RONr;    initial GSU_RONr = 0;
+reg GSU_RANr;    initial GSU_RANr = 0;
+
+always @(posedge CLK2) begin
+  if (SNES_reset_strobe) begin
+    GSU_RONr <= 0;
+    GSU_RANr <= 0;
+  end
+  else begin
+    GSU_RONr    <= GSU_RON & GSU_GO;
+    GSU_RANr    <= GSU_RAN & GSU_GO;
+  end
+end
+
 always @(posedge CLK2) begin
   free_strobe <= 1'b0;
-  if(SNES_cycle_start) free_strobe <= ~ROM_HIT;
+  if(SNES_cycle_start) free_strobe <= ~ROM_HIT | (IS_SAVERAM ? GSU_RANr : GSU_RONr); // drop the snes access if gsu is accessing it
 end
 
 always @(posedge CLK2) begin
@@ -458,6 +478,9 @@ gsu snes_gsu (
   // ACTIVE interface
   .ACTIVE(GSU_ACTIVE),
   .IRQ(GSU_IRQ),
+  .RON(GSU_RON),
+  .RAN(GSU_RAN),
+  .GO(GSU_GO),
   
   // State debug read interface
   .PGM_ADDR(GSU_PGM_ADDR), // [9:0]
@@ -709,10 +732,11 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
 //                                  :dspx_enable ? DSPX_SNES_DATA_OUT
 //                                  :dspx_dp_enable ? DSPX_SNES_DATA_OUT
                                     msu_enable ? MSU_SNES_DATA_OUT
-                                  : gsu_data_enable ? GSU_SNES_DATA_OUT
+                                  : gsu_data_enable ? GSU_SNES_DATA_OUT  // GSU MMIO read
 //                                  :bsx_data_ovr ? BSX_SNES_DATA_OUT
                                   :(cheat_hit & ~feat_cmd_unlock) ? cheat_data_out
                                   :((snescmd_unlock | feat_cmd_unlock) & snescmd_enable) ? snescmd_dout
+                                  :(IS_ROM & ~IS_SAVERAM & GSU_RONr) ? {3'h010, (SNES_ADDR[3] & SNES_ADDR[1]), (SNES_ADDR[2] & ~^{SNES_ADDR[3],SNES_ADDR[1]}), 1'b0, SNES_ADDR[0]} // used for interrupt vectors
                                   :(ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8])
                                   ) : 8'bZ;
 
@@ -843,7 +867,7 @@ always @(posedge CLK2) begin
     ST_IDLE: begin
       STATE <= ST_IDLE;
       
-      if (GSU_ACTIVE) begin
+      if(free_slot | SNES_DEADr) begin
         if (GSU_ROM_RD_PENDr) begin
           STATE <= ST_GSU_ROM_RD_ADDR;
           ST_MEM_DELAYr <= ROM_CYCLE_LEN;
@@ -856,9 +880,7 @@ always @(posedge CLK2) begin
           STATE <= ST_GSU_RAM_WR_ADDR;
           ST_MEM_DELAYr <= ROM_CYCLE_LEN;
         end
-      end
-      else if(free_slot | SNES_DEADr) begin
-        if(MCU_RD_PENDr) begin
+        else if(MCU_RD_PENDr) begin
           STATE <= ST_MCU_RD_ADDR;
           ST_MEM_DELAYr <= ROM_CYCLE_LEN;
         end
@@ -942,7 +964,7 @@ assign ROM_DATA[15:8] = (ROM_ADDR0 && !(!SD_DMA_TO_ROM && GSU_RAM_WR_HIT && GSU_
 assign ROM_WE = SD_DMA_TO_ROM
                 ?MCU_WRITE
                 : GSU_RAM_WR_HIT ? 1'b0
-                : (ROM_HIT & IS_WRITABLE & SNES_CPU_CLK) ? SNES_WRITE
+                : (ROM_HIT & IS_WRITABLE & SNES_CPU_CLK & ~GSU_RANr) ? SNES_WRITE
                 : MCU_WR_HIT ? 1'b0
                 : 1'b1;
 

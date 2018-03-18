@@ -54,6 +54,9 @@ module gsu(
   // ACTIVE interface
   output        ACTIVE,
   output        IRQ,
+  output        GO,
+  output        RON,
+  output        RAN,
   
   // State debug read interface
   input  [9:0]  PGM_ADDR, // [9:0]
@@ -157,20 +160,20 @@ parameter
 // special
 `define OP_STOP          8'h00
 `define OP_NOP           8'h01
-`define OP_CACHE         8'h02
+`define OP_CACHE         8'h02 // x
 // branches (no reset state)
-`define OP_BRA           8'h05
-`define OP_BGE           8'h06
-`define OP_BLT           8'h07
-`define OP_BNE           8'h08
-`define OP_BEQ           8'h09
-`define OP_BPL           8'h0A
-`define OP_BMI           8'h0B
-`define OP_BCC           8'h0C
-`define OP_BCS           8'h0D
-`define OP_BVC           8'h0E
-`define OP_BVS           8'h0F
-`define OP_LOOP          8'h3C
+`define OP_BRA           8'h05 // x
+`define OP_BGE           8'h06 // x
+`define OP_BLT           8'h07 // x
+`define OP_BNE           8'h08 // x
+`define OP_BEQ           8'h09 // x
+`define OP_BPL           8'h0A // x
+`define OP_BMI           8'h0B // x
+`define OP_BCC           8'h0C // x
+`define OP_BCS           8'h0D // x
+`define OP_BVC           8'h0E // x
+`define OP_BVS           8'h0F // x
+`define OP_LOOP          8'h3C // x
 // prefix (also see branch) no reset state
 `define OP_ALT1          8'h3D
 `define OP_ALT2          8'h3E
@@ -180,18 +183,18 @@ parameter
 `define OP_FROM          8'hB0,8'hB1,8'hB2,8'hB3,8'hB4,8'hB5,8'hB6,8'hB7,8'hB8,8'hB9,8'hBA,8'hBB,8'hBC,8'hBD,8'hBE,8'hBF 
 // mov
 // move/moves paired with/to/from
-`define OP_IBT           8'hA0,8'hA1,8'hA2,8'hA3,8'hA4,8'hA5,8'hA6,8'hA7,8'hA8,8'hA9,8'hAA,8'hAB,8'hAC,8'hAD,8'hAE,8'hAF
-`define OP_IWT           8'hF0,8'hF1,8'hF2,8'hF3,8'hF4,8'hF5,8'hF6,8'hF7,8'hF8,8'hF9,8'hFA,8'hFB,8'hFC,8'hFD,8'hFE,8'hFF
+`define OP_IBT           8'hA0,8'hA1,8'hA2,8'hA3,8'hA4,8'hA5,8'hA6,8'hA7,8'hA8,8'hA9,8'hAA,8'hAB,8'hAC,8'hAD,8'hAE,8'hAF // x
+`define OP_IWT           8'hF0,8'hF1,8'hF2,8'hF3,8'hF4,8'hF5,8'hF6,8'hF7,8'hF8,8'hF9,8'hFA,8'hFB,8'hFC,8'hFD,8'hFE,8'hFF // x
 // load from ROM
-`define OP_GETB          8'hEF
+`define OP_GETB          8'hEF // x
 // load from RAM
-`define OP_LD            8'h40,8'h41,8'h42,8'h43,8'h44,8'h45,8'h46,8'h47,8'h48,8'h49,8'h4A,8'h4B
-`define OP_ST            8'h30,8'h31,8'h32,8'h33,8'h34,8'h35,8'h36,8'h37,8'h38,8'h39,8'h3A,8'h3B
-`define OP_SBK           8'h90
-`define OP_GETC_RAMB_ROMB 8'hDF
+`define OP_LD            8'h40,8'h41,8'h42,8'h43,8'h44,8'h45,8'h46,8'h47,8'h48,8'h49,8'h4A,8'h4B // x
+`define OP_ST            8'h30,8'h31,8'h32,8'h33,8'h34,8'h35,8'h36,8'h37,8'h38,8'h39,8'h3A,8'h3B // x
+`define OP_SBK           8'h90 // x
+`define OP_GETC_RAMB_ROMB 8'hDF // x
 // bitmap
-`define OP_CMODE_COLOR   8'h4E
-`define OP_PLOT_RPIX     8'h4C
+`define OP_CMODE_COLOR   8'h4E // x
+`define OP_PLOT_RPIX     8'h4C // x
 // alu
 `define OP_ADD           8'h50,8'h51,8'h52,8'h53,8'h54,8'h55,8'h56,8'h57,8'h58,8'h59,8'h5A,8'h5B,8'h5C,8'h5D,8'h5E,8'h5F
 `define OP_SUB           8'h60,8'h61,8'h62,8'h63,8'h64,8'h65,8'h66,8'h67,8'h68,8'h69,8'h6A,8'h6B,8'h6C,8'h6D,8'h6E,8'h6F
@@ -215,8 +218,8 @@ parameter
 `define OP_FMULT_LMULT   8'h9F
 `define OP_MULT          8'h80,8'h81,8'h82,8'h83,8'h84,8'h85,8'h86,8'h87,8'h88,8'h89,8'h8A,8'h8B,8'h8C,8'h8D,8'h8E,8'h8F
 // jump
-`define OP_LINK          8'h91,8'h92,8'h93,8'h94
-`define OP_JMP_LJMP      8'h98,8'h99,8'h9A,8'h9B,8'h9C,8'h9D
+`define OP_LINK          8'h91,8'h92,8'h93,8'h94 // x
+`define OP_JMP_LJMP      8'h98,8'h99,8'h9A,8'h9B,8'h9C,8'h9D // x
 
 //-------------------------------------------------------------------
 // CONFIG
@@ -2045,5 +2048,8 @@ assign DATA_OUT = data_out_r;
 assign PGM_DATA = pgmdata_out;
 
 assign ACTIVE = ~|(ROM_STATE & ST_ROM_IDLE) | ~|(RAM_STATE & ST_RAM_IDLE);
+assign GO = SFR_GO;
+assign RON = SCMR_RON;
+assign RAN = SCMR_RAN;
 
 endmodule
