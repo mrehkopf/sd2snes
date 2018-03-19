@@ -52,7 +52,7 @@ module gsu(
   output [15:0] RAM_BUS_WRDATA,
   
   // ACTIVE interface
-  output        ACTIVE,
+  //output        ACTIVE,
   output        IRQ,
   output        GO,
   output        RON,
@@ -72,7 +72,7 @@ module gsu(
   output [7:0]  config_data_out,
   // config interface
 
-  output DBG
+  output        DBG
 );
 
 // temporaries
@@ -2077,15 +2077,15 @@ end
 //-------------------------------------------------------------------
 // MISC OUTPUTS
 //-------------------------------------------------------------------
-assign DBG = 0;
+assign DBG         = 0;
+assign PGM_DATA    = pgmdata_out;
+
 assign DATA_ENABLE = data_enable_r;
-assign DATA_OUT = data_out_r;
+assign DATA_OUT    = data_out_r;
 
-assign PGM_DATA = pgmdata_out;
-
-assign ACTIVE = ~|(ROM_STATE & ST_ROM_IDLE) | ~|(RAM_STATE & ST_RAM_IDLE);
-assign GO = SFR_GO;
-assign RON = SCMR_RON;
-assign RAN = SCMR_RAN;
+//assign ACTIVE      = ~|(ROM_STATE & ST_ROM_IDLE) | ~|(RAM_STATE & ST_RAM_IDLE);
+assign GO          = SFR_GO;
+assign RON         = SCMR_RON;
+assign RAN         = SCMR_RAN;
 
 endmodule

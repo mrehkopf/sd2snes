@@ -476,7 +476,7 @@ gsu snes_gsu (
   .RAM_BUS_WRDATA(GSU_RAM_DOUT),
   
   // ACTIVE interface
-  .ACTIVE(GSU_ACTIVE),
+  //.ACTIVE(GSU_ACTIVE),
   .IRQ(GSU_IRQ),
   .RON(GSU_RON),
   .RAN(GSU_RAN),
