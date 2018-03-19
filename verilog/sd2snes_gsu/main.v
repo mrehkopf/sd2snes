@@ -736,7 +736,7 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
 //                                  :bsx_data_ovr ? BSX_SNES_DATA_OUT
                                   :(cheat_hit & ~feat_cmd_unlock) ? cheat_data_out
                                   :((snescmd_unlock | feat_cmd_unlock) & snescmd_enable) ? snescmd_dout
-                                  :(IS_ROM & ~IS_SAVERAM & GSU_RONr) ? {3'h010, (SNES_ADDR[3] & SNES_ADDR[1]), (SNES_ADDR[2] & ~^{SNES_ADDR[3],SNES_ADDR[1]}), 1'b0, SNES_ADDR[0]} // used for interrupt vectors
+                                  :(IS_ROM & ~IS_SAVERAM & GSU_RONr) ? (SNES_ADDR[0] ? 8'h01 : {4'h0, (SNES_ADDR[3] & SNES_ADDR[1]), (SNES_ADDR[2] & ~^{SNES_ADDR[3],SNES_ADDR[1]}), 1'b0, SNES_ADDR[0]}) // used for interrupt vectors
                                   :(ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8])
                                   ) : 8'bZ;
 

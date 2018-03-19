@@ -998,13 +998,13 @@ reg [2:0]  exe_plot_index_r;
 reg        exe_plot_flush_r;
 reg        exe_plot_flushstate_r;
 reg        exe_plot_flushbuf_r;
-reg [2:0]  exe_plot_flushindex_r;
+reg [3:0]  exe_plot_flushindex_r;
 reg [3:0]  exe_plot_flushbppm1_r;
 reg [3:0]  exe_plot_bpp_r;
-reg [7:0]  exe_plot_x[1:0];
-reg [7:0]  exe_plot_y[1:0];
+reg [7:0]  exe_plot_x_r[1:0];
+reg [7:0]  exe_plot_y_r[1:0];
 reg [15:0] exe_plot_char_r[1:0];
-reg [7:0]  exe_plot_data_r;
+reg [7:0]  exe_plot_flushdata_r;
 //reg [15:0] exe_plot_addr_r;
 
 reg        exe_error;
@@ -1144,8 +1144,8 @@ always @(posedge CLK) begin
         // x - [4:0],000
         // y - [12:5]
         for (i = 0; i < 2; i = i + 1) begin
-          exe_plot_x[i] <= {PIXBUF_OFFSET_r[i][4:0],3'b000};
-          exe_plot_y[i] <= PIXBUF_OFFSET_r[i][12:5];
+          exe_plot_x_r[i] <= {PIXBUF_OFFSET_r[i][4:0],3'b000};
+          exe_plot_y_r[i] <= PIXBUF_OFFSET_r[i][12:5];
           
           case (SCMR_HT | {2{POR_OBJ}})
             0: exe_plot_char_r[i] <= {PIXBUF_OFFSET_r[i][4:0],4'b0000} + PIXBUF_OFFSET_r[i][12:8];
@@ -1199,7 +1199,7 @@ always @(posedge CLK) begin
             `OP_FROM          : begin
               if (SFR_B) begin
                 exe_result = exe_srcn_r; // uses N as source
-              
+
                 e2r_val_r  <= 1;
                 e2r_data_pre_r <= exe_result;
 
@@ -1267,17 +1267,26 @@ always @(posedge CLK) begin
                   EXE_STATE <= ST_EXE_WAIT;
                 end
                 else if (PIXBUF_OFFSET_r[0] != exe_plot_offset_r) begin
+                  // TODO: should we shortcircuit this if the buffer is empty?  Probably best done in MEMORY stage
                   // flush
                   exe_plot_flush_r <= 1;
                   // rmw if any of the bits are clear
-                  exe_plot_flushstate_r <= &PIXBUF_VALID_r[0];
-                  exe_plot_flushbuf_r <= 0;
-                  exe_plot_data_r <= 0;
+                  exe_plot_flushstate_r <= &PIXBUF_VALID_r[1];
+                  exe_plot_flushbuf_r <= 1;
+                  exe_plot_flushdata_r <= 0;
                   exe_plot_flushindex_r <= 0;
                   EXE_STATE <= ST_EXE_MEMORY;
                 end
                 else if (~exe_plot_done_r) begin
                   // write
+                  if (exe_plot_flush_r) begin
+                    // if we flushed then copy the buffer over
+                    PIXBUF_VALID_r[1]  <= PIXBUF_VALID_r[0];
+                    PIXBUF_OFFSET_r[1] <= PIXBUF_OFFSET_r[0];
+                    for (i = 0; i < 8; i = i + 1) PIXBUF_r[1][i] <= PIXBUF_r[0][i];
+                  end
+                  
+                  PIXBUF_OFFSET_r[0] <= exe_plot_offset_r;
                   PIXBUF_r[0][exe_plot_index_r]  <= exe_colr_r;
                   PIXBUF_VALID_r[0][exe_plot_index_r] <= 1;
                   
@@ -1288,11 +1297,9 @@ always @(posedge CLK) begin
                   // just writes
                   exe_plot_flushstate_r <= 1;
                   exe_plot_flushbuf_r <= 0;
+                  exe_plot_flushdata_r <= 0;
                   exe_plot_flushindex_r <= 0;
                   EXE_STATE <= (&PIXBUF_VALID_r[0]) ? ST_EXE_MEMORY : ST_EXE_WAIT;
-                end
-                else begin
-                  // copy PIXBUF if we get back here
                 end
               end
             end
@@ -1525,33 +1532,52 @@ always @(posedge CLK) begin
           case (exe_opcode_r)
             `OP_PLOT_RPIX      : begin
               // TODO: add 6 cycles for read
-              if (exe_alt1_r & ~exe_plot_flush_r) begin
+              if (exe_plot_flushindex_r == exe_plot_bpp_r) begin
+                EXE_STATE <= exe_plot_done_r ? ST_EXE_WAIT : ST_EXE_EXECUTE;
+              end
+              else if (exe_alt1_r & ~exe_plot_flush_r) begin
                 // RPIX read.  Remember current count.  Account for clock advance.
+                // stall to avoid overflowing the counter
+                if (e2c_waitcnt_r <= 1) begin
+                  e2c_waitcnt_val_r <= 1;
+                  // TODO: add 16b cache latencies
+                  e2c_waitcnt_r <= 6; // TODO: account for slow clock.
+
+                  // address common between read and write
+                  exe_addr_r <= 24'hE00000 + exe_plot_char_r[0] + {SCBR_r,10'h000} + {exe_plot_y_r[0][2:0],1'b0} + {exe_plot_flushindex_r[2:1], 2'b00, exe_plot_flushindex_r[0]};
+
+                  // read
+                  exe_ram_rd_r <= 1;
+                  exe_word_r <= 0;
+                  
+                  exe_plot_flushindex_r <= exe_plot_flushindex_r + 1;
+                  EXE_STATE <= ST_EXE_MEMORY_WAIT;
+                end
               end
               else begin
                 // TODO: add 1 cycle for miss, add 6 cycles for hit.  Remember current count.  Account for clock advance.
                 // Flush
                 if (e2c_waitcnt_r <= 1) begin
+                  // stall to avoid overflowing the counter
                   e2c_waitcnt_val_r <= 1;
                   // TODO: add 16b cache latencies
-                  // TODO: cumulative latency.  Should we stall to avoid overflowing this counter?
                   e2c_waitcnt_r <= 6; // TODO: account for slow clock.
 
                   // address common between read and write
-                  exe_addr_r <= 24'hE00000 + exe_plot_char_r[exe_plot_flushbuf_r] + {SCBR_r,10'h000} + {exe_plot_y[exe_plot_flushbuf_r][2:0],1'b0} + {exe_plot_flushindex_r[2:1], 2'b00, exe_plot_flushindex_r[0]};
+                  exe_addr_r <= 24'hE00000 + exe_plot_char_r[exe_plot_flushbuf_r] + {SCBR_r,10'h000} + {exe_plot_y_r[exe_plot_flushbuf_r][2:0],1'b0} + {exe_plot_flushindex_r[2:1], 2'b00, exe_plot_flushindex_r[0]};
 
                   // check which mode we are in write or read mode
                   if (exe_plot_flushstate_r) begin
                     // write
                     exe_ram_wr_r <= 1;
                     exe_word_r <= 0;
-                    exe_data_r <= (exe_plot_data_r & ~PIXBUF_VALID_r[exe_plot_flushbuf_r]) | ({PIXBUF_r[exe_plot_flushbuf_r][7][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][6][exe_plot_flushindex_r],
-                                                                                               PIXBUF_r[exe_plot_flushbuf_r][5][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][4][exe_plot_flushindex_r],
-                                                                                               PIXBUF_r[exe_plot_flushbuf_r][3][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][2][exe_plot_flushindex_r],
-                                                                                               PIXBUF_r[exe_plot_flushbuf_r][1][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][0][exe_plot_flushindex_r]} & PIXBUF_VALID_r[exe_plot_flushbuf_r]);
+                    exe_data_r <= (exe_plot_flushdata_r & ~PIXBUF_VALID_r[exe_plot_flushbuf_r]) | ({PIXBUF_r[exe_plot_flushbuf_r][7][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][6][exe_plot_flushindex_r],
+                                                                                                    PIXBUF_r[exe_plot_flushbuf_r][5][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][4][exe_plot_flushindex_r],
+                                                                                                    PIXBUF_r[exe_plot_flushbuf_r][3][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][2][exe_plot_flushindex_r],
+                                                                                                    PIXBUF_r[exe_plot_flushbuf_r][1][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][0][exe_plot_flushindex_r]} & PIXBUF_VALID_r[exe_plot_flushbuf_r]);
 
                     // reset merge data
-                    exe_plot_data_r <= 0;
+                    exe_plot_flushdata_r <= 0;
                     
                     // advance index
                     exe_plot_flushindex_r <= exe_plot_flushindex_r + 1;
@@ -1562,6 +1588,7 @@ always @(posedge CLK) begin
                     exe_word_r <= 0;
                   end
                   
+                  exe_plot_flushstate_r <= ~exe_plot_flushstate_r;
                   EXE_STATE <= ST_EXE_MEMORY_WAIT;
                 end
               end
@@ -1792,9 +1819,18 @@ always @(posedge CLK) begin
                 e2r_colr_r  <= POR_HN ? {COLR_r[7:4],ram_bus_data_r[7:4]} : POR_FHN ? {COLR_r[7:4],ram_bus_data_r[3:0]} : ram_bus_data_r[7:0];
               end
             end
+            `OP_PLOT_RPIX: begin
+              if (exe_alt1_r & ~exe_plot_flush_r) begin
+                // merge data for RPIX
+                e2r_data_r[exe_plot_flushindex_r] <= ram_bus_data_r[~exe_plot_x_r[0][2:0]];
+              end
+              else begin
+                // don't touch data since for PLOT it is R1 + 1
+                exe_plot_flushdata_r <= exe_word_r ? ram_bus_data_r[15:0] : {8'h00,ram_bus_data_r[7:0]};
+              end
+            end
             default: begin
               e2r_data_r <= exe_word_r ? ram_bus_data_r[15:0] : {8'h00,ram_bus_data_r[7:0]};
-              exe_plot_data_r <= exe_word_r ? ram_bus_data_r[15:0] : {8'h00,ram_bus_data_r[7:0]};
             end
           endcase
             
