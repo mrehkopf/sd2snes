@@ -371,10 +371,6 @@ reg [7:0]  ROMRDBUF_r;
 reg [15:0] RAMWRBUF_r; // FIXME: this should be 8b
 reg [15:0] RAMADDR_r;
 
-reg [7:0]  PIXBUF_VALID_r[1:0];
-reg [15:0] PIXBUF_OFFSET_r[1:0];
-reg [7:0]  PIXBUF_r[1:0][7:0];
-
 // Important breakouts
 assign SFR_Z    = SFR_r[1];
 assign SFR_CY   = SFR_r[2];
@@ -451,6 +447,13 @@ reg [3:0]  i2c_waitcnt_r;
 // Execute -> Common
 reg        e2c_waitcnt_val_r; initial e2c_waitcnt_val_r = 0;
 reg [3:0]  e2c_waitcnt_r;
+
+// Execute -> Bitmap
+reg        e2b_plot_r;
+reg        e2b_rpix_r;
+reg [7:0]  e2b_colr_r;
+reg [7:0]  e2b_offset_r;
+reg [2:0]  e2b_index_r;
 
 reg waitcnt_zero_r;
 
@@ -769,7 +772,8 @@ parameter
   ST_RAM_DATA_RD   = 8'b00000100,
   ST_RAM_DATA_WR   = 8'b00001000,
   ST_RAM_FETCH_END = 8'b00010000,
-  ST_RAM_DATA_END  = 8'b00100000
+  ST_RAM_DATA_END  = 8'b00100000,
+  ST_RAM_BITMAP_END= 8'b01000000
   ;
 reg [7:0] RAM_STATE; initial RAM_STATE = ST_RAM_IDLE;
 reg ram_bus_rrq_r; initial ram_bus_rrq_r = 0;
@@ -840,6 +844,254 @@ assign RAM_BUS_WRQ = ram_bus_wrq_r;
 assign RAM_BUS_WORD = ram_bus_word_r;
 assign RAM_BUS_ADDR = ram_bus_addr_r;
 assign RAM_BUS_WRDATA = RAMWRBUF_r;
+
+//-------------------------------------------------------------------
+// BITMAP PIPELINE
+//-------------------------------------------------------------------
+
+// WriteBuffers
+reg [7:0]  PIXBUF_VALID_r[1:0];
+reg [15:0] PIXBUF_OFFSET_r[1:0];
+reg [7:0]  PIXBUF_r[1:0][7:0];
+
+reg [3:0]  bmp_bppm1_r;
+reg [7:0]  bmp_x_r[1:0];
+reg [7:0]  bmp_y_r[1:0];
+reg [15:0] bmp_char_r[1:0];
+reg        bmp_offset_r;
+reg [7:0]  bmp_index_r;
+reg [7:0]  bmp_colr_r;
+
+parameter
+  ST_BMP_IDLE             = 8'b00000001,
+  
+  ST_BMP_FLUSH_READ       = 8'b00000010,
+  ST_BMP_FLUSH_READ_WAIT  = 8'b00000100,
+
+  ST_BMP_FLUSH_WRITE      = 8'b00001000,
+  ST_BMP_FLUSH_WRITE_WAIT = 8'b00010000,
+
+  ST_BMP_FILL             = 8'b00100000,
+  ST_BMP_FILL_WAIT        = 8'b01000000,
+  
+  ST_BMP_END              = 8'b10000000
+  ;
+reg [7:0]  BMP_STATE; initial BMP_STATE = ST_BMP_IDLE;
+
+always @(posedge CLK) begin
+  if (RST) begin
+    BMP_STATE <= ST_BMP_IDLE;
+
+    for (i = 0; i < 2; i = i + 1) PIXBUF_VALID_r[i] <= 0;
+  end
+  else begin
+    // plot character number
+    // x - [4:0],000
+    // y - [12:5]
+    for (i = 0; i < 2; i = i + 1) begin
+      bmp_x_r[i] <= {PIXBUF_OFFSET_r[i][4:0],3'b000};
+      bmp_y_r[i] <= PIXBUF_OFFSET_r[i][12:5];
+      
+      case (SCMR_HT | {2{POR_OBJ}})
+        0: bmp_char_r[i] <= {PIXBUF_OFFSET_r[i][4:0],4'b0000} + PIXBUF_OFFSET_r[i][12:8];
+        1: bmp_char_r[i] <= {PIXBUF_OFFSET_r[i][4:0],4'b0000} + {PIXBUF_OFFSET_r[i][4:0],4'b00} + PIXBUF_OFFSET_r[i][12:8];
+        2: bmp_char_r[i] <= {PIXBUF_OFFSET_r[i][4:0],4'b0000} + {PIXBUF_OFFSET_r[i][4:0],4'b000} + PIXBUF_OFFSET_r[i][12:8];
+        3: bmp_char_r[i] <= {PIXBUF_OFFSET_r[i][12],PIXBUF_OFFSET_r[i][4],PIXBUF_OFFSET_r[i][11:8],PIXBUF_OFFSET_r[i][3:0]};
+      endcase
+    end
+    
+    // {1, 3, 3, 7}
+    bmp_bppm1_r <= {&SCMR_MD, |SCMR_MD, 1'b1};
+
+    case (BMP_STATE)
+      ST_BMP_IDLE: begin // overlaps ST_EXE_MEMORY.  Single cycle operations 
+        // watch for EXE command
+        if      (e2b_plot_r) begin
+          // check if 0
+          if (!POR_TRS && ((SCMR_MD == 3) ? (POR_FHN ? (e2b_colr_r[3:0] == 0) : (e2b_colr_r == 0)) : (e2b_colr_r[3:0] == 0))) begin
+            // no output written.  stay in this state
+          end
+          // check if mismatch offset and flush buffer1, copy 0 to 1
+          else if (PIXBUF_OFFSET_r[0] != e2b_offset_r && &PIXBUF_VALID_r[0]) begin
+          
+          end
+          // check if buffer0 is full and flush buffer1, copy 0 to 1
+          else if (&PIXBUF_VALID_r[0]) begin
+          end
+          // perform plot
+          else begin
+            // 
+          end
+        end
+        else if (e2b_rpix_r) begin
+          // check if buffer0 is valid and flush
+          if (|PIXBUF_VALID_r[0]) begin
+          end
+          // check if buffer1 is valid and flush
+          else if (|PIXBUF_VALID_r[0]) begin
+          end
+          // perform fill
+          else begin
+            bmp_colr_r <= 0;
+          end
+        end
+      end
+      ST_BMP_FLUSH_READ: begin
+        // perform next read
+      end
+      ST_BMP_FLUSH_READ_WAIT: begin
+        // merge data and write 
+      end
+      ST_BMP_FLUSH_WRITE: begin
+        // perform next write
+      end
+      ST_BMP_FLUSH_WRITE_WAIT: begin
+        // merge data and write
+        // test for end
+      end
+      ST_BMP_FILL: begin
+        // generate next read
+      end
+      ST_BMP_FILL_WAIT: begin
+      end
+      ST_BMP_END: begin
+        // signal completion to EXE
+        BMP_STATE <= ST_BMP_IDLE;
+      end
+    endcase
+  end
+end
+
+
+// EXECUTE
+//              if (exe_alt1_r) begin
+//                // RPIX
+//                if (|PIXBUF_VALID_r[0] | |PIXBUF_VALID_r[1]) begin
+//                  // flush
+//                  exe_plot_flush_r <= 1;
+//                  // rmw if any of the bits are clear
+//                  exe_plot_flushstate_r <= &PIXBUF_VALID_r[~|PIXBUF_VALID_r[0]];
+//                  exe_plot_flushbuf_r <= ~|PIXBUF_VALID_r[0];
+//                  exe_plot_flushindex_r <= 0;
+//                  EXE_STATE <= ST_EXE_MEMORY;
+//                end
+//                else begin
+//                  // RPIX operation
+//                  exe_plot_flush_r <= 0;
+//                  EXE_STATE <= ST_EXE_MEMORY;
+//                end
+//              end
+//              else begin
+//                // PLOT
+//                e2r_val_r <= 1;
+//                e2r_data_pre_r <= REG_r[R1] + 1;
+//                exe_plot_flushbppm1_r <= exe_plot_bpp_r - 1;
+//                
+//                if (!POR_TRS && ((SCMR_MD == 3) ? (POR_FHN ? (exe_colr_r[3:0] == 0) : (exe_colr_r == 0)) : (exe_colr_r[3:0] == 0))) begin
+//                  // no output written
+//                  exe_plot_flush_r <= 0;
+//                  EXE_STATE <= ST_EXE_WAIT;
+//                end
+//                else if (PIXBUF_OFFSET_r[0] != exe_plot_offset_r) begin
+//                  // TODO: should we shortcircuit this if the buffer is empty?  Probably best done in MEMORY stage
+//                  // flush
+//                  exe_plot_flush_r <= 1;
+//                  // rmw if any of the bits are clear
+//                  exe_plot_flushstate_r <= &PIXBUF_VALID_r[1];
+//                  exe_plot_flushbuf_r <= 1;
+//                  exe_plot_flushdata_r <= 0;
+//                  exe_plot_flushindex_r <= 0;
+//                  EXE_STATE <= ST_EXE_MEMORY;
+//                end
+//                else if (~exe_plot_done_r) begin
+//                  // write
+//                  if (exe_plot_flush_r) begin
+//                    // if we flushed then copy the buffer over
+//                    PIXBUF_VALID_r[1]  <= PIXBUF_VALID_r[0];
+//                    PIXBUF_OFFSET_r[1] <= PIXBUF_OFFSET_r[0];
+//                    for (i = 0; i < 8; i = i + 1) PIXBUF_r[1][i] <= PIXBUF_r[0][i];
+//                  end
+//                  
+//                  PIXBUF_OFFSET_r[0] <= exe_plot_offset_r;
+//                  PIXBUF_r[0][exe_plot_index_r]  <= exe_colr_r;
+//                  PIXBUF_VALID_r[0][exe_plot_index_r] <= 1;
+//                  
+//                  exe_plot_done_r <= 1;
+//                  
+//                  // check for flush
+//                  exe_plot_flush_r <= &(PIXBUF_VALID_r[0] | (1<<exe_plot_index_r));
+//                  // just writes
+//                  exe_plot_flushstate_r <= 1;
+//                  exe_plot_flushbuf_r <= 0;
+//                  exe_plot_flushdata_r <= 0;
+//                  exe_plot_flushindex_r <= 0;
+//                  EXE_STATE <= (&PIXBUF_VALID_r[0]) ? ST_EXE_MEMORY : ST_EXE_WAIT;
+//                end
+//              end
+
+// MEMORY
+//              // TODO: add 6 cycles for read
+//              if (exe_plot_flushindex_r == exe_plot_bpp_r) begin
+//                EXE_STATE <= exe_plot_done_r ? ST_EXE_WAIT : ST_EXE_EXECUTE;
+//              end
+//              else if (exe_alt1_r & ~exe_plot_flush_r) begin
+//                // RPIX read.  Remember current count.  Account for clock advance.
+//                // stall to avoid overflowing the counter
+//                if (e2c_waitcnt_r <= 1) begin
+//                  e2c_waitcnt_val_r <= 1;
+//                  // TODO: add 16b cache latencies
+//                  e2c_waitcnt_r <= 6; // TODO: account for slow clock.
+//
+//                  // address common between read and write
+//                  exe_addr_r <= 24'hE00000 + exe_plot_char_r[0] + {SCBR_r,10'h000} + {exe_plot_y_r[0][2:0],1'b0} + {exe_plot_flushindex_r[2:1], 2'b00, exe_plot_flushindex_r[0]};
+//
+//                  // read
+//                  exe_ram_rd_r <= 1;
+//                  exe_word_r <= 0;
+//                  
+//                  exe_plot_flushindex_r <= exe_plot_flushindex_r + 1;
+//                  EXE_STATE <= ST_EXE_MEMORY_WAIT;
+//                end
+//              end
+//              else begin
+//                // TODO: add 1 cycle for miss, add 6 cycles for hit.  Remember current count.  Account for clock advance.
+//                // Flush
+//                if (e2c_waitcnt_r <= 1) begin
+//                  // stall to avoid overflowing the counter
+//                  e2c_waitcnt_val_r <= 1;
+//                  // TODO: add 16b cache latencies
+//                  e2c_waitcnt_r <= 6; // TODO: account for slow clock.
+//
+//                  // address common between read and write
+//                  exe_addr_r <= 24'hE00000 + exe_plot_char_r[exe_plot_flushbuf_r] + {SCBR_r,10'h000} + {exe_plot_y_r[exe_plot_flushbuf_r][2:0],1'b0} + {exe_plot_flushindex_r[2:1], 2'b00, exe_plot_flushindex_r[0]};
+//
+//                  // check which mode we are in write or read mode
+//                  if (exe_plot_flushstate_r) begin
+//                    // write
+//                    exe_ram_wr_r <= 1;
+//                    exe_word_r <= 0;
+//                    exe_data_r <= (exe_plot_flushdata_r & ~PIXBUF_VALID_r[exe_plot_flushbuf_r]) | ({PIXBUF_r[exe_plot_flushbuf_r][7][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][6][exe_plot_flushindex_r],
+//                                                                                                    PIXBUF_r[exe_plot_flushbuf_r][5][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][4][exe_plot_flushindex_r],
+//                                                                                                    PIXBUF_r[exe_plot_flushbuf_r][3][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][2][exe_plot_flushindex_r],
+//                                                                                                    PIXBUF_r[exe_plot_flushbuf_r][1][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][0][exe_plot_flushindex_r]} & PIXBUF_VALID_r[exe_plot_flushbuf_r]);
+//
+//                    // reset merge data
+//                    exe_plot_flushdata_r <= 0;
+//                    
+//                    // advance index
+//                    exe_plot_flushindex_r <= exe_plot_flushindex_r + 1;
+//                  end
+//                  else begin
+//                    // read
+//                    exe_ram_rd_r <= 1;
+//                    exe_word_r <= 0;
+//                  end
+//                  
+//                  exe_plot_flushstate_r <= ~exe_plot_flushstate_r;
+//                  EXE_STATE <= ST_EXE_MEMORY_WAIT;
+//                end
+//              end
+
 
 //-------------------------------------------------------------------
 // FETCH PIPELINE
@@ -992,20 +1244,8 @@ wire [15:0] exe_mult_out;
 wire [15:0] exe_umult_out;
 
 reg [7:0]  exe_byte_r;
-reg        exe_plot_done_r;
 reg [15:0] exe_plot_offset_r;
 reg [2:0]  exe_plot_index_r;
-reg        exe_plot_flush_r;
-reg        exe_plot_flushstate_r;
-reg        exe_plot_flushbuf_r;
-reg [3:0]  exe_plot_flushindex_r;
-reg [3:0]  exe_plot_flushbppm1_r;
-reg [3:0]  exe_plot_bpp_r;
-reg [7:0]  exe_plot_x_r[1:0];
-reg [7:0]  exe_plot_y_r[1:0];
-reg [15:0] exe_plot_char_r[1:0];
-reg [7:0]  exe_plot_flushdata_r;
-//reg [15:0] exe_plot_addr_r;
 
 reg        exe_error;
 
@@ -1051,8 +1291,9 @@ always @(posedge CLK) begin
     e2c_waitcnt_val_r <= 0;
     exe_ram_rd_r <= 0;
     exe_ram_wr_r <= 0;
-    
-    for (i = 0; i < 2; i = i + 1) PIXBUF_VALID_r[i] <= 0;
+
+    e2b_plot_r  <= 0;
+    e2b_rpix_r  <= 0;
     
     exe_error <= 0;
   end
@@ -1136,27 +1377,9 @@ always @(posedge CLK) begin
         //exe_dst_r <= REG_r[DREG_r];
         exe_srcn_r <= REG_r[exe_opcode_r[3:0]];
        
-        exe_plot_done_r <= 0;
         exe_plot_offset_r <= {REG_r[R2][10:0],5'h00} + {3'h0,REG_r[R1][15:3]};
-        exe_plot_index_r  <= REG_r[R1][2:0] ^ 3'b111;
-        
-        // plot character number
-        // x - [4:0],000
-        // y - [12:5]
-        for (i = 0; i < 2; i = i + 1) begin
-          exe_plot_x_r[i] <= {PIXBUF_OFFSET_r[i][4:0],3'b000};
-          exe_plot_y_r[i] <= PIXBUF_OFFSET_r[i][12:5];
-          
-          case (SCMR_HT | {2{POR_OBJ}})
-            0: exe_plot_char_r[i] <= {PIXBUF_OFFSET_r[i][4:0],4'b0000} + PIXBUF_OFFSET_r[i][12:8];
-            1: exe_plot_char_r[i] <= {PIXBUF_OFFSET_r[i][4:0],4'b0000} + {PIXBUF_OFFSET_r[i][4:0],4'b00} + PIXBUF_OFFSET_r[i][12:8];
-            2: exe_plot_char_r[i] <= {PIXBUF_OFFSET_r[i][4:0],4'b0000} + {PIXBUF_OFFSET_r[i][4:0],4'b000} + PIXBUF_OFFSET_r[i][12:8];
-            3: exe_plot_char_r[i] <= {PIXBUF_OFFSET_r[i][12],PIXBUF_OFFSET_r[i][4],PIXBUF_OFFSET_r[i][11:8],PIXBUF_OFFSET_r[i][3:0]};
-          endcase
-        end
-        
-        exe_plot_bpp_r <= {&SCMR_MD, ^SCMR_MD, ~|SCMR_MD, 1'b0};
-        
+        exe_plot_index_r  <= ~REG_r[R1][2:0];
+                
         EXE_STATE <= ST_EXE_EXECUTE;
       end
       ST_EXE_EXECUTE: begin
@@ -1240,67 +1463,23 @@ always @(posedge CLK) begin
             `OP_PLOT_RPIX      : begin
               if (exe_alt1_r) begin
                 // RPIX
-                if (|PIXBUF_VALID_r[0] | |PIXBUF_VALID_r[1]) begin
-                  // flush
-                  exe_plot_flush_r <= 1;
-                  // rmw if any of the bits are clear
-                  exe_plot_flushstate_r <= &PIXBUF_VALID_r[~|PIXBUF_VALID_r[0]];
-                  exe_plot_flushbuf_r <= ~|PIXBUF_VALID_r[0];
-                  exe_plot_flushindex_r <= 0;
-                  EXE_STATE <= ST_EXE_MEMORY;
-                end
-                else begin
-                  // RPIX operation
-                  exe_plot_flush_r <= 0;
-                  EXE_STATE <= ST_EXE_MEMORY;
-                end
+                e2r_val_r <= 1;
+                
+                // generate rpixel
+                e2b_rpix_r   <= 1;
+                e2b_offset_r <= exe_plot_offset_r;
+                e2b_index_r  <= exe_plot_index_r;
               end
               else begin
                 // PLOT
                 e2r_val_r <= 1;
                 e2r_data_pre_r <= REG_r[R1] + 1;
-                exe_plot_flushbppm1_r <= exe_plot_bpp_r - 1;
                 
-                if (!POR_TRS && ((SCMR_MD == 3) ? (POR_FHN ? (exe_colr_r[3:0] == 0) : (exe_colr_r == 0)) : (exe_colr_r[3:0] == 0))) begin
-                  // no output written
-                  exe_plot_flush_r <= 0;
-                  EXE_STATE <= ST_EXE_WAIT;
-                end
-                else if (PIXBUF_OFFSET_r[0] != exe_plot_offset_r) begin
-                  // TODO: should we shortcircuit this if the buffer is empty?  Probably best done in MEMORY stage
-                  // flush
-                  exe_plot_flush_r <= 1;
-                  // rmw if any of the bits are clear
-                  exe_plot_flushstate_r <= &PIXBUF_VALID_r[1];
-                  exe_plot_flushbuf_r <= 1;
-                  exe_plot_flushdata_r <= 0;
-                  exe_plot_flushindex_r <= 0;
-                  EXE_STATE <= ST_EXE_MEMORY;
-                end
-                else if (~exe_plot_done_r) begin
-                  // write
-                  if (exe_plot_flush_r) begin
-                    // if we flushed then copy the buffer over
-                    PIXBUF_VALID_r[1]  <= PIXBUF_VALID_r[0];
-                    PIXBUF_OFFSET_r[1] <= PIXBUF_OFFSET_r[0];
-                    for (i = 0; i < 8; i = i + 1) PIXBUF_r[1][i] <= PIXBUF_r[0][i];
-                  end
-                  
-                  PIXBUF_OFFSET_r[0] <= exe_plot_offset_r;
-                  PIXBUF_r[0][exe_plot_index_r]  <= exe_colr_r;
-                  PIXBUF_VALID_r[0][exe_plot_index_r] <= 1;
-                  
-                  exe_plot_done_r <= 1;
-                  
-                  // check for flush
-                  exe_plot_flush_r <= &(PIXBUF_VALID_r[0] | (1<<exe_plot_index_r));
-                  // just writes
-                  exe_plot_flushstate_r <= 1;
-                  exe_plot_flushbuf_r <= 0;
-                  exe_plot_flushdata_r <= 0;
-                  exe_plot_flushindex_r <= 0;
-                  EXE_STATE <= (&PIXBUF_VALID_r[0]) ? ST_EXE_MEMORY : ST_EXE_WAIT;
-                end
+                // generate plot
+                e2b_plot_r   <= 1;
+                e2b_offset_r <= exe_plot_offset_r;
+                e2b_index_r  <= exe_plot_index_r;
+                e2b_colr_r   <= exe_colr_r;
               end
             end
 
@@ -1531,67 +1710,12 @@ always @(posedge CLK) begin
         if (op_complete) begin
           case (exe_opcode_r)
             `OP_PLOT_RPIX      : begin
-              // TODO: add 6 cycles for read
-              if (exe_plot_flushindex_r == exe_plot_bpp_r) begin
-                EXE_STATE <= exe_plot_done_r ? ST_EXE_WAIT : ST_EXE_EXECUTE;
-              end
-              else if (exe_alt1_r & ~exe_plot_flush_r) begin
-                // RPIX read.  Remember current count.  Account for clock advance.
-                // stall to avoid overflowing the counter
-                if (e2c_waitcnt_r <= 1) begin
-                  e2c_waitcnt_val_r <= 1;
-                  // TODO: add 16b cache latencies
-                  e2c_waitcnt_r <= 6; // TODO: account for slow clock.
-
-                  // address common between read and write
-                  exe_addr_r <= 24'hE00000 + exe_plot_char_r[0] + {SCBR_r,10'h000} + {exe_plot_y_r[0][2:0],1'b0} + {exe_plot_flushindex_r[2:1], 2'b00, exe_plot_flushindex_r[0]};
-
-                  // read
-                  exe_ram_rd_r <= 1;
-                  exe_word_r <= 0;
-                  
-                  exe_plot_flushindex_r <= exe_plot_flushindex_r + 1;
-                  EXE_STATE <= ST_EXE_MEMORY_WAIT;
-                end
-              end
-              else begin
-                // TODO: add 1 cycle for miss, add 6 cycles for hit.  Remember current count.  Account for clock advance.
-                // Flush
-                if (e2c_waitcnt_r <= 1) begin
-                  // stall to avoid overflowing the counter
-                  e2c_waitcnt_val_r <= 1;
-                  // TODO: add 16b cache latencies
-                  e2c_waitcnt_r <= 6; // TODO: account for slow clock.
-
-                  // address common between read and write
-                  exe_addr_r <= 24'hE00000 + exe_plot_char_r[exe_plot_flushbuf_r] + {SCBR_r,10'h000} + {exe_plot_y_r[exe_plot_flushbuf_r][2:0],1'b0} + {exe_plot_flushindex_r[2:1], 2'b00, exe_plot_flushindex_r[0]};
-
-                  // check which mode we are in write or read mode
-                  if (exe_plot_flushstate_r) begin
-                    // write
-                    exe_ram_wr_r <= 1;
-                    exe_word_r <= 0;
-                    exe_data_r <= (exe_plot_flushdata_r & ~PIXBUF_VALID_r[exe_plot_flushbuf_r]) | ({PIXBUF_r[exe_plot_flushbuf_r][7][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][6][exe_plot_flushindex_r],
-                                                                                                    PIXBUF_r[exe_plot_flushbuf_r][5][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][4][exe_plot_flushindex_r],
-                                                                                                    PIXBUF_r[exe_plot_flushbuf_r][3][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][2][exe_plot_flushindex_r],
-                                                                                                    PIXBUF_r[exe_plot_flushbuf_r][1][exe_plot_flushindex_r],PIXBUF_r[exe_plot_flushbuf_r][0][exe_plot_flushindex_r]} & PIXBUF_VALID_r[exe_plot_flushbuf_r]);
-
-                    // reset merge data
-                    exe_plot_flushdata_r <= 0;
-                    
-                    // advance index
-                    exe_plot_flushindex_r <= exe_plot_flushindex_r + 1;
-                  end
-                  else begin
-                    // read
-                    exe_ram_rd_r <= 1;
-                    exe_word_r <= 0;
-                  end
-                  
-                  exe_plot_flushstate_r <= ~exe_plot_flushstate_r;
-                  EXE_STATE <= ST_EXE_MEMORY_WAIT;
-                end
-              end
+              // if RPIX then wait for data return.  otherwise we need a quick exit for 1 GSU clock plot operations
+              EXE_STATE <= exe_alt1_r ? ST_EXE_MEMORY_WAIT : ST_EXE_WAIT;
+              
+              // done with the operations
+              e2b_plot_r <= 0;
+              e2b_rpix_r <= 0;
             end
             `OP_GETC_RAMB_ROMB: begin
               if (~exe_alt1_r & ~exe_alt2_r) begin
@@ -1803,7 +1927,7 @@ always @(posedge CLK) begin
       ST_EXE_MEMORY_WAIT: begin
         e2c_waitcnt_val_r <= 0;
         
-        if ((|(ROM_STATE & ST_ROM_DATA_END)) | (|(RAM_STATE & ST_RAM_DATA_END))) begin
+        if ((|(ROM_STATE & ST_ROM_DATA_END)) | (|(RAM_STATE & ST_RAM_DATA_END)) | (|(BMP_STATE & ST_BMP_END))) begin
           exe_rom_rd_r <= 0;
           exe_ram_rd_r <= 0;
           exe_ram_wr_r <= 0;
@@ -1820,14 +1944,8 @@ always @(posedge CLK) begin
               end
             end
             `OP_PLOT_RPIX: begin
-              if (exe_alt1_r & ~exe_plot_flush_r) begin
-                // merge data for RPIX
-                e2r_data_r[exe_plot_flushindex_r] <= ram_bus_data_r[~exe_plot_x_r[0][2:0]];
-              end
-              else begin
-                // don't touch data since for PLOT it is R1 + 1
-                exe_plot_flushdata_r <= exe_word_r ? ram_bus_data_r[15:0] : {8'h00,ram_bus_data_r[7:0]};
-              end
+              // has to be a RPIX if we got here
+              e2r_data_r <= {8'h00, bmp_colr_r};
             end
             default: begin
               e2r_data_r <= exe_word_r ? ram_bus_data_r[15:0] : {8'h00,ram_bus_data_r[7:0]};
@@ -1839,7 +1957,7 @@ always @(posedge CLK) begin
       end
       ST_EXE_WAIT: begin
         e2c_waitcnt_val_r <= 0;
-
+        
         if (pipeline_advance) begin
           if (|exe_opsize_r) exe_opsize_r <= exe_opsize_r - 1;
         
@@ -1882,6 +2000,7 @@ reg      brk_inst_rd_ram_m1;
 reg      brk_data_rd_rom_m1;
 reg      brk_data_rd_ram_m1;
 reg      brk_data_wr_ram_m1;
+
 always @(posedge CLK) begin
   if (RST) begin
     brk_inst_rd_rom_m1 <= 0;
@@ -1951,7 +2070,6 @@ gsu_umult gsu_umult(
 //-------------------------------------------------------------------
 reg [7:0]  pgmpre_out[3:0];
 reg [7:0]  pgmdata_out; //initial pgmdata_out_r = 0;
-
 
 always @(posedge CLK) begin
   pgmdata_out <= pgmpre_out[pgm_addr_r[9:8]];
