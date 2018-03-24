@@ -82,9 +82,9 @@ assign IS_WRITABLE = IS_SAVERAM;
 // GSU has a weird hybrid of Lo and Hi ROM formats.
 assign SRAM_SNES_ADDR = (IS_SAVERAM
                          // 70-7F/F0-FF:0000-FFFF or 00-3F/80-BF:6000-7FFF (first 8K mirror)
-                         ? 24'hE00000 + ((SNES_ADDR[22] ? {SNES_ADDR[19:0]} : SNES_ADDR[12:0]) & SAVERAM_MASK)
+                         ? (24'hE00000 + ((SNES_ADDR[22] ? SNES_ADDR[19:0] : SNES_ADDR[12:0]) & SAVERAM_MASK))
                          // 40-5F/C0-DF:0000-FFFF or 00-3F/80-BF:8000-FFFF
-                         : (SNES_ADDR[22] ? {2'b00, SNES_ADDR[21:0]} : {2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]}) & ROM_MASK
+                         : ((SNES_ADDR[22] ? {2'b00, SNES_ADDR[21:0]} : {2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]}) & ROM_MASK)
                          );
 
 assign ROM_ADDR = SRAM_SNES_ADDR;
