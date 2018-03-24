@@ -357,7 +357,7 @@ reg [7:0]  SCBR_r;  // 3038
 reg [7:0]  CLSR_r;  // 3039
 reg [7:0]  SCMR_r;  // 303A
 reg [7:0]  VCR_r;   // 303B
-reg [7:0]  RAMBR_r; // 303C
+reg        RAMBR_r; // 303C
 reg [15:0] CBR_r;   // 303E
 // unmapped
 reg [7:0]  COLR_r;
@@ -898,8 +898,10 @@ reg [15:0] bmp_rpix_char_r;
 reg [15:0] bmp_rpix_char_shift_r;
 reg [7:0]  bmp_rpix_x_r;
 reg [7:0]  bmp_rpix_y_r;
-reg [1:0]  bmp_pixbuf_allvalid_r;
-reg [1:0]  bmp_pixbuf_onevalid_r;
+
+//reg [1:0]  bmp_pixbuf_allvalid_r;
+//reg [1:0]  bmp_pixbuf_onevalid_r;
+reg [7:0]  bmp_index_bit_r;
 
 parameter  BMP_MODE_PLOT = 0;
 parameter  BMP_MODE_RPIX = 1;
@@ -915,6 +917,15 @@ parameter
   ST_BMP_END              = 8'b10000000
   ;
 reg [7:0]  BMP_STATE; initial BMP_STATE = ST_BMP_IDLE;
+
+always @(*) begin
+  case (SCMR_HT | {2{POR_OBJ}})
+    0: bmp_rpix_char_r = {e2b_offset_r[4:0],4'b0000} + e2b_offset_r[12:8];
+    1: bmp_rpix_char_r = {e2b_offset_r[4:0],4'b0000} + {e2b_offset_r[4:0],2'b00} + e2b_offset_r[12:8];
+    2: bmp_rpix_char_r = {e2b_offset_r[4:0],4'b0000} + {e2b_offset_r[4:0],3'b000} + e2b_offset_r[12:8];
+    3: bmp_rpix_char_r = {e2b_offset_r[12],e2b_offset_r[4],e2b_offset_r[11:8],e2b_offset_r[3:0]};
+  endcase
+end
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -938,28 +949,21 @@ always @(posedge CLK) begin
       endcase
       
       case (SCMR_MD)
-        0: bmp_char_shift_r[i] <= {bmp_char_r[i],4'h00};
+        0: bmp_char_shift_r[i] <= {bmp_char_r[i],4'h0};
         1: bmp_char_shift_r[i] <= {bmp_char_r[i],5'h00};
         2: bmp_char_shift_r[i] <= {bmp_char_r[i],5'h00};
         3: bmp_char_shift_r[i] <= {bmp_char_r[i],6'h00};
       endcase
 
-      bmp_pixbuf_onevalid_r[i] <= |PIXBUF_VALID_r[i];
-      bmp_pixbuf_allvalid_r[i] <= &PIXBUF_VALID_r[i];
+      //bmp_pixbuf_onevalid_r[i] <= |PIXBUF_VALID_r[i];
+      //bmp_pixbuf_allvalid_r[i] <= &PIXBUF_VALID_r[i];
     end
     
-    bmp_rpix_x_r <= {bmp_offset_r[4:0],3'b000};
-    bmp_rpix_y_r <= bmp_offset_r[12:5];
+    bmp_rpix_x_r <= {e2b_offset_r[4:0],3'b000};
+    bmp_rpix_y_r <= e2b_offset_r[12:5];
     
-    case (SCMR_HT | {2{POR_OBJ}})
-      0: bmp_rpix_char_r <= {bmp_offset_r[4:0],4'b0000} + bmp_offset_r[12:8];
-      1: bmp_rpix_char_r <= {bmp_offset_r[4:0],4'b0000} + {bmp_offset_r[4:0],2'b00} + bmp_offset_r[12:8];
-      2: bmp_rpix_char_r <= {bmp_offset_r[4:0],4'b0000} + {bmp_offset_r[4:0],3'b000} + bmp_offset_r[12:8];
-      3: bmp_rpix_char_r <= {bmp_offset_r[12],bmp_offset_r[4],bmp_offset_r[11:8],bmp_offset_r[3:0]};
-    endcase
-
     case (SCMR_MD)
-      0: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,4'h00};
+      0: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,4'h0};
       1: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,5'h00};
       2: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,5'h00};
       3: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,6'h00};
@@ -967,6 +971,7 @@ always @(posedge CLK) begin
     
     // {1, 3, 3, 7}
     bmp_bppm1_r <= {&SCMR_MD, |SCMR_MD, 1'b1};
+    bmp_index_bit_r <= (8'h01 << e2b_index_r);
 
     case (BMP_STATE)
       ST_BMP_IDLE: begin // overlaps ST_EXE_MEMORY.  Single cycle operations 
@@ -980,12 +985,12 @@ always @(posedge CLK) begin
           bmp_mode_r   <= BMP_MODE_PLOT;
           bmp_colr_r   <= e2b_colr_r;
           
-          if (PIXBUF_OFFSET_r[0] != e2b_offset_r && &bmp_pixbuf_onevalid_r) begin
+          if (PIXBUF_OFFSET_r[0] != e2b_offset_r && (|PIXBUF_VALID_r[0] && |PIXBUF_VALID_r[1])/*&bmp_pixbuf_onevalid_r*/) begin
             // flush1
             bmp_flush_buf_r <= 1;
-            bmp_flush_rmw_r <= ~bmp_pixbuf_allvalid_r[1];
+            bmp_flush_rmw_r <= ~&PIXBUF_VALID_r[1];
 
-            BMP_STATE <= bmp_pixbuf_allvalid_r[1] ? ST_BMP_FLUSH_WRITE : ST_BMP_FLUSH_READ;
+            BMP_STATE <= &PIXBUF_VALID_r[1] ? ST_BMP_FLUSH_WRITE : ST_BMP_FLUSH_READ;
           end
           else begin
             // write and potential swap
@@ -996,18 +1001,18 @@ always @(posedge CLK) begin
           bmp_mode_r <= BMP_MODE_RPIX;
 
           // check if buffer0 is valid and flush
-          if (bmp_pixbuf_onevalid_r[0]) begin
+          if (|PIXBUF_VALID_r[0]) begin
             bmp_flush_buf_r <= 0;
-            bmp_flush_rmw_r <= ~bmp_pixbuf_allvalid_r[0];
+            bmp_flush_rmw_r <= ~&PIXBUF_VALID_r[0];
 
-            BMP_STATE <= bmp_pixbuf_allvalid_r[0] ? ST_BMP_FLUSH_WRITE : ST_BMP_FLUSH_READ;
+            BMP_STATE <= &PIXBUF_VALID_r[0] ? ST_BMP_FLUSH_WRITE : ST_BMP_FLUSH_READ;
           end
           // check if buffer1 is valid and flush
-          else if (bmp_pixbuf_onevalid_r[1]) begin
+          else if (|PIXBUF_VALID_r[1]) begin
             bmp_flush_buf_r <= 1;
-            bmp_flush_rmw_r <= ~bmp_pixbuf_allvalid_r[1];
+            bmp_flush_rmw_r <= ~&PIXBUF_VALID_r[1];
 
-            BMP_STATE <= bmp_pixbuf_allvalid_r[1] ? ST_BMP_FLUSH_WRITE : ST_BMP_FLUSH_READ;
+            BMP_STATE <= &PIXBUF_VALID_r[1] ? ST_BMP_FLUSH_WRITE : ST_BMP_FLUSH_READ;
           end
           // perform fill
           else begin
@@ -1068,22 +1073,21 @@ always @(posedge CLK) begin
         // test for end
         if (|(RAM_STATE & ST_RAM_BMP_END)) begin
           bmp_ram_wr_r <= 0;
-
-          // invalidate
-          PIXBUF_VALID_r[bmp_flush_buf_r] <= 0;
           
           if (bmp_plane_r == bmp_bppm1_r) begin
+            // invalidate
+            PIXBUF_VALID_r[bmp_flush_buf_r] <= 0;
             bmp_plane_r <= 0;
             
             if (bmp_mode_r == BMP_MODE_PLOT) begin
               // flush done, perform write
               BMP_STATE <= ST_BMP_END;
             end
-            else if (~bmp_flush_buf_r & bmp_pixbuf_onevalid_r[1]) begin
+            else if (~bmp_flush_buf_r & |PIXBUF_VALID_r[1]) begin
               bmp_flush_buf_r <= 1;
-              bmp_flush_rmw_r <= ~bmp_pixbuf_allvalid_r[1];
+              bmp_flush_rmw_r <= ~&PIXBUF_VALID_r[1];
 
-              BMP_STATE <= bmp_pixbuf_allvalid_r[1] ? ST_BMP_FLUSH_WRITE : ST_BMP_FLUSH_READ;
+              BMP_STATE <= &PIXBUF_VALID_r[1] ? ST_BMP_FLUSH_WRITE : ST_BMP_FLUSH_READ;
             end
             else begin
               BMP_STATE <= ST_BMP_FILL;
@@ -1131,19 +1135,22 @@ always @(posedge CLK) begin
         if (bmp_mode_r == BMP_MODE_PLOT) begin
           // write color and offset
           PIXBUF_OFFSET_r[0]             <= bmp_offset_r;
-          PIXBUF_VALID_r[0]              <= PIXBUF_VALID_r[0] | (1 << bmp_index_r);
           PIXBUF_r[0][bmp_index_r]       <= bmp_colr_r;
           
           // swap buffer if valid.  The only way to get here is:
           // 1) 0 is empty
           // 2) offset was same
           // 3) offset was different 0 is nonempty and 1 is empty (due to flush or start state)
-          if (PIXBUF_OFFSET_r[0] != e2b_offset_r && bmp_pixbuf_onevalid_r[0]) begin
-            // ok to look at stale onevalid because we only flushed 1 in the previous cycle
+          if (PIXBUF_OFFSET_r[0] != e2b_offset_r && |PIXBUF_VALID_r[0]) begin
             // copy over buffer if (3)
             PIXBUF_VALID_r[1]  <= PIXBUF_VALID_r[0];
             PIXBUF_OFFSET_r[1] <= PIXBUF_OFFSET_r[0];
             for (i = 0; i < 8; i = i + 1) PIXBUF_r[1][i] <= PIXBUF_r[0][i];
+            
+            PIXBUF_VALID_r[0] <= bmp_index_bit_r;
+          end
+          else begin
+            PIXBUF_VALID_r[0] <= PIXBUF_VALID_r[0] | bmp_index_bit_r;
           end
         end
         // RPIX gets the data directly from the local color register
@@ -1550,7 +1557,7 @@ always @(posedge CLK) begin
                 
                 // generate plot - skip if transparent
                 e2b_plot_r     <= !POR_TRS && ((SCMR_MD == 3) ? (POR_FHN ? (exe_colr_r[3:0] != 0) : (exe_colr_r != 0)) : (exe_colr_r[3:0] != 0));
-                exe_plot_mem_r <= (PIXBUF_OFFSET_r[0] != exe_plot_offset_r) && &bmp_pixbuf_onevalid_r;
+                exe_plot_mem_r <= (PIXBUF_OFFSET_r[0] != exe_plot_offset_r) && (|PIXBUF_VALID_r[0] && |PIXBUF_VALID_r[1]);
                 
                 e2b_offset_r   <= exe_plot_offset_r;
                 e2b_index_r    <= exe_plot_index_r;
@@ -1725,7 +1732,7 @@ always @(posedge CLK) begin
             
             `OP_GETC_RAMB_ROMB: begin
               if      (exe_alt1_r & exe_alt2_r)   ROMBR_r    <= exe_src_r;
-              else if (exe_alt2_r)                RAMBR_r[0] <= exe_src_r[0];
+              else if (exe_alt2_r)                RAMBR_r    <= exe_src_r[0];
             end
             `OP_INC          : begin
               exe_result = exe_srcn_r + 1;
@@ -1789,6 +1796,7 @@ always @(posedge CLK) begin
               e2b_plot_r <= 0;
               e2b_rpix_r <= 0;
               exe_plot_mem_r <= 0;
+              e2r_data_r <= e2r_data_pre_r; // R1 for PLOT
               
               // if RPIX then wait for data return.  otherwise we need a quick exit for 1 GSU clock plot operations
               if (exe_alt1_r | (exe_plot_mem_r & e2b_plot_r)) begin
@@ -1835,6 +1843,7 @@ always @(posedge CLK) begin
               e2c_waitcnt_r     <= 8-1; // TODO: account for slow clock and multiplier.
               // TODO: figure out how to write to R4.  Have plenty of cycles to do it.
               
+              //EXE_STATE <= ST_EXE_MEMORY_WAIT;
               EXE_STATE <= ST_EXE_WAIT;
               exe_wait_r <= 1;
             end
@@ -1868,7 +1877,7 @@ always @(posedge CLK) begin
                 exe_ram_rd_r <= 1;
                 exe_word_r <= 1;
 
-                exe_addr_r <= {4'hE,3'h0,RAMBR_r[0],7'h00,exe_operand_r[7:0],1'b0};
+                exe_addr_r <= {4'hE,3'h0,RAMBR_r,7'h00,exe_operand_r[7:0],1'b0};
                 EXE_STATE <= ST_EXE_MEMORY_WAIT;
               end
               else if (exe_alt2_r) begin
@@ -1882,7 +1891,7 @@ always @(posedge CLK) begin
                 exe_word_r <= 1;
                 exe_data_r <= exe_srcn_r;
 
-                exe_addr_r <= {4'hE,3'h0,RAMBR_r[0],7'h00,exe_operand_r[7:0],1'b0};
+                exe_addr_r <= {4'hE,3'h0,RAMBR_r,7'h00,exe_operand_r[7:0],1'b0};
                 EXE_STATE <= ST_EXE_MEMORY_WAIT;
               end
               else begin
@@ -1905,7 +1914,7 @@ always @(posedge CLK) begin
                 exe_ram_rd_r <= 1;
                 exe_word_r <= 1;
 
-                exe_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_operand_r};
+                exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_operand_r};
                 EXE_STATE <= ST_EXE_MEMORY_WAIT;
               end
               else if (exe_alt2_r) begin
@@ -1919,7 +1928,7 @@ always @(posedge CLK) begin
                 exe_word_r <= 1;
                 exe_data_r <= exe_srcn_r;
 
-                exe_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_operand_r};
+                exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_operand_r};
                 EXE_STATE <= ST_EXE_MEMORY_WAIT;
               end
               else begin
@@ -1968,7 +1977,7 @@ always @(posedge CLK) begin
               exe_ram_rd_r <= 1;
               exe_word_r <= ~exe_alt1_r;
 
-              exe_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_srcn_r};
+              exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_srcn_r};
 
               EXE_STATE <= ST_EXE_MEMORY_WAIT;
               //EXE_STATE <= ST_EXE_WAIT;
@@ -1981,7 +1990,7 @@ always @(posedge CLK) begin
               exe_word_r <= ~exe_alt1_r;
               exe_data_r <= exe_src_r;
 
-              exe_addr_r <= {4'hE,3'h0,RAMBR_r[0],exe_srcn_r};
+              exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_srcn_r};
 
               EXE_STATE <= ST_EXE_MEMORY_WAIT;
               //EXE_STATE <= ST_EXE_WAIT;
@@ -2045,10 +2054,25 @@ always @(posedge CLK) begin
               e2r_data_r <= exe_word_r ? ram_bus_data_r[15:0] : {8'h00,ram_bus_data_r[7:0]};
             end
           endcase
-            
+
           EXE_STATE <= ST_EXE_WAIT;
           exe_wait_r <= 1;
         end
+//        else if (exe_opcode_r == `OP_FMULT_LMULT) begin
+//          if (exe_waitcnt_r <= 2) begin
+//            // wait for the multiply output
+//            e2r_data_r     <= exe_fmult_out[31:16];
+//            e2r_r4_r       <= exe_fmult_out[15:0];
+//            e2r_lmult_r    <= exe_alt1_r;
+//              
+//            e2r_z_r        <= ~|exe_fmult_out[31:16];
+//            e2r_s_r        <= exe_fmult_out[31];
+//            e2r_cy_r       <= exe_fmult_out[15];
+//                            
+//            EXE_STATE <= ST_EXE_WAIT;        
+//            exe_wait_r <= 1;
+//          end
+//        end
       end
       ST_EXE_WAIT: begin
         e2c_waitcnt_val_r <= 0;
@@ -2137,7 +2161,7 @@ end
 
 //assign pipeline_advance = gsu_clock_en & ~|fetch_waitcnt_r & ~|exe_waitcnt_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
 //assign pipeline_advance = gsu_clock_en & waitcnt_zero_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
-assign pipeline_advance = gsu_clock_en & waitcnt_zero_r & exe_wait_r & fetch_wait_r & step_r;
+assign pipeline_advance = gsu_clock_en & waitcnt_zero_r & |(EXE_STATE & ST_EXE_WAIT) & fetch_wait_r & step_r;
 assign op_complete = exe_opsize_r == 1;
 
 // Multipliers
@@ -2173,9 +2197,42 @@ always @(posedge CLK) begin
   pgmdata_out <= pgmpre_out[pgm_addr_r[9:8]];
 
   case (pgm_addr_r[9:8])
-    2'h0: casex (pgm_addr_r[7:0])
-      ADDR_GPRL        : pgmpre_out[0] <= REG_r[pgm_addr_r[4:1]][7:0];
-      ADDR_GPRH        : pgmpre_out[0] <= REG_r[pgm_addr_r[4:1]][15:8];          
+    2'h0: case (pgm_addr_r[7:0])
+      //ADDR_GPRL        : pgmpre_out[0] <= REG_r[pgm_addr_r[4:1]][7:0];
+      //ADDR_GPRH        : pgmpre_out[0] <= REG_r[pgm_addr_r[4:1]][15:8];
+      ADDR_R0          : pgmpre_out[0] <= REG_r[R0][7:0];
+      ADDR_R0+1        : pgmpre_out[0] <= REG_r[R0][15:8];
+      ADDR_R1          : pgmpre_out[0] <= REG_r[R1][7:0];
+      ADDR_R1+1        : pgmpre_out[0] <= REG_r[R1][15:8];
+      ADDR_R2          : pgmpre_out[0] <= REG_r[R2][7:0];
+      ADDR_R2+1        : pgmpre_out[0] <= REG_r[R2][15:8];
+      ADDR_R3          : pgmpre_out[0] <= REG_r[R3][7:0];
+      ADDR_R3+1        : pgmpre_out[0] <= REG_r[R3][15:8];
+      ADDR_R4          : pgmpre_out[0] <= REG_r[R4][7:0];
+      ADDR_R4+1        : pgmpre_out[0] <= REG_r[R4][15:8];
+      ADDR_R5          : pgmpre_out[0] <= REG_r[R5][7:0];
+      ADDR_R5+1        : pgmpre_out[0] <= REG_r[R5][15:8];
+      ADDR_R6          : pgmpre_out[0] <= REG_r[R6][7:0];
+      ADDR_R6+1        : pgmpre_out[0] <= REG_r[R6][15:8];
+      ADDR_R7          : pgmpre_out[0] <= REG_r[R7][7:0];
+      ADDR_R7+1        : pgmpre_out[0] <= REG_r[R7][15:8];
+      ADDR_R8          : pgmpre_out[0] <= REG_r[R8][7:0];
+      ADDR_R8+1        : pgmpre_out[0] <= REG_r[R8][15:8];
+      ADDR_R9          : pgmpre_out[0] <= REG_r[R9][7:0];
+      ADDR_R9+1        : pgmpre_out[0] <= REG_r[R9][15:8];
+      ADDR_R10         : pgmpre_out[0] <= REG_r[R10][7:0];
+      ADDR_R10+1       : pgmpre_out[0] <= REG_r[R10][15:8];
+      ADDR_R11         : pgmpre_out[0] <= REG_r[R11][7:0];
+      ADDR_R11+1       : pgmpre_out[0] <= REG_r[R11][15:8];
+      ADDR_R12         : pgmpre_out[0] <= REG_r[R12][7:0];
+      ADDR_R12+1       : pgmpre_out[0] <= REG_r[R12][15:8];
+      ADDR_R13         : pgmpre_out[0] <= REG_r[R13][7:0];
+      ADDR_R13+1       : pgmpre_out[0] <= REG_r[R13][15:8];
+      ADDR_R14         : pgmpre_out[0] <= REG_r[R14][7:0];
+      ADDR_R14+1       : pgmpre_out[0] <= REG_r[R14][15:8];
+      ADDR_R15         : pgmpre_out[0] <= REG_r[R15][7:0];
+      ADDR_R15+1       : pgmpre_out[0] <= REG_r[R15][15:8];
+
       ADDR_SFR         : pgmpre_out[0] <= SFR_r[7:0];
       ADDR_SFR+1       : pgmpre_out[0] <= SFR_r[15:8];
       ADDR_BRAMR       : pgmpre_out[0] <= BRAMR_r;
@@ -2201,7 +2258,22 @@ always @(posedge CLK) begin
       8'h50,8'h58      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
       8'h51,8'h59      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
       8'h60,8'h68      : pgmpre_out[0] <= PIXBUF_VALID_r[pgm_addr_r[3]];
-      8'h7x            : pgmpre_out[0] <= PIXBUF_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
+      8'h70            : pgmpre_out[0] <= PIXBUF_r[0][0];
+      8'h71            : pgmpre_out[0] <= PIXBUF_r[0][1];
+      8'h72            : pgmpre_out[0] <= PIXBUF_r[0][2];
+      8'h73            : pgmpre_out[0] <= PIXBUF_r[0][3];
+      8'h74            : pgmpre_out[0] <= PIXBUF_r[0][4];
+      8'h75            : pgmpre_out[0] <= PIXBUF_r[0][5];
+      8'h76            : pgmpre_out[0] <= PIXBUF_r[0][6];
+      8'h77            : pgmpre_out[0] <= PIXBUF_r[0][7];
+      8'h78            : pgmpre_out[0] <= PIXBUF_r[1][0];
+      8'h79            : pgmpre_out[0] <= PIXBUF_r[1][1];
+      8'h7A            : pgmpre_out[0] <= PIXBUF_r[1][2];
+      8'h7B            : pgmpre_out[0] <= PIXBUF_r[1][3];
+      8'h7C            : pgmpre_out[0] <= PIXBUF_r[1][4];
+      8'h7D            : pgmpre_out[0] <= PIXBUF_r[1][5];
+      8'h7E            : pgmpre_out[0] <= PIXBUF_r[1][6];
+      8'h7F            : pgmpre_out[0] <= PIXBUF_r[1][7];
   
       // TODO: add more internal temps @ $80
       8'h80            : pgmpre_out[0] <= SFR_Z;
@@ -2220,108 +2292,142 @@ always @(posedge CLK) begin
       8'h8D            : pgmpre_out[0] <= SCMR_RAN;
       8'h8E            : pgmpre_out[0] <= SCMR_RON;
 
-      default          : pgmpre_out[0] <= 8'hFF;
+      // bitmap state
+      8'h90           : pgmpre_out[0] <= BMP_STATE;
+      8'h91           : pgmpre_out[0] <= bmp_mode_r;
+      8'h92           : pgmpre_out[0] <= bmp_bppm1_r;
+      8'h93           : pgmpre_out[0] <= bmp_plane_r;
+      8'h94           : pgmpre_out[0] <= bmp_x_r[0];
+      8'h95           : pgmpre_out[0] <= bmp_y_r[0];
+      8'h96           : pgmpre_out[0] <= bmp_x_r[1];
+      8'h97           : pgmpre_out[0] <= bmp_y_r[1];
+      8'h98           : pgmpre_out[0] <= bmp_char_shift_r[0][7:0];
+      8'h99           : pgmpre_out[0] <= bmp_char_shift_r[0][15:8];
+      8'h9A           : pgmpre_out[0] <= bmp_char_shift_r[1][7:0];
+      8'h9B           : pgmpre_out[0] <= bmp_char_shift_r[1][15:8];
+      8'h9C           : pgmpre_out[0] <= bmp_offset_r[7:0];
+      8'h9D           : pgmpre_out[0] <= bmp_offset_r[15:8];
+      8'h9E           : pgmpre_out[0] <= bmp_index_bit_r;
+      8'h9F           : pgmpre_out[0] <= bmp_colr_r;
+      8'hA0           : pgmpre_out[0] <= bmp_rpix_char_shift_r[7:0];
+      8'hA1           : pgmpre_out[0] <= bmp_rpix_char_shift_r[15:8];
+      8'hA2           : pgmpre_out[0] <= bmp_rpix_x_r;
+      8'hA3           : pgmpre_out[0] <= bmp_rpix_y_r;
+      8'hA4           : pgmpre_out[0] <= bmp_index_r;
+
+      8'hB2           : pgmpre_out[0] <= exe_opcode_r;
+      8'hB3           : pgmpre_out[0] <= exe_operand_r[7:0];
+      8'hB4           : pgmpre_out[0] <= exe_operand_r[15:8];
+      8'hB5           : pgmpre_out[0] <= exe_opsize_r;
+
+      8'hC0           : pgmpre_out[0] <= FETCH_STATE;
+      8'hC1           : pgmpre_out[0] <= EXE_STATE;
+      8'hC2           : pgmpre_out[0] <= ROM_STATE;
+      8'hC3           : pgmpre_out[0] <= RAM_STATE;
+
+      default         : pgmpre_out[0] <= 8'hFF;
     endcase
     //2'h1: pgmpre_out[1] <= debug_cache_rddata;
     //2'h2: pgmpre_out[2] <= debug_cache_rddata;
-    2'h3: casex (pgm_addr_r[7:0])      
-      // fetch state
-      8'h00           : pgmpre_out[3] <= FETCH_STATE;
-      8'h01           : pgmpre_out[3] <= fetch_waitcnt_r;
-      // exe state
-//      8'h20           : pgmpre_out[3] <= EXE_STATE;
-//      8'h21           : pgmpre_out[3] <= exe_waitcnt_r;
-      8'h22           : pgmpre_out[3] <= exe_opcode_r;
-      8'h23           : pgmpre_out[3] <= exe_operand_r[7:0];
-      8'h24           : pgmpre_out[3] <= exe_operand_r[15:8];
-      8'h25           : pgmpre_out[3] <= exe_opsize_r;
-//      8'h26           : pgmpre_out[3] <= e2r_destnum_r;
+//    2'h3: casex (pgm_addr_r[7:0])      
+//      // fetch state
+//      //8'h00           : pgmpre_out[3] <= FETCH_STATE;
+//      //8'h01           : pgmpre_out[3] <= fetch_waitcnt_r;
+//      // exe state
+////      8'h20           : pgmpre_out[3] <= EXE_STATE;
+////      8'h21           : pgmpre_out[3] <= exe_waitcnt_r;
+//      8'h22           : pgmpre_out[3] <= exe_opcode_r;
+//      8'h23           : pgmpre_out[3] <= exe_operand_r[7:0];
+//      8'h24           : pgmpre_out[3] <= exe_operand_r[15:8];
+//      8'h25           : pgmpre_out[3] <= exe_opsize_r;
+////      8'h26           : pgmpre_out[3] <= e2r_destnum_r;
+////  
+////      8'h30           : pgmpre_out[3] <= exe_src_r[7:0];
+////      8'h31           : pgmpre_out[3] <= exe_src_r[15:8];
+////      8'h32           : pgmpre_out[3] <= exe_srcn_r[7:0];
+////      8'h33           : pgmpre_out[3] <= exe_srcn_r[15:8];
+////      8'h34           : pgmpre_out[3] <= e2r_data_r[7:0];
+////      8'h35           : pgmpre_out[3] <= e2r_data_r[15:8];
+////  
+////      // cache state
+////      //8'h40
+////      // fill state
+////      8'h60           : pgmpre_out[3] <= ROM_BUS_RDY;
+////      8'h61           : pgmpre_out[3] <= RAM_BUS_RDY;
+//      8'h62           : pgmpre_out[3] <= bmp_data_r[7:0];
+//      8'h63           : pgmpre_out[3] <= bmp_data_r[15:8];
+////      8'h68           : pgmpre_out[3] <= cache_rom_rd_r;
+////      8'h69           : pgmpre_out[3] <= cache_ram_rd_r;
+////      8'h6F           : pgmpre_out[3] <= exe_rom_rd_r;
+////      8'h70           : pgmpre_out[3] <= exe_ram_rd_r;
+////      8'h71           : pgmpre_out[3] <= exe_ram_wr_r;
+//      8'h72           : pgmpre_out[3] <= bmp_ram_rd_r;
+//      8'h73           : pgmpre_out[3] <= bmp_ram_wr_r;
+////      8'h74           : pgmpre_out[3] <= exe_addr_r[7:0];
+////      8'h75           : pgmpre_out[3] <= exe_addr_r[15:8];
+////      8'h76           : pgmpre_out[3] <= exe_addr_r[23:16];
+//      8'h77           : pgmpre_out[3] <= bmp_addr_r[7:0];
+//      8'h78           : pgmpre_out[3] <= bmp_addr_r[15:8];
+//      8'h79           : pgmpre_out[3] <= bmp_addr_r[23:16];
+////      8'h7A           : pgmpre_out[3] <= exe_data_r[7:0];
+////      8'h7B           : pgmpre_out[3] <= exe_data_r[15:8];
+////      8'h7C           : pgmpre_out[3] <= rom_bus_data_r[7:0];
+////      8'h7D           : pgmpre_out[3] <= rom_bus_data_r[15:8];
+////      8'h7E           : pgmpre_out[3] <= ram_bus_data_r[7:0];
+////      8'h7F           : pgmpre_out[3] <= ram_bus_data_r[15:8];
+//
+//      // bitmap state
+//      8'h80           : pgmpre_out[3] <= BMP_STATE;
+//      8'h81           : pgmpre_out[3] <= bmp_mode_r;
+//      8'h82           : pgmpre_out[3] <= bmp_bppm1_r;
+//      8'h83           : pgmpre_out[3] <= bmp_plane_r;
+//      8'h84           : pgmpre_out[3] <= bmp_x_r[0];
+//      8'h85           : pgmpre_out[3] <= bmp_y_r[0];
+//      8'h86           : pgmpre_out[3] <= bmp_x_r[1];
+//      8'h87           : pgmpre_out[3] <= bmp_y_r[1];
+//      8'h88           : pgmpre_out[3] <= bmp_char_shift_r[0][7:0];
+//      8'h89           : pgmpre_out[3] <= bmp_char_shift_r[0][15:8];
+//      8'h8A           : pgmpre_out[3] <= bmp_char_shift_r[1][7:0];
+//      8'h8B           : pgmpre_out[3] <= bmp_char_shift_r[1][15:8];
+//      8'h8C           : pgmpre_out[3] <= bmp_offset_r[7:0];
+//      8'h8D           : pgmpre_out[3] <= bmp_offset_r[15:8];
+//      8'h8E           : pgmpre_out[3] <= bmp_index_bit_r;
+//      8'h8F           : pgmpre_out[3] <= bmp_colr_r;
+//      8'h90           : pgmpre_out[3] <= bmp_rpix_char_shift_r[7:0];
+//      8'h91           : pgmpre_out[3] <= bmp_rpix_char_shift_r[15:8];
+//      8'h92           : pgmpre_out[3] <= bmp_rpix_x_r;
+//      8'h93           : pgmpre_out[3] <= bmp_rpix_y_r;
+//      8'h94           : pgmpre_out[3] <= bmp_index_r;
+//
+//      //8'h98           : pgmpre_out[3] <= e2b_plot_r;
+//      //8'h99           : pgmpre_out[3] <= e2b_rpix_r;
+//      //8'h9A           : pgmpre_out[3] <= bmp_flush_buf_r;
+//      //8'h9B           : pgmpre_out[3] <= bmp_flush_rmw_r;
+//      //8'h9C           : pgmpre_out[3] <= bmp_flush_colr_r;
+//
+//      // config state
+//      8'hA0           : pgmpre_out[3] <= config_r[0];
+//      8'hA1           : pgmpre_out[3] <= config_r[1];
+//      //8'hA2           : pgmpre_out[3] <= config_r[2];
+//      //8'hA3           : pgmpre_out[3] <= config_r[3];
+//      //8'hA4           : pgmpre_out[3] <= config_r[4];
+//      //8'hA5           : pgmpre_out[3] <= config_r[5];
+//      //8'hA6           : pgmpre_out[3] <= config_r[6];
+//      //8'hA7           : pgmpre_out[3] <= config_r[7];
 //  
-//      8'h30           : pgmpre_out[3] <= exe_src_r[7:0];
-//      8'h31           : pgmpre_out[3] <= exe_src_r[15:8];
-//      8'h32           : pgmpre_out[3] <= exe_srcn_r[7:0];
-//      8'h33           : pgmpre_out[3] <= exe_srcn_r[15:8];
-//      8'h34           : pgmpre_out[3] <= e2r_data_r[7:0];
-//      8'h35           : pgmpre_out[3] <= e2r_data_r[15:8];
-//  
-//      // cache state
-//      //8'h40
-//      // fill state
-//      8'h60           : pgmpre_out[3] <= ROM_BUS_RDY;
-//      8'h61           : pgmpre_out[3] <= RAM_BUS_RDY;
-      8'h62           : pgmpre_out[3] <= bmp_data_r[7:0];
-      8'h63           : pgmpre_out[3] <= bmp_data_r[15:8];
-//      8'h68           : pgmpre_out[3] <= cache_rom_rd_r;
-//      8'h69           : pgmpre_out[3] <= cache_ram_rd_r;
-//      8'h6F           : pgmpre_out[3] <= exe_rom_rd_r;
-//      8'h70           : pgmpre_out[3] <= exe_ram_rd_r;
-//      8'h71           : pgmpre_out[3] <= exe_ram_wr_r;
-      8'h72           : pgmpre_out[3] <= bmp_ram_rd_r;
-      8'h73           : pgmpre_out[3] <= bmp_ram_wr_r;
-//      8'h74           : pgmpre_out[3] <= exe_addr_r[7:0];
-//      8'h75           : pgmpre_out[3] <= exe_addr_r[15:8];
-//      8'h76           : pgmpre_out[3] <= exe_addr_r[23:16];
-      8'h77           : pgmpre_out[3] <= bmp_addr_r[7:0];
-      8'h78           : pgmpre_out[3] <= bmp_addr_r[15:8];
-      8'h79           : pgmpre_out[3] <= bmp_addr_r[23:16];
-//      8'h7A           : pgmpre_out[3] <= exe_data_r[7:0];
-//      8'h7B           : pgmpre_out[3] <= exe_data_r[15:8];
-//      8'h7C           : pgmpre_out[3] <= rom_bus_data_r[7:0];
-//      8'h7D           : pgmpre_out[3] <= rom_bus_data_r[15:8];
-//      8'h7E           : pgmpre_out[3] <= ram_bus_data_r[7:0];
-//      8'h7F           : pgmpre_out[3] <= ram_bus_data_r[15:8];
-
-      // bitmap state
-      8'h80           : pgmpre_out[3] <= BMP_STATE;
-      8'h81           : pgmpre_out[3] <= bmp_mode_r;
-      8'h82           : pgmpre_out[3] <= bmp_bppm1_r;
-      8'h83           : pgmpre_out[3] <= bmp_plane_r;
-      8'h84           : pgmpre_out[3] <= bmp_x_r[0];
-      8'h85           : pgmpre_out[3] <= bmp_y_r[0];
-      8'h86           : pgmpre_out[3] <= bmp_x_r[1];
-      8'h87           : pgmpre_out[3] <= bmp_y_r[1];
-      8'h88           : pgmpre_out[3] <= bmp_char_shift_r[0][7:0];
-      8'h89           : pgmpre_out[3] <= bmp_char_shift_r[0][15:8];
-      8'h8A           : pgmpre_out[3] <= bmp_char_shift_r[1][7:0];
-      8'h8B           : pgmpre_out[3] <= bmp_char_shift_r[1][15:8];
-      8'h8C           : pgmpre_out[3] <= bmp_offset_r[7:0];
-      8'h8D           : pgmpre_out[3] <= bmp_offset_r[15:8];
-      8'h8E           : pgmpre_out[3] <= bmp_index_r;
-      8'h8F           : pgmpre_out[3] <= bmp_colr_r;
-      8'h90           : pgmpre_out[3] <= bmp_rpix_char_shift_r[7:0];
-      8'h91           : pgmpre_out[3] <= bmp_rpix_char_shift_r[15:8];
-      8'h92           : pgmpre_out[3] <= bmp_rpix_x_r;
-      8'h93           : pgmpre_out[3] <= bmp_rpix_y_r;
-
-      8'h98           : pgmpre_out[3] <= e2b_plot_r;
-      8'h99           : pgmpre_out[3] <= e2b_rpix_r;
-      8'h9A           : pgmpre_out[3] <= bmp_flush_buf_r;
-      8'h9B           : pgmpre_out[3] <= bmp_flush_rmw_r;
-      8'h9C           : pgmpre_out[3] <= bmp_flush_colr_r;
-
-      // config state
-      8'hA0           : pgmpre_out[3] <= config_r[0];
-      8'hA1           : pgmpre_out[3] <= config_r[1];
-      //8'hA2           : pgmpre_out[3] <= config_r[2];
-      //8'hA3           : pgmpre_out[3] <= config_r[3];
-      //8'hA4           : pgmpre_out[3] <= config_r[4];
-      //8'hA5           : pgmpre_out[3] <= config_r[5];
-      //8'hA6           : pgmpre_out[3] <= config_r[6];
-      //8'hA7           : pgmpre_out[3] <= config_r[7];
-  
-      8'hC0           : pgmpre_out[3] <= ROM_STATE;
-      8'hC1           : pgmpre_out[3] <= RAM_STATE;
-      
-      // misc
-      8'hE0           : pgmpre_out[3] <= gsu_cycle_cnt_r[31:24];
-      8'hE1           : pgmpre_out[3] <= gsu_cycle_cnt_r[23:16];
-      8'hE2           : pgmpre_out[3] <= gsu_cycle_cnt_r[15: 8];
-      8'hE3           : pgmpre_out[3] <= gsu_cycle_cnt_r[ 7: 0];
-      8'hE4           : pgmpre_out[3] <= snes_write_r;
-      8'hE5           : pgmpre_out[3] <= pipeline_advance;
-      
-      default           : pgmpre_out[3] <= 8'hFF;
-    endcase
+//      //8'hC0           : pgmpre_out[3] <= ROM_STATE;
+//      //8'hC1           : pgmpre_out[3] <= RAM_STATE;
+//      
+//      // misc
+//      //8'hE0           : pgmpre_out[3] <= gsu_cycle_cnt_r[31:24];
+//      //8'hE1           : pgmpre_out[3] <= gsu_cycle_cnt_r[23:16];
+//      //8'hE2           : pgmpre_out[3] <= gsu_cycle_cnt_r[15: 8];
+//      //8'hE3           : pgmpre_out[3] <= gsu_cycle_cnt_r[ 7: 0];
+//      //8'hE4           : pgmpre_out[3] <= snes_write_r;
+//      //8'hE5           : pgmpre_out[3] <= pipeline_advance;
+//      
+//      default           : pgmpre_out[3] <= 8'hFF;
+//    endcase
   endcase
 end
 `endif
@@ -2339,5 +2445,6 @@ assign DATA_OUT    = data_out_r;
 assign GO          = SFR_GO;
 assign RON         = SCMR_RON;
 assign RAN         = SCMR_RAN;
+assign IRQ         = SFR_IRQ & ~CFGR_IRQ;
 
 endmodule
