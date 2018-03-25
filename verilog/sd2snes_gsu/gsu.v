@@ -281,7 +281,7 @@ end
 assign config_data_out = config_r[reg_read_in];
 
 assign      CONFIG_CONTROL_ENABLED       = config_r[0][0];
-assign      CONFIG_CONTROL_MATCHFULLINST = config_r[0][1];
+assign      CONFIG_CONTROL_MATCHPARTINST = config_r[0][1];
 
 wire [7:0]  CONFIG_STEP_COUNT   = config_r[1];
 //wire [7:0]  CONFIG_DATA_WATCH   = config_r[4];
@@ -586,7 +586,7 @@ always @(posedge CLK) begin
   
     // TODO: figure out how to deal with conflicts between SFX and SNES.
     // handle GSU register writes
-    if (pipeline_advance | snes_write_r | e2r_lmult_r) begin
+    if (pipeline_advance | snes_write_r) begin
       // handle GPR
       if (e2r_val_r) begin
         case (e2r_destnum_r)
@@ -700,9 +700,9 @@ always @(posedge CLK) begin
     else if (gsu_clock_en & |bmp_waitcnt_r) bmp_waitcnt_r <= bmp_waitcnt_r - 1;
     
     // ok to advance to next instruction byte
-    step_r <= CONFIG_CONTROL_ENABLED | (~op_complete & CONFIG_CONTROL_MATCHFULLINST) | (stepcnt_r != CONFIG_STEP_COUNT);
+    step_r <= CONFIG_CONTROL_ENABLED | (~op_complete & ~CONFIG_CONTROL_MATCHPARTINST) | (stepcnt_r != CONFIG_STEP_COUNT);
     
-    if (pipeline_advance & (op_complete | ~CONFIG_CONTROL_MATCHFULLINST)) stepcnt_r <= CONFIG_STEP_COUNT;
+    if (pipeline_advance & (op_complete | CONFIG_CONTROL_MATCHPARTINST)) stepcnt_r <= CONFIG_STEP_COUNT;
     waitcnt_zero_r <= ~|fetch_waitcnt_r & ~|exe_waitcnt_r;
   end
 end
@@ -2096,7 +2096,6 @@ always @(posedge CLK) begin
             e2r_mask_r <= 0;
             e2r_loop_r <= 0;
             e2r_ljmp_r <= 0;
-            e2r_lmult_r <= 0;
             e2r_wpor_r <= 0;
             e2r_wcolr_r <= 0;
           end
@@ -2324,6 +2323,17 @@ always @(posedge CLK) begin
       8'hC1           : pgmpre_out[0] <= EXE_STATE;
       8'hC2           : pgmpre_out[0] <= ROM_STATE;
       8'hC3           : pgmpre_out[0] <= RAM_STATE;
+
+      8'hD0           : pgmpre_out[0] <= config_r[0];
+      8'hD1           : pgmpre_out[0] <= config_r[1];
+      //8'hD2           : pgmpre_out[0] <= config_r[2];
+      //8'hD3           : pgmpre_out[0] <= config_r[3];
+      //8'hD4           : pgmpre_out[0] <= config_r[4];
+      //8'hD5           : pgmpre_out[0] <= config_r[5];
+      //8'hD6           : pgmpre_out[0] <= config_r[6];
+      //8'hD7           : pgmpre_out[0] <= config_r[7];
+
+      8'hE0           : pgmpre_out[0] <= stepcnt_r;
 
       default         : pgmpre_out[0] <= 8'hFF;
     endcase
