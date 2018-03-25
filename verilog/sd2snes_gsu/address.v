@@ -99,6 +99,6 @@ assign return_vector_enable = (SNES_ADDR == 24'h002A5A);
 assign branch1_enable = (SNES_ADDR == 24'h002A13);
 assign branch2_enable = (SNES_ADDR == 24'h002A4D);
 // 00-3F/80-BF:3000-32FF gsu registers
-assign gsu_enable = /*featurebits[FEAT_GSU] &*/ (!SNES_ADDR[22] && ({SNES_ADDR[15:10],2'h0} == 8'h30)) & (SNES_ADDR[9:8] != 2'h3);
+assign gsu_enable = /*featurebits[FEAT_GSU] &*/ (!SNES_ADDR[22] && ({SNES_ADDR[15:10],2'h0} == 8'h30)) && (SNES_ADDR[9:8] != 2'h3);
 
 endmodule

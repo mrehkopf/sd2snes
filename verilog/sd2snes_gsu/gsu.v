@@ -253,16 +253,16 @@ parameter
 // [23:0] AddrWatch
 
 // breakpoint state
-//reg         brk_inst_rd_byte; initial brk_inst_rd_byte = 0;
-//reg         brk_data_rd_byte; initial brk_data_rd_byte = 0;
-//reg         brk_data_wr_byte; initial brk_data_wr_byte = 0;
-//reg         brk_inst_rd_addr; initial brk_inst_rd_addr = 0;
-//reg         brk_data_rd_addr; initial brk_data_rd_addr = 0;
-//reg         brk_data_wr_addr; initial brk_data_wr_addr = 0;
-//reg         brk_stop;         initial brk_stop = 0;
-//reg         brk_error;        initial brk_error = 0;
+reg         brk_inst_rd_byte; initial brk_inst_rd_byte = 0;
+reg         brk_data_rd_byte; initial brk_data_rd_byte = 0;
+reg         brk_data_wr_byte; initial brk_data_wr_byte = 0;
+reg         brk_inst_rd_addr; initial brk_inst_rd_addr = 0;
+reg         brk_data_rd_addr; initial brk_data_rd_addr = 0;
+reg         brk_data_wr_addr; initial brk_data_wr_addr = 0;
+reg         brk_stop;         initial brk_stop = 0;
+reg         brk_error;        initial brk_error = 0;
 
-parameter CONFIG_REGISTERS = 2;
+parameter CONFIG_REGISTERS = 3;
 reg [7:0] config_r[CONFIG_REGISTERS-1:0]; initial for (i = 0; i < CONFIG_REGISTERS; i = i + 1) config_r[i] = 8'h00;
 
 always @(posedge CLK) begin
@@ -274,7 +274,7 @@ always @(posedge CLK) begin
   end
   else begin
     // TODO: figure out how to do the data compares on time without getting false matches
-    //config_r[0][0] <= config_r[0][0] & ~|(config_r[2] & {brk_error,brk_stop,brk_data_wr_addr,brk_data_rd_addr,brk_inst_rd_addr,brk_data_wr_byte,brk_data_rd_byte,brk_inst_rd_byte});
+    config_r[0][0] <= config_r[0][0] & ~|(config_r[2] & {brk_error,brk_stop,brk_data_wr_addr,brk_data_rd_addr,brk_inst_rd_addr,brk_data_wr_byte,brk_data_rd_byte,brk_inst_rd_byte});
   end
 end
 
@@ -309,7 +309,7 @@ reg [15:0] exe_data_r;
 reg [23:0] bmp_addr_r;
 reg [15:0] bmp_data_r;
 
-reg [31:0] gsu_cycle_cnt_r; initial gsu_cycle_cnt_r = 0;
+reg [15:0] gsu_cycle_cnt_r; initial gsu_cycle_cnt_r = 0;
 
 reg [1:0]  gsu_cycle_r; initial gsu_cycle_r = 0;
 reg        gsu_clock_en;
@@ -411,6 +411,7 @@ assign POR_OBJ  = POR_r[4];
 
 // Execute -> RegisterFile
 reg        e2r_val_r;
+reg        e2r_sneswrite_r;
 reg [3:0]  e2r_destnum_r;
 reg [15:0] e2r_data_pre_r;
 reg [15:0] e2r_data_r;
@@ -514,6 +515,7 @@ reg [7:0]  data_out_r;
 reg [7:0]  data_flop_r;
 
 reg        snes_write_r;
+reg        snes_writereg_r;
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -544,6 +546,7 @@ always @(posedge CLK) begin
     data_enable_r <= 0;
     data_flop_r <= 0;
     snes_write_r <= 0;
+    snes_writereg_r <= 0;
     
     cache_mmio_wren_r <= 0;
   end
@@ -583,12 +586,13 @@ always @(posedge CLK) begin
   
     // Register Write
     snes_write_r <= SNES_WR_end && enable_r && ({addr_in_r[9:1],1'b0} == ADDR_SFR || addr_in_r[9:0] == ADDR_SCMR || !SFR_GO);
-  
+    snes_writereg_r <= SNES_WR_end & enable_r & addr_in_r[0] & ~|addr_in_r[9:5];
+
     // TODO: figure out how to deal with conflicts between SFX and SNES.
     // handle GSU register writes
     if (pipeline_advance | snes_write_r) begin
       // handle GPR
-      if (e2r_val_r) begin
+      if ((e2r_val_r & pipeline_advance) | snes_writereg_r) begin
         case (e2r_destnum_r)
           R0 : begin if (~e2r_mask_r[1]) REG_r[R0 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R0 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
           R1 : begin if (~e2r_mask_r[1]) REG_r[R1 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R1 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
@@ -611,7 +615,7 @@ always @(posedge CLK) begin
       else if (e2r_lmult_r) begin
         REG_r[R4] <= e2r_r4_r;
       end
-      else if (SFR_GO) begin
+      else if (~snes_write_r) begin
         REG_r[R15] <= REG_r[R15] + 1;
       end
       
@@ -700,7 +704,7 @@ always @(posedge CLK) begin
     else if (gsu_clock_en & |bmp_waitcnt_r) bmp_waitcnt_r <= bmp_waitcnt_r - 1;
     
     // ok to advance to next instruction byte
-    step_r <= CONFIG_CONTROL_ENABLED | (~op_complete & ~CONFIG_CONTROL_MATCHPARTINST) | (stepcnt_r != CONFIG_STEP_COUNT);
+    step_r <= CONFIG_CONTROL_ENABLED || (!op_complete & !CONFIG_CONTROL_MATCHPARTINST) || (stepcnt_r != CONFIG_STEP_COUNT);
     
     if (pipeline_advance & (op_complete | CONFIG_CONTROL_MATCHPARTINST)) stepcnt_r <= CONFIG_STEP_COUNT;
     waitcnt_zero_r <= ~|fetch_waitcnt_r & ~|exe_waitcnt_r;
@@ -1265,9 +1269,6 @@ always @(posedge CLK) begin
       ST_FETCH_WAIT: begin
         if (pipeline_advance) begin
           fetch_wait_r <= 0;
-          // TODO: fetch address increment
-          //i2e_op_r[~i2e_ptr_r] <= fetch_data_r;
-          //i2e_ptr_r <= ~i2e_ptr_r;
 
           if (e2r_g_r) FETCH_STATE <= ST_FETCH_LOOKUP;
           else         FETCH_STATE <= ST_FETCH_IDLE;
@@ -1384,10 +1385,8 @@ always @(posedge CLK) begin
           EXE_STATE <= ST_EXE_DECODE;
         end
         
-        // handle snes writes
-        e2r_val_r  <= SNES_WR_end & enable_r & addr_in_r[0] & ~|addr_in_r[9:5];
+        // handle snes write reg data
         e2r_data_r <= {data_in_r,data_flop_r};
-        //e2r_r15_r  <= {data_in_r,data_flop_r};
         e2r_mask_r <= 0;
         e2r_destnum_r <= addr_in_r[4:1];
       end
@@ -2058,21 +2057,6 @@ always @(posedge CLK) begin
           EXE_STATE <= ST_EXE_WAIT;
           exe_wait_r <= 1;
         end
-//        else if (exe_opcode_r == `OP_FMULT_LMULT) begin
-//          if (exe_waitcnt_r <= 2) begin
-//            // wait for the multiply output
-//            e2r_data_r     <= exe_fmult_out[31:16];
-//            e2r_r4_r       <= exe_fmult_out[15:0];
-//            e2r_lmult_r    <= exe_alt1_r;
-//              
-//            e2r_z_r        <= ~|exe_fmult_out[31:16];
-//            e2r_s_r        <= exe_fmult_out[31];
-//            e2r_cy_r       <= exe_fmult_out[15];
-//                            
-//            EXE_STATE <= ST_EXE_WAIT;        
-//            exe_wait_r <= 1;
-//          end
-//        end
       end
       ST_EXE_WAIT: begin
         e2c_waitcnt_val_r <= 0;
@@ -2113,49 +2097,49 @@ always @(posedge CLK) begin
   end
 end
 
-//// breakpoints
-//reg      brk_inst_rd_rom_m1;
-//reg      brk_inst_rd_ram_m1;
-//reg      brk_data_rd_rom_m1;
-//reg      brk_data_rd_ram_m1;
-//reg      brk_data_wr_ram_m1;
-//
-//always @(posedge CLK) begin
-//  if (RST) begin
-//    brk_inst_rd_rom_m1 <= 0;
-//    brk_inst_rd_ram_m1 <= 0;
-//    brk_data_rd_rom_m1 <= 0;
-//    brk_data_rd_ram_m1 <= 0;
-//    brk_data_wr_ram_m1 <= 0;
-//
-//    brk_inst_rd_byte <= 0;
-//    brk_data_rd_byte <= 0;
-//    brk_data_wr_byte <= 0;
-//
-//    brk_inst_rd_addr <= 0;
-//    brk_data_rd_addr <= 0;
-//    brk_data_wr_addr <= 0;
-//    brk_stop         <= 0;
-//    brk_error        <= 0;
-//  end
-//  else begin
-//    brk_inst_rd_rom_m1 <= (|(ROM_STATE & ST_ROM_FETCH_RD)) && !rom_bus_rrq_r && ROM_BUS_RDY;
-//    brk_inst_rd_ram_m1 <= (|(RAM_STATE & ST_RAM_FETCH_RD)) && !ram_bus_rrq_r && RAM_BUS_RDY;
-//    brk_data_rd_rom_m1 <= (|(ROM_STATE & ST_ROM_DATA_RD)) && !rom_bus_rrq_r && ROM_BUS_RDY;
-//    brk_data_rd_ram_m1 <= (|(RAM_STATE & ST_RAM_DATA_RD)) && !ram_bus_rrq_r && RAM_BUS_RDY;
-//    brk_data_wr_ram_m1 <= (|(RAM_STATE & ST_RAM_DATA_WR)) && !ram_bus_wrq_r && RAM_BUS_RDY;
-//
-//    brk_inst_rd_byte <= pipeline_advance ? 0 : brk_inst_rd_rom_m1 ? (rom_bus_data_r == CONFIG_DATA_WATCH) : brk_inst_rd_ram_m1 ? (ram_bus_data_r == CONFIG_DATA_WATCH) : brk_inst_rd_byte;
-//    brk_data_rd_byte <= pipeline_advance ? 0 : brk_data_rd_rom_m1 ? (rom_bus_data_r == CONFIG_DATA_WATCH) : brk_data_rd_ram_m1 ? (ram_bus_data_r == CONFIG_DATA_WATCH) : brk_data_rd_byte;
-//    brk_data_wr_byte <= pipeline_advance ? 0                                                              : brk_data_wr_ram_m1 ? (RAMWRBUF_r     == CONFIG_DATA_WATCH) : brk_data_wr_byte;
-//  
-//    brk_inst_rd_addr <= (cache_ram_rd_r && (cache_addr_r == CONFIG_ADDR_WATCH) || cache_rom_rd_r && (cache_addr_r == CONFIG_ADDR_WATCH));
-//    brk_data_rd_addr <= (exe_ram_rd_r   && (exe_addr_r   == CONFIG_ADDR_WATCH) || exe_rom_rd_r   && (exe_addr_r   == CONFIG_ADDR_WATCH));
-//    brk_data_wr_addr <= (exe_ram_wr_r   && (exe_addr_r   == CONFIG_ADDR_WATCH));
-//    brk_stop         <= exe_opcode_r == `OP_STOP;
-//    brk_error        <= exe_error; // FIXME: set this state based on opcode or other error condition
-//  end
-//end
+// breakpoints
+reg      brk_inst_rd_rom_m1;
+reg      brk_inst_rd_ram_m1;
+reg      brk_data_rd_rom_m1;
+reg      brk_data_rd_ram_m1;
+reg      brk_data_wr_ram_m1;
+
+always @(posedge CLK) begin
+  if (RST) begin
+    brk_inst_rd_rom_m1 <= 0;
+    brk_inst_rd_ram_m1 <= 0;
+    brk_data_rd_rom_m1 <= 0;
+    brk_data_rd_ram_m1 <= 0;
+    brk_data_wr_ram_m1 <= 0;
+
+    brk_inst_rd_byte <= 0;
+    brk_data_rd_byte <= 0;
+    brk_data_wr_byte <= 0;
+
+    brk_inst_rd_addr <= 0;
+    brk_data_rd_addr <= 0;
+    brk_data_wr_addr <= 0;
+    brk_stop         <= 0;
+    brk_error        <= 0;
+  end
+  else begin
+    //brk_inst_rd_rom_m1 <= (|(ROM_STATE & ST_ROM_FETCH_RD)) && !rom_bus_rrq_r && ROM_BUS_RDY;
+    //brk_inst_rd_ram_m1 <= (|(RAM_STATE & ST_RAM_FETCH_RD)) && !ram_bus_rrq_r && RAM_BUS_RDY;
+    //brk_data_rd_rom_m1 <= (|(ROM_STATE & ST_ROM_DATA_RD)) && !rom_bus_rrq_r && ROM_BUS_RDY;
+    //brk_data_rd_ram_m1 <= (|(RAM_STATE & ST_RAM_DATA_RD)) && !ram_bus_rrq_r && RAM_BUS_RDY;
+    //brk_data_wr_ram_m1 <= (|(RAM_STATE & ST_RAM_DATA_WR)) && !ram_bus_wrq_r && RAM_BUS_RDY;
+
+    //brk_inst_rd_byte <= pipeline_advance ? 0 : brk_inst_rd_rom_m1 ? (rom_bus_data_r == CONFIG_DATA_WATCH) : brk_inst_rd_ram_m1 ? (ram_bus_data_r == CONFIG_DATA_WATCH) : brk_inst_rd_byte;
+    //brk_data_rd_byte <= pipeline_advance ? 0 : brk_data_rd_rom_m1 ? (rom_bus_data_r == CONFIG_DATA_WATCH) : brk_data_rd_ram_m1 ? (ram_bus_data_r == CONFIG_DATA_WATCH) : brk_data_rd_byte;
+    //brk_data_wr_byte <= pipeline_advance ? 0                                                              : brk_data_wr_ram_m1 ? (RAMWRBUF_r     == CONFIG_DATA_WATCH) : brk_data_wr_byte;
+  
+    //brk_inst_rd_addr <= (cache_ram_rd_r && (cache_addr_r == CONFIG_ADDR_WATCH) || cache_rom_rd_r && (cache_addr_r == CONFIG_ADDR_WATCH));
+    //brk_data_rd_addr <= (exe_ram_rd_r   && (exe_addr_r   == CONFIG_ADDR_WATCH) || exe_rom_rd_r   && (exe_addr_r   == CONFIG_ADDR_WATCH));
+    //brk_data_wr_addr <= (exe_ram_wr_r   && (exe_addr_r   == CONFIG_ADDR_WATCH));
+    brk_stop         <= exe_opcode_r == `OP_STOP;
+    brk_error        <= exe_error; // FIXME: set this state based on opcode or other error condition
+  end
+end
 
 //assign pipeline_advance = gsu_clock_en & ~|fetch_waitcnt_r & ~|exe_waitcnt_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
 //assign pipeline_advance = gsu_clock_en & waitcnt_zero_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
@@ -2318,10 +2302,10 @@ always @(posedge CLK) begin
       8'hB4           : pgmpre_out[0] <= exe_operand_r[15:8];
       8'hB5           : pgmpre_out[0] <= exe_opsize_r;
 
-      8'hC0           : pgmpre_out[0] <= FETCH_STATE;
-      8'hC1           : pgmpre_out[0] <= EXE_STATE;
-      8'hC2           : pgmpre_out[0] <= ROM_STATE;
-      8'hC3           : pgmpre_out[0] <= RAM_STATE;
+      //8'hC0           : pgmpre_out[0] <= FETCH_STATE;
+      //8'hC1           : pgmpre_out[0] <= EXE_STATE;
+      //8'hC2           : pgmpre_out[0] <= ROM_STATE;
+      //8'hC3           : pgmpre_out[0] <= RAM_STATE;
 
       8'hD0           : pgmpre_out[0] <= config_r[0];
       8'hD1           : pgmpre_out[0] <= config_r[1];
@@ -2333,6 +2317,15 @@ always @(posedge CLK) begin
       //8'hD7           : pgmpre_out[0] <= config_r[7];
 
       8'hE0           : pgmpre_out[0] <= stepcnt_r;
+      8'hE1           : pgmpre_out[0] <= pipeline_advance;
+      8'hE2           : pgmpre_out[0] <= snes_write_r;
+      8'hE3           : pgmpre_out[0] <= fetch_waitcnt_r;
+      8'hE4           : pgmpre_out[0] <= exe_waitcnt_r;
+      8'hE5           : pgmpre_out[0] <= op_complete;      
+      8'hE6           : pgmpre_out[0] <= e2r_val_r;      
+      8'hE7           : pgmpre_out[0] <= e2r_destnum_r;
+      8'hE8           : pgmpre_out[0] <= step_r;
+      8'hE9           : pgmpre_out[0] <= gsu_clock_en;
 
       default         : pgmpre_out[0] <= 8'hFF;
     endcase
