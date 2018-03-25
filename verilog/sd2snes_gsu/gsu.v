@@ -262,7 +262,7 @@ reg         brk_data_wr_addr; initial brk_data_wr_addr = 0;
 reg         brk_stop;         initial brk_stop = 0;
 reg         brk_error;        initial brk_error = 0;
 
-parameter CONFIG_REGISTERS = 3;
+parameter CONFIG_REGISTERS = 8;
 reg [7:0] config_r[CONFIG_REGISTERS-1:0]; initial for (i = 0; i < CONFIG_REGISTERS; i = i + 1) config_r[i] = 8'h00;
 
 always @(posedge CLK) begin
@@ -284,8 +284,8 @@ assign      CONFIG_CONTROL_ENABLED       = config_r[0][0];
 assign      CONFIG_CONTROL_MATCHPARTINST = config_r[0][1];
 
 wire [7:0]  CONFIG_STEP_COUNT   = config_r[1];
-//wire [7:0]  CONFIG_DATA_WATCH   = config_r[4];
-//wire [23:0] CONFIG_ADDR_WATCH   = {config_r[7],config_r[6],config_r[5]};
+wire [7:0]  CONFIG_DATA_WATCH   = config_r[4];
+wire [23:0] CONFIG_ADDR_WATCH   = {config_r[7],config_r[6],config_r[5]};
 
 //-------------------------------------------------------------------
 // FLOPS
@@ -1424,7 +1424,7 @@ always @(posedge CLK) begin
             `OP_FROM          : if (~SFR_B) e2r_sreg_r <= exe_opcode_r[3:0];
 
             // generate dithered color value for PLOT
-            `OP_PLOT_RPIX     : if (~exe_alt1_r & POR_DTH & ~&SCMR_MD) exe_colr_r <= {4'h0, ((REG_r[R1] ^ REG_r[R2]) ? COLR_r[7:4] : COLR_r[3:0])}; else exe_colr_r <= COLR_r;
+            `OP_PLOT_RPIX     : if (~exe_alt1_r & POR_DTH & ~&SCMR_MD) exe_colr_r <= {4'h0, ((REG_r[R1][0] ^ REG_r[R2][0]) ? COLR_r[7:4] : COLR_r[3:0])}; else exe_colr_r <= COLR_r;
             
             default           : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= 0; end
           endcase
@@ -1555,7 +1555,8 @@ always @(posedge CLK) begin
                 e2r_data_pre_r <= REG_r[R1] + 1;
                 
                 // generate plot - skip if transparent
-                e2b_plot_r     <= !POR_TRS && ((SCMR_MD == 3) ? (POR_FHN ? (exe_colr_r[3:0] != 0) : (exe_colr_r != 0)) : (exe_colr_r[3:0] != 0));
+                //e2b_plot_r     <= POR_TRS || ((SCMR_MD == 3) ? (POR_FHN ? (exe_colr_r[3:0] != 0) : (exe_colr_r != 0)) : (exe_colr_r[3:0] != 0));
+                e2b_plot_r     <= POR_TRS || ((SCMR_MD != 3 || POR_FHN) ? (exe_colr_r[3:0] != 0) : (exe_colr_r != 0));
                 exe_plot_mem_r <= (PIXBUF_OFFSET_r[0] != exe_plot_offset_r) && (|PIXBUF_VALID_r[0] && |PIXBUF_VALID_r[1]);
                 
                 e2b_offset_r   <= exe_plot_offset_r;
@@ -2104,6 +2105,8 @@ reg      brk_data_rd_rom_m1;
 reg      brk_data_rd_ram_m1;
 reg      brk_data_wr_ram_m1;
 
+reg [23:0] brk_addr_r;
+
 always @(posedge CLK) begin
   if (RST) begin
     brk_inst_rd_rom_m1 <= 0;
@@ -2121,6 +2124,8 @@ always @(posedge CLK) begin
     brk_data_wr_addr <= 0;
     brk_stop         <= 0;
     brk_error        <= 0;
+    
+    brk_addr_r       <= 0;
   end
   else begin
     //brk_inst_rd_rom_m1 <= (|(ROM_STATE & ST_ROM_FETCH_RD)) && !rom_bus_rrq_r && ROM_BUS_RDY;
@@ -2133,11 +2138,15 @@ always @(posedge CLK) begin
     //brk_data_rd_byte <= pipeline_advance ? 0 : brk_data_rd_rom_m1 ? (rom_bus_data_r == CONFIG_DATA_WATCH) : brk_data_rd_ram_m1 ? (ram_bus_data_r == CONFIG_DATA_WATCH) : brk_data_rd_byte;
     //brk_data_wr_byte <= pipeline_advance ? 0                                                              : brk_data_wr_ram_m1 ? (RAMWRBUF_r     == CONFIG_DATA_WATCH) : brk_data_wr_byte;
   
-    //brk_inst_rd_addr <= (cache_ram_rd_r && (cache_addr_r == CONFIG_ADDR_WATCH) || cache_rom_rd_r && (cache_addr_r == CONFIG_ADDR_WATCH));
-    //brk_data_rd_addr <= (exe_ram_rd_r   && (exe_addr_r   == CONFIG_ADDR_WATCH) || exe_rom_rd_r   && (exe_addr_r   == CONFIG_ADDR_WATCH));
-    //brk_data_wr_addr <= (exe_ram_wr_r   && (exe_addr_r   == CONFIG_ADDR_WATCH));
+    brk_inst_rd_addr <= (cache_ram_rd_r && (cache_addr_r == brk_addr_r) || cache_rom_rd_r && (cache_addr_r == brk_addr_r));
+    brk_data_rd_addr <= (exe_ram_rd_r   && (exe_addr_r   == brk_addr_r) || exe_rom_rd_r   && (exe_addr_r   == brk_addr_r));
+    brk_data_wr_addr <= (exe_ram_wr_r   && (exe_addr_r   == brk_addr_r));
     brk_stop         <= exe_opcode_r == `OP_STOP;
     brk_error        <= exe_error; // FIXME: set this state based on opcode or other error condition
+    
+  
+    brk_addr_r <= (CONFIG_ADDR_WATCH[23:16] < 8'h60) ? ((CONFIG_ADDR_WATCH[22] ? CONFIG_ADDR_WATCH : {CONFIG_ADDR_WATCH[20:16],CONFIG_ADDR_WATCH[14:0]}) & ROM_MASK)
+                                                     : 24'hE00000 + ({CONFIG_ADDR_WATCH[4:0],CONFIG_ADDR_WATCH[R15]} & SAVERAM_MASK);
   end
 end
 
@@ -2309,12 +2318,12 @@ always @(posedge CLK) begin
 
       8'hD0           : pgmpre_out[0] <= config_r[0];
       8'hD1           : pgmpre_out[0] <= config_r[1];
-      //8'hD2           : pgmpre_out[0] <= config_r[2];
-      //8'hD3           : pgmpre_out[0] <= config_r[3];
-      //8'hD4           : pgmpre_out[0] <= config_r[4];
-      //8'hD5           : pgmpre_out[0] <= config_r[5];
-      //8'hD6           : pgmpre_out[0] <= config_r[6];
-      //8'hD7           : pgmpre_out[0] <= config_r[7];
+      8'hD2           : pgmpre_out[0] <= config_r[2];
+      8'hD3           : pgmpre_out[0] <= config_r[3];
+      8'hD4           : pgmpre_out[0] <= config_r[4];
+      8'hD5           : pgmpre_out[0] <= config_r[5];
+      8'hD6           : pgmpre_out[0] <= config_r[6];
+      8'hD7           : pgmpre_out[0] <= config_r[7];
 
       8'hE0           : pgmpre_out[0] <= stepcnt_r;
       8'hE1           : pgmpre_out[0] <= pipeline_advance;
