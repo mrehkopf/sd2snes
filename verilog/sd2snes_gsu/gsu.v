@@ -1269,8 +1269,8 @@ always @(posedge CLK) begin
           //i2e_op_r[~i2e_ptr_r] <= fetch_data_r;
           //i2e_ptr_r <= ~i2e_ptr_r;
 
-          if (SFR_GO) FETCH_STATE <= ST_FETCH_LOOKUP;
-          else        FETCH_STATE <= ST_FETCH_IDLE;
+          if (e2r_g_r) FETCH_STATE <= ST_FETCH_LOOKUP;
+          else         FETCH_STATE <= ST_FETCH_IDLE;
         end
       end
     endcase
@@ -2080,7 +2080,6 @@ always @(posedge CLK) begin
         if (pipeline_advance) begin
           if (|exe_opsize_r) exe_opsize_r <= exe_opsize_r - 1;
         
-          // TODO: check if we should look at the current instruction or next.  Probably current due to delay slot so this is buggy.
           if (e2r_g_r) EXE_STATE <= ST_EXE_DECODE;
           else         EXE_STATE <= ST_EXE_IDLE;
                     
