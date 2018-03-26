@@ -590,7 +590,7 @@ always @(posedge CLK) begin
 
     // TODO: figure out how to deal with conflicts between SFX and SNES.
     // handle GSU register writes
-    if (pipeline_advance | snes_write_r) begin
+    if (pipeline_advance | snes_write_r | e2r_lmult_r) begin
       // handle GPR
       if ((e2r_val_r & pipeline_advance) | snes_writereg_r) begin
         case (e2r_destnum_r)
@@ -1003,6 +1003,7 @@ always @(posedge CLK) begin
         end
         else if (e2b_rpix_r) begin
           bmp_mode_r <= BMP_MODE_RPIX;
+          bmp_colr_r <= 0;
 
           // check if buffer0 is valid and flush
           if (|PIXBUF_VALID_r[0]) begin
@@ -1031,7 +1032,7 @@ always @(posedge CLK) begin
           b2c_waitcnt_r <= 6 - 1; // TODO: account for slow clock.
 
           // address common between read and write
-          bmp_addr_r <= 24'hE00000 + bmp_char_shift_r[bmp_flush_buf_r] + {SCBR_r,10'h000} + {bmp_y_r[bmp_flush_buf_r][2:0],1'b0} + {bmp_plane_r[2:1], 2'b00, bmp_plane_r[0]};
+          bmp_addr_r <= 24'hE00000 + bmp_char_shift_r[bmp_flush_buf_r] + {SCBR_r,10'h000} + {bmp_y_r[bmp_flush_buf_r][2:0],1'b0} + {bmp_plane_r[2:1], 3'b000, bmp_plane_r[0]};
 
           // read
           bmp_ram_rd_r <= 1;
@@ -1059,7 +1060,7 @@ always @(posedge CLK) begin
           b2c_waitcnt_r <= 6 - 1; // TODO: account for slow clock.
 
           // address common between read and write
-          bmp_addr_r <= 24'hE00000 + bmp_char_shift_r[bmp_flush_buf_r] + {SCBR_r,10'h000} + {bmp_y_r[bmp_flush_buf_r][2:0],1'b0} + {bmp_plane_r[2:1], 2'b00, bmp_plane_r[0]};
+          bmp_addr_r <= 24'hE00000 + bmp_char_shift_r[bmp_flush_buf_r] + {SCBR_r,10'h000} + {bmp_y_r[bmp_flush_buf_r][2:0],1'b0} + {bmp_plane_r[2:1], 3'b000, bmp_plane_r[0]};
 
           // write
           bmp_ram_wr_r <= 1;
@@ -1112,7 +1113,7 @@ always @(posedge CLK) begin
           b2c_waitcnt_r <= 6 - 1; // TODO: account for slow clock.
 
           // address common between read and write
-          bmp_addr_r <= 24'hE00000 + bmp_rpix_char_shift_r + {SCBR_r,10'h000} + {bmp_rpix_y_r[2:0],1'b0} + {bmp_plane_r[2:1], 2'b00, bmp_plane_r[0]};
+          bmp_addr_r <= 24'hE00000 + bmp_rpix_char_shift_r + {SCBR_r,10'h000} + {bmp_rpix_y_r[2:0],1'b0} + {bmp_plane_r[2:1], 3'b000, bmp_plane_r[0]};
 
           // read
           bmp_ram_rd_r <= 1;
@@ -1424,7 +1425,7 @@ always @(posedge CLK) begin
             `OP_FROM          : if (~SFR_B) e2r_sreg_r <= exe_opcode_r[3:0];
 
             // generate dithered color value for PLOT
-            `OP_PLOT_RPIX     : if (~exe_alt1_r & POR_DTH & ~&SCMR_MD) exe_colr_r <= {4'h0, ((REG_r[R1][0] ^ REG_r[R2][0]) ? COLR_r[7:4] : COLR_r[3:0])}; else exe_colr_r <= COLR_r;
+            `OP_PLOT_RPIX     : if (~SFR_ALT1 & POR_DTH & ~&SCMR_MD) exe_colr_r <= {4'h0, ((REG_r[R1][0] ^ REG_r[R2][0]) ? COLR_r[7:4] : COLR_r[3:0])}; else exe_colr_r <= COLR_r;
             
             default           : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= 0; end
           endcase
@@ -1841,7 +1842,6 @@ always @(posedge CLK) begin
               
               e2c_waitcnt_val_r <= 1;
               e2c_waitcnt_r     <= 8-1; // TODO: account for slow clock and multiplier.
-              // TODO: figure out how to write to R4.  Have plenty of cycles to do it.
               
               //EXE_STATE <= ST_EXE_MEMORY_WAIT;
               EXE_STATE <= ST_EXE_WAIT;
@@ -2061,6 +2061,7 @@ always @(posedge CLK) begin
       end
       ST_EXE_WAIT: begin
         e2c_waitcnt_val_r <= 0;
+        e2r_lmult_r <= 0;
         
         if (pipeline_advance) begin
           if (|exe_opsize_r) exe_opsize_r <= exe_opsize_r - 1;
@@ -2087,10 +2088,6 @@ always @(posedge CLK) begin
           exe_byte_r <= fetch_data_r;
           
           exe_wait_r <= 0;
-        end
-        else if (e2r_lmult_r) begin
-          // early write for R4
-          e2r_lmult_r <= 0;
         end
       end
       
