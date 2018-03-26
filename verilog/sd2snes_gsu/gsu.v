@@ -223,6 +223,17 @@ parameter
 `define OP_LINK          8'h91,8'h92,8'h93,8'h94 // x
 `define OP_JMP_LJMP      8'h98,8'h99,8'h9A,8'h9B,8'h9C,8'h9D // x
 
+//---
+// Latency
+//---
+// TODO: use proper latencies when caching works.
+parameter
+  LAT_MEMORY     = 1,//6,
+  LAT_CACHE      = 1,
+  LAT_FMULT      = 2,//8, // mininum of 2 to do 2 writes
+  LAT_MULT       = 1,//2,
+  LAT_PIPE       = 1;
+
 //-------------------------------------------------------------------
 // CONFIG
 //-------------------------------------------------------------------
@@ -417,7 +428,6 @@ reg [15:0] e2r_data_pre_r;
 reg [15:0] e2r_data_r;
 reg [15:0] e2r_r15_r;
 reg [15:0] e2r_r4_r;
-reg [1:0]  e2r_mask_r;
 reg        e2r_loop_r;
 reg        e2r_ljmp_r;
 reg        e2r_lmult_r;
@@ -594,22 +604,22 @@ always @(posedge CLK) begin
       // handle GPR
       if ((e2r_val_r & pipeline_advance) | snes_writereg_r) begin
         case (e2r_destnum_r)
-          R0 : begin if (~e2r_mask_r[1]) REG_r[R0 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R0 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R1 : begin if (~e2r_mask_r[1]) REG_r[R1 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R1 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R2 : begin if (~e2r_mask_r[1]) REG_r[R2 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R2 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R3 : begin if (~e2r_mask_r[1]) REG_r[R3 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R3 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R4 : begin if (~e2r_mask_r[1]) REG_r[R4 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R4 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R5 : begin if (~e2r_mask_r[1]) REG_r[R5 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R5 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R6 : begin if (~e2r_mask_r[1]) REG_r[R6 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R6 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R7 : begin if (~e2r_mask_r[1]) REG_r[R7 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R7 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R8 : begin if (~e2r_mask_r[1]) REG_r[R8 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R8 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R9 : begin if (~e2r_mask_r[1]) REG_r[R9 ][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R9 ][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R10: begin if (~e2r_mask_r[1]) REG_r[R10][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R10][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R11: begin if (~e2r_mask_r[1]) REG_r[R11][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R11][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R12: begin if (~e2r_mask_r[1]) REG_r[R12][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R12][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= e2r_loop_r ? REG_r[R13] : REG_r[R15] + 1; end
-          R13: begin if (~e2r_mask_r[1]) REG_r[R13][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R13][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R14: begin if (~e2r_mask_r[1]) REG_r[R14][15:8] <= e2r_data_r[15:8]; if (~e2r_mask_r[0]) REG_r[R14][7:0] <= e2r_data_r[7:0]; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R15: REG_r[R15] <= {(~e2r_mask_r[1] ? e2r_data_r[15:8] : REG_r[R15][15:8]), (~e2r_mask_r[0] ? e2r_data_r[7:0] : REG_r[R15][7:0])};
+          R0 : begin REG_r[R0 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R1 : begin REG_r[R1 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R2 : begin REG_r[R2 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R3 : begin REG_r[R3 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R4 : begin REG_r[R4 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R5 : begin REG_r[R5 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R6 : begin REG_r[R6 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R7 : begin REG_r[R7 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R8 : begin REG_r[R8 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R9 : begin REG_r[R9 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R10: begin REG_r[R10] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R11: begin REG_r[R11] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R12: begin REG_r[R12] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= (e2r_loop_r ? REG_r[R13] : REG_r[R15] + 1); end
+          R13: begin REG_r[R13] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R14: begin REG_r[R14] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
+          R15: begin REG_r[R15] <= e2r_data_r;                                           end
         endcase
       end
       else if (e2r_lmult_r) begin
@@ -1029,7 +1039,7 @@ always @(posedge CLK) begin
         // perform next read
         if (bmp_waitcnt_r == 0) begin
           b2c_waitcnt_val_r <= 1;
-          b2c_waitcnt_r <= 6 - 1; // TODO: account for slow clock.
+          b2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
 
           // address common between read and write
           bmp_addr_r <= 24'hE00000 + bmp_char_shift_r[bmp_flush_buf_r] + {SCBR_r,10'h000} + {bmp_y_r[bmp_flush_buf_r][2:0],1'b0} + {bmp_plane_r[2:1], 3'b000, bmp_plane_r[0]};
@@ -1057,7 +1067,7 @@ always @(posedge CLK) begin
         // perform next write
         if (bmp_waitcnt_r == 0) begin
           b2c_waitcnt_val_r <= 1;
-          b2c_waitcnt_r <= 6 - 1; // TODO: account for slow clock.
+          b2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
 
           // address common between read and write
           bmp_addr_r <= 24'hE00000 + bmp_char_shift_r[bmp_flush_buf_r] + {SCBR_r,10'h000} + {bmp_y_r[bmp_flush_buf_r][2:0],1'b0} + {bmp_plane_r[2:1], 3'b000, bmp_plane_r[0]};
@@ -1110,7 +1120,7 @@ always @(posedge CLK) begin
         // generate next read
         if (bmp_waitcnt_r == 0) begin
           b2c_waitcnt_val_r <= 1;
-          b2c_waitcnt_r <= 6 - 1; // TODO: account for slow clock.
+          b2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
 
           // address common between read and write
           bmp_addr_r <= 24'hE00000 + bmp_rpix_char_shift_r + {SCBR_r,10'h000} + {bmp_rpix_y_r[2:0],1'b0} + {bmp_plane_r[2:1], 3'b000, bmp_plane_r[0]};
@@ -1237,7 +1247,7 @@ always @(posedge CLK) begin
         else begin
           // TODO: fill address
           i2c_waitcnt_val_r <= 1;
-          i2c_waitcnt_r <= 4; // TODO: account for slow clock.
+          i2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
           
           cache_rom_rd_r <= (PBR_r < 8'h60);
           cache_ram_rd_r <= (PBR_r >= 8'h60);
@@ -1348,7 +1358,6 @@ always @(posedge CLK) begin
     e2r_irq_r  <= 0;
 
     e2r_val_r <= 0;
-    e2r_mask_r <= 0;
     e2r_loop_r <= 0;
     e2r_ljmp_r <= 0;
     e2r_lmult_r <= 0;
@@ -1358,7 +1367,6 @@ always @(posedge CLK) begin
     
     e2r_data_r <= 0;
     e2r_data_pre_r <= 0;
-    e2r_mask_r <= 0;
     e2r_r15_r <= 0;
     e2r_r4_r <= 0;
     
@@ -1392,7 +1400,6 @@ always @(posedge CLK) begin
         
         // handle snes write reg data
         e2r_data_r <= {data_in_r,data_flop_r};
-        e2r_mask_r <= 0;
         e2r_destnum_r <= addr_in_r[4:1];
       end
       ST_EXE_DECODE: begin
@@ -1821,7 +1828,7 @@ always @(posedge CLK) begin
 
                 e2c_waitcnt_val_r <= 1;
                 // TODO: add 16b cache latencies
-                e2c_waitcnt_r <= 6-1; // TODO: account for slow clock.
+                e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
 
                 exe_rom_rd_r <= 1;
                 exe_word_r <= 1; // load for cache
@@ -1847,7 +1854,7 @@ always @(posedge CLK) begin
               e2r_cy_r       <= exe_fmult_out[15];
               
               e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r     <= 8-1; // TODO: account for slow clock and multiplier.
+              e2c_waitcnt_r     <= LAT_FMULT-1; // TODO: account for slow clock and multiplier.
               
               //EXE_STATE <= ST_EXE_MEMORY_WAIT;
               EXE_STATE <= ST_EXE_WAIT;
@@ -1864,7 +1871,7 @@ always @(posedge CLK) begin
               e2r_s_r        <= exe_result[15];
               
               e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r     <= 2-1; // TODO: account for slow clock and multiplier.
+              e2c_waitcnt_r     <= LAT_MULT-1; // TODO: account for slow clock and multiplier.
               
               EXE_STATE <= ST_EXE_WAIT;
               exe_wait_r <= 1;
@@ -1878,7 +1885,7 @@ always @(posedge CLK) begin
                 e2r_destnum_r   <= exe_opcode_r[3:0];
                  
                 e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= 7-1; // TODO: account for slow clock.
+                e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
           
                 exe_ram_rd_r <= 1;
                 exe_word_r <= 1;
@@ -1889,7 +1896,7 @@ always @(posedge CLK) begin
               else if (exe_alt2_r) begin
                 // SMS (2*imm8), Rn                
                 e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= 7-1; // TODO: account for slow clock.
+                e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
           
                 // TODO: this really does a byte at a time.
                 // TODO: do we need to handle misaligned data in a special way?
@@ -1915,7 +1922,7 @@ always @(posedge CLK) begin
                 e2r_destnum_r   <= exe_opcode_r[3:0];
 
                 e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= 7-1; // TODO: account for slow clock.
+                e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
           
                 exe_ram_rd_r <= 1;
                 exe_word_r <= 1;
@@ -1926,7 +1933,7 @@ always @(posedge CLK) begin
               else if (exe_alt2_r) begin
                 // SM (imm), Rn
                 e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= 7-1; // TODO: account for slow clock.
+                e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
           
                 // TODO: this really does a byte at a time.
                 // TODO: do we need to handle misaligned data in a special way?
@@ -1950,7 +1957,7 @@ always @(posedge CLK) begin
 
               e2c_waitcnt_val_r <= 1;
               // TODO: add 16b cache latencies
-              e2c_waitcnt_r <= 6-1; // TODO: account for slow clock.
+              e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
 
               // TODO: decide if we need separate state machines for this
               exe_rom_rd_r <= 1;
@@ -1963,7 +1970,7 @@ always @(posedge CLK) begin
             end
             `OP_SBK           : begin
               e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r <= 7-1; // TODO: account for slow clock.
+              e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
           
               // TODO: this really does a byte at a time.
               // TODO: do we need to handle misaligned data in a special way?
@@ -1978,7 +1985,7 @@ always @(posedge CLK) begin
               e2r_val_r    <= 1;
                  
               e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r <= exe_alt1_r ? 4-1 : 6-1; // TODO: account for slow clock.
+              e2c_waitcnt_r <= exe_alt1_r ? LAT_MEMORY-1 : LAT_MEMORY-1; // TODO: account for slow clock.
 
               exe_ram_rd_r <= 1;
               exe_word_r <= ~exe_alt1_r;
@@ -1990,7 +1997,7 @@ always @(posedge CLK) begin
             end
             `OP_ST           : begin
               e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r <= exe_alt1_r ? 4-1 : 6-1; // TODO: account for slow clock.
+              e2c_waitcnt_r <= exe_alt1_r ? LAT_MEMORY-1 : LAT_MEMORY-1; // TODO: account for slow clock.
 
               exe_ram_wr_r <= 1;
               exe_word_r <= ~exe_alt1_r;
@@ -2042,8 +2049,7 @@ always @(posedge CLK) begin
           
           case (exe_opcode_r)
             `OP_GETB: begin
-              e2r_data_r <= (exe_alt1_r & exe_alt2_r) ? {{8{rom_bus_data_r[7]}},rom_bus_data_r[7:0]} : exe_alt2_r ? {8'h00,rom_bus_data_r[7:0]} : exe_alt1_r ? {rom_bus_data_r[7:0],8'h00} : {8'h00,rom_bus_data_r[7:0]};
-              e2r_mask_r <= {(~exe_alt1_r & exe_alt2_r),(exe_alt1_r & ~exe_alt2_r)};
+              e2r_data_r <= (exe_alt1_r & exe_alt2_r) ? {{8{rom_bus_data_r[7]}},rom_bus_data_r[7:0]} : exe_alt2_r ? {exe_src_r[15:8],rom_bus_data_r[7:0]} : exe_alt1_r ? {rom_bus_data_r[7:0],exe_src_r[7:0]} : {8'h00,rom_bus_data_r[7:0]};
             end
             `OP_GETC_RAMB_ROMB: begin
               if (~exe_alt1_r & ~exe_alt2_r) begin
@@ -2084,7 +2090,6 @@ always @(posedge CLK) begin
             exe_zs_r <= 0;
 
             e2r_val_r  <= 0;
-            e2r_mask_r <= 0;
             e2r_loop_r <= 0;
             e2r_ljmp_r <= 0;
             e2r_wpor_r <= 0;
