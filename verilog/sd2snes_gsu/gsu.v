@@ -1306,8 +1306,12 @@ reg [15:0] exe_srcn_r;
 reg        exe_alt1_r;
 reg        exe_alt2_r;
 reg        exe_cy_r;
-reg [15:0] exe_mult_srca_r;
-reg [15:0] exe_mult_srcb_r;
+reg [15:0] exe_fmult_srca_r;
+reg [15:0] exe_fmult_srcb_r;
+reg [7:0]  exe_mult_srca_r;
+reg [7:0]  exe_mult_srcb_r;
+reg [7:0]  exe_umult_srca_r;
+reg [7:0]  exe_umult_srcb_r;
 reg [7:0]  exe_colr_r;
 reg        exe_zs_r;
 
@@ -1723,12 +1727,14 @@ always @(posedge CLK) begin
             
             // MULTIPLY
             `OP_FMULT_LMULT   : begin
-              exe_mult_srca_r <= exe_src_r;
-              exe_mult_srcb_r <= REG_r[R6];
+              exe_fmult_srca_r <= exe_src_r;
+              exe_fmult_srcb_r <= REG_r[R6];
             end
             `OP_MULT         : begin
               exe_mult_srca_r <= exe_src_r;
               exe_mult_srcb_r <= exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+              exe_umult_srca_r <= exe_src_r;
+              exe_umult_srcb_r <= exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
             end
             
             `OP_GETC_RAMB_ROMB: begin
@@ -2041,7 +2047,7 @@ always @(posedge CLK) begin
             end
             `OP_GETC_RAMB_ROMB: begin
               if (~exe_alt1_r & ~exe_alt2_r) begin
-                e2r_colr_r  <= POR_HN ? {COLR_r[7:4],ram_bus_data_r[7:4]} : POR_FHN ? {COLR_r[7:4],ram_bus_data_r[3:0]} : ram_bus_data_r[7:0];
+                e2r_colr_r  <= POR_HN ? {COLR_r[7:4],rom_bus_data_r[7:4]} : POR_FHN ? {COLR_r[7:4],rom_bus_data_r[3:0]} : rom_bus_data_r[7:0];
               end
             end
             `OP_PLOT_RPIX: begin
@@ -2155,8 +2161,8 @@ assign op_complete = exe_opsize_r == 1;
 // Multipliers
 gsu_fmult gsu_fmult(
   //.clk(CLK),
-  .a(exe_mult_srca_r[15:0]),
-  .b(exe_mult_srcb_r[15:0]),
+  .a(exe_fmult_srca_r[15:0]),
+  .b(exe_fmult_srcb_r[15:0]),
   .p(exe_fmult_out)
 );
 
@@ -2169,8 +2175,8 @@ gsu_mult gsu_mult(
 
 gsu_umult gsu_umult(
   //.clk(CLK),
-  .a(exe_mult_srca_r[7:0]),
-  .b(exe_mult_srcb_r[7:0]),
+  .a(exe_umult_srca_r[7:0]),
+  .b(exe_umult_srcb_r[7:0]),
   .p(exe_umult_out)
 );
 
