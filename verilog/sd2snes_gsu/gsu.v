@@ -527,11 +527,19 @@ reg [7:0]  data_flop_r;
 reg        snes_write_r;
 reg        snes_writereg_r;
 
+reg        snes_writebuf_val_r;
+reg        snes_writebuf_reg_r;
+reg        snes_writebuf_gpr_r;
+reg [9:0]  snes_writebuf_addr_r;
+reg [7:0]  snes_writebuf_data_r;
+
+reg        snes_readbuf_val_r;
+
 always @(posedge CLK) begin
   if (RST) begin
-    //for (i = 0; i < NUM_GPR; i = i + 1) begin
-    //  REG_r[i] <= 0;
-    //end
+    for (i = 0; i < NUM_GPR; i = i + 1) begin
+      REG_r[i] <= 0;
+    end
     
     SFR_r   <= 0;
     BRAMR_r <= 0;
@@ -555,8 +563,11 @@ always @(posedge CLK) begin
     
     data_enable_r <= 0;
     data_flop_r <= 0;
-    snes_write_r <= 0;
-    snes_writereg_r <= 0;
+    
+    snes_writebuf_val_r <= 0;
+    snes_writebuf_reg_r <= 0;
+    snes_writebuf_gpr_r <= 0;
+    snes_readbuf_val_r <= 0;
     
     cache_mmio_wren_r <= 0;
   end
@@ -585,101 +596,116 @@ always @(posedge CLK) begin
           cache_mmio_addr_r <= {~addr_in_r[8],addr_in_r[7:0]};
         end
       end
-      else if (cache_mmio_wren_r) begin
+      else if (|addr_in_r[9:8]) begin
         data_out_r <= cache_rddata;
-        cache_mmio_wren_r <= 0;
       end
     end
     else begin
       data_enable_r <= 0;
     end
   
-    // Register Write
-    snes_write_r <= SNES_WR_end && enable_r && ({addr_in_r[9:1],1'b0} == ADDR_SFR || addr_in_r[9:0] == ADDR_SCMR || !SFR_GO);
-    snes_writereg_r <= SNES_WR_end & enable_r & addr_in_r[0] & ~|addr_in_r[9:5];
+    // Register Write Buffer.  snes writes are sent on non-GSU clocks
+    if (SNES_WR_end & enable_r) begin
+      snes_writebuf_val_r  <= 1;
+      snes_writebuf_reg_r  <= ~|addr_in_r[9:8];
+      snes_writebuf_gpr_r  <= ~|addr_in_r[9:5];
+      snes_writebuf_addr_r <= addr_in_r[9:0];
+      snes_writebuf_data_r <= data_in_r;
+    end
+    else if (snes_writebuf_val_r & ~gsu_clock_en) begin
+      snes_writebuf_val_r <= 0;
+      snes_writebuf_reg_r <= 0;
+      snes_writebuf_gpr_r <= 0;
+    end
 
-    // TODO: figure out how to deal with conflicts between SFX and SNES.
-    // handle GSU register writes
-    if (pipeline_advance | snes_write_r | e2r_lmult_r) begin
-      // handle GPR
-      if ((e2r_val_r & pipeline_advance) | snes_writereg_r) begin
-        case (e2r_destnum_r)
-          R0 : begin REG_r[R0 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R1 : begin REG_r[R1 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R2 : begin REG_r[R2 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R3 : begin REG_r[R3 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R4 : begin REG_r[R4 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R5 : begin REG_r[R5 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R6 : begin REG_r[R6 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R7 : begin REG_r[R7 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R8 : begin REG_r[R8 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R9 : begin REG_r[R9 ] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R10: begin REG_r[R10] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R11: begin REG_r[R11] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R12: begin REG_r[R12] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= (e2r_loop_r ? REG_r[R13] : REG_r[R15] + 1); end
-          R13: begin REG_r[R13] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R14: begin REG_r[R14] <= e2r_data_r; if (SFR_GO) REG_r[R15] <= REG_r[R15] + 1; end
-          R15: begin REG_r[R15] <= e2r_data_r;                                           end
+    if (SNES_RD_start && enable_r && addr_in_r[9:0] == {2'h0,ADDR_SFR+1}) begin
+      snes_readbuf_val_r <= 1;
+    end
+    else if (snes_readbuf_val_r & ~gsu_clock_en) begin
+      snes_readbuf_val_r <= 0;
+    end
+    
+    // Registers that can be modifed by both
+    if (snes_writebuf_val_r & ~gsu_clock_en) begin
+      if (snes_writebuf_reg_r) begin
+        case (snes_writebuf_addr_r[7:0])
+          ADDR_R15+1: SFR_r[5] <= 1;
+          
+          ADDR_SFR  : SFR_r[6:1] <= snes_writebuf_data_r[6:1];
+          ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {snes_writebuf_data_r[7],snes_writebuf_data_r[4:0]};
+          ADDR_BRAMR: BRAMR_r[0] <= snes_writebuf_data_r[0];
+          ADDR_PBR  : PBR_r <= snes_writebuf_data_r;
+          ADDR_CFGR : {CFGR_r[7],CFGR_r[5]} <= {snes_writebuf_data_r[7],snes_writebuf_data_r[5]};
+          ADDR_SCBR : SCBR_r <= snes_writebuf_data_r;
+          ADDR_CLSR : CLSR_r[0] <= snes_writebuf_data_r[0];
+          ADDR_SCMR : SCMR_r[5:0] <= snes_writebuf_data_r[5:0];
         endcase
       end
-      else if (e2r_lmult_r) begin
-        REG_r[R4] <= e2r_r4_r;
+      else begin
+        cache_mmio_wren_r <= 1;
+        cache_mmio_wrdata_r <= snes_writebuf_data_r;
+        cache_mmio_addr_r <= {~snes_writebuf_addr_r[8],snes_writebuf_addr_r[7:0]};      
       end
-      else if (~snes_write_r) begin
+    end
+    else if (snes_readbuf_val_r & ~gsu_clock_en) begin
+      // clear interrupt
+      SFR_r[15] <= 0;
+    end
+    else if (pipeline_advance & op_complete) begin
+      // TODO: R, IL,IH, IRQ
+      SFR_r[1]   <= e2r_z_r;
+      SFR_r[2]   <= e2r_cy_r;
+      SFR_r[3]   <= e2r_s_r;
+      SFR_r[4]   <= e2r_ov_r;
+      SFR_r[5]   <= e2r_g_r;
+      SFR_r[9:8] <= e2r_alt_r;
+      SFR_r[12]  <= e2r_b_r;
+      SFR_r[15]  <= e2r_irq_r;
+
+      SREG_r     <= e2r_sreg_r;
+      DREG_r     <= e2r_dreg_r;
+      if (e2r_ljmp_r)  PBR_r <= e2r_pbr_r;
+      if (e2r_wpor_r)  POR_r <= e2r_por_r;
+      if (e2r_wcolr_r) COLR_r <= e2r_colr_r;
+    end
+    else begin
+      cache_mmio_wren_r <= 0;
+    end
+
+    // Register file
+    if (snes_writebuf_val_r & snes_writebuf_gpr_r & ~gsu_clock_en) begin
+      if (snes_writebuf_addr_r[0]) REG_r[snes_writebuf_addr_r[5:1]] <= {snes_writebuf_data_r,data_flop_r};
+      else                         data_flop_r                      <= snes_writebuf_data_r;
+    end
+    else if (pipeline_advance) begin
+      if (e2r_val_r & op_complete) begin
+        case (e2r_destnum_r)
+          R0 : begin REG_r[R0 ] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R1 : begin REG_r[R1 ] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R2 : begin REG_r[R2 ] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R3 : begin REG_r[R3 ] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R4 : begin REG_r[R4 ] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R5 : begin REG_r[R5 ] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R6 : begin REG_r[R6 ] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R7 : begin REG_r[R7 ] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R8 : begin REG_r[R8 ] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R9 : begin REG_r[R9 ] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R10: begin REG_r[R10] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R11: begin REG_r[R11] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R12: begin REG_r[R12] <= e2r_data_r; REG_r[R15] <= (e2r_loop_r ? REG_r[R13] : REG_r[R15] + 1); end
+          R13: begin REG_r[R13] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R14: begin REG_r[R14] <= e2r_data_r; REG_r[R15] <= REG_r[R15] + 1; end
+          R15: begin REG_r[R15] <= e2r_data_r;                               end
+        endcase
+      end
+      else begin
+        // TODO: integrate this into one of the non-GSU clocks.
         REG_r[R15] <= REG_r[R15] + 1;
       end
-      
-      // handle other
-      if (snes_write_r) begin
-        if (~|addr_in_r[9:8]) begin
-          case (addr_in_r[7:0])
-            //ADDR_GPRL : data_flop_r <= data_in_r;
-            //ADDR_GPRH : begin REG_r[addr_in_r[4:1]] <= {data_in_r,data_flop_r}; if (addr_in_r[4:1] == R15) SFR_r[5] <= 1; end
-            ADDR_R15+1: SFR_r[5] <= 1;
-          
-            ADDR_SFR  : SFR_r[6:1] <= data_in_r[6:1];
-            ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {data_in_r[7],data_in_r[4:0]};
-            ADDR_BRAMR: BRAMR_r[0] <= data_in_r[0];
-            ADDR_PBR  : PBR_r <= data_in_r;
-            //ADDR_ROMBR: ROMBR_r <= data_in_r;
-            ADDR_CFGR : {CFGR_r[7],CFGR_r[5]} <= {data_in_r[7],data_in_r[5]};
-            ADDR_SCBR : SCBR_r <= data_in_r;
-            ADDR_CLSR : CLSR_r[0] <= data_in_r[0];
-            ADDR_SCMR : SCMR_r[5:0] <= data_in_r[5:0];
-            //ADDR_VCR  : VCR_r <= data_in_r;
-            //ADDR_RAMBR: RAMBR_r[0] <= data_in_r[0];
-            //ADDR_CBR+0: CBR_r[7:4] <= data_in_r[7:4];
-            //ADDR_CBR+1: CBR_r[15:8] <= data_in_r;
-          endcase
-        end
-        else begin
-          cache_mmio_wren_r <= 1;
-          cache_mmio_wrdata_r <= data_in_r;
-          cache_mmio_addr_r <= {~addr_in_r[8],addr_in_r[7:0]};
-        end
-      end
-      else if (op_complete) begin
-        // TODO: R, IL,IH, IRQ
-        SFR_r[1]   <= e2r_z_r;
-        SFR_r[2]   <= e2r_cy_r;
-        SFR_r[3]   <= e2r_s_r;
-        SFR_r[4]   <= e2r_ov_r;
-        SFR_r[5]   <= e2r_g_r;
-        SFR_r[9:8] <= e2r_alt_r;
-        SFR_r[12]  <= e2r_b_r;
-        SFR_r[15]  <= e2r_irq_r;
-
-        SREG_r     <= e2r_sreg_r;
-        DREG_r     <= e2r_dreg_r;
-        if (e2r_ljmp_r) PBR_r <= e2r_pbr_r;
-        if (e2r_wpor_r) POR_r <= e2r_por_r;
-        if (e2r_wcolr_r) COLR_r <= e2r_colr_r;
-      end
-      
-      if (snes_write_r) data_flop_r <= data_in_r;
     end
-    else if (enable_r & SNES_RD_start) begin
-      if (addr_in_r[9:0] == {2'h0,ADDR_SFR+1}) SFR_r[15] <= 0;
+    else if (e2r_lmult_r & gsu_clock_en) begin
+      // TODO: fix this hack
+      REG_r[R4] <= e2r_r4_r;
     end
   end
 end
@@ -1399,8 +1425,8 @@ always @(posedge CLK) begin
         end
         
         // handle snes write reg data
-        e2r_data_r <= {data_in_r,data_flop_r};
-        e2r_destnum_r <= addr_in_r[4:1];
+        //e2r_data_r <= {data_in_r,data_flop_r};
+        //e2r_destnum_r <= addr_in_r[4:1];
       end
       ST_EXE_DECODE: begin
         if (~|exe_opsize_r) begin      
@@ -2073,7 +2099,7 @@ always @(posedge CLK) begin
       end
       ST_EXE_WAIT: begin
         e2c_waitcnt_val_r <= 0;
-        e2r_lmult_r <= 0;
+        if (gsu_clock_en) e2r_lmult_r <= 0;
         
         if (pipeline_advance) begin
           if (|exe_opsize_r) exe_opsize_r <= exe_opsize_r - 1;
