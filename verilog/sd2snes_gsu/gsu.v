@@ -481,6 +481,7 @@ reg        e2i_flush_r;
 reg        r2i_flush_r;
 
 reg waitcnt_zero_r;
+wire waitcnt_zero;
 
 //-------------------------------------------------------------------
 // Cache
@@ -776,9 +777,11 @@ always @(posedge CLK) begin
     step_r <= CONFIG_CONTROL_ENABLED || (!op_complete & !CONFIG_CONTROL_MATCHPARTINST) || (stepcnt_r != CONFIG_STEP_COUNT);
     
     if (pipeline_advance & (op_complete | CONFIG_CONTROL_MATCHPARTINST)) stepcnt_r <= CONFIG_STEP_COUNT;
-    waitcnt_zero_r <= ~|fetch_waitcnt_r & ~|exe_waitcnt_r;
+    //waitcnt_zero_r <= ~|fetch_waitcnt_r & ~|exe_waitcnt_r;
   end
 end
+
+assign waitcnt_zero = ~|fetch_waitcnt_r & ~|exe_waitcnt_r;
 
 //-------------------------------------------------------------------
 // ROM PIPELINE
@@ -1347,6 +1350,10 @@ always @(posedge CLK) begin
         debug_inst_addr_r <= cache_addr_r;
 
         if (fetch_cache_match_r & cache_val_r[cache_gsu_addr_r[8:4]]) begin
+          // FIXME: need to put this 2 cycles before WAIT
+          i2c_waitcnt_val_r <= 1;
+          i2c_waitcnt_r     <= lat_fetch_r;
+
           FETCH_STATE <= ST_FETCH_HIT;
         end
         else begin
@@ -1365,14 +1372,12 @@ always @(posedge CLK) begin
         fetch_cache_data_r <= cache_rddata;
 
         // FIXME: temp to test cache
-        fetch_cache_match_r <= 0;
-        FETCH_STATE <= ST_FETCH_FILL;
-        fetch_cache_comp_r <= 1;
+        //fetch_cache_match_r <= 0;
+        //FETCH_STATE <= ST_FETCH_FILL;
+        //fetch_cache_comp_r <= 1;
         
-        //i2c_waitcnt_val_r <= 1;
-        //i2c_waitcnt_r     <= lat_fetch_r;
-        //FETCH_STATE <= ST_FETCH_WAIT;
-        //fetch_wait_r <= 1;
+        FETCH_STATE <= ST_FETCH_WAIT;
+        fetch_wait_r <= 1;
       end
       ST_FETCH_FILL: begin
         // TODO: check for elapsed time and perform access.
@@ -1888,12 +1893,18 @@ always @(posedge CLK) begin
             `OP_FMULT_LMULT   : begin
               exe_fmult_srca_r <= exe_src_r;
               exe_fmult_srcb_r <= REG_r[R6];
+
+              e2c_waitcnt_val_r <= 1;
+              e2c_waitcnt_r     <= lat_fmult_r; // TODO: account for slow clock and multiplier.
             end
             `OP_MULT         : begin
               exe_mult_srca_r <= exe_src_r;
               exe_mult_srcb_r <= exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
               exe_umult_srca_r <= exe_src_r;
               exe_umult_srcb_r <= exe_alt2_r ? {12'h000, exe_opcode_r[3:0]} : exe_srcn_r;
+
+              e2c_waitcnt_val_r <= 1;
+              e2c_waitcnt_r     <= lat_mult_r; // TODO: account for slow clock and multiplier.
             end
             
             `OP_GETC_RAMB_ROMB: begin
@@ -2003,10 +2014,7 @@ always @(posedge CLK) begin
               e2r_z_r        <= ~|exe_fmult_out[31:16];
               e2r_s_r        <= exe_fmult_out[31];
               e2r_cy_r       <= exe_fmult_out[15];
-              
-              e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r     <= lat_fmult_r; // TODO: account for slow clock and multiplier.
-              
+                            
               //EXE_STATE <= ST_EXE_MEMORY_WAIT;
               EXE_STATE <= ST_EXE_WAIT;
             end
@@ -2019,10 +2027,7 @@ always @(posedge CLK) begin
               
               e2r_z_r        <= ~|exe_result;
               e2r_s_r        <= exe_result[15];
-              
-              e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r     <= lat_mult_r; // TODO: account for slow clock and multiplier.
-              
+                            
               EXE_STATE <= ST_EXE_WAIT;
             end
           
@@ -2305,7 +2310,7 @@ end
 
 //assign pipeline_advance = gsu_clock_en & ~|fetch_waitcnt_r & ~|exe_waitcnt_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
 //assign pipeline_advance = gsu_clock_en & waitcnt_zero_r & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & (~CONFIG_STEP_ENABLED | (stepcnt_r != CONFIG_STEP_COUNT));
-assign pipeline_advance = gsu_clock_en & waitcnt_zero_r & |(EXE_STATE & ST_EXE_WAIT) & fetch_wait_r & step_r;
+assign pipeline_advance = gsu_clock_en & waitcnt_zero & |(EXE_STATE & ST_EXE_WAIT) & fetch_wait_r & step_r;
 assign op_complete = exe_opsize_r == 1;
 
 // Multipliers
