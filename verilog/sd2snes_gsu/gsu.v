@@ -412,6 +412,7 @@ reg [3:0] lat_mult_r;
 
 always @(posedge CLK) begin
   lat_fetch_r  <= CLSR_r[0] ? 1-1 : 2-1;
+  //lat_fetch_r  <= CLSR_r[0] ? 6-1 : 7-1; // FIXME: temporary to test cache
   lat_memory_r <= CLSR_r[0] ? 6-1 : 7-1;
   lat_fmult_r  <= (CLSR_r[0] | CFGR_MS0) ? 8-1 : 16-1;
   lat_mult_r   <= (CLSR_r[0] | CFGR_MS0) ? 2-1 : 4-1;
@@ -1279,6 +1280,11 @@ reg         fetch_cache_match_r;
 reg         fetch_install_val_r;
 reg [5:0]   fetch_install_block_r;
 
+// debug
+reg         fetch_cache_comp_r;
+reg         fetch_error;
+reg [7:0]   fetch_cache_data_r;
+
 always @(posedge CLK) begin
   if (RST) begin
     FETCH_STATE <= ST_FETCH_IDLE;
@@ -1293,6 +1299,7 @@ always @(posedge CLK) begin
     fetch_data_r <= `OP_NOP;
     
     fetch_install_val_r <= 0;
+    fetch_error <= 0;
   end
   else begin
     // handle cache valid bits
@@ -1324,8 +1331,10 @@ always @(posedge CLK) begin
       end
       ST_FETCH_ADDR: begin
         // address for cache // FIXME: cache seems to corrupt something
+        fetch_cache_comp_r <= 0;
+        
         fetch_install_val_r <= 0;
-        fetch_cache_match_r <= 0;//(REG_r[R15][15:0] - CBR_r) < 512;
+        fetch_cache_match_r <= (REG_r[R15][15:0] - CBR_r) < 512;
         cache_gsu_addr_r    <= {~REG_r[R15][8],REG_r[R15][7:0]};
 
         cache_addr_r <= (PBR_r < 8'h60) ? ((PBR_r[6] ? {PBR_r,REG_r[R15]} : {PBR_r[4:0],REG_r[R15][14:0]}) & ROM_MASK)
@@ -1353,12 +1362,17 @@ always @(posedge CLK) begin
       ST_FETCH_HIT: begin
         // get data from cache.  Looks like it takes 2 cycles to read out of a true dual port??
         fetch_data_r <= cache_rddata;
+        fetch_cache_data_r <= cache_rddata;
 
-        i2c_waitcnt_val_r <= 1;
-        i2c_waitcnt_r     <= lat_fetch_r;
+        // FIXME: temp to test cache
+        fetch_cache_match_r <= 0;
+        FETCH_STATE <= ST_FETCH_FILL;
+        fetch_cache_comp_r <= 1;
         
-        FETCH_STATE <= ST_FETCH_WAIT;
-        fetch_wait_r <= 1;
+        //i2c_waitcnt_val_r <= 1;
+        //i2c_waitcnt_r     <= lat_fetch_r;
+        //FETCH_STATE <= ST_FETCH_WAIT;
+        //fetch_wait_r <= 1;
       end
       ST_FETCH_FILL: begin
         // TODO: check for elapsed time and perform access.
@@ -1382,7 +1396,7 @@ always @(posedge CLK) begin
           cache_ram_rd_r <= 0;
           fetch_data_r <= cache_rom_rd_r ? rom_bus_data_r : ram_bus_data_r;
           
-          if (~fetch_cache_match_r) begin
+          if (~fetch_cache_match_r) begin          
             FETCH_STATE <= ST_FETCH_WAIT;
             fetch_wait_r <= 1;
           end
@@ -1412,6 +1426,10 @@ always @(posedge CLK) begin
       end
       ST_FETCH_WAIT: begin
         i2c_waitcnt_val_r <= 0;
+        
+        if (fetch_cache_comp_r) begin
+          fetch_error <= fetch_error || (fetch_cache_data_r != fetch_data_r);
+        end
         
         if (pipeline_advance) begin
           fetch_wait_r <= 0;
@@ -1600,7 +1618,7 @@ always @(posedge CLK) begin
         //exe_dst_r <= REG_r[DREG_r];
         exe_srcn_r <= REG_r[exe_opcode_r[3:0]];
        
-        exe_plot_offset_r <= {REG_r[R2][10:0],5'h00} + {3'h0,REG_r[R1][15:3]};
+        exe_plot_offset_r <= {REG_r[R2][7:0],5'h00} + REG_r[R1][7:3];
         exe_plot_index_r  <= ~REG_r[R1][2:0];
                 
         EXE_STATE <= ST_EXE_EXECUTE;
@@ -2277,7 +2295,7 @@ always @(posedge CLK) begin
     brk_data_rd_addr <= (exe_ram_rd_r   && (exe_addr_r   == brk_addr_r) || (exe_rom_rd_r && (exe_addr_r   == brk_addr_r)));
     brk_data_wr_addr <= (exe_ram_wr_r   && (exe_addr_r   == brk_addr_r));
     brk_stop         <= exe_opcode_r == `OP_STOP;
-    brk_error        <= exe_error; // FIXME: set this state based on opcode or other error condition
+    brk_error        <= fetch_error; // FIXME: set this state based on opcode or other error condition
     
   
     brk_addr_r <= (CONFIG_ADDR_WATCH[23:16] < 8'h60) ? ((CONFIG_ADDR_WATCH[22] ? CONFIG_ADDR_WATCH : {CONFIG_ADDR_WATCH[20:16],CONFIG_ADDR_WATCH[14:0]}) & ROM_MASK)
@@ -2473,6 +2491,7 @@ always @(posedge CLK) begin
       8'hE7           : pgmpre_out[0] <= e2r_destnum_r;
       8'hE8           : pgmpre_out[0] <= step_r;
       8'hE9           : pgmpre_out[0] <= gsu_clock_en;
+      8'hEA           : pgmpre_out[0] <= fetch_error;
 
       8'hEC           : pgmpre_out[0] <= lat_fetch_r;
       8'hED           : pgmpre_out[0] <= lat_memory_r;
@@ -2484,6 +2503,9 @@ always @(posedge CLK) begin
       8'hF1           : pgmpre_out[0] <= cache_val_r[23:16];
       8'hF2           : pgmpre_out[0] <= cache_val_r[15: 8];
       8'hF3           : pgmpre_out[0] <= cache_val_r[ 7: 0];
+      8'hF4           : pgmpre_out[0] <= fetch_cache_data_r;
+      8'hF5           : pgmpre_out[0] <= rom_bus_data_r;
+      8'hF6           : pgmpre_out[0] <= fetch_data_r;
 
       8'hF8           : pgmpre_out[0] <= fetch_cache_match_r;
       8'hF9           : pgmpre_out[0] <= cache_gsu_addr_r[7:0];
@@ -2491,8 +2513,6 @@ always @(posedge CLK) begin
       8'hFB           : pgmpre_out[0] <= cache_addr_r[ 7: 0];
       8'hFC           : pgmpre_out[0] <= cache_addr_r[15: 8];
       8'hFD           : pgmpre_out[0] <= cache_addr_r[23:16];
-      8'hFE           : pgmpre_out[0] <= fetch_data_r;
-      //8'hFF           : pgmpre_out[0] <= cache_rddata;
 
       default         : pgmpre_out[0] <= 8'hFF;
     endcase
