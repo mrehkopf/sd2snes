@@ -1545,6 +1545,9 @@ always @(posedge CLK) begin
     e2i_flush_r <= 0;
     
     exe_error <= 0;
+    
+    ROMBR_r <= 0;
+    RAMBR_r <= 0;
   end
   else begin
     case (EXE_STATE)
