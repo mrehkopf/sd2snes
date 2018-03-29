@@ -1593,12 +1593,20 @@ always @(posedge CLK) begin
             `OP_TO            : if (~SFR_B) e2r_dreg_r <= exe_opcode_r[3:0];
             `OP_WITH          : begin e2r_sreg_r <= exe_opcode_r[3:0]; e2r_dreg_r <= exe_opcode_r[3:0]; e2r_b_r <= 1; end
             `OP_FROM          : if (~SFR_B) e2r_sreg_r <= exe_opcode_r[3:0];
-
-            // generate dithered color value for PLOT
-            `OP_PLOT_RPIX     : if (~SFR_ALT1 & POR_DTH & ~&SCMR_MD) exe_colr_r <= {4'h0, ((REG_r[R1][0] ^ REG_r[R2][0]) ? COLR_r[7:4] : COLR_r[3:0])}; else exe_colr_r <= COLR_r;
             
             default           : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= 0; end
           endcase
+          
+          // generate dithered color value for PLOT
+          if (exe_opcode_r == `OP_PLOT_RPIX) begin
+            if (~SFR_ALT1 & POR_DTH & ~&SCMR_MD) begin
+              exe_colr_r <= {4'h0, ((REG_r[R1][0] ^ REG_r[R2][0]) ? COLR_r[7:4] : COLR_r[3:0])};
+            end
+            else begin
+              exe_colr_r <= COLR_r;
+            end
+          end
+
         end
         else begin
           exe_operand_valid_r <= 1;
@@ -2212,6 +2220,9 @@ always @(posedge CLK) begin
               // RPIX reads data
               if (exe_alt1_r) begin
                 e2r_data_r <= {8'h00, bmp_colr_r};
+
+                e2r_z_r    <= ~|bmp_colr_r;
+                e2r_s_r    <= 0; // sign bit is always 0
               end
             end
             default: begin
