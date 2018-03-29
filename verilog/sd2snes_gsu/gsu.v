@@ -223,17 +223,6 @@ parameter
 `define OP_LINK          8'h91,8'h92,8'h93,8'h94 // x
 `define OP_JMP_LJMP      8'h98,8'h99,8'h9A,8'h9B,8'h9C,8'h9D // x
 
-//---
-// Latency
-//---
-// TODO: use proper latencies when caching works.
-parameter
-  LAT_MEMORY     = 1,//6,
-  LAT_CACHE      = 1,
-  LAT_FMULT      = 2,//8, // mininum of 2 to do 2 writes
-  LAT_MULT       = 1,//2,
-  LAT_PIPE       = 1;
-
 //-------------------------------------------------------------------
 // CONFIG
 //-------------------------------------------------------------------
@@ -319,6 +308,8 @@ reg [23:0] exe_addr_r;
 reg [15:0] exe_data_r;
 reg [23:0] bmp_addr_r;
 reg [15:0] bmp_data_r;
+
+reg [23:0] debug_inst_addr_r;
 
 reg [15:0] gsu_cycle_cnt_r; initial gsu_cycle_cnt_r = 0;
 
@@ -412,6 +403,21 @@ assign POR_FHN  = POR_r[3];
 assign POR_OBJ  = POR_r[4];
 
 //-------------------------------------------------------------------
+// Latency
+//-------------------------------------------------------------------
+reg [3:0] lat_fetch_r;
+reg [3:0] lat_memory_r;
+reg [3:0] lat_fmult_r;
+reg [3:0] lat_mult_r;
+
+always @(posedge CLK) begin
+  lat_fetch_r  <= CLSR_r[0] ? 1-1 : 2-1;
+  lat_memory_r <= CLSR_r[0] ? 6-1 : 7-1;
+  lat_fmult_r  <= (CLSR_r[0] | CFGR_MS0) ? 8-1 : 16-1;
+  lat_mult_r   <= (CLSR_r[0] | CFGR_MS0) ? 2-1 : 4-1;
+end
+
+//-------------------------------------------------------------------
 // PIPELINE IO
 //-------------------------------------------------------------------
 // Fetch -> Execute
@@ -429,9 +435,11 @@ reg [15:0] e2r_data_r;
 reg [15:0] e2r_r15_r;
 reg [15:0] e2r_r4_r;
 reg        e2r_loop_r;
-reg        e2r_ljmp_r;
+reg        e2r_wpbr_r;
+reg        e2r_wcbr_r;
 reg        e2r_lmult_r;
 reg [15:0] e2r_pbr_r;
+reg [15:0] e2r_cbr_r;
 reg        e2r_wpor_r;
 reg [7:0]  e2r_por_r;
 reg        e2r_wcolr_r;
@@ -466,6 +474,10 @@ reg        e2b_rpix_r;
 reg [7:0]  e2b_colr_r;
 reg [15:0] e2b_offset_r;
 reg [2:0]  e2b_index_r;
+
+// Cache flush interface
+reg        e2i_flush_r;
+reg        r2i_flush_r;
 
 reg waitcnt_zero_r;
 
@@ -535,6 +547,8 @@ reg [7:0]  snes_writebuf_data_r;
 
 reg        snes_readbuf_val_r;
 
+reg        idle_r;
+
 always @(posedge CLK) begin
   if (RST) begin
     for (i = 0; i < NUM_GPR; i = i + 1) begin
@@ -542,18 +556,19 @@ always @(posedge CLK) begin
     end
     
     SFR_r   <= 0;
-    BRAMR_r <= 0;
     PBR_r   <= 0;
     //ROMBR_r <= 0;
-    CFGR_r  <= 0;
-    SCBR_r  <= 0;
-    CLSR_r  <= 0;
-    SCMR_r  <= 0;
-    VCR_r   <= 4;
     //RAMBR_r <= 0;
-    
+    CBR_r   <= 0;
+    SCBR_r  <= 0;
+    SCMR_r  <= 0;
     COLR_r  <= 0;
     POR_r   <= 0;
+    BRAMR_r <= 0;
+    VCR_r   <= 4;
+    CFGR_r  <= 0;
+    CLSR_r  <= 0;
+    
     SREG_r  <= 0;
     DREG_r  <= 0;
     
@@ -625,13 +640,29 @@ always @(posedge CLK) begin
       snes_readbuf_val_r <= 0;
     end
     
+    // Cache flush on GO 1->0.  Sync with IDLE.
+    if (snes_writebuf_val_r & ~gsu_clock_en) begin
+      if (snes_writebuf_reg_r) begin
+        if (snes_writebuf_addr_r[7:0] == ADDR_SFR) begin
+          if (SFR_GO & ~snes_writebuf_data_r[5]) r2i_flush_r <= 1;
+        end
+        else if (snes_writebuf_addr_r[7:0] == ADDR_PBR) begin
+          // this can only be done at IDLE so use the same deassertion conditions
+          r2i_flush_r <= 1;
+        end
+      end
+    end
+    else if (idle_r) begin
+      r2i_flush_r <= 0;
+    end
+    
     // Registers that can be modifed by both
     if (snes_writebuf_val_r & ~gsu_clock_en) begin
       if (snes_writebuf_reg_r) begin
         case (snes_writebuf_addr_r[7:0])
           ADDR_R15+1: SFR_r[5] <= 1;
           
-          ADDR_SFR  : SFR_r[6:1] <= snes_writebuf_data_r[6:1];
+          ADDR_SFR  : begin SFR_r[6:1] <= snes_writebuf_data_r[6:1]; CBR_r[15:4] <= 0; end
           ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {snes_writebuf_data_r[7],snes_writebuf_data_r[4:0]};
           ADDR_BRAMR: BRAMR_r[0] <= snes_writebuf_data_r[0];
           ADDR_PBR  : PBR_r <= snes_writebuf_data_r;
@@ -644,7 +675,7 @@ always @(posedge CLK) begin
       else begin
         cache_mmio_wren_r <= 1;
         cache_mmio_wrdata_r <= snes_writebuf_data_r;
-        cache_mmio_addr_r <= {~snes_writebuf_addr_r[8],snes_writebuf_addr_r[7:0]};      
+        cache_mmio_addr_r <= {~snes_writebuf_addr_r[8],snes_writebuf_addr_r[7:0]};
       end
     end
     else if (snes_readbuf_val_r & ~gsu_clock_en) begin
@@ -664,7 +695,8 @@ always @(posedge CLK) begin
 
       SREG_r     <= e2r_sreg_r;
       DREG_r     <= e2r_dreg_r;
-      if (e2r_ljmp_r)  PBR_r <= e2r_pbr_r;
+      if (e2r_wpbr_r)  PBR_r <= e2r_pbr_r;
+      if (e2r_wcbr_r)  CBR_r[15:4] <= e2r_cbr_r[15:4];
       if (e2r_wpor_r)  POR_r <= e2r_por_r;
       if (e2r_wcolr_r) COLR_r <= e2r_colr_r;
     end
@@ -699,12 +731,12 @@ always @(posedge CLK) begin
         endcase
       end
       else begin
-        // TODO: integrate this into one of the non-GSU clocks.
+        // TODO: integrate this into one of the non-GSU clocks.  Gets tricky with LOOP - could adjust R15 in DECODE and write in EXECUTE when we would normally do R15+1 or branch target.
         REG_r[R15] <= REG_r[R15] + 1;
       end
     end
     else if (e2r_lmult_r & gsu_clock_en) begin
-      // TODO: fix this hack
+      // TODO: fix this hack when we fix the need for separate R15.
       REG_r[R4] <= e2r_r4_r;
     end
   end
@@ -1065,7 +1097,7 @@ always @(posedge CLK) begin
         // perform next read
         if (bmp_waitcnt_r == 0) begin
           b2c_waitcnt_val_r <= 1;
-          b2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
+          b2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
 
           // address common between read and write
           bmp_addr_r <= 24'hE00000 + bmp_char_shift_r[bmp_flush_buf_r] + {SCBR_r,10'h000} + {bmp_y_r[bmp_flush_buf_r][2:0],1'b0} + {bmp_plane_r[2:1], 3'b000, bmp_plane_r[0]};
@@ -1093,7 +1125,7 @@ always @(posedge CLK) begin
         // perform next write
         if (bmp_waitcnt_r == 0) begin
           b2c_waitcnt_val_r <= 1;
-          b2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
+          b2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
 
           // address common between read and write
           bmp_addr_r <= 24'hE00000 + bmp_char_shift_r[bmp_flush_buf_r] + {SCBR_r,10'h000} + {bmp_y_r[bmp_flush_buf_r][2:0],1'b0} + {bmp_plane_r[2:1], 3'b000, bmp_plane_r[0]};
@@ -1146,7 +1178,7 @@ always @(posedge CLK) begin
         // generate next read
         if (bmp_waitcnt_r == 0) begin
           b2c_waitcnt_val_r <= 1;
-          b2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
+          b2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
 
           // address common between read and write
           bmp_addr_r <= 24'hE00000 + bmp_rpix_char_shift_r + {SCBR_r,10'h000} + {bmp_rpix_y_r[2:0],1'b0} + {bmp_plane_r[2:1], 3'b000, bmp_plane_r[0]};
@@ -1219,11 +1251,14 @@ end
 // - Cache hit
 // - ROM fill (into cache if offset)
 parameter
-  ST_FETCH_IDLE   = 8'b00000001,
-  ST_FETCH_LOOKUP = 8'b00000010,
-  ST_FETCH_HIT    = 8'b00000100,
-  ST_FETCH_FILL   = 8'b00001000,
-  ST_FETCH_WAIT   = 8'b00010000
+  ST_FETCH_IDLE      = 8'b00000001,
+  ST_FETCH_ADDR      = 8'b00000010,
+  ST_FETCH_CACHE     = 8'b00000100,
+  ST_FETCH_HIT       = 8'b00001000,
+  ST_FETCH_FILL      = 8'b00010000,
+  ST_FETCH_FILL_WAIT = 8'b00100000,
+  ST_FETCH_WRITE     = 8'b01000000,
+  ST_FETCH_WAIT      = 8'b10000000
   ;
 reg [7:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
 
@@ -1233,81 +1268,155 @@ reg [7:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
 // - read data out of cache or from fill
 // - wait for cycles to expire and edge
 
-reg       fetch_wait_r;
-reg [7:0] fetch_data_r;
+// TODO: Fix cache index calculation.
+// TODO: Add snes cache injection
 
-// Need to check if we are within 512B of the address
-wire[15:0] cache_offset = REG_r[R15][15:0] - CBR_r;
-wire       cache_hit = (~|cache_offset[15:9] & cache_val_r[cache_offset[12:4]]);
+reg         fetch_wait_r;
+reg [7:0]   fetch_data_r;
 
-assign     i2c_setcnt = cache_hit & |(FETCH_STATE & ST_FETCH_LOOKUP);
+reg         fetch_cache_match_r;
+
+reg         fetch_install_val_r;
+reg [5:0]   fetch_install_block_r;
 
 always @(posedge CLK) begin
   if (RST) begin
     FETCH_STATE <= ST_FETCH_IDLE;
-
-    //i2e_op_r[0] <= `OP_NOP;
-    //i2e_ptr_r <= 0;
+  
+    cache_val_r <= 0;
     
     i2c_waitcnt_val_r <= 0;
     cache_rom_rd_r <= 0;
     cache_ram_rd_r <= 0;
     fetch_wait_r <= 0;
+    
+    fetch_data_r <= `OP_NOP;
+    
+    fetch_install_val_r <= 0;
   end
   else begin
+    // handle cache valid bits
+    // Make sure not to invalidate the cache until after the operation to avoid deadlock with cache fill->invalidate->cache lookup->cache fill
+    if ((e2i_flush_r & pipeline_advance) | (r2i_flush_r & idle_r)) begin
+      // pulsed for one clock
+      cache_val_r <= 0;
+    end
+    else if (fetch_install_val_r) begin
+      // demand fill
+      cache_val_r[fetch_install_block_r] <= 1;
+    end
+    else if (cache_mmio_wren_r) begin
+      // cache line injection
+      cache_val_r[cache_mmio_addr_r[8:4]] <= 1;
+    end
+  
     case (FETCH_STATE)
       ST_FETCH_IDLE: begin
         // align to GSU clock
         if (SFR_GO & gsu_clock_en) begin
-          FETCH_STATE <= ST_FETCH_LOOKUP;
+          FETCH_STATE <= ST_FETCH_ADDR;
         end
+
+        // TODO: decide what we do if clear the GO bit vs STOP.  Clearing the GO bit we need to insert NOPs, but is it safe
+        // to do that for STOP which may have some weird op hidden in the delay slot for next execution?
+        fetch_data_r <= `OP_NOP;
+        fetch_install_val_r <= 0;
       end
-      ST_FETCH_LOOKUP: begin
-        // check if cache hit
-        if (cache_hit) begin
-          i2c_waitcnt_val_r <= 1;
-          i2c_waitcnt_r <= 0;
-          cache_gsu_addr_r <= REG_r[R15][8:0];
+      ST_FETCH_ADDR: begin
+        // address for cache // FIXME: cache seems to corrupt something
+        fetch_install_val_r <= 0;
+        fetch_cache_match_r <= 0;//(REG_r[R15][15:0] - CBR_r) < 512;
+        cache_gsu_addr_r    <= {~REG_r[R15][8],REG_r[R15][7:0]};
+
+        cache_addr_r <= (PBR_r < 8'h60) ? ((PBR_r[6] ? {PBR_r,REG_r[R15]} : {PBR_r[4:0],REG_r[R15][14:0]}) & ROM_MASK)
+                                        : 24'hE00000 + ({PBR_r[4:0],REG_r[R15]} & SAVERAM_MASK);
+        
+        FETCH_STATE <= ST_FETCH_CACHE;
+      end
+      ST_FETCH_CACHE: begin
+        // transition based on hit/miss
+        debug_inst_addr_r <= cache_addr_r;
+
+        if (fetch_cache_match_r & cache_val_r[cache_gsu_addr_r[8:4]]) begin
           FETCH_STATE <= ST_FETCH_HIT;
         end
         else begin
-          // TODO: fill address
-          i2c_waitcnt_val_r <= 1;
-          i2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
-          
-          cache_rom_rd_r <= (PBR_r < 8'h60);
-          cache_ram_rd_r <= (PBR_r >= 8'h60);
-          cache_word_r <= 1;
+          // align cache address if we are going to install
+          if (fetch_cache_match_r) cache_addr_r[3:0] <= 0;
+          // align with start of line
+          cache_gsu_addr_r[3:0] <= 0;
 
-          cache_addr_r <= (PBR_r < 8'h60) ? ((PBR_r[6] ? {PBR_r,REG_r[R15]} : {PBR_r[4:0],REG_r[R15][14:0]}) & ROM_MASK)
-                                              : 24'hE00000 + ({PBR_r[4:0],REG_r[R15]} & SAVERAM_MASK);
-          
           FETCH_STATE <= ST_FETCH_FILL;
         end
+        
       end
       ST_FETCH_HIT: begin
-        i2c_waitcnt_val_r <= 0;
+        // get data from cache.  Looks like it takes 2 cycles to read out of a true dual port??
         fetch_data_r <= cache_rddata;
+
+        i2c_waitcnt_val_r <= 1;
+        i2c_waitcnt_r     <= lat_fetch_r;
+        
         FETCH_STATE <= ST_FETCH_WAIT;
         fetch_wait_r <= 1;
       end
       ST_FETCH_FILL: begin
-        // TODO: get correct data from ROM
+        // TODO: check for elapsed time and perform access.
+        // FIXME: need to handle delays better.  This has different behavior for cache fill vs standard fill.
+        if (fetch_waitcnt_r == 0) begin
+          cache_rom_rd_r <= (PBR_r < 8'h60);
+          cache_ram_rd_r <= (PBR_r >= 8'h60);
+          cache_word_r <= 1;
+          
+          i2c_waitcnt_val_r <= 1;
+          i2c_waitcnt_r     <= lat_memory_r;
+          FETCH_STATE       <= ST_FETCH_FILL_WAIT;
+        end
+      end
+      ST_FETCH_FILL_WAIT: begin
         i2c_waitcnt_val_r <= 0;
         
+        // check for end and install in cache
         if (|(ROM_STATE & ST_ROM_FETCH_END) | |(RAM_STATE & ST_RAM_FETCH_END)) begin
           cache_rom_rd_r <= 0;
           cache_ram_rd_r <= 0;
           fetch_data_r <= cache_rom_rd_r ? rom_bus_data_r : ram_bus_data_r;
-          FETCH_STATE <= ST_FETCH_WAIT;
-          fetch_wait_r <= 1;
+          
+          if (~fetch_cache_match_r) begin
+            FETCH_STATE <= ST_FETCH_WAIT;
+            fetch_wait_r <= 1;
+          end
+          else begin
+            // allocate byte in cache
+            cache_gsu_wren_r <= 1;
+            cache_gsu_wrdata_r <= cache_rom_rd_r ? rom_bus_data_r : ram_bus_data_r;
+
+            FETCH_STATE <= ST_FETCH_WRITE;
+          end
+        end
+      end
+      ST_FETCH_WRITE: begin
+        cache_gsu_wren_r    <= 0;
+        cache_addr_r[3:0] <= cache_addr_r[3:0] + 1; // TODO: could install 16b if we wanted.  Also fix address compare above
+        
+        if (&cache_addr_r[3:0]) begin
+          FETCH_STATE <= ST_FETCH_ADDR; // Go back and check the cache.  FIXME: Is this going to be a problem when GO bit is cleared by the SNES?
+
+          fetch_install_val_r <= 1;
+          fetch_install_block_r <= cache_gsu_addr_r[8:4];          
+        end
+        else begin
+          FETCH_STATE <= ST_FETCH_FILL;
+          cache_gsu_addr_r[3:0] <= cache_gsu_addr_r[3:0] + 1;
         end
       end
       ST_FETCH_WAIT: begin
+        i2c_waitcnt_val_r <= 0;
+        
         if (pipeline_advance) begin
           fetch_wait_r <= 0;
 
-          if (e2r_g_r) FETCH_STATE <= ST_FETCH_LOOKUP;
+          if (e2r_g_r) FETCH_STATE <= ST_FETCH_ADDR;
           else         FETCH_STATE <= ST_FETCH_IDLE;
         end
       end
@@ -1366,8 +1475,6 @@ reg        exe_plot_mem_r;
 
 reg        exe_error;
 
-reg        exe_wait_r;
-
 always @(posedge CLK) begin
   if (RST) begin
     EXE_STATE <= ST_EXE_IDLE;
@@ -1385,7 +1492,8 @@ always @(posedge CLK) begin
 
     e2r_val_r <= 0;
     e2r_loop_r <= 0;
-    e2r_ljmp_r <= 0;
+    e2r_wpbr_r <= 0;
+    e2r_wcbr_r <= 0;
     e2r_lmult_r <= 0;
     e2r_wpor_r <= 0;
     e2r_wcolr_r <= 0;
@@ -1401,10 +1509,9 @@ always @(posedge CLK) begin
     exe_byte_r <= 0;
     exe_opsize_r <= 0;
     exe_operand_r <= 0;
-    exe_operand_valid_r <= 0;
-    
-    exe_addr_r <= 0;
+    exe_operand_valid_r <= 0;    
 
+    exe_addr_r <= 0;
     e2c_waitcnt_val_r <= 0;
     exe_ram_rd_r <= 0;
     exe_ram_wr_r <= 0;
@@ -1412,9 +1519,9 @@ always @(posedge CLK) begin
     e2b_plot_r  <= 0;
     e2b_rpix_r  <= 0;
     
-    exe_error <= 0;
+    e2i_flush_r <= 0;
     
-    exe_wait_r <= 0;
+    exe_error <= 0;
   end
   else begin
     case (EXE_STATE)
@@ -1519,8 +1626,9 @@ always @(posedge CLK) begin
             //OP_NOP            : begin end
             `OP_CACHE          : begin
               if (e2r_r15_r[15:4] != CBR_r[15:4]) begin
-                CBR_r[15:4] <= e2r_r15_r[15:4];
-                cache_val_r <= 0;
+                e2r_wcbr_r  <= 1;
+                e2r_cbr_r[15:4] <= e2r_r15_r[15:4];
+                e2i_flush_r <= 1;
               end
             end
 
@@ -1812,10 +1920,11 @@ always @(posedge CLK) begin
               if (exe_alt1_r) begin
                 // LJMP
                 e2r_data_pre_r   <= exe_src_r;
-                e2r_ljmp_r  <= 1; // write PBR with srcn
+                e2r_wpbr_r  <= 1; // write PBR with srcn
                 e2r_pbr_r   <= exe_srcn_r;
-                CBR_r[15:4] <= exe_src_r[15:4];
-                cache_val_r <= 0;
+                e2r_wcbr_r  <= 1;
+                e2r_cbr_r[15:4]   <= exe_src_r[15:4];
+                e2i_flush_r <= 1;
               end
               else begin
                 // JMP
@@ -1844,7 +1953,6 @@ always @(posedge CLK) begin
               end
               else begin
                 EXE_STATE <= ST_EXE_WAIT;
-                exe_wait_r <= 1;
               end
             end
             `OP_GETC_RAMB_ROMB: begin
@@ -1854,7 +1962,7 @@ always @(posedge CLK) begin
 
                 e2c_waitcnt_val_r <= 1;
                 // TODO: add 16b cache latencies
-                e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
+                e2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
 
                 exe_rom_rd_r <= 1;
                 exe_word_r <= 1; // load for cache
@@ -1865,7 +1973,6 @@ always @(posedge CLK) begin
               end
               else begin
                 EXE_STATE <= ST_EXE_WAIT;
-                exe_wait_r <= 1;
               end
             end
             `OP_FMULT_LMULT   : begin
@@ -1880,11 +1987,10 @@ always @(posedge CLK) begin
               e2r_cy_r       <= exe_fmult_out[15];
               
               e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r     <= LAT_FMULT-1; // TODO: account for slow clock and multiplier.
+              e2c_waitcnt_r     <= lat_fmult_r; // TODO: account for slow clock and multiplier.
               
               //EXE_STATE <= ST_EXE_MEMORY_WAIT;
               EXE_STATE <= ST_EXE_WAIT;
-              exe_wait_r <= 1;
             end
             `OP_MULT         : begin
               exe_result = exe_alt1_r ? exe_umult_out : exe_mult_out;
@@ -1897,10 +2003,9 @@ always @(posedge CLK) begin
               e2r_s_r        <= exe_result[15];
               
               e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r     <= LAT_MULT-1; // TODO: account for slow clock and multiplier.
+              e2c_waitcnt_r     <= lat_mult_r; // TODO: account for slow clock and multiplier.
               
               EXE_STATE <= ST_EXE_WAIT;
-              exe_wait_r <= 1;
             end
           
             `OP_IBT          : begin
@@ -1911,7 +2016,7 @@ always @(posedge CLK) begin
                 e2r_destnum_r   <= exe_opcode_r[3:0];
                  
                 e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
+                e2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
           
                 exe_ram_rd_r <= 1;
                 exe_word_r <= 1;
@@ -1922,7 +2027,7 @@ always @(posedge CLK) begin
               else if (exe_alt2_r) begin
                 // SMS (2*imm8), Rn                
                 e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
+                e2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
           
                 // TODO: this really does a byte at a time.
                 // TODO: do we need to handle misaligned data in a special way?
@@ -1938,7 +2043,6 @@ always @(posedge CLK) begin
                 e2r_destnum_r   <= exe_opcode_r[3:0];
                 e2r_data_r   <= {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
                 EXE_STATE <= ST_EXE_WAIT;
-                exe_wait_r <= 1;
               end
             end
             `OP_IWT          : begin
@@ -1948,7 +2052,7 @@ always @(posedge CLK) begin
                 e2r_destnum_r   <= exe_opcode_r[3:0];
 
                 e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
+                e2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
           
                 exe_ram_rd_r <= 1;
                 exe_word_r <= 1;
@@ -1959,7 +2063,7 @@ always @(posedge CLK) begin
               else if (exe_alt2_r) begin
                 // SM (imm), Rn
                 e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
+                e2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
           
                 // TODO: this really does a byte at a time.
                 // TODO: do we need to handle misaligned data in a special way?
@@ -1975,7 +2079,6 @@ always @(posedge CLK) begin
                 e2r_destnum_r   <= exe_opcode_r[3:0];
                 e2r_data_r   <= exe_operand_r;
                 EXE_STATE <= ST_EXE_WAIT;
-                exe_wait_r <= 1;
               end
             end
             `OP_GETB          : begin
@@ -1983,7 +2086,7 @@ always @(posedge CLK) begin
 
               e2c_waitcnt_val_r <= 1;
               // TODO: add 16b cache latencies
-              e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
+              e2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
 
               // TODO: decide if we need separate state machines for this
               exe_rom_rd_r <= 1;
@@ -1996,7 +2099,7 @@ always @(posedge CLK) begin
             end
             `OP_SBK           : begin
               e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r <= LAT_MEMORY-1; // TODO: account for slow clock.
+              e2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
           
               // TODO: this really does a byte at a time.
               // TODO: do we need to handle misaligned data in a special way?
@@ -2011,7 +2114,7 @@ always @(posedge CLK) begin
               e2r_val_r    <= 1;
                  
               e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r <= exe_alt1_r ? LAT_MEMORY-1 : LAT_MEMORY-1; // TODO: account for slow clock.
+              e2c_waitcnt_r <= exe_alt1_r ? lat_memory_r : lat_memory_r;
 
               exe_ram_rd_r <= 1;
               exe_word_r <= ~exe_alt1_r;
@@ -2023,7 +2126,7 @@ always @(posedge CLK) begin
             end
             `OP_ST           : begin
               e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r <= exe_alt1_r ? LAT_MEMORY-1 : LAT_MEMORY-1; // TODO: account for slow clock.
+              e2c_waitcnt_r <= exe_alt1_r ? lat_memory_r-1 : lat_memory_r-1; // TODO: account for slow clock.
 
               exe_ram_wr_r <= 1;
               exe_word_r <= ~exe_alt1_r;
@@ -2043,7 +2146,6 @@ always @(posedge CLK) begin
 
               e2r_data_r <= e2r_data_pre_r;
               EXE_STATE <= ST_EXE_WAIT;
-              exe_wait_r <= 1;
             end
             default: begin
               if (exe_zs_r) begin
@@ -2054,14 +2156,12 @@ always @(posedge CLK) begin
             
               e2r_data_r <= e2r_data_pre_r;
               EXE_STATE <= ST_EXE_WAIT;
-              exe_wait_r <= 1;
             end
           endcase
         end
         else begin
           e2r_data_r <= e2r_data_pre_r;
           EXE_STATE <= ST_EXE_WAIT;
-          exe_wait_r <= 1;
         end
       end
       ST_EXE_MEMORY_WAIT: begin
@@ -2094,7 +2194,6 @@ always @(posedge CLK) begin
           endcase
 
           EXE_STATE <= ST_EXE_WAIT;
-          exe_wait_r <= 1;
         end
       end
       ST_EXE_WAIT: begin
@@ -2117,14 +2216,16 @@ always @(posedge CLK) begin
 
             e2r_val_r  <= 0;
             e2r_loop_r <= 0;
-            e2r_ljmp_r <= 0;
+            e2r_wpbr_r <= 0;
+            e2r_wcbr_r <= 0;
             e2r_wpor_r <= 0;
             e2r_wcolr_r <= 0;
+            
+            // deassert flush
+            e2i_flush_r <= 0;
           end
           
           exe_byte_r <= fetch_data_r;
-          
-          exe_wait_r <= 0;
         end
       end
       
@@ -2172,8 +2273,8 @@ always @(posedge CLK) begin
     //brk_data_rd_byte <= pipeline_advance ? 0 : brk_data_rd_rom_m1 ? (rom_bus_data_r == CONFIG_DATA_WATCH) : brk_data_rd_ram_m1 ? (ram_bus_data_r == CONFIG_DATA_WATCH) : brk_data_rd_byte;
     //brk_data_wr_byte <= pipeline_advance ? 0                                                              : brk_data_wr_ram_m1 ? (RAMWRBUF_r     == CONFIG_DATA_WATCH) : brk_data_wr_byte;
   
-    brk_inst_rd_addr <= (cache_ram_rd_r && (cache_addr_r == brk_addr_r) || cache_rom_rd_r && (cache_addr_r == brk_addr_r));
-    brk_data_rd_addr <= (exe_ram_rd_r   && (exe_addr_r   == brk_addr_r) || exe_rom_rd_r   && (exe_addr_r   == brk_addr_r));
+    brk_inst_rd_addr <= (debug_inst_addr_r == brk_addr_r);
+    brk_data_rd_addr <= (exe_ram_rd_r   && (exe_addr_r   == brk_addr_r) || (exe_rom_rd_r && (exe_addr_r   == brk_addr_r)));
     brk_data_wr_addr <= (exe_ram_wr_r   && (exe_addr_r   == brk_addr_r));
     brk_stop         <= exe_opcode_r == `OP_STOP;
     brk_error        <= exe_error; // FIXME: set this state based on opcode or other error condition
@@ -2210,6 +2311,8 @@ gsu_umult gsu_umult(
   .b(exe_umult_srcb_r[7:0]),
   .p(exe_umult_out)
 );
+
+always @(posedge CLK) idle_r <= |(FETCH_STATE & ST_FETCH_IDLE) & |(EXE_STATE & ST_EXE_IDLE);
 
 //-------------------------------------------------------------------
 // DEBUG OUTPUT
@@ -2280,25 +2383,25 @@ always @(posedge CLK) begin
       8'h46            : pgmpre_out[0] <= RAMADDR_r[7:0];
       8'h47            : pgmpre_out[0] <= RAMADDR_r[15:8];
   
-      8'h50,8'h58      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
-      8'h51,8'h59      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
-      8'h60,8'h68      : pgmpre_out[0] <= PIXBUF_VALID_r[pgm_addr_r[3]];
-      8'h70            : pgmpre_out[0] <= PIXBUF_r[0][0];
-      8'h71            : pgmpre_out[0] <= PIXBUF_r[0][1];
-      8'h72            : pgmpre_out[0] <= PIXBUF_r[0][2];
-      8'h73            : pgmpre_out[0] <= PIXBUF_r[0][3];
-      8'h74            : pgmpre_out[0] <= PIXBUF_r[0][4];
-      8'h75            : pgmpre_out[0] <= PIXBUF_r[0][5];
-      8'h76            : pgmpre_out[0] <= PIXBUF_r[0][6];
-      8'h77            : pgmpre_out[0] <= PIXBUF_r[0][7];
-      8'h78            : pgmpre_out[0] <= PIXBUF_r[1][0];
-      8'h79            : pgmpre_out[0] <= PIXBUF_r[1][1];
-      8'h7A            : pgmpre_out[0] <= PIXBUF_r[1][2];
-      8'h7B            : pgmpre_out[0] <= PIXBUF_r[1][3];
-      8'h7C            : pgmpre_out[0] <= PIXBUF_r[1][4];
-      8'h7D            : pgmpre_out[0] <= PIXBUF_r[1][5];
-      8'h7E            : pgmpre_out[0] <= PIXBUF_r[1][6];
-      8'h7F            : pgmpre_out[0] <= PIXBUF_r[1][7];
+//      8'h50,8'h58      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
+//      8'h51,8'h59      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
+//      8'h60,8'h68      : pgmpre_out[0] <= PIXBUF_VALID_r[pgm_addr_r[3]];
+//      8'h70            : pgmpre_out[0] <= PIXBUF_r[0][0];
+//      8'h71            : pgmpre_out[0] <= PIXBUF_r[0][1];
+//      8'h72            : pgmpre_out[0] <= PIXBUF_r[0][2];
+//      8'h73            : pgmpre_out[0] <= PIXBUF_r[0][3];
+//      8'h74            : pgmpre_out[0] <= PIXBUF_r[0][4];
+//      8'h75            : pgmpre_out[0] <= PIXBUF_r[0][5];
+//      8'h76            : pgmpre_out[0] <= PIXBUF_r[0][6];
+//      8'h77            : pgmpre_out[0] <= PIXBUF_r[0][7];
+//      8'h78            : pgmpre_out[0] <= PIXBUF_r[1][0];
+//      8'h79            : pgmpre_out[0] <= PIXBUF_r[1][1];
+//      8'h7A            : pgmpre_out[0] <= PIXBUF_r[1][2];
+//      8'h7B            : pgmpre_out[0] <= PIXBUF_r[1][3];
+//      8'h7C            : pgmpre_out[0] <= PIXBUF_r[1][4];
+//      8'h7D            : pgmpre_out[0] <= PIXBUF_r[1][5];
+//      8'h7E            : pgmpre_out[0] <= PIXBUF_r[1][6];
+//      8'h7F            : pgmpre_out[0] <= PIXBUF_r[1][7];
   
       // TODO: add more internal temps @ $80
       8'h80            : pgmpre_out[0] <= SFR_Z;
@@ -2318,32 +2421,33 @@ always @(posedge CLK) begin
       8'h8E            : pgmpre_out[0] <= SCMR_RON;
 
       // bitmap state
-      8'h90           : pgmpre_out[0] <= BMP_STATE;
-      8'h91           : pgmpre_out[0] <= bmp_mode_r;
-      8'h92           : pgmpre_out[0] <= bmp_bppm1_r;
-      8'h93           : pgmpre_out[0] <= bmp_plane_r;
-      8'h94           : pgmpre_out[0] <= bmp_x_r[0];
-      8'h95           : pgmpre_out[0] <= bmp_y_r[0];
-      8'h96           : pgmpre_out[0] <= bmp_x_r[1];
-      8'h97           : pgmpre_out[0] <= bmp_y_r[1];
-      8'h98           : pgmpre_out[0] <= bmp_char_shift_r[0][7:0];
-      8'h99           : pgmpre_out[0] <= bmp_char_shift_r[0][15:8];
-      8'h9A           : pgmpre_out[0] <= bmp_char_shift_r[1][7:0];
-      8'h9B           : pgmpre_out[0] <= bmp_char_shift_r[1][15:8];
-      8'h9C           : pgmpre_out[0] <= bmp_offset_r[7:0];
-      8'h9D           : pgmpre_out[0] <= bmp_offset_r[15:8];
-      8'h9E           : pgmpre_out[0] <= bmp_index_bit_r;
-      8'h9F           : pgmpre_out[0] <= bmp_colr_r;
-      8'hA0           : pgmpre_out[0] <= bmp_rpix_char_shift_r[7:0];
-      8'hA1           : pgmpre_out[0] <= bmp_rpix_char_shift_r[15:8];
-      8'hA2           : pgmpre_out[0] <= bmp_rpix_x_r;
-      8'hA3           : pgmpre_out[0] <= bmp_rpix_y_r;
-      8'hA4           : pgmpre_out[0] <= bmp_index_r;
+//      8'h90           : pgmpre_out[0] <= BMP_STATE;
+//      8'h91           : pgmpre_out[0] <= bmp_mode_r;
+//      8'h92           : pgmpre_out[0] <= bmp_bppm1_r;
+//      8'h93           : pgmpre_out[0] <= bmp_plane_r;
+//      8'h94           : pgmpre_out[0] <= bmp_x_r[0];
+//      8'h95           : pgmpre_out[0] <= bmp_y_r[0];
+//      8'h96           : pgmpre_out[0] <= bmp_x_r[1];
+//      8'h97           : pgmpre_out[0] <= bmp_y_r[1];
+//      8'h98           : pgmpre_out[0] <= bmp_char_shift_r[0][7:0];
+//      8'h99           : pgmpre_out[0] <= bmp_char_shift_r[0][15:8];
+//      8'h9A           : pgmpre_out[0] <= bmp_char_shift_r[1][7:0];
+//      8'h9B           : pgmpre_out[0] <= bmp_char_shift_r[1][15:8];
+//      8'h9C           : pgmpre_out[0] <= bmp_offset_r[7:0];
+//      8'h9D           : pgmpre_out[0] <= bmp_offset_r[15:8];
+//      8'h9E           : pgmpre_out[0] <= bmp_index_bit_r;
+//      8'h9F           : pgmpre_out[0] <= bmp_colr_r;
+//      8'hA0           : pgmpre_out[0] <= bmp_rpix_char_shift_r[7:0];
+//      8'hA1           : pgmpre_out[0] <= bmp_rpix_char_shift_r[15:8];
+//      8'hA2           : pgmpre_out[0] <= bmp_rpix_x_r;
+//      8'hA3           : pgmpre_out[0] <= bmp_rpix_y_r;
+//      8'hA4           : pgmpre_out[0] <= bmp_index_r;
 
       8'hB2           : pgmpre_out[0] <= exe_opcode_r;
       8'hB3           : pgmpre_out[0] <= exe_operand_r[7:0];
       8'hB4           : pgmpre_out[0] <= exe_operand_r[15:8];
       8'hB5           : pgmpre_out[0] <= exe_opsize_r;
+      //8'hB6           : pgmpre_out[0] <= exe_byte_r;
 
       //8'hC0           : pgmpre_out[0] <= FETCH_STATE;
       //8'hC1           : pgmpre_out[0] <= EXE_STATE;
@@ -2370,10 +2474,30 @@ always @(posedge CLK) begin
       8'hE8           : pgmpre_out[0] <= step_r;
       8'hE9           : pgmpre_out[0] <= gsu_clock_en;
 
+      8'hEC           : pgmpre_out[0] <= lat_fetch_r;
+      8'hED           : pgmpre_out[0] <= lat_memory_r;
+      8'hEE           : pgmpre_out[0] <= lat_mult_r;
+      8'hEF           : pgmpre_out[0] <= lat_fmult_r;
+      
+      // big endian to make debugging easier
+      8'hF0           : pgmpre_out[0] <= cache_val_r[31:23];
+      8'hF1           : pgmpre_out[0] <= cache_val_r[23:16];
+      8'hF2           : pgmpre_out[0] <= cache_val_r[15: 8];
+      8'hF3           : pgmpre_out[0] <= cache_val_r[ 7: 0];
+
+      8'hF8           : pgmpre_out[0] <= fetch_cache_match_r;
+      8'hF9           : pgmpre_out[0] <= cache_gsu_addr_r[7:0];
+      8'hFA           : pgmpre_out[0] <= cache_gsu_addr_r[8];
+      8'hFB           : pgmpre_out[0] <= cache_addr_r[ 7: 0];
+      8'hFC           : pgmpre_out[0] <= cache_addr_r[15: 8];
+      8'hFD           : pgmpre_out[0] <= cache_addr_r[23:16];
+      8'hFE           : pgmpre_out[0] <= fetch_data_r;
+      //8'hFF           : pgmpre_out[0] <= cache_rddata;
+
       default         : pgmpre_out[0] <= 8'hFF;
     endcase
-    //2'h1: pgmpre_out[1] <= debug_cache_rddata;
-    //2'h2: pgmpre_out[2] <= debug_cache_rddata;
+    2'h1: pgmpre_out[1] <= debug_cache_rddata;
+    2'h2: pgmpre_out[2] <= debug_cache_rddata;
 //    2'h3: casex (pgm_addr_r[7:0])      
 //      // fetch state
 //      //8'h00           : pgmpre_out[3] <= FETCH_STATE;
