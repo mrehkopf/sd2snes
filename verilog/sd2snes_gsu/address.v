@@ -67,7 +67,7 @@ assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
                  |(SNES_ADDR[22]));
 
 assign IS_SAVERAM = SAVERAM_MASK[0]
-                    & ( // 60-7F/E0-FF:0000-FFFF
+                    & ( // 60-7D/E0-FF:0000-FFFF
                         (  &SNES_ADDR[22:21]
                         &  ~SNES_ROMSEL
                         )

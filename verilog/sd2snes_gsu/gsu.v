@@ -291,7 +291,7 @@ wire [23:0] CONFIG_ADDR_WATCH   = {config_r[7],config_r[6],config_r[5]};
 // FLOPS
 //-------------------------------------------------------------------
 reg cache_rom_rd_r; initial cache_rom_rd_r = 0;
-reg exe_rom_rd_r; initial exe_rom_rd_r = 0;
+reg prf_rom_rd_r; initial prf_rom_rd_r = 0;
 
 reg cache_ram_rd_r; initial cache_ram_rd_r = 0;
 reg exe_ram_rd_r; initial exe_ram_rd_r = 0;
@@ -300,10 +300,12 @@ reg bmp_ram_rd_r; initial bmp_ram_rd_r = 0;
 reg bmp_ram_wr_r; initial bmp_ram_wr_r = 0;
 
 reg cache_word_r;
+reg prf_word_r;
 reg exe_word_r;
 reg bmp_word_r;
 
 reg [23:0] cache_addr_r;
+reg [23:0] prf_addr_r;
 reg [23:0] exe_addr_r;
 reg [15:0] exe_data_r;
 reg [23:0] bmp_addr_r;
@@ -557,7 +559,9 @@ always @(posedge CLK) begin
       REG_r[i] <= 0;
     end
     
-    SFR_r   <= 0;
+    SFR_r[15:7] <= 0;
+    SFR_r[5:0]  <= 0;
+    
     PBR_r   <= 0;
     //ROMBR_r <= 0;
     //RAMBR_r <= 0;
@@ -664,7 +668,7 @@ always @(posedge CLK) begin
         case (snes_writebuf_addr_r[7:0])
           ADDR_R15+1: SFR_r[5] <= 1;
           
-          ADDR_SFR  : begin SFR_r[6:1] <= snes_writebuf_data_r[6:1]; CBR_r[15:4] <= 0; end
+          ADDR_SFR  : begin SFR_r[5:1] <= snes_writebuf_data_r[5:1]; CBR_r[15:4] <= 0; end
           ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {snes_writebuf_data_r[7],snes_writebuf_data_r[4:0]};
           ADDR_BRAMR: BRAMR_r[0] <= snes_writebuf_data_r[0];
           ADDR_PBR  : PBR_r <= snes_writebuf_data_r;
@@ -708,8 +712,11 @@ always @(posedge CLK) begin
 
     // Register file
     if (snes_writebuf_val_r & snes_writebuf_gpr_r & ~gsu_clock_en) begin
+      // FIXME: description says the data is flopped but emulator writes it directly
       if (snes_writebuf_addr_r[0]) REG_r[snes_writebuf_addr_r[5:1]] <= {snes_writebuf_data_r,data_flop_r};
       else                         data_flop_r                      <= snes_writebuf_data_r;
+      //if (snes_writebuf_addr_r[0]) REG_r[snes_writebuf_addr_r[5:1]][15:8] <= snes_writebuf_data_r;
+      //else                         REG_r[snes_writebuf_addr_r[5:1]][7:0]  <= snes_writebuf_data_r;
     end
     else if (pipeline_advance) begin
       if (e2r_val_r & op_complete) begin
@@ -805,16 +812,14 @@ reg        rom_bus_word_r;
 always @(posedge CLK) begin
   if (RST) begin
     ROM_STATE <= ST_ROM_IDLE;
-
-    ROMRDBUF_r <= 0;
   end
   else begin
     case (ROM_STATE)
       ST_ROM_IDLE: begin
-        if (exe_rom_rd_r & SCMR_RON) begin
+        if (prf_rom_rd_r & SCMR_RON) begin
           rom_bus_rrq_r <= 1;
-          rom_bus_addr_r <= exe_addr_r;
-          rom_bus_word_r <= exe_word_r;
+          rom_bus_addr_r <= prf_addr_r;
+          rom_bus_word_r <= prf_word_r;
           ROM_STATE <= ST_ROM_DATA_RD;
         end
         else if (cache_rom_rd_r & SCMR_RON) begin
@@ -1340,8 +1345,8 @@ always @(posedge CLK) begin
         fetch_cache_match_r <= (REG_r[R15][15:0] - CBR_r) < 512;
         cache_gsu_addr_r    <= {~REG_r[R15][8],REG_r[R15][7:0]};
 
-        cache_addr_r <= (PBR_r < 8'h60) ? ((PBR_r[6] ? {PBR_r,REG_r[R15]} : {PBR_r[4:0],REG_r[R15][14:0]}) & ROM_MASK)
-                                        : 24'hE00000 + ({PBR_r[4:0],REG_r[R15]} & SAVERAM_MASK);
+        cache_addr_r <= (PBR_r < 8'h60) ? ((PBR_r[6] ? {PBR_r,REG_r[R15]} : {PBR_r,REG_r[R15][14:0]}) & ROM_MASK)
+                                        : 24'hE00000 + ({PBR_r[0],REG_r[R15]} & SAVERAM_MASK);
         
         FETCH_STATE <= ST_FETCH_CACHE;
       end
@@ -1441,6 +1446,91 @@ always @(posedge CLK) begin
 
           if (e2r_g_r) FETCH_STATE <= ST_FETCH_ADDR;
           else         FETCH_STATE <= ST_FETCH_IDLE;
+        end
+      end
+    endcase
+  end
+end
+
+//-------------------------------------------------------------------
+// DATA PREFETCHER PIPELINE
+//-------------------------------------------------------------------
+parameter
+  ST_PRF_IDLE        = 8'b00000001,
+  
+  ST_PRF_MEMORY      = 8'b00000010,
+  ST_PRF_MEMORY_WAIT = 8'b00000100,
+  ST_PRF_WAIT        = 8'b00001000
+  ;
+reg [7:0]  PRF_STATE; initial PRF_STATE = ST_PRF_IDLE;
+
+reg [7:0]  prf_data_r;
+reg [3:0]  prf_waitcnt_r;
+
+reg        prf_req_r;
+
+always @(posedge CLK) begin
+  if (RST) begin
+    prf_data_r    <= 0;
+    prf_req_r     <= 0;
+    prf_waitcnt_r <= 0;
+    prf_rom_rd_r  <= 0;
+
+    SFR_r[6] <= 0;
+
+    ROMRDBUF_r <= 0;
+  
+    PRF_STATE <= ST_PRF_IDLE;
+  end
+  else begin
+    if (gsu_clock_en & |prf_waitcnt_r) begin
+      prf_waitcnt_r <= prf_waitcnt_r - 1;
+    end
+    
+    // handle multiple writes to R14.
+    if (  (pipeline_advance & op_complete & e2r_val_r & (e2r_destnum_r == R14))
+       || (snes_writebuf_val_r & snes_writebuf_gpr_r & ~gsu_clock_en & (snes_writebuf_addr_r[5:0] == (ADDR_R14+1)))) begin
+       prf_req_r <= 1;
+    end
+    else if (|(PRF_STATE & ST_PRF_MEMORY)) begin
+       prf_req_r <= 0;
+    end
+  
+    case (PRF_STATE)
+      ST_PRF_IDLE: begin
+        // align to GSU clock.
+        if (prf_req_r) begin
+          PRF_STATE <= ST_PRF_MEMORY;
+          SFR_r[6] <= 1;
+        end
+      end
+      ST_PRF_MEMORY: begin
+        prf_waitcnt_r <= lat_memory_r;
+
+        prf_rom_rd_r <= 1;
+        prf_word_r <= 0;
+
+        // FIXME: what do we do if ROMBR > $5F?  For now just ignore it and compute address
+        prf_addr_r <= ((ROMBR_r[6] ? {ROMBR_r,REG_r[R14]} : {ROMBR_r,REG_r[R14][14:0]}) & ROM_MASK);
+
+        PRF_STATE <= ST_PRF_MEMORY_WAIT;
+      end
+      ST_PRF_MEMORY_WAIT: begin
+        if (|(ROM_STATE & ST_ROM_DATA_END)) begin
+          prf_rom_rd_r <= 0;
+          
+          prf_data_r <= rom_bus_data_r[7:0];
+        
+          PRF_STATE <= ST_PRF_WAIT;
+        end
+      end
+      ST_PRF_WAIT: begin
+        if (gsu_clock_en & ~|prf_waitcnt_r) begin
+          // trigger another prefetch if another request came in
+          SFR_r[6] <= prf_req_r;
+          ROMRDBUF_r <= prf_data_r;
+            
+          PRF_STATE <= prf_req_r ? ST_PRF_MEMORY : ST_PRF_IDLE;
         end
       end
     endcase
@@ -1653,9 +1743,9 @@ always @(posedge CLK) begin
               end
             end          
             `OP_STOP           : begin
-              // TODO: deal with interrupts and other stuff here
               e2r_g_r <= 0;
-              e2r_irq_r <= 1;
+              // mask interrupt write into SFR
+              e2r_irq_r <= ~CFGR_IRQ;
             end
             //OP_NOP            : begin end
             `OP_CACHE          : begin
@@ -1997,19 +2087,12 @@ always @(posedge CLK) begin
             end
             `OP_GETC_RAMB_ROMB: begin
               if (~exe_alt1_r & ~exe_alt2_r) begin
-                //e2r_val_r    <= 1;
-                e2r_wcolr_r <= 1;
+                if (~SFR_RR) begin
+                  e2r_wcolr_r <= 1;
+                  e2r_colr_r  <= POR_HN ? {COLR_r[7:4],ROMRDBUF_r[7:4]} : POR_FHN ? {COLR_r[7:4],ROMRDBUF_r[3:0]} : ROMRDBUF_r[7:0];
 
-                e2c_waitcnt_val_r <= 1;
-                // TODO: add 16b cache latencies
-                e2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
-
-                exe_rom_rd_r <= 1;
-                exe_word_r <= 1; // load for cache
-
-                exe_addr_r <= ((ROMBR_r[6] ? {ROMBR_r,REG_r[R14]} : {ROMBR_r[4:0],REG_r[R14][14:0]}) & ROM_MASK);
-
-                EXE_STATE <= ST_EXE_MEMORY_WAIT;
+                  EXE_STATE <= ST_EXE_WAIT;
+                end
               end
               else begin
                 EXE_STATE <= ST_EXE_WAIT;
@@ -2116,20 +2199,13 @@ always @(posedge CLK) begin
               end
             end
             `OP_GETB          : begin
-              e2r_val_r    <= 1;
-
-              e2c_waitcnt_val_r <= 1;
-              // TODO: add 16b cache latencies
-              e2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
-
-              // TODO: decide if we need separate state machines for this
-              exe_rom_rd_r <= 1;
-              exe_word_r <= 1;
-
-              exe_addr_r <= ((ROMBR_r[6] ? {ROMBR_r,REG_r[R14]} : {ROMBR_r[4:0],REG_r[R14][14:0]}) & ROM_MASK);
-
-              EXE_STATE <= ST_EXE_MEMORY_WAIT;
-              //EXE_STATE <= ST_EXE_WAIT;
+              // wait here for the ROM buffer
+              if (~SFR_RR) begin
+                e2r_val_r    <= 1;
+                
+                e2r_data_r <= (exe_alt1_r & exe_alt2_r) ? {{8{ROMRDBUF_r[7]}},ROMRDBUF_r[7:0]} : exe_alt2_r ? {exe_src_r[15:8],ROMRDBUF_r[7:0]} : exe_alt1_r ? {ROMRDBUF_r[7:0],exe_src_r[7:0]} : {8'h00,ROMRDBUF_r[7:0]};
+                EXE_STATE <= ST_EXE_WAIT;
+              end
             end
             `OP_SBK           : begin
               e2c_waitcnt_val_r <= 1;
@@ -2201,21 +2277,19 @@ always @(posedge CLK) begin
       ST_EXE_MEMORY_WAIT: begin
         e2c_waitcnt_val_r <= 0;
         
-        if ((|(ROM_STATE & ST_ROM_DATA_END)) | (|(RAM_STATE & ST_RAM_DATA_END)) | (|(BMP_STATE & ST_BMP_END))) begin
-          exe_rom_rd_r <= 0;
+        if ((|(RAM_STATE & ST_RAM_DATA_END)) | (|(BMP_STATE & ST_BMP_END))) begin
           exe_ram_rd_r <= 0;
           exe_ram_wr_r <= 0;
-          // byte loads do zero extension
           
           case (exe_opcode_r)
-            `OP_GETB: begin
-              e2r_data_r <= (exe_alt1_r & exe_alt2_r) ? {{8{rom_bus_data_r[7]}},rom_bus_data_r[7:0]} : exe_alt2_r ? {exe_src_r[15:8],rom_bus_data_r[7:0]} : exe_alt1_r ? {rom_bus_data_r[7:0],exe_src_r[7:0]} : {8'h00,rom_bus_data_r[7:0]};
-            end
-            `OP_GETC_RAMB_ROMB: begin
-              if (~exe_alt1_r & ~exe_alt2_r) begin
-                e2r_colr_r  <= POR_HN ? {COLR_r[7:4],rom_bus_data_r[7:4]} : POR_FHN ? {COLR_r[7:4],rom_bus_data_r[3:0]} : rom_bus_data_r[7:0];
-              end
-            end
+//            `OP_GETB: begin
+//              e2r_data_r <= (exe_alt1_r & exe_alt2_r) ? {{8{rom_bus_data_r[7]}},rom_bus_data_r[7:0]} : exe_alt2_r ? {exe_src_r[15:8],rom_bus_data_r[7:0]} : exe_alt1_r ? {rom_bus_data_r[7:0],exe_src_r[7:0]} : {8'h00,rom_bus_data_r[7:0]};
+//            end
+//            `OP_GETC_RAMB_ROMB: begin
+//              if (~exe_alt1_r & ~exe_alt2_r) begin
+//                e2r_colr_r  <= POR_HN ? {COLR_r[7:4],rom_bus_data_r[7:4]} : POR_FHN ? {COLR_r[7:4],rom_bus_data_r[3:0]} : rom_bus_data_r[7:0];
+//              end
+//            end
             `OP_PLOT_RPIX: begin
               // RPIX reads data
               if (exe_alt1_r) begin
@@ -2311,14 +2385,18 @@ always @(posedge CLK) begin
     //brk_data_wr_byte <= pipeline_advance ? 0                                                              : brk_data_wr_ram_m1 ? (RAMWRBUF_r     == CONFIG_DATA_WATCH) : brk_data_wr_byte;
   
     brk_inst_rd_addr <= (debug_inst_addr_r == brk_addr_r);
-    brk_data_rd_addr <= (exe_ram_rd_r   && (exe_addr_r   == brk_addr_r) || (exe_rom_rd_r && (exe_addr_r   == brk_addr_r)));
-    brk_data_wr_addr <= (exe_ram_wr_r   && (exe_addr_r   == brk_addr_r));
+    brk_data_rd_addr <= (  (exe_ram_rd_r   && (exe_addr_r   == brk_addr_r) || (prf_rom_rd_r && (prf_addr_r   == brk_addr_r)))
+                        || (bmp_ram_rd_r   && (bmp_addr_r   == brk_addr_r)                                                  )
+                        );
+    brk_data_wr_addr <= (  (exe_ram_wr_r   && (exe_addr_r   == brk_addr_r))
+                        || (bmp_ram_wr_r   && (bmp_addr_r   == brk_addr_r))
+                        );
     brk_stop         <= exe_opcode_r == `OP_STOP;
     brk_error        <= fetch_error; // FIXME: set this state based on opcode or other error condition
     
   
     brk_addr_r <= (CONFIG_ADDR_WATCH[23:16] < 8'h60) ? ((CONFIG_ADDR_WATCH[22] ? CONFIG_ADDR_WATCH : {CONFIG_ADDR_WATCH[20:16],CONFIG_ADDR_WATCH[14:0]}) & ROM_MASK)
-                                                     : 24'hE00000 + ({CONFIG_ADDR_WATCH[4:0],CONFIG_ADDR_WATCH[R15]} & SAVERAM_MASK);
+                                                     : 24'hE00000 + (CONFIG_ADDR_WATCH & SAVERAM_MASK);
   end
 end
 
@@ -2490,6 +2568,7 @@ always @(posedge CLK) begin
       //8'hC1           : pgmpre_out[0] <= EXE_STATE;
       //8'hC2           : pgmpre_out[0] <= ROM_STATE;
       //8'hC3           : pgmpre_out[0] <= RAM_STATE;
+      //8'hC4           : pgmpre_out[0] <= PRF_STATE;
 
       8'hD0           : pgmpre_out[0] <= config_r[0];
       8'hD1           : pgmpre_out[0] <= config_r[1];
@@ -2518,25 +2597,25 @@ always @(posedge CLK) begin
       8'hEF           : pgmpre_out[0] <= lat_fmult_r;
       
       // big endian to make debugging easier
-      8'hF0           : pgmpre_out[0] <= cache_val_r[31:23];
-      8'hF1           : pgmpre_out[0] <= cache_val_r[23:16];
-      8'hF2           : pgmpre_out[0] <= cache_val_r[15: 8];
-      8'hF3           : pgmpre_out[0] <= cache_val_r[ 7: 0];
-      8'hF4           : pgmpre_out[0] <= fetch_cache_data_r;
-      8'hF5           : pgmpre_out[0] <= rom_bus_data_r;
-      8'hF6           : pgmpre_out[0] <= fetch_data_r;
+      //8'hF0           : pgmpre_out[0] <= cache_val_r[31:23];
+      //8'hF1           : pgmpre_out[0] <= cache_val_r[23:16];
+      //8'hF2           : pgmpre_out[0] <= cache_val_r[15: 8];
+      //8'hF3           : pgmpre_out[0] <= cache_val_r[ 7: 0];
+      //8'hF4           : pgmpre_out[0] <= fetch_cache_data_r;
+      //8'hF5           : pgmpre_out[0] <= rom_bus_data_r;
+      //8'hF6           : pgmpre_out[0] <= fetch_data_r;
 
-      8'hF8           : pgmpre_out[0] <= fetch_cache_match_r;
-      8'hF9           : pgmpre_out[0] <= cache_gsu_addr_r[7:0];
-      8'hFA           : pgmpre_out[0] <= cache_gsu_addr_r[8];
-      8'hFB           : pgmpre_out[0] <= cache_addr_r[ 7: 0];
-      8'hFC           : pgmpre_out[0] <= cache_addr_r[15: 8];
-      8'hFD           : pgmpre_out[0] <= cache_addr_r[23:16];
+      //8'hF8           : pgmpre_out[0] <= fetch_cache_match_r;
+      //8'hF9           : pgmpre_out[0] <= cache_gsu_addr_r[7:0];
+      //8'hFA           : pgmpre_out[0] <= cache_gsu_addr_r[8];
+      //8'hFB           : pgmpre_out[0] <= cache_addr_r[ 7: 0];
+      //8'hFC           : pgmpre_out[0] <= cache_addr_r[15: 8];
+      //8'hFD           : pgmpre_out[0] <= cache_addr_r[23:16];
 
       default         : pgmpre_out[0] <= 8'hFF;
     endcase
-    2'h1: pgmpre_out[1] <= debug_cache_rddata;
-    2'h2: pgmpre_out[2] <= debug_cache_rddata;
+    //2'h1: pgmpre_out[1] <= debug_cache_rddata;
+    //2'h2: pgmpre_out[2] <= debug_cache_rddata;
 //    2'h3: casex (pgm_addr_r[7:0])      
 //      // fetch state
 //      //8'h00           : pgmpre_out[3] <= FETCH_STATE;
@@ -2653,6 +2732,6 @@ assign DATA_OUT    = data_out_r;
 assign GO          = SFR_GO;
 assign RON         = SCMR_RON;
 assign RAN         = SCMR_RAN;
-assign IRQ         = SFR_IRQ & ~CFGR_IRQ;
+assign IRQ         = SFR_IRQ;
 
 endmodule
