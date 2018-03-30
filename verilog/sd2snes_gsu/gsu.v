@@ -1315,7 +1315,7 @@ always @(posedge CLK) begin
       // demand fill
       cache_val_r[fetch_install_block_r] <= 1;
     end
-    else if (cache_mmio_wren_r) begin
+    else if (cache_mmio_wren_r & &cache_mmio_addr_r[3:0]) begin
       // cache line injection
       cache_val_r[cache_mmio_addr_r[8:4]] <= 1;
     end
