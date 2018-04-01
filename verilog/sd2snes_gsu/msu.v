@@ -48,7 +48,7 @@ module msu(
   output DBG_msu_address_ext_write_rising
 );
 
-//`define MSU 1
+//`define MSU
 
 `ifndef MSU
 assign reg_data_out = 0;

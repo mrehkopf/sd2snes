@@ -287,7 +287,6 @@ parameter ST_GSU_RAM_WR_END  = 11'b10000000000;
 parameter SNES_DEAD_TIMEOUT = 17'd96000; // 1ms
 
 parameter ROM_CYCLE_LEN = 4'd6;
-//parameter ROM_CYCLE_LEN = 4'd7; // 6 seems too tight
 
 reg [10:0] STATE;
 initial STATE = ST_IDLE;

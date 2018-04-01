@@ -253,6 +253,7 @@ parameter
 // [23:0] AddrWatch
 
 // breakpoint state
+`ifdef DEBUG
 reg         brk_inst_rd_byte; initial brk_inst_rd_byte = 0;
 reg         brk_data_rd_byte; initial brk_data_rd_byte = 0;
 reg         brk_data_wr_byte; initial brk_data_wr_byte = 0;
@@ -285,6 +286,11 @@ assign      CONFIG_CONTROL_MATCHPARTINST = config_r[0][1];
 wire [7:0]  CONFIG_STEP_COUNT   = config_r[1];
 wire [7:0]  CONFIG_DATA_WATCH   = config_r[4];
 wire [23:0] CONFIG_ADDR_WATCH   = {config_r[7],config_r[6],config_r[5]};
+`else
+wire [7:0] CONFIG_STEP_COUNT = 0;
+assign CONFIG_CONTROL_ENABLED = 1;
+assign CONFIG_CONTROL_MATCHPARTINST = 0;
+`endif
 
 //-------------------------------------------------------------------
 // FLOPS
@@ -294,25 +300,27 @@ reg prf_rom_rd_r; initial prf_rom_rd_r = 0;
 
 reg cache_ram_rd_r; initial cache_ram_rd_r = 0;
 reg exe_ram_rd_r; initial exe_ram_rd_r = 0;
-reg exe_ram_wr_r; initial exe_ram_wr_r = 0;
+reg stb_ram_wr_r; initial stb_ram_wr_r = 0;
 reg bmp_ram_rd_r; initial bmp_ram_rd_r = 0;
 reg bmp_ram_wr_r; initial bmp_ram_wr_r = 0;
 
 reg cache_word_r;
 reg prf_word_r;
 reg exe_word_r;
+reg stb_word_r;
 reg bmp_word_r;
 
 reg [23:0] cache_addr_r;
 reg [23:0] prf_addr_r;
 reg [23:0] exe_addr_r;
-reg [15:0] exe_data_r;
+reg [23:0] stb_addr_r;
+reg [15:0] stb_data_r;
 reg [23:0] bmp_addr_r;
 reg [15:0] bmp_data_r;
 
 reg [23:0] debug_inst_addr_r;
 
-reg [15:0] gsu_cycle_cnt_r; initial gsu_cycle_cnt_r = 0;
+reg [31:0] gsu_cycle_cnt_r; initial gsu_cycle_cnt_r = 0;
 
 reg [1:0]  gsu_cycle_r; initial gsu_cycle_r = 0;
 reg        gsu_clock_en;
@@ -340,7 +348,7 @@ always @(posedge CLK) begin
   if (RST) begin
     gsu_cycle_cnt_r <= 0;
   end
-  else if (gsu_clock_en & step_r) begin
+  else if (pipeline_advance) begin
     gsu_cycle_cnt_r <= gsu_cycle_cnt_r + 1;
   end
 end
@@ -480,6 +488,10 @@ reg [2:0]  e2b_index_r;
 reg        e2i_flush_r;
 reg        r2i_flush_r;
 
+// Execute -> Store Buffer
+reg        e2s_req_r;
+reg        e2s_word_r;
+
 reg waitcnt_zero_r;
 wire waitcnt_zero;
 
@@ -575,10 +587,6 @@ always @(posedge CLK) begin
     
     SREG_r  <= 0;
     DREG_r  <= 0;
-    
-    //ROMRDBUF_r <= 0;
-    //RAMWRBUF_r <= 0;
-    //RAMADDR_r  <= 0;
     
     data_enable_r <= 0;
     data_flop_r <= 0;
@@ -885,9 +893,6 @@ always @(posedge CLK) begin
     ram_bus_rrq_r <= 0;
     ram_bus_wrq_r <= 0;
     
-    RAMWRBUF_r <= 0;
-    RAMADDR_r  <= 0;
-    
     ram_busy_r <= 0;
   end
   else begin
@@ -897,19 +902,9 @@ always @(posedge CLK) begin
           if (exe_ram_rd_r) begin
             ram_bus_rrq_r <= 1;
             ram_bus_word_r <= exe_word_r;
-            ram_bus_addr_r <= exe_addr_r; // TODO: get correct cache address for demand fetch
-            RAMADDR_r <= exe_addr_r[15:0];
+            ram_bus_addr_r <= exe_addr_r;
             ram_busy_r <= 1;
             RAM_STATE <= ST_RAM_DATA_RD;
-          end
-          else if (exe_ram_wr_r) begin
-            ram_bus_wrq_r <= 1;
-            ram_bus_word_r <= exe_word_r;
-            ram_bus_addr_r <= exe_addr_r; // TODO: get correct cache address for demand fetch
-            RAMADDR_r <= exe_addr_r[15:0];
-            RAMWRBUF_r <= exe_data_r;
-            ram_busy_r <= 1;
-            RAM_STATE <= ST_RAM_DATA_WR;
           end
           else if (cache_ram_rd_r) begin
             ram_bus_rrq_r <= 1;
@@ -918,20 +913,26 @@ always @(posedge CLK) begin
             ram_busy_r <= 1;
             RAM_STATE <= ST_RAM_FETCH_RD;
           end
+          else if (stb_ram_wr_r) begin
+            ram_bus_wrq_r <= 1;
+            ram_bus_word_r <= stb_word_r;
+            ram_bus_addr_r <= stb_addr_r;
+            ram_bus_data_r <= stb_data_r;
+            ram_busy_r <= 1;
+            RAM_STATE <= ST_RAM_DATA_WR;
+          end
           else if (bmp_ram_rd_r) begin
             ram_bus_rrq_r <= 1;
             ram_bus_word_r <= bmp_word_r;
-            ram_bus_addr_r <= bmp_addr_r; // TODO: get correct cache address for demand fetch
-            RAMADDR_r <= bmp_addr_r[15:0];
+            ram_bus_addr_r <= bmp_addr_r;
             ram_busy_r <= 1;
             RAM_STATE <= ST_RAM_BMP_RD;
           end
           else if (bmp_ram_wr_r) begin
             ram_bus_wrq_r <= 1;
             ram_bus_word_r <= bmp_word_r;
-            ram_bus_addr_r <= bmp_addr_r; // TODO: get correct cache address for demand fetch
-            RAMADDR_r <= bmp_addr_r[15:0];
-            RAMWRBUF_r <= bmp_data_r;
+            ram_bus_addr_r <= bmp_addr_r;
+            ram_bus_data_r <= bmp_data_r;
             ram_busy_r <= 1;
             RAM_STATE <= ST_RAM_BMP_WR;
           end
@@ -964,7 +965,7 @@ assign RAM_BUS_RRQ = ram_bus_rrq_r;
 assign RAM_BUS_WRQ = ram_bus_wrq_r;
 assign RAM_BUS_WORD = ram_bus_word_r;
 assign RAM_BUS_ADDR = ram_bus_addr_r;
-assign RAM_BUS_WRDATA = RAMWRBUF_r;
+assign RAM_BUS_WRDATA = ram_bus_data_r;
 
 //-------------------------------------------------------------------
 // BITMAP PIPELINE
@@ -1259,6 +1260,67 @@ always @(posedge CLK) begin
 end
 
 //-------------------------------------------------------------------
+// STORE BUFFER PIPELINE
+//-------------------------------------------------------------------
+parameter
+  ST_STB_IDLE        = 8'b00000001,
+  
+  ST_STB_MEMORY_WAIT = 8'b00000010,
+  ST_STB_WAIT        = 8'b00000100
+  ;
+reg [7:0]  STB_STATE; initial STB_STATE = ST_STB_IDLE;
+
+reg [3:0]  stb_waitcnt_r;
+reg        stb_busy_r;
+
+always @(posedge CLK) begin
+  if (RST) begin
+    stb_waitcnt_r <= 0;
+    stb_ram_wr_r  <= 0;
+    stb_busy_r    <= 0;
+  
+    STB_STATE <= ST_STB_IDLE;
+  end
+  else begin
+    if (gsu_clock_en & |stb_waitcnt_r) begin
+      stb_waitcnt_r <= stb_waitcnt_r - 1;
+    end
+    
+    case (STB_STATE)
+      ST_STB_IDLE: begin
+        if (e2s_req_r) begin
+          stb_busy_r <= 1;
+
+          stb_waitcnt_r <= lat_memory_r;
+
+          stb_ram_wr_r <= 1;
+          stb_word_r <= e2s_word_r;
+
+          stb_addr_r <= {4'hE,3'h0,RAMBR_r,RAMADDR_r};
+          stb_data_r <= RAMWRBUF_r;
+
+          STB_STATE <= ST_STB_MEMORY_WAIT;
+        end
+      end
+      ST_STB_MEMORY_WAIT: begin
+        if (|(RAM_STATE & ST_RAM_DATA_END)) begin
+          stb_ram_wr_r <= 0;
+          
+          STB_STATE <= ST_STB_WAIT;
+        end
+      end
+      ST_STB_WAIT: begin
+        if (gsu_clock_en & ~|stb_waitcnt_r) begin
+          stb_busy_r <= 0;
+
+          STB_STATE <= ST_STB_IDLE;
+        end
+      end
+    endcase
+  end
+end
+
+//-------------------------------------------------------------------
 // FETCH PIPELINE
 //-------------------------------------------------------------------
 // The frontend of the pipeline starts with the fetch operation which
@@ -1307,6 +1369,8 @@ reg         fetch_cache_comp_r;
 reg         fetch_error;
 reg [7:0]   fetch_cache_data_r;
 
+reg         fetch_rom_r;
+
 always @(posedge CLK) begin
   if (RST) begin
     FETCH_STATE <= ST_FETCH_IDLE;
@@ -1339,6 +1403,9 @@ always @(posedge CLK) begin
       cache_val_r[cache_mmio_addr_r[8:4]] <= 1;
     end
   
+    // PBR is updated by SNES or JMP instructions.
+    fetch_rom_r <= (PBR_r < 8'h60);
+  
     case (FETCH_STATE)
       ST_FETCH_IDLE: begin
         // align to GSU clock
@@ -1360,6 +1427,7 @@ always @(posedge CLK) begin
         cache_gsu_addr_r    <= REG_r[R15][8:0];
         //cache_gsu_addr_r    <= (REG_r[R15][15:0] - CBR_r);
 
+        // need to use PBR directly here because of prior cycle update
         cache_addr_r <= (PBR_r < 8'h60) ? ((PBR_r[6] ? {PBR_r,REG_r[R15]} : {PBR_r,REG_r[R15][14:0]}) & ROM_MASK)
                                         : 24'hE00000 + ({PBR_r[0],REG_r[R15]} & SAVERAM_MASK);
         
@@ -1403,13 +1471,22 @@ always @(posedge CLK) begin
         // TODO: check for elapsed time and perform access.
         // FIXME: need to handle delays better.  This has different behavior for cache fill vs standard fill.
         if (fetch_waitcnt_r == 0) begin
-          cache_rom_rd_r <= (PBR_r < 8'h60);
-          cache_ram_rd_r <= (PBR_r >= 8'h60);
-          cache_word_r <= 1;
-          
-          i2c_waitcnt_val_r <= 1;
-          i2c_waitcnt_r     <= lat_memory_r;
-          FETCH_STATE       <= ST_FETCH_FILL_WAIT;
+          if (fetch_rom_r) begin
+            cache_rom_rd_r <= 1;
+            cache_word_r <= 1;
+
+            i2c_waitcnt_val_r <= 1;
+            i2c_waitcnt_r     <= lat_memory_r;
+            FETCH_STATE       <= ST_FETCH_FILL_WAIT;
+          end
+          else if (~stb_busy_r) begin
+            cache_ram_rd_r <= 1;
+            cache_word_r <= 1;
+
+            i2c_waitcnt_val_r <= 1;
+            i2c_waitcnt_r     <= lat_memory_r;
+            FETCH_STATE       <= ST_FETCH_FILL_WAIT;
+          end
         end
       end
       ST_FETCH_FILL_WAIT: begin
@@ -1513,7 +1590,6 @@ always @(posedge CLK) begin
   
     case (PRF_STATE)
       ST_PRF_IDLE: begin
-        // align to GSU clock.
         if (prf_req_r) begin
           PRF_STATE <= ST_PRF_MEMORY;
           SFR_r[6] <= 1;
@@ -1645,17 +1721,22 @@ always @(posedge CLK) begin
     exe_addr_r <= 0;
     e2c_waitcnt_val_r <= 0;
     exe_ram_rd_r <= 0;
-    exe_ram_wr_r <= 0;
+    //exe_ram_wr_r <= 0;
 
     e2b_plot_r  <= 0;
     e2b_rpix_r  <= 0;
     
     e2i_flush_r <= 0;
+
+    e2s_req_r <= 0;
     
     exe_error <= 0;
     
     ROMBR_r <= 0;
     RAMBR_r <= 0;
+
+    RAMWRBUF_r <= 0;
+    RAMADDR_r <= 0;
   end
   else begin
     case (EXE_STATE)
@@ -2000,6 +2081,7 @@ always @(posedge CLK) begin
             end
             
             `OP_GETC_RAMB_ROMB: begin
+              // don't block on stb_busy with RAMBR because old value already flopped
               if      (exe_alt1_r & exe_alt2_r)   ROMBR_r    <= exe_src_r;
               else if (exe_alt2_r)                RAMBR_r    <= exe_src_r[0];
             end
@@ -2057,6 +2139,12 @@ always @(posedge CLK) begin
       ST_EXE_MEMORY: begin
         if (op_complete) begin
           case (exe_opcode_r)
+            `OP_STOP           : begin
+              if (~stb_busy_r) begin
+                // don't allow STOP to complete until the store buffer is flushed
+                EXE_STATE <= ST_EXE_WAIT;
+              end
+            end
             `OP_PLOT_RPIX      : begin             
               // done with the operations
               e2b_plot_r <= 0;
@@ -2099,31 +2187,43 @@ always @(posedge CLK) begin
             `OP_IBT          : begin
               if (exe_alt1_r) begin
                 // LMS Rn, (2*imm8)
-                //exe_memory = 1;
-                e2r_val_r    <= 1;
-                e2r_destnum_r   <= exe_n_r;
+                // no ST->LD forwarding (requires invalidations, word vs byte, etc)
+                if (~stb_busy_r) begin
+                  e2r_val_r    <= 1;
+                  e2r_destnum_r   <= exe_n_r;
                  
-                e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= lat_memory_r;
+                  e2c_waitcnt_val_r <= 1;
+                  e2c_waitcnt_r <= lat_memory_r;
           
-                exe_ram_rd_r <= 1;
-                exe_word_r <= 1;
+                  exe_ram_rd_r <= 1;
+                  exe_word_r <= 1;
 
-                exe_addr_r <= {4'hE,3'h0,RAMBR_r,7'h00,exe_operand_r[7:0],1'b0};
-                EXE_STATE <= ST_EXE_MEMORY_WAIT;
+                  RAMADDR_r <= {7'h00,exe_operand_r[7:0],1'b0};
+                  exe_addr_r <= {4'hE,3'h0,RAMBR_r,7'h00,exe_operand_r[7:0],1'b0};
+                  EXE_STATE <= ST_EXE_MEMORY_WAIT;
+                end
               end
               else if (exe_alt2_r) begin
                 // SMS (2*imm8), Rn                
-                e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= lat_memory_r;
+                //e2c_waitcnt_val_r <= 1;
+                //e2c_waitcnt_r <= lat_memory_r;
           
                 // TODO: this really does a byte at a time.
-                exe_ram_wr_r <= 1;
-                exe_word_r <= 1;
-                exe_data_r <= exe_srcn_r;
+                //exe_ram_wr_r <= 1;
+                //exe_word_r <= 1;
+                //exe_data_r <= exe_srcn_r;
+                //exe_addr_r <= {4'hE,3'h0,RAMBR_r,7'h00,exe_operand_r[7:0],1'b0};
+                  
+                //EXE_STATE <= ST_EXE_MEMORY_WAIT;
 
-                exe_addr_r <= {4'hE,3'h0,RAMBR_r,7'h00,exe_operand_r[7:0],1'b0};
-                EXE_STATE <= ST_EXE_MEMORY_WAIT;
+                if (~stb_busy_r) begin                  
+                  e2s_req_r <= 1;
+                  e2s_word_r <= 1;
+                  RAMWRBUF_r <= exe_srcn_r;
+                  RAMADDR_r <= {7'h00,exe_operand_r[7:0],1'b0};
+                
+                  EXE_STATE <= ST_EXE_WAIT;
+                end
               end
               else begin
                 e2r_val_r    <= 1;
@@ -2135,30 +2235,43 @@ always @(posedge CLK) begin
             `OP_IWT          : begin
               if (exe_alt1_r) begin
                 // LM Rn, (imm)
-                e2r_val_r    <= 1;
-                e2r_destnum_r   <= exe_n_r;
+                // no ST->LD forwarding (requires invalidations, word vs byte, etc)
+                if (~stb_busy_r) begin
+                  e2r_val_r    <= 1;
+                  e2r_destnum_r   <= exe_n_r;
 
-                e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
+                  e2c_waitcnt_val_r <= 1;
+                  e2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
           
-                exe_ram_rd_r <= 1;
-                exe_word_r <= 1;
-
-                exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_operand_r};
-                EXE_STATE <= ST_EXE_MEMORY_WAIT;
+                  exe_ram_rd_r <= 1;
+                  exe_word_r <= 1;
+                  
+                  RAMADDR_r <= exe_operand_r;
+                  exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_operand_r};
+                  EXE_STATE <= ST_EXE_MEMORY_WAIT;
+                end
               end
               else if (exe_alt2_r) begin
                 // SM (imm), Rn
-                e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= lat_memory_r;
+                //e2c_waitcnt_val_r <= 1;
+                //e2c_waitcnt_r <= lat_memory_r;
           
                 // TODO: this really does a byte at a time.
-                exe_ram_wr_r <= 1;
-                exe_word_r <= 1;
-                exe_data_r <= exe_srcn_r;
+                //exe_ram_wr_r <= 1;
+                //exe_word_r <= 1;
+                //exe_data_r <= exe_srcn_r;
+                //exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_operand_r};
 
-                exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_operand_r};
-                EXE_STATE <= ST_EXE_MEMORY_WAIT;
+                //EXE_STATE <= ST_EXE_MEMORY_WAIT;
+
+                if (~stb_busy_r) begin
+                  e2s_req_r <= 1;
+                  e2s_word_r <= 1;
+                  RAMWRBUF_r <= exe_srcn_r;
+                  RAMADDR_r <= exe_operand_r;
+                  
+                  EXE_STATE <= ST_EXE_WAIT;
+                end
               end
               else begin
                 e2r_val_r    <= 1;
@@ -2177,41 +2290,62 @@ always @(posedge CLK) begin
               end
             end
             `OP_SBK           : begin
-              e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r <= lat_memory_r;
+              //e2c_waitcnt_val_r <= 1;
+              //e2c_waitcnt_r <= lat_memory_r;
           
               // TODO: this really does a byte at a time.
-              exe_ram_wr_r <= 1;
-              exe_word_r <= 1;
-              exe_data_r <= exe_src_r;
-
-              exe_addr_r <= {8'hE0,RAMADDR_r};
-              EXE_STATE <= ST_EXE_MEMORY_WAIT;
+              //exe_ram_wr_r <= 1;
+              //exe_word_r <= 1;
+              //exe_data_r <= exe_src_r;
+              //exe_addr_r <= {8'hE0,RAMADDR_r};
+              
+              //EXE_STATE <= ST_EXE_MEMORY_WAIT;
+              
+              if (~stb_busy_r) begin
+                e2s_req_r <= 1;
+                e2s_word_r <= 1;
+                RAMWRBUF_r <= exe_src_r;
+                //RAMADDR_r <= exe_operand_r; // SBK uses prior address
+              
+                EXE_STATE <= ST_EXE_WAIT;
+              end
             end
             `OP_LD           : begin
-              e2r_val_r    <= 1;
+              if (~stb_busy_r) begin
+                e2r_val_r    <= 1;
                  
-              e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r <= exe_alt1_r ? lat_memory_r : lat_memory_r;
+                e2c_waitcnt_val_r <= 1;
+                e2c_waitcnt_r <= exe_alt1_r ? lat_memory_r : lat_memory_r;
 
-              exe_ram_rd_r <= 1;
-              exe_word_r <= ~exe_alt1_r;
+                exe_ram_rd_r <= 1;
+                exe_word_r <= ~exe_alt1_r;
 
-              exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_srcn_r};
+                RAMADDR_r <= exe_srcn_r;
+                exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_srcn_r};
 
-              EXE_STATE <= ST_EXE_MEMORY_WAIT;
+                EXE_STATE <= ST_EXE_MEMORY_WAIT;
+              end
             end
             `OP_ST           : begin
-              e2c_waitcnt_val_r <= 1;
-              e2c_waitcnt_r <= exe_alt1_r ? lat_memory_r-1 : lat_memory_r-1;
+              //e2c_waitcnt_val_r <= 1;
+              //e2c_waitcnt_r <= exe_alt1_r ? lat_memory_r-1 : lat_memory_r-1;
 
-              exe_ram_wr_r <= 1;
-              exe_word_r <= ~exe_alt1_r;
-              exe_data_r <= exe_src_r;
+              //exe_ram_wr_r <= 1;
+              //exe_word_r <= ~exe_alt1_r;
+              //exe_data_r <= exe_src_r;
 
-              exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_srcn_r};
+              //exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_srcn_r};
 
-              EXE_STATE <= ST_EXE_MEMORY_WAIT;
+              //EXE_STATE <= ST_EXE_MEMORY_WAIT;
+              
+              if (~stb_busy_r) begin
+                e2s_req_r <= 1;
+                e2s_word_r <= ~exe_alt1_r;
+                RAMWRBUF_r <= exe_src_r;
+                RAMADDR_r <= exe_srcn_r;
+              
+                EXE_STATE <= ST_EXE_WAIT;
+              end              
             end
             // hopefully relax timing by setting some condition codes here
             `OP_MERGE         : begin
@@ -2296,7 +2430,6 @@ always @(posedge CLK) begin
           default: begin
             if (|(RAM_STATE & ST_RAM_DATA_END)) begin
               exe_ram_rd_r <= 0;
-              exe_ram_wr_r <= 0;
               
               e2r_data_r <= exe_word_r ? ram_bus_data_r[15:0] : {8'h00,ram_bus_data_r[7:0]};
               
@@ -2307,6 +2440,8 @@ always @(posedge CLK) begin
       end
       ST_EXE_WAIT: begin
         e2c_waitcnt_val_r <= 0;
+        e2s_req_r <= 0;
+        
         if (gsu_clock_en) e2r_lmult_r <= 0;
         
         if (pipeline_advance) begin
@@ -2342,6 +2477,7 @@ always @(posedge CLK) begin
   end
 end
 
+`ifdef DEBUG
 // breakpoints
 reg      brk_inst_rd_rom_m1;
 reg      brk_inst_rd_ram_m1;
@@ -2386,7 +2522,7 @@ always @(posedge CLK) begin
     brk_data_rd_addr <= (  (exe_ram_rd_r   && (exe_addr_r   == brk_addr_r) || (prf_rom_rd_r && (prf_addr_r   == brk_addr_r)))
                         || (bmp_ram_rd_r   && (bmp_addr_r   == brk_addr_r)                                                  )
                         );
-    brk_data_wr_addr <= (  (exe_ram_wr_r   && (exe_addr_r   == brk_addr_r))
+    brk_data_wr_addr <= (  (stb_ram_wr_r   && (stb_addr_r   == brk_addr_r))
                         || (bmp_ram_wr_r   && (bmp_addr_r   == brk_addr_r))
                         );
     brk_stop         <= exe_opcode_r == `OP_STOP;
@@ -2397,6 +2533,7 @@ always @(posedge CLK) begin
                                                      : 24'hE00000 + (CONFIG_ADDR_WATCH & SAVERAM_MASK);
   end
 end
+`endif
 
 assign pipeline_advance = gsu_clock_en & waitcnt_zero & |(EXE_STATE & ST_EXE_WAIT) & fetch_wait_r & step_r;
 assign op_complete = exe_opsize_r == 1;
@@ -2593,6 +2730,11 @@ always @(posedge CLK) begin
       8'hEF           : pgmpre_out[0] <= lat_fmult_r;
       
       // big endian to make debugging easier
+      8'hF0           : pgmpre_out[0] <= gsu_cycle_cnt_r[31:24];
+      8'hF1           : pgmpre_out[0] <= gsu_cycle_cnt_r[23:16];
+      8'hF2           : pgmpre_out[0] <= gsu_cycle_cnt_r[15: 8];
+      8'hF3           : pgmpre_out[0] <= gsu_cycle_cnt_r[ 7: 0];
+
 //      8'hF0           : pgmpre_out[0] <= cache_val_r[31:23];
 //      8'hF1           : pgmpre_out[0] <= cache_val_r[23:16];
 //      8'hF2           : pgmpre_out[0] <= cache_val_r[15: 8];
