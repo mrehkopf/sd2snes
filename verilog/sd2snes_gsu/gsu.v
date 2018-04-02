@@ -302,13 +302,15 @@ reg cache_ram_rd_r; initial cache_ram_rd_r = 0;
 reg exe_ram_rd_r; initial exe_ram_rd_r = 0;
 reg stb_ram_wr_r; initial stb_ram_wr_r = 0;
 reg bmp_ram_rd_r; initial bmp_ram_rd_r = 0;
-reg bmp_ram_wr_r; initial bmp_ram_wr_r = 0;
+reg bmf_ram_rd_r; initial bmf_ram_rd_r = 0;
+reg bmf_ram_wr_r; initial bmf_ram_wr_r = 0;
 
 reg cache_word_r;
 reg prf_word_r;
 reg exe_word_r;
 reg stb_word_r;
 reg bmp_word_r;
+reg bmf_word_r;
 
 reg [23:0] cache_addr_r;
 reg [23:0] prf_addr_r;
@@ -316,7 +318,8 @@ reg [23:0] exe_addr_r;
 reg [23:0] stb_addr_r;
 reg [15:0] stb_data_r;
 reg [23:0] bmp_addr_r;
-reg [15:0] bmp_data_r;
+reg [23:0] bmf_addr_r;
+reg [15:0] bmf_data_r;
 
 reg [23:0] debug_inst_addr_r;
 
@@ -763,13 +766,11 @@ end
 
 reg [3:0] fetch_waitcnt_r;
 reg [3:0] exe_waitcnt_r;
-reg [3:0] bmp_waitcnt_r;
 
 always @(posedge CLK) begin
   if (RST) begin
     fetch_waitcnt_r <= 0;
     exe_waitcnt_r <= 0;
-    bmp_waitcnt_r <= 0;
     waitcnt_zero_r <= 0;
     
     stepcnt_r <= 0;
@@ -782,15 +783,11 @@ always @(posedge CLK) begin
 
     if (e2c_waitcnt_val_r) exe_waitcnt_r <= e2c_waitcnt_r;
     else if (gsu_clock_en & |exe_waitcnt_r) exe_waitcnt_r <= exe_waitcnt_r - 1;
-
-    if (b2c_waitcnt_val_r) bmp_waitcnt_r <= b2c_waitcnt_r;
-    else if (gsu_clock_en & |bmp_waitcnt_r) bmp_waitcnt_r <= bmp_waitcnt_r - 1;
     
     // ok to advance to next instruction byte
     step_r <= CONFIG_CONTROL_ENABLED || (!op_complete & !CONFIG_CONTROL_MATCHPARTINST) || (stepcnt_r != CONFIG_STEP_COUNT);
     
     if (pipeline_advance & (op_complete | CONFIG_CONTROL_MATCHPARTINST)) stepcnt_r <= CONFIG_STEP_COUNT;
-    //waitcnt_zero_r <= ~|fetch_waitcnt_r & ~|exe_waitcnt_r;
   end
 end
 
@@ -928,11 +925,18 @@ always @(posedge CLK) begin
             ram_busy_r <= 1;
             RAM_STATE <= ST_RAM_BMP_RD;
           end
-          else if (bmp_ram_wr_r) begin
+          else if (bmf_ram_rd_r) begin
+            ram_bus_rrq_r <= 1;
+            ram_bus_word_r <= bmf_word_r;
+            ram_bus_addr_r <= bmf_addr_r;
+            ram_busy_r <= 1;
+            RAM_STATE <= ST_RAM_BMP_RD;
+          end
+          else if (bmf_ram_wr_r) begin
             ram_bus_wrq_r <= 1;
-            ram_bus_word_r <= bmp_word_r;
-            ram_bus_addr_r <= bmp_addr_r;
-            ram_bus_data_r <= bmp_data_r;
+            ram_bus_word_r <= bmf_word_r;
+            ram_bus_addr_r <= bmf_addr_r;
+            ram_bus_data_r <= bmf_data_r;
             ram_busy_r <= 1;
             RAM_STATE <= ST_RAM_BMP_WR;
           end
@@ -975,6 +979,7 @@ assign RAM_BUS_WRDATA = ram_bus_data_r;
 reg [7:0]  PIXBUF_VALID_r[1:0];
 reg [15:0] PIXBUF_OFFSET_r[1:0];
 reg [7:0]  PIXBUF_r[1:0][7:0];
+reg        PIXBUF_HEAD_r;
 
 reg        bmp_mode_r;
 reg [3:0]  bmp_bppm1_r;
@@ -985,33 +990,43 @@ reg [15:0] bmp_char_shift_r[1:0];
 reg [15:0] bmp_offset_r;
 reg [2:0]  bmp_index_r;
 reg [7:0]  bmp_colr_r;
-reg        bmp_flush_buf_r;
-reg        bmp_flush_rmw_r;
-reg [7:0]  bmp_flush_colr_r;
 reg [2:0]  bmp_plane_r;
 reg [15:0] bmp_rpix_char_r;
 reg [15:0] bmp_rpix_char_shift_r;
 reg [7:0]  bmp_rpix_x_r;
 reg [7:0]  bmp_rpix_y_r;
 
-//reg [1:0]  bmp_pixbuf_allvalid_r;
-//reg [1:0]  bmp_pixbuf_onevalid_r;
 reg [7:0]  bmp_index_bit_r;
+
+reg [3:0]  bmp_waitcnt_r;
 
 parameter  BMP_MODE_PLOT = 0;
 parameter  BMP_MODE_RPIX = 1;
 
+wire bmf_done;
+wire bmp_hit = PIXBUF_OFFSET_r[PIXBUF_HEAD_r] == e2b_offset_r || ~|PIXBUF_VALID_r[PIXBUF_HEAD_r];
+
 parameter
   ST_BMP_IDLE             = 8'b00000001,
-  ST_BMP_FLUSH_READ       = 8'b00000010,
-  ST_BMP_FLUSH_READ_WAIT  = 8'b00000100,
-  ST_BMP_FLUSH_WRITE      = 8'b00001000,
-  ST_BMP_FLUSH_WRITE_WAIT = 8'b00010000,
-  ST_BMP_FILL             = 8'b00100000,
-  ST_BMP_FILL_WAIT        = 8'b01000000,
+  ST_BMP_FLUSH_WAIT       = 8'b00000010,
+  ST_BMP_FILL             = 8'b00000100,
+  ST_BMP_FILL_WAIT        = 8'b00001000,
   ST_BMP_END              = 8'b10000000
   ;
 reg [7:0]  BMP_STATE; initial BMP_STATE = ST_BMP_IDLE;
+
+wire bmp_plot_done = (|(BMP_STATE & ST_BMP_END) && bmp_mode_r == BMP_MODE_PLOT);
+
+always @(PIXBUF_OFFSET_r[0], PIXBUF_OFFSET_r[1]) begin
+  for (i = 0; i < 2; i = i + 1) begin
+    case (SCMR_HT | {2{POR_OBJ}})
+      0: bmp_char_r[i] = {PIXBUF_OFFSET_r[i][4:0],4'b0000} + PIXBUF_OFFSET_r[i][12:8];
+      1: bmp_char_r[i] = {PIXBUF_OFFSET_r[i][4:0],4'b0000} + {PIXBUF_OFFSET_r[i][4:0],2'b00} + PIXBUF_OFFSET_r[i][12:8];
+      2: bmp_char_r[i] = {PIXBUF_OFFSET_r[i][4:0],4'b0000} + {PIXBUF_OFFSET_r[i][4:0],3'b000} + PIXBUF_OFFSET_r[i][12:8];
+      3: bmp_char_r[i] = {PIXBUF_OFFSET_r[i][12],PIXBUF_OFFSET_r[i][4],PIXBUF_OFFSET_r[i][11:8],PIXBUF_OFFSET_r[i][3:0]};
+    endcase
+  end
+end
 
 always @(*) begin
   case (SCMR_HT | {2{POR_OBJ}})
@@ -1022,187 +1037,110 @@ always @(*) begin
   endcase
 end
 
+// common stuff
+always @(posedge CLK) begin
+  // plot character number
+  // x - [4:0],000
+  // y - [12:5]
+  for (i = 0; i < 2; i = i + 1) begin
+    bmp_x_r[i] <= {PIXBUF_OFFSET_r[i][4:0],3'b000};
+    bmp_y_r[i] <= PIXBUF_OFFSET_r[i][12:5];
+          
+    case (SCMR_MD)
+      0: bmp_char_shift_r[i] <= {bmp_char_r[i],4'h0};
+      1: bmp_char_shift_r[i] <= {bmp_char_r[i],5'h00};
+      2: bmp_char_shift_r[i] <= {bmp_char_r[i],5'h00};
+      3: bmp_char_shift_r[i] <= {bmp_char_r[i],6'h00};
+    endcase
+  end
+  
+  bmp_rpix_x_r <= {e2b_offset_r[4:0],3'b000};
+  bmp_rpix_y_r <= e2b_offset_r[12:5];
+  
+  case (SCMR_MD)
+    0: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,4'h0};
+    1: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,5'h00};
+    2: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,5'h00};
+    3: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,6'h00};
+  endcase
+  
+  // {1, 3, 3, 7}
+  bmp_bppm1_r <= {&SCMR_MD, |SCMR_MD, 1'b1};
+  bmp_index_bit_r <= (8'h01 << e2b_index_r);
+end
+
+// buffer advance/valid bitsalways @(posedge CLK) begin
+always @(posedge CLK) begin
+  if (RST) begin
+    PIXBUF_HEAD_r <= 0;
+    for (i = 0; i < 2; i = i + 1) PIXBUF_VALID_r[i] <= 0;
+  end
+  else begin
+    // ok if flush finishes at idle, will just block bmp pipe for one cycle
+    if (bmf_done | bmp_plot_done) begin
+      // clear when flush is complete
+      if (bmf_done) PIXBUF_VALID_r[~PIXBUF_HEAD_r] <= 0;
+      // set valid when done
+      if (bmp_plot_done) PIXBUF_VALID_r[PIXBUF_HEAD_r] <= PIXBUF_VALID_r[PIXBUF_HEAD_r] | bmp_index_bit_r;
+    end
+    // double buffer swap
+    // second buffer must be available and we must be idle
+    // Conflict, Flush, or Full
+    else if (~|PIXBUF_VALID_r[~PIXBUF_HEAD_r]            // available
+       & (|(BMP_STATE & ST_BMP_IDLE))                    // idle
+       & ( (e2b_plot_r & ~bmp_hit)                       // conflict
+         | (e2b_rpix_r & |PIXBUF_VALID_r[PIXBUF_HEAD_r]) // flush
+         | (&PIXBUF_VALID_r[PIXBUF_HEAD_r])              // full
+         )
+       ) begin
+      // swap the buffers
+      PIXBUF_HEAD_r <= ~PIXBUF_HEAD_r;
+    end
+  end
+end
+
+// bitmap instruction pipe
 always @(posedge CLK) begin
   if (RST) begin
     BMP_STATE <= ST_BMP_IDLE;
 
-    for (i = 0; i < 2; i = i + 1) PIXBUF_VALID_r[i] <= 0;
     for (i = 0; i < 2; i = i + 1) PIXBUF_OFFSET_r[i] <= 16'hFFFF;
+
+    bmp_waitcnt_r <= 0;
+    bmp_ram_rd_r <= 0;
   end
   else begin
-    // plot character number
-    // x - [4:0],000
-    // y - [12:5]
-    for (i = 0; i < 2; i = i + 1) begin
-      bmp_x_r[i] <= {PIXBUF_OFFSET_r[i][4:0],3'b000};
-      bmp_y_r[i] <= PIXBUF_OFFSET_r[i][12:5];
-      
-      case (SCMR_HT | {2{POR_OBJ}})
-        0: bmp_char_r[i] <= {PIXBUF_OFFSET_r[i][4:0],4'b0000} + PIXBUF_OFFSET_r[i][12:8];
-        1: bmp_char_r[i] <= {PIXBUF_OFFSET_r[i][4:0],4'b0000} + {PIXBUF_OFFSET_r[i][4:0],2'b00} + PIXBUF_OFFSET_r[i][12:8];
-        2: bmp_char_r[i] <= {PIXBUF_OFFSET_r[i][4:0],4'b0000} + {PIXBUF_OFFSET_r[i][4:0],3'b000} + PIXBUF_OFFSET_r[i][12:8];
-        3: bmp_char_r[i] <= {PIXBUF_OFFSET_r[i][12],PIXBUF_OFFSET_r[i][4],PIXBUF_OFFSET_r[i][11:8],PIXBUF_OFFSET_r[i][3:0]};
-      endcase
-      
-      case (SCMR_MD)
-        0: bmp_char_shift_r[i] <= {bmp_char_r[i],4'h0};
-        1: bmp_char_shift_r[i] <= {bmp_char_r[i],5'h00};
-        2: bmp_char_shift_r[i] <= {bmp_char_r[i],5'h00};
-        3: bmp_char_shift_r[i] <= {bmp_char_r[i],6'h00};
-      endcase
-
-      //bmp_pixbuf_onevalid_r[i] <= |PIXBUF_VALID_r[i];
-      //bmp_pixbuf_allvalid_r[i] <= &PIXBUF_VALID_r[i];
-    end
-    
-    bmp_rpix_x_r <= {e2b_offset_r[4:0],3'b000};
-    bmp_rpix_y_r <= e2b_offset_r[12:5];
-    
-    case (SCMR_MD)
-      0: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,4'h0};
-      1: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,5'h00};
-      2: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,5'h00};
-      3: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,6'h00};
-    endcase
-    
-    // {1, 3, 3, 7}
-    bmp_bppm1_r <= {&SCMR_MD, |SCMR_MD, 1'b1};
-    bmp_index_bit_r <= (8'h01 << e2b_index_r);
+    if (gsu_clock_en & |bmp_waitcnt_r) bmp_waitcnt_r <= bmp_waitcnt_r - 1;
 
     case (BMP_STATE)
       ST_BMP_IDLE: begin // overlaps ST_EXE_MEMORY.  Single cycle operations 
-        // watch for EXE command
-        bmp_flush_colr_r <= 0;
-        bmp_plane_r      <= 0;
-        bmp_offset_r <= e2b_offset_r;
-        bmp_index_r  <= e2b_index_r;
-
-        if      (e2b_plot_r) begin
-          bmp_mode_r   <= BMP_MODE_PLOT;
-          bmp_colr_r   <= e2b_colr_r;
-          
-          if (PIXBUF_OFFSET_r[0] != e2b_offset_r && (|PIXBUF_VALID_r[0] && |PIXBUF_VALID_r[1])/*&bmp_pixbuf_onevalid_r*/) begin
-            // flush1
-            bmp_flush_buf_r <= 1;
-            bmp_flush_rmw_r <= ~&PIXBUF_VALID_r[1];
-
-            BMP_STATE <= &PIXBUF_VALID_r[1] ? ST_BMP_FLUSH_WRITE : ST_BMP_FLUSH_READ;
-          end
-          else begin
-            // write and potential swap
+        if (e2b_plot_r) begin
+          if (bmp_hit) begin
+            bmp_mode_r <= BMP_MODE_PLOT;
+            bmp_colr_r <= e2b_colr_r;
+            bmp_offset_r <= e2b_offset_r;
+            bmp_index_r  <= e2b_index_r;
+            //bmp_plane_r  <= 0;
+            
             BMP_STATE <= ST_BMP_END;
           end
         end
         else if (e2b_rpix_r) begin
-          bmp_mode_r <= BMP_MODE_RPIX;
-          bmp_colr_r <= 0;
+          if (~|PIXBUF_VALID_r[0] & ~|PIXBUF_VALID_r[1]) begin
+            bmp_mode_r <= BMP_MODE_RPIX;
+            bmp_offset_r <= e2b_offset_r;
+            bmp_index_r  <= e2b_index_r;
+            bmp_plane_r  <= 0;
+            bmp_colr_r <= 0;
 
-          // check if buffer0 is valid and flush
-          if (|PIXBUF_VALID_r[0]) begin
-            bmp_flush_buf_r <= 0;
-            bmp_flush_rmw_r <= ~&PIXBUF_VALID_r[0];
-
-            BMP_STATE <= &PIXBUF_VALID_r[0] ? ST_BMP_FLUSH_WRITE : ST_BMP_FLUSH_READ;
-          end
-          // check if buffer1 is valid and flush
-          else if (|PIXBUF_VALID_r[1]) begin
-            bmp_flush_buf_r <= 1;
-            bmp_flush_rmw_r <= ~&PIXBUF_VALID_r[1];
-
-            BMP_STATE <= &PIXBUF_VALID_r[1] ? ST_BMP_FLUSH_WRITE : ST_BMP_FLUSH_READ;
-          end
-          // perform fill
-          else begin
             BMP_STATE <= ST_BMP_FILL;
-          end
-        end
-      end
-      ST_BMP_FLUSH_READ: begin
-        // perform next read
-        if (bmp_waitcnt_r == 0) begin
-          b2c_waitcnt_val_r <= 1;
-          b2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
-
-          // address common between read and write
-          bmp_addr_r <= 24'hE00000 + bmp_char_shift_r[bmp_flush_buf_r] + {SCBR_r,10'h000} + {bmp_y_r[bmp_flush_buf_r][2:0],1'b0} + {bmp_plane_r[2:1], 3'b000, bmp_plane_r[0]};
-
-          // read
-          bmp_ram_rd_r <= 1;
-          bmp_word_r <= 0;
-          
-          BMP_STATE <= ST_BMP_FLUSH_READ_WAIT;
-        end
-      end
-      ST_BMP_FLUSH_READ_WAIT: begin        
-        b2c_waitcnt_val_r <= 0;
-
-        if (|(RAM_STATE & ST_RAM_BMP_END)) begin
-          bmp_ram_rd_r <= 0;
-          
-          // collect data
-          bmp_flush_colr_r <= ram_bus_data_r[7:0];
-          
-          BMP_STATE <= ST_BMP_FLUSH_WRITE;
-        end
-      end
-      ST_BMP_FLUSH_WRITE: begin
-        // perform next write
-        if (bmp_waitcnt_r == 0) begin
-          b2c_waitcnt_val_r <= 1;
-          b2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
-
-          // address common between read and write
-          bmp_addr_r <= 24'hE00000 + bmp_char_shift_r[bmp_flush_buf_r] + {SCBR_r,10'h000} + {bmp_y_r[bmp_flush_buf_r][2:0],1'b0} + {bmp_plane_r[2:1], 3'b000, bmp_plane_r[0]};
-
-          // write
-          bmp_ram_wr_r <= 1;
-          bmp_word_r <= 0;
-          bmp_data_r <= ({PIXBUF_r[bmp_flush_buf_r][7][bmp_plane_r],PIXBUF_r[bmp_flush_buf_r][6][bmp_plane_r],PIXBUF_r[bmp_flush_buf_r][5][bmp_plane_r],PIXBUF_r[bmp_flush_buf_r][4][bmp_plane_r],
-                          PIXBUF_r[bmp_flush_buf_r][3][bmp_plane_r],PIXBUF_r[bmp_flush_buf_r][2][bmp_plane_r],PIXBUF_r[bmp_flush_buf_r][1][bmp_plane_r],PIXBUF_r[bmp_flush_buf_r][0][bmp_plane_r]} & PIXBUF_VALID_r[bmp_flush_buf_r])
-                        | (bmp_flush_colr_r & ~PIXBUF_VALID_r[bmp_flush_buf_r]);
-          
-          BMP_STATE <= ST_BMP_FLUSH_WRITE_WAIT;
-        end
-      end
-      ST_BMP_FLUSH_WRITE_WAIT: begin
-        b2c_waitcnt_val_r <= 0;
-
-        // test for end
-        if (|(RAM_STATE & ST_RAM_BMP_END)) begin
-          bmp_ram_wr_r <= 0;
-          
-          if (bmp_plane_r == bmp_bppm1_r) begin
-            // invalidate
-            PIXBUF_VALID_r[bmp_flush_buf_r] <= 0;
-            bmp_plane_r <= 0;
-            
-            if (bmp_mode_r == BMP_MODE_PLOT) begin
-              // flush done, perform write
-              BMP_STATE <= ST_BMP_END;
-            end
-            else if (~bmp_flush_buf_r & |PIXBUF_VALID_r[1]) begin
-              bmp_flush_buf_r <= 1;
-              bmp_flush_rmw_r <= ~&PIXBUF_VALID_r[1];
-
-              BMP_STATE <= &PIXBUF_VALID_r[1] ? ST_BMP_FLUSH_WRITE : ST_BMP_FLUSH_READ;
-            end
-            else begin
-              BMP_STATE <= ST_BMP_FILL;
-            end
-          end
-          else begin
-            // continue flush
-            bmp_plane_r <= bmp_plane_r + 1;
-            
-            BMP_STATE <= bmp_flush_rmw_r ? ST_BMP_FLUSH_READ : ST_BMP_FLUSH_WRITE;
           end
         end
       end
       ST_BMP_FILL: begin
         // generate next read
         if (bmp_waitcnt_r == 0) begin
-          b2c_waitcnt_val_r <= 1;
-          b2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
+          bmp_waitcnt_r <= lat_memory_r;
 
           // address common between read and write
           bmp_addr_r <= 24'hE00000 + bmp_rpix_char_shift_r + {SCBR_r,10'h000} + {bmp_rpix_y_r[2:0],1'b0} + {bmp_plane_r[2:1], 3'b000, bmp_plane_r[0]};
@@ -1215,8 +1153,6 @@ always @(posedge CLK) begin
         end
       end
       ST_BMP_FILL_WAIT: begin
-        b2c_waitcnt_val_r <= 0;
-
         if (|(RAM_STATE & ST_RAM_BMP_END)) begin
           bmp_ram_rd_r <= 0;
 
@@ -1229,31 +1165,116 @@ always @(posedge CLK) begin
         end
       end
       ST_BMP_END: begin
-        if (bmp_mode_r == BMP_MODE_PLOT) begin
-          // write color and offset
-          PIXBUF_OFFSET_r[0]             <= bmp_offset_r;
-          PIXBUF_r[0][bmp_index_r]       <= bmp_colr_r;
-          
-          // swap buffer if valid.  The only way to get here is:
-          // 1) 0 is empty
-          // 2) offset was same
-          // 3) offset was different 0 is nonempty and 1 is empty (due to flush or start state)
-          if (PIXBUF_OFFSET_r[0] != e2b_offset_r && |PIXBUF_VALID_r[0]) begin
-            // copy over buffer if (3)
-            PIXBUF_VALID_r[1]  <= PIXBUF_VALID_r[0];
-            PIXBUF_OFFSET_r[1] <= PIXBUF_OFFSET_r[0];
-            for (i = 0; i < 8; i = i + 1) PIXBUF_r[1][i] <= PIXBUF_r[0][i];
-            
-            PIXBUF_VALID_r[0] <= bmp_index_bit_r;
+        // this state signals completion to EXE
+        if (bmp_waitcnt_r == 0) begin
+          if (bmp_mode_r == BMP_MODE_PLOT) begin
+            // write offset and color.  valid handled in that pipe
+            PIXBUF_OFFSET_r[PIXBUF_HEAD_r]       <= bmp_offset_r;
+            PIXBUF_r[PIXBUF_HEAD_r][bmp_index_r] <= bmp_colr_r;
           end
-          else begin
-            PIXBUF_VALID_r[0] <= PIXBUF_VALID_r[0] | bmp_index_bit_r;
-          end
+          // RPIX gets the data directly from the local color register
+
+          BMP_STATE <= ST_BMP_IDLE;
         end
-        // RPIX gets the data directly from the local color register
-      
-        // signal completion to EXE
-        BMP_STATE <= ST_BMP_IDLE;
+      end
+    endcase
+  end
+end
+
+// PIXBUF FLUSH PIPELINE
+parameter
+  ST_BMF_IDLE             = 8'b00000001,
+  ST_BMF_FLUSH_READ       = 8'b00000010,
+  ST_BMF_FLUSH_READ_WAIT  = 8'b00000100,
+  ST_BMF_FLUSH_WRITE      = 8'b00001000,
+  ST_BMF_FLUSH_WRITE_WAIT = 8'b00010000,
+  ST_BMF_END              = 8'b10000000
+  ;
+reg [7:0]  BMF_STATE; initial BMF_STATE = ST_BMF_IDLE;
+
+assign bmf_done = |(BMF_STATE & ST_BMF_END);
+
+reg [3:0]  bmf_waitcnt_r;
+reg [2:0]  bmf_plane_r;
+reg        bmf_rmw_r;
+
+always @(posedge CLK) begin
+  if (RST) begin
+    BMF_STATE <= ST_BMF_IDLE;
+    
+    bmf_waitcnt_r <= 0;
+    bmf_ram_rd_r <= 0;
+    bmf_ram_wr_r <= 0;
+    bmf_plane_r <= 0;
+    bmf_rmw_r <= 0;
+  end
+  else begin
+    if (gsu_clock_en & |bmf_waitcnt_r) bmf_waitcnt_r <= bmf_waitcnt_r - 1;
+
+    case (BMF_STATE)
+      ST_BMF_IDLE: begin
+        if (|PIXBUF_VALID_r[~PIXBUF_HEAD_r]) begin
+          bmf_data_r <= 0;
+          bmf_plane_r <= 0;
+          bmf_rmw_r <= ~&PIXBUF_VALID_r[~PIXBUF_HEAD_r];
+
+          BMF_STATE <= &PIXBUF_VALID_r[~PIXBUF_HEAD_r] ? ST_BMF_FLUSH_WRITE : ST_BMF_FLUSH_READ;
+        end
+      end
+      ST_BMF_FLUSH_READ: begin
+        // perform next read
+        if (bmf_waitcnt_r == 0) begin
+          bmf_waitcnt_r <= lat_memory_r;
+
+          // address common between read and write
+          bmf_addr_r <= 24'hE00000 + bmp_char_shift_r[~PIXBUF_HEAD_r] + {SCBR_r,10'h000} + {bmp_y_r[~PIXBUF_HEAD_r][2:0],1'b0} + {bmf_plane_r[2:1], 3'b000, bmf_plane_r[0]};
+
+          // read
+          bmf_ram_rd_r <= 1;
+          bmf_word_r <= 0;
+          
+          BMF_STATE <= ST_BMF_FLUSH_READ_WAIT;
+        end
+      end
+      ST_BMF_FLUSH_READ_WAIT: begin        
+        if (|(RAM_STATE & ST_RAM_BMP_END)) begin
+          bmf_ram_rd_r <= 0;
+          
+          // collect data
+          bmf_data_r <= ram_bus_data_r[7:0];
+          
+          BMF_STATE <= ST_BMF_FLUSH_WRITE;
+        end
+      end
+      ST_BMF_FLUSH_WRITE: begin
+        // perform next write
+        if (bmf_waitcnt_r == 0) begin
+          bmf_waitcnt_r <= lat_memory_r;
+
+          // address common between read and write
+          bmf_addr_r <= 24'hE00000 + bmp_char_shift_r[~PIXBUF_HEAD_r] + {SCBR_r,10'h000} + {bmp_y_r[~PIXBUF_HEAD_r][2:0],1'b0} + {bmf_plane_r[2:1], 3'b000, bmf_plane_r[0]};
+
+          // write
+          bmf_ram_wr_r <= 1;
+          bmf_word_r <= 0;
+          bmf_data_r <= ({PIXBUF_r[~PIXBUF_HEAD_r][7][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][6][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][5][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][4][bmf_plane_r],
+                          PIXBUF_r[~PIXBUF_HEAD_r][3][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][2][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][1][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][0][bmf_plane_r]} & PIXBUF_VALID_r[~PIXBUF_HEAD_r])
+                        | (bmf_data_r & ~PIXBUF_VALID_r[~PIXBUF_HEAD_r]);
+          
+          BMF_STATE <= ST_BMF_FLUSH_WRITE_WAIT;
+        end
+      end
+      ST_BMF_FLUSH_WRITE_WAIT: begin
+        // test for end
+        if (|(RAM_STATE & ST_RAM_BMP_END)) begin
+          bmf_ram_wr_r <= 0;          
+          bmf_plane_r <= bmf_plane_r + 1;
+          
+          BMF_STATE <= (bmf_plane_r == bmp_bppm1_r) ? ST_BMF_END : bmf_rmw_r ? ST_BMF_FLUSH_READ : ST_BMF_FLUSH_WRITE;
+        end
+      end
+      ST_BMF_END: begin
+        BMF_STATE <= ST_BMF_IDLE;
       end
     endcase
   end
@@ -1282,9 +1303,7 @@ always @(posedge CLK) begin
     STB_STATE <= ST_STB_IDLE;
   end
   else begin
-    if (gsu_clock_en & |stb_waitcnt_r) begin
-      stb_waitcnt_r <= stb_waitcnt_r - 1;
-    end
+    if (gsu_clock_en & |stb_waitcnt_r) stb_waitcnt_r <= stb_waitcnt_r - 1;
     
     case (STB_STATE)
       ST_STB_IDLE: begin
@@ -1676,9 +1695,9 @@ wire [15:0] exe_mult_out;
 wire [15:0] exe_umult_out;
 
 reg [7:0]  exe_byte_r;
+
 reg [15:0] exe_plot_offset_r;
 reg [2:0]  exe_plot_index_r;
-reg        exe_plot_mem_r;
 
 reg        exe_error;
 
@@ -1910,7 +1929,7 @@ always @(posedge CLK) begin
                 // RPIX
                 e2r_val_r    <= 1;
                 
-                // generate rpixel
+                // generate pixel read
                 e2b_rpix_r   <= 1;
                 e2b_offset_r <= exe_plot_offset_r;
                 e2b_index_r  <= exe_plot_index_r;
@@ -1923,7 +1942,6 @@ always @(posedge CLK) begin
                 
                 // generate plot - skip if transparent
                 e2b_plot_r     <= POR_TRS || ((SCMR_MD != 3 || POR_FHN) ? (exe_colr_r[3:0] != 0) : (exe_colr_r != 0));
-                exe_plot_mem_r <= (PIXBUF_OFFSET_r[0] != exe_plot_offset_r) && (|PIXBUF_VALID_r[0] && |PIXBUF_VALID_r[1]);
                 
                 e2b_offset_r   <= exe_plot_offset_r;
                 e2b_index_r    <= exe_plot_index_r;
@@ -2146,14 +2164,10 @@ always @(posedge CLK) begin
               end
             end
             `OP_PLOT_RPIX      : begin             
-              // done with the operations
-              e2b_plot_r <= 0;
-              e2b_rpix_r <= 0;
-              exe_plot_mem_r <= 0;
               e2r_data_r <= e2r_data_pre_r; // R1 for PLOT
               
-              // if RPIX then wait for data return.  otherwise we need a quick exit for 1 GSU clock plot operations
-              if (exe_alt1_r | (exe_plot_mem_r & e2b_plot_r)) begin
+              // if RPIX then wait for data return.  otherwise we need a quick exit for 1 GSU clock PLOT operations
+              if (exe_alt1_r | (e2b_plot_r & ~bmp_hit)) begin
                 EXE_STATE <= ST_EXE_MEMORY_WAIT;
               end
               else begin
@@ -2441,6 +2455,10 @@ always @(posedge CLK) begin
       ST_EXE_WAIT: begin
         e2c_waitcnt_val_r <= 0;
         e2s_req_r <= 0;
+
+        // done with the operations
+        e2b_plot_r <= 0;
+        e2b_rpix_r <= 0;
         
         if (gsu_clock_en) e2r_lmult_r <= 0;
         
@@ -2523,7 +2541,7 @@ always @(posedge CLK) begin
                         || (bmp_ram_rd_r   && (bmp_addr_r   == brk_addr_r)                                                  )
                         );
     brk_data_wr_addr <= (  (stb_ram_wr_r   && (stb_addr_r   == brk_addr_r))
-                        || (bmp_ram_wr_r   && (bmp_addr_r   == brk_addr_r))
+                        || (bmf_ram_wr_r   && (bmf_addr_r   == brk_addr_r))
                         );
     brk_stop         <= exe_opcode_r == `OP_STOP;
     brk_error        <= fetch_error; // FIXME: set this state based on opcode or other error condition
@@ -2573,41 +2591,41 @@ always @(posedge CLK) begin
   pgmdata_out <= pgmpre_out[pgm_addr_r[9:8]];
 
   case (pgm_addr_r[9:8])
-    2'h0: case (pgm_addr_r[7:0])
-      //ADDR_GPRL        : pgmpre_out[0] <= REG_r[pgm_addr_r[4:1]][7:0];
-      //ADDR_GPRH        : pgmpre_out[0] <= REG_r[pgm_addr_r[4:1]][15:8];
-      ADDR_R0          : pgmpre_out[0] <= REG_r[R0][7:0];
-      ADDR_R0+1        : pgmpre_out[0] <= REG_r[R0][15:8];
-      ADDR_R1          : pgmpre_out[0] <= REG_r[R1][7:0];
-      ADDR_R1+1        : pgmpre_out[0] <= REG_r[R1][15:8];
-      ADDR_R2          : pgmpre_out[0] <= REG_r[R2][7:0];
-      ADDR_R2+1        : pgmpre_out[0] <= REG_r[R2][15:8];
-      ADDR_R3          : pgmpre_out[0] <= REG_r[R3][7:0];
-      ADDR_R3+1        : pgmpre_out[0] <= REG_r[R3][15:8];
-      ADDR_R4          : pgmpre_out[0] <= REG_r[R4][7:0];
-      ADDR_R4+1        : pgmpre_out[0] <= REG_r[R4][15:8];
-      ADDR_R5          : pgmpre_out[0] <= REG_r[R5][7:0];
-      ADDR_R5+1        : pgmpre_out[0] <= REG_r[R5][15:8];
-      ADDR_R6          : pgmpre_out[0] <= REG_r[R6][7:0];
-      ADDR_R6+1        : pgmpre_out[0] <= REG_r[R6][15:8];
-      ADDR_R7          : pgmpre_out[0] <= REG_r[R7][7:0];
-      ADDR_R7+1        : pgmpre_out[0] <= REG_r[R7][15:8];
-      ADDR_R8          : pgmpre_out[0] <= REG_r[R8][7:0];
-      ADDR_R8+1        : pgmpre_out[0] <= REG_r[R8][15:8];
-      ADDR_R9          : pgmpre_out[0] <= REG_r[R9][7:0];
-      ADDR_R9+1        : pgmpre_out[0] <= REG_r[R9][15:8];
-      ADDR_R10         : pgmpre_out[0] <= REG_r[R10][7:0];
-      ADDR_R10+1       : pgmpre_out[0] <= REG_r[R10][15:8];
-      ADDR_R11         : pgmpre_out[0] <= REG_r[R11][7:0];
-      ADDR_R11+1       : pgmpre_out[0] <= REG_r[R11][15:8];
-      ADDR_R12         : pgmpre_out[0] <= REG_r[R12][7:0];
-      ADDR_R12+1       : pgmpre_out[0] <= REG_r[R12][15:8];
-      ADDR_R13         : pgmpre_out[0] <= REG_r[R13][7:0];
-      ADDR_R13+1       : pgmpre_out[0] <= REG_r[R13][15:8];
-      ADDR_R14         : pgmpre_out[0] <= REG_r[R14][7:0];
-      ADDR_R14+1       : pgmpre_out[0] <= REG_r[R14][15:8];
-      ADDR_R15         : pgmpre_out[0] <= REG_r[R15][7:0];
-      ADDR_R15+1       : pgmpre_out[0] <= REG_r[R15][15:8];
+    2'h0: casex (pgm_addr_r[7:0])
+      ADDR_GPRL        : pgmpre_out[0] <= REG_r[pgm_addr_r[4:1]][7:0];
+      ADDR_GPRH        : pgmpre_out[0] <= REG_r[pgm_addr_r[4:1]][15:8];
+//      ADDR_R0          : pgmpre_out[0] <= REG_r[R0][7:0];
+//      ADDR_R0+1        : pgmpre_out[0] <= REG_r[R0][15:8];
+//      ADDR_R1          : pgmpre_out[0] <= REG_r[R1][7:0];
+//      ADDR_R1+1        : pgmpre_out[0] <= REG_r[R1][15:8];
+//      ADDR_R2          : pgmpre_out[0] <= REG_r[R2][7:0];
+//      ADDR_R2+1        : pgmpre_out[0] <= REG_r[R2][15:8];
+//      ADDR_R3          : pgmpre_out[0] <= REG_r[R3][7:0];
+//      ADDR_R3+1        : pgmpre_out[0] <= REG_r[R3][15:8];
+//      ADDR_R4          : pgmpre_out[0] <= REG_r[R4][7:0];
+//      ADDR_R4+1        : pgmpre_out[0] <= REG_r[R4][15:8];
+//      ADDR_R5          : pgmpre_out[0] <= REG_r[R5][7:0];
+//      ADDR_R5+1        : pgmpre_out[0] <= REG_r[R5][15:8];
+//      ADDR_R6          : pgmpre_out[0] <= REG_r[R6][7:0];
+//      ADDR_R6+1        : pgmpre_out[0] <= REG_r[R6][15:8];
+//      ADDR_R7          : pgmpre_out[0] <= REG_r[R7][7:0];
+//      ADDR_R7+1        : pgmpre_out[0] <= REG_r[R7][15:8];
+//      ADDR_R8          : pgmpre_out[0] <= REG_r[R8][7:0];
+//      ADDR_R8+1        : pgmpre_out[0] <= REG_r[R8][15:8];
+//      ADDR_R9          : pgmpre_out[0] <= REG_r[R9][7:0];
+//      ADDR_R9+1        : pgmpre_out[0] <= REG_r[R9][15:8];
+//      ADDR_R10         : pgmpre_out[0] <= REG_r[R10][7:0];
+//      ADDR_R10+1       : pgmpre_out[0] <= REG_r[R10][15:8];
+//      ADDR_R11         : pgmpre_out[0] <= REG_r[R11][7:0];
+//      ADDR_R11+1       : pgmpre_out[0] <= REG_r[R11][15:8];
+//      ADDR_R12         : pgmpre_out[0] <= REG_r[R12][7:0];
+//      ADDR_R12+1       : pgmpre_out[0] <= REG_r[R12][15:8];
+//      ADDR_R13         : pgmpre_out[0] <= REG_r[R13][7:0];
+//      ADDR_R13+1       : pgmpre_out[0] <= REG_r[R13][15:8];
+//      ADDR_R14         : pgmpre_out[0] <= REG_r[R14][7:0];
+//      ADDR_R14+1       : pgmpre_out[0] <= REG_r[R14][15:8];
+//      ADDR_R15         : pgmpre_out[0] <= REG_r[R15][7:0];
+//      ADDR_R15+1       : pgmpre_out[0] <= REG_r[R15][15:8];
 
       ADDR_SFR         : pgmpre_out[0] <= SFR_r[7:0];
       ADDR_SFR+1       : pgmpre_out[0] <= SFR_r[15:8];
@@ -2631,8 +2649,11 @@ always @(posedge CLK) begin
       8'h46            : pgmpre_out[0] <= RAMADDR_r[7:0];
       8'h47            : pgmpre_out[0] <= RAMADDR_r[15:8];
   
-//      8'h50,8'h58      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
-//      8'h51,8'h59      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
+      8'h4F            : pgmpre_out[0] <= PIXBUF_HEAD_r;
+      8'h50,8'h58      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
+      8'h51,8'h59      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
+      8'h6x            : pgmpre_out[0] <= PIXBUF_VALID_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
+      8'h7x            : pgmpre_out[0] <= PIXBUF_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
 //      8'h60,8'h68      : pgmpre_out[0] <= PIXBUF_VALID_r[pgm_addr_r[3]];
 //      8'h70            : pgmpre_out[0] <= PIXBUF_r[0][0];
 //      8'h71            : pgmpre_out[0] <= PIXBUF_r[0][1];
@@ -2651,22 +2672,6 @@ always @(posedge CLK) begin
 //      8'h7E            : pgmpre_out[0] <= PIXBUF_r[1][6];
 //      8'h7F            : pgmpre_out[0] <= PIXBUF_r[1][7];
   
-      // TODO: add more internal temps @ $80
-//      8'h80            : pgmpre_out[0] <= SFR_Z;
-//      8'h81            : pgmpre_out[0] <= SFR_CY;
-//      8'h82            : pgmpre_out[0] <= SFR_S;
-//      8'h83            : pgmpre_out[0] <= SFR_OV;
-//      8'h84            : pgmpre_out[0] <= SFR_GO;
-//      8'h85            : pgmpre_out[0] <= SFR_RR;
-//      8'h86            : pgmpre_out[0] <= SFR_ALT1;
-//      8'h87            : pgmpre_out[0] <= SFR_ALT2;
-//      8'h88            : pgmpre_out[0] <= SFR_IL;
-//      8'h89            : pgmpre_out[0] <= SFR_IH;
-//      8'h8A            : pgmpre_out[0] <= SFR_B;
-//      8'h8B            : pgmpre_out[0] <= SCMR_MD;
-//      8'h8C            : pgmpre_out[0] <= SCMR_HT;
-//      8'h8D            : pgmpre_out[0] <= SCMR_RAN;
-//      8'h8E            : pgmpre_out[0] <= SCMR_RON;
 
       // bitmap state
 //      8'h90           : pgmpre_out[0] <= BMP_STATE;
@@ -2690,6 +2695,12 @@ always @(posedge CLK) begin
 //      8'hA2           : pgmpre_out[0] <= bmp_rpix_x_r;
 //      8'hA3           : pgmpre_out[0] <= bmp_rpix_y_r;
 //      8'hA4           : pgmpre_out[0] <= bmp_index_r;
+
+      //8'hA5           : pgmpre_out[0] <= e2b_plot_r;
+      //8'hA6           : pgmpre_out[0] <= e2b_rpix_r;
+      //8'hA7           : pgmpre_out[0] <= RAM_STATE;
+
+      //8'hA8           : pgmpre_out[0] <= BMF_STATE;
 
       8'hB2           : pgmpre_out[0] <= exe_opcode_r;
       8'hB3           : pgmpre_out[0] <= exe_operand_r[7:0];
