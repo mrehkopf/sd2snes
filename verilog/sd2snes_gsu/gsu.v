@@ -439,8 +439,8 @@ end
 //reg        i2e_ptr_r; initial i2e_ptr_r = 0;
 
 // Execute -> RegisterFile
-reg        e2r_val_r;
-reg        e2r_sneswrite_r;
+reg        e2r_val_r; initial e2r_val_r = 0;
+reg        e2r_sneswrite_r; initial e2r_sneswrite_r = 0;
 reg [3:0]  e2r_destnum_r;
 reg [15:0] e2r_data_pre_r;
 reg [15:0] e2r_data_r;
@@ -449,7 +449,7 @@ reg [15:0] e2r_r4_r;
 reg        e2r_loop_r;
 reg        e2r_wpbr_r;
 reg        e2r_wcbr_r;
-reg        e2r_lmult_r;
+reg        e2r_lmult_r; initial e2r_lmult_r = 0;
 reg [15:0] e2r_pbr_r;
 reg [15:0] e2r_cbr_r;
 reg        e2r_wpor_r;
@@ -470,32 +470,32 @@ reg [3:0]  e2r_dreg_r;
 
 // Fetch -> Common
 reg        i2c_waitcnt_val_r; initial i2c_waitcnt_val_r = 0;
-reg [3:0]  i2c_waitcnt_r;
+reg [3:0]  i2c_waitcnt_r; initial i2c_waitcnt_r = 0;
 
 // Execute -> Common
 reg        e2c_waitcnt_val_r; initial e2c_waitcnt_val_r = 0;
-reg [3:0]  e2c_waitcnt_r;
+reg [3:0]  e2c_waitcnt_r; initial e2c_waitcnt_r = 0;
 
 // Bitmap -> Common
 reg        b2c_waitcnt_val_r; initial b2c_waitcnt_val_r = 0;
-reg [3:0]  b2c_waitcnt_r;
+reg [3:0]  b2c_waitcnt_r; initial b2c_waitcnt_r = 0;
 
 // Execute -> Bitmap
-reg        e2b_plot_r;
-reg        e2b_rpix_r;
-reg [7:0]  e2b_colr_r;
-reg [15:0] e2b_offset_r;
-reg [2:0]  e2b_index_r;
+reg        e2b_plot_r; initial e2b_plot_r = 0;
+reg        e2b_rpix_r; initial e2b_rpix_r = 0;
+reg [7:0]  e2b_colr_r; initial e2b_colr_r = 0;
+reg [15:0] e2b_offset_r; initial e2b_offset_r = 0;
+reg [2:0]  e2b_index_r; initial e2b_index_r = 0;
 
 // Cache flush interface
-reg        e2i_flush_r;
-reg        r2i_flush_r;
+reg        e2i_flush_r; initial e2i_flush_r = 0;
+reg        r2i_flush_r; initial r2i_flush_r = 0;
 
 // Execute -> Store Buffer
-reg        e2s_req_r;
-reg        e2s_word_r;
+reg        e2s_req_r; initial e2s_req_r = 0;
+reg        e2s_word_r; initial e2s_word_r = 0;
 
-reg waitcnt_zero_r;
+reg waitcnt_zero_r; initial waitcnt_zero_r = 0;
 wire waitcnt_zero;
 
 //-------------------------------------------------------------------
@@ -549,22 +549,22 @@ gsu_cache cache (
 //-------------------------------------------------------------------
 // This handles all state read and write.  The main execution pipeline
 // feeds intermediate results back here.
-reg        data_enable_r;
+reg        data_enable_r; initial data_enable_r = 0;
 reg [7:0]  data_out_r;
 reg [7:0]  data_flop_r;
 
-reg        snes_write_r;
-reg        snes_writereg_r;
+reg        snes_write_r; initial snes_write_r = 0;
+reg        snes_writereg_r; initial snes_writereg_r = 0;
 
-reg        snes_writebuf_val_r;
+reg        snes_writebuf_val_r; initial snes_writebuf_val_r = 0;
 reg        snes_writebuf_reg_r;
 reg        snes_writebuf_gpr_r;
 reg [9:0]  snes_writebuf_addr_r;
 reg [7:0]  snes_writebuf_data_r;
 
-reg        snes_readbuf_val_r;
+reg        snes_readbuf_val_r; initial snes_readbuf_val_r = 0;
 
-reg        idle_r;
+reg        idle_r; initial idle_r = 0;
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -764,8 +764,8 @@ end
 // COMMON PIPELINE
 //-------------------------------------------------------------------
 
-reg [3:0] fetch_waitcnt_r;
-reg [3:0] exe_waitcnt_r;
+reg [3:0] fetch_waitcnt_r; initial fetch_waitcnt_r = 0;
+reg [3:0] exe_waitcnt_r; initial exe_waitcnt_r = 0;
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -810,7 +810,7 @@ reg [23:0] rom_bus_addr_r;
 reg [15:0] rom_bus_data_r;
 reg        rom_bus_word_r;
 //reg [3:0] rom_waitcnt_r;
-reg        rom_busy_r;
+reg        rom_busy_r; initial rom_busy_r = 0;
 
 // The ROM/RAM should be dedicated to the GSU whenever it wants to do a fetch
 always @(posedge CLK) begin
@@ -864,24 +864,27 @@ assign ROM_BUS_ADDR = rom_bus_addr_r;
 // RAM PIPELINE
 //-------------------------------------------------------------------
 parameter
-  ST_RAM_IDLE      = 9'b000000001,
-  ST_RAM_FETCH_RD  = 9'b000000010,
-  ST_RAM_DATA_RD   = 9'b000000100,
-  ST_RAM_DATA_WR   = 9'b000001000,
-  ST_RAM_BMP_RD    = 9'b000010000,
-  ST_RAM_BMP_WR    = 9'b000100000,
-  ST_RAM_FETCH_END = 9'b001000000,
-  ST_RAM_DATA_END  = 9'b010000000,
-  ST_RAM_BMP_END   = 9'b100000000
+  ST_RAM_IDLE      = 8'b00000001,
+  ST_RAM_ACCESS    = 8'b00000010,
+  //ST_RAM_DATA_RD   = 10'b0000000100,
+  //ST_RAM_DATA_WR   = 10'b0000001000,
+  //ST_RAM_BMP_RD    = 10'b0000010000,
+  //ST_RAM_BMP_WR    = 10'b0000100000,
+  ST_RAM_FETCH_END = 8'b00000100,
+  ST_RAM_DATA_END  = 8'b00001000,
+  ST_RAM_STB_END   = 8'b00010000,
+  ST_RAM_BMP_END   = 8'b00100000,
+  ST_RAM_BMF_END   = 8'b01000000
   ;
-reg [8:0] RAM_STATE; initial RAM_STATE = ST_RAM_IDLE;
+reg [7:0] RAM_STATE; initial RAM_STATE = ST_RAM_IDLE;
+reg [7:0] ram_state_end_r;
 reg ram_bus_rrq_r; initial ram_bus_rrq_r = 0;
 reg ram_bus_wrq_r; initial ram_bus_wrq_r = 0;
 reg [23:0] ram_bus_addr_r;
 reg [15:0] ram_bus_data_r;
 reg        ram_bus_word_r;
 //reg [3:0] ram_waitcnt_r;
-reg        ram_busy_r;
+reg        ram_busy_r; initial ram_busy_r = 0;
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -901,14 +904,16 @@ always @(posedge CLK) begin
             ram_bus_word_r <= exe_word_r;
             ram_bus_addr_r <= exe_addr_r;
             ram_busy_r <= 1;
-            RAM_STATE <= ST_RAM_DATA_RD;
+            RAM_STATE <= ST_RAM_ACCESS;
+            ram_state_end_r <= ST_RAM_DATA_END;
           end
           else if (cache_ram_rd_r) begin
             ram_bus_rrq_r <= 1;
             ram_bus_addr_r <= cache_addr_r;
             ram_bus_word_r <= cache_word_r;
             ram_busy_r <= 1;
-            RAM_STATE <= ST_RAM_FETCH_RD;
+            RAM_STATE <= ST_RAM_ACCESS;
+            ram_state_end_r <= ST_RAM_FETCH_END;
           end
           else if (stb_ram_wr_r) begin
             ram_bus_wrq_r <= 1;
@@ -916,21 +921,24 @@ always @(posedge CLK) begin
             ram_bus_addr_r <= stb_addr_r;
             ram_bus_data_r <= stb_data_r;
             ram_busy_r <= 1;
-            RAM_STATE <= ST_RAM_DATA_WR;
+            RAM_STATE <= ST_RAM_ACCESS;
+            ram_state_end_r <= ST_RAM_STB_END;            
           end
           else if (bmp_ram_rd_r) begin
             ram_bus_rrq_r <= 1;
             ram_bus_word_r <= bmp_word_r;
             ram_bus_addr_r <= bmp_addr_r;
             ram_busy_r <= 1;
-            RAM_STATE <= ST_RAM_BMP_RD;
+            RAM_STATE <= ST_RAM_ACCESS;
+            ram_state_end_r <= ST_RAM_BMP_END;
           end
           else if (bmf_ram_rd_r) begin
             ram_bus_rrq_r <= 1;
             ram_bus_word_r <= bmf_word_r;
             ram_bus_addr_r <= bmf_addr_r;
             ram_busy_r <= 1;
-            RAM_STATE <= ST_RAM_BMP_RD;
+            RAM_STATE <= ST_RAM_ACCESS;
+            ram_state_end_r <= ST_RAM_BMF_END;
           end
           else if (bmf_ram_wr_r) begin
             ram_bus_wrq_r <= 1;
@@ -938,26 +946,25 @@ always @(posedge CLK) begin
             ram_bus_addr_r <= bmf_addr_r;
             ram_bus_data_r <= bmf_data_r;
             ram_busy_r <= 1;
-            RAM_STATE <= ST_RAM_BMP_WR;
+            RAM_STATE <= ST_RAM_ACCESS;
+            ram_state_end_r <= ST_RAM_BMF_END;
           end
         end
       end
-      ST_RAM_FETCH_RD,
-      ST_RAM_DATA_RD,
-      ST_RAM_DATA_WR,
-      ST_RAM_BMP_RD,
-      ST_RAM_BMP_WR: begin
+      ST_RAM_ACCESS: begin
         ram_bus_rrq_r <= 0;
         ram_bus_wrq_r <= 0;
         
         if ((~ram_bus_rrq_r & ~ram_bus_wrq_r) & RAM_BUS_RDY) begin
           ram_bus_data_r <= RAM_BUS_RDDATA;
-          RAM_STATE <= (|(RAM_STATE & ST_RAM_FETCH_RD)) ? ST_RAM_FETCH_END : (|(RAM_STATE & (ST_RAM_BMP_RD | ST_RAM_BMP_WR))) ? ST_RAM_BMP_END : ST_RAM_DATA_END;
+          RAM_STATE <= ram_state_end_r;
         end
       end
       ST_RAM_FETCH_END,
+      ST_RAM_STB_END,
       ST_RAM_DATA_END,
-      ST_RAM_BMP_END: begin
+      ST_RAM_BMP_END,
+      ST_RAM_BMF_END: begin
         ram_busy_r <= 0;
         RAM_STATE <= ST_RAM_IDLE;
       end
@@ -979,6 +986,9 @@ assign RAM_BUS_WRDATA = ram_bus_data_r;
 reg [7:0]  PIXBUF_VALID_r[1:0];
 reg [15:0] PIXBUF_OFFSET_r[1:0];
 reg [7:0]  PIXBUF_r[1:0][7:0];
+reg        PIXBUF_OBJ_r[1:0];
+reg [1:0]  PIXBUF_HT_r[1:0];
+reg [1:0]  PIXBUF_MD_r[1:0];
 reg        PIXBUF_HEAD_r;
 
 reg        bmp_mode_r;
@@ -1004,7 +1014,7 @@ parameter  BMP_MODE_PLOT = 0;
 parameter  BMP_MODE_RPIX = 1;
 
 wire bmf_done;
-wire bmp_hit = PIXBUF_OFFSET_r[PIXBUF_HEAD_r] == e2b_offset_r || ~|PIXBUF_VALID_r[PIXBUF_HEAD_r];
+wire bmp_hit = (PIXBUF_OFFSET_r[PIXBUF_HEAD_r] == e2b_offset_r) || (~|PIXBUF_VALID_r[PIXBUF_HEAD_r]);
 
 parameter
   ST_BMP_IDLE             = 8'b00000001,
@@ -1017,8 +1027,9 @@ reg [7:0]  BMP_STATE; initial BMP_STATE = ST_BMP_IDLE;
 
 wire bmp_plot_done = (|(BMP_STATE & ST_BMP_END) && bmp_mode_r == BMP_MODE_PLOT);
 
-always @(PIXBUF_OFFSET_r[0], PIXBUF_OFFSET_r[1]) begin
+always @(PIXBUF_OFFSET_r[0], PIXBUF_OFFSET_r[1], SCMR_HT, POR_OBJ) begin
   for (i = 0; i < 2; i = i + 1) begin
+    //case (PIXBUF_HT_r[i] | {2{PIXBUF_OBJ_r[i]}})
     case (SCMR_HT | {2{POR_OBJ}})
       0: bmp_char_r[i] = {PIXBUF_OFFSET_r[i][4:0],4'b0000} + PIXBUF_OFFSET_r[i][12:8];
       1: bmp_char_r[i] = {PIXBUF_OFFSET_r[i][4:0],4'b0000} + {PIXBUF_OFFSET_r[i][4:0],2'b00} + PIXBUF_OFFSET_r[i][12:8];
@@ -1046,6 +1057,7 @@ always @(posedge CLK) begin
     bmp_x_r[i] <= {PIXBUF_OFFSET_r[i][4:0],3'b000};
     bmp_y_r[i] <= PIXBUF_OFFSET_r[i][12:5];
           
+    //case (PIXBUF_MD_r[i])
     case (SCMR_MD)
       0: bmp_char_shift_r[i] <= {bmp_char_r[i],4'h0};
       1: bmp_char_shift_r[i] <= {bmp_char_r[i],5'h00};
@@ -1063,7 +1075,7 @@ always @(posedge CLK) begin
     2: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,5'h00};
     3: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,6'h00};
   endcase
-  
+
   // {1, 3, 3, 7}
   bmp_bppm1_r <= {&SCMR_MD, |SCMR_MD, 1'b1};
   bmp_index_bit_r <= (8'h01 << e2b_index_r);
@@ -1077,20 +1089,29 @@ always @(posedge CLK) begin
   end
   else begin
     // ok if flush finishes at idle, will just block bmp pipe for one cycle
-    if (bmf_done | bmp_plot_done) begin
-      // clear when flush is complete
-      if (bmf_done) PIXBUF_VALID_r[~PIXBUF_HEAD_r] <= 0;
-      // set valid when done
-      if (bmp_plot_done) PIXBUF_VALID_r[PIXBUF_HEAD_r] <= PIXBUF_VALID_r[PIXBUF_HEAD_r] | bmp_index_bit_r;
+    for (i = 0; i < 2; i = i + 1) begin
+      if (i == PIXBUF_HEAD_r) begin
+        if (bmp_plot_done) PIXBUF_VALID_r[i] <= PIXBUF_VALID_r[i] |  bmp_index_bit_r;
+      end
+      else begin
+        if (bmf_done)      PIXBUF_VALID_r[i] <= 0;
+      end
     end
+//    if (bmf_done | bmp_plot_done) begin
+//      // clear when flush is complete
+//      if (bmf_done) PIXBUF_VALID_r[~PIXBUF_HEAD_r] <= 0;
+//      // set valid when done
+//      if (bmp_plot_done) PIXBUF_VALID_r[PIXBUF_HEAD_r] <= PIXBUF_VALID_r[PIXBUF_HEAD_r] | bmp_index_bit_r;
+//    end
     // double buffer swap
     // second buffer must be available and we must be idle
     // Conflict, Flush, or Full
-    else if (~|PIXBUF_VALID_r[~PIXBUF_HEAD_r]            // available
-       & (|(BMP_STATE & ST_BMP_IDLE))                    // idle
-       & ( (e2b_plot_r & ~bmp_hit)                       // conflict
-         | (e2b_rpix_r & |PIXBUF_VALID_r[PIXBUF_HEAD_r]) // flush
-         | (&PIXBUF_VALID_r[PIXBUF_HEAD_r])              // full
+    
+    if (~|PIXBUF_VALID_r[~PIXBUF_HEAD_r]                  // available
+       & (|(BMP_STATE & ST_BMP_IDLE))                     // idle
+       & ( (e2b_plot_r  & ~bmp_hit)                       // conflict
+         | (e2b_rpix_r  & |PIXBUF_VALID_r[PIXBUF_HEAD_r]) // flush
+         | (~e2b_plot_r & &PIXBUF_VALID_r[PIXBUF_HEAD_r]) // full and nothing that may hit on it in the pipe
          )
        ) begin
       // swap the buffers
@@ -1115,24 +1136,25 @@ always @(posedge CLK) begin
     case (BMP_STATE)
       ST_BMP_IDLE: begin // overlaps ST_EXE_MEMORY.  Single cycle operations 
         if (e2b_plot_r) begin
+          bmp_mode_r <= BMP_MODE_PLOT;
+          bmp_colr_r <= e2b_colr_r;
+          bmp_offset_r <= e2b_offset_r;
+          bmp_index_r  <= e2b_index_r;
+          
           if (bmp_hit) begin
-            bmp_mode_r <= BMP_MODE_PLOT;
-            bmp_colr_r <= e2b_colr_r;
-            bmp_offset_r <= e2b_offset_r;
-            bmp_index_r  <= e2b_index_r;
             //bmp_plane_r  <= 0;
             
             BMP_STATE <= ST_BMP_END;
           end
         end
         else if (e2b_rpix_r) begin
-          if (~|PIXBUF_VALID_r[0] & ~|PIXBUF_VALID_r[1]) begin
-            bmp_mode_r <= BMP_MODE_RPIX;
-            bmp_offset_r <= e2b_offset_r;
-            bmp_index_r  <= e2b_index_r;
-            bmp_plane_r  <= 0;
-            bmp_colr_r <= 0;
+          bmp_mode_r <= BMP_MODE_RPIX;
+          bmp_offset_r <= e2b_offset_r;
+          bmp_index_r  <= e2b_index_r;
+          bmp_plane_r  <= 0;
+          bmp_colr_r <= 0;
 
+          if (~|PIXBUF_VALID_r[0] & ~|PIXBUF_VALID_r[1]) begin
             BMP_STATE <= ST_BMP_FILL;
           end
         end
@@ -1166,16 +1188,19 @@ always @(posedge CLK) begin
       end
       ST_BMP_END: begin
         // this state signals completion to EXE
-        if (bmp_waitcnt_r == 0) begin
+        //if (bmp_waitcnt_r == 0) begin
           if (bmp_mode_r == BMP_MODE_PLOT) begin
             // write offset and color.  valid handled in that pipe
             PIXBUF_OFFSET_r[PIXBUF_HEAD_r]       <= bmp_offset_r;
             PIXBUF_r[PIXBUF_HEAD_r][bmp_index_r] <= bmp_colr_r;
+            //PIXBUF_OBJ_r[PIXBUF_HEAD_r]          <= POR_OBJ;
+            //PIXBUF_HT_r[PIXBUF_HEAD_r]           <= SCMR_HT;
+            //PIXBUF_MD_r[PIXBUF_HEAD_r]           <= SCMR_MD;
           end
           // RPIX gets the data directly from the local color register
 
           BMP_STATE <= ST_BMP_IDLE;
-        end
+        //end
       end
     endcase
   end
@@ -1197,6 +1222,7 @@ assign bmf_done = |(BMF_STATE & ST_BMF_END);
 reg [3:0]  bmf_waitcnt_r;
 reg [2:0]  bmf_plane_r;
 reg        bmf_rmw_r;
+reg [7:0]  bmf_flush_data_r;
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -1237,11 +1263,11 @@ always @(posedge CLK) begin
         end
       end
       ST_BMF_FLUSH_READ_WAIT: begin        
-        if (|(RAM_STATE & ST_RAM_BMP_END)) begin
+        if (|(RAM_STATE & ST_RAM_BMF_END)) begin
           bmf_ram_rd_r <= 0;
           
           // collect data
-          bmf_data_r <= ram_bus_data_r[7:0];
+          bmf_flush_data_r <= ram_bus_data_r[7:0];
           
           BMF_STATE <= ST_BMF_FLUSH_WRITE;
         end
@@ -1259,14 +1285,14 @@ always @(posedge CLK) begin
           bmf_word_r <= 0;
           bmf_data_r <= ({PIXBUF_r[~PIXBUF_HEAD_r][7][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][6][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][5][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][4][bmf_plane_r],
                           PIXBUF_r[~PIXBUF_HEAD_r][3][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][2][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][1][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][0][bmf_plane_r]} & PIXBUF_VALID_r[~PIXBUF_HEAD_r])
-                        | (bmf_data_r & ~PIXBUF_VALID_r[~PIXBUF_HEAD_r]);
+                        | (bmf_flush_data_r & ~PIXBUF_VALID_r[~PIXBUF_HEAD_r]);
           
           BMF_STATE <= ST_BMF_FLUSH_WRITE_WAIT;
         end
       end
       ST_BMF_FLUSH_WRITE_WAIT: begin
         // test for end
-        if (|(RAM_STATE & ST_RAM_BMP_END)) begin
+        if (|(RAM_STATE & ST_RAM_BMF_END)) begin
           bmf_ram_wr_r <= 0;          
           bmf_plane_r <= bmf_plane_r + 1;
           
@@ -1322,7 +1348,7 @@ always @(posedge CLK) begin
         end
       end
       ST_STB_MEMORY_WAIT: begin
-        if (|(RAM_STATE & ST_RAM_DATA_END)) begin
+        if (|(RAM_STATE & ST_RAM_STB_END)) begin
           stb_ram_wr_r <= 0;
           
           STB_STATE <= ST_STB_WAIT;
@@ -2171,6 +2197,7 @@ always @(posedge CLK) begin
                 EXE_STATE <= ST_EXE_MEMORY_WAIT;
               end
               else begin
+                e2b_plot_r <= 0;
                 EXE_STATE <= ST_EXE_WAIT;
               end
             end
@@ -2435,8 +2462,12 @@ always @(posedge CLK) begin
                 e2r_data_r <= {8'h00, bmp_colr_r};
 
                 e2r_z_r    <= ~|bmp_colr_r;
-                e2r_s_r    <= 0; // sign bit is always 0
+                e2r_s_r    <= 0; // sign bit is always 0                
               end
+              
+              // done with the operations
+              e2b_plot_r <= 0;
+              e2b_rpix_r <= 0;
               
               EXE_STATE <= ST_EXE_WAIT;
             end
@@ -2455,10 +2486,6 @@ always @(posedge CLK) begin
       ST_EXE_WAIT: begin
         e2c_waitcnt_val_r <= 0;
         e2s_req_r <= 0;
-
-        // done with the operations
-        e2b_plot_r <= 0;
-        e2b_rpix_r <= 0;
         
         if (gsu_clock_en) e2r_lmult_r <= 0;
         
