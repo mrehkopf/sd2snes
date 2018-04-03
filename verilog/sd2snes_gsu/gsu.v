@@ -75,7 +75,7 @@ module gsu(
   output        DBG
 );
 
-`define DEBUG
+//`define DEBUG
 
 // temporaries
 integer i;
@@ -326,7 +326,7 @@ reg [23:0] debug_inst_addr_r;
 reg [31:0] gsu_cycle_cnt_r; initial gsu_cycle_cnt_r = 0;
 
 reg [1:0]  gsu_cycle_r; initial gsu_cycle_r = 0;
-reg        gsu_clock_en;
+reg        gsu_clock_en; initial gsu_clock_en = 0;
 
 // step counter for pipelines
 reg [7:0] stepcnt_r; initial stepcnt_r = 0;
@@ -359,7 +359,7 @@ end
 //-------------------------------------------------------------------
 // STATE
 //-------------------------------------------------------------------
-reg [15:0] REG_r   [15:0];
+reg [15:0] REG_r   [15:0]; initial for (i = 0; i < 16; i = i + 1) REG_r[i] = 0;
 
 // Special Registers
 reg [15:0] SFR_r;   // 3030-3031
@@ -381,6 +381,26 @@ reg [7:0]  DREG_r;
 reg [7:0]  ROMRDBUF_r;
 reg [15:0] RAMWRBUF_r; // FIXME: this should be 8b
 reg [15:0] RAMADDR_r;
+
+initial SFR_r = 0;
+initial BRAMR_r = 0;
+initial PBR_r = 0;
+initial ROMBR_r = 0;
+initial CFGR_r = 0;
+initial SCBR_r = 0;
+initial CLSR_r = 0;
+initial SCMR_r = 0;
+initial VCR_r = 0;
+initial RAMBR_r = 0;
+initial CBR_r = 0;
+
+initial COLR_r = 0;
+initial POR_r = 0;
+initial SREG_r = 0;
+initial DREG_r = 0;
+initial ROMRDBUF_r = 0;
+initial RAMWRBUF_r = 0;
+initial RAMADDR_r = 0;
 
 // Important breakouts
 assign SFR_Z    = SFR_r[1];
@@ -551,7 +571,7 @@ gsu_cache cache (
 // feeds intermediate results back here.
 reg        data_enable_r; initial data_enable_r = 0;
 reg [7:0]  data_out_r;
-reg [7:0]  data_flop_r;
+reg [7:0]  data_flop_r; initial data_flop_r = 0;
 
 reg        snes_write_r; initial snes_write_r = 0;
 reg        snes_writereg_r; initial snes_writereg_r = 0;
@@ -821,7 +841,7 @@ always @(posedge CLK) begin
   else begin
     case (ROM_STATE)
       ST_ROM_IDLE: begin
-        if (SCMR_RON & ROM_BUS_RDY) begin
+        if (SCMR_RON & ROM_BUS_RDY & SFR_GO) begin
           if (cache_rom_rd_r) begin
             rom_bus_rrq_r <= 1;
             rom_bus_addr_r <= cache_addr_r;
@@ -898,7 +918,7 @@ always @(posedge CLK) begin
   else begin
     case (RAM_STATE)
       ST_RAM_IDLE: begin
-        if (SCMR_RAN & RAM_BUS_RDY) begin
+        if (SCMR_RAN & RAM_BUS_RDY & SFR_GO) begin
           if (exe_ram_rd_r) begin
             ram_bus_rrq_r <= 1;
             ram_bus_word_r <= exe_word_r;
@@ -1313,7 +1333,7 @@ parameter
   ST_STB_IDLE        = 8'b00000001,
   
   ST_STB_MEMORY_WAIT = 8'b00000010,
-  ST_STB_WAIT        = 8'b00000100
+  ST_STB_WAIT        = 8'b10000000
   ;
 reg [7:0]  STB_STATE; initial STB_STATE = ST_STB_IDLE;
 
@@ -2580,7 +2600,7 @@ always @(posedge CLK) begin
 end
 `endif
 
-assign pipeline_advance = gsu_clock_en & waitcnt_zero & |(EXE_STATE & ST_EXE_WAIT) & fetch_wait_r & step_r;
+assign pipeline_advance = gsu_clock_en & waitcnt_zero & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & step_r;
 assign op_complete = exe_opsize_r == 1;
 
 // Multipliers

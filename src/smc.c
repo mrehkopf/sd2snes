@@ -33,6 +33,7 @@
 #include "snes.h"
 #include "fpga.h"
 #include "cfg.h"
+#include "memory.h"
 
 extern cfg_t CFG;
 snes_romprops_t romprops;
@@ -185,8 +186,8 @@ void smc_id(snes_romprops_t* props) {
       else if (header->map == 0x20 && ((header->carttype >= 0x13 && header->carttype <= 0x15) ||
           header->carttype == 0x1a)) {
         props->has_gsu = 1;
-        props->error = MENU_ERR_NOIMPL;
-        props->error_param = (uint8_t*)"SuperFX";
+        props->fpga_conf = FPGA_GSU;
+        header->ramsize = sram_readbyte(hdr_addr[score_idx] + 0xD) & 0x7;
       }
       break;
 

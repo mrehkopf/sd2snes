@@ -186,7 +186,7 @@ uint8_t get_snes_reset_state(void) {
 uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_save_failed = 0;
 uint8_t sram_valid = 0;
 uint8_t snes_main_loop() {
-  if(romprops.ramsize_bytes) {
+  if(romprops.ramsize_bytes && !romprops.has_gsu) {
     saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
     sram_valid = sram_reliable();
     if(crc_valid && sram_valid) {
