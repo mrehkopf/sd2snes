@@ -70,6 +70,7 @@ void smc_id(snes_romprops_t* props) {
   props->has_st0010 = 0;
   props->has_cx4 = 0;
   props->has_obc1 = 0;
+  props->has_gsu = 0;
   props->fpga_features = 0;
   props->fpga_conf = NULL;
   for(uint8_t num = 0; num < 6; num++) {

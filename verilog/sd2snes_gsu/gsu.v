@@ -75,7 +75,7 @@ module gsu(
   output        DBG
 );
 
-//`define DEBUG
+`define DEBUG
 
 // temporaries
 integer i;
@@ -1646,7 +1646,7 @@ always @(posedge CLK) begin
     
     // handle multiple writes to R14.
     if (  (pipeline_advance & op_complete & e2r_val_r & (e2r_destnum_r == R14))
-       || (snes_writebuf_val_r & snes_writebuf_gpr_r & ~gsu_clock_en & (snes_writebuf_addr_r[5:0] == (ADDR_R14+1)))) begin
+       || (snes_writebuf_val_r & snes_writebuf_gpr_r & ~gsu_clock_en & (snes_writebuf_addr_r[4:0] == (ADDR_R14+1)))) begin
        prf_req_r <= 1;
     end
     else if (|(PRF_STATE & ST_PRF_MEMORY)) begin
@@ -1681,7 +1681,9 @@ always @(posedge CLK) begin
         end
       end
       ST_PRF_WAIT: begin
-        if (gsu_clock_en & ~|prf_waitcnt_r) begin
+        // use non-GSU clock so we don't have a case where a prefetch request is coming
+        // this cycle, but we clear R.
+        if (~gsu_clock_en & ~|prf_waitcnt_r) begin
           // trigger another prefetch if another request came in
           SFR_r[6] <= prf_req_r;
           ROMRDBUF_r <= prf_data_r;

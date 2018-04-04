@@ -48,7 +48,7 @@ module msu(
   output DBG_msu_address_ext_write_rising
 );
 
-`define MSU
+//`define MSU
 
 `ifndef MSU
 assign reg_data_out = 0;
@@ -65,7 +65,6 @@ assign DBG_msu_reg_we_rising = 0;
 assign DBG_msu_address = 0;
 assign DBG_msu_address_ext_write_rising = 0;
 `else
-
 reg [1:0] status_reset_we_r;
 always @(posedge clkin) status_reset_we_r = {status_reset_we_r[0], status_reset_we};
 wire status_reset_en = (status_reset_we_r == 2'b01);
