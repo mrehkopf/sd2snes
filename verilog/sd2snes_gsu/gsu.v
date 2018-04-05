@@ -75,7 +75,7 @@ module gsu(
   output        DBG
 );
 
-`define DEBUG
+//`define DEBUG
 
 // temporaries
 integer i;

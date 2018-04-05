@@ -38,7 +38,7 @@ module dac(
   output DAC_STATUS
 );
 
-//`define DAC
+`define DAC
 
 `ifndef DAC
 assign sdout = 0;
