@@ -1646,7 +1646,8 @@ always @(posedge CLK) begin
     
     // handle multiple writes to R14.
     if (  (pipeline_advance & op_complete & e2r_val_r & (e2r_destnum_r == R14))
-       || (snes_writebuf_val_r & snes_writebuf_gpr_r & ~gsu_clock_en & (snes_writebuf_addr_r[4:0] == (ADDR_R14+1)))) begin
+       || (snes_writebuf_val_r & snes_writebuf_gpr_r & ~gsu_clock_en & (snes_writebuf_addr_r[4:0] == (ADDR_R14+1)))
+       ) begin
        prf_req_r <= 1;
     end
     else if (|(PRF_STATE & ST_PRF_MEMORY)) begin
@@ -1666,7 +1667,6 @@ always @(posedge CLK) begin
         prf_rom_rd_r <= 1;
         prf_word_r <= 0;
 
-        // FIXME: what do we do if ROMBR > $5F?  For now just ignore it and compute address
         prf_addr_r <= ((ROMBR_r[6] ? {ROMBR_r,REG_r[R14]} : {ROMBR_r,REG_r[R14][14:0]}) & ROM_MASK);
 
         PRF_STATE <= ST_PRF_MEMORY_WAIT;
@@ -1747,6 +1747,9 @@ reg [7:0]  exe_byte_r;
 reg [15:0] exe_plot_offset_r;
 reg [2:0]  exe_plot_index_r;
 
+reg        exe_wrombr_r;
+reg        exe_wrambr_r;
+
 reg        exe_error;
 
 always @(posedge CLK) begin
@@ -1783,7 +1786,7 @@ always @(posedge CLK) begin
     exe_byte_r <= 0;
     exe_opsize_r <= 0;
     exe_operand_r <= 0;
-    exe_operand_valid_r <= 0;    
+    exe_operand_valid_r <= 0;
 
     exe_addr_r <= 0;
     e2c_waitcnt_val_r <= 0;
@@ -1799,6 +1802,8 @@ always @(posedge CLK) begin
     
     exe_error <= 0;
     
+    exe_wrombr_r <= 0;
+    exe_wrambr_r <= 0;
     ROMBR_r <= 0;
     RAMBR_r <= 0;
 
@@ -2148,8 +2153,8 @@ always @(posedge CLK) begin
             
             `OP_GETC_RAMB_ROMB: begin
               // don't block on stb_busy with RAMBR because old value already flopped
-              if      (exe_alt1_r & exe_alt2_r)   ROMBR_r    <= exe_src_r;
-              else if (exe_alt2_r)                RAMBR_r    <= exe_src_r[0];
+              if      (exe_alt1_r & exe_alt2_r)   exe_wrombr_r <= 1;
+              else if (exe_alt2_r)                exe_wrambr_r <= 1;
             end
             `OP_INC          : begin
               exe_result = exe_srcn_r + 1;
@@ -2232,7 +2237,9 @@ always @(posedge CLK) begin
                   EXE_STATE <= ST_EXE_WAIT;
                 end
               end
-              else begin
+              else if ((exe_alt1_r & ~SFR_RR) | (~exe_alt1_r & ~stb_busy_r)) begin
+                // stall ROMB write if prefetcher active - fixes doom
+                // stall RAMB write if store buffer active - will fix bugs when address logic moves to RAM pipe
                 EXE_STATE <= ST_EXE_WAIT;
               end
             end
@@ -2524,6 +2531,8 @@ always @(posedge CLK) begin
             exe_operand_r <= 0;
             exe_operand_valid_r <= 0;
             exe_zs_r <= 0;
+            exe_wrombr_r <= 0;
+            exe_wrambr_r <= 0;
 
             e2r_val_r  <= 0;
             e2r_loop_r <= 0;
@@ -2534,6 +2543,10 @@ always @(posedge CLK) begin
             
             // deassert flush
             e2i_flush_r <= 0;
+            
+            // ROMB needs to write ROMBR
+            if (exe_wrombr_r) ROMBR_r <= exe_src_r;
+            if (exe_wrambr_r) RAMBR_r <= exe_src_r[0];
           end
           
           exe_byte_r <= fetch_data_r;
