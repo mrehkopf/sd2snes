@@ -34,7 +34,7 @@
 #define DSPFW_1B ((const uint8_t*)"/sd2snes/dsp1b.bin")
 #define DSPFW_ST0010 ((const uint8_t*)"/sd2snes/st0010.bin")
 
-typedef struct _snes_header {
+typedef struct __attribute__ ((__packed__)) _snes_header {
   uint8_t maker[2];     /* 0xB0 */
   uint8_t gamecode[4];  /* 0xB2 */
   uint8_t fixed_00[7];  /* 0xB6 */
@@ -67,7 +67,7 @@ typedef struct _snes_header {
   uint16_t vect_brk8;   /* 0xFE */
 } snes_header_t;
 
-typedef struct _snes_romprops {
+typedef struct __attribute__ ((__packed__)) _snes_romprops {
   uint16_t offset;            /* start of actual ROM image */
   uint8_t mapper_id;          /* FPGA mapper */
   uint8_t pad1;               /* for alignment */

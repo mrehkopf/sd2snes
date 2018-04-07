@@ -186,7 +186,7 @@ uint8_t get_snes_reset_state(void) {
 uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_save_failed = 0;
 uint8_t sram_valid = 0;
 uint8_t snes_main_loop() {
-  if(romprops.ramsize_bytes && !romprops.has_gsu) {
+  if(romprops.ramsize_bytes) {
     saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
     sram_valid = sram_reliable();
     if(crc_valid && sram_valid) {
@@ -220,7 +220,9 @@ uint8_t snes_main_loop() {
         last_save_failed = save_failed;
         save_failed = file_res ? 1 : 0;
         didnotsave = save_failed ? 25 : 0;
-        writeled(!last_save_failed);
+		// this used to be !last_save_failed which seemed odd.  I would think we would want to leave the light
+        // on when there is a fail, but it must have been there for a reason.
+        writeled(romprops.has_gsu ? last_save_failed : !last_save_failed);
       }
       saveram_crc_old = saveram_crc;
     }

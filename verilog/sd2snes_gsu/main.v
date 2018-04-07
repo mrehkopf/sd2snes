@@ -228,13 +228,9 @@ reg GSU_RONr;    initial GSU_RONr = 0;
 reg GSU_RANr;    initial GSU_RANr = 0;
 
 always @(posedge CLK2) begin
-  if (SNES_reset_strobe) begin
-    GSU_RONr <= 0;
-    GSU_RANr <= 0;
-  end
   // synchronize to the SNES cycle to avoid reading partial interrupt vector
   // FIXME: SNES_CYCLE_end doesn't seem to work here.
-  else if (SNES_WR_end | SNES_RD_end) begin
+  if (SNES_WR_end | SNES_RD_end) begin
     GSU_RONr    <= GSU_RON & GSU_GO;
     GSU_RANr    <= GSU_RAN & GSU_GO;
   end
@@ -442,9 +438,6 @@ wire [23:0] GSU_RAM_ADDR;
 wire [15:0] GSU_RAM_DOUT;
 wire        GSU_RAM_WORD;
 
-// gsu debug
-//reg [7:0]   gsu_debug; initial gsu_debug = 0;
-
 // GSU (superfx)
 gsu snes_gsu (
   .RST(SNES_reset_strobe),
@@ -499,7 +492,6 @@ gsu snes_gsu (
   .reg_read_in(reg_read),
   .config_data_out(gsu_config_data),
 
-  //.DEBUG_IN(gsu_debug),
   .DBG(DBG_GSU)
 );
 
@@ -812,11 +804,12 @@ always @(posedge CLK2) begin
 end
 
 always @(posedge CLK2) begin
-  if (SNES_reset_strobe) begin
-    GSU_ROM_RD_PENDr <= 1'b0;
-    RQ_GSU_ROM_RDYr <= 1'b1;  
-  end
-  else if(GSU_ROM_RRQ) begin
+//  if (SNES_reset_strobe) begin
+//    GSU_ROM_RD_PENDr <= 1'b0;
+//    RQ_GSU_ROM_RDYr <= 1'b1;  
+//  end
+//  else
+  if(GSU_ROM_RRQ) begin
     GSU_ROM_RD_PENDr <= 1'b1;
     RQ_GSU_ROM_RDYr <= 1'b0;
     GSU_ROM_ADDRr <= GSU_ROM_ADDR;
@@ -828,12 +821,13 @@ always @(posedge CLK2) begin
 end
 
 always @(posedge CLK2) begin
-  if (SNES_reset_strobe) begin
-    GSU_RAM_RD_PENDr <= 1'b0;
-    GSU_RAM_WR_PENDr <= 1'b0;
-    RQ_GSU_RAM_RDYr <= 1'b1;
-  end
-  else if(GSU_RAM_RRQ) begin
+//  if (SNES_reset_strobe) begin
+//    GSU_RAM_RD_PENDr <= 1'b0;
+//    GSU_RAM_WR_PENDr <= 1'b0;
+//    RQ_GSU_RAM_RDYr <= 1'b1;
+//  end
+//  else
+  if(GSU_RAM_RRQ) begin
     GSU_RAM_RD_PENDr <= 1'b1;
     RQ_GSU_RAM_RDYr <= 1'b0;
     GSU_RAM_ADDRr <= GSU_RAM_ADDR;
@@ -1046,30 +1040,6 @@ ila_srtc ila (
     .TRIG6(MCU_DINr), // IN BUS [7:0]
    .TRIG7(ST_MEM_DELAYr)
 );
-*/
-
-/*// gsu debug
-reg [23:0] gsu_debug_addr;
-
-always @(posedge CLK2) begin
-  if (SNES_reset_strobe) begin
-    gsu_debug <= 0;
-  end
-  else begin
-    gsu_debug_addr <= SNES_ADDR;
-    
-    if (SNES_RD_start & (gsu_debug_addr == 24'h707E7D) & ~gsu_debug[7]) begin
-      gsu_debug[7] <= 1;
-      gsu_debug[6] <= msu_enable;
-      gsu_debug[5] <= gsu_enable;
-      gsu_debug[4] <= snescmd_enable;
-      gsu_debug[3] <= SNES_DATABUS_OE;
-      gsu_debug[2] <= SNES_DATABUS_DIR;
-      gsu_debug[1] <= IS_ROM;
-      gsu_debug[0] <= IS_SAVERAM;
-    end
-  end
-end
 */
 
 endmodule

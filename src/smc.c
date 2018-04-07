@@ -188,7 +188,7 @@ void smc_id(snes_romprops_t* props) {
           header->carttype == 0x1a)) {
         props->has_gsu = 1;
         props->fpga_conf = FPGA_GSU;
-        header->ramsize = sram_readbyte(hdr_addr[score_idx] + 0xD) & 0x7;
+        header->ramsize = header->expramsize & 0x7;
       }
       break;
 

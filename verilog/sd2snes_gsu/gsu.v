@@ -72,7 +72,6 @@ module gsu(
   output [7:0]  config_data_out,
   // config interface
 
-  //input  [7:0]  DEBUG_IN,
   output        DBG
 );
 
