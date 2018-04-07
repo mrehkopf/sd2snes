@@ -442,6 +442,9 @@ wire [23:0] GSU_RAM_ADDR;
 wire [15:0] GSU_RAM_DOUT;
 wire        GSU_RAM_WORD;
 
+// gsu debug
+//reg [7:0]   gsu_debug; initial gsu_debug = 0;
+
 // GSU (superfx)
 gsu snes_gsu (
   .RST(SNES_reset_strobe),
@@ -496,6 +499,7 @@ gsu snes_gsu (
   .reg_read_in(reg_read),
   .config_data_out(gsu_config_data),
 
+  //.DEBUG_IN(gsu_debug),
   .DBG(DBG_GSU)
 );
 
@@ -947,7 +951,7 @@ always @(posedge CLK2) MCU_WRITE_1<= MCU_WRITE;
 assign ROM_DATA[7:0] = (ROM_ADDR0 || (!SD_DMA_TO_ROM && GSU_RAM_WR_HIT && GSU_RAM_WORDr))
                        ?(SD_DMA_TO_ROM ? (!MCU_WRITE_1 ? MCU_DOUT : 8'bZ)
                                        : GSU_RAM_WR_HIT ? (ROM_ADDR0 ? GSU_RAM_DATAr[7:0] : GSU_RAM_DATAr[15:8])
-                                       : (ROM_HIT & ~SNES_WRITE) ? SNES_DATA
+                                       : (ROM_HIT & ~SNES_WRITE & ~GSU_RANr) ? SNES_DATA
                                        : MCU_WR_HIT ? MCU_DOUT : 8'bZ
                         )
                        :8'bZ;
@@ -957,7 +961,7 @@ assign ROM_DATA[15:8] = (ROM_ADDR0 && !(!SD_DMA_TO_ROM && GSU_RAM_WR_HIT && GSU_
                         ? 8'bZ
                         :(SD_DMA_TO_ROM ? (!MCU_WRITE_1 ? MCU_DOUT : 8'bZ)
                                         : GSU_RAM_WR_HIT ? (ROM_ADDR0 ? GSU_RAM_DATAr[15:8] : GSU_RAM_DATAr[7:0])
-                                        : (ROM_HIT & ~SNES_WRITE) ? SNES_DATA
+                                        : (ROM_HIT & ~SNES_WRITE & ~GSU_RANr) ? SNES_DATA
                                         : MCU_WR_HIT ? MCU_DOUT
                                         : 8'bZ
                          );
@@ -978,19 +982,14 @@ assign ROM_CE = 1'b0;
 assign ROM_BHE =  ROM_ADDR0 && !(!SD_DMA_TO_ROM && GSU_ROM_HIT && GSU_ROM_WORDr) && !(!SD_DMA_TO_ROM && GSU_RAM_HIT && GSU_RAM_WORDr);
 assign ROM_BLE = !ROM_ADDR0 && !(!SD_DMA_TO_ROM && GSU_ROM_HIT && GSU_ROM_WORDr) && !(!SD_DMA_TO_ROM && GSU_RAM_HIT && GSU_RAM_WORDr);
 
-assign SNES_DATABUS_OE = //(dspx_enable | dspx_dp_enable) ? 1'b0 :
-                         msu_enable ? 1'b0 :
+assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
                          gsu_enable ? 1'b0 :
-//                         bsx_data_ovr ? (SNES_READ & SNES_WRITE) :
-//                         srtc_enable ? (SNES_READ & SNES_WRITE) :
                          snescmd_enable ? (~(snescmd_unlock | feat_cmd_unlock) | (SNES_READ & SNES_WRITE)) :
-//                         bs_page_enable ? (SNES_READ) :
                          r213f_enable & !SNES_PARD ? 1'b0 :
                          snoop_4200_enable ? SNES_WRITE :
-                         ((IS_ROM & SNES_ROMSEL)
-                          |(!IS_ROM & !IS_SAVERAM & !IS_WRITABLE)
-                          |(SNES_READ & SNES_WRITE)
-//                          | bsx_tristate
+                         ( (IS_ROM & SNES_ROMSEL)
+                         | (!IS_ROM & !IS_SAVERAM & !IS_WRITABLE)
+                         | (SNES_READ & SNES_WRITE)
                          );
 
 assign SNES_DATABUS_DIR = (~SNES_READ | (~SNES_PARD & (r213f_enable)))
@@ -1047,6 +1046,30 @@ ila_srtc ila (
     .TRIG6(MCU_DINr), // IN BUS [7:0]
    .TRIG7(ST_MEM_DELAYr)
 );
+*/
+
+/*// gsu debug
+reg [23:0] gsu_debug_addr;
+
+always @(posedge CLK2) begin
+  if (SNES_reset_strobe) begin
+    gsu_debug <= 0;
+  end
+  else begin
+    gsu_debug_addr <= SNES_ADDR;
+    
+    if (SNES_RD_start & (gsu_debug_addr == 24'h707E7D) & ~gsu_debug[7]) begin
+      gsu_debug[7] <= 1;
+      gsu_debug[6] <= msu_enable;
+      gsu_debug[5] <= gsu_enable;
+      gsu_debug[4] <= snescmd_enable;
+      gsu_debug[3] <= SNES_DATABUS_OE;
+      gsu_debug[2] <= SNES_DATABUS_DIR;
+      gsu_debug[1] <= IS_ROM;
+      gsu_debug[0] <= IS_SAVERAM;
+    end
+  end
+end
 */
 
 endmodule

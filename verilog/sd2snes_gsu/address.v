@@ -46,9 +46,6 @@ module address(
   output branch1_enable,
   output branch2_enable,
   output gsu_enable
-//  input [8:0] bs_page_offset,
-//  input [9:0] bs_page,
-//  input bs_page_enable
 );
 
 parameter [2:0]
@@ -57,24 +54,24 @@ parameter [2:0]
   //FEAT_SRTC = 2,
   FEAT_MSU1 = 3,
   FEAT_213F = 4
-  //FEAT_GSU = 5 // Special FPGA file doesn't need feature bit
 ;
 
 wire [23:0] SRAM_SNES_ADDR;
 
 
-assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
-                 |(SNES_ADDR[22]));
+assign IS_ROM = ( (~SNES_ADDR[22] & SNES_ADDR[15])
+                | (SNES_ADDR[22]  & ~SNES_ROMSEL))
+                ;
 
 assign IS_SAVERAM = SAVERAM_MASK[0]
                     & ( // 60-7D/E0-FF:0000-FFFF
-                        (  &SNES_ADDR[22:21]
-                        &  ~SNES_ROMSEL
+                        ( &SNES_ADDR[22:21]
+                        & ~SNES_ROMSEL
                         )
                         // 00-3F/80-BF:6000-7FFF
-                      | (  ~SNES_ADDR[22]
-                        &  ~SNES_ADDR[15]
-                        &  &SNES_ADDR[14:13]
+                      | ( ~SNES_ADDR[22]
+                        & ~SNES_ADDR[15]
+                        & &SNES_ADDR[14:13]
                         )
                       );
 
@@ -99,7 +96,7 @@ assign nmicmd_enable = (SNES_ADDR == 24'h002BF2);
 assign return_vector_enable = (SNES_ADDR == 24'h002A5A);
 assign branch1_enable = (SNES_ADDR == 24'h002A13);
 assign branch2_enable = (SNES_ADDR == 24'h002A4D);
-// 00-3F/80-BF:3000-32FF gsu registers
-assign gsu_enable = /*featurebits[FEAT_GSU] &*/ (!SNES_ADDR[22] && ({SNES_ADDR[15:10],2'h0} == 8'h30)) && (SNES_ADDR[9:8] != 2'h3);
+// 00-3F/80-BF:3000-32FF gsu registers.  TODO: some emulators go to $34FF???
+assign gsu_enable = (!SNES_ADDR[22] && ({SNES_ADDR[15:10],2'h0} == 8'h30)) && (SNES_ADDR[9:8] != 2'h3);
 
 endmodule
