@@ -72,6 +72,7 @@ module gsu(
   output [7:0]  config_data_out,
   // config interface
 
+  //input  [7:0]  DEBUG_IN,
   output        DBG
 );
 
@@ -697,7 +698,11 @@ always @(posedge CLK) begin
         case (snes_writebuf_addr_r[7:0])
           ADDR_R15+1: SFR_r[5] <= 1;
           
-          ADDR_SFR  : begin SFR_r[5:1] <= snes_writebuf_data_r[5:1]; CBR_r[15:4] <= 0; end
+          ADDR_SFR  : begin
+            SFR_r[5:1] <= snes_writebuf_data_r[5:1];
+            // FIXME: this may still be a race where we clear CBR before flush has propagated.
+            if (SFR_GO & ~snes_writebuf_data_r[5]) CBR_r[15:4] <= 0;
+          end
           ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {snes_writebuf_data_r[7],snes_writebuf_data_r[4:0]};
           ADDR_BRAMR: BRAMR_r[0] <= snes_writebuf_data_r[0];
           ADDR_PBR  : PBR_r <= snes_writebuf_data_r[6:0]; // FIXME: is the upper bit open bus?
@@ -2784,6 +2789,8 @@ always @(posedge CLK) begin
       8'hD5           : pgmpre_out[0] <= config_r[5];
       8'hD6           : pgmpre_out[0] <= config_r[6];
       8'hD7           : pgmpre_out[0] <= config_r[7];
+
+      //8'hDF           : pgmpre_out[0] <= DEBUG_IN;
 
       8'hE0           : pgmpre_out[0] <= stepcnt_r;
       //8'hE1           : pgmpre_out[0] <= pipeline_advance;
