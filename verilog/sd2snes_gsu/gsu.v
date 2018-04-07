@@ -511,6 +511,7 @@ reg [2:0]  e2b_index_r; initial e2b_index_r = 0;
 // Cache flush interface
 reg        e2i_flush_r; initial e2i_flush_r = 0;
 reg        r2i_flush_r; initial r2i_flush_r = 0;
+reg        r2i_clear_r; initial r2i_clear_r = 0;
 
 // Execute -> Store Buffer
 reg        e2s_req_r; initial e2s_req_r = 0;
@@ -599,7 +600,6 @@ always @(posedge CLK) begin
     PBR_r   <= 0;
     //ROMBR_r <= 0;
     //RAMBR_r <= 0;
-    CBR_r   <= 0;
     SCBR_r  <= 0;
     SCMR_r  <= 0;
     COLR_r  <= 0;
@@ -619,6 +619,9 @@ always @(posedge CLK) begin
     snes_writebuf_reg_r <= 0;
     snes_writebuf_gpr_r <= 0;
     snes_readbuf_val_r <= 0;
+    
+    r2i_flush_r <= 0;
+    r2i_clear_r <= 0;
     
     cache_mmio_wren_r <= 0;
   end
@@ -680,7 +683,10 @@ always @(posedge CLK) begin
     if (snes_writebuf_val_r & ~gsu_clock_en) begin
       if (snes_writebuf_reg_r) begin
         if (snes_writebuf_addr_r[7:0] == ADDR_SFR) begin
-          if (SFR_GO & ~snes_writebuf_data_r[5]) r2i_flush_r <= 1;
+          if (SFR_GO & ~snes_writebuf_data_r[5]) begin
+            r2i_flush_r <= 1;
+            r2i_clear_r <= 1;
+          end
         end
         else if (snes_writebuf_addr_r[7:0] == ADDR_PBR) begin
           // this can only be done at IDLE so use the same deassertion conditions
@@ -690,6 +696,7 @@ always @(posedge CLK) begin
     end
     else if (idle_r) begin
       r2i_flush_r <= 0;
+      r2i_clear_r <= 0;
     end
     
     // Registers that can be modifed by both
@@ -698,11 +705,7 @@ always @(posedge CLK) begin
         case (snes_writebuf_addr_r[7:0])
           ADDR_R15+1: SFR_r[5] <= 1;
           
-          ADDR_SFR  : begin
-            SFR_r[5:1] <= snes_writebuf_data_r[5:1];
-            // FIXME: this may still be a race where we clear CBR before flush has propagated.
-            if (SFR_GO & ~snes_writebuf_data_r[5]) CBR_r[15:4] <= 0;
-          end
+          ADDR_SFR  : SFR_r[5:1] <= snes_writebuf_data_r[5:1];
           ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {snes_writebuf_data_r[7],snes_writebuf_data_r[4:0]};
           ADDR_BRAMR: BRAMR_r[0] <= snes_writebuf_data_r[0];
           ADDR_PBR  : PBR_r <= snes_writebuf_data_r[6:0]; // FIXME: is the upper bit open bus?
@@ -736,7 +739,6 @@ always @(posedge CLK) begin
       SREG_r     <= e2r_sreg_r;
       DREG_r     <= e2r_dreg_r;
       if (e2r_wpbr_r)  PBR_r <= e2r_pbr_r;
-      if (e2r_wcbr_r)  CBR_r[15:4] <= e2r_cbr_r[15:4];
       if (e2r_wpor_r)  POR_r <= e2r_por_r;
       if (e2r_wcolr_r) COLR_r <= e2r_colr_r;
     end
@@ -1456,6 +1458,8 @@ always @(posedge CLK) begin
     
     fetch_install_val_r <= 0;
     fetch_error <= 0;
+
+    CBR_r <= 0;
   end
   else begin
     // handle cache valid bits
@@ -1471,6 +1475,13 @@ always @(posedge CLK) begin
     else if (cache_mmio_wren_r & &cache_mmio_addr_r[3:0]) begin
       // cache line injection
       cache_val_r[cache_mmio_addr_r[8:4]] <= 1;
+    end
+
+    if (r2i_flush_r & r2i_clear_r & idle_r) begin
+      CBR_r[15:4] <= 0;
+    end
+    else if (pipeline_advance & op_complete) begin
+      if (e2r_wcbr_r)  CBR_r[15:4] <= e2r_cbr_r[15:4];
     end
   
     // PBR is updated by SNES or JMP instructions.
@@ -2620,7 +2631,7 @@ always @(posedge CLK) begin
 end
 `endif
 
-assign pipeline_advance = gsu_clock_en & waitcnt_zero & |(EXE_STATE & ST_EXE_WAIT) & |(FETCH_STATE & ST_FETCH_WAIT) & step_r;
+assign pipeline_advance = gsu_clock_en & waitcnt_zero & |(EXE_STATE & ST_EXE_WAIT) & fetch_wait_r & step_r;
 assign op_complete = exe_opsize_r == 1;
 
 // Multipliers
@@ -2716,11 +2727,11 @@ always @(posedge CLK) begin
       8'h46            : pgmpre_out[0] <= RAMADDR_r[7:0];
       8'h47            : pgmpre_out[0] <= RAMADDR_r[15:8];
   
-      8'h4F            : pgmpre_out[0] <= PIXBUF_HEAD_r;
-      8'h50,8'h58      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
-      8'h51,8'h59      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
-      8'h6x            : pgmpre_out[0] <= PIXBUF_VALID_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
-      8'h7x            : pgmpre_out[0] <= PIXBUF_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
+      //8'h4F            : pgmpre_out[0] <= PIXBUF_HEAD_r;
+      //8'h50,8'h58      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
+      //8'h51,8'h59      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
+      //8'h6x            : pgmpre_out[0] <= PIXBUF_VALID_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
+      //8'h7x            : pgmpre_out[0] <= PIXBUF_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
 //      8'h60,8'h68      : pgmpre_out[0] <= PIXBUF_VALID_r[pgm_addr_r[3]];
 //      8'h70            : pgmpre_out[0] <= PIXBUF_r[0][0];
 //      8'h71            : pgmpre_out[0] <= PIXBUF_r[0][1];
