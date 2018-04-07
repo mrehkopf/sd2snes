@@ -700,7 +700,7 @@ always @(posedge CLK) begin
           ADDR_SFR  : begin SFR_r[5:1] <= snes_writebuf_data_r[5:1]; CBR_r[15:4] <= 0; end
           ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {snes_writebuf_data_r[7],snes_writebuf_data_r[4:0]};
           ADDR_BRAMR: BRAMR_r[0] <= snes_writebuf_data_r[0];
-          ADDR_PBR  : PBR_r <= snes_writebuf_data_r;
+          ADDR_PBR  : PBR_r <= snes_writebuf_data_r[6:0]; // FIXME: is the upper bit open bus?
           ADDR_CFGR : {CFGR_r[7],CFGR_r[5]} <= {snes_writebuf_data_r[7],snes_writebuf_data_r[5]};
           ADDR_SCBR : SCBR_r <= snes_writebuf_data_r;
           ADDR_CLSR : CLSR_r[0] <= snes_writebuf_data_r[0];
@@ -2545,7 +2545,7 @@ always @(posedge CLK) begin
             e2i_flush_r <= 0;
             
             // ROMB needs to write ROMBR
-            if (exe_wrombr_r) ROMBR_r <= exe_src_r;
+            if (exe_wrombr_r) ROMBR_r <= exe_src_r[6:0]; // FIXME: ok to drop top bit?
             if (exe_wrambr_r) RAMBR_r <= exe_src_r[0];
           end
           
