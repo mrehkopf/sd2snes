@@ -89,33 +89,14 @@ assign ROM_ADDR = SRAM_SNES_ADDR;
 
 assign ROM_HIT = IS_ROM | IS_WRITABLE;
 
-reg msu_enable_r; always @(posedge CLK) msu_enable_r <= featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
-reg r213f_enable_r; always @(posedge CLK) r213f_enable_r <= featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
-reg snescmd_enable_r; always @(posedge CLK) snescmd_enable_r <= ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);
-reg nmicmd_enable_r; always @(posedge CLK) nmicmd_enable_r <= (SNES_ADDR == 24'h002BF2);
-reg return_vector_enable_r; always @(posedge CLK) return_vector_enable_r <= (SNES_ADDR == 24'h002A5A);
-reg branch1_enable_r; always @(posedge CLK) branch1_enable_r <= (SNES_ADDR == 24'h002A13);
-reg branch2_enable_r; always @(posedge CLK) branch2_enable_r <= (SNES_ADDR == 24'h002A4D);
+assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
+assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
+assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);
+assign nmicmd_enable = (SNES_ADDR == 24'h002BF2);
+assign return_vector_enable = (SNES_ADDR == 24'h002A5A);
+assign branch1_enable = (SNES_ADDR == 24'h002A13);
+assign branch2_enable = (SNES_ADDR == 24'h002A4D);
 // 00-3F/80-BF:3000-32FF gsu registers.  TODO: some emulators go to $34FF???
-reg gsu_enable_r; always @(posedge CLK) gsu_enable_r <= (!SNES_ADDR[22] && ({SNES_ADDR[15:10],2'h0} == 8'h30)) && (SNES_ADDR[9:8] != 2'h3);
-
-assign msu_enable = msu_enable_r;
-assign r213f_enable = r213f_enable_r;
-assign snescmd_enable = snescmd_enable_r;
-assign nmicmd_enable = nmicmd_enable_r;
-assign return_vector_enable = return_vector_enable_r;
-assign branch1_enable = branch1_enable_r;
-assign branch2_enable = branch2_enable_r;
-assign gsu_enable = gsu_enable_r;
-
-//assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
-//assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
-//assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);
-//assign nmicmd_enable = (SNES_ADDR == 24'h002BF2);
-//assign return_vector_enable = (SNES_ADDR == 24'h002A5A);
-//assign branch1_enable = (SNES_ADDR == 24'h002A13);
-//assign branch2_enable = (SNES_ADDR == 24'h002A4D);
-//// 00-3F/80-BF:3000-32FF gsu registers.  TODO: some emulators go to $34FF???
-//assign gsu_enable = (!SNES_ADDR[22] && ({SNES_ADDR[15:10],2'h0} == 8'h30)) && (SNES_ADDR[9:8] != 2'h3);
+assign gsu_enable = (!SNES_ADDR[22] && ({SNES_ADDR[15:10],2'h0} == 8'h30)) && (SNES_ADDR[9:8] != 2'h3);
 
 endmodule

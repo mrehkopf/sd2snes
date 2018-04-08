@@ -236,9 +236,11 @@ always @(posedge CLK2) begin
   end
 end
 
+// Provide full bandwidth if snes is not accessing the bus.
 always @(posedge CLK2) begin
-  free_strobe <= 1'b0;
-  if(SNES_cycle_start) free_strobe <= ~ROM_HIT | (IS_SAVERAM ? GSU_RANr : GSU_RONr); // drop the snes access if gsu is accessing it
+  if(GSU_RONr & GSU_RANr) free_strobe <= 1;
+  else if (SNES_cycle_start) free_strobe <= ~ROM_HIT | (IS_SAVERAM ? GSU_RANr : GSU_RONr); // drop the snes access if gsu is accessing it
+  else free_strobe <= 1'b0;
 end
 
 always @(posedge CLK2) begin
