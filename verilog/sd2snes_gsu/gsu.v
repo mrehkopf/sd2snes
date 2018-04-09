@@ -682,7 +682,7 @@ always @(posedge CLK) begin
     if (snes_writebuf_val_r & ~gsu_clock_en) begin
       if (snes_writebuf_reg_r) begin
         if (snes_writebuf_addr_r[7:0] == ADDR_SFR) begin
-          if (SFR_GO & ~snes_writebuf_data_r[5]) begin
+          if (~SFR_GO & snes_writebuf_data_r[5]) begin
             r2i_flush_r <= 1;
             r2i_clear_r <= 1;
           end
@@ -737,7 +737,7 @@ always @(posedge CLK) begin
 
       SREG_r     <= e2r_sreg_r;
       DREG_r     <= e2r_dreg_r;
-      if (e2r_wpbr_r)  PBR_r <= e2r_pbr_r;
+      if (e2r_wpbr_r)  PBR_r <= e2r_pbr_r[6:0];
       if (e2r_wpor_r)  POR_r <= e2r_por_r;
       if (e2r_wcolr_r) COLR_r <= e2r_colr_r;
     end
@@ -2560,7 +2560,7 @@ always @(posedge CLK) begin
             e2i_flush_r <= 0;
             
             // ROMB needs to write ROMBR
-            if (exe_wrombr_r) ROMBR_r <= exe_src_r[6:0]; // FIXME: ok to drop top bit?
+            if (exe_wrombr_r) ROMBR_r <= exe_src_r[6:0];
             if (exe_wrambr_r) RAMBR_r <= exe_src_r[0];
           end
           
