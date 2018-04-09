@@ -682,6 +682,8 @@ always @(posedge CLK) begin
     if (snes_writebuf_val_r & ~gsu_clock_en) begin
       if (snes_writebuf_reg_r) begin
         if (snes_writebuf_addr_r[7:0] == ADDR_SFR) begin
+          // FIXME: We are flushing the cache on 0->1 right now.  Should be 1->0.  Something was added from
+          // v02 -> v03/v04 (may be in firmware) that causes problems for certain people.  Problem with saving SRAM?
           if (~SFR_GO & snes_writebuf_data_r[5]) begin
             r2i_flush_r <= 1;
             r2i_clear_r <= 1;
