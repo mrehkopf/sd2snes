@@ -61,7 +61,7 @@ status_t ST = {
 void prepare_reset() {
   snes_reset(1);
   delay_ms(SNES_RESET_PULSELEN_MS);
-  if(romprops.ramsize_bytes && fpga_test() == FPGA_TEST_TOKEN) {
+  if(romprops.ramsize_bytes && (!romprops.has_gsu || romprops.has_gsu_sram) && fpga_test() == FPGA_TEST_TOKEN) {
     writeled(1);
     save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
     writeled(0);
@@ -186,7 +186,7 @@ uint8_t get_snes_reset_state(void) {
 uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_save_failed = 0;
 uint8_t sram_valid = 0;
 uint8_t snes_main_loop() {
-  if(romprops.ramsize_bytes) {
+  if(romprops.ramsize_bytes && (!romprops.has_gsu || romprops.has_gsu_sram)) {
     saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
     sram_valid = sram_reliable();
     if(crc_valid && sram_valid) {
