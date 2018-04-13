@@ -162,7 +162,7 @@ assign SRAM_SNES_ADDR = ((MAPPER == 3'b000)
                           ?(IS_SAVERAM
                             ? 24'hE00000 + ({SNES_ADDR[20:16], SNES_ADDR[14:0]}
                                             & SAVERAM_MASK)
-                            : ({2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]}
+                            : ({1'b0, ~SNES_ADDR[23], SNES_ADDR[22:16], SNES_ADDR[14:0]}
                                & ROM_MASK))
 
                           :(MAPPER == 3'b010)
