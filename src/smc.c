@@ -73,6 +73,7 @@ void smc_id(snes_romprops_t* props) {
   props->has_gsu = 0;
   props->has_gsu_sram = 0;
   props->fpga_features = 0;
+  props->fpga_dspfeat = 0;
   props->fpga_conf = NULL;
   for(uint8_t num = 0; num < 6; num++) {
     score = smc_headerscore(hdr_addr[num], header);
@@ -190,6 +191,7 @@ void smc_id(snes_romprops_t* props) {
         props->has_gsu = 1;
 		props->has_gsu_sram = (header->carttype == 0x15 || header->carttype == 0x1a) ? 1 : 0;
         props->fpga_conf = FPGA_GSU;
+        props->fpga_dspfeat = CFG.gsu_speed;
         header->ramsize = header->expramsize & 0x7;
       }
       break;

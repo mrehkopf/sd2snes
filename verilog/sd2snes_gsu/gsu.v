@@ -57,6 +57,8 @@ module gsu(
   output        GO,
   output        RON,
   output        RAN,
+
+  input         SPEED,
   
   // State debug read interface
   input  [9:0]  PGM_ADDR, // [9:0]
@@ -443,10 +445,10 @@ reg [3:0] lat_fmult_r;
 reg [3:0] lat_mult_r;
 
 always @(posedge CLK) begin
-  lat_fetch_r  <= CLSR_r[0] ? 1-1 : 2-1;
-  lat_memory_r <= CLSR_r[0] ? 6-1 : 8-2;
-  lat_fmult_r  <= (CLSR_r[0] | CFGR_MS0) ? 8-1 : 16-2; // minimum 3-1
-  lat_mult_r   <= (CLSR_r[0] | CFGR_MS0) ? 2-1 : 4-2; // minimum 2-1
+  lat_fetch_r  <= SPEED ? 1-1 : CLSR_r[0] ? 1-1 : 2-1;
+  lat_memory_r <= SPEED ? 3-1 : CLSR_r[0] ? 6-1 : 8-2;
+  lat_fmult_r  <= SPEED ? 3-1 : (CLSR_r[0] | CFGR_MS0) ? 8-1 : 16-2; // minimum 3-1
+  lat_mult_r   <= SPEED ? 2-1 : (CLSR_r[0] | CFGR_MS0) ? 2-1 : 4-2; // minimum 2-1
 end
 
 //-------------------------------------------------------------------

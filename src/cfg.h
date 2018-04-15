@@ -21,6 +21,7 @@
 #define CFG_SORT_DIRECTORIES      ("SortDirectories")
 #define CFG_HIDE_EXTENSIONS       ("HideExtensions")
 #define CFG_CX4_SPEED             ("Cx4Speed")
+#define CFG_GSU_SPEED             ("GSUSpeed")
 #define CFG_SKIN_NAME             ("SkinName")
 #define CFG_CONTROL_TYPE          ("ControlType")
 #define CFG_MSU_VOLUME_BOOST      ("MSUVolumeBoost")
@@ -49,6 +50,7 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t skin_name[128];       /* file name of selected skin */
   uint8_t control_type;         /* control type (0: A=OK, B=Cancel; 1: A=Cancel, B=OK) */
   uint8_t msu_volume_boost;     /* volume boost (0: none; 1=+3.5dB; 2=+6dB; 3=+9dB; 4=+12dB) */
+  uint8_t gsu_speed;            /* GSU speed (0: original, 1: no waitstates */
 } cfg_t;
 
 int cfg_save(void);

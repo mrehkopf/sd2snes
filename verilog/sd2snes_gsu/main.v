@@ -159,6 +159,8 @@ wire DBG_msu_reg_we_rising;
 wire [2:0] SD_DMA_DBG_clkcnt;
 wire [10:0] SD_DMA_DBG_cyclecnt;
 
+wire [15:0] dsp_feat;
+
 wire [8:0] snescmd_addr_mcu;
 wire [7:0] snescmd_data_out_mcu;
 wire [7:0] snescmd_data_in_mcu;
@@ -481,6 +483,8 @@ gsu snes_gsu (
   .RAN(GSU_RAN),
   .GO(GSU_GO),
   
+  .SPEED(dsp_feat[0]),
+  
   // State debug read interface
   .PGM_ADDR(GSU_PGM_ADDR), // [9:0]
   .PGM_DATA(GSU_PGM_DATA), // [7:0]
@@ -497,7 +501,6 @@ gsu snes_gsu (
   .DBG(DBG_GSU)
 );
 
-//wire [15:0] dsp_feat;
 //
 //upd77c25 snes_dspx (
 //  .DI(DSPX_SNES_DATA_IN),
@@ -609,8 +612,8 @@ mcu_cmd snes_mcu_cmd(
   .snescmd_data_in(snescmd_data_in_mcu),
   .cheat_pgm_idx_out(cheat_pgm_idx),
   .cheat_pgm_data_out(cheat_pgm_data),
-  .cheat_pgm_we_out(cheat_pgm_we)
-//  .dsp_feat_out(dsp_feat)
+  .cheat_pgm_we_out(cheat_pgm_we),
+  .dsp_feat_out(dsp_feat)
 );
 
 wire [7:0] DCM_STATUS;
