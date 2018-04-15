@@ -2229,7 +2229,7 @@ always @(posedge CLK) begin
         if (op_complete) begin
           case (exe_opcode_r)
             `OP_STOP           : begin
-              if (~stb_busy_r) begin
+              if (~stb_busy_r & ~SFR_RR) begin
                 // don't allow STOP to complete until the store buffer is flushed
                 EXE_STATE <= ST_EXE_WAIT;
               end

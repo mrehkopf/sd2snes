@@ -229,8 +229,8 @@ reg GSU_RANr;    initial GSU_RANr = 0;
 
 always @(posedge CLK2) begin
   // synchronize to the SNES cycle to avoid reading partial interrupt vector
-  // FIXME: SNES_CYCLE_end doesn't seem to work here.
-  if (SNES_WR_end | SNES_RD_end) begin
+  //if (SNES_WR_end | SNES_RD_end) begin
+  if (SNES_cycle_end) begin
     GSU_RONr    <= GSU_RON & GSU_GO;
     GSU_RANr    <= GSU_RAN & GSU_GO;
   end
