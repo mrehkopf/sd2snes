@@ -27,7 +27,8 @@ cfg_t CFG_DEFAULT = {
   .cx4_speed = 0,
   .skin_name = "sd2snes.skin",
   .control_type = 0,
-  .msu_volume_boost = 0
+  .msu_volume_boost = 0,
+  .gsu_speed = 0
 };
 
 cfg_t CFG;
@@ -130,6 +131,9 @@ int cfg_load() {
     }
     if(yaml_get_itemvalue(CFG_CX4_SPEED, &tok)) {
       CFG.cx4_speed = tok.longvalue;
+    }
+    if(yaml_get_itemvalue(CFG_GSU_SPEED, &tok)) {
+      CFG.gsu_speed = tok.longvalue;
     }
     if(yaml_get_itemvalue(CFG_MSU_VOLUME_BOOST, &tok)) {
       CFG.msu_volume_boost = tok.longvalue;

@@ -284,9 +284,10 @@ parameter ST_GSU_RAM_RD_END  = 11'b00100000000;
 parameter ST_GSU_RAM_WR_ADDR = 11'b01000000000;
 parameter ST_GSU_RAM_WR_END  = 11'b10000000000;
 
-parameter SNES_DEAD_TIMEOUT = 17'd96000; // 1ms
+parameter SNES_DEAD_TIMEOUT = 17'd96000; // 1ms  // FIXME: this and some other constant times should be adjusted for new clock rate.
 
-parameter ROM_CYCLE_LEN = 4'd6;
+// TODO: decide if we should increase the clock rate in DCM to try and match the original cart rather than try to match number of clocks.
+parameter ROM_CYCLE_LEN = 4'd7; // Increased from 6 due to tight timing on some sd2snes.  Two pics from boards with errors had a Micron chip with 0LA41/PW510.  Same build lot.
 
 reg [10:0] STATE;
 initial STATE = ST_IDLE;
