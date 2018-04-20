@@ -40,6 +40,7 @@ module address(
   output dspx_dp_enable,
   output dspx_a0,
   output r213f_enable,
+  output r2100_enable,
   output snescmd_enable,
   output nmicmd_enable,
   output return_vector_enable,
@@ -50,12 +51,14 @@ module address(
   input bs_page_enable
 );
 
+/* feature bits. see src/fpga_spi.c for mapping */
 parameter [2:0]
   FEAT_DSPX = 0,
   FEAT_ST0010 = 1,
   FEAT_SRTC = 2,
   FEAT_MSU1 = 3,
-  FEAT_213F = 4
+  FEAT_213F = 4,
+  FEAT_2100 = 6
 ;
 
 wire [23:0] SRAM_SNES_ADDR;
@@ -242,6 +245,7 @@ assign dspx_a0 = featurebits[FEAT_DSPX]
                  : 1'b1;
 
 assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
+assign r2100_enable = featurebits[FEAT_2100] & (SNES_PA == 8'h00);
 
 assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);
 assign nmicmd_enable = (SNES_ADDR == 24'h002BF2);
