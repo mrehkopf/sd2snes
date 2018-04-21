@@ -30,7 +30,7 @@ module gsu(
   input         SNES_RD_start,
   input         SNES_WR_start,
   input         SNES_WR_end,
-  input  [23:0] SNES_ADDR,
+  input  [9:0]  SNES_ADDR,
   input  [7:0]  DATA_IN,
   output        DATA_ENABLE,
   output [7:0]  DATA_OUT,
@@ -47,12 +47,11 @@ module gsu(
   output        RAM_BUS_RRQ,
   output        RAM_BUS_WRQ,
   output        RAM_BUS_WORD,
-  output [23:0] RAM_BUS_ADDR,
-  input  [15:0] RAM_BUS_RDDATA,
-  output [15:0] RAM_BUS_WRDATA,
+  output [18:0] RAM_BUS_ADDR,
+  input  [7:0]  RAM_BUS_RDDATA,
+  output [7:0]  RAM_BUS_WRDATA,
   
   // ACTIVE interface
-  //output        ACTIVE,
   output        IRQ,
   output        GO,
   output        RON,
@@ -88,7 +87,7 @@ wire op_complete;
 // INPUTS
 //-------------------------------------------------------------------
 reg [7:0]  data_in_r;
-reg [23:0] addr_in_r;
+reg [9:0]  addr_in_r;
 reg        enable_r;
 reg [9:0]  pgm_addr_r;
 
@@ -378,8 +377,8 @@ reg [15:0] CBR_r;   // 303E
 // unmapped
 reg [7:0]  COLR_r;
 reg [7:0]  POR_r;
-reg [7:0]  SREG_r;
-reg [7:0]  DREG_r;
+reg [3:0]  SREG_r;
+reg [3:0]  DREG_r;
 reg [7:0]  ROMRDBUF_r;
 reg [15:0] RAMWRBUF_r; // FIXME: this should be 8b
 reg [15:0] RAMADDR_r;
@@ -440,25 +439,24 @@ assign POR_OBJ  = POR_r[4];
 // Latency
 //-------------------------------------------------------------------
 reg [3:0] lat_fetch_r;
-reg [3:0] lat_memory_r;
+reg [3:0] lat_rom_r;
+reg [3:0] lat_ram_r;
 reg [3:0] lat_fmult_r;
 reg [3:0] lat_mult_r;
 
 always @(posedge CLK) begin
-  lat_fetch_r  <= SPEED ? 1-1 : CLSR_r[0] ? 1-1 : 2-1;
-  lat_memory_r <= SPEED ? 3-1 : CLSR_r[0] ? 6-1 : 8-2;
-  lat_fmult_r  <= SPEED ? 3-1 : (CLSR_r[0] | CFGR_MS0) ? 8-1 : 16-2; // minimum 3-1
-  lat_mult_r   <= SPEED ? 2-1 : (CLSR_r[0] | CFGR_MS0) ? 2-1 : 4-2; // minimum 2-1
+  lat_fetch_r  <= SPEED ? 0 : (CLSR_CLS           ) ? 0 : 1;  // additional clocks
+  lat_rom_r    <= SPEED ? 2 : (CLSR_CLS           ) ? 5 : 6;
+  lat_ram_r    <= SPEED ? 1 : (CLSR_CLS           ) ? 5 : 6;
+  lat_fmult_r  <= SPEED ? 2 : (CLSR_CLS | CFGR_MS0) ? 7 : 14; // minimum 2
+  lat_mult_r   <= SPEED ? 1 : (CLSR_CLS | CFGR_MS0) ? 1 : 2;  // minimum 1
 end
 
 //-------------------------------------------------------------------
 // PIPELINE IO
 //-------------------------------------------------------------------
 // Fetch -> Execute
-// The fetch pipe and execution pipe are synchronized via the opbuf.
 // Fetch operates one byte ahead of execution.
-//reg [7:0]  i2e_op_r[1:0]; initial for (i = 0; i < 2; i = i + 1) i2e_op_r[i] = `OP_NOP;
-//reg        i2e_ptr_r; initial i2e_ptr_r = 0;
 
 // Execute -> RegisterFile
 reg        e2r_val_r; initial e2r_val_r = 0;
@@ -472,7 +470,7 @@ reg        e2r_loop_r;
 reg        e2r_wpbr_r;
 reg        e2r_wcbr_r;
 reg        e2r_lmult_r; initial e2r_lmult_r = 0;
-reg [15:0] e2r_pbr_r;
+reg [7:0]  e2r_pbr_r;
 reg [15:0] e2r_cbr_r;
 reg        e2r_wpor_r;
 reg [7:0]  e2r_por_r;
@@ -582,7 +580,7 @@ reg        snes_writereg_r; initial snes_writereg_r = 0;
 reg        snes_writebuf_val_r; initial snes_writebuf_val_r = 0;
 reg        snes_writebuf_reg_r;
 reg        snes_writebuf_gpr_r;
-reg [9:0]  snes_writebuf_addr_r;
+reg [8:0]  snes_writebuf_addr_r;
 reg [7:0]  snes_writebuf_data_r;
 
 reg        snes_readbuf_val_r; initial snes_readbuf_val_r = 0;
@@ -664,7 +662,7 @@ always @(posedge CLK) begin
       snes_writebuf_val_r  <= 1;
       snes_writebuf_reg_r  <= ~|addr_in_r[9:8];
       snes_writebuf_gpr_r  <= ~|addr_in_r[9:5];
-      snes_writebuf_addr_r <= addr_in_r[9:0];
+      snes_writebuf_addr_r <= addr_in_r[8:0];
       snes_writebuf_data_r <= data_in_r;
     end
     else if (snes_writebuf_val_r & ~gsu_clock_en) begin
@@ -684,9 +682,6 @@ always @(posedge CLK) begin
     if (snes_writebuf_val_r & ~gsu_clock_en) begin
       if (snes_writebuf_reg_r) begin
         if (snes_writebuf_addr_r[7:0] == ADDR_SFR) begin
-          // FIXME: The emulator only flushes on 1->0.  Something was added from
-          // v02 -> v03/v04 (may be in firmware) that causes problems for certain people.
-          // Could be related to this.
           if (SFR_GO & ~snes_writebuf_data_r[5]) begin
             r2i_flush_r <= 1;
             r2i_clear_r <= 1;
@@ -712,7 +707,7 @@ always @(posedge CLK) begin
           ADDR_SFR  : SFR_r[5:1] <= snes_writebuf_data_r[5:1];
           ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {snes_writebuf_data_r[7],snes_writebuf_data_r[4:0]};
           ADDR_BRAMR: BRAMR_r[0] <= snes_writebuf_data_r[0];
-          ADDR_PBR  : PBR_r <= snes_writebuf_data_r[6:0]; // FIXME: is the upper bit open bus?
+          ADDR_PBR  : PBR_r <= snes_writebuf_data_r[6:0]; // upper bit looks to be written with open bus value in voxel demo
           ADDR_CFGR : {CFGR_r[7],CFGR_r[5]} <= {snes_writebuf_data_r[7],snes_writebuf_data_r[5]};
           ADDR_SCBR : SCBR_r <= snes_writebuf_data_r;
           ADDR_CLSR : CLSR_r[0] <= snes_writebuf_data_r[0];
@@ -752,11 +747,8 @@ always @(posedge CLK) begin
 
     // Register file
     if (snes_writebuf_val_r & snes_writebuf_gpr_r & ~gsu_clock_en) begin
-      // FIXME: description says the data is flopped but emulator writes it directly
       if (snes_writebuf_addr_r[0]) REG_r[snes_writebuf_addr_r[5:1]] <= {snes_writebuf_data_r,data_flop_r};
       else                         data_flop_r                      <= snes_writebuf_data_r;
-      //if (snes_writebuf_addr_r[0]) REG_r[snes_writebuf_addr_r[5:1]][15:8] <= snes_writebuf_data_r;
-      //else                         REG_r[snes_writebuf_addr_r[5:1]][7:0]  <= snes_writebuf_data_r;
     end
     else if (pipeline_advance) begin
       if (e2r_val_r & op_complete) begin
@@ -831,7 +823,6 @@ parameter
   ST_ROM_IDLE      = 8'b00000001,
   ST_ROM_FETCH_RD  = 8'b00000010,
   ST_ROM_DATA_RD   = 8'b00000100,
-  //ST_ROM_DATA_WR   = 8'b00001000,
   ST_ROM_FETCH_END = 8'b00010000,
   ST_ROM_DATA_END  = 8'b00100000
   ;
@@ -840,10 +831,8 @@ reg rom_bus_rrq_r; initial rom_bus_rrq_r = 0;
 reg [23:0] rom_bus_addr_r;
 reg [15:0] rom_bus_data_r;
 reg        rom_bus_word_r;
-//reg [3:0] rom_waitcnt_r;
 reg        rom_busy_r; initial rom_busy_r = 0;
 
-// The ROM/RAM should be dedicated to the GSU whenever it wants to do a fetch
 always @(posedge CLK) begin
   if (RST) begin
     ROM_STATE <= ST_ROM_IDLE;
@@ -897,10 +886,6 @@ assign ROM_BUS_ADDR = rom_bus_addr_r;
 parameter
   ST_RAM_IDLE      = 8'b00000001,
   ST_RAM_ACCESS    = 8'b00000010,
-  //ST_RAM_DATA_RD   = 10'b0000000100,
-  //ST_RAM_DATA_WR   = 10'b0000001000,
-  //ST_RAM_BMP_RD    = 10'b0000010000,
-  //ST_RAM_BMP_WR    = 10'b0000100000,
   ST_RAM_FETCH_END = 8'b00000100,
   ST_RAM_DATA_END  = 8'b00001000,
   ST_RAM_STB_END   = 8'b00010000,
@@ -911,11 +896,13 @@ reg [7:0] RAM_STATE; initial RAM_STATE = ST_RAM_IDLE;
 reg [7:0] ram_state_end_r;
 reg ram_bus_rrq_r; initial ram_bus_rrq_r = 0;
 reg ram_bus_wrq_r; initial ram_bus_wrq_r = 0;
-reg [23:0] ram_bus_addr_r;
+reg [18:0] ram_bus_addr_r;
 reg [15:0] ram_bus_data_r;
 reg        ram_bus_word_r;
-//reg [3:0] ram_waitcnt_r;
 reg        ram_busy_r; initial ram_busy_r = 0;
+reg        ram_word_r; initial ram_word_r = 0;
+reg        ram_wr_r; initial ram_wr_r = 0;
+reg        ram_upper_r; initial ram_upper_r = 0;
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -932,51 +919,63 @@ always @(posedge CLK) begin
         if (SCMR_RAN & RAM_BUS_RDY & SFR_GO) begin
           if (exe_ram_rd_r) begin
             ram_bus_rrq_r <= 1;
-            ram_bus_word_r <= exe_word_r;
+            ram_bus_word_r <= 0;
             ram_bus_addr_r <= exe_addr_r;
             ram_busy_r <= 1;
+            ram_word_r <= exe_word_r;
+            ram_wr_r <= 0;
             RAM_STATE <= ST_RAM_ACCESS;
             ram_state_end_r <= ST_RAM_DATA_END;
           end
           else if (cache_ram_rd_r) begin
             ram_bus_rrq_r <= 1;
             ram_bus_addr_r <= cache_addr_r;
-            ram_bus_word_r <= cache_word_r;
+            ram_bus_word_r <= 0;
             ram_busy_r <= 1;
+            ram_word_r <= cache_word_r;
+            ram_wr_r <= 0;
             RAM_STATE <= ST_RAM_ACCESS;
             ram_state_end_r <= ST_RAM_FETCH_END;
           end
           else if (stb_ram_wr_r) begin
             ram_bus_wrq_r <= 1;
-            ram_bus_word_r <= stb_word_r;
+            ram_bus_word_r <= 0;
             ram_bus_addr_r <= stb_addr_r;
             ram_bus_data_r <= stb_data_r;
             ram_busy_r <= 1;
+            ram_word_r <= stb_word_r;
+            ram_wr_r <= 1;
             RAM_STATE <= ST_RAM_ACCESS;
             ram_state_end_r <= ST_RAM_STB_END;            
           end
           else if (bmp_ram_rd_r) begin
             ram_bus_rrq_r <= 1;
-            ram_bus_word_r <= bmp_word_r;
+            ram_bus_word_r <= 0;
             ram_bus_addr_r <= bmp_addr_r;
             ram_busy_r <= 1;
+            ram_word_r <= bmp_word_r;
+            ram_wr_r <= 0;
             RAM_STATE <= ST_RAM_ACCESS;
             ram_state_end_r <= ST_RAM_BMP_END;
           end
           else if (bmf_ram_rd_r) begin
             ram_bus_rrq_r <= 1;
-            ram_bus_word_r <= bmf_word_r;
+            ram_bus_word_r <= 0;
             ram_bus_addr_r <= bmf_addr_r;
             ram_busy_r <= 1;
+            ram_word_r <= bmf_word_r;
+            ram_wr_r <= 0;
             RAM_STATE <= ST_RAM_ACCESS;
             ram_state_end_r <= ST_RAM_BMF_END;
           end
           else if (bmf_ram_wr_r) begin
             ram_bus_wrq_r <= 1;
-            ram_bus_word_r <= bmf_word_r;
+            ram_bus_word_r <= 0;
             ram_bus_addr_r <= bmf_addr_r;
             ram_bus_data_r <= bmf_data_r;
             ram_busy_r <= 1;
+            ram_word_r <= bmf_word_r;
+            ram_wr_r <= 1;
             RAM_STATE <= ST_RAM_ACCESS;
             ram_state_end_r <= ST_RAM_BMF_END;
           end
@@ -987,8 +986,25 @@ always @(posedge CLK) begin
         ram_bus_wrq_r <= 0;
         
         if ((~ram_bus_rrq_r & ~ram_bus_wrq_r) & RAM_BUS_RDY) begin
-          ram_bus_data_r <= RAM_BUS_RDDATA;
-          RAM_STATE <= ram_state_end_r;
+          if (ram_word_r) begin
+            ram_word_r <= 0;
+            ram_upper_r <= 1;
+            
+            ram_bus_rrq_r <= ~ram_wr_r;
+            ram_bus_wrq_r <=  ram_wr_r;
+            
+            ram_bus_addr_r[0] <= ~ram_bus_addr_r[0];
+            // if it's a read we are inserting the lower byte.  If it's a store we are writing the lower byte
+            ram_bus_data_r[7:0] <= ram_wr_r ? ram_bus_data_r[15:8] : RAM_BUS_RDDATA[7:0];
+            
+            // no state change
+          end
+          else begin
+            ram_upper_r <= 0;
+            if (ram_upper_r) ram_bus_data_r[15:8] <= RAM_BUS_RDDATA[7:0];
+            else             ram_bus_data_r[7:0]  <= RAM_BUS_RDDATA[7:0];
+            RAM_STATE <= ram_state_end_r;
+          end
         end
       end
       ST_RAM_FETCH_END,
@@ -1007,7 +1023,7 @@ assign RAM_BUS_RRQ = ram_bus_rrq_r;
 assign RAM_BUS_WRQ = ram_bus_wrq_r;
 assign RAM_BUS_WORD = ram_bus_word_r;
 assign RAM_BUS_ADDR = ram_bus_addr_r;
-assign RAM_BUS_WRDATA = ram_bus_data_r;
+assign RAM_BUS_WRDATA = ram_bus_data_r[7:0];
 
 //-------------------------------------------------------------------
 // BITMAP PIPELINE
@@ -1128,16 +1144,9 @@ always @(posedge CLK) begin
         if (bmf_done)      PIXBUF_VALID_r[i] <= 0;
       end
     end
-//    if (bmf_done | bmp_plot_done) begin
-//      // clear when flush is complete
-//      if (bmf_done) PIXBUF_VALID_r[~PIXBUF_HEAD_r] <= 0;
-//      // set valid when done
-//      if (bmp_plot_done) PIXBUF_VALID_r[PIXBUF_HEAD_r] <= PIXBUF_VALID_r[PIXBUF_HEAD_r] | bmp_index_bit_r;
-//    end
     // double buffer swap
     // second buffer must be available and we must be idle
-    // Conflict, Flush, or Full
-    
+    // Conflict, Flush, or Full    
     if (~|PIXBUF_VALID_r[~PIXBUF_HEAD_r]                  // available
        & (|(BMP_STATE & ST_BMP_IDLE))                     // idle
        & ( (e2b_plot_r  & ~bmp_hit)                       // conflict
@@ -1193,7 +1202,7 @@ always @(posedge CLK) begin
       ST_BMP_FILL: begin
         // generate next read
         if (bmp_waitcnt_r == 0) begin
-          bmp_waitcnt_r <= lat_memory_r;
+          bmp_waitcnt_r <= lat_ram_r;
 
           // address common between read and write
           bmp_addr_r <= 24'hE00000 + bmp_rpix_char_shift_r + {SCBR_r,10'h000} + {bmp_rpix_y_r[2:0],1'b0} + {bmp_plane_r[2:1], 3'b000, bmp_plane_r[0]};
@@ -1224,9 +1233,6 @@ always @(posedge CLK) begin
             // write offset and color.  valid handled in that pipe
             PIXBUF_OFFSET_r[PIXBUF_HEAD_r]       <= bmp_offset_r;
             PIXBUF_r[PIXBUF_HEAD_r][bmp_index_r] <= bmp_colr_r;
-            //PIXBUF_OBJ_r[PIXBUF_HEAD_r]          <= POR_OBJ;
-            //PIXBUF_HT_r[PIXBUF_HEAD_r]           <= SCMR_HT;
-            //PIXBUF_MD_r[PIXBUF_HEAD_r]           <= SCMR_MD;
           end
           // RPIX gets the data directly from the local color register
 
@@ -1281,7 +1287,7 @@ always @(posedge CLK) begin
       ST_BMF_FLUSH_READ: begin
         // perform next read
         if (bmf_waitcnt_r == 0) begin
-          bmf_waitcnt_r <= lat_memory_r;
+          bmf_waitcnt_r <= lat_ram_r;
 
           // address common between read and write
           bmf_addr_r <= 24'hE00000 + bmp_char_shift_r[~PIXBUF_HEAD_r] + {SCBR_r,10'h000} + {bmp_y_r[~PIXBUF_HEAD_r][2:0],1'b0} + {bmf_plane_r[2:1], 3'b000, bmf_plane_r[0]};
@@ -1306,7 +1312,7 @@ always @(posedge CLK) begin
       ST_BMF_FLUSH_WRITE: begin
         // perform next write
         if (bmf_waitcnt_r == 0) begin
-          bmf_waitcnt_r <= lat_memory_r;
+          bmf_waitcnt_r <= lat_ram_r;
 
           // address common between read and write
           bmf_addr_r <= 24'hE00000 + bmp_char_shift_r[~PIXBUF_HEAD_r] + {SCBR_r,10'h000} + {bmp_y_r[~PIXBUF_HEAD_r][2:0],1'b0} + {bmf_plane_r[2:1], 3'b000, bmf_plane_r[0]};
@@ -1344,6 +1350,7 @@ parameter
   ST_STB_IDLE        = 8'b00000001,
   
   ST_STB_MEMORY_WAIT = 8'b00000010,
+  ST_STB_MEMORY2_WAIT= 8'b00000100,
   ST_STB_WAIT        = 8'b10000000
   ;
 reg [7:0]  STB_STATE; initial STB_STATE = ST_STB_IDLE;
@@ -1367,7 +1374,7 @@ always @(posedge CLK) begin
         if (e2s_req_r) begin
           stb_busy_r <= 1;
 
-          stb_waitcnt_r <= lat_memory_r;
+          stb_waitcnt_r <= lat_ram_r;
 
           stb_ram_wr_r <= 1;
           stb_word_r <= e2s_word_r;
@@ -1381,15 +1388,26 @@ always @(posedge CLK) begin
       ST_STB_MEMORY_WAIT: begin
         if (|(RAM_STATE & ST_RAM_STB_END)) begin
           stb_ram_wr_r <= 0;
-          
           STB_STATE <= ST_STB_WAIT;
         end
       end
       ST_STB_WAIT: begin
         if (gsu_clock_en & ~|stb_waitcnt_r) begin
-          stb_busy_r <= 0;
+          if (stb_word_r) begin
+            stb_waitcnt_r <= lat_ram_r;
+            
+            stb_ram_wr_r <= 1;
+            stb_word_r <= 0;
 
-          STB_STATE <= ST_STB_IDLE;
+            // write second byte
+            stb_addr_r[0] <= ~stb_addr_r[0];
+            stb_data_r <= {stb_data_r[7:0], stb_data_r[15:8]};
+            STB_STATE <= ST_STB_MEMORY_WAIT;
+          end
+          else begin
+            stb_busy_r <= 0;
+            STB_STATE <= ST_STB_IDLE;
+          end
         end
       end
     endcase
@@ -1429,16 +1447,13 @@ reg [7:0] FETCH_STATE; initial FETCH_STATE = ST_FETCH_IDLE;
 // - read data out of cache or from fill
 // - wait for cycles to expire and edge
 
-// TODO: Fix cache index calculation.
-// TODO: Add snes cache injection
-
 reg         fetch_wait_r;
 reg [7:0]   fetch_data_r;
 
 reg         fetch_cache_match_r;
 
 reg         fetch_install_val_r;
-reg [5:0]   fetch_install_block_r;
+reg [4:0]   fetch_install_block_r;
 
 // debug
 reg         fetch_cache_comp_r;
@@ -1544,7 +1559,7 @@ always @(posedge CLK) begin
         fetch_data_r <= cache_rddata;
         fetch_cache_data_r <= cache_rddata;
 
-        // FIXME: temp to test cache
+        // uncomment to test cache
         //fetch_cache_match_r <= 0;
         //FETCH_STATE <= ST_FETCH_FILL;
         //fetch_cache_comp_r <= 1;
@@ -1561,7 +1576,7 @@ always @(posedge CLK) begin
             cache_word_r <= 1;
 
             i2c_waitcnt_val_r <= 1;
-            i2c_waitcnt_r     <= lat_memory_r;
+            i2c_waitcnt_r     <= lat_rom_r;
             FETCH_STATE       <= ST_FETCH_FILL_WAIT;
           end
           else if (~stb_busy_r) begin
@@ -1569,7 +1584,7 @@ always @(posedge CLK) begin
             cache_word_r <= 1;
 
             i2c_waitcnt_val_r <= 1;
-            i2c_waitcnt_r     <= lat_memory_r;
+            i2c_waitcnt_r     <= lat_ram_r;
             FETCH_STATE       <= ST_FETCH_FILL_WAIT;
           end
         end
@@ -1682,7 +1697,7 @@ always @(posedge CLK) begin
         end
       end
       ST_PRF_MEMORY: begin
-        prf_waitcnt_r <= lat_memory_r;
+        prf_waitcnt_r <= lat_rom_r;
 
         prf_rom_rd_r <= 1;
         prf_word_r <= 0;
@@ -1836,11 +1851,7 @@ always @(posedge CLK) begin
         // align to GSU clock.  Sinks up with fetch.
         if (SFR_GO & gsu_clock_en) begin
           EXE_STATE <= ST_EXE_DECODE;
-        end
-        
-        // handle snes write reg data
-        //e2r_data_r <= {data_in_r,data_flop_r};
-        //e2r_destnum_r <= addr_in_r[4:1];
+        end        
       end
       ST_EXE_DECODE: begin
         if (~|exe_opsize_r) begin      
@@ -2283,7 +2294,7 @@ always @(posedge CLK) begin
                   e2r_destnum_r   <= exe_n_r;
                  
                   e2c_waitcnt_val_r <= 1;
-                  e2c_waitcnt_r <= lat_memory_r;
+                  e2c_waitcnt_r <= {lat_ram_r,1'b0};
           
                   exe_ram_rd_r <= 1;
                   exe_word_r <= 1;
@@ -2295,16 +2306,6 @@ always @(posedge CLK) begin
               end
               else if (exe_alt2_r) begin
                 // SMS (2*imm8), Rn                
-                //e2c_waitcnt_val_r <= 1;
-                //e2c_waitcnt_r <= lat_memory_r;
-          
-                // TODO: this really does a byte at a time.
-                //exe_ram_wr_r <= 1;
-                //exe_word_r <= 1;
-                //exe_data_r <= exe_srcn_r;
-                //exe_addr_r <= {4'hE,3'h0,RAMBR_r,7'h00,exe_operand_r[7:0],1'b0};
-                  
-                //EXE_STATE <= ST_EXE_MEMORY_WAIT;
 
                 if (~stb_busy_r) begin                  
                   e2s_req_r <= 1;
@@ -2331,7 +2332,7 @@ always @(posedge CLK) begin
                   e2r_destnum_r   <= exe_n_r;
 
                   e2c_waitcnt_val_r <= 1;
-                  e2c_waitcnt_r <= lat_memory_r; // TODO: account for slow clock.
+                  e2c_waitcnt_r <= {lat_ram_r,1'b0};
           
                   exe_ram_rd_r <= 1;
                   exe_word_r <= 1;
@@ -2343,16 +2344,6 @@ always @(posedge CLK) begin
               end
               else if (exe_alt2_r) begin
                 // SM (imm), Rn
-                //e2c_waitcnt_val_r <= 1;
-                //e2c_waitcnt_r <= lat_memory_r;
-          
-                // TODO: this really does a byte at a time.
-                //exe_ram_wr_r <= 1;
-                //exe_word_r <= 1;
-                //exe_data_r <= exe_srcn_r;
-                //exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_operand_r};
-
-                //EXE_STATE <= ST_EXE_MEMORY_WAIT;
 
                 if (~stb_busy_r) begin
                   e2s_req_r <= 1;
@@ -2379,18 +2370,7 @@ always @(posedge CLK) begin
                 EXE_STATE <= ST_EXE_WAIT;
               end
             end
-            `OP_SBK           : begin
-              //e2c_waitcnt_val_r <= 1;
-              //e2c_waitcnt_r <= lat_memory_r;
-          
-              // TODO: this really does a byte at a time.
-              //exe_ram_wr_r <= 1;
-              //exe_word_r <= 1;
-              //exe_data_r <= exe_src_r;
-              //exe_addr_r <= {8'hE0,RAMADDR_r};
-              
-              //EXE_STATE <= ST_EXE_MEMORY_WAIT;
-              
+            `OP_SBK           : begin              
               if (~stb_busy_r) begin
                 e2s_req_r <= 1;
                 e2s_word_r <= 1;
@@ -2405,7 +2385,7 @@ always @(posedge CLK) begin
                 e2r_val_r    <= 1;
                  
                 e2c_waitcnt_val_r <= 1;
-                e2c_waitcnt_r <= exe_alt1_r ? lat_memory_r : lat_memory_r;
+                e2c_waitcnt_r <= exe_alt1_r ? lat_ram_r : {lat_ram_r,1'b0};
 
                 exe_ram_rd_r <= 1;
                 exe_word_r <= ~exe_alt1_r;
@@ -2417,17 +2397,6 @@ always @(posedge CLK) begin
               end
             end
             `OP_ST           : begin
-              //e2c_waitcnt_val_r <= 1;
-              //e2c_waitcnt_r <= exe_alt1_r ? lat_memory_r-1 : lat_memory_r-1;
-
-              //exe_ram_wr_r <= 1;
-              //exe_word_r <= ~exe_alt1_r;
-              //exe_data_r <= exe_src_r;
-
-              //exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_srcn_r};
-
-              //EXE_STATE <= ST_EXE_MEMORY_WAIT;
-              
               if (~stb_busy_r) begin
                 e2s_req_r <= 1;
                 e2s_word_r <= ~exe_alt1_r;
@@ -2676,38 +2645,6 @@ always @(posedge CLK) begin
     2'h0: casex (pgm_addr_r[7:0])
       ADDR_GPRL        : pgmpre_out[0] <= REG_r[pgm_addr_r[4:1]][7:0];
       ADDR_GPRH        : pgmpre_out[0] <= REG_r[pgm_addr_r[4:1]][15:8];
-//      ADDR_R0          : pgmpre_out[0] <= REG_r[R0][7:0];
-//      ADDR_R0+1        : pgmpre_out[0] <= REG_r[R0][15:8];
-//      ADDR_R1          : pgmpre_out[0] <= REG_r[R1][7:0];
-//      ADDR_R1+1        : pgmpre_out[0] <= REG_r[R1][15:8];
-//      ADDR_R2          : pgmpre_out[0] <= REG_r[R2][7:0];
-//      ADDR_R2+1        : pgmpre_out[0] <= REG_r[R2][15:8];
-//      ADDR_R3          : pgmpre_out[0] <= REG_r[R3][7:0];
-//      ADDR_R3+1        : pgmpre_out[0] <= REG_r[R3][15:8];
-//      ADDR_R4          : pgmpre_out[0] <= REG_r[R4][7:0];
-//      ADDR_R4+1        : pgmpre_out[0] <= REG_r[R4][15:8];
-//      ADDR_R5          : pgmpre_out[0] <= REG_r[R5][7:0];
-//      ADDR_R5+1        : pgmpre_out[0] <= REG_r[R5][15:8];
-//      ADDR_R6          : pgmpre_out[0] <= REG_r[R6][7:0];
-//      ADDR_R6+1        : pgmpre_out[0] <= REG_r[R6][15:8];
-//      ADDR_R7          : pgmpre_out[0] <= REG_r[R7][7:0];
-//      ADDR_R7+1        : pgmpre_out[0] <= REG_r[R7][15:8];
-//      ADDR_R8          : pgmpre_out[0] <= REG_r[R8][7:0];
-//      ADDR_R8+1        : pgmpre_out[0] <= REG_r[R8][15:8];
-//      ADDR_R9          : pgmpre_out[0] <= REG_r[R9][7:0];
-//      ADDR_R9+1        : pgmpre_out[0] <= REG_r[R9][15:8];
-//      ADDR_R10         : pgmpre_out[0] <= REG_r[R10][7:0];
-//      ADDR_R10+1       : pgmpre_out[0] <= REG_r[R10][15:8];
-//      ADDR_R11         : pgmpre_out[0] <= REG_r[R11][7:0];
-//      ADDR_R11+1       : pgmpre_out[0] <= REG_r[R11][15:8];
-//      ADDR_R12         : pgmpre_out[0] <= REG_r[R12][7:0];
-//      ADDR_R12+1       : pgmpre_out[0] <= REG_r[R12][15:8];
-//      ADDR_R13         : pgmpre_out[0] <= REG_r[R13][7:0];
-//      ADDR_R13+1       : pgmpre_out[0] <= REG_r[R13][15:8];
-//      ADDR_R14         : pgmpre_out[0] <= REG_r[R14][7:0];
-//      ADDR_R14+1       : pgmpre_out[0] <= REG_r[R14][15:8];
-//      ADDR_R15         : pgmpre_out[0] <= REG_r[R15][7:0];
-//      ADDR_R15+1       : pgmpre_out[0] <= REG_r[R15][15:8];
 
       ADDR_SFR         : pgmpre_out[0] <= SFR_r[7:0];
       ADDR_SFR+1       : pgmpre_out[0] <= SFR_r[15:8];
@@ -2819,8 +2756,9 @@ always @(posedge CLK) begin
       8'hE9           : pgmpre_out[0] <= gsu_clock_en;
       //8'hEA           : pgmpre_out[0] <= fetch_error;
 
-      8'hEC           : pgmpre_out[0] <= lat_fetch_r;
-      8'hED           : pgmpre_out[0] <= lat_memory_r;
+      8'hEB           : pgmpre_out[0] <= lat_fetch_r;
+      8'hEC           : pgmpre_out[0] <= lat_rom_r;
+      8'hED           : pgmpre_out[0] <= lat_ram_r;
       8'hEE           : pgmpre_out[0] <= lat_mult_r;
       8'hEF           : pgmpre_out[0] <= lat_fmult_r;
       
@@ -2847,107 +2785,6 @@ always @(posedge CLK) begin
 
       default         : pgmpre_out[0] <= 8'hFF;
     endcase
-    //2'h1: pgmpre_out[1] <= debug_cache_rddata;
-    //2'h2: pgmpre_out[2] <= debug_cache_rddata;
-//    2'h3: casex (pgm_addr_r[7:0])      
-//      // fetch state
-//      //8'h00           : pgmpre_out[3] <= FETCH_STATE;
-//      //8'h01           : pgmpre_out[3] <= fetch_waitcnt_r;
-//      // exe state
-////      8'h20           : pgmpre_out[3] <= EXE_STATE;
-////      8'h21           : pgmpre_out[3] <= exe_waitcnt_r;
-//      8'h22           : pgmpre_out[3] <= exe_opcode_r;
-//      8'h23           : pgmpre_out[3] <= exe_operand_r[7:0];
-//      8'h24           : pgmpre_out[3] <= exe_operand_r[15:8];
-//      8'h25           : pgmpre_out[3] <= exe_opsize_r;
-////      8'h26           : pgmpre_out[3] <= e2r_destnum_r;
-////  
-////      8'h30           : pgmpre_out[3] <= exe_src_r[7:0];
-////      8'h31           : pgmpre_out[3] <= exe_src_r[15:8];
-////      8'h32           : pgmpre_out[3] <= exe_srcn_r[7:0];
-////      8'h33           : pgmpre_out[3] <= exe_srcn_r[15:8];
-////      8'h34           : pgmpre_out[3] <= e2r_data_r[7:0];
-////      8'h35           : pgmpre_out[3] <= e2r_data_r[15:8];
-////  
-////      // cache state
-////      //8'h40
-////      // fill state
-////      8'h60           : pgmpre_out[3] <= ROM_BUS_RDY;
-////      8'h61           : pgmpre_out[3] <= RAM_BUS_RDY;
-//      8'h62           : pgmpre_out[3] <= bmp_data_r[7:0];
-//      8'h63           : pgmpre_out[3] <= bmp_data_r[15:8];
-////      8'h68           : pgmpre_out[3] <= cache_rom_rd_r;
-////      8'h69           : pgmpre_out[3] <= cache_ram_rd_r;
-////      8'h6F           : pgmpre_out[3] <= exe_rom_rd_r;
-////      8'h70           : pgmpre_out[3] <= exe_ram_rd_r;
-////      8'h71           : pgmpre_out[3] <= exe_ram_wr_r;
-//      8'h72           : pgmpre_out[3] <= bmp_ram_rd_r;
-//      8'h73           : pgmpre_out[3] <= bmp_ram_wr_r;
-////      8'h74           : pgmpre_out[3] <= exe_addr_r[7:0];
-////      8'h75           : pgmpre_out[3] <= exe_addr_r[15:8];
-////      8'h76           : pgmpre_out[3] <= exe_addr_r[23:16];
-//      8'h77           : pgmpre_out[3] <= bmp_addr_r[7:0];
-//      8'h78           : pgmpre_out[3] <= bmp_addr_r[15:8];
-//      8'h79           : pgmpre_out[3] <= bmp_addr_r[23:16];
-////      8'h7A           : pgmpre_out[3] <= exe_data_r[7:0];
-////      8'h7B           : pgmpre_out[3] <= exe_data_r[15:8];
-////      8'h7C           : pgmpre_out[3] <= rom_bus_data_r[7:0];
-////      8'h7D           : pgmpre_out[3] <= rom_bus_data_r[15:8];
-////      8'h7E           : pgmpre_out[3] <= ram_bus_data_r[7:0];
-////      8'h7F           : pgmpre_out[3] <= ram_bus_data_r[15:8];
-//
-//      // bitmap state
-//      8'h80           : pgmpre_out[3] <= BMP_STATE;
-//      8'h81           : pgmpre_out[3] <= bmp_mode_r;
-//      8'h82           : pgmpre_out[3] <= bmp_bppm1_r;
-//      8'h83           : pgmpre_out[3] <= bmp_plane_r;
-//      8'h84           : pgmpre_out[3] <= bmp_x_r[0];
-//      8'h85           : pgmpre_out[3] <= bmp_y_r[0];
-//      8'h86           : pgmpre_out[3] <= bmp_x_r[1];
-//      8'h87           : pgmpre_out[3] <= bmp_y_r[1];
-//      8'h88           : pgmpre_out[3] <= bmp_char_shift_r[0][7:0];
-//      8'h89           : pgmpre_out[3] <= bmp_char_shift_r[0][15:8];
-//      8'h8A           : pgmpre_out[3] <= bmp_char_shift_r[1][7:0];
-//      8'h8B           : pgmpre_out[3] <= bmp_char_shift_r[1][15:8];
-//      8'h8C           : pgmpre_out[3] <= bmp_offset_r[7:0];
-//      8'h8D           : pgmpre_out[3] <= bmp_offset_r[15:8];
-//      8'h8E           : pgmpre_out[3] <= bmp_index_bit_r;
-//      8'h8F           : pgmpre_out[3] <= bmp_colr_r;
-//      8'h90           : pgmpre_out[3] <= bmp_rpix_char_shift_r[7:0];
-//      8'h91           : pgmpre_out[3] <= bmp_rpix_char_shift_r[15:8];
-//      8'h92           : pgmpre_out[3] <= bmp_rpix_x_r;
-//      8'h93           : pgmpre_out[3] <= bmp_rpix_y_r;
-//      8'h94           : pgmpre_out[3] <= bmp_index_r;
-//
-//      //8'h98           : pgmpre_out[3] <= e2b_plot_r;
-//      //8'h99           : pgmpre_out[3] <= e2b_rpix_r;
-//      //8'h9A           : pgmpre_out[3] <= bmp_flush_buf_r;
-//      //8'h9B           : pgmpre_out[3] <= bmp_flush_rmw_r;
-//      //8'h9C           : pgmpre_out[3] <= bmp_flush_colr_r;
-//
-//      // config state
-//      8'hA0           : pgmpre_out[3] <= config_r[0];
-//      8'hA1           : pgmpre_out[3] <= config_r[1];
-//      //8'hA2           : pgmpre_out[3] <= config_r[2];
-//      //8'hA3           : pgmpre_out[3] <= config_r[3];
-//      //8'hA4           : pgmpre_out[3] <= config_r[4];
-//      //8'hA5           : pgmpre_out[3] <= config_r[5];
-//      //8'hA6           : pgmpre_out[3] <= config_r[6];
-//      //8'hA7           : pgmpre_out[3] <= config_r[7];
-//  
-//      //8'hC0           : pgmpre_out[3] <= ROM_STATE;
-//      //8'hC1           : pgmpre_out[3] <= RAM_STATE;
-//      
-//      // misc
-//      //8'hE0           : pgmpre_out[3] <= gsu_cycle_cnt_r[31:24];
-//      //8'hE1           : pgmpre_out[3] <= gsu_cycle_cnt_r[23:16];
-//      //8'hE2           : pgmpre_out[3] <= gsu_cycle_cnt_r[15: 8];
-//      //8'hE3           : pgmpre_out[3] <= gsu_cycle_cnt_r[ 7: 0];
-//      //8'hE4           : pgmpre_out[3] <= snes_write_r;
-//      //8'hE5           : pgmpre_out[3] <= pipeline_advance;
-//      
-//      default           : pgmpre_out[3] <= 8'hFF;
-//    endcase
   endcase
 end
 `endif
@@ -2961,11 +2798,9 @@ assign PGM_DATA    = pgmdata_out;
 assign DATA_ENABLE = data_enable_r;
 assign DATA_OUT    = data_out_r;
 
-//assign ACTIVE      = ~|(ROM_STATE & ST_ROM_IDLE) | ~|(RAM_STATE & ST_RAM_IDLE);
 assign GO          = SFR_GO;
-// Mask out CPU accesses if the memory state machines are not idle.
-assign RON         = SCMR_RON;// | rom_busy_r;
-assign RAN         = SCMR_RAN;// | ram_busy_r;
+assign RON         = SCMR_RON;
+assign RAN         = SCMR_RAN;
 assign IRQ         = SFR_IRQ;
 
 endmodule
