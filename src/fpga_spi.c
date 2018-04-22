@@ -128,7 +128,7 @@
         bit        function
    ==========================================================================
          7         -
-         6         -
+         6         enable $2100 DAC fix for 1CHIP
          5         enable permanent snescmd unlock (during load handshake)
          4         enable $213F override
          3         enable MSU1 registers

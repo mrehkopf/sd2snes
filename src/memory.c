@@ -368,6 +368,10 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     }
   }
 
+  if(cfg_is_patch_1chip_brightness() && (filename != (uint8_t*)"/sd2snes/menu.bin")) {
+    romprops.fpga_features |= FEAT_2100;
+  }
+
   if(flags & LOADROM_WAIT_SNES) {
     while(snes_get_mcu_cmd() != SNES_CMD_RESET) cli_entrycheck();
   }
