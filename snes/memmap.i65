@@ -97,6 +97,7 @@
 #define CFG_SKIN_NAME               CFG_ADDR+$001A
 #define CFG_CONTROL_TYPE            CFG_ADDR+$009A
 #define CFG_MSU_VOLUME_BOOST        CFG_ADDR+$009B
+#define CFG_1CHIP_BRIGHTNESS_PATCH  CFG_ADDR+$009C
 
 #define ST_RTC_VALID                ST_ADDR+$0000
 #define ST_NUM_RECENT_GAMES         ST_ADDR+$0001

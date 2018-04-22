@@ -209,6 +209,7 @@ mtext_ingame_enable               .byt "In-game hook", 0
 mtext_ingame_buttons              .byt "In-game buttons", 0
 mtext_ingame_holdoff              .byt "Initial holdoff", 0
 mtext_ingame_regionpatch          .byt "Auto region patch", 0
+mtext_ingame_1chipbrightpatch     .byt "1CHIP brightness patch", 0
 mtext_chip_cx4_speed              .byt "Cx4 speed", 0
 mtext_chip_msu1_volume_boost      .byt "MSU-1 volume boost", 0
 
@@ -234,6 +235,7 @@ mdesc_ingame_enable               .byt "Required for in-game buttons and 7E/7F c
 mdesc_ingame_buttons              .byt "Enable in-game buttons (reset, en/disable cheats", 127, 128, ")", 0
 mdesc_ingame_holdoff              .byt "Wait 10 seconds before enabling hook (this helps some games boot)", 0
 mdesc_ingame_regionpatch          .byt "Bypass simple region protection by games", 0
+mdesk_ingame_1chipbrightpatch     .byt "[EXPERIMENTAL] patch brightness on 1CHIP consoles to avoid certain artifacts", 0
 mdesc_chip_cx4_speed              .byt "Set speed of Cx4 soft core", 0
 mdesc_chip_msu1_volume_boost      .byt "Set volume boost for MSU1 audio", 0
 mdesc_cx4_speed_fast              .byt "Run as fast as possible", 0

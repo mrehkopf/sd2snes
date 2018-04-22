@@ -281,6 +281,15 @@ menu_enttab_ingame:
  .word !CFG_R213F_OVERRIDE
  .byt  ^CFG_R213F_OVERRIDE
 
+ .byt  MTYPE_VALUE
+ .word !mtext_ingame_1chipbrightpatch
+ .byt  ^mtext_ingame_1chipbrightpatch
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_1CHIP_BRIGHTNESS_PATCH
+ .byt  ^CFG_1CHIP_BRIGHTNESS_PATCH
+
  .byt 0
 
 menu_enttab_scic:
