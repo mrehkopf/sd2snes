@@ -692,6 +692,7 @@ cheat snes_cheat(
   .pgm_idx(cheat_pgm_idx),
   .pgm_we(cheat_pgm_we),
   .pgm_in(cheat_pgm_data),
+  .gsu_vec_enable(ROM_HIT & ~IS_SAVERAM & GSU_RONr),
   .data_out(cheat_data_out),
   .cheat_hit(cheat_hit),
   .snescmd_unlock(snescmd_unlock)

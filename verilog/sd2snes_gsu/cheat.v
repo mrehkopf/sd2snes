@@ -38,6 +38,7 @@ module cheat(
   input [2:0] pgm_idx,
   input pgm_we,
   input [31:0] pgm_in,
+  input gsu_vec_enable,
   output [7:0] data_out,
   output cheat_hit,
   output snescmd_unlock
@@ -97,7 +98,7 @@ wire [5:0] cheat_match_bits ={(cheat_enable_mask[5] & (SNES_ADDR == cheat_addr[5
                               (cheat_enable_mask[0] & (SNES_ADDR == cheat_addr[0]))};
 wire cheat_addr_match = |cheat_match_bits;
 
-wire [1:0] nmi_match_bits = {SNES_ADDR == 24'h00FFEA, SNES_ADDR == 24'h00FFEB};
+wire [1:0] nmi_match_bits = {SNES_ADDR == 24'h00FFEA, SNES_ADDR == 24'h00FFEB} | ({SNES_ADDR[3:0] == 4'hA, SNES_ADDR[3:0] == 4'hB} & {2{gsu_vec_enable}});
 wire [1:0] irq_match_bits = {SNES_ADDR == 24'h00FFEE, SNES_ADDR == 24'h00FFEF};
 wire [1:0] rst_match_bits = {SNES_ADDR == 24'h00FFFC, SNES_ADDR == 24'h00FFFD};
 

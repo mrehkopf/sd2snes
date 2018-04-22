@@ -445,11 +445,13 @@ reg [3:0] lat_fmult_r;
 reg [3:0] lat_mult_r;
 
 always @(posedge CLK) begin
-  lat_fetch_r  <= SPEED ? 0 : (CLSR_CLS           ) ? 0 : 1;  // additional clocks
-  lat_rom_r    <= SPEED ? 2 : (CLSR_CLS           ) ? 5 : 6;
-  lat_ram_r    <= SPEED ? 1 : (CLSR_CLS           ) ? 5 : 6;
-  lat_fmult_r  <= SPEED ? 2 : (CLSR_CLS | CFGR_MS0) ? 7 : 14; // minimum 2
-  lat_mult_r   <= SPEED ? 1 : (CLSR_CLS | CFGR_MS0) ? 1 : 2;  // minimum 1
+  // pipeline latencies for multi-cycle operations.  starfox is the only game that
+  // doesn't set CLS.
+  lat_fetch_r  <= SPEED ? 0 : CLSR_CLS ?                  0 : 1;
+  lat_rom_r    <= SPEED ? 2 : CLSR_CLS ?                5-2 : 6-2;
+  lat_ram_r    <= SPEED ? 1 : CLSR_CLS ?                  5 : 6-3;
+  lat_fmult_r  <= SPEED ? 2 : CLSR_CLS ? (CFGR_MS0 ? 3 : 7) : (CFGR_MS0 ? 6 : 14);  // minimum 2
+  lat_mult_r   <= SPEED ? 0 : CLSR_CLS ? (CFGR_MS0 ? 0 : 1) : (CFGR_MS0 ? 0 :  2);
 end
 
 //-------------------------------------------------------------------
@@ -2173,10 +2175,10 @@ always @(posedge CLK) begin
               e2c_waitcnt_r     <= lat_fmult_r;
             end
             `OP_MULT         : begin
-              exe_mult_srca_r <= exe_src_r;
-              exe_mult_srcb_r <= exe_alt2_r ? {12'h000, exe_n_r} : exe_srcn_r;
-              exe_umult_srca_r <= exe_src_r;
-              exe_umult_srcb_r <= exe_alt2_r ? {12'h000, exe_n_r} : exe_srcn_r;
+              //exe_mult_srca_r <= exe_src_r;
+              //exe_mult_srcb_r <= exe_alt2_r ? {12'h000, exe_n_r} : exe_srcn_r;
+              //exe_umult_srca_r <= exe_src_r;
+              //exe_umult_srcb_r <= exe_alt2_r ? {12'h000, exe_n_r} : exe_srcn_r;
 
               e2c_waitcnt_val_r <= 1;
               e2c_waitcnt_r     <= lat_mult_r;
@@ -2281,8 +2283,20 @@ always @(posedge CLK) begin
             end
             `OP_MULT         : begin
               e2c_waitcnt_val_r <= 0;
-              exe_mult_delay_r <= 2;
-              EXE_STATE <= ST_EXE_MEMORY_WAIT;
+              
+              exe_result = exe_alt1_r ? exe_umult_out : exe_mult_out;
+          
+              e2r_val_r      <= 1;
+           
+              e2r_data_r     <= exe_result;
+            
+              e2r_z_r        <= ~|exe_result;
+              e2r_s_r        <= exe_result[15];
+              
+              EXE_STATE <= ST_EXE_WAIT;
+                            
+              //exe_mult_delay_r <= 2;
+              //EXE_STATE <= ST_EXE_MEMORY_WAIT;
             end
           
             `OP_IBT          : begin
@@ -2456,23 +2470,23 @@ always @(posedge CLK) begin
             end
 
           end
-          `OP_MULT         : begin
-            if (|exe_mult_delay_r) begin
-              exe_mult_delay_r <= exe_mult_delay_r - 1;
-            end
-            else begin
-              exe_result = exe_alt1_r ? exe_umult_out : exe_mult_out;
-          
-              e2r_val_r      <= 1;
-           
-              e2r_data_r     <= exe_result;
-            
-              e2r_z_r        <= ~|exe_result;
-              e2r_s_r        <= exe_result[15];
-              
-              EXE_STATE <= ST_EXE_WAIT;
-            end
-          end
+//          `OP_MULT         : begin
+//            if (|exe_mult_delay_r) begin
+//              exe_mult_delay_r <= exe_mult_delay_r - 1;
+//            end
+//            else begin
+//              exe_result = exe_alt1_r ? exe_umult_out : exe_mult_out;
+//          
+//              e2r_val_r      <= 1;
+//           
+//              e2r_data_r     <= exe_result;
+//            
+//              e2r_z_r        <= ~|exe_result;
+//              e2r_s_r        <= exe_result[15];
+//              
+//              EXE_STATE <= ST_EXE_WAIT;
+//            end
+//          end
           `OP_PLOT_RPIX: begin
             // RPIX reads data
             if (|(BMP_STATE & ST_BMP_END)) begin
@@ -2615,17 +2629,22 @@ gsu_fmult gsu_fmult(
   .p(exe_fmult_out)
 );
 
+wire [7:0] exe_mult_srca  = exe_src_r;
+wire [7:0] exe_mult_srcb  = exe_alt2_r ? {12'h000, exe_n_r} : exe_srcn_r;
+wire [7:0] exe_umult_srca = exe_src_r;
+wire [7:0] exe_umult_srcb = exe_alt2_r ? {12'h000, exe_n_r} : exe_srcn_r;
+
 gsu_mult gsu_mult(
-  .clk(CLK),
-  .a(exe_mult_srca_r[7:0]),
-  .b(exe_mult_srcb_r[7:0]),
+  //.clk(CLK),
+  .a(exe_mult_srca[7:0]),
+  .b(exe_mult_srcb[7:0]),
   .p(exe_mult_out)
 );
 
 gsu_umult gsu_umult(
-  .clk(CLK),
-  .a(exe_umult_srca_r[7:0]),
-  .b(exe_umult_srcb_r[7:0]),
+  //.clk(CLK),
+  .a(exe_umult_srca[7:0]),
+  .b(exe_umult_srcb[7:0]),
   .p(exe_umult_out)
 );
 
@@ -2673,25 +2692,7 @@ always @(posedge CLK) begin
       //8'h51,8'h59      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
       //8'h6x            : pgmpre_out[0] <= PIXBUF_VALID_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
       //8'h7x            : pgmpre_out[0] <= PIXBUF_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
-//      8'h60,8'h68      : pgmpre_out[0] <= PIXBUF_VALID_r[pgm_addr_r[3]];
-//      8'h70            : pgmpre_out[0] <= PIXBUF_r[0][0];
-//      8'h71            : pgmpre_out[0] <= PIXBUF_r[0][1];
-//      8'h72            : pgmpre_out[0] <= PIXBUF_r[0][2];
-//      8'h73            : pgmpre_out[0] <= PIXBUF_r[0][3];
-//      8'h74            : pgmpre_out[0] <= PIXBUF_r[0][4];
-//      8'h75            : pgmpre_out[0] <= PIXBUF_r[0][5];
-//      8'h76            : pgmpre_out[0] <= PIXBUF_r[0][6];
-//      8'h77            : pgmpre_out[0] <= PIXBUF_r[0][7];
-//      8'h78            : pgmpre_out[0] <= PIXBUF_r[1][0];
-//      8'h79            : pgmpre_out[0] <= PIXBUF_r[1][1];
-//      8'h7A            : pgmpre_out[0] <= PIXBUF_r[1][2];
-//      8'h7B            : pgmpre_out[0] <= PIXBUF_r[1][3];
-//      8'h7C            : pgmpre_out[0] <= PIXBUF_r[1][4];
-//      8'h7D            : pgmpre_out[0] <= PIXBUF_r[1][5];
-//      8'h7E            : pgmpre_out[0] <= PIXBUF_r[1][6];
-//      8'h7F            : pgmpre_out[0] <= PIXBUF_r[1][7];
   
-
       // bitmap state
 //      8'h90           : pgmpre_out[0] <= BMP_STATE;
 //      8'h91           : pgmpre_out[0] <= bmp_mode_r;
