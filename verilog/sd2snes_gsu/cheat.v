@@ -44,6 +44,9 @@ module cheat(
   output snescmd_unlock
 );
 
+reg [23:0]  snes_addr_d1;
+always @(posedge clk) snes_addr_d1 <= SNES_ADDR;
+
 wire snescmd_wr_strobe = snescmd_enable & SNES_wr_strobe;
 
 reg cheat_enable = 0;
@@ -98,7 +101,7 @@ wire [5:0] cheat_match_bits ={(cheat_enable_mask[5] & (SNES_ADDR == cheat_addr[5
                               (cheat_enable_mask[0] & (SNES_ADDR == cheat_addr[0]))};
 wire cheat_addr_match = |cheat_match_bits;
 
-wire [1:0] nmi_match_bits = {SNES_ADDR == 24'h00FFEA, SNES_ADDR == 24'h00FFEB} | ({SNES_ADDR[3:0] == 4'hA, SNES_ADDR[3:0] == 4'hB} & {2{gsu_vec_enable}});
+wire [1:0] nmi_match_bits = {SNES_ADDR == 24'h00FFEA, SNES_ADDR == 24'h00FFEB};
 wire [1:0] irq_match_bits = {SNES_ADDR == 24'h00FFEE, SNES_ADDR == 24'h00FFEF};
 wire [1:0] rst_match_bits = {SNES_ADDR == 24'h00FFFC, SNES_ADDR == 24'h00FFFD};
 
@@ -203,13 +206,19 @@ always @(posedge clk) begin
         // remember where we came from (IRQ/NMI) for hook exit
         return_vector <= SNES_ADDR[7:0];
         snescmd_unlock_r <= 1;
+        // clear unlock countdown if we are entering the snescmd region.  this is to avoid a prior snescmd lock countdown re-locking before we are done
+        snescmd_unlock_disable <= 0;
+        snescmd_unlock_disable_countdown <= 0;
       end
-      if(rst_match_bits[1] & |reset_unlock_r) begin
+      else if(rst_match_bits[1] & |reset_unlock_r) begin
         snescmd_unlock_r <= 1;
+        // clear unlock countdown if we are entering the snescmd region.  this is to avoid a prior snescmd lock countdown re-locking before we are done
+        snescmd_unlock_disable <= 0;
+        snescmd_unlock_disable_countdown <= 0;
       end
-    end
+    end    
     // give some time to exit snescmd memory and jump to original vector
-    if(SNES_cycle_start) begin
+    else if(SNES_cycle_start) begin
       if(snescmd_unlock_disable) begin
         if(|snescmd_unlock_disable_countdown) begin
           snescmd_unlock_disable_countdown <= snescmd_unlock_disable_countdown - 1;
@@ -219,7 +228,7 @@ always @(posedge clk) begin
         end
       end
     end
-    if(snescmd_unlock_disable_strobe) begin
+    else if(snescmd_unlock_disable_strobe) begin
       snescmd_unlock_disable_countdown <= 7'd72;
       snescmd_unlock_disable <= 1;
     end
@@ -269,7 +278,7 @@ end
 always @(posedge clk) begin
   if((snescmd_unlock & snescmd_wr_strobe & ~|SNES_ADDR[8:0] & (SNES_DATA == 8'h85))
      | (holdoff_enable & SNES_reset_strobe)) begin
-    hook_enable_count <= 30'd960000000;
+    hook_enable_count <= 30'd960000000; // FIXME: adjust for different frequency
   end else if (|hook_enable_count) begin
     hook_enable_count <= hook_enable_count - 1;
   end

@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Wed Mar 28 11:04:18 2018
+# Date: Tue May 01 15:48:03 2018
 #
 ##############################################################
 #
@@ -41,7 +41,7 @@ SELECT Block_Memory_Generator xilinx.com:ip:blk_mem_gen:7.3
 # BEGIN Parameters
 CSET additional_inputs_for_power_estimation=false
 CSET algorithm=Minimum_Area
-CSET assume_synchronous_clk=true
+CSET assume_synchronous_clk=false
 CSET axi_id_width=4
 CSET axi_slave_type=Memory_Slave
 CSET axi_type=AXI4_Full
@@ -61,7 +61,7 @@ CSET fill_remaining_memory_locations=false
 CSET interface_type=Native
 CSET load_init_file=false
 CSET mem_file=no_Mem_file_loaded
-CSET memory_type=True_Dual_Port_RAM
+CSET memory_type=Single_Port_RAM
 CSET operating_mode_a=WRITE_FIRST
 CSET operating_mode_b=WRITE_FIRST
 CSET output_reset_value_a=0
@@ -70,9 +70,9 @@ CSET pipeline_stages=0
 CSET port_a_clock=100
 CSET port_a_enable_rate=100
 CSET port_a_write_rate=50
-CSET port_b_clock=100
-CSET port_b_enable_rate=100
-CSET port_b_write_rate=50
+CSET port_b_clock=0
+CSET port_b_enable_rate=0
+CSET port_b_write_rate=0
 CSET primitive=8kx2
 CSET read_width_a=8
 CSET read_width_b=8
@@ -105,4 +105,4 @@ CSET write_width_b=8
 MISC pkg_timestamp=2012-11-19T16:22:25Z
 # END Extra information
 GENERATE
-# CRC: 9b093993
+# CRC:  3c3e5a1

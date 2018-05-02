@@ -447,11 +447,11 @@ reg [3:0] lat_mult_r;
 always @(posedge CLK) begin
   // pipeline latencies for multi-cycle operations.  starfox is the only game that
   // doesn't set CLS.
-  lat_fetch_r  <= SPEED ? 0 : CLSR_CLS ?                  0 : 1;
-  lat_rom_r    <= SPEED ? 2 : CLSR_CLS ?                5-2 : 6-2;
-  lat_ram_r    <= SPEED ? 1 : CLSR_CLS ?                  5 : 6-3;
-  lat_fmult_r  <= SPEED ? 2 : CLSR_CLS ? (CFGR_MS0 ? 3 : 7) : (CFGR_MS0 ? 6 : 14);  // minimum 2
-  lat_mult_r   <= SPEED ? 0 : CLSR_CLS ? (CFGR_MS0 ? 0 : 1) : (CFGR_MS0 ? 0 :  2);
+  lat_fetch_r  <= SPEED ? 0 : CLSR_CLS ? 0                  : 1;
+  lat_rom_r    <= SPEED ? 2 : CLSR_CLS ? 5-1                : 6-2;
+  lat_ram_r    <= SPEED ? 1 : CLSR_CLS ? 5-1                : 6-3;
+  lat_fmult_r  <= SPEED ? 2 : CLSR_CLS ? (CFGR_MS0 ? 7 : 7) : (CFGR_MS0 ? 7 : 14-6);  // minimum 2.  starfox2 uses slow ms0 for some reason...
+  lat_mult_r   <= SPEED ? 0 : CLSR_CLS ? (CFGR_MS0 ? 0 : 1) : (CFGR_MS0 ? 0 :  2-0);
 end
 
 //-------------------------------------------------------------------
@@ -558,13 +558,15 @@ gsu_cache cache (
   .wea(cache_wren), // input [0 : 0] wea
   .addra(cache_addr), // input [8 : 0] addra
   .dina(cache_wrdata), // input [7 : 0] dina
-  .douta(cache_rddata), // output [7 : 0] douta
-  
+  .douta(cache_rddata) // output [7 : 0] douta
+`ifdef CACHE_DEBUG_PORT 
+  ,
   .clkb(CLK), // input clkb
   .web(debug_cache_wren), // input [0 : 0] web
   .addrb(debug_cache_addr), // input [8 : 0] addrb
   .dinb(debug_cache_wrdata), // input [7 : 0] dinb
   .doutb(debug_cache_rddata) // output [7 : 0] doutb
+`endif
 );
 
 //-------------------------------------------------------------------
@@ -1952,6 +1954,9 @@ always @(posedge CLK) begin
               e2r_g_r <= 0;
               // mask interrupt write into SFR
               e2r_irq_r <= ~CFGR_IRQ;
+              // clear POR
+              //e2r_wpor_r <= 1;
+              //e2r_por_r <= 0;
             end
             //OP_NOP            : begin end
             `OP_CACHE          : begin
