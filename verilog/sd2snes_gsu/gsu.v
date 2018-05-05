@@ -734,10 +734,12 @@ always @(posedge CLK) begin
       SFR_r[2]   <= e2r_cy_r;
       SFR_r[3]   <= e2r_s_r;
       SFR_r[4]   <= e2r_ov_r;
-      SFR_r[5]   <= e2r_g_r;
+      // go should only be written when there is a 0/1->0 writer
+      SFR_r[5] <= SFR_GO & e2r_g_r;
       SFR_r[9:8] <= e2r_alt_r;
       SFR_r[12]  <= e2r_b_r;
-      SFR_r[15]  <= e2r_irq_r;
+      // irq should only be written when there is a 0->1 writer.  the old value should not be written as that can result in a 1->0->1 transition when no interrupt has occurred.
+      SFR_r[15] <= SFR_IRQ | e2r_irq_r;
 
       SREG_r     <= e2r_sreg_r;
       DREG_r     <= e2r_dreg_r;
@@ -1519,7 +1521,8 @@ always @(posedge CLK) begin
 
         // TODO: decide what we do if clear the GO bit vs STOP.  Clearing the GO bit we need to insert NOPs, but is it safe
         // to do that for STOP which may have some weird op hidden in the delay slot for next execution?
-        fetch_data_r <= `OP_NOP;
+        // UPDATE: We don't need to insert a NOP when we clear the GO bit.  Up to host to deal with delay slot in that case.
+        //fetch_data_r <= `OP_NOP;
         fetch_install_val_r <= 0;
       end
       ST_FETCH_ADDR: begin
@@ -1914,8 +1917,10 @@ always @(posedge CLK) begin
         e2r_cy_r   <= SFR_CY;
         e2r_s_r    <= SFR_S;
         e2r_ov_r   <= SFR_OV;
+        // g samples the architected state at the beginning of the instruction.  it's possible this gets cleared by mmio and we execute another instruction
         e2r_g_r    <= SFR_GO;
-        e2r_irq_r  <= SFR_IRQ;
+        // irq should always assumed be 0 (don't write) unless there is a writer
+        e2r_irq_r  <= 0;
         
         // get default destination
         e2r_destnum_r <= DREG_r;
@@ -1946,9 +1951,14 @@ always @(posedge CLK) begin
                 e2r_val_r <= 1;
                 e2r_destnum_r <= R15;
                 e2r_data_pre_r <= e2r_r15_r + {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
-          
+                    
                 exe_branch_r <= 0;
               end
+              // these aren't set to current values in decode so it's possible (but highly unlikely) the first instruction is a branch resulting in bad values being written
+              //e2r_alt_r <= {SFR_ALT2,SFR_ALT1};
+              // if prior instruction was TO/FROM/WITH then it's dropped on a branch
+              //e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= 0;
+              
             end          
             `OP_STOP           : begin
               e2r_g_r <= 0;
