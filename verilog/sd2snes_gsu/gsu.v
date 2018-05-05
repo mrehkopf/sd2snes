@@ -2022,7 +2022,8 @@ always @(posedge CLK) begin
               end
               else begin
                 e2r_wcolr_r <= 1;
-                e2r_colr_r  <= POR_HN ? {COLR_r[7:4],exe_src_r[7:4]} : POR_FHN ? {COLR_r[7:4],exe_src_r[3:0]} : exe_src_r[7:0];
+                //e2r_colr_r  <= POR_HN ? {COLR_r[7:4],exe_src_r[7:4]} : POR_FHN ? {COLR_r[7:4],exe_src_r[3:0]} : exe_src_r[7:0];
+                e2r_colr_r <= {POR_FHN ? COLR_r[7:4] : exe_src_r[7:4], POR_HN ? exe_src_r[7:4] : exe_src_r[3:0]};
               end
             end
             `OP_PLOT_RPIX      : begin
@@ -2042,7 +2043,8 @@ always @(posedge CLK) begin
                 e2r_data_pre_r <= REG_r[R1] + 1;
                 
                 // generate plot - skip if transparent
-                e2b_plot_r     <= POR_TRS || ((SCMR_MD != 3 || POR_FHN) ? (exe_colr_r[3:0] != 0) : (exe_colr_r != 0));
+                //e2b_plot_r     <= POR_TRS || ((SCMR_MD != 3 || POR_FHN) ? (exe_colr_r[3:0] != 0) : (exe_colr_r != 0));
+                e2b_plot_r     <= POR_TRS || ((SCMR_MD != 3 || POR_FHN) ? (COLR_r[3:0] != 0) : (COLR_r != 0));
                 
                 e2b_offset_r   <= exe_plot_offset_r;
                 e2b_index_r    <= exe_plot_index_r;
@@ -2280,7 +2282,8 @@ always @(posedge CLK) begin
               if (~exe_alt1_r & ~exe_alt2_r) begin
                 if (~SFR_RR) begin
                   e2r_wcolr_r <= 1;
-                  e2r_colr_r  <= POR_HN ? {COLR_r[7:4],ROMRDBUF_r[7:4]} : POR_FHN ? {COLR_r[7:4],ROMRDBUF_r[3:0]} : ROMRDBUF_r[7:0];
+                  //e2r_colr_r  <= POR_HN ? {COLR_r[7:4],ROMRDBUF_r[7:4]} : POR_FHN ? {COLR_r[7:4],ROMRDBUF_r[3:0]} : ROMRDBUF_r[7:0];
+                  e2r_colr_r  <= {POR_FHN ? COLR_r[7:4] : ROMRDBUF_r[7:4], POR_HN ? ROMRDBUF_r[7:4] : ROMRDBUF_r[3:0]};
 
                   EXE_STATE <= ST_EXE_WAIT;
                 end
