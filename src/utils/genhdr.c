@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     return 1;
   }
   char *remaining = NULL;
-  uint32_t version = (uint32_t)strtol(argv[3], &remaining, 0);
+  uint32_t version = (uint32_t)strtoul(argv[3], &remaining, 0);
   if(*remaining) {
     printf("could not parse version number (remaining portion: %s)\n", remaining);
     fclose(f);

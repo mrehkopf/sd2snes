@@ -107,7 +107,7 @@ CDEFS = -DF_OSC=$(CONFIG_MCU_FOSC)UL
 
 
 # Place -I options here
-CINCS =
+CINCS = -Iinclude
 
 
 # CPU-specific flags
