@@ -186,6 +186,8 @@ void set_dac_addr(uint16_t address) {
 
 void set_mcu_addr(uint32_t address) {
   FPGA_SELECT();
+  // wait for prior operations to clear out
+  FPGA_WAIT_RDY();
   FPGA_TX_BYTE(FPGA_CMD_SETADDR | FPGA_TGT_MEM);
   FPGA_TX_BYTE((address>>16)&0xff);
   FPGA_TX_BYTE((address>>8)&0xff);

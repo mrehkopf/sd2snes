@@ -328,10 +328,12 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   set_rom_mask(rommask);
   readled(0);
 
+  printf("gsu=%x gsu_sram=%x\n", romprops.has_gsu, romprops.has_gsu_sram);
   if(flags & LOADROM_WITH_SRAM) {
     if(romprops.ramsize_bytes) {
-      sram_memset(SRAM_SAVE_ADDR, romprops.ramsize_bytes, 0xFF);
-      migrate_and_load_srm(filename, SRAM_SAVE_ADDR);
+      // powerslide relies on the init value to be 00.
+      sram_memset(SRAM_SAVE_ADDR, romprops.ramsize_bytes, romprops.has_gsu ? 0x00 : 0xFF);
+	  if (!romprops.has_gsu || romprops.has_gsu_sram) migrate_and_load_srm(filename, SRAM_SAVE_ADDR);
       /* file not found error is ok (SRM file might not exist yet) */
       if(file_res == FR_NO_FILE) file_res = 0;
       saveram_crc_old = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);

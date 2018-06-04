@@ -229,6 +229,15 @@ menu_enttab_chip:
  .byt  ^CFG_CX4_SPEED
 
  .byt  MTYPE_VALUE
+ .word !mtext_chip_gsu_speed
+ .byt  ^mtext_chip_gsu_speed
+ .word !kv_gsu_speed
+ .byt  ^kv_gsu_speed
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_GSU_SPEED
+ .byt  ^CFG_GSU_SPEED
+ 
+ .byt  MTYPE_VALUE
  .word !mtext_chip_msu1_volume_boost
  .byt  ^mtext_chip_msu1_volume_boost
  .word !kv_volume_boost
@@ -375,6 +384,11 @@ kv_vmode_noauto:
 .word $ffff
 
 kv_cx4_speed:
+.word $0000, !text_normal : .byt ^text_normal
+.word $0001, !text_fast : .byt ^text_fast
+.word $ffff
+
+kv_gsu_speed:
 .word $0000, !text_normal : .byt ^text_normal
 .word $0001, !text_fast : .byt ^text_fast
 .word $ffff
