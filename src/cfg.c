@@ -17,9 +17,9 @@ cfg_t CFG_DEFAULT = {
   .bsx_use_usertime = 0,
   .bsx_time = {0x0, 0x3, 0x5, 0x0, 0x8, 0x1, 0x1, 0x0, 0x3, 0x7, 0x9, 0x9},
   .r213f_override = 1,
-  .enable_irq_hook = 1,
-  .enable_irq_buttons = 1,
-  .enable_irq_holdoff = 1,
+  .enable_ingame_hook = 0,
+  .enable_ingame_buttons = 1,
+  .enable_hook_holdoff = 1,
   .enable_screensaver = 1,
   .screensaver_timeout = 600,
   .sort_directories = 1,
@@ -55,17 +55,17 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %06lX%08lX\n", CFG_BSX_TIME, (uint32_t)(bcdtime>>32), (uint32_t)(bcdtime & 0xffffffffLL));
   f_puts("\n# Enable PPU region flag patching\n", &file_handle);
   f_printf(&file_handle, "%s: %s\n", CFG_R213F_OVERRIDE, CFG.r213f_override ? "true" : "false");
-  f_puts("\n# IRQ hook related settings\n", &file_handle);
-  f_printf(&file_handle, "#  %s: Overall enable IRQ hooks (required for in-game buttons & WRAM cheats)\n", CFG_ENABLE_IRQ_HOOK);
-  f_printf(&file_handle, "#  %s: Enable in-game buttons (en/disable cheats, reset sd2snes...)\n", CFG_ENABLE_IRQ_BUTTONS);
-  f_printf(&file_handle, "#  %s: Enable 10s grace period after reset before enabling in-game hooks\n", CFG_ENABLE_IRQ_HOLDOFF);
-  f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_IRQ_HOOK, CFG.enable_irq_hook ? "true" : "false");
-  f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_IRQ_BUTTONS, CFG.enable_irq_buttons ? "true" : "false");
-  f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_IRQ_HOLDOFF, CFG.enable_irq_holdoff ? "true" : "false");
   f_puts("\n# Enable 1CHIP transient fixes (experimental) - Fix some 1CHIP related graphical issues\n", &file_handle);
   f_printf(&file_handle, "%s: %s\n", CFG_1CHIP_TRANSIENT_FIXES, CFG.onechip_transient_fixes ? "true" : "false");
   f_puts("\n# Brightness limit - can be used to limit RGB output levels on S-CPUN based consoles\n", &file_handle);
   f_printf(&file_handle, "%s: %d\n", CFG_BRIGHTNESS_LIMIT, CFG.brightness_limit);
+  f_puts("\n\n# IRQ hook related settings\n", &file_handle);
+  f_printf(&file_handle, "#  %s: Overall enable IRQ hooks (required for in-game buttons & WRAM cheats)\n", CFG_ENABLE_INGAME_HOOK);
+  f_printf(&file_handle, "#  %s: Enable in-game buttons (en/disable cheats, reset sd2snes...)\n", CFG_ENABLE_INGAME_BUTTONS);
+  f_printf(&file_handle, "#  %s: Enable 10s grace period after reset before enabling in-game hooks\n", CFG_ENABLE_HOOK_HOLDOFF);
+  f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_INGAME_HOOK, CFG.enable_ingame_hook ? "true" : "false");
+  f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_INGAME_BUTTONS, CFG.enable_ingame_buttons ? "true" : "false");
+  f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_HOOK_HOLDOFF, CFG.enable_hook_holdoff ? "true" : "false");
   f_puts("\n# Screensaver settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Enable screensaver\n", CFG_ENABLE_SCREENSAVER);
 //  f_printf(&file_handle, "#  %s: Dim screen after n seconds\n", CFG_SCREENSAVER_TIMEOUT);
@@ -117,14 +117,14 @@ int cfg_load() {
     if(yaml_get_itemvalue(CFG_R213F_OVERRIDE, &tok)) {
       CFG.r213f_override = tok.boolvalue ? 1 : 0;
     }
-    if(yaml_get_itemvalue(CFG_ENABLE_IRQ_HOOK, &tok)) {
-      CFG.enable_irq_hook = tok.boolvalue ? 1 : 0;
+    if(yaml_get_itemvalue(CFG_ENABLE_INGAME_HOOK, &tok)) {
+      CFG.enable_ingame_hook = tok.boolvalue ? 1 : 0;
     }
-    if(yaml_get_itemvalue(CFG_ENABLE_IRQ_BUTTONS, &tok)) {
-      CFG.enable_irq_buttons = tok.boolvalue ? 1 : 0;
+    if(yaml_get_itemvalue(CFG_ENABLE_INGAME_BUTTONS, &tok)) {
+      CFG.enable_ingame_buttons = tok.boolvalue ? 1 : 0;
     }
-    if(yaml_get_itemvalue(CFG_ENABLE_IRQ_HOLDOFF, &tok)) {
-      CFG.enable_irq_holdoff = tok.boolvalue ? 1 : 0;
+    if(yaml_get_itemvalue(CFG_ENABLE_HOOK_HOLDOFF, &tok)) {
+      CFG.enable_hook_holdoff = tok.boolvalue ? 1 : 0;
     }
     if(yaml_get_itemvalue(CFG_ENABLE_SCREENSAVER, &tok)) {
       CFG.enable_screensaver = tok.boolvalue ? 1 : 0;

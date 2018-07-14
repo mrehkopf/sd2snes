@@ -57,11 +57,11 @@ void cheat_program() {
   fpga_write_cheat(6, enable_mask);
   cheat_enable(1);
   //cheat_nmi_enable(romprops.has_gsu ? 0 : CFG.enable_irq_hook);
-  cheat_nmi_enable(CFG.enable_irq_hook);
+  cheat_nmi_enable(CFG.enable_ingame_hook);
   //cheat_irq_enable(romprops.has_gsu ? 0 : CFG.enable_irq_hook);
-  cheat_irq_enable((romprops.has_gsu && !strncmp((char *)romprops.header.name, "DOOM", strlen("DOOM"))) ? 0 : CFG.enable_irq_hook);
-  cheat_holdoff_enable(CFG.enable_irq_holdoff);
-  cheat_buttons_enable(CFG.enable_irq_buttons);
+  cheat_irq_enable((romprops.has_gsu && !strncmp((char *)romprops.header.name, "DOOM", strlen("DOOM"))) ? 0 : CFG.enable_ingame_hook);
+  cheat_holdoff_enable(CFG.enable_hook_holdoff);
+  cheat_buttons_enable(CFG.enable_ingame_buttons);
   cheat_wram_present(wram_index);
 }
 
