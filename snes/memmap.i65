@@ -107,6 +107,7 @@
 #define ST_NUM_RECENT_GAMES         ST_ADDR+$0001
 #define ST_IS_U16                   ST_ADDR+$0002
 #define ST_U16_CFG                  ST_ADDR+$0003
+#define ST_PAIRMODE                 ST_ADDR+$0004
 
 #define MTYPE_FUNC                  $01
 #define MTYPE_SUBMENU               $02

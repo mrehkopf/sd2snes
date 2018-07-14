@@ -192,9 +192,18 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     firstboot = 0;
     delay_ms(SNES_RESET_PULSELEN_MS);
     sram_writebyte(32, SRAM_CMD_ADDR);
-    if(get_cic_state() == CIC_PAIR) {
-      printf("PAIR MODE ENGAGED!\n");
-      cic_pair(CFG.vidmode_menu, CFG.vidmode_menu);
+    enum cicstates cic_state = get_cic_state();
+    switch(cic_state) {
+      case CIC_PAIR:
+        ST.pairmode = 1;
+        printf("PAIR MODE ENGAGED!\n");
+        cic_pair(CFG.vidmode_menu, CFG.vidmode_menu);
+        break;
+      case CIC_SCIC:
+        ST.pairmode = 1;
+        break;
+      default:
+        ST.pairmode = 0;
     }
     fpga_set_dac_boost(CFG.msu_volume_boost);
     cfg_load_to_menu();
@@ -261,10 +270,10 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           cfg_add_last_game(file_lfn);
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;
-        case SNES_CMD_SET_ALLOW_PAIR:
+/*        case SNES_CMD_SET_ALLOW_PAIR:
           cfg_set_pair_mode_allowed(snes_get_mcu_param() & 0xff);
           break;
-/*        case SNES_CMD_SELECT_FILE:
+        case SNES_CMD_SELECT_FILE:
           menu_cmd_select_file();
           cmd=0;
           break;
@@ -282,6 +291,13 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
         case SNES_CMD_SAVE_CFG:
           /* save config */
           cfg_get_from_menu();
+          cic_init(CFG.pair_mode_allowed);
+          if(CFG.pair_mode_allowed && cic_state == CIC_SCIC) {
+            delay_ms(50);
+            if(get_cic_state() == CIC_PAIR) {
+              cic_pair(CFG.vidmode_menu, CFG.vidmode_menu);
+            }
+          }
           cic_videomode(CFG.vidmode_menu);
           fpga_set_dac_boost(CFG.msu_volume_boost);
           cfg_save();
