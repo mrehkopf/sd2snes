@@ -73,7 +73,7 @@ module mcu_cmd(
   output msu_reset_out,
 
   // feature enable
-  output reg [7:0] featurebits_out,
+  output reg [15:0] featurebits_out,
 
   output reg region_out,
   // SNES sync/clk
@@ -125,6 +125,8 @@ reg [31:0] SNES_SYSCLK_FREQ_BUF;
 reg [7:0] MCU_DATA_OUT_BUF;
 reg [7:0] MCU_DATA_IN_BUF;
 reg [2:0] mcu_nextaddr_buf;
+
+reg [7:0] feat_tmp;
 
 wire mcu_nextaddr;
 
@@ -300,7 +302,10 @@ always @(posedge clk) begin
           dac_palmode_out <= param_data[7];
         end
       8'hed:
-        featurebits_out <= param_data;
+        case (spi_byte_cnt)
+          32'h2: feat_tmp <= param_data;
+          32'h3: featurebits_out <= {feat_tmp, param_data};
+        endcase
       8'hee:
         region_out <= param_data[0];
     endcase

@@ -47,6 +47,8 @@
 #define FPGA_TX_BLOCK(x,y) spi_tx_block(x,y)
 #define FPGA_RX_BLOCK(x,y) spi_rx_block(x,y)
 
+#define FEAT_2100_LIMIT(x) ((x & 15) << 7)
+#define FEAT_2100_LIMIT_NONE FEAT_2100_LIMIT(15)
 #define FEAT_2100          (1 << 6)
 #define FEAT_CMD_UNLOCK    (1 << 5)
 #define FEAT_213F          (1 << 4)
@@ -127,7 +129,7 @@ void fpga_write_dspx_pgm(uint32_t data);
 void fpga_write_dspx_dat(uint16_t data);
 void fpga_dspx_reset(uint8_t reset);
 void fpga_set_dac_boost(uint8_t boost);
-void fpga_set_features(uint8_t feat);
+void fpga_set_features(uint16_t feat);
 void fpga_set_213f(uint8_t data);
 void fpga_set_snescmd_addr(uint16_t addr);
 void fpga_write_snescmd(uint8_t data);

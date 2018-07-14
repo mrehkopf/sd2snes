@@ -88,7 +88,7 @@ typedef struct __attribute__ ((__packed__)) _snes_romprops {
   uint8_t has_sa1;            /* SA-1 presence flag */
   uint8_t has_sdd1;           /* S-DD1 presence flag */
   uint8_t has_spc7110;        /* SPC7110 presence flag */
-  uint8_t fpga_features;      /* feature/peripheral enable bits */
+  uint16_t fpga_features;     /* feature/peripheral enable bits */
   uint16_t fpga_dspfeat;      /* DSP configuration bits */
   uint8_t region;             /* game region (derived from destination code) */
   uint32_t load_address;      /* where to load the ROM image */

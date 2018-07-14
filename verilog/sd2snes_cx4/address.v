@@ -19,7 +19,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 module address(
   input CLK,
-  input [7:0] featurebits,
+  input [15:0] featurebits,
   input [2:0] MAPPER,       // MCU detected mapper
   input [23:0] SNES_ADDR,   // requested address from SNES
   input [7:0] SNES_PA,      // peripheral address from SNES
@@ -34,6 +34,7 @@ module address(
   output cx4_enable,
   output cx4_vect_enable,
   output r213f_enable,
+  output r2100_hit,
   output snescmd_enable,
   output nmicmd_enable,
   output return_vector_enable,
@@ -43,7 +44,8 @@ module address(
 
 parameter [2:0]
   FEAT_MSU1 = 3,
-  FEAT_213F = 4
+  FEAT_213F = 4,
+  FEAT_2100 = 6
 ;
 
 wire [23:0] SRAM_SNES_ADDR;
@@ -79,7 +81,8 @@ assign cx4_enable = cx4_enable_w;
 
 assign cx4_vect_enable = &SNES_ADDR[15:5];
 
-assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 9'h3f);
+assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
+assign r2100_hit = (SNES_PA == 8'h00);
 
 assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);
 assign nmicmd_enable = (SNES_ADDR == 24'h002BF2);

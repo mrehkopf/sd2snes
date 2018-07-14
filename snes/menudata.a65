@@ -404,13 +404,33 @@ menu_enttab_ingame:
  .byt  0,0,0
 
  .byt  MTYPE_VALUE
- .word !mtext_ingame_1chipbrightpatch
- .byt  ^mtext_ingame_1chipbrightpatch
+ .word !mtext_ingame_1chiptransientfixes
+ .byt  ^mtext_ingame_1chiptransientfixes
  .word !kv_onoff
  .byt  ^kv_onoff
  .byt  OPTTYPE_KVBYTE
- .word !CFG_1CHIP_BRIGHTNESS_PATCH
- .byt  ^CFG_1CHIP_BRIGHTNESS_PATCH
+ .word !CFG_1CHIP_TRANSIENT_FIXES
+ .byt  ^CFG_1CHIP_TRANSIENT_FIXES
+ .word !mdesc_ingame_1chiptransientfixes
+ .byt  ^mdesc_ingame_1chiptransientfixes
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt MTYPE_VALUE
+ .word !mtext_ingame_brightlimit
+ .byt  ^mtext_ingame_brightlimit
+ .word !kv_bright_limit
+ .byt  ^kv_bright_limit
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_BRIGHTNESS_LIMIT
+ .byt  ^CFG_BRIGHTNESS_LIMIT
+ .word !mdesc_ingame_brightlimit
+ .byt  ^mdesc_ingame_brightlimit
+ .word !(mfunc_chg_brightness-1)
+ .byt  ^(mfunc_chg_brightness-1)
+ .byt  0,0,0
+ .byt  0,0,0
 
  .byt 0
 
@@ -498,6 +518,12 @@ mfunc_isenabled_scic:
   eor #$ff
   ror
   rtl
+
+mfunc_chg_brightness:
+  sta @tgt_bright
+  sta @bright_limit
+  rtl
+
 kv_bsx_timesource:
 .word $0000, !text_rtc : .byt ^text_rtc
 .word $0001, !text_custom : .byt ^text_custom
@@ -562,6 +588,17 @@ kv_volume_boost:
 .word $0002, !text_6db : .byt ^text_6db
 .word $0003, !text_9_5db : .byt ^text_9_5db
 .word $0004, !text_12db : .byt ^text_12db
+.word $ffff
+
+kv_bright_limit:
+.word $0008, !text_minus7 : .byt ^text_minus7
+.word $0009, !text_minus6 : .byt ^text_minus6
+.word $000a, !text_minus5 : .byt ^text_minus5
+.word $000b, !text_minus4 : .byt ^text_minus4
+.word $000c, !text_minus3 : .byt ^text_minus3
+.word $000d, !text_minus2 : .byt ^text_minus2
+.word $000e, !text_minus1 : .byt ^text_minus1
+.word $000f, !text_off : .byt ^text_off
 .word $ffff
 
 menu_enttab_test:

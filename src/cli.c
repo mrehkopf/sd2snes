@@ -399,7 +399,7 @@ void cmd_time(void) {
 }
 
 void cmd_setfeature(void) {
-  uint8_t feat = parse_unsigned(0, 255, 16);
+  uint16_t feat = parse_unsigned(0, 65535, 16);
   fpga_set_features(feat);
 }
 

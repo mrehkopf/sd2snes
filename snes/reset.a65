@@ -67,7 +67,8 @@ math_cont
   beq nobuttonspressed
 buttonspressed
   stz idle_count
-  ldx #$0f
+  lda bright_limit
+  tax
   stx tgt_bright
   ldx #$01
   stx fade_speed

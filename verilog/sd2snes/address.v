@@ -19,7 +19,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 module address(
   input CLK,
-  input [7:0] featurebits,  // peripheral enable/disable
+  input [15:0] featurebits, // peripheral enable/disable
   input [2:0] MAPPER,       // MCU detected mapper
   input [23:0] SNES_ADDR,   // requested address from SNES
   input [7:0] SNES_PA,      // peripheral address from SNES
@@ -40,7 +40,7 @@ module address(
   output dspx_dp_enable,
   output dspx_a0,
   output r213f_enable,
-  output r2100_enable,
+  output r2100_hit,
   output snescmd_enable,
   output nmicmd_enable,
   output return_vector_enable,
@@ -245,7 +245,7 @@ assign dspx_a0 = featurebits[FEAT_DSPX]
                  : 1'b1;
 
 assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
-assign r2100_enable = featurebits[FEAT_2100] & (SNES_PA == 8'h00);
+assign r2100_hit = (SNES_PA == 8'h00);
 
 assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);
 assign nmicmd_enable = (SNES_ADDR == 24'h002BF2);

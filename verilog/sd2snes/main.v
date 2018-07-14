@@ -133,7 +133,7 @@ wire [15:0] dspx_dat_data;
 wire [10:0] dspx_dat_addr;
 wire dspx_dat_we;
 
-wire [7:0] featurebits;
+wire [15:0] featurebits;
 
 wire [23:0] MAPPED_SNES_ADDR;
 wire ROM_ADDR0;
@@ -173,7 +173,7 @@ reg SNES_reset_strobe = 0;
 reg free_strobe = 0;
 
 wire SNES_PARD_start = ((SNES_PARDr[6:1] | SNES_PARDr[7:2]) == 6'b111110);
-wire SNES_PAWR_start = ((SNES_PAWRr[6:1] | SNES_PAWRr[7:2]) == 6'b111100); /* 00 necessary for SNES_DATA capture */
+wire SNES_PAWR_start = ((SNES_PAWRr[6:1] | SNES_PAWRr[7:2]) == 6'b111000); /* 000 necessary for SNES_DATA capture */
 wire SNES_PAWR_end = ((SNES_PAWRr[6:1] & SNES_PAWRr[7:2]) == 6'b000001);
 wire SNES_RD_start = ((SNES_READr[6:1] | SNES_READr[7:2]) == 6'b111100);
 wire SNES_RD_end = ((SNES_READr[6:1] & SNES_READr[7:2]) == 6'b000001);
@@ -534,7 +534,7 @@ address snes_addr(
   .dspx_dp_enable(dspx_dp_enable),
   .dspx_a0(DSPX_A0),
   .r213f_enable(r213f_enable),
-  .r2100_enable(r2100_enable),
+  .r2100_hit(r2100_hit),
   .snescmd_enable(snescmd_enable),
   .nmicmd_enable(nmicmd_enable),
   .return_vector_enable(return_vector_enable),
@@ -584,7 +584,10 @@ initial r213f_delay = 3'b000;
 
 reg [7:0] r2100r = 0;
 reg r2100_forcewrite = 0;
-
+wire [3:0] r2100_limit = featurebits[10:7];
+wire [3:0] r2100_limited = (SNES_DATA[3:0] > r2100_limit) ? r2100_limit : SNES_DATA[3:0];
+wire r2100_patch = featurebits[6];
+wire r2100_enable = r2100_hit & (r2100_patch | ~(&r2100_limit));
 
 wire snoop_4200_enable = {SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h04200;
 wire r4016_enable = {SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h04016;
@@ -723,18 +726,24 @@ end
  * R2100 patching (experimental) *
  *********************************/
 reg [3:0] r2100_bright = 0;
+reg [3:0] r2100_bright_orig = 0;
 
 always @(posedge CLK2) begin
   if(SNES_cycle_end) r2100_forcewrite <= 1'b0;
-  else if(SNES_PAWR_start & r2100_enable) begin
-    if(SNES_DATA[7]) begin
+  else if(SNES_PAWR_start & r2100_hit) begin
+    if(r2100_patch & SNES_DATA[7]) begin
       r2100_forcewrite <= 1'b1;
-      r2100r <= {SNES_DATA[7], 3'b000, r2100_bright};
-    end else if (SNES_DATA[3:0] < 4'h8 && r2100_bright > 4'hd) begin
+      r2100r <= {SNES_DATA[7:4], r2100_bright};
+    end else if (r2100_patch && SNES_DATA[3:0] < 4'h8 && r2100_bright_orig > 4'hd) begin
       r2100_forcewrite <= 1'b1;
-      r2100r <= {4'b0000, 4'h0};
-    end else begin
-      r2100_bright <= SNES_DATA[3:0];
+      r2100r <= {1'b0, SNES_DATA[6:4], 4'h0};
+    end else if (r2100_patch | ~(&r2100_limit)) begin
+      r2100_bright <= r2100_limited;
+      r2100_bright_orig <= SNES_DATA[3:0];
+      if (~(&r2100_limit) && SNES_DATA[3:0] > r2100_limit) begin
+        r2100_forcewrite <= 1'b1;
+        r2100r <= {SNES_DATA[7:4], r2100_limited};
+      end
     end
   end
 end

@@ -41,7 +41,7 @@ GAME_MAIN:
   sta $4371
   sta $420b
   ; The following initialization processes must not touch memory
-  ; structures used by the file selector !
+  ; structures used by the file selector!
   jsr killdma
   jsr apu_ram_init
   jsr waitblank
@@ -52,7 +52,7 @@ GAME_MAIN:
   jsr video_init
   jsr setup_hdma
   jsr detect_ultra16
-  lda #$0f
+  lda @CFG_BRIGHTNESS_LIMIT
   sta cur_bright
   sta tgt_bright
   sta $2100
@@ -304,8 +304,9 @@ video_init:
 
 screen_on:
   stz $2100     ; screen on, 0% brightness
-  lda #$0f
+  lda @CFG_BRIGHTNESS_LIMIT
   sta tgt_bright
+  sta bright_limit
   rts
 
 snes_init:

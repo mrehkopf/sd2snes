@@ -25,7 +25,8 @@
 #define CFG_SKIN_NAME             ("SkinName")
 #define CFG_CONTROL_TYPE          ("ControlType")
 #define CFG_MSU_VOLUME_BOOST      ("MSUVolumeBoost")
-#define CFG_1CHIP_BRIGHTNESS_PATCH  ("1CHIPBrightnessPatch")
+#define CFG_1CHIP_TRANSIENT_FIXES ("1CHIPTransientFixes")
+#define CFG_BRIGHTNESS_LIMIT      ("BrightnessLimit")
 
 typedef enum {
   VIDMODE_60 = 0,
@@ -52,7 +53,8 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t control_type;         /* control type (0: A=OK, B=Cancel; 1: A=Cancel, B=OK) */
   uint8_t msu_volume_boost;     /* volume boost (0: none; 1=+3.5dB; 2=+6dB; 3=+9dB; 4=+12dB) */
   uint8_t gsu_speed;            /* GSU speed (0: original, 1: no waitstates */
-  uint8_t patch_1chip_brightness;  /* override register 2100 bits 3-0 */
+  uint8_t  onechip_transient_fixes; /* override register 2100 bits 3-0 */
+  uint8_t  brightness_limit;        /* limit brightness set by register 2100 */
 } cfg_t;
 
 int cfg_save(void);
@@ -81,6 +83,10 @@ uint8_t cfg_is_pair_mode_allowed(void);
 void cfg_set_r213f_override(uint8_t);
 uint8_t cfg_is_r213f_override_enabled(void);
 
-void cfg_set_patch_1chip_brightness(uint8_t);
-uint8_t cfg_is_patch_1chip_brightness(void);
+void cfg_set_onechip_transient_fixes(uint8_t);
+uint8_t cfg_is_onechip_transient_fixes(void);
+
+void cfg_set_brightness_limit(uint8_t);
+uint8_t cfg_get_brightness_limit(void);
+
 #endif

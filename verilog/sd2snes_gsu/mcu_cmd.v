@@ -87,31 +87,8 @@ module mcu_cmd(
   output       reg_we_out,
   output [7:0] reg_read_out,
 
-//  // BS-X
-//  output [7:0] bsx_regs_reset_out,
-//  output [7:0] bsx_regs_set_out,
-//  output bsx_regs_reset_we,
-//
-//  // generic RTC
-//  output [55:0] rtc_data_out,
-//  output rtc_pgm_we,
-//
-//  // S-RTC
-//  output srtc_reset,
-//
-//  // uPD77C25
-//  output reg [23:0] dspx_pgm_data_out,
-//  output reg [10:0] dspx_pgm_addr_out,
-//  output reg dspx_pgm_we_out,
-//
-//  output reg [15:0] dspx_dat_data_out,
-//  output reg [10:0] dspx_dat_addr_out,
-//  output reg dspx_dat_we_out,
-//
-//  output reg dspx_reset_out,
-
   // feature enable
-  output reg [7:0] featurebits_out,
+  output reg [15:0] featurebits_out,
 
   output reg region_out,
   // SNES sync/clk
@@ -181,6 +158,7 @@ reg [2:0] mcu_nextaddr_buf;
 wire mcu_nextaddr;
 
 reg [7:0] dsp_feat_tmp;
+reg [7:0] feat_tmp;
 
 reg DAC_STATUSr;
 reg SD_DMA_STATUSr;
@@ -377,7 +355,10 @@ always @(posedge clk) begin
           dac_palmode_out <= param_data[7];
         end
       8'hed:
-        featurebits_out <= param_data;
+        case (spi_byte_cnt)
+          32'h2: feat_tmp <= param_data;
+          32'h3: featurebits_out <= {feat_tmp, param_data};
+        endcase
       8'hee:
         region_out <= param_data[0];
       8'hef:

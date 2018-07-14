@@ -241,8 +241,9 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   smc_id(&romprops);
   file_close();
 
+  uint16_t fpga_features_preload = romprops.fpga_features | FEAT_CMD_UNLOCK | FEAT_2100_LIMIT_NONE;
   if(filename == (uint8_t*)"/sd2snes/menu.bin") {
-    fpga_set_features(romprops.fpga_features | FEAT_CMD_UNLOCK);
+    fpga_set_features(fpga_features_preload);
   }
   /* TODO check prerequisites and set error code here */
   if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x55);
@@ -253,7 +254,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   if(romprops.fpga_conf) {
     printf("reconfigure FPGA with %s...\n", romprops.fpga_conf);
     fpga_pgm((uint8_t*)romprops.fpga_conf);
-    fpga_set_features(romprops.fpga_features | FEAT_CMD_UNLOCK);
+    fpga_set_features(fpga_features_preload);
   }
   if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x77);
   set_mcu_addr(base_addr + romprops.load_address);
@@ -370,9 +371,10 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     }
   }
 
-  if(cfg_is_patch_1chip_brightness() && (filename != (uint8_t*)"/sd2snes/menu.bin")) {
+  if(cfg_is_onechip_transient_fixes() && (filename != (uint8_t*)"/sd2snes/menu.bin")) {
     romprops.fpga_features |= FEAT_2100;
   }
+  romprops.fpga_features |= FEAT_2100_LIMIT(cfg_get_brightness_limit());
 
   if(flags & LOADROM_WAIT_SNES) {
     while(snes_get_mcu_cmd() != SNES_CMD_RESET) cli_entrycheck();

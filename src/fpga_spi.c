@@ -127,7 +127,7 @@
         FPGA feature enable bits:
         bit        function
    ==========================================================================
-         7         -
+      10-7         $2100 brightness limit (4 bits)
          6         enable $2100 DAC fix for 1CHIP
          5         enable permanent snescmd unlock (during load handshake)
          4         enable $213F override
@@ -409,11 +409,12 @@ void fpga_set_dac_boost(uint8_t boost) {
   FPGA_DESELECT();
 }
 
-void fpga_set_features(uint8_t feat) {
-  printf("set features: %02x\n", feat);
+void fpga_set_features(uint16_t feat) {
+  printf("set features: %04x\n", feat);
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_SETFEATURE);
-  FPGA_TX_BYTE(feat);
+  FPGA_TX_BYTE((feat >> 8) & 0xff);
+  FPGA_TX_BYTE((feat) & 0xff);
   FPGA_DESELECT();
 }
 

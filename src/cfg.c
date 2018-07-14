@@ -28,7 +28,8 @@ cfg_t CFG_DEFAULT = {
   .skin_name = "sd2snes.skin",
   .control_type = 0,
   .msu_volume_boost = 0,
-  .patch_1chip_brightness = 0,
+  .onechip_transient_fixes = 0,
+  .brightness_limit = 15,
   .gsu_speed = 0
 };
 
@@ -54,8 +55,6 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %06lX%08lX\n", CFG_BSX_TIME, (uint32_t)(bcdtime>>32), (uint32_t)(bcdtime & 0xffffffffLL));
   f_puts("\n# Enable PPU region flag patching\n", &file_handle);
   f_printf(&file_handle, "%s: %s\n", CFG_R213F_OVERRIDE, CFG.r213f_override ? "true" : "false");
-  f_puts("\n# Enable 1CHIP brightness patching (experimental)\n", &file_handle);
-  f_printf(&file_handle, "%s: %s\n", CFG_1CHIP_BRIGHTNESS_PATCH, CFG.patch_1chip_brightness ? "true" : "false");
   f_puts("\n# IRQ hook related settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Overall enable IRQ hooks (required for in-game buttons & WRAM cheats)\n", CFG_ENABLE_IRQ_HOOK);
   f_printf(&file_handle, "#  %s: Enable in-game buttons (en/disable cheats, reset sd2snes...)\n", CFG_ENABLE_IRQ_BUTTONS);
@@ -63,6 +62,10 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_IRQ_HOOK, CFG.enable_irq_hook ? "true" : "false");
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_IRQ_BUTTONS, CFG.enable_irq_buttons ? "true" : "false");
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_IRQ_HOLDOFF, CFG.enable_irq_holdoff ? "true" : "false");
+  f_puts("\n# Enable 1CHIP transient fixes (experimental) - Fix some 1CHIP related graphical issues\n", &file_handle);
+  f_printf(&file_handle, "%s: %s\n", CFG_1CHIP_TRANSIENT_FIXES, CFG.onechip_transient_fixes ? "true" : "false");
+  f_puts("\n# Brightness limit - can be used to limit RGB output levels on S-CPUN based consoles\n", &file_handle);
+  f_printf(&file_handle, "%s: %d\n", CFG_BRIGHTNESS_LIMIT, CFG.brightness_limit);
   f_puts("\n# Screensaver settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Enable screensaver\n", CFG_ENABLE_SCREENSAVER);
 //  f_printf(&file_handle, "#  %s: Dim screen after n seconds\n", CFG_SCREENSAVER_TIMEOUT);
@@ -141,8 +144,11 @@ int cfg_load() {
     if(yaml_get_itemvalue(CFG_MSU_VOLUME_BOOST, &tok)) {
       CFG.msu_volume_boost = tok.longvalue;
     }
-    if(yaml_get_itemvalue(CFG_1CHIP_BRIGHTNESS_PATCH, &tok)) {
-      CFG.patch_1chip_brightness = tok.boolvalue ? 1 : 0;
+    if(yaml_get_itemvalue(CFG_1CHIP_TRANSIENT_FIXES, &tok)) {
+      CFG.onechip_transient_fixes = tok.boolvalue ? 1 : 0;
+    }
+    if(yaml_get_itemvalue(CFG_BRIGHTNESS_LIMIT, &tok)) {
+      CFG.brightness_limit = tok.longvalue & 0xf;
     }
   }
   yaml_file_close();
@@ -272,11 +278,19 @@ uint8_t cfg_is_r213f_override_enabled() {
   return CFG.r213f_override;
 }
 
-void cfg_set_patch_1chip_brightness(uint8_t enable) {
-  CFG.patch_1chip_brightness = enable;
+void cfg_set_onechip_transient_fixes(uint8_t enable) {
+  CFG.onechip_transient_fixes = enable;
 }
-uint8_t cfg_is_patch_1chip_brightness() {
-  return CFG.patch_1chip_brightness;
+uint8_t cfg_is_onechip_transient_fixes() {
+  return CFG.onechip_transient_fixes;
+}
+
+void cfg_set_brightness_limit(uint8_t limit) {
+  CFG.brightness_limit = limit;
+}
+
+uint8_t cfg_get_brightness_limit() {
+  return CFG.brightness_limit;
 }
 
 void cfg_set_vidmode_game(cfg_vidmode_t vidmode) {
