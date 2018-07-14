@@ -996,9 +996,16 @@ filesel_request_filelist:
   sta @MCU_PARAM+2
   lda #^ROOT_DIR
   sta @MCU_PARAM+6
-  lda #TYPE_PARENT|TYPE_SUBDIR|TYPE_ROM|TYPE_SPC
+  lda #TYPE_PARENT
   sta @MCU_PARAM+8
+  lda #TYPE_SUBDIR
+  sta @MCU_PARAM+9
+  lda #TYPE_ROM
+  sta @MCU_PARAM+10
+  lda #TYPE_SPC
+  sta @MCU_PARAM+11
   lda #$00
+  sta @MCU_PARAM+12
   sta @SNES_CMD
   lda #CMD_READDIR
   sta @MCU_CMD

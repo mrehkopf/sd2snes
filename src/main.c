@@ -54,11 +54,14 @@ extern volatile status_t ST;
 
 void menu_cmd_readdir(void) {
   uint8_t path[256];
+  SNES_FTYPE filetypes[16];
   snes_get_filepath(path, 256);
+  snescmd_readstrn(filetypes, SNESCMD_MCU_PARAM + 8, sizeof(filetypes));
   uint32_t tgt_addr = snescmd_readlong(SNESCMD_MCU_PARAM + 4) & 0xffffff;
-  uint8_t typemask = snescmd_readbyte(SNESCMD_MCU_PARAM + 8);
-printf("path=%s tgt=%06lx mask=%02x\n", path, tgt_addr, typemask);
-  scan_dir(path, tgt_addr, typemask);
+printf("path=%s tgt=%06lx types=", path, tgt_addr);
+uart_puts_hex((char*)filetypes);
+uart_putc('\n');
+  scan_dir(path, tgt_addr, filetypes);
 }
 
 int main(void) {

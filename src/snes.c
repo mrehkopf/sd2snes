@@ -384,6 +384,20 @@ uint64_t snescmd_gettime(void) {
   return srtctime2bcdtime(data);
 }
 
+uint16_t snescmd_readstrn(void *buf, uint16_t addr, uint16_t size) {
+  fpga_set_snescmd_addr(addr);
+  uint16_t elemcount = 0;
+  uint16_t count = size;
+  uint8_t* tgt = buf;
+  while(count--) {
+    if(!(*(tgt++) = fpga_read_snescmd())) break;
+    elemcount++;
+  }
+  tgt--;
+  if(*tgt) *tgt = 0;
+  return elemcount;
+}
+
 void snescmd_prepare_nmihook() {
   uint16_t bram_src = sram_readshort(SRAM_MENU_ADDR + MENU_ADDR_BRAM_SRC);
   uint8_t bram[224];
