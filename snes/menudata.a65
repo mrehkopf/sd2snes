@@ -5,7 +5,7 @@
 ; 1 byte   line spacing for menu display
 ; 3 bytes  long pointer to menu window title
 
-; ENTRY SIZE: 20 bytes
+; ENTRY SIZE: 23 bytes
 ; ENTRIES:
 ; 1 byte   entry type (see below)
 ; 3 bytes  long pointer to menu entry text
@@ -13,8 +13,9 @@
 ; 1 byte   data type of parameter (see below)
 ; 3 bytes  long pointer to parameter value (of data type above)
 ; 3 bytes  long pointer to text description of item
-; 3 bytes  long pointer to post-hook function (no return value)
-; 3 bytes  long pointer to isEnabled function (c=0: disabled, c=1: enabled)
+; 3 bytes  long pointer to change-hook function (called whenever the value is changed during selection; no return value)
+; 3 bytes  long pointer to post-hook function (called when the value is set; no return value)
+; 3 bytes  long pointer to isEnabled function (return: c=0: enabled, c=1: disabled)
 
 ; entry types:
 ; 00  termination
@@ -60,6 +61,11 @@ menu_enttab_mm:
  .byt  ^select_last_file-1
  .byt  0
  .byt  0,0,0
+ .word !mdesc_mm_last
+ .byt  ^mdesc_mm_last
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
  .byt  MTYPE_FUNC
  .word !mtext_mm_sysinfo
@@ -68,6 +74,11 @@ menu_enttab_mm:
  .byt  ^show_sysinfo-1
  .byt  0
  .byt  0,0,0
+ .word !mdesc_mm_sysinfo
+ .byt  ^mdesc_mm_sysinfo
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
  .byt  MTYPE_SUBMENU
  .word !mtext_mm_cfg
@@ -75,6 +86,11 @@ menu_enttab_mm:
  .word !menu_enttab_cfg
  .byt  ^menu_enttab_cfg
  .byt  0
+ .byt  0,0,0
+ .word !mdesc_mm_cfg
+ .byt  ^mdesc_mm_cfg
+ .byt  0,0,0
+ .byt  0,0,0
  .byt  0,0,0
 
  .byt  0
@@ -93,44 +109,69 @@ menu_enttab_cfg:
  ;.byt 0
  ;.byt 0,0,0
 
- .byt MTYPE_FUNC
+ .byt  MTYPE_FUNC
  .word !mtext_cfg_time
- .byt ^mtext_cfg_time
+ .byt  ^mtext_cfg_time
  .word !rtc_init-1
- .byt ^rtc_init
- .byt 0
- .byt 0,0,0
+ .byt  ^rtc_init
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_cfg_time
+ .byt  ^mdesc_cfg_time
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
- .byt MTYPE_SUBMENU
+ .byt  MTYPE_SUBMENU
  .word !mtext_cfg_bsx
- .byt ^mtext_cfg_bsx
+ .byt  ^mtext_cfg_bsx
  .word !menu_enttab_bsx
- .byt ^menu_enttab_bsx
- .byt 0
- .byt 0,0,0
+ .byt  ^menu_enttab_bsx
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_cfg_bsx
+ .byt  ^mdesc_cfg_bsx
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
- .byt MTYPE_SUBMENU
+ .byt  MTYPE_SUBMENU
  .word !mtext_cfg_browser
- .byt ^mtext_cfg_browser
+ .byt  ^mtext_cfg_browser
  .word !menu_enttab_browser
- .byt ^menu_enttab_browser
- .byt 0
- .byt 0,0,0
+ .byt  ^menu_enttab_browser
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_cfg_browser
+ .byt  ^mdesc_cfg_browser
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
- .byt MTYPE_SUBMENU
+ .byt  MTYPE_SUBMENU
  .word !mtext_cfg_chip
- .byt ^mtext_cfg_chip
+ .byt  ^mtext_cfg_chip
  .word !menu_enttab_chip
- .byt ^menu_enttab_chip
- .byt 0
- .byt 0,0,0
+ .byt  ^menu_enttab_chip
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_cfg_chip
+ .byt  ^mdesc_cfg_chip
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
- .byt MTYPE_SUBMENU
+ .byt  MTYPE_SUBMENU
  .word !mtext_cfg_ingame
  .byt  ^mtext_cfg_ingame
  .word !menu_enttab_ingame
  .byt  ^menu_enttab_ingame
  .byt  0
+ .byt  0,0,0
+ .word !mdesc_cfg_ingame
+ .byt  ^mdesc_cfg_ingame
+ .byt  0,0,0
+ .byt  0,0,0
  .byt  0,0,0
 
  .byt  MTYPE_SUBMENU
@@ -139,6 +180,11 @@ menu_enttab_cfg:
  .word !menu_enttab_scic
  .byt  ^menu_enttab_scic
  .byt  0
+ .byt  0,0,0
+ .word !mdesc_cfg_scic
+ .byt  ^mdesc_cfg_scic
+ .byt  0,0,0
+ .byt  0,0,0
  .byt  0,0,0
 
  .byt 0
@@ -157,6 +203,11 @@ menu_enttab_bsx:
  .byt  OPTTYPE_KVBYTE
  .word !CFG_BSX_USE_USERTIME
  .byt  ^CFG_BSX_USE_USERTIME
+ .word !mdesc_bsx_timesource
+ .byt  ^mdesc_bsx_timesource
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
  .byt  MTYPE_VALUE
  .word !mtext_bsx_time
@@ -166,6 +217,11 @@ menu_enttab_bsx:
  .byt  OPTTYPE_TIME
  .word !CFG_BSX_TIME
  .byt  ^CFG_BSX_TIME
+ .word !mdesc_bsx_time
+ .byt  ^mdesc_bsx_time
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
  .byt 0
 
@@ -183,6 +239,11 @@ menu_enttab_browser:
  .byt  OPTTYPE_KVBYTE
  .word !CFG_SORT_DIRECTORIES
  .byt  ^CFG_SORT_DIRECTORIES
+ .word !mdesc_browser_sort
+ .byt  ^mdesc_browser_sort
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
  .byt  MTYPE_VALUE
  .word !mtext_browser_hide_ext
@@ -192,6 +253,11 @@ menu_enttab_browser:
  .byt  OPTTYPE_KVBYTE
  .word !CFG_HIDE_EXTENSIONS
  .byt  ^CFG_HIDE_EXTENSIONS
+ .word !mdesc_browser_hide_ext
+ .byt  ^mdesc_browser_hide_ext
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
  .byt  MTYPE_VALUE
  .word !mtext_browser_screensaver
@@ -201,15 +267,25 @@ menu_enttab_browser:
  .byt  OPTTYPE_KVBYTE
  .word !CFG_ENABLE_SCREENSAVER
  .byt  ^CFG_ENABLE_SCREENSAVER
+ .word !mdesc_browser_screensaver
+ .byt  ^mdesc_browser_screensaver
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
-;.byt  MTYPE_VALUE
-;.word !mtext_browser_screensaver_timeout
-;.byt  ^mtext_browser_screensaver_timeout
-;.word !kv_screensaver_timeout
-;.byt  ^kv_screensaver_timeout
-;.byt  OPTTYPE_KVBYTE
-;.word !CFG_SCREENSAVER_TIMEOUT
-;.byt  ^CFG_SCREENSAVER_TIMEOUT
+; .byt  MTYPE_VALUE
+; .word !mtext_browser_screensaver_timeout
+; .byt  ^mtext_browser_screensaver_timeout
+; .word !kv_screensaver_timeout
+; .byt  ^kv_screensaver_timeout
+; .byt  OPTTYPE_KVBYTE
+; .word !CFG_SCREENSAVER_TIMEOUT
+; .byt  ^CFG_SCREENSAVER_TIMEOUT
+; .word !mdesc_browser_screensaver_timeout
+; .byt  ^mdesc_browser_screensaver_timeout
+; .byt  0,0,0
+; .byt  0,0,0
+; .byt  0,0,0
 
  .byt 0
 
@@ -227,6 +303,11 @@ menu_enttab_chip:
  .byt  OPTTYPE_KVBYTE
  .word !CFG_CX4_SPEED
  .byt  ^CFG_CX4_SPEED
+ .word !mdesc_chip_cx4_speed
+ .byt  ^mdesc_chip_cx4_speed
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
  .byt  MTYPE_VALUE
  .word !mtext_chip_gsu_speed
@@ -236,6 +317,11 @@ menu_enttab_chip:
  .byt  OPTTYPE_KVBYTE
  .word !CFG_GSU_SPEED
  .byt  ^CFG_GSU_SPEED
+ .word !mdesc_chip_gsu_speed
+ .byt  ^mdesc_chip_gsu_speed
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
  
  .byt  MTYPE_VALUE
  .word !mtext_chip_msu1_volume_boost
@@ -245,6 +331,11 @@ menu_enttab_chip:
  .byt  OPTTYPE_KVBYTE
  .word !CFG_MSU_VOLUME_BOOST
  .byt  ^CFG_MSU_VOLUME_BOOST
+ .word !mdesc_chip_msu1_volume_boost
+ .byt  ^mdesc_chip_msu1_volume_boost
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
  .byt 0
 
@@ -260,8 +351,13 @@ menu_enttab_ingame:
  .word !kv_onoff
  .byt  ^kv_onoff
  .byt  OPTTYPE_KVBYTE
- .word !CFG_ENABLE_IRQ_HOOK
- .byt  ^CFG_ENABLE_IRQ_HOOK
+ .word !CFG_ENABLE_INGAME_HOOK
+ .byt  ^CFG_ENABLE_INGAME_HOOK
+ .word !mdesc_ingame_enable
+ .byt  ^mdesc_ingame_enable
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
  .byt  MTYPE_VALUE
  .word !mtext_ingame_buttons
@@ -269,8 +365,14 @@ menu_enttab_ingame:
  .word !kv_onoff
  .byt  ^kv_onoff
  .byt  OPTTYPE_KVBYTE
- .word !CFG_ENABLE_IRQ_BUTTONS
- .byt  ^CFG_ENABLE_IRQ_BUTTONS
+ .word !CFG_ENABLE_INGAME_BUTTONS
+ .byt  ^CFG_ENABLE_INGAME_BUTTONS
+ .word !mdesc_ingame_buttons
+ .byt  ^mdesc_ingame_buttons
+ .byt  0,0,0
+ .byt  0,0,0
+ .word !(mfunc_isenabled_hooks-1)
+ .byt  ^(mfunc_isenabled_hooks-1)
 
  .byt  MTYPE_VALUE
  .word !mtext_ingame_holdoff
@@ -278,8 +380,14 @@ menu_enttab_ingame:
  .word !kv_onoff
  .byt  ^kv_onoff
  .byt  OPTTYPE_KVBYTE
- .word !CFG_ENABLE_IRQ_HOLDOFF
- .byt  ^CFG_ENABLE_IRQ_HOLDOFF
+ .word !CFG_ENABLE_HOOK_HOLDOFF
+ .byt  ^CFG_ENABLE_HOOK_HOLDOFF
+ .word !mdesc_ingame_holdoff
+ .byt  ^mdesc_ingame_holdoff
+ .byt  0,0,0
+ .byt  0,0,0
+ .word !(mfunc_isenabled_hooks-1)
+ .byt  ^(mfunc_isenabled_hooks-1)
 
  .byt  MTYPE_VALUE
  .word !mtext_ingame_regionpatch
@@ -289,6 +397,11 @@ menu_enttab_ingame:
  .byt  OPTTYPE_KVBYTE
  .word !CFG_R213F_OVERRIDE
  .byt  ^CFG_R213F_OVERRIDE
+ .word !mdesc_ingame_regionpatch
+ .byt  ^mdesc_ingame_regionpatch
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
  .byt  MTYPE_VALUE
  .word !mtext_ingame_1chipbrightpatch
@@ -315,6 +428,11 @@ menu_enttab_scic:
  .byt  OPTTYPE_KVBYTE
  .word !CFG_PAIR_MODE_ALLOWED
  .byt  ^CFG_PAIR_MODE_ALLOWED
+ .word !mdesc_scic_enable
+ .byt  ^mdesc_scic_enable
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
  .byt  MTYPE_VALUE
  .word !mtext_scic_vmode_menu
@@ -324,6 +442,12 @@ menu_enttab_scic:
  .byt  OPTTYPE_KVBYTE
  .word !CFG_VIDMODE_MENU
  .byt  ^CFG_VIDMODE_MENU
+ .word !mdesc_scic_vmode_menu
+ .byt  ^mdesc_scic_vmode_menu
+ .byt  0,0,0
+ .byt  0,0,0
+ .word !(mfunc_isenabled_scic-1)
+ .byt  ^(mfunc_isenabled_scic-1)
 
  .byt  MTYPE_VALUE
  .word !mtext_scic_vmode_game
@@ -333,6 +457,12 @@ menu_enttab_scic:
  .byt  OPTTYPE_KVBYTE
  .word !CFG_VIDMODE_GAME
  .byt  ^CFG_VIDMODE_GAME
+ .word !mdesc_scic_vmode_game
+ .byt  ^mdesc_scic_vmode_game
+ .byt  0,0,0
+ .byt  0,0,0
+ .word !(mfunc_isenabled_scic-1)
+ .byt  ^(mfunc_isenabled_scic-1)
 
  .byt 0
 mfunc_set_bsx_time:
@@ -356,6 +486,18 @@ mfunc_isenabled_never:
   clc
   rtl
 
+mfunc_isenabled_hooks:
+  lda @CFG_ENABLE_INGAME_HOOK
+  eor #$ff
+  ror
+  rtl
+
+mfunc_isenabled_scic:
+  lda @CFG_PAIR_MODE_ALLOWED
+  and @ST_PAIRMODE
+  eor #$ff
+  ror
+  rtl
 kv_bsx_timesource:
 .word $0000, !text_rtc : .byt ^text_rtc
 .word $0001, !text_custom : .byt ^text_custom

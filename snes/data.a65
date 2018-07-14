@@ -93,7 +93,6 @@ listdisp        .word 0 ; number of displayable list entries
 ;-misc
 testvar         .word 0,0,0,0
 ;menu system
-menu_stack      .word 0,0,0,0,0,0,0,0
 listsel_sel     .byt 0
 listsel_step    .byt 0
 listsel_max     .byt 0
