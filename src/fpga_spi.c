@@ -171,16 +171,16 @@ void fpga_spi_init(void) {
 void set_msu_addr(uint16_t address) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_SETADDR | FPGA_TGT_MSUBUF);
-  FPGA_TX_BYTE((address>>8)&0xff);
-  FPGA_TX_BYTE((address)&0xff);
+  FPGA_TX_BYTE((address >> 8) & 0xff);
+  FPGA_TX_BYTE((address) & 0xff);
   FPGA_DESELECT();
 }
 
 void set_dac_addr(uint16_t address) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_SETADDR | FPGA_TGT_DACBUF);
-  FPGA_TX_BYTE((address>>8)&0xff);
-  FPGA_TX_BYTE((address)&0xff);
+  FPGA_TX_BYTE((address >> 8) & 0xff);
+  FPGA_TX_BYTE((address) & 0xff);
   FPGA_DESELECT();
 }
 
@@ -189,27 +189,27 @@ void set_mcu_addr(uint32_t address) {
   // wait for prior operations to clear out
   FPGA_WAIT_RDY();
   FPGA_TX_BYTE(FPGA_CMD_SETADDR | FPGA_TGT_MEM);
-  FPGA_TX_BYTE((address>>16)&0xff);
-  FPGA_TX_BYTE((address>>8)&0xff);
-  FPGA_TX_BYTE((address)&0xff);
+  FPGA_TX_BYTE((address >> 16) & 0xff);
+  FPGA_TX_BYTE((address >> 8) & 0xff);
+  FPGA_TX_BYTE((address) & 0xff);
   FPGA_DESELECT();
 }
 
 void set_saveram_mask(uint32_t mask) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_SETRAMMASK);
-  FPGA_TX_BYTE((mask>>16)&0xff);
-  FPGA_TX_BYTE((mask>>8)&0xff);
-  FPGA_TX_BYTE((mask)&0xff);
+  FPGA_TX_BYTE((mask >> 16) & 0xff);
+  FPGA_TX_BYTE((mask >> 8) & 0xff);
+  FPGA_TX_BYTE((mask) & 0xff);
   FPGA_DESELECT();
 }
 
 void set_rom_mask(uint32_t mask) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_SETROMMASK);
-  FPGA_TX_BYTE((mask>>16)&0xff);
-  FPGA_TX_BYTE((mask>>8)&0xff);
-  FPGA_TX_BYTE((mask)&0xff);
+  FPGA_TX_BYTE((mask >> 16) & 0xff);
+  FPGA_TX_BYTE((mask >> 8) & 0xff);
+  FPGA_TX_BYTE((mask) & 0xff);
   FPGA_DESELECT();
 }
 
@@ -240,10 +240,10 @@ void fpga_set_sddma_range(uint16_t start, uint16_t end) {
   DBG_SD_OFFLOAD printf("FPGA set partial range %u - %u\n", start, end);
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_SDDMA_RANGE);
-  FPGA_TX_BYTE(start>>8);
-  FPGA_TX_BYTE(start&0xff);
-  FPGA_TX_BYTE(end>>8);
-  FPGA_TX_BYTE(end&0xff);
+  FPGA_TX_BYTE(start >> 8);
+  FPGA_TX_BYTE(start & 0xff);
+  FPGA_TX_BYTE(end >> 8);
+  FPGA_TX_BYTE(end & 0xff);
   FPGA_DESELECT();
 }
 
@@ -281,7 +281,7 @@ void dac_pause() {
 void dac_reset(uint16_t address) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_DACSETPTR);
-  FPGA_TX_BYTE((address>>8) & 0xff); /* address hi */
+  FPGA_TX_BYTE((address >> 8) & 0xff); /* address hi */
   FPGA_TX_BYTE(address & 0xff);      /* address lo */
   FPGA_DESELECT();
 }
@@ -289,7 +289,7 @@ void dac_reset(uint16_t address) {
 void msu_reset(uint16_t address) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_MSUSETPTR);
-  FPGA_TX_BYTE((address>>8) & 0xff); /* address hi */
+  FPGA_TX_BYTE((address >> 8) & 0xff); /* address hi */
   FPGA_TX_BYTE(address & 0xff);      /* address lo */
   FPGA_DESELECT();
 }
@@ -377,9 +377,9 @@ void fpga_reset_dspx_addr() {
 void fpga_write_dspx_pgm(uint32_t data) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_DSPWRITEPGM);
-  FPGA_TX_BYTE((data>>16)&0xff);
-  FPGA_TX_BYTE((data>>8)&0xff);
-  FPGA_TX_BYTE((data)&0xff);
+  FPGA_TX_BYTE((data >> 16) & 0xff);
+  FPGA_TX_BYTE((data >> 8) & 0xff);
+  FPGA_TX_BYTE((data) & 0xff);
   FPGA_TX_BYTE(0x00);
   FPGA_TX_BYTE(0x00);
   FPGA_DESELECT();
@@ -388,8 +388,8 @@ void fpga_write_dspx_pgm(uint32_t data) {
 void fpga_write_dspx_dat(uint16_t data) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_DSPWRITEDAT);
-  FPGA_TX_BYTE((data>>8)&0xff);
-  FPGA_TX_BYTE((data)&0xff);
+  FPGA_TX_BYTE((data >> 8) & 0xff);
+  FPGA_TX_BYTE((data) & 0xff);
   FPGA_TX_BYTE(0x00);
   FPGA_TX_BYTE(0x00);
   FPGA_DESELECT();
