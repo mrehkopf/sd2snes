@@ -1,3 +1,26 @@
+v1.8.0
+======
+ * add SuperFX support by RedGuy (v10)
+ * add support for ExLoROM (LoROM > 32 Mbits)
+ * disable in-game hooks by default
+ * add brightness patching to correct RGB output levels on 1CHIP consoles
+ * add mid-screen brightness change fixes for 1CHIP consoles:
+   - avoid change of brightness (bits 0-3) when forced blanking is used
+   - on bigger brightness change steps, substitute brightness 0
+     -> less sync distortion in Rudra's Treasure text boxes
+     -> visible shadow in A.S.P. Air Strike Patrol
+   - known issue: HDMA writes are not handled correctly
+ * some menu improvements:
+   - Menu entries can now be printed in grey when some condition is (not)
+     met. A function call is used to determine the status with the carry flag
+     as a boolean return value. Disabled menu entries can still be changed
+     for when they become active again.
+   - Also a change hook function can now be used in the menu structure. It is
+     called whenever the value is changed during setting, e.g. to immediately
+     reflect / preview the setting made.
+ * change versioning to eliminate the useless "v0." and gain a meaningful
+   subversion at the end
+
 v0.1.7e
 =======
  * fix critical DAC timing quirk causing audio distortion with MSU1
