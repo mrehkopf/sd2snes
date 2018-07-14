@@ -77,8 +77,8 @@ int main(int argc, char** argv) {
 		}
 		in_off++;
 	}
-	free(obuf);
 	fwrite(obuf, dsize, 1, out);
+	free(obuf);
 	fclose(out);
 	fclose(in);
 }
