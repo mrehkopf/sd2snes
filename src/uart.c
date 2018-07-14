@@ -238,6 +238,13 @@ void uart_puthex(uint8_t num) {
     uart_putc('a'+tmp-10);
 }
 
+void uart_puts_hex(const char *text) {
+  while (*text) {
+    uart_puthex(*text++);
+    uart_putc(' ');
+  }
+}
+
 void uart_trace(void *ptr, uint32_t start, uint32_t len) {
   uint32_t i;
   uint8_t j;
