@@ -101,6 +101,8 @@
 #define CFG_BRIGHTNESS_LIMIT        CFG_ADDR+$009D
 #define CFG_GSU_SPEED               CFG_ADDR+$009E
 
+#define MENU_ENTRY_SIZE             23
+
 #define ST_RTC_VALID                ST_ADDR+$0000
 #define ST_NUM_RECENT_GAMES         ST_ADDR+$0001
 #define ST_IS_U16                   ST_ADDR+$0002
