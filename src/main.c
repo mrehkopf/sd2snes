@@ -70,6 +70,11 @@ int main(void) {
   BITBAND(SNES_CIC_PAIR_REG->FIOSET, SNES_CIC_PAIR_BIT) = 1;
   LPC_GPIO0->FIODIR = BV(16);
 
+ /* disable pull-up on fake USB_CONNECT pin (P4.28), set P1.30 to VBUS */
+  LPC_PINCON->PINMODE9 |= BV(25);
+  LPC_PINCON->PINSEL3 |= BV(29);
+  LPC_PINCON->PINMODE3 |= BV(29);
+
  /* connect UART3 on P0[25:26] + SSP0 on P0[15:18] + MAT3.0 on P0[10] */
   LPC_PINCON->PINSEL1 = BV(18) | BV(19) | BV(20) | BV(21) /* UART3 */
                       | BV(3) | BV(5);                    /* SSP0 (FPGA) except SS */
