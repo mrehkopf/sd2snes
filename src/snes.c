@@ -141,7 +141,7 @@ uint8_t get_snes_reset_state(void) {
 
   if(resbutton) { /* Yes (e.g. reset-button is pressed) */
 
-    result = SNES_RESET_SHORT;
+    result = cfg_is_reset_to_menu() ? SNES_RESET_LONG : SNES_RESET_SHORT;
     reset_flag = 1;
 
     if(!resbutton_prev) { /* push, reset tick-timer */

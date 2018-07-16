@@ -102,6 +102,7 @@
 #define CFG_1CHIP_TRANSIENT_FIXES   CFG_ADDR+$009C
 #define CFG_BRIGHTNESS_LIMIT        CFG_ADDR+$009D
 #define CFG_GSU_SPEED               CFG_ADDR+$009E
+#define CFG_ENABLE_RST_TO_MENU      CFG_ADDR+$009F
 
 #define MENU_ENTRY_SIZE             23
 

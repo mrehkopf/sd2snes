@@ -27,6 +27,7 @@
 #define CFG_MSU_VOLUME_BOOST      ("MSUVolumeBoost")
 #define CFG_1CHIP_TRANSIENT_FIXES ("1CHIPTransientFixes")
 #define CFG_BRIGHTNESS_LIMIT      ("BrightnessLimit")
+#define CFG_ENABLE_RST_TO_MENU    ("ShortReset2Menu")
 
 typedef enum {
   VIDMODE_60 = 0,
@@ -55,6 +56,7 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t  onechip_transient_fixes; /* override register 2100 bits 3-0 */
   uint8_t  brightness_limit;        /* limit brightness set by register 2100 */
   uint8_t  gsu_speed;               /* GSU speed (0: original, 1: no waitstates */
+  uint8_t  reset_to_menu;           /* Go back to menu on short reset */
 } cfg_t;
 
 int cfg_save(void);
@@ -89,4 +91,6 @@ uint8_t cfg_is_onechip_transient_fixes(void);
 void cfg_set_brightness_limit(uint8_t);
 uint8_t cfg_get_brightness_limit(void);
 
+void cfg_set_reset_to_menu(uint8_t);
+uint8_t cfg_is_reset_to_menu(void);
 #endif

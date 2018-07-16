@@ -346,6 +346,20 @@ menu_enttab_ingame:
  .byt  ^mtext_cfg_ingame
 ; ENTRIES
  .byt  MTYPE_VALUE
+ .word !mtext_ingame_shortreset
+ .byt  ^mtext_ingame_shortreset
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_ENABLE_RST_TO_MENU
+ .byt  ^CFG_ENABLE_RST_TO_MENU
+ .word !mdesc_ingame_shortreset
+ .byt  ^mdesc_ingame_shortreset
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+ 
+ .byt  MTYPE_VALUE
  .word !mtext_ingame_enable
  .byt  ^mtext_ingame_enable
  .word !kv_onoff

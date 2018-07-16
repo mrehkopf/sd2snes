@@ -28,9 +28,14 @@ cfg_t CFG_DEFAULT = {
   .skin_name = "sd2snes.skin",
   .control_type = 0,
   .msu_volume_boost = 0,
+<<<<<<< HEAD
   .onechip_transient_fixes = 0,
   .brightness_limit = 15,
   .gsu_speed = 0
+=======
+  .patch_1chip_brightness = 0,
+  .reset_to_menu = 0
+>>>>>>> 5e2da6a... Option to go back to menu on short reset
 };
 
 cfg_t CFG;
@@ -59,6 +64,8 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %s\n", CFG_1CHIP_TRANSIENT_FIXES, CFG.onechip_transient_fixes ? "true" : "false");
   f_puts("\n# Brightness limit - can be used to limit RGB output levels on S-CPUN based consoles\n", &file_handle);
   f_printf(&file_handle, "%s: %d\n", CFG_BRIGHTNESS_LIMIT, CFG.brightness_limit);
+  f_puts("\n# Reset to menu on short reset\n", &file_handle);
+  f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_RST_TO_MENU, CFG.reset_to_menu ? "true" : "false");
   f_puts("\n\n# IRQ hook related settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Overall enable IRQ hooks (required for in-game buttons & WRAM cheats)\n", CFG_ENABLE_INGAME_HOOK);
   f_printf(&file_handle, "#  %s: Enable in-game buttons (en/disable cheats, reset sd2snes...)\n", CFG_ENABLE_INGAME_BUTTONS);
@@ -149,6 +156,9 @@ int cfg_load() {
     }
     if(yaml_get_itemvalue(CFG_BRIGHTNESS_LIMIT, &tok)) {
       CFG.brightness_limit = tok.longvalue & 0xf;
+    }
+    if(yaml_get_itemvalue(CFG_ENABLE_RST_TO_MENU, &tok)) {
+      CFG.reset_to_menu = tok.boolvalue ? 1 : 0;
     }
   }
   yaml_file_close();
@@ -291,6 +301,13 @@ void cfg_set_brightness_limit(uint8_t limit) {
 
 uint8_t cfg_get_brightness_limit() {
   return CFG.brightness_limit;
+}
+
+void cfg_set_reset_to_menu(uint8_t enable) {
+  CFG.reset_to_menu = enable;
+}
+uint8_t cfg_is_reset_to_menu() {
+  return CFG.reset_to_menu;
 }
 
 void cfg_set_vidmode_game(cfg_vidmode_t vidmode) {
