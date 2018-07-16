@@ -28,14 +28,10 @@ cfg_t CFG_DEFAULT = {
   .skin_name = "sd2snes.skin",
   .control_type = 0,
   .msu_volume_boost = 0,
-<<<<<<< HEAD
   .onechip_transient_fixes = 0,
   .brightness_limit = 15,
-  .gsu_speed = 0
-=======
-  .patch_1chip_brightness = 0,
+  .gsu_speed = 0,
   .reset_to_menu = 0
->>>>>>> 5e2da6a... Option to go back to menu on short reset
 };
 
 cfg_t CFG;
