@@ -299,6 +299,8 @@ int msu1_loop() {
   }
   dac_pause();
   f_close(&file_handle);
+// TODO have FPGA automatically reset SRTC on detected reset
+  fpga_reset_srtc_state();
   DBG_MSU1 printf("Reset ");
   if(msu_res == SNES_RESET_LONG) {
     f_close(&msufile);

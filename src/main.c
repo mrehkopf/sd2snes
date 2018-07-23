@@ -345,6 +345,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       if(reset_changed) {
         printf("reset\n");
         reset_changed = 0;
+// TODO have FPGA automatically reset SRTC on detected reset
         fpga_reset_srtc_state();
       }
       if(get_snes_reset_state() == SNES_RESET_LONG) {
