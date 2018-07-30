@@ -205,8 +205,9 @@ int cfg_add_last_game(uint8_t *fn) {
   fqfn[0] = 0;
   if(fn[0] !=  '/') {
     strncpy(fqfn, (const char*)file_path, 256);
+    fqfn[255] = 0;
   }
-  strncat(fqfn, (const char*)fn, 256);
+  strncat(fqfn, (const char*)fn, 256 - strlen(fqfn) - 1);
   for(index = 0; index < 10; index++) {
     f_gets(fntmp[index], 255, &file_handle);
     if((*fntmp[index] == 0) || (*fntmp[index] == '\n')) {
