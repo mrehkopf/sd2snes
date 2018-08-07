@@ -98,11 +98,11 @@ wire ROM_ADDR0;
 
 assign DCM_RST=0;
 
-reg [7:0] SNES_PARDr;
-reg [7:0] SNES_READr;
-reg [7:0] SNES_WRITEr;
-reg [7:0] SNES_CPU_CLKr;
-reg [7:0] SNES_ROMSELr;
+reg [7:0] SNES_PARDr = 8'b11111111;
+reg [7:0] SNES_READr = 8'b11111111;
+reg [7:0] SNES_WRITEr = 8'b11111111;
+reg [7:0] SNES_CPU_CLKr = 8'b00000000;
+reg [7:0] SNES_ROMSELr = 8'b11111111;
 reg [23:0] SNES_ADDRr [6:0];
 
 reg SNES_DEADr = 1;
