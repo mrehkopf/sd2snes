@@ -842,6 +842,9 @@ reg        rom_busy_r; initial rom_busy_r = 0;
 always @(posedge CLK) begin
   if (RST) begin
     ROM_STATE <= ST_ROM_IDLE;
+    
+    rom_bus_rrq_r <= 0;
+
     rom_busy_r <= 0;
   end
   else begin
