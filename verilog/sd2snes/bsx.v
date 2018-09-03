@@ -36,7 +36,8 @@ module bsx(
   input [59:0] rtc_data,
   output [9:0] bs_page_out, // support only page 0000-03ff
   output bs_page_enable,
-  output [8:0] bs_page_offset
+  output [8:0] bs_page_offset,
+  input feat_bs_base_enable
 );
 
 wire [3:0] reg_addr = snes_addr[19:16]; // 00-0f:5000-5fff
@@ -50,7 +51,8 @@ reg [7:0] flash_cmd0;
 
 wire cart_enable = (use_bsx) && ((snes_addr[23:12] & 12'hf0f) == 12'h005);
 
-wire base_enable = (use_bsx) && (!snes_addr[22] && (snes_addr[15:0] >= 16'h2188)
+wire base_enable = feat_bs_base_enable
+                   & (use_bsx) && (!snes_addr[22] && (snes_addr[15:0] >= 16'h2188)
                                  && (snes_addr[15:0] <= 16'h219f));
 
 wire flash_enable = (snes_addr[23:16] == 8'hc0);

@@ -55,7 +55,8 @@ status_t ST = {
   .rtc_valid = 0xff,
   .num_recent_games = 0,
   .is_u16 = 0,
-  .u16_cfg = 0xff
+  .u16_cfg = 0xff,
+  .has_satellaview = 0
 };
 
 void prepare_reset() {

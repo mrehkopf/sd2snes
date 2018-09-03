@@ -134,6 +134,8 @@ wire [10:0] dspx_dat_addr;
 wire dspx_dat_we;
 
 wire [15:0] featurebits;
+wire feat_cmd_unlock = featurebits[5];
+wire feat_bs_base_enable = featurebits[12];
 
 wire [23:0] MAPPED_SNES_ADDR;
 wire ROM_ADDR0;
@@ -369,8 +371,8 @@ bsx snes_bsx(
   .rtc_data(rtc_data[59:0]),
   .bs_page_out(bs_page), // support only page 0000-03ff
   .bs_page_enable(bs_page_enable),
-  .bs_page_offset(bs_page_offset)
-
+  .bs_page_offset(bs_page_offset),
+  .feat_bs_base_enable(feat_bs_base_enable)
 );
 
 spi snes_spi(
@@ -418,8 +420,6 @@ wire [7:0] MCU_DOUT;
 wire [31:0] cheat_pgm_data;
 wire [7:0] cheat_data_out;
 wire [2:0] cheat_pgm_idx;
-
-wire feat_cmd_unlock = featurebits[5];
 
 mcu_cmd snes_mcu_cmd(
   .clk(CLK2),

@@ -47,6 +47,7 @@
 #define FPGA_TX_BLOCK(x,y) spi_tx_block(x,y)
 #define FPGA_RX_BLOCK(x,y) spi_rx_block(x,y)
 
+#define FEAT_SATELLABASE   (1 << 12)
 #define FEAT_2100_LIMIT(x) ((x & 15) << 7)
 #define FEAT_2100_LIMIT_NONE FEAT_2100_LIMIT(15)
 #define FEAT_2100          (1 << 6)

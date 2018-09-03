@@ -97,6 +97,7 @@ typedef struct __attribute__ ((__packed__)) _status {
   uint8_t is_u16;
   uint8_t u16_cfg;
   uint8_t pairmode;
+  uint8_t has_satellaview;
 } status_t;
 
 uint8_t crc_valid;

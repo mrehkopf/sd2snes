@@ -376,6 +376,11 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   romprops.fpga_features |= FEAT_2100_LIMIT(cfg_get_brightness_limit());
 
+  /* enable Satellaview Base emulation only if no physical Satellaview Base unit is present */
+  if(!ST.has_satellaview) {
+    romprops.fpga_features |= FEAT_SATELLABASE;
+  }
+
   if(flags & LOADROM_WAIT_SNES) {
     while(snes_get_mcu_cmd() != SNES_CMD_RESET) cli_entrycheck();
   }
