@@ -31,7 +31,8 @@ cfg_t CFG_DEFAULT = {
   .onechip_transient_fixes = 0,
   .brightness_limit = 15,
   .gsu_speed = 0,
-  .reset_to_menu = 0
+  .reset_to_menu = 0,
+  .led_brightness = 15
 };
 
 cfg_t CFG;
@@ -77,8 +78,10 @@ int cfg_save() {
   f_puts("\n# UI related settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Sort directories (slower but files are guaranteed to be in order)\n", CFG_SORT_DIRECTORIES);
   f_printf(&file_handle, "#  %s: Hide file extensions\n", CFG_HIDE_EXTENSIONS);
+  f_printf(&file_handle, "#  %s: LED brightness (0: minimum, 15: maximum)\n", CFG_LED_BRIGHTNESS);
   f_printf(&file_handle, "%s: %s\n", CFG_SORT_DIRECTORIES, CFG.sort_directories ? "true" : "false");
   f_printf(&file_handle, "%s: %s\n", CFG_HIDE_EXTENSIONS, CFG.hide_extensions ? "true" : "false");
+  f_printf(&file_handle, "%s: %d\n", CFG_LED_BRIGHTNESS, CFG.led_brightness);
   f_puts("\n# Enhancement chip settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Cx4 core speed (0: original, 1: fast, all instructions are single cycle)\n", CFG_CX4_SPEED);
   f_printf(&file_handle, "%s: %d\n", CFG_CX4_SPEED, CFG.cx4_speed);
@@ -155,6 +158,12 @@ int cfg_load() {
     }
     if(yaml_get_itemvalue(CFG_ENABLE_RST_TO_MENU, &tok)) {
       CFG.reset_to_menu = tok.boolvalue ? 1 : 0;
+    }
+    if(yaml_get_itemvalue(CFG_LED_BRIGHTNESS, &tok)) {
+      CFG.led_brightness = tok.longvalue;
+      if(CFG.led_brightness > 15) {
+        CFG.led_brightness = 15;
+      }
     }
   }
   yaml_file_close();

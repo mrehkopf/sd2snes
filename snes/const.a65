@@ -205,6 +205,7 @@ mtext_browser_sort                .byt "Sort directories", 0
 mtext_browser_hide_ext            .byt "Hide file extensions", 0
 mtext_browser_screensaver         .byt "Screensaver", 0
 mtext_browser_screensaver_timeout .byt "Fade screen after", 0
+mtext_browser_ledbright           .byt "LED brightness", 0
 mtext_ingame_shortreset           .byt "Reset to menu", 0
 mtext_ingame_enable               .byt "In-game hook", 0
 mtext_ingame_buttons              .byt " ",129,"In-game buttons", 0
@@ -234,6 +235,7 @@ mdesc_browser_sort                .byt "Choose whether to sort file lists", 0
 mdesc_browser_hide_ext            .byt "Choose whether to hide file extensions", 0
 mdesc_browser_screensaver         .byt "Fade-out the screen after some time", 0
 mdesc_browser_screensaver_timeout .byt "Set time after which to fade the screen", 0
+mdesc_browser_ledbright           .byt "Change brightness of LEDs", 0
 mdesc_ingame_shortreset           .byt "Go back to menu on short reset if enabled", 0
 mdesc_ingame_enable               .byt "Required for in-game buttons and 7E/7F cheats", 0
 mdesc_ingame_buttons              .byt "Enable in-game buttons (reset, en/disable cheats", 127, 128, "). Requires in-game hook to be enabled.", 0
@@ -292,6 +294,22 @@ text_minus4     .byt "-4", 0
 text_minus5     .byt "-5", 0
 text_minus6     .byt "-6", 0
 text_minus7     .byt "-7", 0
+
+text_1          .byt "1", 0
+text_2          .byt "2", 0
+text_3          .byt "3", 0
+text_4          .byt "4", 0
+text_5          .byt "5", 0
+text_6          .byt "6", 0
+text_7          .byt "7", 0
+text_8          .byt "8", 0
+text_9          .byt "9", 0
+text_10         .byt "10", 0
+text_11         .byt "11", 0
+text_12         .byt "12", 0
+text_13         .byt "13", 0
+text_14         .byt "14", 0
+text_15_max     .byt "15 (max)", 0
 
 text_3_5db      .byt "+3.5dBFS", 0
 text_6db        .byt "+6dBFS", 0

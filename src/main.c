@@ -143,6 +143,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       file_close();
     }
 //    snes_bootprint("           Loading ...          \0");
+    led_pwm();
     rdyled(1);
     readled(0);
     writeled(0);
@@ -155,6 +156,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     }
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
     cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
+    led_set_brightness(1 /*CFG.led_brightness*/);
 
     /* load menu */
     sram_writelong(0x12345678, SRAM_SCRATCHPAD);
@@ -307,6 +309,11 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           fpga_set_dac_boost(CFG.msu_volume_boost);
           cfg_save();
           cmd=0; /* stay in menu loop */
+          break;
+        case SNES_CMD_LED_BRIGHTNESS:
+          cfg_get_from_menu();
+          led_set_brightness(CFG.led_brightness);
+          cmd=0;
           break;
         case SNES_CMD_LOAD_CHT:
           /* load cheats */

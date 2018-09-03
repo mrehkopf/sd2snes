@@ -72,6 +72,7 @@
 #define CMD_SET_CFG                 $0F
 #define CMD_SELECTROM               $10
 #define CMD_RUNROM                  $11 /* ROM must first be selected by SELECTROM */
+#define CMD_LED_BRIGHTNESS          $12
 #define CMD_MCU_RDY                 $55
 #define CMD_RESET                   $80
 #define CMD_RESET_TO_MENU           $81
@@ -103,6 +104,7 @@
 #define CFG_BRIGHTNESS_LIMIT        CFG_ADDR+$009D
 #define CFG_GSU_SPEED               CFG_ADDR+$009E
 #define CFG_ENABLE_RST_TO_MENU      CFG_ADDR+$009F
+#define CFG_LED_BRIGHTNESS          CFG_ADDR+$00A0
 
 #define MENU_ENTRY_SIZE             23
 

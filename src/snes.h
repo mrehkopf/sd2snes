@@ -40,6 +40,7 @@
 #define SNES_CMD_LOAD_CHT          (0x0c)
 #define SNES_CMD_SAVE_CHT          (0x0d)
 #define SNES_CMD_SAVE_CFG          (0x0e)
+#define SNES_CMD_LED_BRIGHTNESS    (0x12)
 #define SNES_CMD_RESET             (0x80)
 #define SNES_CMD_RESET_TO_MENU     (0x81)
 #define SNES_CMD_ENABLE_CHEATS     (0x82)
