@@ -360,6 +360,21 @@ menu_enttab_ingame:
  .word !mtext_cfg_ingame
  .byt  ^mtext_cfg_ingame
 ; ENTRIES
+
+ .byt  MTYPE_VALUE
+ .word !mtext_ingame_cheats
+ .byt  ^mtext_ingame_cheats
+ .word !kv_yesno
+ .byt  ^kv_yesno
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_ENABLE_CHEATS
+ .byt  ^CFG_ENABLE_CHEATS
+ .word !mdesc_ingame_cheats
+ .byt  ^mdesc_ingame_cheats
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
  .byt  MTYPE_VALUE
  .word !mtext_ingame_shortreset
  .byt  ^mtext_ingame_shortreset

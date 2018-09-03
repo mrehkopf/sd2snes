@@ -206,6 +206,7 @@ mtext_browser_hide_ext            .byt "Hide file extensions", 0
 mtext_browser_screensaver         .byt "Screensaver", 0
 mtext_browser_screensaver_timeout .byt "Fade screen after", 0
 mtext_browser_ledbright           .byt "LED brightness", 0
+mtext_ingame_cheats               .byt "Start with cheats enabled", 0
 mtext_ingame_shortreset           .byt "Reset to menu", 0
 mtext_ingame_enable               .byt "In-game hook", 0
 mtext_ingame_buttons              .byt " ",129,"In-game buttons", 0
@@ -236,6 +237,7 @@ mdesc_browser_hide_ext            .byt "Choose whether to hide file extensions",
 mdesc_browser_screensaver         .byt "Fade-out the screen after some time", 0
 mdesc_browser_screensaver_timeout .byt "Set time after which to fade the screen", 0
 mdesc_browser_ledbright           .byt "Change brightness of LEDs", 0
+mdesc_ingame_cheats               .byt "Whether to start out with cheats enabled. Can be changed using in-game buttons", 0
 mdesc_ingame_shortreset           .byt "Go back to menu on short reset if enabled", 0
 mdesc_ingame_enable               .byt "Required for in-game buttons and 7E/7F cheats", 0
 mdesc_ingame_buttons              .byt "Enable in-game buttons (reset, en/disable cheats", 127, 128, "). Requires in-game hook to be enabled.", 0

@@ -63,6 +63,8 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %d\n", CFG_BRIGHTNESS_LIMIT, CFG.brightness_limit);
   f_puts("\n# Reset to menu on short reset\n", &file_handle);
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_RST_TO_MENU, CFG.reset_to_menu ? "true" : "false");
+  f_puts("\n# Initial cheats state when loading a game (true: enabled, false: disabled)\n", &file_handle);
+  f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_CHEATS, CFG.enable_cheats ? "true" : "false");
   f_puts("\n\n# IRQ hook related settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Overall enable IRQ hooks (required for in-game buttons & WRAM cheats)\n", CFG_ENABLE_INGAME_HOOK);
   f_printf(&file_handle, "#  %s: Enable in-game buttons (en/disable cheats, reset sd2snes...)\n", CFG_ENABLE_INGAME_BUTTONS);
@@ -164,6 +166,9 @@ int cfg_load() {
       if(CFG.led_brightness > 15) {
         CFG.led_brightness = 15;
       }
+    }
+    if(yaml_get_itemvalue(CFG_ENABLE_CHEATS, &tok)) {
+      CFG.enable_cheats = tok.boolvalue ? 1 : 0;
     }
   }
   yaml_file_close();

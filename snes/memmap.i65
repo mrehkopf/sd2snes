@@ -103,6 +103,7 @@
 #define CFG_GSU_SPEED               CFG_ADDR+$009E
 #define CFG_ENABLE_RST_TO_MENU      CFG_ADDR+$009F
 #define CFG_LED_BRIGHTNESS          CFG_ADDR+$00A0
+#define CFG_ENABLE_CHEATS           CFG_ADDR+$00A1
 
 #define MENU_ENTRY_SIZE             23
 
