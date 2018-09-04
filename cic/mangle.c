@@ -48,7 +48,7 @@ void mangle(unsigned char* data) {
 			a+=data[offset]+carry;
 		}
 		temp=a; a=data[offset]; data[offset++]=temp&0xf;
-	
+
 		while(offset<0x10) {
 			a++;
 			a+=data[offset]+carry;
@@ -62,33 +62,55 @@ void mangle(unsigned char* data) {
 	} while(carry);
 }
 
-int main(void) {
+int main(int argc, char **argv) {
 	unsigned char *label[2];
-	unsigned char restart=1;
-	unsigned char keyseed[16]={0x0, // dummy
+	unsigned char restart = 1, swap = 0;
+	long streamno = 0;
+	char *endptr;
+	unsigned char lockseed[16]={0x0, // dummy
 				 0xb,0x1,0x4,0xf,
 				 0x4,0xb,0x5,0x7,
 				 0xf,0xd,0x6,0x1,
 				 0xe,0x9,0x8};
-	unsigned char lockseed[16]={0x0, // dummy
-				 0xf,0x9,0xa,0x1,
+	unsigned char keyseed[16]={0x0, // dummy
+				 0x0, // fill-in value sent by lock on reset in bit order 3-0-1-2
+				 0x9,0xa,0x1,
 				 0x8,0x5,0xf,0x1,
 				 0x1,0xe,0x1,0x0,
 				 0xd,0xe,0xc};
 
+	if(argc < 2) {
+		printf("Usage: %s <stream number>\n\n", argv[0]);
+		printf("<stream number> selects one of 16 fill-in values sent by the lock on reset.\n");
+		printf("Both sides use it as the first nibble of the seed initially sent on D1 by\n");
+		printf("the lock. Transmission bit order is 3-0-1-2. e.g. '1-0-1-1' => 0xe\n");
+		return -1;
+	}
+
+	streamno = strtol(argv[1], &endptr, 0);
+	printf("%p %p\n", argv[1], endptr);
+	if(*endptr) {
+		printf("invalid format for stream number. example: decimal: 15, hex: 0xe, oct: 017\n");
+		return 1;
+	}
+	if(streamno > 15 || streamno < 0) {
+		printf("invalid stream number. Valid range is 0x0-0xf\n");
+		return 1;
+	}
+	keyseed[1] = (unsigned char) streamno;
 	printf("initial seeds:\n");
-	printseed(keyseed);
 	printseed(lockseed);
+	printseed(keyseed);
 	printf("\n");
 
-	label[0] = "LockInKeyOut";
-	label[1] = "LockOutKeyIn";
+	label[0] = "LockOutKeyIn";
+	label[1] = "LockInKeyOut";
 while(1) {
 	printf("\n");
 	printf("D0[%s]: ", label[0]);
-	printstream(keyseed, restart);
+	printstream(swap ? keyseed : lockseed, restart);
 	printf("D1[%s]: ", label[1]);
-	printstream(lockseed, restart);
+	printstream(swap ? lockseed : keyseed, restart);
 	mangle(keyseed);
 	mangle(keyseed);
 	mangle(keyseed);
@@ -98,13 +120,14 @@ while(1) {
 
 //printseed(keyseed);
 //printseed(lockseed);
-	restart=lockseed[7];
-	if(lockseed[7] & 1) {
-		label[0] = "LockOutKeyIn";
-		label[1] = "LockInKeyOut";
-	} else {
+	restart = keyseed[7];
+	swap = restart & 1;
+	if(swap) {
 		label[0] = "LockInKeyOut";
 		label[1] = "LockOutKeyIn";
+	} else {
+		label[0] = "LockOutKeyIn";
+		label[1] = "LockInKeyOut";
 	}
 //	lockseed[3]=lockseed[7];
 	if(!restart)restart=1;
