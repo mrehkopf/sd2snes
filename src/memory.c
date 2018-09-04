@@ -54,6 +54,7 @@ char* hex = "0123456789ABCDEF";
 
 extern snes_romprops_t romprops;
 extern uint32_t saveram_crc_old;
+extern uint8_t sram_checksum_valid;
 extern cfg_t CFG;
 extern status_t ST;
 
@@ -271,7 +272,9 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       uart_putc('.');
     }
   }
+  uart_putc('\n');
   file_close();
+  
   printf("rom header map: %02x; mapper id: %d\n", romprops.header.map, romprops.mapper_id);
   ticks_total=getticks()-ticksstart;
   printf("%u ticks total\n", ticks_total);
@@ -318,7 +321,15 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     romprops.romsize_bytes <<= 1;
   }
 
-  if(romprops.header.ramsize == 0) {
+  if (romprops.has_sa1 && romprops.header.carttype == 0x36 && romprops.header.ramsize) {
+    // move iram into saveram for special carts with no bwram
+    romprops.header.ramsize = 1;
+    romprops.ramsize_bytes = 0x800;
+    // override any changes to this so we capture full sram
+    romprops.srambase       = 0;
+    romprops.sramsize_bytes = romprops.ramsize_bytes;
+    rammask = 1;
+  } else if(romprops.header.ramsize == 0) {
     rammask = 0;
   } else {
     rammask = romprops.ramsize_bytes - 1;
@@ -329,15 +340,15 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   set_rom_mask(rommask);
   readled(0);
 
-  printf("gsu=%x gsu_sram=%x\n", romprops.has_gsu, romprops.has_gsu_sram);
+  printf("gsu=%x sa1=%x srambase=%lx sramsize=%lx\n", romprops.has_gsu, romprops.has_sa1, romprops.srambase, romprops.sramsize_bytes);
   if(flags & LOADROM_WITH_SRAM) {
     if(romprops.ramsize_bytes) {
       // powerslide relies on the init value to be 00.
       sram_memset(SRAM_SAVE_ADDR, romprops.ramsize_bytes, romprops.has_gsu ? 0x00 : 0xFF);
-	  if (!romprops.has_gsu || romprops.has_gsu_sram) migrate_and_load_srm(filename, SRAM_SAVE_ADDR);
+      if (romprops.sramsize_bytes) migrate_and_load_srm(filename, SRAM_SAVE_ADDR);
       /* file not found error is ok (SRM file might not exist yet) */
       if(file_res == FR_NO_FILE) file_res = 0;
-      saveram_crc_old = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
+      saveram_crc_old = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes);
     } else {
       printf("No SRAM\n");
     }
@@ -405,6 +416,9 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     snes_reset(0);
     fpga_dspx_reset(0);
   }
+  
+  // loading a new rom implies the previous checksum is no longer valid
+  sram_checksum_valid = 0;
 
   return (uint32_t)filesize;
 }
@@ -655,6 +669,28 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
   }
   FPGA_DESELECT();
   return crc;
+}
+
+uint16_t calc_sram_sum(uint32_t base_addr, uint32_t size) {
+  uint8_t data;
+  uint32_t count;
+  uint16_t sum;
+  sum=0;
+  sum_valid = 1;
+  set_mcu_addr(base_addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x88);
+  for(count=0; count<size; count++) {
+    FPGA_WAIT_RDY();
+    data = FPGA_RX_BYTE();
+    if(get_snes_reset()) {
+      sum_valid = 0;
+      break;
+    }
+    sum += data;
+  }
+  FPGA_DESELECT();
+  return sum;
 }
 
 uint8_t sram_reliable() {

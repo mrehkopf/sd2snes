@@ -71,7 +71,9 @@ void smc_id(snes_romprops_t* props) {
   props->has_cx4 = 0;
   props->has_obc1 = 0;
   props->has_gsu = 0;
-  props->has_gsu_sram = 0;
+  props->has_sa1 = 0;
+  props->srambase = 0;
+  props->sramsize_bytes = 0;
   props->fpga_features = 0;
   props->fpga_dspfeat = 0;
   props->fpga_conf = NULL;
@@ -100,8 +102,9 @@ void smc_id(snes_romprops_t* props) {
         if(header->licensee == 0x33 || header->licensee == 0xff) {
           props->mapper_id = 0;
 /*XXX do this properly */
-          props->ramsize_bytes = 0x8000;
-          props->romsize_bytes = 0x100000;
+          props->ramsize_bytes  = 0x8000;
+          props->sramsize_bytes = props->ramsize_bytes;
+          props->romsize_bytes  = 0x100000;
           props->expramsize_bytes = 0;
           props->mapper_id = 3; /* BS-X Memory Map */
           props->region = 0; /* BS-X only existed in Japan */
@@ -189,7 +192,6 @@ void smc_id(snes_romprops_t* props) {
       else if (header->map == 0x20 && ((header->carttype >= 0x13 && header->carttype <= 0x15) ||
           header->carttype == 0x1a)) {
         props->has_gsu = 1;
-		props->has_gsu_sram = (header->carttype == 0x15 || header->carttype == 0x1a) ? 1 : 0;
         props->fpga_conf = FPGA_GSU;
         props->fpga_dspfeat = CFG.gsu_speed;
         header->ramsize = header->expramsize & 0x7;
@@ -224,10 +226,9 @@ void smc_id(snes_romprops_t* props) {
       break;
 
     case 0x23: /* SA1 */
-      if(header->carttype == 0x32 || header->carttype == 0x34 || header->carttype == 0x35) {
+      if(header->carttype == 0x32 || header->carttype == 0x34 || header->carttype == 0x35 || header->carttype == 0x36) {
         props->has_sa1 = 1;
-        props->error = MENU_ERR_NOIMPL;
-        props->error_param = (uint8_t*)"SA-1";
+        props->fpga_conf = FPGA_SA1;
       }
       break;
 
@@ -286,6 +287,17 @@ void smc_id(snes_romprops_t* props) {
   }
   props->region = (header->destcode <= 1 || header->destcode >= 13) ? 0 : 1;
 
+  // adjust sram size for special cart types
+  if (  (props->has_gsu && (header->carttype != 0x15 && header->carttype != 0x1a))
+     || (props->has_sa1 && (header->carttype == 0x34)                            )
+     ) {
+    // no sram in ram
+    props->sramsize_bytes = 0;
+  }
+  else {
+    props->sramsize_bytes = props->ramsize_bytes;
+  }
+  
   if(header->carttype == 0x55) {
     props->fpga_features |= FEAT_SRTC;
   }

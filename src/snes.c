@@ -43,6 +43,7 @@
 #include "cfg.h"
 
 uint32_t saveram_crc, saveram_crc_old;
+uint8_t sram_checksum_valid;
 extern snes_romprops_t romprops;
 extern int snes_boot_configured;
 
@@ -59,10 +60,32 @@ status_t ST = {
   .has_satellaview = 0
 };
 
+typedef struct { uint16_t sum; uint32_t base; uint32_t size; } SramOffset;
+const SramOffset SramOffsetTable[] = {
+  // GSU
+  { 0x132C, 0x7c00, 0x0400, }, // yoshi's island (us)
+  { 0xE10B, 0x7c00, 0x0400, }, // yoshi's island (eu)
+  { 0x730E, 0x7c00, 0x0400, }, // yoshi's island (jp)
+  
+  // SA1
+  { 0x3BB4, 0x0000, 0x2000, }, // super mario rpg (us)
+  { 0x4575, 0x0000, 0x2000, }, // super mario rpg (jp)
+  
+  { 0xC6AA, 0x1F00, 0x0100, }, // kirby super star (us)
+  { 0xAE40, 0x1F00, 0x0100, }, // kirby super star (eu)
+  { 0xF602, 0x1F00, 0x0100, }, // kirby super star (jp) rev2
+
+  { 0x247C, 0x5E00, 0x0200, }, // kirby's dreamland (us)
+  { 0x2233, 0x5E00, 0x0200, }, // kirby's dreamland (jp)
+
+  { 0x36A6, 0x0100, 0x0C00, }, // marvelous (jp)
+  { 0x22EE, 0x0100, 0x0C00, }, // marvelous (us)
+};
+
 void prepare_reset() {
   snes_reset(1);
   delay_ms(SNES_RESET_PULSELEN_MS);
-  if(romprops.ramsize_bytes && (!romprops.has_gsu || romprops.has_gsu_sram) && fpga_test() == FPGA_TEST_TOKEN) {
+  if(romprops.sramsize_bytes && fpga_test() == FPGA_TEST_TOKEN) {
     writeled(1);
     save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
     writeled(0);
@@ -134,7 +157,6 @@ uint8_t get_snes_reset_state(void) {
     /* release reset from the sd2snes-side */
     snes_reset(0);
     delay_us(SNES_RELEASE_RESET_DELAY_US);
-
   }
 
   /* now start new cycle */
@@ -187,8 +209,10 @@ uint8_t get_snes_reset_state(void) {
 uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_save_failed = 0;
 uint8_t sram_valid = 0;
 uint8_t snes_main_loop() {
-  if(romprops.ramsize_bytes && (!romprops.has_gsu || romprops.has_gsu_sram)) {
-    saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
+  recalculate_sram_range();
+  
+  if(romprops.sramsize_bytes) {
+    saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes);
     sram_valid = sram_reliable();
     if(crc_valid && sram_valid) {
       if(save_failed) didnotsave++;
@@ -221,9 +245,7 @@ uint8_t snes_main_loop() {
         last_save_failed = save_failed;
         save_failed = file_res ? 1 : 0;
         didnotsave = save_failed ? 25 : 0;
-		// this used to be !last_save_failed which seemed odd.  I would think we would want to leave the light
-        // on when there is a fail, but it must have been there for a reason.
-        writeled(romprops.has_gsu ? last_save_failed : !last_save_failed);
+        writeled(!last_save_failed);
       }
       saveram_crc_old = saveram_crc;
     }
@@ -414,4 +436,25 @@ void status_load_to_menu() {
 
 void status_save_from_menu() {
   sram_readblock(&ST, SRAM_STATUS_ADDR, sizeof(status_t));
+}
+
+void recalculate_sram_range() {
+  if (romprops.has_sa1 || romprops.has_gsu) {
+    if (!sram_checksum_valid && sram_valid) {
+      printf("calculating checksum: ");
+      uint16_t sum = calc_sram_sum(SRAM_ROM_ADDR + romprops.load_address, romprops.romsize_bytes);
+      printf("%04x\n", sum);
+
+      if (sum_valid) {
+        sram_checksum_valid = 1;      
+      
+        for (uint32_t i = 0; i < (sizeof(SramOffsetTable)/sizeof(SramOffset)); i++) {
+          if (sum == SramOffsetTable[i].sum) {
+            romprops.srambase       = SramOffsetTable[i].base;
+            romprops.sramsize_bytes = SramOffsetTable[i].size;
+          }
+        }
+      }
+    }    
+  }
 }

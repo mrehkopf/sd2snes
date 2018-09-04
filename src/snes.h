@@ -101,6 +101,7 @@ typedef struct __attribute__ ((__packed__)) _status {
 } status_t;
 
 uint8_t crc_valid;
+uint8_t sum_valid;
 
 void prepare_reset(void);
 void snes_init(void);
@@ -132,4 +133,5 @@ void snescmd_prepare_nmihook(void);
 void snes_get_filepath(uint8_t *buffer, uint16_t length);
 void status_load_to_menu(void);
 void status_save_from_menu(void);
+void recalculate_sram_range(void);
 #endif

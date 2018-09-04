@@ -156,7 +156,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     }
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
     cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
-    led_set_brightness(1 /*CFG.led_brightness*/);
+    led_set_brightness(CFG.led_brightness);
 
     /* load menu */
     sram_writelong(0x12345678, SRAM_SCRATCHPAD);
@@ -367,6 +367,9 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           if(cmd) {
             switch(cmd) {
               case SNES_CMD_RESET:
+                // TODO: add reset loop here to speedup reset cycling for proper clock alignment.
+                // A reset loop will also be needed when first entering the game loop from the menu to avoid long running tasks stalling it.
+                // Ideally, there would only be one code loop that does it and it will count failures to allow the loop to exit at some point.
                 snes_reset_pulse();
                 break;
               case SNES_CMD_RESET_TO_MENU:
