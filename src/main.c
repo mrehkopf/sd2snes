@@ -156,7 +156,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     }
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
     cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
-    led_set_brightness(1 /*CFG.led_brightness*/);
+    led_set_brightness(CFG.led_brightness);
 
     /* load menu */
     sram_writelong(0x12345678, SRAM_SCRATCHPAD);
