@@ -103,14 +103,12 @@ isr
 init
 	org 0x0010
 	bcf	STATUS, RP0
-	nop
 	clrf	GPIO
 	movlw	0x07	; GPIO2..0 are digital I/O (not connected to comparator)
 	movwf	CMCON
 	movlw	0x90	; global enable interrupts + enable external interrupt
 	movwf	INTCON
 	bsf	STATUS, RP0
-	nop
 	movlw	0x2d	; in out in in out in
 	movwf	TRISIO
 	movlw	0x24	; pullups for reset+clk to avoid errors when no CIC in host 
@@ -119,18 +117,15 @@ init
 	movwf	OPTION_REG
 	
 	bcf	STATUS, RP0
-	nop
 	bsf 	GPIO, 4	; LED on
 idle
 	goto	idle	; wait for interrupt from lock
 
 main
 	bsf	STATUS, RP0
-	nop
 	bsf	TRISIO, 0
 	bcf	TRISIO, 1
 	bcf	STATUS, RP0
-	nop
 ; --------INIT LOCK SEED (what the lock sends)--------
 	movlw	0xb
 	movwf	0x21
@@ -165,12 +160,10 @@ main
 	
 ; --------INIT KEY SEED (what we must send)--------
 	bsf	STATUS, RP0     ; D/F411 and D/F413
-	nop
 	clrf	EEADR		; differ in 2nd seed nibble
 	bsf	EECON1, RD	; of key stream,
 	movf	EEDAT, w	; restore saved nibble from EEPROM
 	bcf	STATUS, RP0
-	nop
 	movwf	0x32
 	movlw	0xa
 	movwf	0x33
@@ -236,12 +229,9 @@ main
 	btfsc	GPIO, 0		; check stream ID bit
 	bsf	0x31, 2		; copy to lock seed
 	bsf	STATUS, RP0
-	nop
 	bcf	TRISIO, 0
 	bsf	TRISIO, 1
 	bcf	STATUS, RP0
-	nop
-	nop
 	movlw	0x27		; "wait" 1
 	call	wait		; wait 121
 ; --------main loop--------
@@ -253,6 +243,7 @@ loop0
 loop1
 	nop
 	nop
+	nop
 	movf	INDF, w ; load seed value
 	movwf	0x20
 	bcf	0x20, 1	; clear bit 1 
@@ -262,19 +253,21 @@ loop1
 	movf	0x20, w
 	movwf	GPIO
 	nop
+	nop
 	movlw	0x10
 	movwf	GPIO	; reset GPIO
-	movlw	0x14
+	movlw	0x13
 	call	wait
+	nop
 	btfsc	0x5d, 0 ; pair mode available signal
 	bcf	GPIO, 4 ;
 	nop
 	nop
-	bsf	GPIO, 4 ; 
+	bsf	GPIO, 4 ;
 	btfsc	GPIO, 0 ; both pins must be low...
 	goto	die
 	btfsc	GPIO, 1 ; ...when no bit transfer takes place
-	goto	die	; if not -> lock cic error state -> die
+	goto	die		; if not -> lock cic error state -> die
 	incf	FSR, f	; next one
 	movlw	0xf
 	andwf	FSR, w
@@ -290,19 +283,16 @@ loop1
 	btfsc	0x37, 0
 	goto	swap
 	bsf	STATUS, RP0
-	nop
 	bcf	TRISIO, 0
 	bsf	TRISIO, 1
 	goto	swapskip
 swap
 	bsf	STATUS, RP0
-	nop
 	bsf	TRISIO, 0
 	bcf	TRISIO, 1
 	nop
 swapskip
 	bcf	STATUS, RP0
-	nop
 	movf	0x37, w
 	andlw	0xf
 	btfss	STATUS, Z
@@ -709,13 +699,11 @@ die
 	movlw	0x3a		;wait 50ms before writing
 	call	longwait	;("error" might be due to power loss)
 	bsf	STATUS, RP0
-	nop
 	clrw
 	movwf	EEADR
 	bsf	EECON1, RD
 	movf	EEDAT, w
 	bcf	STATUS, RP0
-	nop
 	movwf	0x4d
 	btfsc	0x4d, 0
 	goto	die_reg_6
@@ -726,7 +714,6 @@ die_reg_6
 	movlw	0x6	; died with NTSC, fall back to PAL
 die_reg_cont
 	bsf	STATUS, RP0
-	nop
 	movwf	EEDAT
 	bsf	EECON1, WREN
 
@@ -743,7 +730,6 @@ die_intloop
 	bsf	INTCON, GIE
 
 	bcf	STATUS, RP0
-	nop
 	bcf	GPIO, 4
 ; --------get caught up--------
 die_trap
@@ -751,11 +737,9 @@ die_trap
 ; -----------------------------------------------------------------------
 supercic_pairmode
 	bsf	STATUS, RP0
-	nop
 	bsf	TRISIO, 0
 	bsf	TRISIO, 1
 	bcf	STATUS, RP0
-	nop
 supercic_pairmode_loop
 	bsf	GPIO, 4
 	nop
@@ -764,6 +748,6 @@ supercic_pairmode_loop
 	goto	supercic_pairmode_loop
 
 ; eeprom memory
-DEEPROM	CODE
+ org __EEPROM_START
 	de      0x09	; D411 (NTSC)
-end
+ end
