@@ -123,6 +123,40 @@ void snes_reset(int state) {
 }
 
 /*
+ * provides a mini reset environment to speed reset for clock synchronization
+ *
+ * returns: upon loop exit returns the current non-reset related command
+ */
+uint8_t snes_reset_loop(void) {
+  uint8_t cmd = 0;
+  
+  while(fpga_test() == FPGA_TEST_TOKEN) {
+    cmd = snes_get_mcu_cmd();
+
+    if (cmd) {
+      printf("snes_reset_loop: cmd=%hhx\n", cmd);
+      
+      switch (cmd) {
+        case SNES_CMD_RESET_LOOP_FAIL:
+          snes_set_mcu_cmd(0);
+          cmd = 0;
+          snes_reset_pulse();
+          delay_us(SNES_RELEASE_RESET_DELAY_US);
+          break;
+        case SNES_CMD_RESET_LOOP_PASS:
+          snes_set_mcu_cmd(0);
+          cmd = 0;
+        default:
+          goto snes_reset_loop_out;
+      }
+    }
+  }
+
+snes_reset_loop_out:
+  return cmd;
+}
+
+/*
  * gets the SNES reset state.
  *
  * returns: 1 when reset, 0 when not reset

@@ -123,12 +123,14 @@ resethook: ; EMULATION MODE
   dey
   bmi +
   ; perform reset
-  lda #$80
+  lda #$85
   sta @MCU_CMD
 - bra -
   ; clean up state
 + dex
   stx $4207
+  lda #$86
+  sta @MCU_CMD
 
 resethook_loop:
 - lda $4212

@@ -179,6 +179,10 @@ int msu1_loop() {
     cmd = snes_get_mcu_cmd();
     if(cmd) {
       switch(cmd) {
+        case SNES_CMD_RESET_LOOP_FAIL:
+          msu_res = SNES_RESET_SHORT;
+          snes_reset_loop();
+          break;        
         case SNES_CMD_RESET:
           msu_res = SNES_RESET_SHORT;
           snes_reset_pulse();

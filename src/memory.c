@@ -413,8 +413,12 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
 // XXX    cheat_yaml_save(filename);
     cheat_program();
     fpga_set_features(romprops.fpga_features);
+    snes_set_mcu_cmd(0);
     snes_reset(0);
     fpga_dspx_reset(0);
+    
+    // handle reset loop from hook
+    snes_reset_loop();
   }
   
   // loading a new rom implies the previous checksum is no longer valid

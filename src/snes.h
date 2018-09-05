@@ -46,6 +46,8 @@
 #define SNES_CMD_ENABLE_CHEATS     (0x82)
 #define SNES_CMD_DISABLE_CHEATS    (0x83)
 #define SNES_CMD_KILL_NMIHOOK      (0x84)
+#define SNES_CMD_RESET_LOOP_FAIL   (0x85)
+#define SNES_CMD_RESET_LOOP_PASS   (0x86)
 #define SNES_CMD_GAMELOOP          (0xff)
 
 #define MCU_CMD_RDY                (0x55)
@@ -109,6 +111,7 @@ void snes_reset_pulse(void);
 void snes_reset(int state);
 uint8_t get_snes_reset(void);
 uint8_t get_snes_reset_state(void);
+uint8_t snes_reset_loop(void);
 uint8_t snes_main_loop(void);
 uint8_t menu_main_loop(void);
 void get_selected_name(uint8_t* lfn);

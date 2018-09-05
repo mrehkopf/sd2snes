@@ -366,10 +366,10 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           cmd=snes_main_loop();
           if(cmd) {
             switch(cmd) {
+              case SNES_CMD_RESET_LOOP_FAIL:
+                snes_reset_loop();
+                break;
               case SNES_CMD_RESET:
-                // TODO: add reset loop here to speedup reset cycling for proper clock alignment.
-                // A reset loop will also be needed when first entering the game loop from the menu to avoid long running tasks stalling it.
-                // Ideally, there would only be one code loop that does it and it will count failures to allow the loop to exit at some point.
                 snes_reset_pulse();
                 break;
               case SNES_CMD_RESET_TO_MENU:
