@@ -103,7 +103,6 @@ typedef struct __attribute__ ((__packed__)) _status {
 } status_t;
 
 uint8_t crc_valid;
-uint8_t sum_valid;
 
 void prepare_reset(void);
 void snes_init(void);

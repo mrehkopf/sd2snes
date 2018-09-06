@@ -54,7 +54,8 @@ char* hex = "0123456789ABCDEF";
 
 extern snes_romprops_t romprops;
 extern uint32_t saveram_crc_old;
-extern uint8_t sram_checksum_valid;
+extern uint8_t sram_crc_valid;
+extern uint32_t sram_crc_filesize;
 extern cfg_t CFG;
 extern status_t ST;
 
@@ -421,8 +422,9 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     snes_reset_loop();
   }
   
-  // loading a new rom implies the previous checksum is no longer valid
-  sram_checksum_valid = 0;
+  // loading a new rom implies the previous crc is no longer valid
+  sram_crc_valid = 0;
+  sram_crc_filesize = filesize;
 
   return (uint32_t)filesize;
 }
@@ -652,7 +654,6 @@ void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
   file_close();
 }
 
-
 uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
   uint8_t data;
   uint32_t count;
@@ -673,28 +674,6 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
   }
   FPGA_DESELECT();
   return crc;
-}
-
-uint16_t calc_sram_sum(uint32_t base_addr, uint32_t size) {
-  uint8_t data;
-  uint32_t count;
-  uint16_t sum;
-  sum=0;
-  sum_valid = 1;
-  set_mcu_addr(base_addr);
-  FPGA_SELECT();
-  FPGA_TX_BYTE(0x88);
-  for(count=0; count<size; count++) {
-    FPGA_WAIT_RDY();
-    data = FPGA_RX_BYTE();
-    if(get_snes_reset()) {
-      sum_valid = 0;
-      break;
-    }
-    sum += data;
-  }
-  FPGA_DESELECT();
-  return sum;
 }
 
 uint8_t sram_reliable() {

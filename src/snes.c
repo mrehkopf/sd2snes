@@ -43,7 +43,8 @@
 #include "cfg.h"
 
 uint32_t saveram_crc, saveram_crc_old;
-uint8_t sram_checksum_valid;
+uint8_t sram_crc_valid;
+uint32_t sram_crc_filesize;
 extern snes_romprops_t romprops;
 extern int snes_boot_configured;
 
@@ -60,26 +61,26 @@ status_t ST = {
   .has_satellaview = 0
 };
 
-typedef struct { uint16_t sum; uint32_t base; uint32_t size; } SramOffset;
+typedef struct { uint32_t crc; uint32_t base; uint32_t size; } SramOffset;
 const SramOffset SramOffsetTable[] = {
   // GSU
-  { 0x132C, 0x7c00, 0x0400, }, // yoshi's island (us)
-  { 0xE10B, 0x7c00, 0x0400, }, // yoshi's island (eu)
-  { 0x730E, 0x7c00, 0x0400, }, // yoshi's island (jp)
+  { 0x2444D698, 0x7c00, 0x0400, }, // yoshi's island (us)
+  { 0x8D93C19D, 0x7c00, 0x0400, }, // yoshi's island (eu)
+  { 0x2C75AB19, 0x7c00, 0x0400, }, // yoshi's island (jp)
   
   // SA1
-  { 0x3BB4, 0x0000, 0x2000, }, // super mario rpg (us)
-  { 0x4575, 0x0000, 0x2000, }, // super mario rpg (jp)
+  { 0x1D77C761, 0x0000, 0x2000, }, // super mario rpg (us)
+  { 0xC3FA1E20, 0x0000, 0x2000, }, // super mario rpg (jp)
   
-  { 0xC6AA, 0x1F00, 0x0100, }, // kirby super star (us)
-  { 0xAE40, 0x1F00, 0x0100, }, // kirby super star (eu)
-  { 0xF602, 0x1F00, 0x0100, }, // kirby super star (jp) rev2
+  { 0xAE7DC486, 0x1F00, 0x0100, }, // kirby super star (us)
+  { 0xB2193041, 0x1F00, 0x0100, }, // kirby super star (eu)
+  { 0xAE4986AF, 0x1F00, 0x0100, }, // kirby super star (jp)
 
-  { 0x247C, 0x5E00, 0x0200, }, // kirby's dreamland (us)
-  { 0x2233, 0x5E00, 0x0200, }, // kirby's dreamland (jp)
+  { 0xBFA3216C, 0x5E00, 0x0200, }, // kirby's dreamland (us)
+  { 0x1779D7B2, 0x5E00, 0x0200, }, // kirby's dreamland (jp)
 
-  { 0x36A6, 0x0100, 0x0C00, }, // marvelous (jp)
-  { 0x22EE, 0x0100, 0x0C00, }, // marvelous (us)
+  { 0x382E1F93, 0x0100, 0x0C00, }, // marvelous (jp)
+  { 0xEBBA38AD, 0x0100, 0x0C00, }, // marvelous 1.07 (us)
 };
 
 void prepare_reset() {
@@ -473,19 +474,22 @@ void status_save_from_menu() {
 }
 
 void recalculate_sram_range() {
+  // TODO: remove this check once we are sure there won't be any false positives.
   if (romprops.has_sa1 || romprops.has_gsu) {
-    if (!sram_checksum_valid && sram_valid) {
-      printf("calculating checksum: ");
-      uint16_t sum = calc_sram_sum(SRAM_ROM_ADDR + romprops.load_address, romprops.romsize_bytes);
-      printf("%04x\n", sum);
+    if (!sram_crc_valid && sram_valid) {
+      printf("calculating crc: ");
+      uint32_t crc = calc_sram_crc(SRAM_ROM_ADDR + romprops.load_address, sram_crc_filesize);
+      printf("%08lx\n", crc);
 
-      if (sum_valid) {
-        sram_checksum_valid = 1;      
+      if (crc_valid) {
+        sram_crc_valid = 1;      
       
         for (uint32_t i = 0; i < (sizeof(SramOffsetTable)/sizeof(SramOffset)); i++) {
-          if (sum == SramOffsetTable[i].sum) {
+          if (crc == SramOffsetTable[i].crc) {
             romprops.srambase       = SramOffsetTable[i].base;
             romprops.sramsize_bytes = SramOffsetTable[i].size;
+            printf("crc match: base=%lx size=%lx\n", romprops.srambase, romprops.sramsize_bytes);
+            break;
           }
         }
       }
