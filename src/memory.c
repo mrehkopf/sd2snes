@@ -55,7 +55,7 @@ char* hex = "0123456789ABCDEF";
 extern snes_romprops_t romprops;
 extern uint32_t saveram_crc_old;
 extern uint8_t sram_crc_valid;
-extern uint32_t sram_crc_filesize;
+extern uint32_t sram_crc_romsize;
 extern cfg_t CFG;
 extern status_t ST;
 
@@ -424,7 +424,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   
   // loading a new rom implies the previous crc is no longer valid
   sram_crc_valid = 0;
-  sram_crc_filesize = filesize;
+  sram_crc_romsize = filesize - romprops.offset;
 
   return (uint32_t)filesize;
 }

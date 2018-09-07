@@ -44,7 +44,7 @@
 
 uint32_t saveram_crc, saveram_crc_old;
 uint8_t sram_crc_valid;
-uint32_t sram_crc_filesize;
+uint32_t sram_crc_romsize;
 extern snes_romprops_t romprops;
 extern int snes_boot_configured;
 
@@ -61,6 +61,11 @@ status_t ST = {
   .has_satellaview = 0
 };
 
+// These rom hashes are all based on unheadered contents in sram.
+// Known conflicts with crc32 implementation.  Match count is always 2.
+// 0x06F5FCAD, 0x2DCCDC2F, 0x47AC91A5, 0x566A91FD
+// 0x61506060, 0x6D869DD1, 0x7B55EA0F, 0x81C1BA16
+// 0xD8841B4B, 0xDEFABA49, 0xE7E44192
 typedef struct { uint32_t crc; uint32_t base; uint32_t size; } SramOffset;
 const SramOffset SramOffsetTable[] = {
   // GSU
@@ -473,24 +478,33 @@ void status_save_from_menu() {
   sram_readblock(&ST, SRAM_STATUS_ADDR, sizeof(status_t));
 }
 
+// The goals of this function are the following:
+// - detect a small, fixed set of popular games where the save location is a known, strict subset of sram.
+//   this avoids switching to the periodic save to sd mode.
+// - revert to full sram save if there is any change in the rom.  this includes minor hacks that don't change save location.
+// - not support any user control beyond rom modification.
+//   user control is very error prone: bad crc when rom is modified, incorrect save region definition, etc.
+// - very limited rom hack coverage.  if the hack changes then it will no longer benefit without an updated crc.
+//
+// The full sram location is still loaded and saved.  The restricted bounds are only used to detect when to save.
 void recalculate_sram_range() {
-  // TODO: remove this check once we are sure there won't be any false positives.
-  if (romprops.has_sa1 || romprops.has_gsu) {
-    if (!sram_crc_valid && sram_valid) {
-      printf("calculating crc: ");
-      uint32_t crc = calc_sram_crc(SRAM_ROM_ADDR + romprops.load_address, sram_crc_filesize);
-      printf("%08lx\n", crc);
+  if (!sram_crc_valid && sram_valid) {
+    printf("calculating rom hash: ");
+    // there is a very small chance of collision.  there are several ways to avoid this:
+    // - incorporate (concatenate) checksum16 or other information
+    // - use a better hash function like sha-256
+    uint32_t crc = calc_sram_crc(SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
+    printf("%08lx\n", crc);
 
-      if (crc_valid) {
-        sram_crc_valid = 1;      
+    if (crc_valid) {
+      sram_crc_valid = 1;      
       
-        for (uint32_t i = 0; i < (sizeof(SramOffsetTable)/sizeof(SramOffset)); i++) {
-          if (crc == SramOffsetTable[i].crc) {
-            romprops.srambase       = SramOffsetTable[i].base;
-            romprops.sramsize_bytes = SramOffsetTable[i].size;
-            printf("crc match: base=%lx size=%lx\n", romprops.srambase, romprops.sramsize_bytes);
-            break;
-          }
+      for (uint32_t i = 0; i < (sizeof(SramOffsetTable)/sizeof(SramOffset)); i++) {
+        if (crc == SramOffsetTable[i].crc) {
+          romprops.srambase       = SramOffsetTable[i].base;
+          romprops.sramsize_bytes = SramOffsetTable[i].size;
+          printf("rom hash match: base=%lx size=%lx\n", romprops.srambase, romprops.sramsize_bytes);
+          break;
         }
       }
     }    
