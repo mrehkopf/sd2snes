@@ -70,6 +70,7 @@ typedef struct { uint32_t crc; uint32_t base; uint32_t size; } SramOffset;
 const SramOffset SramOffsetTable[] = {
   // GSU
   { 0x2444D698, 0x7c00, 0x0400, }, // yoshi's island (us)
+  { 0x2E00BB2F, 0x7c00, 0x0400, }, // yoshi's island (us) 1.1
   { 0x8D93C19D, 0x7c00, 0x0400, }, // yoshi's island (eu)
   { 0x2C75AB19, 0x7c00, 0x0400, }, // yoshi's island (jp)
   
