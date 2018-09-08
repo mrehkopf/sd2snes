@@ -122,7 +122,7 @@ module sa1(
 // [x] mac support for multiply
 // [_] full mdr support
 // [x] variable length data/fixed
-// [_] variable length data/auto
+// [x] variable length data/auto
 
 //-------------------------------------------------------------------
 // DEFINES
@@ -2117,8 +2117,9 @@ assign dma_mmc_cc1_mask = dma_cc1_imask_r;
 // auto  - write address, write control, [not currently supported]
 parameter
   ST_VBD_IDLE        = 8'b00000001,
-  ST_VBD_READ_END    = 8'b00000010,
-  ST_VBD_SHIFT       = 8'b00000100,
+  ST_VBD_READ        = 8'b00000010,
+  ST_VBD_READ_END    = 8'b00000100,
+  ST_VBD_SHIFT       = 8'b00001000,
   ST_VBD_ALL         = 8'b11111111;
   
 reg [7:0]  VBD_STATE; initial VBD_STATE = ST_VBD_IDLE;
@@ -2127,6 +2128,7 @@ reg [23:0] VBA_r; initial VBA_r = 0;
 reg [4:0]  vbd_temp;
 reg [3:0]  vbd_vbit_r; initial vbd_vbit_r = 0;
 reg        vbd_trigger_r; initial vbd_trigger_r = 0;
+reg        vbd_update_r; initial vbd_update_r = 0;
 reg [31:0] vbd_data_r;
 
 reg        vbd_active_r; initial vbd_active_r = 0;
@@ -2139,37 +2141,43 @@ always @(posedge CLK) begin
     VDP_r         <= 0;
     vbd_vbit_r    <= 0;
     vbd_trigger_r <= 0;
+    vbd_update_r  <= 0;
     vbd_active_r  <= 0;
     
     VBD_STATE <= ST_VBD_IDLE;
   end
   else begin    
     // watch for triggers
-    vbd_trigger_r <= VBD_r[`VBD_HL] ? (1'b0 && (snes_readbuf_val_r | sa1_readbuf_val_r) && snes_readbuf_mmio_addr_r[8:0] == ADDR_VDP+1) : (snes_writebuf_val_r && (snes_writebuf_addr_r[8:0] == ADDR_VDA+2 || snes_writebuf_addr_r[8:0] == ADDR_VBD));
+    // HL=0 trigger on VBA+2 and every VBD write.  HL=1 trigger on VDP+1 data read and every VBD write.
+    vbd_trigger_r <= (VBD_r[`VBD_HL] && sa1_mmio_read_r[1] && snes_readbuf_mmio_addr_r[8:0] == ADDR_VDP+1) || (snes_writebuf_val_r && ((~VBD_r[`VBD_HL] && snes_writebuf_addr_r[8:0] == ADDR_VDA+2) || snes_writebuf_addr_r[8:0] == ADDR_VBD));
+    // HL=0 update on VBD write.  needs to sync'ed with trigger to get new register value.  this is done by adding the extra READ stage.  HL=1 update on data written to VDP
+    vbd_update_r <= (snes_writebuf_val_r && snes_writebuf_addr_r[8:0] == ADDR_VBD && ~snes_writebuf_data_r[`VBD_HL]) || (VBD_STATE[clog2(ST_VBD_SHIFT)] && VBD_r[`VBD_HL]);
 
     case (VBD_STATE)
       ST_VBD_IDLE: begin
-        if (snes_writebuf_val_r) begin
+        if (vbd_update_r) begin
+          vbd_temp = {1'b0,vbd_vbit_r} + {~|VBD_r[`VBD_VB],VBD_r[`VBD_VB]};
+
+          vbd_vbit_r <= vbd_temp[3:0];
+          VDA_r <= VDA_r[23:0] + {vbd_temp[4],1'b0};
+        end
+        else if (snes_writebuf_val_r) begin
           if      (snes_writebuf_addr_r[8:0] == ADDR_VDA+0) VDA_r[7 : 0] <= snes_writebuf_data_r;
           else if (snes_writebuf_addr_r[8:0] == ADDR_VDA+1) VDA_r[15: 8] <= snes_writebuf_data_r;
           else if (snes_writebuf_addr_r[8:0] == ADDR_VDA+2) begin VDA_r[23:16] <= snes_writebuf_data_r; vbd_vbit_r <= 0; end
-          else if (snes_writebuf_addr_r[8:0] == ADDR_VBD  ) begin
-            if (~snes_writebuf_data_r[`VBD_HL]) begin
-              vbd_temp = {1'b0,vbd_vbit_r} + {~|snes_writebuf_data_r[`VBD_VB],snes_writebuf_data_r[`VBD_VB]};
-          
-              vbd_vbit_r <= vbd_temp[3:0];
-              VDA_r <= VDA_r[23:0] + {vbd_temp[4],1'b0};
-            end
-          end
         end
-        else if (vbd_trigger_r) begin
-          vbd_mmc_rd_r   <= 1;
-          vbd_mmc_addr_r <= VDA_r;
-          
+        
+        if (vbd_trigger_r) begin
           vbd_active_r <= 1;
         
-          VBD_STATE <= ST_VBD_READ_END;
+          VBD_STATE <= ST_VBD_READ;
         end
+      end
+      ST_VBD_READ: begin
+        vbd_mmc_rd_r   <= 1;
+        vbd_mmc_addr_r <= VDA_r;
+        
+        VBD_STATE <= ST_VBD_READ_END;
       end
       ST_VBD_READ_END: begin
         if (MMC_STATE[clog2(ST_MMC_VBD_END)]) begin
