@@ -32,7 +32,8 @@ cfg_t CFG_DEFAULT = {
   .brightness_limit = 15,
   .gsu_speed = 0,
   .reset_to_menu = 0,
-  .led_brightness = 15
+  .led_brightness = 15,
+  .reset_patch = 0,
 };
 
 cfg_t CFG;
@@ -72,6 +73,7 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_INGAME_HOOK, CFG.enable_ingame_hook ? "true" : "false");
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_INGAME_BUTTONS, CFG.enable_ingame_buttons ? "true" : "false");
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_HOOK_HOLDOFF, CFG.enable_hook_holdoff ? "true" : "false");
+  f_printf(&file_handle, "%s: %s\n", CFG_RESET_PATCH, CFG.reset_patch ? "true" : "false");
   f_puts("\n# Screensaver settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Enable screensaver\n", CFG_ENABLE_SCREENSAVER);
 //  f_printf(&file_handle, "#  %s: Dim screen after n seconds\n", CFG_SCREENSAVER_TIMEOUT);
@@ -169,6 +171,9 @@ int cfg_load() {
     }
     if(yaml_get_itemvalue(CFG_ENABLE_CHEATS, &tok)) {
       CFG.enable_cheats = tok.boolvalue ? 1 : 0;
+    }
+    if(yaml_get_itemvalue(CFG_RESET_PATCH, &tok)) {
+      CFG.reset_patch = tok.boolvalue ? 1 : 0;
     }
   }
   yaml_file_close();

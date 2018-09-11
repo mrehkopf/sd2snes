@@ -216,7 +216,7 @@ wire SNES_PAWR = SNES_PAWRr[2] & SNES_PAWRr[1];
 
 wire SNES_ROMSEL = (SNES_ROMSELr[5] & SNES_ROMSELr[4]);
 wire [23:0] SNES_ADDR = SNES_ADDRr[0]; //(SNES_ADDRr[6] & SNES_ADDRr[5]);
-wire [23:0] SNES_ADDR_early = SNES_ADDRr[0];
+//wire [23:0] SNES_ADDR_early = SNES_ADDRr[0];
 wire [7:0] SNES_PA = SNES_PAr[0]; //(SNES_PAr[6] & SNES_PAr[5]);
 wire [7:0] SNES_DATA_IN = (SNES_DATAr[3] & SNES_DATAr[2]);
 
@@ -232,13 +232,12 @@ wire IS_ROM;
 assign DCM_RST=0;
 wire IS_SAVERAM;
 
-//wire free_slot = SNES_cycle_end | free_strobe;
+//wire mcu_free_slot = SNES_cycle_end | free_strobe;
 wire free_slot = SNES_cycle_end | ~IS_ROM;
 
 // TODO: Provide full bandwidth if snes is not accessing the bus.
 reg [7:0] SNES_cycle_end_delay;
 always @(posedge CLK2) begin
-  //if (SNES_cycle_end_early) free_strobe <= ~ROM_HIT; // next address available now
   if (SNES_cycle_start) free_strobe <= ~ROM_HIT;
   else if (SNES_cycle_end) free_strobe <= 1'b0;
   else free_strobe <= 1'b0;
@@ -286,7 +285,7 @@ parameter ST_SA1_RAM_RD_END  = 11'b00100000000;
 parameter ST_SA1_RAM_WR_ADDR = 11'b01000000000;
 parameter ST_SA1_RAM_WR_END  = 11'b10000000000;
 
-parameter SNES_DEAD_TIMEOUT = 17'd96000; // 1ms  // FIXME: this and some other constant times should be adjusted for new clock rate.
+parameter SNES_DEAD_TIMEOUT = 17'd85714; // 1ms
 
 parameter ROM_CYCLE_LEN = 4'd7; // Increased from 6 due to tight timing on some sd2snes.  Two pics from boards with errors had a Micron chip with 0LA41/PW510.  Same build lot.
 
@@ -649,7 +648,7 @@ address snes_addr(
   .CLK(CLK2),
   .MAPPER(MAPPER),
   .featurebits(featurebits),
-  .SNES_ADDR(SNES_ADDR_early), // requested address from SNES
+  .SNES_ADDR(SNES_ADDR), // requested address from SNES
   .SNES_PA(SNES_PA),
   .SNES_ROMSEL(SNES_ROMSEL),
   .ROM_ADDR(MAPPED_SNES_ADDR),   // Address to request from SRAM (active low)

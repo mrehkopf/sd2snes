@@ -69,6 +69,7 @@
 #define SNESCMD_MCU_CMD              (0x2a00)
 #define SNESCMD_SNES_CMD             (0x2a02)
 #define SNESCMD_MCU_PARAM            (0x2a04)
+#define SNESCMD_RESET_HOOK           (0x2a6b)
 #define SNESCMD_NMI_RESET            (0x2ba0)
 #define SNESCMD_NMI_RESET_TO_MENU    (0x2ba2)
 #define SNESCMD_NMI_ENABLE_CHEATS    (0x2ba4)

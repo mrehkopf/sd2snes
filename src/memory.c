@@ -410,6 +410,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       delay_ms(SNES_RESET_PULSELEN_MS);
     }
     snescmd_prepare_nmihook();
+    if (CFG.reset_patch) snescmd_writebyte(0, SNESCMD_RESET_HOOK+1);
     cheat_yaml_load(filename);
 // XXX    cheat_yaml_save(filename);
     cheat_program();
