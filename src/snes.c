@@ -490,7 +490,10 @@ void status_save_from_menu() {
 // The full sram location is still loaded and saved.  The restricted bounds are only used to detect when to save.
 void recalculate_sram_range() {
   if (!sram_crc_valid && sram_valid) {
-    printf("calculating rom hash: ");
+    // insert arbitrary delay to avoid startup problem in some games
+    delay_ms(2000);
+    
+    printf("calculating rom hash (base=%06lx, size=%ld): ", SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
     // there is a very small chance of collision.  there are several ways to avoid this:
     // - incorporate (concatenate) checksum16 or other information
     // - use a better hash function like sha-256
