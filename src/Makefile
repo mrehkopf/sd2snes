@@ -61,7 +61,7 @@ SRC += memory.c filetypes.c faulthandler.c sort.c crc32.c cic.c
 SRC += cli.c xmodem.c irq.c rle.c sdnative.c msu1.c crc16.c sysinfo.c
 SRC += cfg.c cheat.c yaml.c
 
-#SRC += usbdesc.c usbcore.c usbuser.c usbhw.c cdcuser.c
+SRC += usbdesc.c usbcore.c usbuser.c usbhw.c cdcuser.c usbinterface.c
 
 # usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
 
@@ -172,7 +172,6 @@ LDFLAGS += -Wl,--gc-sections
 ifeq ($(CONFIG_LINKER_RELAX),y)
   LDFLAGS += -Wl,-O9,--relax
 endif
-
 
 #============================================================================
 

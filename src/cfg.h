@@ -28,6 +28,9 @@
 #define CFG_1CHIP_TRANSIENT_FIXES ("1CHIPTransientFixes")
 #define CFG_BRIGHTNESS_LIMIT      ("BrightnessLimit")
 #define CFG_ENABLE_RST_TO_MENU    ("ShortReset2Menu")
+#define CFG_LED_BRIGHTNESS        ("LEDBrightness")
+#define CFG_ENABLE_CHEATS         ("EnableCheats")
+#define CFG_RESET_PATCH           ("ResetPatch")
 
 typedef enum {
   VIDMODE_60 = 0,
@@ -57,6 +60,9 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t  brightness_limit;        /* limit brightness set by register 2100 */
   uint8_t  gsu_speed;               /* GSU speed (0: original, 1: no waitstates */
   uint8_t  reset_to_menu;           /* Go back to menu on short reset */
+  uint8_t  led_brightness;          /* LED brightness (0..15) */
+  uint8_t  enable_cheats;           /* initial cheat enable state */
+  uint8_t  reset_patch;             /* enable reset patch */
 } cfg_t;
 
 int cfg_save(void);

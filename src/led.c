@@ -6,13 +6,19 @@
 #include "led.h"
 #include "cli.h"
 #include "fileops.h"
+#include "cfg.h"
 
-static uint8_t led_bright[16]={255,253,252,251,249,247,244,239,232,223,210,191,165,127,74,0};
+static uint16_t led_bright[16]={60000, 59920, 59871, 59794,
+                                59669, 59469, 59148, 58633,
+                                57806, 56481, 54354, 50942,
+                                45469, 36688, 22601,     0};
 
 int led_rdyledstate = 0;
 int led_readledstate = 0;
 int led_writeledstate = 0;
 int led_pwmstate = 0;
+
+extern cfg_t CFG;
 
 /* LED connections (Rev.C)
 
@@ -25,7 +31,7 @@ int led_pwmstate = 0;
 
 void rdyled(unsigned int state) {
   if(led_pwmstate) {
-    rdybright(state?15:0);
+    rdybright(state ? CFG.led_brightness : 0);
   } else {
     BITBAND(LPC_GPIO2->FIODIR, 4) = state;
   }
@@ -34,7 +40,7 @@ void rdyled(unsigned int state) {
 
 void readled(unsigned int state) {
   if(led_pwmstate) {
-    readbright(state?15:0);
+    readbright(state ? CFG.led_brightness : 0);
   } else {
     BITBAND(LPC_GPIO2->FIODIR, 5) = state;
   }
@@ -43,7 +49,7 @@ void readled(unsigned int state) {
 
 void writeled(unsigned int state) {
   if(led_pwmstate) {
-    writebright(state?15:0);
+    writebright(state ? CFG.led_brightness : 0);
   } else {
     BITBAND(LPC_GPIO1->FIODIR, 23) = state;
   }
@@ -141,7 +147,8 @@ void led_init() {
 /* set PCLK divider to 8 */
   BITBAND(LPC_SC->PCLKSEL0, 13) = 1;
   BITBAND(LPC_SC->PCLKSEL0, 12) = 1;
-  LPC_PWM1->MR0 = 255;
+/* PWM rate 200Hz -> 60000 counts */
+  LPC_PWM1->MR0 = 60000;
   BITBAND(LPC_PWM1->LER, 0) = 1;
   BITBAND(LPC_PWM1->TCR, 0) = 1;
   BITBAND(LPC_PWM1->TCR, 3) = 1;
@@ -184,4 +191,11 @@ void led_error() {
     }
     framecount++;
   }
+}
+
+void led_set_brightness(uint8_t bright) {
+  rdybright(led_rdyledstate ? bright : 0);
+  readbright(led_readledstate ? bright : 0);
+  writebright(led_writeledstate ? bright : 0);
+  CFG.led_brightness = bright;
 }

@@ -29,6 +29,13 @@
 #include "sysinfo.h"
 #include "cfg.h"
 
+//usb
+#include "usb.h"
+#include "usbhw.h"
+#include "cdcuser.h"
+#include "usbinterface.h"
+
+
 #define EMC0TOGGLE        (3<<4)
 #define MR0R              (1<<1)
 
@@ -93,11 +100,18 @@ int main(void) {
   fpga_spi_init();
   spi_preinit();
   led_init();
+  // USB initialization
+  USB_Init ();
+  CDC_Init (0x00);
  /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
   LPC_PINCON->PINSEL0 |= BV(20) | BV(21);                  /* MAT3.0 (FPGA clock) */
   led_std();
   sdn_init();
+  
+  //usb
+  USB_Connect (0x01);
+  
   printf("\n\nsd2snes mk.2\n============\nfw ver.: " CONFIG_VERSION "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
 printf("PCONP=%lx\n", LPC_SC->PCONP);
 
@@ -143,6 +157,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       file_close();
     }
 //    snes_bootprint("           Loading ...          \0");
+    led_pwm();
     rdyled(1);
     readled(0);
     writeled(0);
@@ -155,6 +170,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     }
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
     cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
+    led_set_brightness(CFG.led_brightness);
 
     /* load menu */
     sram_writelong(0x12345678, SRAM_SCRATCHPAD);
@@ -308,6 +324,11 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           cfg_save();
           cmd=0; /* stay in menu loop */
           break;
+        case SNES_CMD_LED_BRIGHTNESS:
+          cfg_get_from_menu();
+          led_set_brightness(CFG.led_brightness);
+          cmd=0;
+          break;
         case SNES_CMD_LOAD_CHT:
           /* load cheats */
           cmd=0; /* stay in menu loop */
@@ -337,11 +358,20 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 
     cmd=0;
     int loop_ticks = getticks();
+	uint8_t usb_cmd = 0;
 // uint8_t snes_res;
     while(fpga_test() == FPGA_TEST_TOKEN) {
       cli_entrycheck();
+      //usb upload/boot/lock  
+      usb_cmd |= usbint_handler();
+	  if (usb_cmd == SNES_CMD_GAMELOOP) usb_cmd = 0;
+
 //        sleep_ms(250);
       sram_reliable();
+      
+      // loop if we are in the middle of a reset
+      if (usbint_server_reset()) continue;
+      
       if(reset_changed) {
         printf("reset\n");
         reset_changed = 0;
@@ -357,12 +387,20 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
  //         sram_reliable();
           printf("%s ", get_cic_statename(get_cic_state()));
           cmd=snes_main_loop();
+		  if (usb_cmd && !cmd) cmd = usb_cmd;
           if(cmd) {
+            printf("snes loop cmd=%d\n", cmd);
             switch(cmd) {
+              case SNES_CMD_RESET_LOOP_FAIL:
+			    usb_cmd = 0;
+                snes_reset_loop();
+                break;
               case SNES_CMD_RESET:
+			    usb_cmd = 0;
                 snes_reset_pulse();
                 break;
               case SNES_CMD_RESET_TO_MENU:
+			    usb_cmd = 0;
                 prepare_reset();
                 goto snes_loop_out;
               default:

@@ -151,6 +151,7 @@ void fpga_pgm(uint8_t* filename) {
     printf("FPGA failed to configure after %d tries.\n", MAXRETRIES);
     led_panic(LED_PANIC_FPGA_NOCONF);
   }
+  
   printf("FPGA configured\n");
   fpga_config = filename;
   fpga_postinit();

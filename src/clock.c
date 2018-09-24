@@ -55,7 +55,7 @@ void clock_init() {
 /* configure PLL1 for USB operation */
   disconnectPLL1();
   disablePLL1();
-  LPC_SC->PLL1CFG = 0x23;
+  setPLL1MultPrediv(36, 1);
   enablePLL1();
   connectPLL1();
 

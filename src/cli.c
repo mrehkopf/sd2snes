@@ -437,7 +437,7 @@ void cmd_cheat(void) {
 void cmd_test(void) {
   int i;
   uint8_t databuf[512];
-  fpga_set_snescmd_addr(0);
+  fpga_set_snescmd_addr(SNESCMD_MCU_CMD);
   for(i=0; i<512; i++) {
     databuf[i]=fpga_read_snescmd();
   }

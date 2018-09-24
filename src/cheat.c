@@ -55,7 +55,7 @@ void cheat_program() {
   snescmd_writebyte(wram_index, SNESCMD_NMI_WRAM_PATCH_COUNT);
   printf("enable mask=%02x\n", enable_mask);
   fpga_write_cheat(6, enable_mask);
-  cheat_enable(1);
+  cheat_enable(CFG.enable_cheats);
   //cheat_nmi_enable(romprops.has_gsu ? 0 : CFG.enable_irq_hook);
   cheat_nmi_enable(CFG.enable_ingame_hook);
   //cheat_irq_enable(romprops.has_gsu ? 0 : CFG.enable_irq_hook);

@@ -179,6 +179,10 @@ int msu1_loop() {
     cmd = snes_get_mcu_cmd();
     if(cmd) {
       switch(cmd) {
+        case SNES_CMD_RESET_LOOP_FAIL:
+          msu_res = SNES_RESET_SHORT;
+          snes_reset_loop();
+          break;        
         case SNES_CMD_RESET:
           msu_res = SNES_RESET_SHORT;
           snes_reset_pulse();
@@ -309,4 +313,93 @@ int msu1_loop() {
   }
   DBG_MSU1 printf("game\n");
   return 0;
+}
+
+uint8_t msu_readbyte(uint16_t addr) {
+  set_msu_addr(addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF5); /* READ */
+  //FPGA_WAIT_RDY();
+  uint8_t val = FPGA_RX_BYTE();
+  FPGA_DESELECT();
+  return val;
+}
+
+uint16_t msu_readshort(uint16_t addr) {
+  set_msu_addr(addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF5);
+  //FPGA_WAIT_RDY();
+  uint32_t val = FPGA_RX_BYTE();
+  //FPGA_WAIT_RDY();
+  val |= ((uint32_t)FPGA_RX_BYTE()<<8);
+  FPGA_DESELECT();
+  return val;
+}
+
+uint32_t msu_readlong(uint16_t addr) {
+  set_msu_addr(addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF5);
+  //FPGA_WAIT_RDY();
+  uint32_t val = FPGA_RX_BYTE();
+  //FPGA_WAIT_RDY();
+  val |= ((uint32_t)FPGA_RX_BYTE()<<8);
+  //FPGA_WAIT_RDY();
+  val |= ((uint32_t)FPGA_RX_BYTE()<<16);
+  //FPGA_WAIT_RDY();
+  val |= ((uint32_t)FPGA_RX_BYTE()<<24);
+  FPGA_DESELECT();
+  return val;
+}
+
+void msu_readlongblock(uint32_t* buf, uint16_t addr, uint16_t count) {
+  set_msu_addr(addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF5);
+  uint16_t i=0;
+  while(i<count) {
+    //FPGA_WAIT_RDY();
+    uint32_t val = (uint32_t)FPGA_RX_BYTE()<<24;
+    //FPGA_WAIT_RDY();
+    val |= ((uint32_t)FPGA_RX_BYTE()<<16);
+    //FPGA_WAIT_RDY();
+    val |= ((uint32_t)FPGA_RX_BYTE()<<8);
+    //FPGA_WAIT_RDY();
+    val |= FPGA_RX_BYTE();
+    buf[i++] = val;
+  }
+  FPGA_DESELECT();
+}
+
+uint16_t msu_readblock(void* buf, uint16_t addr, uint16_t size) {
+  uint16_t count=size;
+  uint8_t* tgt = buf;
+  set_msu_addr(addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF5);   /* READ */
+  while(count--) {
+    //FPGA_WAIT_RDY();
+    *(tgt++) = FPGA_RX_BYTE();
+  }
+  FPGA_DESELECT();
+  return size;
+}
+
+uint16_t msu_readstrn(void* buf, uint16_t addr, uint16_t size) {
+  uint16_t elemcount = 0;
+  uint16_t count = size;
+  uint8_t* tgt = buf;
+  set_msu_addr(addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF5);   /* READ */
+  while(count--) {
+    //FPGA_WAIT_RDY();
+    if(!(*(tgt++) = FPGA_RX_BYTE())) break;
+    elemcount++;
+  }
+  tgt--;
+  if(*tgt) *tgt = 0;
+  FPGA_DESELECT();
+  return elemcount;
 }

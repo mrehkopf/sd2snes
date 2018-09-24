@@ -84,10 +84,11 @@ typedef struct __attribute__ ((__packed__)) _snes_romprops {
   uint8_t has_cx4;            /* CX4 presence flag */
   uint8_t has_obc1;           /* OBC1 presence flag */
   uint8_t has_gsu;            /* GSU presence flag */
-  uint8_t has_gsu_sram;       /* GSU saveram presence flag */
   uint8_t has_sa1;            /* SA-1 presence flag */
   uint8_t has_sdd1;           /* S-DD1 presence flag */
   uint8_t has_spc7110;        /* SPC7110 presence flag */
+  uint32_t srambase;          /* saveram base address */
+  uint32_t sramsize_bytes;    /* saveram size in bytes */
   uint16_t fpga_features;     /* feature/peripheral enable bits */
   uint16_t fpga_dspfeat;      /* DSP configuration bits */
   uint8_t region;             /* game region (derived from destination code) */

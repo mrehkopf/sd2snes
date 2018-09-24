@@ -40,11 +40,14 @@
 #define SNES_CMD_LOAD_CHT          (0x0c)
 #define SNES_CMD_SAVE_CHT          (0x0d)
 #define SNES_CMD_SAVE_CFG          (0x0e)
+#define SNES_CMD_LED_BRIGHTNESS    (0x12)
 #define SNES_CMD_RESET             (0x80)
 #define SNES_CMD_RESET_TO_MENU     (0x81)
 #define SNES_CMD_ENABLE_CHEATS     (0x82)
 #define SNES_CMD_DISABLE_CHEATS    (0x83)
 #define SNES_CMD_KILL_NMIHOOK      (0x84)
+#define SNES_CMD_RESET_LOOP_FAIL   (0x85)
+#define SNES_CMD_RESET_LOOP_PASS   (0x86)
 #define SNES_CMD_GAMELOOP          (0xff)
 
 #define MCU_CMD_RDY                (0x55)
@@ -66,6 +69,7 @@
 #define SNESCMD_MCU_CMD              (0x2a00)
 #define SNESCMD_SNES_CMD             (0x2a02)
 #define SNESCMD_MCU_PARAM            (0x2a04)
+#define SNESCMD_RESET_HOOK           (0x2a6b)
 #define SNESCMD_NMI_RESET            (0x2ba0)
 #define SNESCMD_NMI_RESET_TO_MENU    (0x2ba2)
 #define SNESCMD_NMI_ENABLE_CHEATS    (0x2ba4)
@@ -75,7 +79,8 @@
 #define SNESCMD_NMI_ENABLE_BUTTONS   (0x2bfc)
 #define SNESCMD_NMI_DISABLE_WRAM     (0x2bfe)
 #define SNESCMD_NMI_WRAM_PATCH_COUNT (0x2bff)
-#define SNESCMD_WRAM_CHEATS          (0x2a90)
+#define SNESCMD_WRAM_CHEATS          (0x2b00)
+#define SNESCMD_EXE                  (0x2c00)
 
 #define ASM_LDA_IMM      (0xa9)
 #define ASM_STA_ABSLONG  (0x8f)
@@ -96,6 +101,7 @@ typedef struct __attribute__ ((__packed__)) _status {
   uint8_t is_u16;
   uint8_t u16_cfg;
   uint8_t pairmode;
+  uint8_t has_satellaview;
 } status_t;
 
 uint8_t crc_valid;
@@ -106,6 +112,7 @@ void snes_reset_pulse(void);
 void snes_reset(int state);
 uint8_t get_snes_reset(void);
 uint8_t get_snes_reset_state(void);
+uint8_t snes_reset_loop(void);
 uint8_t snes_main_loop(void);
 uint8_t menu_main_loop(void);
 void get_selected_name(uint8_t* lfn);
@@ -120,14 +127,16 @@ void echo_mcu_cmd(void);
 uint32_t snes_get_mcu_param(void);
 void snescmd_writeshort(uint16_t val, uint16_t addr);
 void snescmd_writebyte(uint8_t val, uint16_t addr);
-void snescmd_writeblock(void *buf, uint16_t addr, uint16_t size);
+uint16_t snescmd_writeblock(void *buf, uint16_t addr, uint16_t size);
 uint16_t snescmd_readshort(uint16_t addr);
 uint8_t snescmd_readbyte(uint16_t addr);
 uint32_t snescmd_readlong(uint16_t addr);
+uint16_t snescmd_readblock(void *buf, uint16_t addr, uint16_t size);
 uint64_t snescmd_gettime(void);
 uint16_t snescmd_readstrn(void *buf, uint16_t addr, uint16_t size);
 void snescmd_prepare_nmihook(void);
 void snes_get_filepath(uint8_t *buffer, uint16_t length);
 void status_load_to_menu(void);
 void status_save_from_menu(void);
+void recalculate_sram_range(void);
 #endif

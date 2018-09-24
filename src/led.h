@@ -24,4 +24,5 @@ void led_pwm(void);
 void led_std(void);
 void led_init(void);
 void led_error(void);
+void led_set_brightness(uint8_t bright);
 #endif

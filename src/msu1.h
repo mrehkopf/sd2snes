@@ -40,4 +40,11 @@
 int msu1_check(uint8_t*);
 int msu1_loop(void);
 
+uint8_t msu_readbyte(uint16_t addr);
+uint16_t msu_readshort(uint16_t addr);
+uint32_t msu_readlong(uint16_t addr);
+uint16_t msu_readblock(void* buf, uint16_t addr, uint16_t size);
+uint16_t msu_readstrn(void* buf, uint16_t addr, uint16_t size);
+void msu_readlongblock(uint32_t* buf, uint16_t addr, uint16_t count);
+	
 #endif

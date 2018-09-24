@@ -47,6 +47,7 @@
 #define FPGA_TX_BLOCK(x,y) spi_tx_block(x,y)
 #define FPGA_RX_BLOCK(x,y) spi_rx_block(x,y)
 
+#define FEAT_SATELLABASE   (1 << 12)
 #define FEAT_2100_LIMIT(x) ((x & 15) << 7)
 #define FEAT_2100_LIMIT_NONE FEAT_2100_LIMIT(15)
 #define FEAT_2100          (1 << 6)
@@ -99,6 +100,11 @@
 #define FPGA_CMD_GETSTATUS       (0xf1)
 #define FPGA_CMD_MSUGETADDR      (0xf2)
 #define FPGA_CMD_MSUGETTRACK     (0xf3)
+#define FPGA_CMD_MSUGETVOLUME    (0xf4)
+#define FPGA_CMD_MSUREAD         (0xf5)
+#define FPGA_CMD_MSUGETSCADDR    (0xf6)
+#define FPGA_CMD_CONFIG_READ     (0xf9)
+#define FPGA_CMD_CONFIG_WRITE    (0xfa)
 #define FPGA_CMD_GETSYSCLK       (0xfe)
 #define FPGA_CMD_ECHO            (0xff)
 
@@ -119,6 +125,7 @@ void set_mapper(uint8_t val);
 void fpga_sddma(uint8_t tgt, uint8_t partial);
 void fpga_set_sddma_range(uint16_t start, uint16_t end);
 uint16_t get_msu_track(void);
+uint32_t get_msu_pointer(void);
 uint32_t get_msu_offset(void);
 uint32_t get_snes_sysclk(void);
 void set_bsx_regs(uint8_t set, uint8_t reset);
@@ -136,4 +143,6 @@ void fpga_write_snescmd(uint8_t data);
 uint8_t fpga_read_snescmd(void);
 void fpga_write_cheat(uint8_t index, uint32_t code);
 void fpga_set_dspfeat(uint16_t feat);
+uint8_t fpga_read_config(uint8_t group, uint8_t index);
+void fpga_write_config(uint8_t group, uint8_t index, uint8_t value, uint8_t invmask);
 #endif
