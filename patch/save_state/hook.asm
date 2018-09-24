@@ -5,10 +5,9 @@ hook:
   php : %ai16() : pha
   lda.l $004218 ; need to access buttons as soon as possible
   sta.l $FC2006
-  phx : phy
   jmp.l !SS_CODE
 hook_return:
-  %ai16() : ply : plx : pla : plp
+  %ai16() : pla : plp
   jmp ($FFEA)
   
 print "Hook Bank Ending at: ", pc

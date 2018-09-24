@@ -111,7 +111,7 @@ start:
 
   %a8()
   ; consume current NMI
-  lda.l $4210
+  lda.l $004210
   
   ; align back with the NMI
   lda !SRAM_OTH_BANK
@@ -164,9 +164,10 @@ start:
 ; SMC (Self Modifying Code) to init on first pass
 .ss_init
   %ai16()
+  %save_registers()
 
   lda #.ss_start
-  sta start+1
+  sta.l start+1
 
   %a8()
   ; save/load state machine
@@ -211,6 +212,7 @@ start:
 .button_reg_done
   lda #$0000
   sta.l .CS_SAVE_REQ
+  %load_registers()
   
 .ss_start
   %a8()  
@@ -227,8 +229,8 @@ start:
   
   ; remove aligned NMI state from the stack.  this is pushed in hook.asm
   ; the fpga needs to be careful and not treat the nested NMI as an exit.
-  ; y, x, a
-  %a16() : pla : pla : pla
+  ; a
+  %a16() : pla
   ; p
   %a8() : pla
 
@@ -265,10 +267,12 @@ start:
   ; check programmable trigger
 + lda.l .CS_SAVE_REQ ; loads both
   beq .save_state_jump_exit
+  phx
   tax
   lda #$0000
   sta.l .CS_SAVE_REQ
   txa
+  plx
   and #$00FF
   bne .save_state
   jmp .load_state

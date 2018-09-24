@@ -191,6 +191,7 @@ reg loop_enable = 0;
 reg [7:0] loop_data = 8'h80; // BRA
 // exe region
 reg exe_present; initial exe_present = 0;
+wire map_unlock;
 
 reg SNES_SNOOPRD_DATA_OE;
 reg SNES_SNOOPWR_DATA_OE;
@@ -758,6 +759,7 @@ cheat snes_cheat(
   .pgm_idx(cheat_pgm_idx),
   .pgm_we(cheat_pgm_we),
   .pgm_in(cheat_pgm_data),
+  .feat_cmd_unlock_in(feat_cmd_unlock),
   .data_out(cheat_data_out),
   .cheat_hit(cheat_hit),
   .snescmd_unlock(snescmd_unlock),
