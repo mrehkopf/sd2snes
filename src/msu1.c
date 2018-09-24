@@ -11,6 +11,7 @@
 #include "snes.h"
 #include "timer.h"
 #include "smc.h"
+#include "usbinterface.h"
 
 FIL msufile;
 FRESULT msu_res;
@@ -197,6 +198,8 @@ int msu1_loop() {
       snes_set_mcu_cmd(0);
     }
     cli_entrycheck();
+    if (!cmd) { cmd = usbint_handler(); }
+
     fpga_status_now = fpga_status();
 
     /* ACK as fast as possible */
