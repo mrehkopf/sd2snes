@@ -138,8 +138,8 @@ reg [15:0] APU_ADDR;
 initial APU_ADDR = 0;
 reg [2:0] APU_STATE;
 initial APU_STATE = 0;
-reg IS_APU_RAM_r;
-reg IS_APU_PORT_r;
+reg IS_APU_RAM_r; initial IS_APU_RAM_r = 0;
+reg IS_APU_PORT_r; initial IS_APU_PORT_r = 0;
 
 wire [7:0] APU_STATUS_COMPARE_PRE = (r214x[0] + 1) - SNES_DATA_IN;
 wire [7:0] APU_SNES_PA_PRE = ({SNES_PA[7:6],4'b0000,SNES_PA[1:0]});
@@ -179,6 +179,9 @@ always @(posedge clkin) begin
 	  r214x[1] <= 0;
 	  r214x[2] <= 0;
 	  r214x[3] <= 0;
+    
+    IS_APU_RAM_r <= 0;
+    IS_APU_PORT_r <= 0;
   end
   else begin
     IS_APU_RAM_r <= IS_APU_RAM;
@@ -559,7 +562,7 @@ wire [7:0] DATA_SINGLE_IN = IS_CPUREG_READ ? r421x[SNES_ADDR[3:0]] : IS_APU_RAM_
 
 always @(posedge clkin) begin
   if (IS_WRITE) begin
-	 // this is only asserted once as the main code flops it
+	  // this is only asserted once as the main code flops it
     REQ <= 1;
     ADDR[23:0] <= SRAM_SNES_ADDR[23:0];
     // The following handles double writes.  This approximates the data value used to assign
@@ -568,13 +571,13 @@ always @(posedge clkin) begin
     DATA[15:0] <= { DATA_SINGLE_IN, (IS_BG_DOUBLE ? rBG : IS_M7_DOUBLE ? rM7 : DATA_SINGLE_IN) };
     WORD <= IS_WORD;
   end
-  else if (REQ && BUS_RDY) begin
+  else begin
     REQ <= 0;
   end
 end
 
 // assign outputs
-assign BUS_WRQ = REQ && BUS_RDY;
+assign BUS_WRQ = REQ & BUS_RDY;
 assign ROM_ADDR[23:0] = ADDR[23:0];
 assign ROM_DATA[15:0] = DATA[15:0];
 assign ROM_WORD_ENABLE = WORD;

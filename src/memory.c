@@ -463,8 +463,6 @@ void init(uint8_t *filename) {
   cheat_program();
   fpga_set_features(romprops.fpga_features);
   snes_set_mcu_cmd(0);
-  snes_reset(0);
-  fpga_dspx_reset(0);
   // init save state region - VRAM, APURAM, CGRAM, OAM only
   sram_writeset(0x0, 0xF70000, 0x30000);
 }
