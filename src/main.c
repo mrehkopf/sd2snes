@@ -358,13 +358,13 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 
     cmd=0;
     int loop_ticks = getticks();
-	uint8_t usb_cmd = 0;
+    uint8_t usb_cmd = 0;
 // uint8_t snes_res;
     while(fpga_test() == FPGA_TEST_TOKEN) {
       cli_entrycheck();
       //usb upload/boot/lock  
       usb_cmd |= usbint_handler();
-	  if (usb_cmd == SNES_CMD_GAMELOOP) usb_cmd = 0;
+      if (usb_cmd == SNES_CMD_GAMELOOP) usb_cmd = 0;
 
 //        sleep_ms(250);
       sram_reliable();
@@ -387,20 +387,20 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
  //         sram_reliable();
           printf("%s ", get_cic_statename(get_cic_state()));
           cmd=snes_main_loop();
-		  if (usb_cmd && !cmd) cmd = usb_cmd;
+          if (usb_cmd && !cmd) cmd = usb_cmd;
           if(cmd) {
             printf("snes loop cmd=%d\n", cmd);
             switch(cmd) {
               case SNES_CMD_RESET_LOOP_FAIL:
-			    usb_cmd = 0;
+                usb_cmd = 0;
                 snes_reset_loop();
                 break;
               case SNES_CMD_RESET:
-			    usb_cmd = 0;
+                usb_cmd = 0;
                 snes_reset_pulse();
                 break;
               case SNES_CMD_RESET_TO_MENU:
-			    usb_cmd = 0;
+                usb_cmd = 0;
                 prepare_reset();
                 goto snes_loop_out;
               default:
