@@ -48,6 +48,7 @@
 #define SNES_CMD_KILL_NMIHOOK      (0x84)
 #define SNES_CMD_RESET_LOOP_FAIL   (0x85)
 #define SNES_CMD_RESET_LOOP_PASS   (0x86)
+#define SNES_CMD_SAVESTATE         (0x87)
 #define SNES_CMD_GAMELOOP          (0xff)
 
 #define MCU_CMD_RDY                (0x55)

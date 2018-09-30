@@ -28,6 +28,7 @@
 #include "rtc.h"
 #include "sysinfo.h"
 #include "cfg.h"
+#include "savestate.h"
 
 //usb
 #include "usb.h"
@@ -403,6 +404,10 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 			    usb_cmd = 0;
                 prepare_reset();
                 goto snes_loop_out;
+              case SNES_CMD_SAVESTATE:
+          usb_cmd = 0;
+                save_backup_state();
+                break;
               default:
                 printf("unknown cmd: %02x\n", cmd);
                 break;

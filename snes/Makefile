@@ -6,7 +6,8 @@ smc: menu.bin
 	cat menu.bin sd2snes.rom > menu.smc
 
 map: menu.bin
-	utils/mkmap.sh $(OBJS)
+	cp menu.bin F:/sd2snes/menu.bin
+	#utils/mkmap.sh $(OBJS)
 
 menu.bin: $(OBJS)
 	sneslink -fsmc -o $@ $^ 2>&1 | tee link.log
