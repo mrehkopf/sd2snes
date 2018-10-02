@@ -189,7 +189,7 @@ void smc_id(snes_romprops_t* props) {
       else if (header->map == 0x20 && ((header->carttype >= 0x13 && header->carttype <= 0x15) ||
           header->carttype == 0x1a)) {
         props->has_gsu = 1;
-		props->has_gsu_sram = (header->carttype == 0x15 || header->carttype == 0x1a) ? 1 : 0;
+        props->has_gsu_sram = (header->carttype == 0x15 || header->carttype == 0x1a) ? 1 : 0;
         props->fpga_conf = FPGA_GSU;
         props->fpga_dspfeat = CFG.gsu_speed;
         header->ramsize = header->expramsize & 0x7;

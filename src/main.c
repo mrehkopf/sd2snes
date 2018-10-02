@@ -70,7 +70,7 @@ int main(void) {
   BITBAND(SNES_CIC_PAIR_REG->FIOSET, SNES_CIC_PAIR_BIT) = 1;
   LPC_GPIO0->FIODIR = BV(16);
 
- /* disable pull-up on fake USB_CONNECT pin (P4.28), set P1.30 to VBUS */
+ /* disable pull-up on fake USB_CONNECT pin (P4.28), set P1.30 function to VBUS */
   LPC_PINCON->PINMODE9 |= BV(25);
   LPC_PINCON->PINSEL3 |= BV(29);
   LPC_PINCON->PINMODE3 |= BV(29);
