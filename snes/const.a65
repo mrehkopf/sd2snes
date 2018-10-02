@@ -214,6 +214,7 @@ mtext_ingame_holdoff              .byt " ",129,"Initial holdoff", 0
 mtext_ingame_regionpatch          .byt "Auto region patch", 0
 mtext_ingame_1chiptransientfixes  .byt "1CHIP transient fixes", 0
 mtext_ingame_brightlimit          .byt "Brightness limit", 0
+mtext_ingame_resetpatch           .byt "Reset patch for clock phase", 0
 mtext_chip_cx4_speed              .byt "Cx4 speed", 0
 mtext_chip_gsu_speed              .byt "SuperFX speed", 0
 mtext_chip_msu1_volume_boost      .byt "MSU-1 volume boost", 0
@@ -245,6 +246,7 @@ mdesc_ingame_holdoff              .byt "Wait 10 seconds before enabling hook (he
 mdesc_ingame_regionpatch          .byt "Bypass simple region protection by games", 0
 mdesc_ingame_1chiptransientfixes  .byt "Patch brightness changes to fix sync glitches, fading scanlines and missing shadow on 1CHIP/Jr. consoles", 0
 mdesc_ingame_brightlimit          .byt "Limit overall brightness (e.g. on 1CHIP consoles to meet RGB line levels)", 0
+mdesc_ingame_resetpatch           .byt "Enable reset patch to align clocks.  Fixes graphical issues in some games", 0
 mdesc_chip_cx4_speed              .byt "Set speed of Cx4 soft core", 0
 mdesc_chip_gsu_speed              .byt "Set speed of SuperFX soft core", 0
 mdesc_chip_msu1_volume_boost      .byt "Set volume boost for MSU1 audio if your sd2snes is too quiet (Rev. E-G)", 0

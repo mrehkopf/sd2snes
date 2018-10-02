@@ -86,7 +86,7 @@ nmi_stop:
 
 resethook: ; EMULATION MODE
   .as : .xs
-  
+  bra resethook_skip
   ; mask interrupt handler call
   sei
   ; x stores the count of scanlines
@@ -120,16 +120,21 @@ resethook: ; EMULATION MODE
   bne -
   ; stop interrupts and check if we have any errors
   stz $4200
+  dex
+  stx $4207
   dey
   bmi +
   ; perform reset
-  lda #$80
+  lda #$85
   sta @MCU_CMD
 - bra -
   ; clean up state
-+ dex
-  stx $4207
-
++ inx
+  iny
+resethook_skip:
+  lda #$86
+  sta @MCU_CMD
+  
 resethook_loop:
 - lda $4212
   bpl -

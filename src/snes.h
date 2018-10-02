@@ -46,6 +46,8 @@
 #define SNES_CMD_ENABLE_CHEATS     (0x82)
 #define SNES_CMD_DISABLE_CHEATS    (0x83)
 #define SNES_CMD_KILL_NMIHOOK      (0x84)
+#define SNES_CMD_RESET_LOOP_FAIL   (0x85)
+#define SNES_CMD_RESET_LOOP_PASS   (0x86)
 #define SNES_CMD_GAMELOOP          (0xff)
 
 #define MCU_CMD_RDY                (0x55)
@@ -67,6 +69,7 @@
 #define SNESCMD_MCU_CMD              (0x2a00)
 #define SNESCMD_SNES_CMD             (0x2a02)
 #define SNESCMD_MCU_PARAM            (0x2a04)
+#define SNESCMD_RESET_HOOK           (0x2a6b)
 #define SNESCMD_NMI_RESET            (0x2ba0)
 #define SNESCMD_NMI_RESET_TO_MENU    (0x2ba2)
 #define SNESCMD_NMI_ENABLE_CHEATS    (0x2ba4)
@@ -108,6 +111,7 @@ void snes_reset_pulse(void);
 void snes_reset(int state);
 uint8_t get_snes_reset(void);
 uint8_t get_snes_reset_state(void);
+uint8_t snes_reset_loop(void);
 uint8_t snes_main_loop(void);
 uint8_t menu_main_loop(void);
 void get_selected_name(uint8_t* lfn);
@@ -132,4 +136,5 @@ void snescmd_prepare_nmihook(void);
 void snes_get_filepath(uint8_t *buffer, uint16_t length);
 void status_load_to_menu(void);
 void status_save_from_menu(void);
+void recalculate_sram_range(void);
 #endif
