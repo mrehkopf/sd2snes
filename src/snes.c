@@ -43,6 +43,8 @@
 #include "cfg.h"
 
 uint32_t saveram_crc, saveram_crc_old;
+uint8_t sram_crc_valid;
+uint32_t sram_crc_romsize;
 extern snes_romprops_t romprops;
 extern int snes_boot_configured;
 
@@ -59,10 +61,38 @@ status_t ST = {
   .has_satellaview = 0
 };
 
+// These rom hashes are all based on unheadered contents in sram.
+// Known conflicts with crc32 implementation.  Match count is always 2.
+// 0x06F5FCAD, 0x2DCCDC2F, 0x47AC91A5, 0x566A91FD
+// 0x61506060, 0x6D869DD1, 0x7B55EA0F, 0x81C1BA16
+// 0xD8841B4B, 0xDEFABA49, 0xE7E44192
+typedef struct { uint32_t crc; uint32_t base; uint32_t size; } SramOffset;
+const SramOffset SramOffsetTable[] = {
+  // GSU
+  { 0x2444D698, 0x7c00, 0x0400, }, // yoshi's island (us)
+  { 0x2E00BB2F, 0x7c00, 0x0400, }, // yoshi's island (us) 1.1
+  { 0x8D93C19D, 0x7c00, 0x0400, }, // yoshi's island (eu)
+  { 0x2C75AB19, 0x7c00, 0x0400, }, // yoshi's island (jp)
+  
+  // SA1
+  { 0x1D77C761, 0x0000, 0x2000, }, // super mario rpg (us)
+  { 0xC3FA1E20, 0x0000, 0x2000, }, // super mario rpg (jp)
+  
+  { 0xAE7DC486, 0x1F00, 0x0100, }, // kirby super star (us)
+  { 0xB2193041, 0x1F00, 0x0100, }, // kirby super star (eu)
+  { 0xAE4986AF, 0x1F00, 0x0100, }, // kirby super star (jp)
+
+  { 0xBFA3216C, 0x5E00, 0x0200, }, // kirby's dreamland (us)
+  { 0x1779D7B2, 0x5E00, 0x0200, }, // kirby's dreamland (jp)
+
+  { 0x382E1F93, 0x0100, 0x0C00, }, // marvelous (jp)
+  { 0xEBBA38AD, 0x0100, 0x0C00, }, // marvelous 1.07 (us)
+};
+
 void prepare_reset() {
   snes_reset(1);
   delay_ms(SNES_RESET_PULSELEN_MS);
-  if(romprops.ramsize_bytes && (!romprops.has_gsu || romprops.has_gsu_sram) && fpga_test() == FPGA_TEST_TOKEN) {
+  if(romprops.sramsize_bytes && fpga_test() == FPGA_TEST_TOKEN) {
     writeled(1);
     save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
     writeled(0);
@@ -100,6 +130,40 @@ void snes_reset(int state) {
 }
 
 /*
+ * provides a mini reset environment to speed reset for clock synchronization
+ *
+ * returns: upon loop exit returns the current non-reset related command
+ */
+uint8_t snes_reset_loop(void) {
+  uint8_t cmd = 0;
+  
+  while(fpga_test() == FPGA_TEST_TOKEN) {
+    cmd = snes_get_mcu_cmd();
+
+    if (cmd) {
+      printf("snes_reset_loop: cmd=%hhx\n", cmd);
+      
+      switch (cmd) {
+        case SNES_CMD_RESET_LOOP_FAIL:
+          snes_set_mcu_cmd(0);
+          cmd = 0;
+          snes_reset_pulse();
+          //delay_us(SNES_RELEASE_RESET_DELAY_US);
+          break;
+        case SNES_CMD_RESET_LOOP_PASS:
+          snes_set_mcu_cmd(0);
+          cmd = 0;
+        default:
+          goto snes_reset_loop_out;
+      }
+    }
+  }
+
+snes_reset_loop_out:
+  return cmd;
+}
+
+/*
  * gets the SNES reset state.
  *
  * returns: 1 when reset, 0 when not reset
@@ -134,7 +198,6 @@ uint8_t get_snes_reset_state(void) {
     /* release reset from the sd2snes-side */
     snes_reset(0);
     delay_us(SNES_RELEASE_RESET_DELAY_US);
-
   }
 
   /* now start new cycle */
@@ -187,8 +250,10 @@ uint8_t get_snes_reset_state(void) {
 uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_save_failed = 0;
 uint8_t sram_valid = 0;
 uint8_t snes_main_loop() {
-  if(romprops.ramsize_bytes && (!romprops.has_gsu || romprops.has_gsu_sram)) {
-    saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
+  recalculate_sram_range();
+  
+  if(romprops.sramsize_bytes) {
+    saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes);
     sram_valid = sram_reliable();
     if(crc_valid && sram_valid) {
       if(save_failed) didnotsave++;
@@ -221,9 +286,7 @@ uint8_t snes_main_loop() {
         last_save_failed = save_failed;
         save_failed = file_res ? 1 : 0;
         didnotsave = save_failed ? 25 : 0;
-		// this used to be !last_save_failed which seemed odd.  I would think we would want to leave the light
-        // on when there is a fail, but it must have been there for a reason.
-        writeled(romprops.has_gsu ? last_save_failed : !last_save_failed);
+        writeled(!last_save_failed);
       }
       saveram_crc_old = saveram_crc;
     }
@@ -414,4 +477,40 @@ void status_load_to_menu() {
 
 void status_save_from_menu() {
   sram_readblock(&ST, SRAM_STATUS_ADDR, sizeof(status_t));
+}
+
+// The goals of this function are the following:
+// - detect a small, fixed set of popular games where the save location is a known, strict subset of sram.
+//   this avoids switching to the periodic save to sd mode.
+// - revert to full sram save if there is any change in the rom.  this includes minor hacks that don't change save location.
+// - not support any user control beyond rom modification.
+//   user control is very error prone: bad crc when rom is modified, incorrect save region definition, etc.
+// - very limited rom hack coverage.  if the hack changes then it will no longer benefit without an updated crc.
+//
+// The full sram location is still loaded and saved.  The restricted bounds are only used to detect when to save.
+void recalculate_sram_range() {
+  if (!sram_crc_valid && sram_valid) {
+    // insert arbitrary delay to avoid startup problem in some games
+    delay_ms(2000);
+    
+    printf("calculating rom hash (base=%06lx, size=%ld): ", SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
+    // there is a very small chance of collision.  there are several ways to avoid this:
+    // - incorporate (concatenate) checksum16 or other information
+    // - use a better hash function like sha-256
+    uint32_t crc = calc_sram_crc(SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
+    printf("%08lx\n", crc);
+
+    if (crc_valid) {
+      sram_crc_valid = 1;      
+      
+      for (uint32_t i = 0; i < (sizeof(SramOffsetTable)/sizeof(SramOffset)); i++) {
+        if (crc == SramOffsetTable[i].crc) {
+          romprops.srambase       = SramOffsetTable[i].base;
+          romprops.sramsize_bytes = SramOffsetTable[i].size;
+          printf("rom hash match: base=%lx size=%lx\n", romprops.srambase, romprops.sramsize_bytes);
+          break;
+        }
+      }
+    }    
+  }
 }

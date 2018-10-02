@@ -366,6 +366,9 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           cmd=snes_main_loop();
           if(cmd) {
             switch(cmd) {
+              case SNES_CMD_RESET_LOOP_FAIL:
+                snes_reset_loop();
+                break;
               case SNES_CMD_RESET:
                 snes_reset_pulse();
                 break;

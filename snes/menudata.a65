@@ -475,6 +475,20 @@ menu_enttab_ingame:
  .byt  ^(mfunc_chg_brightness-1)
  .byt  0,0,0
  .byt  0,0,0
+ 
+ .byt  MTYPE_VALUE
+ .word !mtext_ingame_resetpatch
+ .byt  ^mtext_ingame_resetpatch
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_RESET_PATCH
+ .byt  ^CFG_RESET_PATCH
+ .word !mdesc_ingame_resetpatch
+ .byt  ^mdesc_ingame_resetpatch
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
 
  .byt 0
 
