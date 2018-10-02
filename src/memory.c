@@ -48,6 +48,7 @@ memory.c: RAM operations
 #include "cli.h"
 #include "cheat.h"
 #include "rtc.h"
+#include "savestate.h"
 
 #include <string.h>
 char* hex = "0123456789ABCDEF";
@@ -461,6 +462,7 @@ void init(uint8_t *filename) {
   cheat_yaml_load(filename);
 // XXX    cheat_yaml_save(filename);
   cheat_program();
+  savestate_program();
   fpga_set_features(romprops.fpga_features);
   snes_set_mcu_cmd(0);
   // init save state region - VRAM, APURAM, CGRAM, OAM only

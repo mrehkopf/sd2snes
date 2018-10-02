@@ -61,6 +61,10 @@ int write_sysinfo(int sd_measured) {
   memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
   sram_addr += 40;
+  len = snprintf(linebuf, sizeof(linebuf), "Features: GSU, SA-1, Savestates");
+  memset(linebuf+len, 0x20, 40-len);
+  sram_writeblock(linebuf, sram_addr, 40);
+  sram_addr += 40;
   len = snprintf(linebuf, sizeof(linebuf), "                                        ");
   memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);

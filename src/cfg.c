@@ -34,6 +34,11 @@ cfg_t CFG_DEFAULT = {
   .reset_to_menu = 0,
   .led_brightness = 15,
   .reset_patch = 0,
+  .enable_ingame_savestate = 0,
+  .loadstate_delay = 10,
+  .enable_savestate_slots = 1,
+  .ingame_savestate_buttons = 0x1020,
+  .ingame_loadstate_buttons = 0x1010,
 };
 
 cfg_t CFG;
@@ -70,10 +75,20 @@ int cfg_save() {
   f_printf(&file_handle, "#  %s: Overall enable IRQ hooks (required for in-game buttons & WRAM cheats)\n", CFG_ENABLE_INGAME_HOOK);
   f_printf(&file_handle, "#  %s: Enable in-game buttons (en/disable cheats, reset sd2snes...)\n", CFG_ENABLE_INGAME_BUTTONS);
   f_printf(&file_handle, "#  %s: Enable 10s grace period after reset before enabling in-game hooks\n", CFG_ENABLE_HOOK_HOLDOFF);
+  f_printf(&file_handle, "#  %s: Enable in-game savestate\n", CFG_ENABLE_INGAME_SAVESTATE);
+  f_printf(&file_handle, "#  %s: Load state delay (frames),\n", CFG_LOADSTATE_DELAY);
+  f_printf(&file_handle, "#  %s: Enable in-game savestate\n", CFG_ENABLE_INGAME_SAVESTATE);
+  f_printf(&file_handle, "#  %s: In-game save state buttons (hexadecimal),\n", CFG_INGAME_SAVESTATE_BUTTONS);
+  f_printf(&file_handle, "#  %s: In-game load state buttons (hexadecimal),\n", CFG_INGAME_LOADSTATE_BUTTONS);
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_INGAME_HOOK, CFG.enable_ingame_hook ? "true" : "false");
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_INGAME_BUTTONS, CFG.enable_ingame_buttons ? "true" : "false");
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_HOOK_HOLDOFF, CFG.enable_hook_holdoff ? "true" : "false");
   f_printf(&file_handle, "%s: %s\n", CFG_RESET_PATCH, CFG.reset_patch ? "true" : "false");
+  f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_INGAME_SAVESTATE, CFG.enable_ingame_savestate ? "true" : "false");
+  f_printf(&file_handle, "%s: %d\n", CFG_LOADSTATE_DELAY, CFG.loadstate_delay);
+  f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_SAVESTATE_SLOTS, CFG.enable_savestate_slots ? "true" : "false");
+  f_printf(&file_handle, "%s: 0x%04X\n", CFG_INGAME_SAVESTATE_BUTTONS, CFG.ingame_savestate_buttons);
+  f_printf(&file_handle, "%s: 0x%04X\n", CFG_INGAME_LOADSTATE_BUTTONS, CFG.ingame_loadstate_buttons);
   f_puts("\n# Screensaver settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Enable screensaver\n", CFG_ENABLE_SCREENSAVER);
 //  f_printf(&file_handle, "#  %s: Dim screen after n seconds\n", CFG_SCREENSAVER_TIMEOUT);
@@ -174,6 +189,23 @@ int cfg_load() {
     }
     if(yaml_get_itemvalue(CFG_RESET_PATCH, &tok)) {
       CFG.reset_patch = tok.boolvalue ? 1 : 0;
+    }
+    if(yaml_get_itemvalue(CFG_ENABLE_INGAME_SAVESTATE, &tok)) {
+      CFG.enable_ingame_savestate = tok.boolvalue ? 1 : 0;
+    }
+    if(yaml_get_itemvalue(CFG_LOADSTATE_DELAY, &tok)) {
+      CFG.loadstate_delay = tok.longvalue;
+    }
+    if(yaml_get_itemvalue(CFG_ENABLE_SAVESTATE_SLOTS, &tok)) {
+      CFG.enable_savestate_slots = tok.boolvalue ? 1 : 0;
+    }
+    if(yaml_get_itemvalue(CFG_INGAME_SAVESTATE_BUTTONS, &tok)) {
+      uint16_t input = strtol(tok.stringvalue, NULL, 16);
+      CFG.ingame_savestate_buttons = input;
+    }
+    if(yaml_get_itemvalue(CFG_INGAME_LOADSTATE_BUTTONS, &tok)) {
+      uint16_t input = strtol(tok.stringvalue, NULL, 16);
+      CFG.ingame_loadstate_buttons = input;
     }
   }
   yaml_file_close();
