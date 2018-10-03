@@ -520,29 +520,29 @@ end
 wire [23:0] SRAM_SNES_ADDR;
 assign SRAM_SNES_ADDR[23:0] = IS_WRAM
                             ? (24'hF50000 + ( IS_WRAM_SHADOW ? SNES_ADDR[12:0]
-								                            : IS_WRAM_BANK   ? SNES_ADDR[16:0]
-									 			                    :                  WRAM_ADDR[16:0]))
-								            : IS_VRAM
-								            ? (24'hF70000 + ( (r2115[3:2] == 2'h0) ? ({VRAM_ADDR[14: 0],                              SNES_PA[0]})
+                                            : IS_WRAM_BANK   ? SNES_ADDR[16:0]
+                                            :                  WRAM_ADDR[16:0]))
+                            : IS_VRAM
+                            ? (24'hF70000 + ( (r2115[3:2] == 2'h0) ? ({VRAM_ADDR[14: 0],                              SNES_PA[0]})
                                             : (r2115[3:2] == 2'h1) ? ({VRAM_ADDR[14: 8],VRAM_ADDR[4:0],VRAM_ADDR[7:5],SNES_PA[0]})
                                             : (r2115[3:2] == 2'h2) ? ({VRAM_ADDR[14: 9],VRAM_ADDR[5:0],VRAM_ADDR[8:6],SNES_PA[0]})
                                             :                        ({VRAM_ADDR[14:10],VRAM_ADDR[6:0],VRAM_ADDR[9:7],SNES_PA[0]})))
                             : IS_CGRAM
-									          ? (24'hF90000 + CGRAM_ADDR[8:0])
+                            ? (24'hF90000 + CGRAM_ADDR[8:0])
                             : IS_OAM
-									          ? (24'hF90200 + ( OAM_ADDR[9] ? (OAM_ADDR[9:0] & 10'h21F)
-									                          :               (OAM_ADDR[9:0])))
-				                    : IS_PPUREG
-									          ? (24'hF90500 + {SNES_PA[7:0],1'b0})
-				                    : IS_CPUREG
-									          ? (24'hF90700 + SNES_ADDR[8:0])
-									          : IS_MISC
-									          ? (24'hF90420 + ( IS_GAMEPAD_WRITE ? ({7'h00,SNES_ADDR[0]})
-									                          :                    (8'hDF)))
+                            ? (24'hF90200 + ( OAM_ADDR[9] ? (OAM_ADDR[9:0] & 10'h21F)
+                                            :               (OAM_ADDR[9:0]          )))
+                            : IS_PPUREG
+                            ? (24'hF90500 + {SNES_PA[7:0],1'b0})
+                            : IS_CPUREG
+                            ? (24'hF90700 + SNES_ADDR[8:0])
+                            : IS_MISC
+                            ? (24'hF90420 + ( IS_GAMEPAD_WRITE ? ({7'h00,SNES_ADDR[0]})
+                                            :                    (8'hDF               )))
                             : IS_APU
-									          ? (24'hF80000 + ( IS_APU_RAM_r ? (APU_ADDR[15:0])
-									                          :                (8'hF4 + SNES_PA[1:0])))
-								            : 24'hF98000;
+                            ? (24'hF80000 + ( IS_APU_RAM_r ? (APU_ADDR[15:0]      )
+                                            :                (8'hF4 + SNES_PA[1:0])))
+                            : 24'hF98000;
 
 assign IS_WRITE = IS_WRAM | IS_VRAM | IS_CGRAM | IS_OAM | IS_APU | IS_PPUREG | IS_CPUREG | IS_MISC; // | IS_SNESCAST_NMI; // NMI for SNESCAST
 assign IS_WORD = IS_PPUREG;
