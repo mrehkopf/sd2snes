@@ -406,8 +406,8 @@ menu_enttab_ingame:
  .byt  MTYPE_VALUE
  .word !mtext_ingame_savestate
  .byt  ^mtext_ingame_savestate
- .word !kv_onoff
- .byt  ^kv_onoff
+ .word !kv_savestates
+ .byt  ^kv_savestates
  .byt  OPTTYPE_KVBYTE
  .word !CFG_ENABLE_INGAME_SAVESTATE
  .byt  ^CFG_ENABLE_INGAME_SAVESTATE
@@ -573,8 +573,10 @@ mfunc_isenabled_hooks:
 
 mfunc_isenabled_savestate:
   lda @CFG_ENABLE_INGAME_SAVESTATE
-  eor #$ff
-  ror
+  bne +
+  sec
+  rtl
++ clc
   rtl
 
 mfunc_isenabled_scic:
@@ -664,6 +666,12 @@ kv_bright_limit:
 .word $000d, !text_minus2 : .byt ^text_minus2
 .word $000e, !text_minus1 : .byt ^text_minus1
 .word $000f, !text_off : .byt ^text_off
+.word $ffff
+
+kv_savestates:
+.word $0000, !text_off : .byt ^text_off
+.word $0001, !text_on_p1 : .byt ^text_on_p1
+.word $0002, !text_on_p2 : .byt ^text_on_p2
 .word $ffff
 
 opt_0_to_30:

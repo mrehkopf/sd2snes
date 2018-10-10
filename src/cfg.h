@@ -36,6 +36,7 @@
 #define CFG_ENABLE_SAVESTATE_SLOTS    ("EnableSavestateSlots")
 #define CFG_INGAME_SAVESTATE_BUTTONS  ("IngameSavestateButtons")
 #define CFG_INGAME_LOADSTATE_BUTTONS  ("IngameLoadstateButtons")
+#define CFG_INGAME_CHANGESTATE_BUTTONS  ("IngameChangestateButtons")
 
 typedef enum {
   VIDMODE_60 = 0,
@@ -73,6 +74,7 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t  enable_savestate_slots;  /* enable savestate slots (select+dpad to change) */
   uint16_t ingame_savestate_buttons; /* save state buttons */
   uint16_t ingame_loadstate_buttons; /* load state buttons */
+  uint16_t ingame_changestate_buttons; /* change slot state buttons + dpad */
 } cfg_t;
 
 int cfg_save(void);

@@ -25,8 +25,10 @@ void savestate_program() {
     sram_writeshort(0x0101, SS_REQ_ADDR);
     sram_writebyte(CFG.loadstate_delay, SS_DELAY_ADDR);
     sram_writebyte(CFG.enable_savestate_slots, SS_SLOTS_ADDR);
+    sram_writebyte(CFG.enable_ingame_savestate, SS_CTRL_ADDR);
 
     savestate_set_inputs();
+    savestate_set_fixes();
     load_backup_state(1);
 
     fpga_set_snescmd_addr(SNESCMD_EXE);
@@ -41,7 +43,10 @@ void savestate_program() {
     fpga_write_snescmd(0xEA);
     fpga_write_snescmd(0xFF);
     return;
-  }
+  } 
+
+  fpga_set_snescmd_addr(SNESCMD_EXE);
+  fpga_write_snescmd(0x00);
   file_close();
 }
 
@@ -52,6 +57,7 @@ void savestate_set_inputs() {
 
   sram_writeshort(CFG.ingame_savestate_buttons, SS_SAVE_INPUT_ADDR);
   sram_writeshort(CFG.ingame_loadstate_buttons, SS_LOAD_INPUT_ADDR);
+  sram_writeshort(CFG.ingame_changestate_buttons, SS_SLOTS_INPUT_ADDR);
   
   yaml_file_open(SS_INPUTFILE, FA_READ);
   if(file_res) {
@@ -63,17 +69,59 @@ void savestate_set_inputs() {
       uint16_t input;
       strncpy(buf, tok.stringvalue, 4);
       input = strtol(buf, NULL, 16);
-      sram_writeshort(swap_uint16(input), SS_SAVE_INPUT_ADDR);
+      sram_writeshort(input, SS_SAVE_INPUT_ADDR);
       strncpy(buf, strrchr(tok.stringvalue, ',')+1, 4);
       input = strtol(buf, NULL, 16);
-      sram_writeshort(swap_uint16(input), SS_LOAD_INPUT_ADDR);
+      sram_writeshort(input, SS_LOAD_INPUT_ADDR);
     }
   }
   yaml_file_close();
 }
 
-uint16_t swap_uint16(uint16_t val) {
-    return ((((val) & 0xFF00) >> 8) | (((val) & 0x00FF) << 8));
+void savestate_set_fixes() {
+  int err = 0;
+  char buf[8];
+  snprintf(buf, 5, "%04X", romprops.header.chk);
+
+  sram_writeshort(0x0000, SS_FIXES_ADDR);
+  
+  yaml_file_open(SS_FIXESFILE, FA_READ);
+  if(file_res) {
+    err = file_res;
+  }
+  if(!err) {
+    yaml_token_t tok;
+    if(yaml_get_itemvalue(buf, &tok)) { 
+      uint16_t src;
+      uint32_t dst;
+
+      //checksum
+      sram_writeshort(romprops.header.chk, SS_FIXES_ADDR);
+
+      //dst address
+      strncpy(buf, tok.stringvalue, 6); buf[6] = '\0';
+      dst = strtol(buf, NULL, 16);
+      sram_writelong(dst, SS_FIXES_ADDR+2);
+
+      //src offset
+      strncpy(buf, strrchr(tok.stringvalue, ',')+1, 4); buf[4] = '\0';
+      src = strtol(buf, NULL, 16);
+      sram_writeshort(src, SS_FIXES_ADDR+6);
+
+
+
+      //rompatch
+      strncpy(buf, strrchr(tok.stringvalue, ';')+1, 6); buf[6] = '\0';
+      dst = strtol(buf, NULL, 16);
+      strncpy(buf, strrchr(strrchr(tok.stringvalue, ';')+1, ',')+1, 2); buf[2] = '\0';
+      uint8_t byte = strtol(buf, NULL, 16);
+      if(dst > 0){
+        sram_writebyte(byte, dst);        
+      }
+    }
+  }
+  sram_writeshort(0x0000, SS_FIXES_ADDR+8);
+  yaml_file_close();
 }
 
 void load_backup_state(uint8_t slot) {
@@ -83,13 +131,8 @@ void load_backup_state(uint8_t slot) {
   append_file_basename(line, (char*)file_lfn, "%02d.state", sizeof(line));
   snprintf(line, 256, line, slot);
 
-  //file_open((uint8_t*) line, FA_READ);
-  //if(file_status == FILE_OK) {
-  //  file_close();
-    load_sram((uint8_t*) line, 0xF00000L);
-  //  return;
-  //}
-  //file_close();
+  load_sram((uint8_t*) line, 0xF00000L);
+  if(file_res == FR_NO_FILE) file_res = 0;
 }
 
 void save_backup_state(uint8_t slot) {
