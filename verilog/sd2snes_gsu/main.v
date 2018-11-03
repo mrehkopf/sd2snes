@@ -164,16 +164,19 @@ reg SNES_reset_strobe = 0;
 reg free_strobe = 0;
 reg ram_free_strobe = 0;
 
-wire SNES_PARD_start = ((SNES_PARDr[6:1] | SNES_PARDr[7:2]) == 6'b111110);
-wire SNES_PAWR_start = ((SNES_PAWRr[6:1] | SNES_PAWRr[7:2]) == 6'b110000); /* 0000 necessary for SNES_DATA capture */
-wire SNES_PAWR_end = ((SNES_PAWRr[6:1] & SNES_PAWRr[7:2]) == 6'b000001);
-wire SNES_RD_start = ((SNES_READr[6:1] | SNES_READr[7:2]) == 6'b111100);
-//wire SNES_RD_end = ((SNES_READr[6:1] & SNES_READr[7:2]) == 6'b000001);
-//wire SNES_WR_end = ((SNES_WRITEr[6:1] & SNES_WRITEr[7:2]) == 6'b000001);
-reg SNES_RD_end; always @(posedge CLK2) SNES_RD_end <= ((SNES_READr[5:0] & SNES_READr[6:1]) == 6'b000001);
-reg SNES_WR_end; always @(posedge CLK2) SNES_WR_end <= ((SNES_WRITEr[5:0] & SNES_WRITEr[6:1]) == 6'b000001);
-wire SNES_cycle_start = ((SNES_CPU_CLKr[7:2] & SNES_CPU_CLKr[6:1]) == 6'b000011);
-wire SNES_cycle_end = ((SNES_CPU_CLKr[7:2] | SNES_CPU_CLKr[6:1]) == 6'b111000);
+wire [23:0] SNES_ADDR = (SNES_ADDRr[6] & SNES_ADDRr[5]);
+wire [7:0] SNES_PA = (SNES_PAr[6] & SNES_PAr[5]);
+wire [7:0] SNES_DATA_IN = (SNES_DATAr[3] & SNES_DATAr[2]);
+
+wire SNES_PARD_start = (SNES_PARDr[6:1] == 6'b111110);
+// Sample PAWR data earlier on CPU accesses, later on DMA accesses...
+wire SNES_PAWR_start = (SNES_PAWRr[6:1] == (({SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h02100) ? 6'b111000 : 6'b100000)); /* 0000 necessary for SNES_DATA capture */
+wire SNES_PAWR_end = (SNES_PAWRr[6:1] == 6'b000001);
+wire SNES_RD_start = (SNES_READr[6:1] == 6'b111110);
+wire SNES_RD_end = (SNES_READr[6:1] == 6'b000001);
+wire SNES_WR_end = (SNES_WRITEr[6:1] == 6'b000001);
+wire SNES_cycle_start = (SNES_CPU_CLKr[6:1] == 6'b000001);
+wire SNES_cycle_end = (SNES_CPU_CLKr[6:1] == 6'b111110);
 wire SNES_WRITE = SNES_WRITEr[2] & SNES_WRITEr[1];
 wire SNES_READ = SNES_READr[2] & SNES_READr[1];
 wire SNES_CPU_CLK = SNES_CPU_CLKr[2] & SNES_CPU_CLKr[1];
@@ -181,9 +184,6 @@ wire SNES_PARD = SNES_PARDr[2] & SNES_PARDr[1];
 wire SNES_PAWR = SNES_PAWRr[2] & SNES_PAWRr[1];
 
 wire SNES_ROMSEL = (SNES_ROMSELr[5] & SNES_ROMSELr[4]);
-wire [23:0] SNES_ADDR = (SNES_ADDRr[6] & SNES_ADDRr[5]);
-wire [7:0] SNES_PA = (SNES_PAr[6] & SNES_PAr[5]);
-wire [7:0] SNES_DATA_IN = (SNES_DATAr[3] & SNES_DATAr[2]);
 
 reg [7:0] BUS_DATA;
 
@@ -652,7 +652,8 @@ end
 
 assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
                    :(r2100_enable & ~SNES_PAWR & r2100_forcewrite) ? r2100r
-                   :(~SNES_READ ^ (r213f_forceread & r213f_enable & ~SNES_PARD))
+                   :((~SNES_READ ^ (r213f_forceread & r213f_enable & ~SNES_PARD))
+                                & ~(r2100_enable & ~SNES_PAWR & ~r2100_forcewrite & ~IS_ROM & ~IS_WRITABLE))
                                 ? ( msu_enable ? MSU_SNES_DATA_OUT
                                   : gsu_data_enable ? GSU_SNES_DATA_OUT  // GSU MMIO read
                                   : (cheat_hit & ~feat_cmd_unlock) ? cheat_data_out
@@ -745,7 +746,6 @@ always @(posedge CLK2) begin
   case(STATE)
     ST_IDLE: begin
       STATE <= ST_IDLE;
-      
       if(free_slot | SNES_DEADr) begin
         if (GSU_ROM_RD_PENDr) begin
           STATE <= ST_GSU_ROM_RD_ADDR;
@@ -809,17 +809,24 @@ always @(posedge CLK2) begin
   if(SNES_cycle_end) r2100_forcewrite_pre <= 1'b0;
   else if(SNES_PAWR_start & r2100_hit) begin
     if(r2100_patch & SNES_DATA[7]) begin
+    // keep previous brightness during forced blanking so there is no DAC step
       r2100_forcewrite_pre <= 1'b1;
-      r2100r <= {SNES_DATA[7:4], r2100_bright};
+      r2100r <= {SNES_DATA[7], 3'b010, r2100_bright}; // 0xAx
+    end else if (r2100_patch && SNES_DATA == 8'h00 && r2100r[7]) begin
+    // extend forced blanking when game goes from blanking to brightness 0
+      r2100_forcewrite_pre <= 1'b1;
+      r2100r <= {1'b1, 3'b111, r2100_bright}; // 0xFx
     end else if (r2100_patch && SNES_DATA[3:0] < 4'h8 && r2100_bright_orig > 4'hd) begin
+    // substitute big brightness changes with brightness 0 (so it is visible on 1CHIP)
       r2100_forcewrite_pre <= 1'b1;
-      r2100r <= {SNES_DATA[7:4], 4'h0};
+      r2100r <= {SNES_DATA[7], 3'b011, 4'h0}; // 0x3x / 0xBx(!)
     end else if (r2100_patch | ~(&r2100_limit)) begin
+    // save brightness, limit brightness
       r2100_bright <= r2100_limited;
       r2100_bright_orig <= SNES_DATA[3:0];
       if (~(&r2100_limit) && SNES_DATA[3:0] > r2100_limit) begin
         r2100_forcewrite_pre <= 1'b1;
-        r2100r <= {SNES_DATA[7:4], r2100_limited};
+        r2100r <= {SNES_DATA[7], 3'b100, r2100_limited}; // 0x4x / 0xCx
       end
     end
   end
@@ -1037,10 +1044,11 @@ assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
                          | (SNES_READ & SNES_WRITE)
                          );
 
-assign SNES_DATABUS_DIR = (~SNES_PAWR & r2100_enable) ? (r2100_forcewrite | IS_ROM)
-                           : (~SNES_READ | (~SNES_PARD & (r213f_enable)))
-                           ? (1'b1 ^ (r213f_forceread & r213f_enable & ~SNES_PARD))
-                           : 1'b0;
+assign SNES_DATABUS_DIR = (~SNES_READ | (~SNES_PARD & (r213f_enable)))
+                           ? (1'b1 ^ (r213f_forceread & r213f_enable & ~SNES_PARD)
+                                   ^ (r2100_enable & ~SNES_PAWR & ~r2100_forcewrite & ~IS_ROM & ~IS_WRITABLE))
+                           : ((~SNES_PAWR & r2100_enable) ? r2100_forcewrite
+                           : 1'b0);
 
 assign SNES_IRQ = GSU_IRQ;
 

@@ -652,7 +652,10 @@ wire [6:0] dma_mmc_cc1_mask;
 always @(posedge CLK) begin
   // iram sees the address early so data is available.
   // TODO: can this be single bit now?
-  if (~snes_mmio_delay_r[1] & ~snes_mmio_done_r) snes_data_out_r <= snes_readbuf_iram_r ? snes_iram_data_r : data_out_r;
+// XXX  if (~SNES_READ) snes_data_out_r <= snes_iram_active_r ? snes_iram_out : data_out_r;
+// XXX  if (snes_iram_active_r) snes_data_out_r <= snes_iram_out;
+// XXX  if (~snes_mmio_delay_r[1] & ~snes_mmio_done_r) snes_data_out_r <= snes_readbuf_iram_r ? snes_iram_data_r : data_out_r;
+  if (~snes_mmio_delay_r[1] & ~snes_mmio_done_r) snes_data_out_r <= snes_readbuf_iram_r ? snes_iram_out : data_out_r;
 
   if (RST) begin
     snes_data_enable_r <= 0;
@@ -761,7 +764,9 @@ always @(posedge CLK) begin
     end
     
     // set both data and oe enable here
-    snes_data_enable_r <= ((snes_iram_active_r | snes_mmio_active_r) & ~SNES_WRITE) | snes_mmio_delay_r[1] | snes_mmio_done_r;
+    snes_data_enable_r <= (snes_iram_active_r & ~SNES_READ) | ((snes_iram_active_r | snes_mmio_active_r) & ~SNES_WRITE) | snes_mmio_delay_r[1] | snes_mmio_done_r;
+// XXX    snes_data_enable_r <= ((snes_iram_active | snes_mmio_active_r) & (~SNES_WRITE | ~SNES_READ));
+// XXX    snes_data_enable_r <= ((snes_iram_active_r | snes_mmio_active_r) & ~SNES_WRITE) | snes_mmio_delay_r[1] | snes_mmio_done_r;
     // get address as early as possible so the read data is available when SNES_READ asserts
     snes_iram_addr_r <= (`IS_CPU_BRAM(addr_in_r) & dma_mmc_cc1_en) ? {DDA_r[10:7],(DDA_r[6:0] & ~dma_mmc_cc1_mask) | (addr_in_r[6:0] & dma_mmc_cc1_mask)} : addr_in_r[10:0];
 
