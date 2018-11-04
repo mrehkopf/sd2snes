@@ -52,7 +52,6 @@ module main(
   /* Bus 2: SRAM, 4Mbit, 8bit, 45ns */
   inout [7:0] RAM_DATA,
   output [18:0] RAM_ADDR,
-  //output RAM_CE,
   output RAM_OE,
   output RAM_WE,
 
@@ -959,7 +958,7 @@ always @(posedge CLK2) begin
   if(SNES_DEADr & SNES_CPU_CLKr[1]) RAM_STATE <= ST_RAM_IDLE; // interrupt+restart an ongoing MCU access when the SNES comes alive
   else
   case(RAM_STATE)
-    ST_RAM_IDLE: begin      
+    ST_RAM_IDLE: begin
       if(ram_free_slot | SNES_DEADr) begin
         if (GSU_RAM_RD_PENDr) begin
           RAM_STATE <= ST_RAM_GSU_RD_ADDR;
