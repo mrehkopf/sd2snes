@@ -45,13 +45,15 @@
 //#define CONFIG_UART_BAUDRATE      115200
 #define CONFIG_UART_DEADLOCKABLE
 
+/*   PLL0 96MHz
+     Base clock:   12MHz
+     Multiplier:   16
+     Pre-Divisor:   1
+     Divisor:       4
+*/
 #define CONFIG_CLK_MULT           16
-#define CONFIG_CLK_PREDIV         2
-#define CONFIG_CLK_CCLKDIV        2
-
-//#define CONFIG_CLK_MULT           43
-//#define CONFIG_CLK_PREDIV         2
-//#define CONFIG_CLK_CCLKDIV        6
+#define CONFIG_CLK_PREDIV         1
+#define CONFIG_CLK_CCLKDIV        4
 
 #define SSP_CLK_DIVISOR           2
 
