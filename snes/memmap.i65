@@ -18,7 +18,7 @@
 
 #define BRAM_PAYLOAD                $002A04
 #define BRAM_RESET_HOOK             $002A74
-#define BRAM_CHEATS                 $002B00
+#define NMI_WRAM_CHEATS             $002AC8
 #define NMI_PAD                     $002BF0
 #define NMI_CMD                     $002BF2
 #define BRAM_UNLOCK                 $002BF4
@@ -28,7 +28,6 @@
 #define NMI_VECT_DISABLE            $002BFD
 #define NMI_WRAM_PATCH_DISABLE      $002BFE
 #define NMI_WRAM_PATCH_COUNT        $002BFF
-#define NMI_WRAM_CHEATS             $002B00
 #define WINDOW_STACK_BASE           $7E2000
 
 #define BG2_TILE_BUF                $7EA000

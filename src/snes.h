@@ -70,6 +70,7 @@
 #define SNESCMD_SNES_CMD             (0x2a02)
 #define SNESCMD_MCU_PARAM            (0x2a04)
 #define SNESCMD_RESET_HOOK           (0x2a6b)
+#define SNESCMD_WRAM_CHEATS          (0x2ac8)
 #define SNESCMD_NMI_RESET            (0x2ba0)
 #define SNESCMD_NMI_RESET_TO_MENU    (0x2ba2)
 #define SNESCMD_NMI_ENABLE_CHEATS    (0x2ba4)
@@ -79,7 +80,6 @@
 #define SNESCMD_NMI_ENABLE_BUTTONS   (0x2bfc)
 #define SNESCMD_NMI_DISABLE_WRAM     (0x2bfe)
 #define SNESCMD_NMI_WRAM_PATCH_COUNT (0x2bff)
-#define SNESCMD_WRAM_CHEATS          (0x2b00)
 
 #define ASM_LDA_IMM      (0xa9)
 #define ASM_STA_ABSLONG  (0x8f)
