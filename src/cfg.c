@@ -33,7 +33,8 @@ cfg_t CFG_DEFAULT = {
   .gsu_speed = 0,
   .reset_to_menu = 0,
   .led_brightness = 15,
-  .reset_patch = 0,
+  .enable_cheats = 1,
+  .reset_patch = 0
 };
 
 cfg_t CFG;
