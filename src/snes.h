@@ -49,6 +49,7 @@
 #define SNES_CMD_RESET_LOOP_FAIL   (0x85)
 #define SNES_CMD_RESET_LOOP_PASS   (0x86)
 #define SNES_CMD_GAMELOOP          (0xff)
+#define SNES_CMD_RESET_LOOP_TIMEOUT (0x87)
 
 #define MCU_CMD_RDY                (0x55)
 #define MCU_CMD_ERR                (0xaa)
@@ -61,6 +62,7 @@
 
 #define SNES_RELEASE_RESET_DELAY_US (2)
 #define SNES_RESET_PULSELEN_MS (5)
+#define SNES_RESET_LOOP_TIMEOUT (10) // 10ms steps x10 = 100ms
 
 #define SNES_BOOL_TRUE  (0x01)
 #define SNES_BOOL_FALSE (0x00)
