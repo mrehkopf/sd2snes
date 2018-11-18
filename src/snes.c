@@ -136,13 +136,15 @@ void snes_reset(int state) {
  */
 uint8_t snes_reset_loop(void) {
   uint8_t cmd = 0;
-  
+  tick_t starttime = getticks();
   while(fpga_test() == FPGA_TEST_TOKEN) {
     cmd = snes_get_mcu_cmd();
-
+    // 100ms timeout in case the reset hook is defeated somehow
+    if(getticks() > starttime + SNES_RESET_LOOP_TIMEOUT) {
+      cmd = SNES_CMD_RESET_LOOP_TIMEOUT;
+    }
     if (cmd) {
       printf("snes_reset_loop: cmd=%hhx\n", cmd);
-      
       switch (cmd) {
         case SNES_CMD_RESET_LOOP_FAIL:
           snes_set_mcu_cmd(0);
@@ -151,6 +153,7 @@ uint8_t snes_reset_loop(void) {
           //delay_us(SNES_RELEASE_RESET_DELAY_US);
           break;
         case SNES_CMD_RESET_LOOP_PASS:
+        case SNES_CMD_RESET_LOOP_TIMEOUT:
           snes_set_mcu_cmd(0);
           cmd = 0;
         default:
@@ -251,7 +254,6 @@ uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_sav
 uint8_t sram_valid = 0;
 uint8_t snes_main_loop() {
   recalculate_sram_range();
-  
   if(romprops.sramsize_bytes) {
     saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes);
     sram_valid = sram_reliable();
