@@ -134,7 +134,7 @@ resethook: ; EMULATION MODE
 resethook_skip:
   lda #$86
   sta @MCU_CMD
-  
+
 resethook_loop:
 - lda $4212
   bpl -

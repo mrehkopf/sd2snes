@@ -418,11 +418,11 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     snes_set_mcu_cmd(0);
     snes_reset(0);
     fpga_dspx_reset(0);
-    
+
     // handle reset loop from hook
     snes_reset_loop();
   }
-  
+
   // loading a new rom implies the previous crc is no longer valid
   sram_crc_valid = 0;
   sram_crc_romsize = filesize - romprops.offset;

@@ -182,7 +182,7 @@ int msu1_loop() {
         case SNES_CMD_RESET_LOOP_FAIL:
           msu_res = SNES_RESET_SHORT;
           snes_reset_loop();
-          break;        
+          break;
         case SNES_CMD_RESET:
           msu_res = SNES_RESET_SHORT;
           snes_reset_pulse();
