@@ -259,7 +259,7 @@ text_statusbar_keys .byt "A:Select B:Back X:Menu", 0
 text_statusbar_spc  .byt "B:Back", 0
 text_statusbar_menu .byt "A:Select B:Back", 0
 text_last           .byt "Recent games", 0
-text_system         .byt "CPU Rev.: x  PPU1 Rev.: y  PPU2 Rev.: z",0
+text_system         .byt "CPU/PPU1/PPU2: a/b/c        VMode: x0Hz",0
 
 text_on         .byt "On", 0
 text_off        .byt "Off", 0

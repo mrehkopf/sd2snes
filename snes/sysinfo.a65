@@ -76,26 +76,35 @@ sysinfo_printloop:
   dec
   bne -
 
-  ldx #24
+  ldx #17
   lda $213e
   and #$0f
   clc
   adc #$30
   sta @snes_system_config,x
 
-  ldx #38
+  ldx #19
   lda $213f
   and #$0f
   clc
   adc #$30
   sta @snes_system_config,x
 
-  ldx #10
+  ldx #15
   lda $4210
   and #$0f
   clc
   adc #$30
   sta @snes_system_config,x
+
+  ldx #35
+  lda $213f
+  eor #$10
+  and #$10
+  adc #$f0
+  lda #$35
+  adc #$00
+  sta @snes_system_config, x
 
   lda #^snes_system_config ; System text
   ldx #!snes_system_config
