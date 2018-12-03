@@ -3,16 +3,20 @@ print "Savestate Bank Starting at: ", pc
 	php : %ai16() : pha
 	; need to access buttons as soon as possible
 
+	lda.l $004218
+	sta.l !CS_INPUT_NEXT
+	sta.l $002BF0
+
 	%a8()
 	lda.l !CS_CTRL
 	cmp #$02
 	%ai16()
-	beq +
-	lda.l $004218
-	bra ++
-+	lda.l $00421A
-++	sta.l !CS_INPUT_NEXT
+	bne +
+	lda.l $00421A
+	sta.l !CS_INPUT_NEXT
 	sta.l $002BF0
+
++	%ai16()
 start:
 	jmp .ss_init
 
@@ -150,7 +154,7 @@ start:
 	%ai16() : pla : plp
 	jmp.l !SS_RETURN
 	;rtl
-	
+
 ; SMC (Self Modifying Code) to init on first pass
 .ss_init
 	%ai16()
@@ -239,18 +243,36 @@ start:
 	and.l !CS_SLOT_INPUT
 	cmp.l !CS_SLOT_INPUT
 	bne ++
+	; wait until release save input
 	%a8()
+
 	lda.l !CS_INPUT_CUR+1
 	bit #$08 : beq + : lda #$01 : bra .loadslot
 +	bit #$04 : beq + : lda #$03 : bra .loadslot
 +	bit #$02 : beq + : lda #$04 : bra .loadslot
 +	bit #$01 : beq ++ : lda #$02 : .loadslot
 	; load last savestate slot
-	sta.l !MCU_PARAM
 	sta.l !CS_SLOT
 	lda !CMD_LOADSTATE
 	sta.l !MCU_CMD
 ++
+
+	; slowmode	
+;	%a8()
+;	lda.l !CS_SLOW
+;	beq ++
+;	lda.l $F90700|$0000
+;	and #$01
+;	sta.l $4200
+
+;	lda.l !CS_SLOW
+;	--
+;	- bit $4212 : bpl -
+;	- bit $4212 : bmi -
+;	dec
+;	bpl --
+;++
+
 	%ai16()
 
 ; savestate input check
@@ -316,14 +338,6 @@ start:
 	%save_registers()
 	
 	%a8()
-	; wait until release save input
-	;--
-	;- bit $4212 : bpl -
-	;- bit $4212 : bmi -
-	;lda.l $4219
-	;and.l !CS_INPUT_CUR
-	;cmp.l !CS_INPUT_CUR
-	;beq --
 	
 	; disable DMA
 	lda.l $F90700|$000C
@@ -422,11 +436,6 @@ start:
 	beq --
  
 	; send cmd to write the state inside the sd
-	lda !CS_SLOT
-	cmp #$00
-	bne +
-	lda #$01
-+	sta !MCU_PARAM
 	lda !CMD_SAVESTATE
 	sta !MCU_CMD
 

@@ -29,7 +29,7 @@ void savestate_program() {
 
     savestate_set_inputs();
     savestate_set_fixes();
-    load_backup_state(1);
+    load_backup_state();
 
     fpga_set_snescmd_addr(SNESCMD_EXE);
     //jml $FC0000
@@ -104,16 +104,16 @@ void savestate_set_fixes() {
       sram_writelong(dst, SS_FIXES_ADDR+2);
 
       //src offset
-      strncpy(buf, strrchr(tok.stringvalue, ',')+1, 4); buf[4] = '\0';
+      strncpy(buf, strchr(tok.stringvalue, ',')+1, 4); buf[4] = '\0';
       src = strtol(buf, NULL, 16);
       sram_writeshort(src, SS_FIXES_ADDR+6);
 
 
 
       //rompatch
-      strncpy(buf, strrchr(tok.stringvalue, ';')+1, 6); buf[6] = '\0';
+      strncpy(buf, strchr(tok.stringvalue, ';')+1, 6); buf[6] = '\0';
       dst = strtol(buf, NULL, 16);
-      strncpy(buf, strrchr(strrchr(tok.stringvalue, ';')+1, ',')+1, 2); buf[2] = '\0';
+      strncpy(buf, strrchr(tok.stringvalue, ',')+1, 2); buf[2] = '\0';
       uint8_t byte = strtol(buf, NULL, 16);
       if(dst > 0){
         sram_writebyte(byte, dst);        
@@ -124,7 +124,8 @@ void savestate_set_fixes() {
   yaml_file_close();
 }
 
-void load_backup_state(uint8_t slot) {
+void load_backup_state() {
+  uint8_t slot = CFG.enable_savestate_slots ? sram_readbyte(SS_SLOTS_ADDR) : 1;
   char line[256] = SS_BASEDIR;
   check_or_create_folder(SS_BASEDIR);
   cfg_get_last_game(file_lfn, 0);
@@ -135,7 +136,8 @@ void load_backup_state(uint8_t slot) {
   if(file_res == FR_NO_FILE) file_res = 0;
 }
 
-void save_backup_state(uint8_t slot) {
+void save_backup_state() {
+  uint8_t slot = CFG.enable_savestate_slots ? sram_readbyte(SS_SLOTS_ADDR) : 1;
   char line[256] = SS_BASEDIR;
   check_or_create_folder(SS_BASEDIR);
   cfg_get_last_game(file_lfn, 0);

@@ -406,11 +406,11 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
                 goto snes_loop_out;
               case SNES_CMD_SAVESTATE:
                 usb_cmd = 0;
-                save_backup_state(snes_get_mcu_param());
+                save_backup_state();
                 break;
               case SNES_CMD_LOADSTATE:
                 usb_cmd = 0;
-                load_backup_state(snes_get_mcu_param());
+                load_backup_state();
                 break;
               default:
                 printf("unknown cmd: %02x\n", cmd);

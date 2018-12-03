@@ -20,7 +20,7 @@
 void savestate_program(void);
 void savestate_set_inputs(void);
 void savestate_set_fixes(void);
-void load_backup_state(uint8_t slot);
-void save_backup_state(uint8_t slot);
+void load_backup_state(void);
+void save_backup_state(void);
 
 #endif

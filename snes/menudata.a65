@@ -415,8 +415,7 @@ menu_enttab_ingame:
  .byt  ^mdesc_ingame_savestate
  .byt  0,0,0
  .byt  0,0,0
- .word !(mfunc_isenabled_hooks-1)
- .byt  ^(mfunc_isenabled_hooks-1)
+ .byt  0,0,0
 
  .byt  MTYPE_VALUE
  .word !mtext_savestate_slots

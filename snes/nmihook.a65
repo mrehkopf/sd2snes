@@ -5,8 +5,17 @@ nmihook:
   php
   rep #$20 : .al
   pha
-  lda @$004218 ; initial backup as early as possible
-  sta @NMI_PAD
+  ;lda @NMI_PAD ; check if we have NMI_PAD
+  ;bne nmi_auto_read
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+nmireturn:
   sep #$20 : .as
 - bra -        ; branch1 filled in by FPGA
 ; rules for branch tgt:
@@ -95,4 +104,8 @@ resethook: ; EMULATION MODE
   stz NMI_VECT_DISABLE
   jmp ($fffc)
 
+nmi_auto_read:
+  lda @$004218
+  sta @NMI_PAD
+  bra nmireturn
 .byt "bram_end"
