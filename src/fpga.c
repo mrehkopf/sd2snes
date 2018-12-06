@@ -25,16 +25,6 @@
 */
 
 
-/*
-   FPGA pin mapping
-   ================
-   CCLK        P0.11 out
-   PROG_B      P1.15 out
-   INIT_B      P2.9  in
-   DIN         P2.8  out
-   DONE        P0.22 in
- */
-
 #include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
 
@@ -54,29 +44,29 @@
 
 void fpga_set_prog_b(uint8_t val) {
   if(val)
-    BITBAND(PROGBREG->FIOSET, PROGBBIT) = 1;
+    BITBAND(FPGA_PROGBREG->FIOSET, FPGA_PROGBBIT) = 1;
   else
-    BITBAND(PROGBREG->FIOCLR, PROGBBIT) = 1;
+    BITBAND(FPGA_PROGBREG->FIOCLR, FPGA_PROGBBIT) = 1;
 }
 
 void fpga_set_cclk(uint8_t val) {
   if(val)
-    BITBAND(CCLKREG->FIOSET, CCLKBIT) = 1;
+    BITBAND(FPGA_CCLKREG->FIOSET, FPGA_CCLKBIT) = 1;
   else
-    BITBAND(CCLKREG->FIOCLR, CCLKBIT) = 1;
+    BITBAND(FPGA_CCLKREG->FIOCLR, FPGA_CCLKBIT) = 1;
 }
 
 int fpga_get_initb() {
-  return BITBAND(INITBREG->FIOPIN, INITBBIT);
+  return BITBAND(FPGA_INITBREG->FIOPIN, FPGA_INITBBIT);
 }
 
 void fpga_init() {
 /* mainly GPIO directions */
-  BITBAND(CCLKREG->FIODIR, CCLKBIT) = 1; /* CCLK */
-  BITBAND(DONEREG->FIODIR, DONEBIT) = 0; /* DONE */
-  BITBAND(PROGBREG->FIODIR, PROGBBIT) = 1; /* PROG_B */
-  BITBAND(DINREG->FIODIR, DINBIT) = 1; /* DIN */
-  BITBAND(INITBREG->FIODIR, INITBBIT) = 0; /* INIT_B */
+  BITBAND(FPGA_CCLKREG->FIODIR, FPGA_CCLKBIT) = 1; /* CCLK */
+  BITBAND(FPGA_DONEREG->FIODIR, FPGA_DONEBIT) = 0; /* DONE */
+  BITBAND(FPGA_PROGBREG->FIODIR, FPGA_PROGBBIT) = 1; /* PROG_B */
+  BITBAND(FPGA_DINREG->FIODIR, FPGA_DINBIT) = 1; /* DIN */
+  BITBAND(FPGA_INITBREG->FIODIR, FPGA_INITBBIT) = 0; /* INIT_B */
 
   LPC_GPIO2->FIOMASK1 = 0;
 
@@ -85,11 +75,12 @@ void fpga_init() {
 }
 
 int fpga_get_done(void) {
-  return BITBAND(DONEREG->FIOPIN, DONEBIT);
+  return BITBAND(FPGA_DONEREG->FIOPIN, FPGA_DONEBIT);
 }
 
 void fpga_postinit() {
   LPC_GPIO2->FIOMASK1 = 0;
+  BITBAND(FPGA_DINREG->FIODIR, FPGA_DINBIT) = 0; /* DATA0 -> MCU_RDY */
 }
 
 void fpga_pgm(uint8_t* filename) {
@@ -105,14 +96,15 @@ void fpga_pgm(uint8_t* filename) {
     uart_putc(0x30+file_res);
     return;
   }
-
+  fpga_init();
   do {
+    printf("fpga_pgm: configuring FPGA, attempts left: %d\n", retries);
     i=0;
     timeout = getticks() + 1;
     fpga_set_prog_b(0);
-    while(BITBAND(PROGBREG->FIOPIN, PROGBBIT)) {
+    while(BITBAND(FPGA_PROGBREG->FIOPIN, FPGA_PROGBBIT)) {
       if(getticks() > timeout) {
-        printf("PROGB is stuck high!\n");
+        printf("fpga_pgm: PROGB is stuck high!\n");
         led_panic(LED_PANIC_FPGA_PROGB_STUCK);
       }
     }
@@ -121,14 +113,14 @@ void fpga_pgm(uint8_t* filename) {
     fpga_set_prog_b(1);
     while(!fpga_get_initb()){
       if(getticks() > timeout) {
-        printf("no response from FPGA trying to initiate configuration!\n");
+        printf("fpga_pgm: no response from FPGA trying to initiate configuration!\n");
         led_panic(LED_PANIC_FPGA_NO_INITB);
       }
     };
     timeout = getticks() + 100;
     while(fpga_get_done()) {
       if(getticks() > timeout) {
-        printf("DONE is stuck high!\n");
+        printf("fpga_pgm: DONE is stuck high!\n");
         led_panic(LED_PANIC_FPGA_DONE_STUCK);
       }
     }
@@ -145,10 +137,18 @@ void fpga_pgm(uint8_t* filename) {
     uart_putc('c');
     file_close();
     printf("fpga_pgm: %d bytes programmed\n", i);
+    timeout = getticks() + 100;
+    while(!fpga_get_done()) {
+      if(getticks() > timeout) {
+        printf("fpga_pgm: no DONE from FPGA! Retrying\n");
+        break;
+      }
+    }
+    CCLK(); CCLK(); CCLK();
     delay_ms(1);
   } while (!fpga_get_done() && retries--);
   if(!fpga_get_done()) {
-    printf("FPGA failed to configure after %d tries.\n", MAXRETRIES);
+    printf("fpga_pgm: FPGA failed to configure after %d tries.\n", MAXRETRIES);
     led_panic(LED_PANIC_FPGA_NOCONF);
   }
   printf("FPGA configured\n");
@@ -162,6 +162,7 @@ void fpga_rompgm() {
   uint8_t data;
   int i;
   tick_t timeout;
+  fpga_init();
   do {
     i=0;
     timeout = getticks() + 100;

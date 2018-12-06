@@ -29,6 +29,7 @@
 
 #include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
+#include "config.h"
 
 void fpga_set_prog_b(uint8_t val);
 void fpga_set_cclk(uint8_t val);
@@ -43,36 +44,18 @@ uint8_t SPI_OFFLOAD;
 
 const uint8_t *fpga_config;
 
-#define FPGA_CX4 ((const uint8_t*)"/sd2snes/fpga_cx4.bit")
-#define FPGA_OBC1 ((const uint8_t*)"/sd2snes/fpga_obc1.bit")
-#define FPGA_GSU ((const uint8_t*)"/sd2snes/fpga_gsu.bit")
-#define FPGA_SA1 ((const uint8_t*)"/sd2snes/fpga_sa1.bit")
-#define FPGA_BASE ((const uint8_t*)"/sd2snes/fpga_base.bit")
+#define FPGA_CX4 ((const uint8_t*)"/sd2snes/fpga_cx4." FPGA_CONF_EXT)
+#define FPGA_OBC1 ((const uint8_t*)"/sd2snes/fpga_obc1." FPGA_CONF_EXT)
+#define FPGA_GSU ((const uint8_t*)"/sd2snes/fpga_gsu." FPGA_CONF_EXT)
+#define FPGA_SA1 ((const uint8_t*)"/sd2snes/fpga_sa1." FPGA_CONF_EXT)
+#define FPGA_BASE ((const uint8_t*)"/sd2snes/fpga_base." FPGA_CONF_EXT)
 #define FPGA_ROM ((const uint8_t*)"rom")
-
-#define CCLKREG  LPC_GPIO0
-#define PROGBREG LPC_GPIO1
-#define INITBREG LPC_GPIO2
-#define DINREG   LPC_GPIO2
-#define DONEREG  LPC_GPIO0
-
-#define CCLKBIT  (11)
-#define PROGBBIT (15)
-#define INITBBIT (9)
-#define DINBIT   (8)
-#define DONEBIT  (22)
-
 
 #define FPGA_TEST_TOKEN	(0xa5)
 
 // some macros for bulk transfers (faster)
-#define FPGA_SEND_BYTE_SERIAL(data)	do {SET_FPGA_DIN(data>>7); CCLK();\
-SET_FPGA_DIN(data>>6); CCLK(); SET_FPGA_DIN(data>>5); CCLK();\
-SET_FPGA_DIN(data>>4); CCLK(); SET_FPGA_DIN(data>>3); CCLK();\
-SET_FPGA_DIN(data>>2); CCLK(); SET_FPGA_DIN(data>>1); CCLK();\
-SET_FPGA_DIN(data); CCLK();} while (0)
-#define SET_CCLK()			do {BITBAND(LPC_GPIO0->FIOSET, 11) = 1;} while (0)
-#define CLR_CCLK()			do {BITBAND(LPC_GPIO0->FIOCLR, 11) = 1;} while (0)
-#define CCLK()				do {SET_CCLK(); CLR_CCLK();} while (0)
-#define SET_FPGA_DIN(data)		do {LPC_GPIO2->FIOPIN1 = data;} while (0)
+#define SET_CCLK()          do {BITBAND(FPGA_CCLKREG->FIOSET, FPGA_CCLKBIT) = 1;} while (0)
+#define CLR_CCLK()          do {BITBAND(FPGA_CCLKREG->FIOCLR, FPGA_CCLKBIT) = 1;} while (0)
+#define CCLK()              do {SET_CCLK(); CLR_CCLK();} while (0)
+#define SET_FPGA_DIN(data)  do {FPGA_DINREG->FIOPIN1 = data;} while (0)
 #endif

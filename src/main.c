@@ -28,9 +28,7 @@
 #include "rtc.h"
 #include "sysinfo.h"
 #include "cfg.h"
-
-#define EMC0TOGGLE        (3<<4)
-#define MR0R              (1<<1)
+#include "check.h"
 
 int i;
 
@@ -65,24 +63,28 @@ uart_putc('\n');
 }
 
 int main(void) {
-  LPC_GPIO2->FIODIR = BV(4) | BV(5);
-  LPC_GPIO1->FIODIR = BV(23) | BV(SNES_CIC_PAIR_BIT);
+  SNES_CIC_PAIR_REG->FIODIR = BV(SNES_CIC_PAIR_BIT);
   BITBAND(SNES_CIC_PAIR_REG->FIOSET, SNES_CIC_PAIR_BIT) = 1;
-  LPC_GPIO0->FIODIR = BV(16);
 
- /* disable pull-up on fake USB_CONNECT pin (P4.28), set P1.30 function to VBUS */
-  LPC_PINCON->PINMODE9 |= BV(25);
-  LPC_PINCON->PINSEL3 |= BV(29);
-  LPC_PINCON->PINMODE3 |= BV(29);
+  BITBAND(DAC_DEMREG->FIODIR, DAC_DEMBIT) = 1;
+  BITBAND(DAC_DEMREG->FIOSET, DAC_DEMBIT) = 1;
 
- /* connect UART3 on P0[25:26] + SSP0 on P0[15:18] + MAT3.0 on P0[10] */
+ /* disable pull-up on fake USB_CONNECT pin, set P1.30 function to VBUS */
+  USB_CONN_MODEREG |= BV(USB_CONN_MODEBIT);
+  USB_VBUS_PINSEL |= BV(USB_VBUS_PINSELBIT);
+  USB_VBUS_MODEREG |= BV(USB_VBUS_MODEBIT);
+
+ /* connect UART3 on P0[25:26] + SSP0 on P0[15:18] */
   LPC_PINCON->PINSEL1 = BV(18) | BV(19) | BV(20) | BV(21) /* UART3 */
                       | BV(3) | BV(5);                    /* SSP0 (FPGA) except SS */
-  LPC_PINCON->PINSEL0 = BV(31);                            /* SSP0 */
-/*                      | BV(13) | BV(15) | BV(17) | BV(19)  SSP1 (SD) */
+  LPC_PINCON->PINSEL0 = BV(31);                           /* SSP0 */
+  LPC_GPIO0->FIODIR = BV(16);                             /* SSP0 SS */
 
  /* pull-down CIC data lines */
-  LPC_PINCON->PINMODE0 = BV(0) | BV(1) | BV(2) | BV(3);
+  BITBAND(SNES_CIC_D0_MODEREG, SNES_CIC_D0_MODEBIT) = 1;
+  BITBAND(SNES_CIC_D0_MODEREG, SNES_CIC_D0_MODEBIT - 1) = 1;
+  BITBAND(SNES_CIC_D1_MODEREG, SNES_CIC_D1_MODEBIT) = 1;
+  BITBAND(SNES_CIC_D1_MODEREG, SNES_CIC_D1_MODEBIT - 1) = 1;
 
   clock_disconnect();
   snes_init();
@@ -95,22 +97,22 @@ int main(void) {
   led_init();
  /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
-  LPC_PINCON->PINSEL0 |= BV(20) | BV(21);                  /* MAT3.0 (FPGA clock) */
+  FPGA_CLK_PINSEL |= BV(FPGA_CLK_PINSELBIT) | BV(FPGA_CLK_PINSELBIT - 1); /* MAT3.x (FPGA clock) */
   led_std();
   sdn_init();
-  printf("\n\nsd2snes mk.2\n============\nfw ver.: " CONFIG_VERSION "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
+  printf("\n\n" DEVICE_NAME "\n===============\nfw ver.: " CONFIG_VERSION "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
 printf("PCONP=%lx\n", LPC_SC->PCONP);
 
   file_init();
   cic_init(0);
 /* setup timer (fpga clk) */
-  LPC_TIM3->TCR=2;
-  LPC_TIM3->CTCR=0;
-  LPC_TIM3->PR=0;
-  LPC_TIM3->EMR=EMC0TOGGLE;
-  LPC_TIM3->MCR=MR0R;
-  LPC_TIM3->MR0=1;
-  LPC_TIM3->TCR=1;
+  LPC_TIM3->TCR=2;                         // counter reset
+  LPC_TIM3->CTCR=0;                        // increment TC on PCLK
+  LPC_TIM3->PR=0;                          // prescale = 1:1 (increment TC every PCLK)
+  LPC_TIM3->EMR=EMR_FPGACLK_EMCxTOGGLE;    // toggle MAT3 output every time TC == MR
+  LPC_TIM3->MCR=MCR_FPGACLK_MRxR;          // reset TC when == MR
+  TMR_FPGACLK_MR=1;                        // MR = 1 -> toggle MAT3 output every 2 PCLK -> FPGA_CLK = PCLK / 4
+  LPC_TIM3->TCR=1;                         // start the counter
   fpga_init();
   firstboot = 1;
   while(1) {

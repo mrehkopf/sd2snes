@@ -663,7 +663,7 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
   crc_valid=1;
   set_mcu_addr(base_addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x88);
+  FPGA_TX_BYTE(FPGA_CMD_READMEM | FPGA_MEM_AUTOINC);
   for(count=0; count<size; count++) {
     FPGA_WAIT_RDY();
     data = FPGA_RX_BYTE();

@@ -18,11 +18,7 @@ void clock_init() {
 /* set flash access time to 5 clks (80<f<=100MHz) */
   setFlashAccessTime(5);
 
-/* setup PLL0 for 86MHz
-   Base clock: 12MHz
-   Multiplier:   23
-   Pre-Divisor:   2
-   Divisor:       6
+/* setup PLL0 for 96MHz
    First, disable and disconnect PLL0.
 */
   clock_disconnect();
