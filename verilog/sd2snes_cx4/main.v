@@ -141,7 +141,7 @@ wire [23:0] SNES_ADDR = (SNES_ADDRr[5] & SNES_ADDRr[4]);
 wire [7:0] SNES_PA = (SNES_PAr[5] & SNES_PAr[4]);
 wire [7:0] SNES_DATA_IN = (SNES_DATAr[3] & SNES_DATAr[2]);
 
-wire SNES_PARD_start = (SNES_PARDr[6:1]  == 6'b111110);
+wire SNES_PARD_start = (SNES_PARDr[6:1] == 6'b111110);
 // Sample PAWR data earlier on CPU accesses, later on DMA accesses...
 wire SNES_PAWR_start = (SNES_PAWRr[6:1] == (({SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h02100) ? 6'b111000 : 6'b100000));
 wire SNES_PAWR_end = (SNES_PAWRr[6:1] == 6'b000001);
