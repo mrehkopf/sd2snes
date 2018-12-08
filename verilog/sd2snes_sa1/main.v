@@ -784,15 +784,15 @@ end
 always @(posedge CLK2) begin
   if(SNES_cycle_end) r213f_forceread <= 1'b1;
   else if(SNES_PARD_start & r213f_enable) begin
-//    r213f_delay <= 3'b000;
-//    r213f_state <= 2'b10;
-//  end else if(r213f_state == 2'b10) begin
-//    r213f_delay <= r213f_delay - 1;
-//    if(r213f_delay == 3'b000) begin
+    r213f_delay <= 3'b001;
+    r213f_state <= 2'b10;
+  end else if(r213f_state == 2'b10) begin
+    r213f_delay <= r213f_delay - 1;
+    if(r213f_delay == 3'b000) begin
       r213f_forceread <= 1'b0;
       r213f_state <= 2'b01;
       r213fr <= {SNES_DATA[7:5], mcu_region, SNES_DATA[3:0]};
-//    end
+    end
   end
 end
 
