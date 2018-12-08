@@ -262,7 +262,7 @@ parameter ST_GSU_RAM_RD_END  = 11'b00100000000;
 parameter ST_GSU_RAM_WR_ADDR = 11'b01000000000;
 parameter ST_GSU_RAM_WR_END  = 11'b10000000000;
 
-parameter SNES_DEAD_TIMEOUT = 17'd96000; // 1ms  // FIXME: this and some other constant times should be adjusted for new clock rate.
+parameter SNES_DEAD_TIMEOUT = 17'd85714; // 1ms
 
 parameter ROM_CYCLE_LEN = 4'd7; // Increased from 6 due to tight timing on some sd2snes.
 
