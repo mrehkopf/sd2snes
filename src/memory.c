@@ -671,7 +671,7 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
       crc_valid = 0;
       break;
     }
-    crc += crc32_update(crc, data);
+    crc = crc32_update(crc, data);
   }
   FPGA_DESELECT();
   return crc;

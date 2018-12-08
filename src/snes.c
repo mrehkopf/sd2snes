@@ -69,24 +69,30 @@ status_t ST = {
 typedef struct { uint32_t crc; uint32_t base; uint32_t size; } SramOffset;
 const SramOffset SramOffsetTable[] = {
   // GSU
-  { 0x2444D698, 0x7c00, 0x0400, }, // yoshi's island (us)
-  { 0x2E00BB2F, 0x7c00, 0x0400, }, // yoshi's island (us) 1.1
-  { 0x8D93C19D, 0x7c00, 0x0400, }, // yoshi's island (eu)
-  { 0x2C75AB19, 0x7c00, 0x0400, }, // yoshi's island (jp)
-  
+  { 0x5cb1755a, 0x7c00, 0x0400 }, // yoshi's island (us)
+  { 0x42115ad4, 0x7c00, 0x0400 }, // yoshi's island (us) 1.1
+  { 0x08f007cc, 0x7c00, 0x0400 }, // yoshi's island (eu)
+  { 0x8a699987, 0x7c00, 0x0400 }, // yoshi's island (eu) 1.1
+  { 0xb9b78a85, 0x7c00, 0x0400 }, // yoshi's island (jp)
+  { 0x82efeef5, 0x7c00, 0x0400 }, // yoshi's island (jp) 1.1
+  { 0x7c8fb8d3, 0x7c00, 0x0400 }, // yoshi's island (jp) 1.2
+
   // SA1
-  { 0x1D77C761, 0x0000, 0x2000, }, // super mario rpg (us)
-  { 0xC3FA1E20, 0x0000, 0x2000, }, // super mario rpg (jp)
-  
-  { 0xAE7DC486, 0x1F00, 0x0100, }, // kirby super star (us)
-  { 0xB2193041, 0x1F00, 0x0100, }, // kirby super star (eu)
-  { 0xAE4986AF, 0x1F00, 0x0100, }, // kirby super star (jp)
+  { 0x0acd464f, 0x0000, 0x2000 }, // super mario rpg (us)
+  { 0x44604774, 0x0000, 0x2000 }, // super mario rpg (jp)
 
-  { 0xBFA3216C, 0x5E00, 0x0200, }, // kirby's dreamland (us)
-  { 0x1779D7B2, 0x5E00, 0x0200, }, // kirby's dreamland (jp)
+  { 0x9897b7b6, 0x1F00, 0x0100 }, // kirby super star (us)
+  { 0xdf749c91, 0x1F00, 0x0100 }, // kirby super star (eu)
+  { 0x045c941a, 0x1F00, 0x0100 }, // hoshi no kirby super deluxe (jp)
 
-  { 0x382E1F93, 0x0100, 0x0C00, }, // marvelous (jp)
-  { 0xEBBA38AD, 0x0100, 0x0C00, }, // marvelous 1.07 (us)
+  { 0xfdcd089c, 0x5E00, 0x0200 }, // kirby's dreamland (us)
+  { 0x52707a84, 0x5E00, 0x0200 }, // hoshi no kirby 3 (jp)
+
+  { 0xb7ad7461, 0x0100, 0x0C00 }, // marvelous (jp)
+  { 0xb803d023, 0x0100, 0x0C00 }, // marvelous 1.06 (us)
+  { 0x7a76f989, 0x0100, 0x0C00 }, // marvelous 1.07 (us Tashi-DackR)
+  { 0x186dddd3, 0x0100, 0x0C00 }  // marvelous 1.07 (us DackR)
+
 };
 
 void prepare_reset() {
