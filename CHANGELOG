@@ -1,3 +1,31 @@
+v1.9.0
+======
+ * add SA-1 support by RedGuy
+ * add partial SRAM change detection for known games (SuperFX/SA-1) by RedGuy
+   this enables sensible autosaving for games that use part SRAM as work RAM,
+   without having to resort to periodic saving. I added some more games to the
+   known CRC list.
+   Note that this feature performs full ROM CRC calculation after loading and
+   running the ROM so firmware is unresponsive to in-game hooks and resetting
+   for a couple of seconds after the game has started. I have some ideas for
+   optimization.
+ * add option to always go back to menu when resetting
+ * add LED brightness setting
+ * add an option to start out with cheats enabled or disabled
+ * disable Satellaview emulation when a real Satellaview unit is present to
+   avoid conflicts and facilitate Satellaview development
+ * add SNES CPU <-> PPU clock phase alignment correction on reset
+   (fixes flickering sprite slabs e.g. giant Frog in Chrono Trigger, sprites in
+   Kirby Super Star, Star Ocean...)
+ * show current effective video mode (50/60Hz) in System Information
+ * fixes:
+   - earlier signal edge detection, improving stability on some consoles
+   - fix timing of auto region patching
+   - fix brightness patching for games that use HDMA to set brightness/blanking
+   - fix an occasional lockup when loading a game that uses OBC-1/SuperFX/SA-1
+   - fix SuperCIC pair mode entry for consoles with <= 3.072MHz CIC clock
+   - reset S-RTC register state on reset
+
 v1.8.0
 ======
  * add SuperFX support by RedGuy (v10)

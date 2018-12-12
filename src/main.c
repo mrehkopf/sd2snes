@@ -28,7 +28,6 @@
 #include "rtc.h"
 #include "sysinfo.h"
 #include "cfg.h"
-#include "check.h"
 
 int i;
 
