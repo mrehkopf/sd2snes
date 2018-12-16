@@ -273,6 +273,21 @@ menu_enttab_browser:
  .byt  0,0,0
  .byt  0,0,0
 
+ .byt MTYPE_VALUE
+ .word !mtext_browser_ledbright
+ .byt  ^mtext_browser_ledbright
+ .word !kv_led_bright
+ .byt  ^kv_led_bright
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_LED_BRIGHTNESS
+ .byt  ^CFG_LED_BRIGHTNESS
+ .word !mdesc_browser_ledbright
+ .byt  ^mdesc_browser_ledbright
+ .word !(mfunc_chg_ledbright-1)
+ .byt  ^(mfunc_chg_ledbright-1)
+ .byt  0,0,0
+ .byt  0,0,0
+
 ; .byt  MTYPE_VALUE
 ; .word !mtext_browser_screensaver_timeout
 ; .byt  ^mtext_browser_screensaver_timeout
@@ -322,7 +337,7 @@ menu_enttab_chip:
  .byt  0,0,0
  .byt  0,0,0
  .byt  0,0,0
- 
+
  .byt  MTYPE_VALUE
  .word !mtext_chip_msu1_volume_boost
  .byt  ^mtext_chip_msu1_volume_boost
@@ -345,6 +360,21 @@ menu_enttab_ingame:
  .word !mtext_cfg_ingame
  .byt  ^mtext_cfg_ingame
 ; ENTRIES
+
+ .byt  MTYPE_VALUE
+ .word !mtext_ingame_cheats
+ .byt  ^mtext_ingame_cheats
+ .word !kv_yesno
+ .byt  ^kv_yesno
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_ENABLE_CHEATS
+ .byt  ^CFG_ENABLE_CHEATS
+ .word !mdesc_ingame_cheats
+ .byt  ^mdesc_ingame_cheats
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
  .byt  MTYPE_VALUE
  .word !mtext_ingame_shortreset
  .byt  ^mtext_ingame_shortreset
@@ -358,7 +388,7 @@ menu_enttab_ingame:
  .byt  0,0,0
  .byt  0,0,0
  .byt  0,0,0
- 
+
  .byt  MTYPE_VALUE
  .word !mtext_ingame_enable
  .byt  ^mtext_ingame_enable
@@ -443,6 +473,20 @@ menu_enttab_ingame:
  .byt  ^mdesc_ingame_brightlimit
  .word !(mfunc_chg_brightness-1)
  .byt  ^(mfunc_chg_brightness-1)
+ .byt  0,0,0
+ .byt  0,0,0
+ 
+ .byt  MTYPE_VALUE
+ .word !mtext_ingame_resetpatch
+ .byt  ^mtext_ingame_resetpatch
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_RESET_PATCH
+ .byt  ^CFG_RESET_PATCH
+ .word !mdesc_ingame_resetpatch
+ .byt  ^mdesc_ingame_resetpatch
+ .byt  0,0,0
  .byt  0,0,0
  .byt  0,0,0
 
@@ -538,6 +582,14 @@ mfunc_chg_brightness:
   sta @bright_limit
   rtl
 
+mfunc_chg_ledbright:
+  sta @CFG_LED_BRIGHTNESS
+  lda #CMD_LED_BRIGHTNESS
+- sta @MCU_CMD
+  cmp @SNES_CMD
+  bne -
+  rtl
+
 kv_bsx_timesource:
 .word $0000, !text_rtc : .byt ^text_rtc
 .word $0001, !text_custom : .byt ^text_custom
@@ -613,6 +665,25 @@ kv_bright_limit:
 .word $000d, !text_minus2 : .byt ^text_minus2
 .word $000e, !text_minus1 : .byt ^text_minus1
 .word $000f, !text_off : .byt ^text_off
+.word $ffff
+
+kv_led_bright:
+.word $0000, !text_off : .byt ^text_off
+.word $0001, !text_1 : .byt ^text_1
+.word $0002, !text_2 : .byt ^text_2
+.word $0003, !text_3 : .byt ^text_3
+.word $0004, !text_4 : .byt ^text_4
+.word $0005, !text_5 : .byt ^text_5
+.word $0006, !text_6 : .byt ^text_6
+.word $0007, !text_7 : .byt ^text_7
+.word $0008, !text_8 : .byt ^text_8
+.word $0009, !text_9 : .byt ^text_9
+.word $000a, !text_10 : .byt ^text_10
+.word $000b, !text_11 : .byt ^text_11
+.word $000c, !text_12 : .byt ^text_12
+.word $000d, !text_13 : .byt ^text_13
+.word $000e, !text_14 : .byt ^text_14
+.word $000f, !text_15_max : .byt ^text_15_max
 .word $ffff
 
 menu_enttab_test:

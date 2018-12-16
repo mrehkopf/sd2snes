@@ -70,24 +70,29 @@ status_t ST = {
 typedef struct { uint32_t crc; uint32_t base; uint32_t size; } SramOffset;
 const SramOffset SramOffsetTable[] = {
   // GSU
-  { 0x2444D698, 0x7c00, 0x0400, }, // yoshi's island (us)
-  { 0x2E00BB2F, 0x7c00, 0x0400, }, // yoshi's island (us) 1.1
-  { 0x8D93C19D, 0x7c00, 0x0400, }, // yoshi's island (eu)
-  { 0x2C75AB19, 0x7c00, 0x0400, }, // yoshi's island (jp)
-  
+  { 0x5cb1755a, 0x7c00, 0x0400 }, // yoshi's island (us)
+  { 0x42115ad4, 0x7c00, 0x0400 }, // yoshi's island (us) 1.1
+  { 0x08f007cc, 0x7c00, 0x0400 }, // yoshi's island (eu)
+  { 0x8a699987, 0x7c00, 0x0400 }, // yoshi's island (eu) 1.1
+  { 0xb9b78a85, 0x7c00, 0x0400 }, // yoshi's island (jp)
+  { 0x82efeef5, 0x7c00, 0x0400 }, // yoshi's island (jp) 1.1
+  { 0x7c8fb8d3, 0x7c00, 0x0400 }, // yoshi's island (jp) 1.2
+
   // SA1
-  { 0x1D77C761, 0x0000, 0x2000, }, // super mario rpg (us)
-  { 0xC3FA1E20, 0x0000, 0x2000, }, // super mario rpg (jp)
-  
-  { 0xAE7DC486, 0x1F00, 0x0100, }, // kirby super star (us)
-  { 0xB2193041, 0x1F00, 0x0100, }, // kirby super star (eu)
-  { 0xAE4986AF, 0x1F00, 0x0100, }, // kirby super star (jp)
+  { 0x0acd464f, 0x0000, 0x2000 }, // super mario rpg (us)
+  { 0x44604774, 0x0000, 0x2000 }, // super mario rpg (jp)
 
-  { 0xBFA3216C, 0x5E00, 0x0200, }, // kirby's dreamland (us)
-  { 0x1779D7B2, 0x5E00, 0x0200, }, // kirby's dreamland (jp)
+  { 0x9897b7b6, 0x1F00, 0x0100 }, // kirby super star (us)
+  { 0xdf749c91, 0x1F00, 0x0100 }, // kirby super star (eu)
+  { 0x045c941a, 0x1F00, 0x0100 }, // hoshi no kirby super deluxe (jp)
 
-  { 0x382E1F93, 0x0100, 0x0C00, }, // marvelous (jp)
-  { 0xEBBA38AD, 0x0100, 0x0C00, }, // marvelous 1.07 (us)
+  { 0xfdcd089c, 0x5E00, 0x0200 }, // kirby's dreamland (us)
+  { 0x52707a84, 0x5E00, 0x0200 }, // hoshi no kirby 3 (jp)
+
+  { 0xb7ad7461, 0x0100, 0x0C00 }, // marvelous (jp)
+  { 0xb803d023, 0x0100, 0x0C00 }, // marvelous 1.06 (us)
+  { 0x7a76f989, 0x0100, 0x0C00 }, // marvelous 1.07 (us Tashi-DackR)
+  { 0x186dddd3, 0x0100, 0x0C00 }  // marvelous 1.07 (us DackR)
 };
 
 void prepare_reset() {
@@ -137,15 +142,16 @@ void snes_reset(int state) {
  */
 uint8_t snes_reset_loop(void) {
   uint8_t cmd = 0;
-  // FIXME: don't enable reset loop in usb firmware
-  return cmd;
   
+  tick_t starttime = getticks();
   while(fpga_test() == FPGA_TEST_TOKEN) {
     cmd = snes_get_mcu_cmd();
-
+    // 100ms timeout in case the reset hook is defeated somehow
+    if(getticks() > starttime + SNES_RESET_LOOP_TIMEOUT) {
+      cmd = SNES_CMD_RESET_LOOP_TIMEOUT;
+    }
     if (cmd) {
       printf("snes_reset_loop: cmd=%hhx\n", cmd);
-      
       switch (cmd) {
         case SNES_CMD_RESET_LOOP_FAIL:
           snes_set_mcu_cmd(0);
@@ -154,6 +160,7 @@ uint8_t snes_reset_loop(void) {
           //delay_us(SNES_RELEASE_RESET_DELAY_US);
           break;
         case SNES_CMD_RESET_LOOP_PASS:
+        case SNES_CMD_RESET_LOOP_TIMEOUT:
           snes_set_mcu_cmd(0);
           cmd = 0;
         default:
@@ -254,7 +261,6 @@ uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_sav
 uint8_t sram_valid = 0;
 uint8_t snes_main_loop() {
   recalculate_sram_range();
-  
   if(romprops.sramsize_bytes) {
     saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes);
     sram_valid = sram_reliable();
@@ -327,7 +333,7 @@ void get_selected_name(uint8_t* fn) {
   uint32_t fdaddr;
   char *dot;
   cwdaddr = snes_get_mcu_param();
-  fdaddr = snescmd_readlong(SNESCMD_MCU_CMD + 8);
+  fdaddr = snescmd_readlong(SNESCMD_MCU_CMD + 0x08);
   printf("cwd addr=%lx  fdaddr=%lx\n", cwdaddr, fdaddr);
   uint16_t count = sram_readstrn(fn, cwdaddr, 256);
   if(count && fn[count-1] != '/') {
@@ -497,33 +503,31 @@ void status_save_from_menu() {
   sram_readblock(&ST, SRAM_STATUS_ADDR, sizeof(status_t));
 }
 
-// The goals of this function are the following:
-// - detect a small, fixed set of popular games where the save location is a known, strict subset of sram.
-//   this avoids switching to the periodic save to sd mode.
-// - revert to full sram save if there is any change in the rom.  this includes minor hacks that don't change save location.
-// - not support any user control beyond rom modification.
-//   user control is very error prone: bad crc when rom is modified, incorrect save region definition, etc.
-// - very limited rom hack coverage.  if the hack changes then it will no longer benefit without an updated crc.
-//
-// The full sram location is still loaded and saved.  The restricted bounds are only used to detect when to save.
+/*
+   The goals of this function are the following:
+   - detect a small, fixed set of popular games where the save location is a known, strict subset of sram.
+     this avoids switching to the periodic save to sd mode.
+   - revert to full sram save if there is any change in the rom.  this includes minor hacks that don't change save location.
+   - not support any user control beyond rom modification.
+     user control is very error prone: bad crc when rom is modified, incorrect save region definition, etc.
+   - very limited rom hack coverage.  if the hack changes then it will no longer benefit without an updated crc.
+
+   The full sram location is still loaded and saved.  The restricted bounds are only used to detect when to save.
+*/
 void recalculate_sram_range() {
-  // FIXME: don't support yet in usb firmware
-  return;
-  
   if (!sram_crc_valid && sram_valid) {
-    // insert arbitrary delay to avoid startup problem in some games
-    delay_ms(2000);
-    
     printf("calculating rom hash (base=%06lx, size=%ld): ", SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
-    // there is a very small chance of collision.  there are several ways to avoid this:
-    // - incorporate (concatenate) checksum16 or other information
-    // - use a better hash function like sha-256
+    /*
+      there is a very small chance of collision.  there are several ways to avoid this:
+      - incorporate (concatenate) checksum16 or other information
+      - use a better hash function like sha-256
+     */
     uint32_t crc = calc_sram_crc(SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
     printf("%08lx\n", crc);
 
     if (crc_valid) {
-      sram_crc_valid = 1;      
-      
+      sram_crc_valid = 1;
+
       for (uint32_t i = 0; i < (sizeof(SramOffsetTable)/sizeof(SramOffset)); i++) {
         if (crc == SramOffsetTable[i].crc) {
           romprops.srambase       = SramOffsetTable[i].base;
@@ -532,6 +536,6 @@ void recalculate_sram_range() {
           break;
         }
       }
-    }    
+    }
   }
 }

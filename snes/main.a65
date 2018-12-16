@@ -698,3 +698,29 @@ detect_ultra16_out:
   sta @$0021c0
   plp
   rts
+
+detect_satellaview:
+  php
+  sep #$20 : .as
+  lda #$aa
+  sta $2188
+  cmp $2188
+  bne detect_satellaview_out
+  lda #$55
+  sta $2188
+  cmp $2188
+  bne detect_satellaview_out
+detect_satellaview_found:
+  stz $2188
+  stz $2189
+  stz $218e
+  stz $218f
+  lda #$01
+  sta @ST_HAS_SATELLAVIEW
+  plp
+  rts
+detect_satellaview_out:
+  lda #$00
+  sta @ST_HAS_SATELLAVIEW
+  plp
+  rts

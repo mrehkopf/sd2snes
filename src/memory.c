@@ -429,10 +429,6 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
 
   set_mapper(romprops.mapper_id);
 
-  // loading a new rom implies the previous crc is no longer valid
-  sram_crc_valid = 0;
-  sram_crc_romsize = filesize - romprops.offset;
-  
 //printf("%04lx\n", romprops.header_address + ((void*)&romprops.header.vect_irq16 - (void*)&romprops.header));
   if(flags & (LOADROM_WITH_RESET|LOADROM_WAIT_SNES)) {
     assert_reset();
@@ -440,6 +436,10 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     deassert_reset();
   }
   
+  // loading a new rom implies the previous crc is no longer valid
+  sram_crc_valid = 0;
+  sram_crc_romsize = filesize - romprops.offset;
+
   return (uint32_t)filesize;
 }
 
@@ -447,7 +447,6 @@ void assert_reset() {
   printf("resetting SNES\n");
   fpga_dspx_reset(1);
   snes_reset(1);
-  
   if(ST.is_u16 && (ST.u16_cfg & 0x01)) {
     delay_ms(60*SNES_RESET_PULSELEN_MS);
   } else {
@@ -457,7 +456,7 @@ void assert_reset() {
 
 void init(uint8_t *filename) {
   snescmd_prepare_nmihook();
-  //if (CFG.reset_patch) snescmd_writebyte(0, SNESCMD_RESET_HOOK+1);
+  if (CFG.reset_patch) snescmd_writebyte(0, SNESCMD_RESET_HOOK+1);
   cheat_yaml_load(filename);
 // XXX    cheat_yaml_save(filename);
   cheat_program();
@@ -707,7 +706,7 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
   crc_valid=1;
   set_mcu_addr(base_addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x88);
+  FPGA_TX_BYTE(FPGA_CMD_READMEM | FPGA_MEM_AUTOINC);
   for(count=0; count<size; count++) {
     FPGA_WAIT_RDY();
     data = FPGA_RX_BYTE();
@@ -715,7 +714,7 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size) {
       crc_valid = 0;
       break;
     }
-    crc += crc32_update(crc, data);
+    crc = crc32_update(crc, data);
   }
   FPGA_DESELECT();
   return crc;
