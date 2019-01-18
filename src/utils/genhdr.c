@@ -70,6 +70,7 @@ int main(int argc, char **argv) {
 
   if(flen+256 < flen) {
     printf("File too large ;)\n");
+    fclose(f);
     return 1;
   }
   char *remaining = NULL;
@@ -86,6 +87,8 @@ int main(int argc, char **argv) {
   uint8_t *buf = malloc(flen+256);
   if(!buf) {
     perror("malloc");
+    fclose(f);
+    return -1;
   }
   memset(buf, 0xff, 256);
   fseek(f, 0, SEEK_SET);
@@ -122,5 +125,6 @@ int main(int argc, char **argv) {
   fseek(f, 0, SEEK_SET);
   fwrite(buf, 1, 256+flen, f);
   fclose(f);
+  free(buf);
   return 0;
 }
