@@ -20,4 +20,4 @@ menu.bin: $(OBJS)
 	snescom -I -J -Wall -o $@ $< 2>&1 | tee $@.log
 
 clean:
-	rm -f *.ips *.o65 *~ menu.bin
+	rm -f *.ips *.o65 *~ menu.bin *.o65.log *.map *.ips.log

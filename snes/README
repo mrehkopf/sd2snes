@@ -1,0 +1,14 @@
+SNES Menu Compilation
+
+This directory contains all code for the SD2SNES menu navigation.
+
+snescom (Version 1.7.4) is required. It can be downloaded here: https://bisqwit.iki.fi/source/snescom.html
+
+To Compile, libboot-dev-all should be installed, then make & make install in the snescom directory.
+
+After installing snescom, call make in this directory to build the SD2SNES menu.
+
+Copy the resulting file "menu.bin" to <sdcard>/sd2snes/menu.bin.
+
+
+
