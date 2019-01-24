@@ -1,3 +1,4 @@
+.link page $c0
 #define hash #
 #define f(x) x
 #define imm(a) f(hash)a
