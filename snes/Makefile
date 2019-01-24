@@ -23,4 +23,4 @@ $(OUT): $(OBJS)
 	snescom -I -J -Wall -o $@ $< 2>&1 | tee $@.log
 
 clean:
-	rm -f *.ips *.o65 *~ $(OUT)
+	rm -f *.ips *.o65 *~ $(OUT) menu.bin *.o65.log *.map *.ips.log

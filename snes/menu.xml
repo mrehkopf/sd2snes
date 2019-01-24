@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cartridge region="PAL">
+ <rom>
+   <map mode="shadow" address="00-3f:8000-ffff"/>
+   <map mode="linear" address="40-7f:0000-ffff"/>
+   <map mode="shadow" address="80-bf:8000-ffff"/>
+   <map mode="linear" address="c0-ff:0000-ffff"/>
+ </rom>
+ <ram size="0x10000">
+   <map mode="linear" address="ff:0000-ffff"/>
+ </ram>
+<srtc>
+  <map address='00-3f:2800-2801'/>
+   <map address='80-bf:2800-2801'/>
+</srtc>
+</cartridge>
