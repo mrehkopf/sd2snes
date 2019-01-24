@@ -1,3 +1,5 @@
+.link page $c0
+
 version         .byt "                            v0.1",0
 zero            .word  0
 bg2tile         .byt $20

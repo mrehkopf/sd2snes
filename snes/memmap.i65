@@ -1,3 +1,4 @@
+.link page $c0
 #define APUIO0                      $2140
 #define APUIO1                      $2141
 #define APUIO2                      $2142
