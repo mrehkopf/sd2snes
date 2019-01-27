@@ -121,3 +121,6 @@ cic/supercic/supercic-key.hex
 cic/supercic/supercic-lock.hex
 contrib/*
 docs/*
+obj/
+snes/menu.rtc
+snes/menu.srm
