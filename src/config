@@ -1,3 +1,4 @@
 CONFIG_VERSION="1.9.0"
 CONFIG_FWVER=0x01090000
+#CONFIG_FWVER=0x44534E53 # Use this magic number during development to disable version check on hardware boot
 CONFIG_MCU_FOSC=12000000
