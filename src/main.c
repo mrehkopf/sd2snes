@@ -116,7 +116,16 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
   firstboot = 1;
   while(1) {
     snes_boot_configured = 0;
-    while(get_cic_state() == CIC_FAIL) {
+    uint8_t checkTimer = 0;
+
+    /* Check CIC communication */
+    while(get_cic_state() == CIC_FAIL && checkTimer < 10) {
+      snes_bootprint("         CIC CHIP CHECK!        \0");
+      delay_ms(1000);
+      checkTimer++;
+    }
+    /* CIC didn't respond for 10 secs, display permanent error, flashing lights of doom */
+    while(checkTimer >= 9) {
       snes_bootprint("         CIC CHIP ERROR!        \0");
       rdyled(0);
       readled(0);
@@ -127,7 +136,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       writeled(1);
       delay_ms(500);
     }
-    
+
     /* some sanity checks */
     uint8_t card_go = 0;
     while(!card_go) {
