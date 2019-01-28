@@ -117,6 +117,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
   while(1) {
     snes_boot_configured = 0;
     while(get_cic_state() == CIC_FAIL) {
+      snes_bootprint("         CIC CHIP ERROR!        \0");
       rdyled(0);
       readled(0);
       writeled(0);
@@ -126,6 +127,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       writeled(1);
       delay_ms(500);
     }
+    
     /* some sanity checks */
     uint8_t card_go = 0;
     while(!card_go) {
