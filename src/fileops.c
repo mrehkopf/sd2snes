@@ -118,7 +118,8 @@ FRESULT check_or_create_folder(TCHAR *dir) {
   fno.lfname = NULL;
   TCHAR buf[256];
   TCHAR *ptr = buf;
-  strncpy(buf, dir, sizeof(buf));
+  strncpy(buf, dir, sizeof(buf) - 1);
+  buf[sizeof(buf) - 1] = '\0';
   while(*(ptr++)) {
     if(*ptr == '/') {
       *ptr = 0;
