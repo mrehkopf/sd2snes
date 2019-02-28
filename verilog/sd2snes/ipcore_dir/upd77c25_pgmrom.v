@@ -22,7 +22,7 @@
 *     devices, or systems.  Use in such applications are expressly             *
 *     prohibited.                                                              *
 *                                                                              *
-*     (c) Copyright 1995-2016 Xilinx, Inc.                                     *
+*     (c) Copyright 1995-2018 Xilinx, Inc.                                     *
 *     All rights reserved.                                                     *
 *******************************************************************************/
 // You must compile the wrapper file upd77c25_pgmrom.v when simulating

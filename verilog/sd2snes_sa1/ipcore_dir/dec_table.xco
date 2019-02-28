@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Sat Jul 14 02:50:47 2018
+# Date: Thu Oct 25 23:13:50 2018
 #
 ##############################################################
 #
@@ -46,7 +46,7 @@ CSET axi_id_width=4
 CSET axi_slave_type=Memory_Slave
 CSET axi_type=AXI4_Full
 CSET byte_size=9
-CSET coe_file=./dec_table.coe
+CSET coe_file=.\dec_table.coe
 CSET collision_warnings=ALL
 CSET component_name=dec_table
 CSET disable_collision_warnings=false

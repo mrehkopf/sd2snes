@@ -7,17 +7,17 @@
 // \   \   \/     Version: P.20131013
 //  \   \         Application: netgen
 //  /   /         Filename: sa1_mult.v
-// /___/   /\     Timestamp: Fri Jun 15 16:26:43 2018
+// /___/   /\     Timestamp: Fri Oct 26 01:08:37 2018
 // \   \  /  \ 
 //  \___\/\___\
 //             
-// Command	: -w -sim -ofmt verilog C:/Users/O/dev/sd2snes-sa1/verilog/sd2snes_sa1/ipcore_dir/tmp/_cg/sa1_mult.ngc C:/Users/O/dev/sd2snes-sa1/verilog/sd2snes_sa1/ipcore_dir/tmp/_cg/sa1_mult.v 
+// Command	: -w -sim -ofmt verilog D:/prj/sd2snes/verilog/sd2snes_sa1/ipcore_dir/tmp/_cg/sa1_mult.ngc D:/prj/sd2snes/verilog/sd2snes_sa1/ipcore_dir/tmp/_cg/sa1_mult.v 
 // Device	: 3s400pq208-4
-// Input file	: C:/Users/O/dev/sd2snes-sa1/verilog/sd2snes_sa1/ipcore_dir/tmp/_cg/sa1_mult.ngc
-// Output file	: C:/Users/O/dev/sd2snes-sa1/verilog/sd2snes_sa1/ipcore_dir/tmp/_cg/sa1_mult.v
+// Input file	: D:/prj/sd2snes/verilog/sd2snes_sa1/ipcore_dir/tmp/_cg/sa1_mult.ngc
+// Output file	: D:/prj/sd2snes/verilog/sd2snes_sa1/ipcore_dir/tmp/_cg/sa1_mult.v
 // # of Modules	: 1
 // Design Name	: sa1_mult
-// Xilinx        : C:\Xilinx\14.7\ISE_DS\ISE\
+// Xilinx        : E:\Xilinx\14.7\ISE_DS\ISE\
 //             
 // Purpose:    
 //     This verilog netlist is a verification model and uses simulation 
