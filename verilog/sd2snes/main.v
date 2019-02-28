@@ -18,6 +18,8 @@
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
+`include "config.vh"
+
 module main(
   /* input clock */
   input CLKIN,
@@ -394,7 +396,7 @@ spi snes_spi(
 );
 
 wire [15:0] dsp_feat;
-
+`ifndef DEBUG
 upd77c25 snes_dspx (
   .DI(DSPX_SNES_DATA_IN),
   .DO(DSPX_SNES_DATA_OUT),
@@ -415,6 +417,7 @@ upd77c25 snes_dspx (
   .DP_ADDR(SNES_ADDR[10:0]),
   .dsp_feat(dsp_feat)
 );
+`endif
 
 reg [7:0] MCU_DINr;
 wire [7:0] MCU_DOUT;
@@ -835,5 +838,74 @@ snescmd_buf snescmd (
   .dinb(snescmd_data_out_mcu), // input [7 : 0] dinb
   .doutb(snescmd_data_in_mcu) // output [7 : 0] doutb
 );
+
+`ifdef DEBUG
+
+wire [35:0] CONTROL;
+
+wire [7:0] TRIG0w = {
+  SNES_READ_IN,
+  SNES_WRITE_IN,
+  SNES_CPU_CLK_IN,
+  SNES_READ,
+  SNES_WRITE,
+  SNES_CPU_CLK,
+  SNES_DATABUS_OE,
+  SNES_DATABUS_DIR
+};
+
+wire [31:0] TRIG1w = {
+  SNES_ADDR_IN,
+  SNES_DATA_IN
+};
+
+wire [40:0] TRIG2w = {
+  SNES_ADDR,
+  SNES_DATA,
+  BUS_DATA
+};
+
+wire [3:0] TRIG3w = {
+  SNES_cycle_start,
+  SNES_RD_start,
+  SNES_RD_end,
+  SNES_WR_end
+};
+
+wire [25:0] TRIG4w = {
+  ROM_WE,
+  ROM_BHE,
+  ROM_BLE,
+  ROM_ADDR
+};
+
+reg [7:0] TRIG0;
+reg [31:0] TRIG1;
+reg [40:0] TRIG2;
+reg [3:0] TRIG3;
+reg [25:0] TRIG4;
+
+always @(posedge CLK2) begin
+	TRIG0 <= TRIG0w;
+	TRIG1 <= TRIG1w;
+	TRIG2 <= TRIG2w;
+	TRIG3 <= TRIG3w;
+	TRIG4 <= TRIG4w;
+end
+
+chipscope_icon snes_icon (
+    .CONTROL0(CONTROL) // INOUT BUS [35:0]
+);
+
+chipscope_ila snes_ila (
+    .CONTROL(CONTROL), // INOUT BUS [35:0]
+    .CLK(CLK2), // IN
+    .TRIG0(TRIG0), // IN BUS [7:0]
+    .TRIG1(TRIG1), // IN BUS [31:0]
+    .TRIG2(TRIG2), // IN BUS [39:0]
+    .TRIG3(TRIG3), // IN BUS [3:0]
+    .TRIG4(TRIG4) // IN BUS [25:0]
+);
+`endif
 
 endmodule
