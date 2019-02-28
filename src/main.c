@@ -143,7 +143,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       }
       file_close();
     }
-//    snes_bootprint("           Loading ...          \0");
+    if(fpga_config == FPGA_ROM) snes_bootprint("           Loading ...          \0");
     led_pwm();
     rdyled(1);
     readled(0);
