@@ -1,3 +1,11 @@
+v1.10.0
+=======
+ * add S-DD1 support by magno
+ * initial firmware release for sd2snes Mk.III ("sd2snes pro")
+ * fixes:
+   - fix memory corruption on BS-X loading
+   - reset S-RTC read state on all load and reset occasions
+
 v1.9.0
 ======
  * add SA-1 support by RedGuy
