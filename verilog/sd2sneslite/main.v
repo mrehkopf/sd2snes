@@ -95,8 +95,6 @@ wire [23:0] MAPPED_SNES_ADDR;
 wire ROM_ADDR0;
 
 
-assign DCM_RST=0;
-
 reg [7:0] SNES_PARDr = 8'b11111111;
 reg [7:0] SNES_READr = 8'b11111111;
 reg [7:0] SNES_WRITEr = 8'b11111111;

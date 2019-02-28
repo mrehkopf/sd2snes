@@ -297,7 +297,7 @@ void smc_id(snes_romprops_t* props) {
   else {
     props->sramsize_bytes = props->ramsize_bytes;
   }
-  
+
   if(header->carttype == 0x55) {
     props->fpga_features |= FEAT_SRTC;
   }

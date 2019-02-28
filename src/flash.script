@@ -6,7 +6,7 @@
 #flash info 0
 
 reset init
-flash write_image erase unlock obj/firmware.img 8192
+flash write_image erase unlock obj/firmware.img 0x2000
 reset run
 shutdown
 

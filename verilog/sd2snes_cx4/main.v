@@ -415,8 +415,6 @@ address snes_addr(
   .branch2_enable(branch2_enable)
 );
 
-assign DCM_RST=0;
-
 //always @(posedge CLK2) begin
 //  non_hit_cycle <= 1'b0;
 //  if(SNES_cycle_start) non_hit_cycle <= ~ROM_HIT;
