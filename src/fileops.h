@@ -27,6 +27,7 @@
 #ifndef FILEOPS_H
 #define FILEOPS_H
 #include <arm/NXP/LPC17xx/LPC17xx.h>
+#include <stdio.h>
 #include "ff.h"
 
 enum filestates { FILE_OK=0, FILE_ERR, FILE_EOF };
@@ -47,7 +48,7 @@ void file_open_by_filinfo(FILINFO* fno);
 void file_close(void);
 void file_seek(uint32_t offset);
 UINT file_read(void);
-UINT file_write(void);
+UINT file_write(size_t len);
 UINT file_readblock(void* buf, uint32_t addr, uint16_t size);
 UINT file_writeblock(void* buf, uint32_t addr, uint16_t size);
 

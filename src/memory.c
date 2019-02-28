@@ -629,29 +629,32 @@ void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
 
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
   uint32_t count = 0;
-
+  uint32_t remain = sram_size;
+  size_t copy;
   FPGA_DESELECT();
   file_open(filename, FA_CREATE_ALWAYS | FA_WRITE);
   if(file_res) {
     uart_putc(0x30+file_res);
     return;
   }
-  while(count<sram_size) {
-    set_mcu_addr(base_addr+count);
-    FPGA_SELECT();
-    FPGA_TX_BYTE(0x88); /* read */
-    for(int j=0; j<sizeof(file_buf); j++) {
+  set_mcu_addr(base_addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x88); /* read */
+  while(remain) {
+    copy = (remain > 512) ? 512 : remain;
+    for(int j=0; j < copy; j++) {
       FPGA_WAIT_RDY();
       file_buf[j] = FPGA_RX_BYTE();
       count++;
     }
-    FPGA_DESELECT();
-    file_write();
+    file_write(copy);
     if(file_res) {
       uart_putc(0x30+file_res);
       return;
     }
+    remain -= copy;
   }
+  FPGA_DESELECT();
   file_close();
 }
 
