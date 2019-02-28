@@ -59,7 +59,7 @@ module main(
   input SPI_MOSI,
   inout SPI_MISO,
   input SPI_SS,
-  inout SPI_SCK,
+  input SPI_SCK,
   input MCU_OVR,
   output MCU_RDY,
 
@@ -143,7 +143,7 @@ wire [7:0] SNES_DATA_IN = (SNES_DATAr[3] & SNES_DATAr[2]);
 
 wire SNES_PARD_start = (SNES_PARDr[6:1] == 6'b111110);
 // Sample PAWR data earlier on CPU accesses, later on DMA accesses...
-wire SNES_PAWR_start = (SNES_PAWRr[6:1] == (({SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h02100) ? 6'b111000 : 6'b100000));
+wire SNES_PAWR_start = (SNES_PAWRr[7:1] == (({SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h02100) ? 7'b1110000 : 7'b1000000));
 wire SNES_PAWR_end = (SNES_PAWRr[6:1] == 6'b000001);
 wire SNES_RD_start = (SNES_READr[6:1] == 6'b111110);
 wire SNES_RD_end = (SNES_READr[6:1] == 6'b000001);
@@ -719,7 +719,7 @@ assign ROM_OE = 1'b0;
 assign ROM_CE = 1'b0;
 
 assign ROM_BHE = ROM_ADDR0;
-assign ROM_BLE = !ROM_ADDR0;
+assign ROM_BLE = ~ROM_ADDR0;
 
 assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
                          cx4_enable ? 1'b0 :

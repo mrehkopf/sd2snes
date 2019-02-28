@@ -59,7 +59,7 @@ module main(
   input SPI_MOSI,
   inout SPI_MISO,
   input SPI_SS,
-  inout SPI_SCK,
+  input SPI_SCK,
   input MCU_OVR,
   output MCU_RDY,
 
@@ -107,6 +107,7 @@ wire [5:0] msu_status_reset_bits;
 wire [5:0] msu_status_set_bits;
 
 wire [15:0] featurebits;
+wire feat_cmd_unlock = featurebits[5];
 
 wire [23:0] MAPPED_SNES_ADDR;
 wire ROM_ADDR0;
@@ -306,8 +307,6 @@ wire [7:0] MCU_DOUT;
 wire [31:0] cheat_pgm_data;
 wire [7:0] cheat_data_out;
 wire [2:0] cheat_pgm_idx;
-
-wire feat_cmd_unlock = featurebits[5];
 
 mcu_cmd snes_mcu_cmd(
   .clk(CLK2),
