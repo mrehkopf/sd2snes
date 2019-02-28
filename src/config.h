@@ -10,6 +10,8 @@
 // #define DEBUG_MSU1
 // #define DEBUG_YAML
 
+#define MENU_FILENAME            "/sd2snes/menu.bin"
+
 #define IN_AHBRAM                 __attribute__ ((section(".ahbram")))
 
 #define SD_DT_INT_SETUP()         do {\

@@ -134,9 +134,9 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
         while(disk_status(0) & (STA_NODISK));
         delay_ms(200);
       }
-      file_open((uint8_t*)"/sd2snes/menu.bin", FA_READ);
+      file_open((uint8_t*)MENU_FILENAME, FA_READ);
       if(file_status != FILE_OK) {
-        snes_bootprint("  /sd2snes/menu.bin not found!  \0");
+        snes_bootprint("  " MENU_FILENAME " not found!  \0");
         while(disk_status(0) == 0);
       } else {
         card_go = 1;
@@ -163,7 +163,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     sram_writelong(0x12345678, SRAM_SCRATCHPAD);
     fpga_dspx_reset(1);
     uart_putc('(');
-    load_rom((uint8_t*)"/sd2snes/menu.bin", SRAM_MENU_ADDR, 0);
+    load_rom((uint8_t*)MENU_FILENAME, SRAM_MENU_ADDR, 0);
     /* force memory size + mapper */
     set_rom_mask(0x3fffff);
     set_mapper(0x7);
