@@ -1,3 +1,7 @@
+v1.10.1
+=======
+ * fix bug preventing boot on sd2snes Mk.III...
+
 v1.10.0
 =======
  * add S-DD1 support by magno
