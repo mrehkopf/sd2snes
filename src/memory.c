@@ -244,7 +244,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   file_close();
 
   uint16_t fpga_features_preload = romprops.fpga_features | FEAT_CMD_UNLOCK | FEAT_2100_LIMIT_NONE;
-  if(filename == (uint8_t*)"/sd2snes/menu.bin") {
+  if(filename == (uint8_t*)MENU_FILENAME) {
     fpga_set_features(fpga_features_preload);
   }
   /* TODO check prerequisites and set error code here */
@@ -364,7 +364,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   printf("done\n");
 
-  if(cfg_is_r213f_override_enabled() && (filename != (uint8_t*)"/sd2snes/menu.bin") && !ST.is_u16) {
+  if(cfg_is_r213f_override_enabled() && (filename != (uint8_t*)MENU_FILENAME) && !ST.is_u16) {
     romprops.fpga_features |= FEAT_213F; /* e.g. for general consoles */
   }
   fpga_set_213f(romprops.region);
@@ -373,7 +373,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   dac_pause();
   dac_reset(0);
   if(get_cic_state() == CIC_PAIR) {
-    if(filename != (uint8_t*)"/sd2snes/menu.bin") {
+    if(filename != (uint8_t*)MENU_FILENAME) {
       if(CFG.vidmode_game == VIDMODE_AUTO) {
         cic_videomode(romprops.region);
       } else {
@@ -383,7 +383,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     }
   }
 
-  if(cfg_is_onechip_transient_fixes() && (filename != (uint8_t*)"/sd2snes/menu.bin")) {
+  if(cfg_is_onechip_transient_fixes() && (filename != (uint8_t*)MENU_FILENAME)) {
     romprops.fpga_features |= FEAT_2100;
   }
   romprops.fpga_features |= FEAT_2100_LIMIT(cfg_get_brightness_limit());
