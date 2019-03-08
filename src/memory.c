@@ -370,6 +370,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   fpga_set_213f(romprops.region);
 //  fpga_set_features(romprops.fpga_features);
   fpga_set_dspfeat(romprops.fpga_dspfeat);
+  fpga_set_dac_boost(CFG.msu_volume_boost);
   dac_pause();
   dac_reset(0);
   if(get_cic_state() == CIC_PAIR) {
