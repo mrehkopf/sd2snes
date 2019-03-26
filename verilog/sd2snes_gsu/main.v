@@ -643,8 +643,9 @@ reg [23:0] ROM_ADDRr;
 reg RQ_MCU_RDYr;
 initial RQ_MCU_RDYr = 1'b1;
 
-wire MCU_WR_HIT = |(STATE & ST_MCU_WR_ADDR);
-wire MCU_RD_HIT = |(STATE & ST_MCU_RD_ADDR);
+wire MCU_WE_HIT = |(STATE & ST_MCU_WR_ADDR);
+wire MCU_WR_HIT = |(STATE & (ST_MCU_WR_ADDR | ST_MCU_WR_END));
+wire MCU_RD_HIT = |(STATE & (ST_MCU_RD_ADDR | ST_MCU_RD_END));
 wire MCU_HIT = MCU_WR_HIT | MCU_RD_HIT;
 
 // GSU ROM
@@ -783,7 +784,7 @@ always @(posedge CLK2) begin
       r2100_forcewrite_pre <= 1'b1;
       r2100r <= {SNES_DATA[7], 3'b010, r2100_bright}; // 0xAx
     end else if (r2100_patch && SNES_DATA == 8'h00 && r2100r[7]) begin
-    // extend forced blanking when game goes from blanking to brightness 0
+    // extend forced blanking when game goes from blanking to brightness 0 (Star Fox top of screen)
       r2100_forcewrite_pre <= 1'b1;
       r2100r <= {1'b1, 3'b111, r2100_bright}; // 0xFx
     end else if (r2100_patch && SNES_DATA[3:0] < 4'h8 && r2100_bright_orig > 4'hd) begin
@@ -825,7 +826,7 @@ assign ROM_DATA[15:8] = (ROM_ADDR0)
 assign ROM_WE = SD_DMA_TO_ROM
                 ?MCU_WRITE
                 : (ROM_HIT & IS_WRITABLE & ~IS_SAVERAM & SNES_CPU_CLK & ~GSU_RONr) ? SNES_WRITE
-                : MCU_WR_HIT ? 1'b0
+                : MCU_WE_HIT ? 1'b0
                 : 1'b1;
 
 // OE always active. Overridden by WE when needed.
@@ -871,6 +872,7 @@ reg [18:0] RAM_ADDRr;
 reg RQ_RAM_MCU_RDYr;
 initial RQ_RAM_MCU_RDYr = 1'b1;
 
+wire MCU_RAM_WE_HIT = |(RAM_STATE & (ST_RAM_MCU_WR_ADDR | ST_RAM_MCU_WR_END));
 wire MCU_RAM_WR_HIT = |(RAM_STATE & ST_RAM_MCU_WR_ADDR);
 wire MCU_RAM_RD_HIT = |(RAM_STATE & ST_RAM_MCU_RD_ADDR);
 wire MCU_RAM_HIT = MCU_RAM_WR_HIT | MCU_RAM_RD_HIT;
@@ -901,6 +903,7 @@ reg        GSU_RAM_WORDr;
 reg RQ_GSU_RAM_RDYr; initial RQ_GSU_RAM_RDYr = 1;
 assign GSU_RAM_RDY = RQ_GSU_RAM_RDYr;
 
+wire GSU_RAM_WE_HIT = |(RAM_STATE & (ST_RAM_GSU_WR_ADDR | ST_RAM_GSU_WR_END));
 wire GSU_RAM_WR_HIT = |(RAM_STATE & ST_RAM_GSU_WR_ADDR);
 wire GSU_RAM_RD_HIT = |(RAM_STATE & ST_RAM_GSU_RD_ADDR);
 wire GSU_RAM_HIT    = GSU_RAM_WR_HIT | GSU_RAM_RD_HIT;
@@ -981,9 +984,9 @@ assign RAM_DATA[7:0] = ( GSU_RAM_WR_HIT ? GSU_RAM_DATAr[7:0]
                        : 8'bZ
                        );
 
-assign RAM_WE = ( GSU_RAM_WR_HIT ? 1'b0
+assign RAM_WE = ( GSU_RAM_WE_HIT ? 1'b0
                 : (ROM_HIT & IS_SAVERAM & SNES_CPU_CLK & ~GSU_RANr) ? SNES_WRITE
-                : MCU_RAM_WR_HIT ? 1'b0
+                : MCU_RAM_WE_HIT ? 1'b0
                 : 1'b1
                 );
 

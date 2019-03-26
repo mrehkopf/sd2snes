@@ -643,8 +643,9 @@ reg RQ_MCU_RDYr;
 initial RQ_MCU_RDYr = 1'b1;
 assign MCU_RDY = RQ_MCU_RDYr;
 
-wire MCU_WR_HIT = |(STATE & ST_MCU_WR_ADDR);
-wire MCU_RD_HIT = |(STATE & ST_MCU_RD_ADDR);
+wire MCU_WE_HIT = |(STATE & ST_MCU_WR_ADDR);
+wire MCU_WR_HIT = |(STATE & (ST_MCU_WR_ADDR | ST_MCU_WR_END));
+wire MCU_RD_HIT = |(STATE & (ST_MCU_RD_ADDR | ST_MCU_RD_END));
 wire MCU_HIT = MCU_WR_HIT | MCU_RD_HIT;
 
 assign ROM_ADDR  = (SD_DMA_TO_ROM) ? MCU_ADDR[23:1] : MCU_HIT ? ROM_ADDRr[23:1] : MAPPED_SNES_ADDR[23:1];
@@ -783,9 +784,9 @@ assign ROM_DATA[15:8] = ROM_ADDR0 ? 8'bZ
                          );
 
 assign ROM_WE = SD_DMA_TO_ROM
-                ?MCU_WRITE
+                ? MCU_WRITE
                 : (ROM_HIT & (IS_WRITABLE | IS_FLASHWR) & SNES_CPU_CLK) ? SNES_WRITE
-                : MCU_WR_HIT ? 1'b0
+                : MCU_WE_HIT ? 1'b0
                 : 1'b1;
 
 // OE always active. Overridden by WE when needed.
@@ -794,7 +795,7 @@ assign ROM_OE = 1'b0;
 assign ROM_CE = 1'b0;
 
 assign ROM_BHE = ROM_ADDR0;
-assign ROM_BLE = !ROM_ADDR0;
+assign ROM_BLE = ~ROM_ADDR0;
 
 assign SNES_DATABUS_OE = (dspx_enable | dspx_dp_enable) ? 1'b0 :
                          msu_enable ? 1'b0 :

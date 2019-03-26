@@ -601,8 +601,9 @@ reg RQ_MCU_RDYr;
 initial RQ_MCU_RDYr = 1'b1;
 assign MCU_RDY = RQ_MCU_RDYr;
 
-wire MCU_WR_HIT = |(STATE & ST_MCU_WR_ADDR);
-wire MCU_RD_HIT = |(STATE & ST_MCU_RD_ADDR);
+wire MCU_WE_HIT = |(STATE & ST_MCU_WR_ADDR);
+wire MCU_WR_HIT = |(STATE & (ST_MCU_WR_ADDR | ST_MCU_WR_END));
+wire MCU_RD_HIT = |(STATE & (ST_MCU_RD_ADDR | ST_MCU_RD_END));
 wire MCU_HIT = MCU_WR_HIT | MCU_RD_HIT;
 
 // final address to PSRAM where ROM and SRAM is stored
@@ -769,9 +770,9 @@ assign ROM_DATA[15:8] = ROM_ADDR0 ? 8'bZ
 
 
 // write enable for PSRAM; for S-DD1, enabled when accessing backup SRAM for writing
-assign ROM_WE = SD_DMA_TO_ROM?MCU_WRITE
-      : MCU_WR_HIT ? 1'b0
            : (sdd1_enable & ~SDD1_RAM_CE) ? SDD1_RAM_WE
+assign ROM_WE = SD_DMA_TO_ROM ? MCU_WRITE
+      : MCU_WE_HIT ? 1'b0
            : (ROM_HIT & IS_WRITABLE & SNES_CPU_CLK) ? SNES_WRITE
            : 1'b1;
 
