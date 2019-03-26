@@ -122,7 +122,7 @@ wire [15:0] dat_doutb;
 upd77c25_datrom datrom (
   .clka(CLK), // input clka
   .wea(DAT_WR), // input [0 : 0] wea
-  .addra(DAT_WR_ADDR), // input [9 : 0] addra
+  .addra(DAT_WR_ADDR), // input [10 : 0] addra
   .dina(DAT_DI), // input [15 : 0] dina
   .clkb(CLK), // input clkb
   .addrb(regs_rp), // input [10 : 0] addrb
