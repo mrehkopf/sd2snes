@@ -15,7 +15,7 @@ spcplayer:
   beq +
   jmp spc_exit
 +
-  dey
+  dex
   bne -
 
   rep #$10 : .xl      ; Now draw lots of stuff
