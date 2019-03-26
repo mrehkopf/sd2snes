@@ -1,3 +1,15 @@
+v1.10.2
+=======
+ * fixes:
+   - [Pro] fix wrong data ROM size on uPD96050 core -> F1 ROC II track is shown
+           properly.
+   - [Pro] fix S-DD1 address mirroring -> Star Ocean works
+   - [All] apply volume boost after FPGA reconfiguration
+           (fixes MSU1 volume boost on Cx4, OBC1, SuperFX, SA-1, S-DD1)
+   - [All] fix S-DD1 writes going to the wrong address on concurrent MCU
+           accesses (saving not working in Star Ocean)
+   - [All] avoid potential data corruption on MCU writes (e.g. SPC loading)
+
 v1.10.1
 =======
  * fix bug preventing boot on sd2snes Mk.III...
