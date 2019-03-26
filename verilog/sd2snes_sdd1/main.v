@@ -770,9 +770,9 @@ assign ROM_DATA[15:8] = ROM_ADDR0 ? 8'bZ
 
 
 // write enable for PSRAM; for S-DD1, enabled when accessing backup SRAM for writing
-           : (sdd1_enable & ~SDD1_RAM_CE) ? SDD1_RAM_WE
 assign ROM_WE = SD_DMA_TO_ROM ? MCU_WRITE
       : MCU_WE_HIT ? 1'b0
+           : (sdd1_enable & ~SDD1_RAM_CE & SNES_CPU_CLK) ? SDD1_RAM_WE
            : (ROM_HIT & IS_WRITABLE & SNES_CPU_CLK) ? SNES_WRITE
            : 1'b1;
 
