@@ -149,10 +149,11 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     readled(0);
     writeled(0);
 
+    cic_init(0);
+
     if(firstboot) {
       cfg_load();
       cfg_save();
-      cic_init(cfg_is_pair_mode_allowed());
       cfg_validity_check_recent_games();
     }
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
