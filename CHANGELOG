@@ -4,11 +4,14 @@ v1.10.2
    - [Pro] fix wrong data ROM size on uPD96050 core -> F1 ROC II track is shown
            properly.
    - [Pro] fix S-DD1 address mirroring -> Star Ocean works
+   - [Pro] correct Cx4 core speed from 96MHz to 80MHz
    - [All] apply volume boost after FPGA reconfiguration
            (fixes MSU1 volume boost on Cx4, OBC1, SuperFX, SA-1, S-DD1)
    - [All] fix S-DD1 writes going to the wrong address on concurrent MCU
            accesses (saving not working in Star Ocean)
    - [All] avoid potential data corruption on MCU writes (e.g. SPC loading)
+   - [All] Workaround for Super Nt not booting when CIC enters pair mode
+           successfully
 
 v1.10.1
 =======
