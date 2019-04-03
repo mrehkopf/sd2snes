@@ -64,7 +64,7 @@ NMI_8bit:
   .byt "SNSD"   ; 4 bytes - rom id
 
 *= $C0FFC0
-  .byt "SD2SNES MENU v1.10.2 "
+  .byt "SD2SNES MENU v1.10.3 "
 ;       123456789012345678901  -  max 21 chars
 
 *= $C0FFD5  .byt $31 ; rom map + speed (HiROM FastROM)
