@@ -47,7 +47,8 @@ extern snes_romprops_t romprops;
 extern volatile int reset_changed;
 
 extern volatile cfg_t CFG;
-extern volatile status_t ST;
+extern volatile mcu_status_t STM;
+extern volatile snes_status_t STS;
 
 void menu_cmd_readdir(void) {
   uint8_t path[256];
@@ -180,13 +181,13 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 
     if((rtc_state = rtc_isvalid()) != RTC_OK) {
       printf("RTC invalid!\n");
-      ST.rtc_valid = 0xff;
+      STM.rtc_valid = 0xff;
       set_bcdtime(0x20120701000000LL);
       set_fpga_time(0x20120701000000LL);
       invalidate_rtc();
     } else {
       printf("RTC valid!\n");
-      ST.rtc_valid = 0;
+      STM.rtc_valid = 0;
       set_fpga_time(get_bcdtime());
     }
     sram_memset(SRAM_SYSINFO_ADDR, 13*40, 0x20);
@@ -194,7 +195,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     snes_reset(1);
     fpga_reset_srtc_state();
     if(!firstboot) {
-      if(ST.is_u16 && (ST.u16_cfg & 0x01)) {
+      if(STS.is_u16 && (STS.u16_cfg & 0x01)) {
         delay_ms(59*SNES_RESET_PULSELEN_MS);
       }
     }
@@ -204,15 +205,15 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     enum cicstates cic_state = get_cic_state();
     switch(cic_state) {
       case CIC_PAIR:
-        ST.pairmode = 1;
+        STM.pairmode = 1;
         printf("PAIR MODE ENGAGED!\n");
         cic_pair(CFG.vidmode_menu, CFG.vidmode_menu);
         break;
       case CIC_SCIC:
-        ST.pairmode = 1;
+        STM.pairmode = 1;
         break;
       default:
-        ST.pairmode = 0;
+        STM.pairmode = 0;
     }
     fpga_set_dac_boost(CFG.msu_volume_boost);
     cfg_load_to_menu();

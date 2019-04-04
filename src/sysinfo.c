@@ -15,7 +15,7 @@
 #include "sdnative.h"
 #include "sysinfo.h"
 
-extern status_t ST;
+extern snes_status_t STS;
 
 static uint32_t sd_tacc_max, sd_tacc_avg;
 
@@ -116,11 +116,11 @@ int write_sysinfo(int sd_measured) {
   memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
   sram_addr += 40;
-  if(ST.is_u16) {
-    if(ST.u16_cfg & 0x01) {
-      len = snprintf(linebuf, sizeof(linebuf), "Ultra16 serial no. %d (Autoboot On)", ST.is_u16);
+  if(STS.is_u16) {
+    if(STS.u16_cfg & 0x01) {
+      len = snprintf(linebuf, sizeof(linebuf), "Ultra16 serial no. %d (Autoboot On)", STS.is_u16);
     } else {
-      len = snprintf(linebuf, sizeof(linebuf), "Ultra16 serial no. %d (Autoboot Off)", ST.is_u16);
+      len = snprintf(linebuf, sizeof(linebuf), "Ultra16 serial no. %d (Autoboot Off)", STS.is_u16);
     }
     memset(linebuf+len, 0x20, 40-len);
     sram_writeblock(linebuf, sram_addr, 40);

@@ -50,7 +50,8 @@
 
 #define FILESEL_CWD                 $FF0000
 #define CFG_ADDR                    $FF0100
-#define ST_ADDR                     $FF1100
+#define ST_MCU_ADDR                 $FF1100
+#define ST_SNES_ADDR                $FF1110
 #define SYSINFO_BLK                 $FF1200
 #define LAST_GAME                   $FF1420
 #define WRAM_BAK                    $FF2000
@@ -107,12 +108,13 @@
 
 #define MENU_ENTRY_SIZE             23
 
-#define ST_RTC_VALID                ST_ADDR+$0000
-#define ST_NUM_RECENT_GAMES         ST_ADDR+$0001
-#define ST_IS_U16                   ST_ADDR+$0002
-#define ST_U16_CFG                  ST_ADDR+$0003
-#define ST_PAIRMODE                 ST_ADDR+$0004
-#define ST_HAS_SATELLAVIEW          ST_ADDR+$0005
+#define ST_RTC_VALID                ST_MCU_ADDR+$0000
+#define ST_NUM_RECENT_GAMES         ST_MCU_ADDR+$0001
+#define ST_PAIRMODE                 ST_MCU_ADDR+$0002
+
+#define ST_IS_U16                   ST_SNES_ADDR+$0000
+#define ST_U16_CFG                  ST_SNES_ADDR+$0001
+#define ST_HAS_SATELLAVIEW          ST_SNES_ADDR+$0002
 
 #define MTYPE_FUNC                  $01
 #define MTYPE_SUBMENU               $02
