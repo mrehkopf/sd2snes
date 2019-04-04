@@ -202,6 +202,16 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
     firstboot = 0;
     delay_ms(SNES_RESET_PULSELEN_MS);
     sram_writebyte(32, SRAM_CMD_ADDR);
+
+    fpga_set_dac_boost(CFG.msu_volume_boost);
+    cfg_load_to_menu();
+    snes_reset(0);
+
+/* Since the Super Nt workaround requires pair mode to be disabled during reset
+   (or the Super Nt doesn't boot), pair mode can only be enabled after reset,
+   so we need to get the CIC state later to actually detect pair mode.
+   A delay is required so the CICs can settle before getting the state. */
+    delay_ms(100);
     enum cicstates cic_state = get_cic_state();
     switch(cic_state) {
       case CIC_PAIR:
@@ -215,10 +225,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       default:
         STM.pairmode = 0;
     }
-    fpga_set_dac_boost(CFG.msu_volume_boost);
-    cfg_load_to_menu();
     status_load_to_menu();
-    snes_reset(0);
 
     uint8_t cmd = 0;
     uint64_t btime = 0;
@@ -303,7 +310,7 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           cfg_get_from_menu();
           cic_init(CFG.pair_mode_allowed);
           if(CFG.pair_mode_allowed && cic_state == CIC_SCIC) {
-            delay_ms(50);
+            delay_ms(100);
             if(get_cic_state() == CIC_PAIR) {
               cic_pair(CFG.vidmode_menu, CFG.vidmode_menu);
             }
