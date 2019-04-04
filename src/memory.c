@@ -373,14 +373,15 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   fpga_set_dac_boost(CFG.msu_volume_boost);
   dac_pause();
   dac_reset(0);
+/* fully enable pair mode again instead of just setting the video/d4 mode
+   in case previous pair mode entry was skipped / pair mode undetected so far */
   if(get_cic_state() == CIC_PAIR) {
     if(filename != (uint8_t*)MENU_FILENAME) {
       if(CFG.vidmode_game == VIDMODE_AUTO) {
-        cic_videomode(romprops.region);
+        cic_pair(romprops.region, romprops.region);
       } else {
-        cic_videomode(CFG.vidmode_game);
+        cic_pair(CFG.vidmode_game, romprops.region);
       }
-      cic_d4(romprops.region);
     }
   }
 
