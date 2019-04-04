@@ -1,3 +1,14 @@
+v1.10.3
+=======
+ * fixes:
+   - [Mk2] Revert S-DD1 bitfile to earlier build which happens to less expose a
+           timing hazard. This will need further examination for a proper fix.
+           Fixes severe glitches with S-DD1
+   - [All] Fix swapped logic terms in SA-1 and SuperFX RAM write cycles. Fixes
+           severe glitches on SA-1 and SuperFX on Mk.II units; The bug was also
+           present in the Pro firmware but didn't seem to have much of an effect
+   - [All] Fix game video mode setting in SuperCIC pair mode
+
 v1.10.2
 =======
  * fixes:
