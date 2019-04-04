@@ -79,10 +79,10 @@
 #define SNES_CIC_PAIR_BIT         25
 
 #define SNES_CIC_D0_MODEREG       LPC_PINCON->PINMODE0
-#define SNES_CIC_D0_MODEBIT       1
+#define SNES_CIC_D0_MODEBIT       3
 
 #define SNES_CIC_D1_MODEREG       LPC_PINCON->PINMODE0
-#define SNES_CIC_D1_MODEBIT       3
+#define SNES_CIC_D1_MODEBIT       1
 
 /*
    FPGA pin mapping
