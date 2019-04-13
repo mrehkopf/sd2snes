@@ -1,6 +1,8 @@
 #ifndef __YAML_H
 #define __YAML_H
 
+#include "config.h"
+
 #ifdef DEBUG_YAML
 #define DBG_YAML
 #else

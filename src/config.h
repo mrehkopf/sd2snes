@@ -10,6 +10,8 @@
 // #define DEBUG_MSU1
 // #define DEBUG_YAML
 
+#define MENU_FILENAME            "/sd2snes/menu.bin"
+
 #define IN_AHBRAM                 __attribute__ ((section(".ahbram")))
 
 #define SD_DT_INT_SETUP()         do {\
@@ -39,17 +41,12 @@
 #define SD_SUPPLY_VOLTAGE         (1L<<21) /* 3.3V - 3.4V */
 #define CONFIG_SD_BLOCKTRANSFER   1
 #define CONFIG_SD_AUTO_RETRIES    10
-// #define SD_CHANGE_VECT
-// #define CONFIG_SD_DATACRC 1
 
 #define CONFIG_UART_NUM	          3
-// #define CONFIG_CPU_FREQUENCY      90315789
 #define CONFIG_CPU_FREQUENCY      96000000
-//#define CONFIG_CPU_FREQUENCY      46000000
 #define CONFIG_UART_PCLKDIV       1
 #define CONFIG_UART_TX_BUF_SHIFT  8
 #define CONFIG_UART_BAUDRATE      921600
-//#define CONFIG_UART_BAUDRATE      115200
 #define CONFIG_UART_DEADLOCKABLE
 
 #define DEVICE_NAME "sd2snes Mk.II"
@@ -82,10 +79,10 @@
 #define SNES_CIC_PAIR_BIT         25
 
 #define SNES_CIC_D0_MODEREG       LPC_PINCON->PINMODE0
-#define SNES_CIC_D0_MODEBIT       1
+#define SNES_CIC_D0_MODEBIT       3
 
 #define SNES_CIC_D1_MODEREG       LPC_PINCON->PINMODE0
-#define SNES_CIC_D1_MODEBIT       3
+#define SNES_CIC_D1_MODEBIT       1
 
 /*
    FPGA pin mapping

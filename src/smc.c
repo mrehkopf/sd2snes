@@ -220,7 +220,7 @@ void smc_id(snes_romprops_t* props) {
         props->has_sdd1 = 1;
         props->fpga_conf = FPGA_SDD1;
       }
-      /* Standard ExLoROM */
+      /* Standard LoROM */
       else {
         props->mapper_id = 1;
       }
@@ -255,10 +255,8 @@ void smc_id(snes_romprops_t* props) {
         case 3:
           if(file_handle.fsize > 0x800200) {
             props->mapper_id = 6; /* SO96 interleaved */
-          } else if(file_handle.fsize > 0x400200) {
-            props->mapper_id = 1; /* ExLoROM */
           } else {
-            props->mapper_id = 1; /* LoROM */
+            props->mapper_id = 1; /* (Ex)LoROM */
           }
           break;
         case 4:
@@ -298,7 +296,7 @@ void smc_id(snes_romprops_t* props) {
   else {
     props->sramsize_bytes = props->ramsize_bytes;
   }
-  
+
   if(header->carttype == 0x55) {
     props->fpga_features |= FEAT_SRTC;
   }

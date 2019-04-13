@@ -10,6 +10,8 @@
 #include "sdnative.h"
 #include "snes.h"
 #include "led.h"
+#include "cfg.h"
+#include "cic.h"
 
 extern volatile int sd_changed;
 extern volatile int reset_changed;
@@ -32,10 +34,15 @@ void SysTick_Handler(void) {
   if(warmup > WARMUP_TICKS && ((sdch_state == 0xf000) || (sdch_state == 0xefff))) {
     sd_changed = 1;
   }
-  reset_state = (reset_state << 1) | get_snes_reset() | 0xe000;
-  if((reset_state == 0xf000) || (reset_state == 0xefff)) {
-    reset_pressed = (reset_state == 0xf000);
+  reset_state = (reset_state << 1) | get_snes_reset() | 0xff00;
+  if((reset_state == 0xff80) || (reset_state == 0xff7f)) {
+    reset_pressed = (reset_state == 0xff7f);
     reset_changed = 1;
+    if(reset_pressed) {
+      cic_init(0);
+    } else {
+      cic_init(cfg_is_pair_mode_allowed());
+    }
   }
   led_error();
   sdn_changed();

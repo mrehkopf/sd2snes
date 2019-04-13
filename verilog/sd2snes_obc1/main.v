@@ -1,3 +1,5 @@
+
+
 `timescale 1 ns / 1 ns
 //////////////////////////////////////////////////////////////////////////////////
 // Company: Rehkopf
@@ -59,7 +61,7 @@ module main(
   input SPI_MOSI,
   inout SPI_MISO,
   input SPI_SS,
-  inout SPI_SCK,
+  input SPI_SCK,
   input MCU_OVR,
   output MCU_RDY,
 
@@ -107,6 +109,7 @@ wire [5:0] msu_status_reset_bits;
 wire [5:0] msu_status_set_bits;
 
 wire [15:0] featurebits;
+wire feat_cmd_unlock = featurebits[5];
 
 wire [23:0] MAPPED_SNES_ADDR;
 wire ROM_ADDR0;
@@ -306,8 +309,6 @@ wire [7:0] MCU_DOUT;
 wire [31:0] cheat_pgm_data;
 wire [7:0] cheat_data_out;
 wire [2:0] cheat_pgm_idx;
-
-wire feat_cmd_unlock = featurebits[5];
 
 mcu_cmd snes_mcu_cmd(
   .clk(CLK2),
@@ -513,8 +514,9 @@ reg RQ_MCU_RDYr;
 initial RQ_MCU_RDYr = 1'b1;
 assign MCU_RDY = RQ_MCU_RDYr;
 
-wire MCU_WR_HIT = |(STATE & ST_MCU_WR_ADDR);
-wire MCU_RD_HIT = |(STATE & ST_MCU_RD_ADDR);
+wire MCU_WE_HIT = |(STATE & ST_MCU_WR_ADDR);
+wire MCU_WR_HIT = |(STATE & (ST_MCU_WR_ADDR | ST_MCU_WR_END));
+wire MCU_RD_HIT = |(STATE & (ST_MCU_RD_ADDR | ST_MCU_RD_END));
 wire MCU_HIT = MCU_WR_HIT | MCU_RD_HIT;
 
 assign ROM_ADDR  = (SD_DMA_TO_ROM) ? MCU_ADDR[23:1] : MCU_HIT ? ROM_ADDRr[23:1] : MAPPED_SNES_ADDR[23:1];
@@ -616,7 +618,7 @@ always @(posedge CLK2) begin
       r2100_forcewrite_pre <= 1'b1;
       r2100r <= {SNES_DATA[7], 3'b010, r2100_bright}; // 0xAx
     end else if (r2100_patch && SNES_DATA == 8'h00 && r2100r[7]) begin
-    // extend forced blanking when game goes from blanking to brightness 0
+    // extend forced blanking when game goes from blanking to brightness 0 (Star Fox top of screen)
       r2100_forcewrite_pre <= 1'b1;
       r2100r <= {1'b1, 3'b111, r2100_bright}; // 0xFx
     end else if (r2100_patch && SNES_DATA[3:0] < 4'h8 && r2100_bright_orig > 4'hd) begin
@@ -658,7 +660,7 @@ assign ROM_DATA[15:8] = ROM_ADDR0 ? 8'bZ
 assign ROM_WE = SD_DMA_TO_ROM
                 ?MCU_WRITE
                 : (ROM_HIT & IS_WRITABLE & SNES_CPU_CLK) ? SNES_WRITE
-                : MCU_WR_HIT ? 1'b0
+                : MCU_WE_HIT ? 1'b0
                 : 1'b1;
 
 // OE always active. Overridden by WE when needed.

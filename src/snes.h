@@ -97,14 +97,17 @@
 
 enum snes_reset_state { SNES_RESET_NONE = 0, SNES_RESET_SHORT, SNES_RESET_LONG };
 
-typedef struct __attribute__ ((__packed__)) _status {
+typedef struct __attribute__ ((__packed__)) _mcu_status {
   uint8_t rtc_valid;
   uint8_t num_recent_games;
+  uint8_t pairmode;
+} mcu_status_t;
+
+typedef struct __attribute__ ((__packed__)) _snes_status {
   uint8_t is_u16;
   uint8_t u16_cfg;
-  uint8_t pairmode;
   uint8_t has_satellaview;
-} status_t;
+} snes_status_t;
 
 uint8_t crc_valid;
 

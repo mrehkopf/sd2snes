@@ -16,6 +16,8 @@
 // Revision 0.2 - core fully operational, firmware download
 //
 //////////////////////////////////////////////////////////////////////////////////
+`include "config.vh"
+
 module upd77c25(
   input [7:0] DI,
   output [7:0] DO,
@@ -91,6 +93,7 @@ assign ram_dina = ram_dina_r;
 
 wire [23:0] pgm_doutb;
 
+`ifndef DEBUG
 upd77c25_pgmrom pgmrom (
   .clka(CLK), // input clka
   .wea(PGM_WR), // input [0 : 0] wea
@@ -100,6 +103,7 @@ upd77c25_pgmrom pgmrom (
   .addrb(pc), // input [10 : 0] addrb
   .doutb(pgm_doutb) // output [23 : 0] doutb
 );
+`endif
 
 wire [23:0] opcode_w = pgm_doutb;
 reg [1:0] op;
@@ -114,16 +118,17 @@ reg [3:0] op_dst;
 
 wire [15:0] dat_doutb;
 
+`ifndef DEBUG
 upd77c25_datrom datrom (
   .clka(CLK), // input clka
   .wea(DAT_WR), // input [0 : 0] wea
-  .addra(DAT_WR_ADDR), // input [9 : 0] addra
+  .addra(DAT_WR_ADDR), // input [10 : 0] addra
   .dina(DAT_DI), // input [15 : 0] dina
   .clkb(CLK), // input clkb
   .addrb(regs_rp), // input [10 : 0] addrb
   .doutb(dat_doutb) // output [15 : 0] doutb
 );
-
+`endif
 
 wire [15:0] ram_douta;
 wire [9:0] ram_addra;
@@ -133,6 +138,7 @@ wire [7:0] UPD_DO;
 
 wire ram_web = reg_we_rising & DP_enable;
 
+`ifndef DEBUG
 upd77c25_datram datram (
   .clka(CLK), // input clka
   .wea(ram_wea), // input [0 : 0] wea
@@ -145,6 +151,7 @@ upd77c25_datram datram (
   .dinb(DI), // input [7 : 0] dinb
   .doutb(DP_DO) // output [7 : 0] doutb
 );
+`endif
 
 assign ram_wea = ((op != I_JP) && op_dst == 4'b1111 && insn_state == STATE_NEXT);
 assign ram_addra = {regs_dpb,

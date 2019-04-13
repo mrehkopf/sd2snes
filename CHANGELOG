@@ -1,3 +1,41 @@
+v1.10.3
+=======
+ * fixes:
+   - [Mk2] Revert S-DD1 bitfile to earlier build which happens to less expose a
+           timing hazard. This will need further examination for a proper fix.
+           Fixes severe glitches with S-DD1
+   - [All] Fix swapped logic terms in SA-1 and SuperFX RAM write cycles. Fixes
+           severe glitches on SA-1 and SuperFX on Mk.II units; The bug was also
+           present in the Pro firmware but didn't seem to have much of an effect
+   - [All] Fix game video mode setting in SuperCIC pair mode
+
+v1.10.2
+=======
+ * fixes:
+   - [Pro] fix wrong data ROM size on uPD96050 core -> F1 ROC II track is shown
+           properly.
+   - [Pro] fix S-DD1 address mirroring -> Star Ocean works
+   - [Pro] correct Cx4 core speed from 96MHz to 80MHz
+   - [All] apply volume boost after FPGA reconfiguration
+           (fixes MSU1 volume boost on Cx4, OBC1, SuperFX, SA-1, S-DD1)
+   - [All] fix S-DD1 writes going to the wrong address on concurrent MCU
+           accesses (saving not working in Star Ocean)
+   - [All] avoid potential data corruption on MCU writes (e.g. SPC loading)
+   - [All] Workaround for Super Nt not booting when CIC enters pair mode
+           successfully
+
+v1.10.1
+=======
+ * fix bug preventing boot on sd2snes Mk.III...
+
+v1.10.0
+=======
+ * add S-DD1 support by magno
+ * initial firmware release for sd2snes Mk.III ("sd2snes pro")
+ * fixes:
+   - fix memory corruption on BS-X loading
+   - reset S-RTC read state on all load and reset occasions
+
 v1.9.0
 ======
  * add SA-1 support by RedGuy

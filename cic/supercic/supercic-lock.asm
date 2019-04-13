@@ -387,8 +387,10 @@ main
 	bcf	TRISC, 1
 	bcf     STATUS, RP0
 	nop
-	movlw	0x23		;
-	call	wait		; wait 109
+	movlw	0x22		;
+	call	wait		; wait 106
+	nop
+	nop
 	movlw	0x1		; 'first time' bit
 	movwf	0x43		; for key detection
 ; --------main loop--------
@@ -408,6 +410,7 @@ loop1
 	iorwf	0x20, f		; combine with data i/o
 	movf	0x20, w
 	movwf	PORTC
+	nop
 	nop
 	movf	PORTC, w 	; read input
 	movwf	0x42		; store input
@@ -432,7 +435,6 @@ loop1
 	clrf	0x59		; clear D4 output
 	btfsc	0x54, 1		; use effective region for D4 output
 	bsf	0x59, 4
-	nop
 
 main_skipinval2
 	call	checkrst
@@ -480,7 +482,6 @@ swapskip
 
 
 main_skipinval1
-	nop
 	nop
 	nop
 	goto	main_skipinval2
@@ -654,9 +655,9 @@ mangle_key_withskip
 	movwf	0x5e
 	nop
 	bcf	PORTC, 1
+	nop ; add nop here, 2010 SCIC key is a bit late.
 	movf	PORTC, w
 	movwf	0x5f
-	nop
 	nop
 	nop
 	nop
@@ -763,7 +764,7 @@ mangle_lock_withoutskip
 	goto mangle_lock_loop
 ; 69 when goto, 69 when return
 ; CIC has 78 -> 9 nops
-	
+
 mangle_lock_withskip
 	movf	0x41, w 	; restore 33
 	addwf	0x33, f 	; add to 33
@@ -1127,7 +1128,7 @@ rst2_loop2
 	goto	rst		; finally reset
 ; -----------------------------------------------------------------------
 ; eeprom data
-DEEPROM	CODE
+	org __EEPROM_START
 	de	0x01		;current mode (default: 60Hz)
-end
+	end
 ; ------------------------------------------------------------------------

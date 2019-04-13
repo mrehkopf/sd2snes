@@ -54,9 +54,13 @@ extern cfg_t CFG;
 volatile int reset_changed;
 volatile int reset_pressed;
 
-status_t ST = {
+mcu_status_t STM = {
   .rtc_valid = 0xff,
   .num_recent_games = 0,
+  .pairmode = 0
+};
+
+snes_status_t STS = {
   .is_u16 = 0,
   .u16_cfg = 0xff,
   .has_satellaview = 0
@@ -496,11 +500,11 @@ void snescmd_prepare_nmihook() {
 }
 
 void status_load_to_menu() {
-  sram_writeblock(&ST, SRAM_STATUS_ADDR, sizeof(status_t));
+  sram_writeblock(&STM, SRAM_MCU_STATUS_ADDR, sizeof(mcu_status_t));
 }
 
 void status_save_from_menu() {
-  sram_readblock(&ST, SRAM_STATUS_ADDR, sizeof(status_t));
+  sram_readblock(&STS, SRAM_SNES_STATUS_ADDR, sizeof(snes_status_t));
 }
 
 /*

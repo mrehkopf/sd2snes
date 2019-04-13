@@ -234,6 +234,7 @@ main
 	bcf	STATUS, RP0
 	movlw	0x27		; "wait" 1
 	call	wait		; wait 121
+	nop
 ; --------main loop--------
 loop	
 	movlw	0x1
@@ -241,8 +242,6 @@ loop0
 	addlw	0x30	; key stream
 	movwf	FSR	; store in index reg
 loop1
-	nop
-	nop
 	nop
 	movf	INDF, w ; load seed value
 	movwf	0x20
@@ -252,6 +251,8 @@ loop1
 	bsf	0x20, 4 ; LED on
 	movf	0x20, w
 	movwf	GPIO
+	nop
+	nop
 	nop
 	nop
 	movlw	0x10

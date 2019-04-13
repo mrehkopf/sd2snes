@@ -21,7 +21,7 @@ module address(
   input CLK,
   input [15:0] featurebits, // peripheral enable/disable
   input [2:0] MAPPER,       // MCU detected mapper
-  input [23:0] SNES_ADDR,   // requested address from SNES
+  input [23:0] SNES_ADDR_early,   // requested address from SNES
   input [7:0] SNES_PA,      // peripheral address from SNES
   input SNES_ROMSEL,        // ROMSEL from SNES
   output [23:0] ROM_ADDR,   // Address to request from SRAM0
@@ -65,11 +65,10 @@ parameter [2:0]
   FEAT_2100 = 6,
   FEAT_DMA1 = 7
 ;
-reg [7:0] MAPPER_DEC;
+
 integer i;
-always @(posedge CLK) begin
-  for (i = 0; i < 8; i = i + 1) MAPPER_DEC[i] <= (MAPPER == i);
-end
+reg [7:0] MAPPER_DEC; always @(posedge CLK) for (i = 0; i < 8; i = i + 1) MAPPER_DEC[i] <= (MAPPER == i);
+reg [23:0] SNES_ADDR; always @(posedge CLK) SNES_ADDR <= SNES_ADDR_early;
 
 wire [23:0] SRAM_SNES_ADDR;
 
@@ -89,35 +88,40 @@ wire [23:0] SRAM_SNES_ADDR;
 assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
                  |(SNES_ADDR[22]));
 
-assign IS_SAVERAM = (~map_unlock & SAVERAM_MASK[0])
+// Calculate pre IS_SAVERAM to relax timing.  Uses
+// early SNES_ADDR from main.
+assign IS_SAVERAM_pre = (~map_unlock & SAVERAM_MASK[0])
                     &(featurebits[FEAT_ST0010]
-                      ?((SNES_ADDR[22:19] == 4'b1101)
-                        & &(~SNES_ADDR[15:12])
-                        & SNES_ADDR[11])
+                      ?((SNES_ADDR_early[22:19] == 4'b1101)
+                        & &(~SNES_ADDR_early[15:12])
+                        & SNES_ADDR_early[11])
                       :((MAPPER_DEC[3'b000]
                         || MAPPER_DEC[3'b010]
                         || MAPPER_DEC[3'b110])
-                      ? (!SNES_ADDR[22]
-                         & SNES_ADDR[21]
-                         & &SNES_ADDR[14:13]
-                         & !SNES_ADDR[15]
+                      ? (!SNES_ADDR_early[22]
+                         & SNES_ADDR_early[21]
+                         & &SNES_ADDR_early[14:13]
+                         & !SNES_ADDR_early[15]
                         )
 /*  LoROM:   SRAM @ Bank 0x70-0x7d, 0xf0-0xff
  *  Offset 0000-7fff for ROM >= 32 MBit, otherwise 0000-ffff */
                       :(MAPPER_DEC[3'b001])
-                      ? (&SNES_ADDR[22:20]
+                      ? (&SNES_ADDR_early[22:20]
                          & (~SNES_ROMSEL)
-                         & (~SNES_ADDR[15] | ~ROM_MASK[21])
+                         & (~SNES_ADDR_early[15] | ~ROM_MASK[21])
                         )
 /*  BS-X: SRAM @ Bank 0x10-0x17 Offset 5000-5fff */
                       :(MAPPER_DEC[3'b011])
-                      ? ((SNES_ADDR[23:19] == 5'b00010)
-                         & (SNES_ADDR[15:12] == 4'b0101)
+                      ? ((SNES_ADDR_early[23:19] == 5'b00010)
+                         & (SNES_ADDR_early[15:12] == 4'b0101)
                         )
 /*  Menu mapper: 8Mbit "SRAM" @ Bank 0xf0-0xff (entire banks!) */
                       :(MAPPER_DEC[3'b111])
-                      ? (&SNES_ADDR[23:20])
+                      ? (&SNES_ADDR_early[23:20])
                       : 1'b0));
+
+reg IS_SAVERAM_r; always @(posedge CLK) IS_SAVERAM_r <= IS_SAVERAM_pre;
+assign IS_SAVERAM = IS_SAVERAM_r;
 
 // give the patch free reign over $F0-$FF banks
 assign IS_PATCH = map_unlock & (&SNES_ADDR[23:20]);

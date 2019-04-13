@@ -63,10 +63,10 @@ UINT file_read() {
   return bytes_read;
 }
 
-UINT file_write() {
+UINT file_write(size_t len) {
   UINT bytes_written;
-  file_res = f_write(&file_handle, file_buf, sizeof(file_buf), &bytes_written);
-  if(bytes_written < sizeof(file_buf)) {
+  file_res = f_write(&file_handle, file_buf, len, &bytes_written);
+  if(bytes_written < len) {
     printf("wrote less than expected - card full?\n");
   }
   return bytes_written;
@@ -118,7 +118,8 @@ FRESULT check_or_create_folder(TCHAR *dir) {
   fno.lfname = NULL;
   TCHAR buf[256];
   TCHAR *ptr = buf;
-  strncpy(buf, dir, sizeof(buf));
+  strncpy(buf, dir, sizeof(buf) - 1);
+  buf[sizeof(buf) - 1] = '\0';
   while(*(ptr++)) {
     if(*ptr == '/') {
       *ptr = 0;

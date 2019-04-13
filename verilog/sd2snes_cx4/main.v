@@ -59,7 +59,7 @@ module main(
   input SPI_MOSI,
   inout SPI_MISO,
   input SPI_SS,
-  inout SPI_SCK,
+  input SPI_SCK,
   input MCU_OVR,
   output MCU_RDY,
 
@@ -143,7 +143,7 @@ wire [7:0] SNES_DATA_IN = (SNES_DATAr[3] & SNES_DATAr[2]);
 
 wire SNES_PARD_start = (SNES_PARDr[6:1] == 6'b111110);
 // Sample PAWR data earlier on CPU accesses, later on DMA accesses...
-wire SNES_PAWR_start = (SNES_PAWRr[6:1] == (({SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h02100) ? 6'b111000 : 6'b100000));
+wire SNES_PAWR_start = (SNES_PAWRr[7:1] == (({SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h02100) ? 7'b1110000 : 7'b1000000));
 wire SNES_PAWR_end = (SNES_PAWRr[6:1] == 6'b000001);
 wire SNES_RD_start = (SNES_READr[6:1] == 6'b111110);
 wire SNES_RD_end = (SNES_READr[6:1] == 6'b000001);
@@ -415,8 +415,6 @@ address snes_addr(
   .branch2_enable(branch2_enable)
 );
 
-assign DCM_RST=0;
-
 //always @(posedge CLK2) begin
 //  non_hit_cycle <= 1'b0;
 //  if(SNES_cycle_start) non_hit_cycle <= ~ROM_HIT;
@@ -544,8 +542,9 @@ reg RQ_CX4_RDYr;
 initial RQ_CX4_RDYr = 1'b1;
 assign CX4_RDY = RQ_CX4_RDYr;
 
-wire MCU_WR_HIT = |(STATE & ST_MCU_WR_ADDR);
-wire MCU_RD_HIT = |(STATE & ST_MCU_RD_ADDR);
+wire MCU_WE_HIT = |(STATE & ST_MCU_WR_ADDR);
+wire MCU_WR_HIT = |(STATE & (ST_MCU_WR_ADDR | ST_MCU_WR_END));
+wire MCU_RD_HIT = |(STATE & (ST_MCU_RD_ADDR | ST_MCU_RD_END));
 wire MCU_HIT = MCU_WR_HIT | MCU_RD_HIT;
 
 wire CX4_HIT = |(STATE & ST_CX4_RD_ADDR);
@@ -672,7 +671,7 @@ always @(posedge CLK2) begin
       r2100_forcewrite_pre <= 1'b1;
       r2100r <= {SNES_DATA[7], 3'b010, r2100_bright}; // 0xAx
     end else if (r2100_patch && SNES_DATA == 8'h00 && r2100r[7]) begin
-    // extend forced blanking when game goes from blanking to brightness 0
+    // extend forced blanking when game goes from blanking to brightness 0 (Star Fox top of screen)
       r2100_forcewrite_pre <= 1'b1;
       r2100r <= {1'b1, 3'b111, r2100_bright}; // 0xFx
     end else if (r2100_patch && SNES_DATA[3:0] < 4'h8 && r2100_bright_orig > 4'hd) begin
@@ -712,7 +711,7 @@ assign ROM_DATA[15:8] = ROM_ADDR0 ? 8'bZ
 assign ROM_WE = SD_DMA_TO_ROM
                 ?MCU_WRITE
                 : (ROM_HIT & IS_WRITABLE & SNES_CPU_CLK) ? SNES_WRITE
-                : MCU_WR_HIT ? 1'b0
+                : MCU_WE_HIT ? 1'b0
                 : 1'b1;
 
 // OE always active. Overridden by WE when needed.
@@ -721,7 +720,7 @@ assign ROM_OE = 1'b0;
 assign ROM_CE = 1'b0;
 
 assign ROM_BHE = ROM_ADDR0;
-assign ROM_BLE = !ROM_ADDR0;
+assign ROM_BLE = ~ROM_ADDR0;
 
 assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
                          cx4_enable ? 1'b0 :

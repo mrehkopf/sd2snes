@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
 
 	if((bin=fopen(argv[1], "wb"))==NULL) {
 		perror("could not open output file");
+		free(buffer);
 		return 1;
 	}
 

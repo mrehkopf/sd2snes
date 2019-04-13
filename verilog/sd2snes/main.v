@@ -18,6 +18,8 @@
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
+`include "config.vh"
+
 module main(
   /* input clock */
   input CLKIN,
@@ -59,7 +61,7 @@ module main(
   input SPI_MOSI,
   inout SPI_MISO,
   input SPI_SS,
-  inout SPI_SCK,
+  input SPI_SCK,
   input MCU_OVR,
   output MCU_RDY,
 
@@ -215,6 +217,8 @@ wire SNES_RD_start_early = ((SNES_READr[6:1] | SNES_READr[7:2]) == 6'b111100);
 wire [23:0] SNES_ADDR = (SNES_ADDRr[5] & SNES_ADDRr[4]);
 wire [7:0] SNES_PA = (SNES_PAr[5] & SNES_PAr[4]);
 wire [7:0] SNES_DATA_IN = (SNES_DATAr[3] & SNES_DATAr[2]);
+
+reg  [23:0] SNES_ADDR_early; always @(posedge CLK2) SNES_ADDR_early <= (SNES_ADDRr[3] & SNES_ADDRr[2]);
 
 wire SNES_PARD_start = (SNES_PARDr[6:1] == 6'b111110);
 // Sample PAWR data earlier on CPU accesses, later on DMA accesses...
@@ -583,7 +587,7 @@ spi snes_spi(
 );
 
 wire [15:0] dsp_feat;
-
+`ifndef DEBUG
 upd77c25 snes_dspx (
   .DI(DSPX_SNES_DATA_IN),
   .DO(DSPX_SNES_DATA_OUT),
@@ -604,6 +608,7 @@ upd77c25 snes_dspx (
   .DP_ADDR(SNES_ADDR[10:0]),
   .dsp_feat(dsp_feat)
 );
+`endif
 
 reg [7:0] MCU_DINr;
 wire [7:0] MCU_DOUT;
@@ -705,7 +710,7 @@ address snes_addr(
   .CLK(CLK2),
   .MAPPER(MAPPER),
   .featurebits(featurebits),
-  .SNES_ADDR(SNES_ADDR), // requested address from SNES
+  .SNES_ADDR_early(SNES_ADDR_early), // requested address from SNES
   .SNES_PA(SNES_PA),
   .SNES_ROMSEL(SNES_ROMSEL),
   .ROM_ADDR(MAPPED_SNES_ADDR),   // Address to request from SRAM (active low)
@@ -879,15 +884,18 @@ reg RQ_DMA_RDYr;
 initial RQ_DMA_RDYr = 1'b1;
 assign DMA_RDY = RQ_DMA_RDYr;
 
-wire MCU_WR_HIT = |(STATE & ST_MCU_WR_ADDR);
-wire MCU_RD_HIT = |(STATE & ST_MCU_RD_ADDR);
+wire MCU_WE_HIT = |(STATE & ST_MCU_WR_ADDR);
+wire MCU_WR_HIT = |(STATE & (ST_MCU_WR_ADDR | ST_MCU_WR_END));
+wire MCU_RD_HIT = |(STATE & (ST_MCU_RD_ADDR | ST_MCU_RD_END));
 wire MCU_HIT = MCU_WR_HIT | MCU_RD_HIT;
 // CTX
-wire CTX_WR_HIT = |(STATE & ST_CTX_WR_ADDR);
+wire CTX_WE_HIT = |(STATE & ST_CTX_WR_ADDR);
+wire CTX_WR_HIT = |(STATE & (ST_CTX_WR_ADDR | ST_CTX_WR_END));
 wire CTX_HIT = CTX_WR_HIT;
 // DMA
-wire DMA_WR_HIT = |(STATE & ST_DMA_WR_ADDR);
-wire DMA_RD_HIT = |(STATE & ST_DMA_RD_ADDR);
+wire DMA_WE_HIT = |(STATE & ST_DMA_WR_ADDR);
+wire DMA_WR_HIT = |(STATE & (ST_DMA_WR_ADDR | ST_DMA_WR_END));
+wire DMA_RD_HIT = |(STATE & (ST_DMA_RD_ADDR | ST_DMA_RD_END));
 wire DMA_HIT = DMA_WR_HIT | DMA_RD_HIT;
 
 assign ROM_ADDR  = (SD_DMA_TO_ROM) ? MCU_ADDR[23:1] : CTX_HIT ? CTX_ROM_ADDRr[23:1] : DMA_HIT ? DMA_ROM_ADDRr[23:1] : MCU_HIT ? ROM_ADDRr[23:1] : MAPPED_SNES_ADDR[23:1];
@@ -1062,7 +1070,7 @@ always @(posedge CLK2) begin
       r2100_forcewrite_pre <= 1'b1;
       r2100r <= {SNES_DATA[7], 3'b010, r2100_bright}; // 0xAx
     end else if (r2100_patch && SNES_DATA == 8'h00 && r2100r[7]) begin
-    // extend forced blanking when game goes from blanking to brightness 0
+    // extend forced blanking when game goes from blanking to brightness 0 (Star Fox top of screen)
       r2100_forcewrite_pre <= 1'b1;
       r2100r <= {1'b1, 3'b111, r2100_bright}; // 0xFx
     end else if (r2100_patch && SNES_DATA[3:0] < 4'h8 && r2100_bright_orig > 4'hd) begin
@@ -1103,11 +1111,11 @@ assign ROM_DATA[15:8] = ROM_ADDR0 ? 8'bZ
                          );
 
 assign ROM_WE = SD_DMA_TO_ROM
-                ?MCU_WRITE
-                : CTX_WR_HIT ? 1'b0
-                : DMA_WR_HIT ? 1'b0
+                ? MCU_WRITE
+                : CTX_WE_HIT ? 1'b0
+                : DMA_WE_HIT ? 1'b0
                 : (ROM_HIT & ~loop_enable & (IS_WRITABLE | IS_FLASHWR) & SNES_CPU_CLK) ? SNES_WRITE
-                : MCU_WR_HIT ? 1'b0
+                : MCU_WE_HIT ? 1'b0
                 : 1'b1;
 
 // OE always active. Overridden by WE when needed.
@@ -1116,7 +1124,7 @@ assign ROM_OE = 1'b0;
 assign ROM_CE = 1'b0;
 
 assign ROM_BHE = ROM_ADDR0;
-assign ROM_BLE = !ROM_ADDR0 && !(!SD_DMA_TO_ROM && CTX_HIT && CTX_ROM_WORDr) && !(!SD_DMA_TO_ROM && DMA_HIT && DMA_ROM_WORDr);
+assign ROM_BLE = ~ROM_ADDR0 & ~(~SD_DMA_TO_ROM & CTX_HIT & CTX_ROM_WORDr) & ~(~SD_DMA_TO_ROM & DMA_HIT & DMA_ROM_WORDr);
 
 assign SNES_DATABUS_OE = (dspx_enable | dspx_dp_enable) ? 1'b0 :
                          msu_enable ? 1'b0 :
@@ -1203,5 +1211,74 @@ always @(posedge CLK2) begin
     endcase
   end
 end
+
+`ifdef DEBUG
+
+wire [35:0] CONTROL;
+
+wire [7:0] TRIG0w = {
+  SNES_READ_IN,
+  SNES_WRITE_IN,
+  SNES_CPU_CLK_IN,
+  SNES_READ,
+  SNES_WRITE,
+  SNES_CPU_CLK,
+  SNES_DATABUS_OE,
+  SNES_DATABUS_DIR
+};
+
+wire [31:0] TRIG1w = {
+  SNES_ADDR_IN,
+  SNES_DATA_IN
+};
+
+wire [40:0] TRIG2w = {
+  SNES_ADDR,
+  SNES_DATA,
+  BUS_DATA
+};
+
+wire [3:0] TRIG3w = {
+  SNES_cycle_start,
+  SNES_RD_start,
+  SNES_RD_end,
+  SNES_WR_end
+};
+
+wire [25:0] TRIG4w = {
+  ROM_WE,
+  ROM_BHE,
+  ROM_BLE,
+  ROM_ADDR
+};
+
+reg [7:0] TRIG0;
+reg [31:0] TRIG1;
+reg [40:0] TRIG2;
+reg [3:0] TRIG3;
+reg [25:0] TRIG4;
+
+always @(posedge CLK2) begin
+	TRIG0 <= TRIG0w;
+	TRIG1 <= TRIG1w;
+	TRIG2 <= TRIG2w;
+	TRIG3 <= TRIG3w;
+	TRIG4 <= TRIG4w;
+end
+
+chipscope_icon snes_icon (
+    .CONTROL0(CONTROL) // INOUT BUS [35:0]
+);
+
+chipscope_ila snes_ila (
+    .CONTROL(CONTROL), // INOUT BUS [35:0]
+    .CLK(CLK2), // IN
+    .TRIG0(TRIG0), // IN BUS [7:0]
+    .TRIG1(TRIG1), // IN BUS [31:0]
+    .TRIG2(TRIG2), // IN BUS [39:0]
+    .TRIG3(TRIG3), // IN BUS [3:0]
+    .TRIG4(TRIG4) // IN BUS [25:0]
+);
+`endif
 
 endmodule
