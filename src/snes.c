@@ -45,6 +45,7 @@
 
 uint32_t saveram_crc, saveram_crc_old;
 uint8_t sram_crc_valid;
+uint8_t sram_crc_init;
 uint32_t sram_crc_romsize;
 extern snes_romprops_t romprops;
 extern int snes_boot_configured;
@@ -265,8 +266,9 @@ uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_sav
 uint8_t sram_valid = 0;
 uint8_t snes_main_loop() {
   recalculate_sram_range();
+  
   if(romprops.sramsize_bytes) {
-    saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes);
+    saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes, 0);
     sram_valid = sram_reliable();
     if(crc_valid && sram_valid) {
       if(save_failed) didnotsave++;
@@ -519,27 +521,48 @@ void status_save_from_menu() {
    The full sram location is still loaded and saved.  The restricted bounds are only used to detect when to save.
 */
 void recalculate_sram_range() {
+  static uint32_t crc      = 0;
+  static uint32_t cur_addr = 0;
+  static uint32_t end_addr = 0;
+ 
   if (!sram_crc_valid && sram_valid) {
-    printf("calculating rom hash (base=%06lx, size=%ld): ", SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
     /*
       there is a very small chance of collision.  there are several ways to avoid this:
       - incorporate (concatenate) checksum16 or other information
       - use a better hash function like sha-256
      */
-    uint32_t crc = calc_sram_crc(SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
-    printf("%08lx\n", crc);
+     
+    if (sram_crc_init) {
+      printf("calculating rom hash for: base=%06lx, size=%ld\n", SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
+      crc = 0;
+      cur_addr = SRAM_ROM_ADDR + romprops.load_address;
+      end_addr = cur_addr + sram_crc_romsize;
+      sram_crc_init = 0;
+    }
+    
+    // Pick a small enough transfer size where USB transfers don't lose connection during ROM load.
+    // It's possible that we switch to periodic save before this is complete.  This is ok because
+    // it will switch back if the rom bounds change and the new SaveRAM CRC stops changing.
+    uint32_t bytes = min(end_addr - cur_addr, 0x8000);
+    crc = calc_sram_crc(cur_addr, bytes, crc);
+    cur_addr += bytes;
 
-    if (crc_valid) {
-      sram_crc_valid = 1;
-
+    if (crc_valid && end_addr && cur_addr >= end_addr) {
+      printf("finished rom hash: %08lx\n", crc);
+      
       for (uint32_t i = 0; i < (sizeof(SramOffsetTable)/sizeof(SramOffset)); i++) {
         if (crc == SramOffsetTable[i].crc) {
-          romprops.srambase       = SramOffsetTable[i].base;
+          romprops.srambase = SramOffsetTable[i].base;
           romprops.sramsize_bytes = SramOffsetTable[i].size;
           printf("rom hash match: base=%lx size=%lx\n", romprops.srambase, romprops.sramsize_bytes);
           break;
         }
       }
+
+      cur_addr = 0;
+      end_addr = 0;
+      sram_crc_init  = 1;
+      sram_crc_valid = 1;
     }
   }
 }
