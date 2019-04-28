@@ -53,7 +53,7 @@ memory.c: RAM operations
 char* hex = "0123456789ABCDEF";
 
 extern snes_romprops_t romprops;
-extern uint32_t saveram_crc_old;
+extern uint32_t saveram_crc_old, saveram_crc, saveram_offset;
 extern uint8_t sram_crc_valid;
 extern uint8_t sram_crc_init;
 extern uint32_t sram_crc_romsize;
@@ -381,6 +381,8 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       /* file not found error is ok (SRM file might not exist yet) */
       if(file_res == FR_NO_FILE) file_res = 0;
       saveram_crc_old = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes, 0);
+      saveram_crc = 0;
+      saveram_offset = 0;
     } else {
       printf("No SRAM\n");
     }

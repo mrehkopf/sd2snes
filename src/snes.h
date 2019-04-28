@@ -95,6 +95,8 @@
 #define SNES_BUTTON_LRSY (0x5030)
 #define SNES_BUTTON_LRSX (0x1070)
 
+#define SRAM_REGION_SIZE (0x10000)
+
 enum snes_reset_state { SNES_RESET_NONE = 0, SNES_RESET_SHORT, SNES_RESET_LONG };
 
 typedef struct __attribute__ ((__packed__)) _mcu_status {
