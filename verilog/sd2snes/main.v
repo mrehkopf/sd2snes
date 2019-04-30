@@ -1126,17 +1126,19 @@ assign ROM_CE = 1'b0;
 assign ROM_BHE = ROM_ADDR0;
 assign ROM_BLE = ~ROM_ADDR0 & ~(~SD_DMA_TO_ROM & CTX_HIT & CTX_ROM_WORDr) & ~(~SD_DMA_TO_ROM & DMA_HIT & DMA_ROM_WORDr);
 
-assign SNES_DATABUS_OE = (dspx_enable | dspx_dp_enable) ? 1'b0 :
-                         msu_enable ? 1'b0 :
-                         dma_enable ? 1'b0 :
-                         loop_enable ? SNES_READ :
-                         bsx_data_ovr ? (SNES_READ & SNES_WRITE) :
-                         srtc_enable ? (SNES_READ & SNES_WRITE) :
-                         snescmd_enable ? (~(snescmd_unlock | feat_cmd_unlock) | (SNES_READ & SNES_WRITE)) :
-                         bs_page_enable ? (SNES_READ) :
+reg ReadOrWrite_r; always @(posedge CLK2) ReadOrWrite_r <= ~(SNES_READr[1] & SNES_READr[0] & SNES_WRITEr[1] & SNES_WRITEr[0]);
+
+assign SNES_DATABUS_OE = ((dspx_enable | dspx_dp_enable) & ReadOrWrite_r) ? 1'b0 :
+                         (msu_enable & ReadOrWrite_r) ? 1'b0 :
+                         (dma_enable & ReadOrWrite_r) ? 1'b0 :
+                         (loop_enable & ~SNES_READ) ? 1'b0 :
+                         (bsx_data_ovr & ReadOrWrite_r) ? 1'b0 :
+                         (srtc_enable & ReadOrWrite_r) ? 1'b0 :
+                         (snescmd_enable & ReadOrWrite_r) ? (~(snescmd_unlock | feat_cmd_unlock)) :
+                         (bs_page_enable & SNES_READ) ? 1'b0 :
                          (r213f_enable & ~SNES_PARD) ? 1'b0 :
                          (r2100_enable & ~SNES_PAWR) ? 1'b0 :
-                         snoop_4200_enable ? SNES_WRITE :
+                         (snoop_4200_enable & ~SNES_WRITE) ? 1'b0 :
                          (ctx_wr_enable & SNES_SNOOPWR_DATA_OE) ? 1'b0 :
                          (ctx_pawr_enable & SNES_SNOOPPAWR_DATA_OE)? 1'b0 :
                          (ctx_pard_enable & SNES_SNOOPPARD_DATA_OE)? 1'b0 :
