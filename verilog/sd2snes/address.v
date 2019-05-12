@@ -22,6 +22,7 @@ module address(
   input [15:0] featurebits, // peripheral enable/disable
   input [2:0] MAPPER,       // MCU detected mapper
   input [23:0] SNES_ADDR_early,   // requested address from SNES
+  input SNES_WRITE_early,
   input [7:0] SNES_PA,      // peripheral address from SNES
   input SNES_ROMSEL,        // ROMSEL from SNES
   output [23:0] ROM_ADDR,   // Address to request from SRAM0
@@ -32,6 +33,10 @@ module address(
   input [23:0] SAVERAM_MASK,
   input [23:0] ROM_MASK,
   input  map_unlock,
+  input  map_scratch_rd_unlock,
+  input  map_scratch_wr_unlock,
+  input  map_fullmeg_rd_unlock,
+  input  map_fullmeg_wr_unlock,
   output msu_enable,
   output dma_enable,
   output srtc_enable,
@@ -49,6 +54,7 @@ module address(
   output branch1_enable,
   output branch2_enable,
   output exe_enable,
+  output map_enable,
   input [8:0] bs_page_offset,
   input [9:0] bs_page,
   input bs_page_enable
@@ -124,7 +130,7 @@ reg IS_SAVERAM_r; always @(posedge CLK) IS_SAVERAM_r <= IS_SAVERAM_pre;
 assign IS_SAVERAM = IS_SAVERAM_r;
 
 // give the patch free reign over $F0-$FF banks
-assign IS_PATCH = map_unlock & (&SNES_ADDR[23:20]);
+assign IS_PATCH = ((map_unlock | (map_fullmeg_rd_unlock & SNES_WRITE_early) | (map_fullmeg_wr_unlock & ~SNES_WRITE_early)) & (&SNES_ADDR[23:20])) | (((map_scratch_rd_unlock & SNES_WRITE_early) | (map_scratch_wr_unlock & ~SNES_WRITE_early)) & ({SNES_ADDR[23:15],3'h0} == 12'hFE8));
 
 /* BS-X has 4 MBits of extra RAM that can be mapped to various places */
 // LoROM: A23 = r03/r04  A22 = r06  A21 = r05  A20 = 0    A19 = d/c
@@ -234,6 +240,7 @@ assign dma_enable = (featurebits[FEAT_DMA1] | map_unlock) & (!SNES_ADDR[22] && (
 assign use_bsx = (MAPPER_DEC[3'b011]);
 assign srtc_enable = featurebits[FEAT_SRTC] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h2800));
 assign exe_enable =                           (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hffff) == 16'h2C00));
+assign map_enable =                           (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hffff) == 16'h2BB0));
 
 // DSP1 LoROM: DR=30-3f:8000-bfff; SR=30-3f:c000-ffff
 //          or DR=60-6f:0000-3fff; SR=60-6f:4000-7fff

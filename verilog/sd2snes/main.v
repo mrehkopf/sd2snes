@@ -198,6 +198,13 @@ reg [7:0] loop_data = 8'h80; // BRA
 reg exe_present; initial exe_present = 0;
 wire map_unlock;
 
+reg map_fullmeg_rd_unlock_r; initial map_fullmeg_rd_unlock_r = 0;
+reg map_fullmeg_wr_unlock_r; initial map_fullmeg_wr_unlock_r = 0;
+reg map_scratch_rd_unlock_r; initial map_scratch_rd_unlock_r = 0;
+reg map_scratch_wr_unlock_r; initial map_scratch_wr_unlock_r = 0;
+reg map_snescmd_rd_unlock_r; initial map_snescmd_rd_unlock_r = 0;
+reg map_snescmd_wr_unlock_r; initial map_snescmd_wr_unlock_r = 0;
+
 reg SNES_SNOOPRD_DATA_OE;
 reg SNES_SNOOPWR_DATA_OE;
 reg SNES_SNOOPPAWR_DATA_OE;
@@ -236,6 +243,7 @@ wire SNES_CPU_CLK = SNES_CPU_CLKr[2] & SNES_CPU_CLKr[1];
 wire SNES_PARD = SNES_PARDr[2] & SNES_PARDr[1];
 wire SNES_PAWR = SNES_PAWRr[2] & SNES_PAWRr[1];
 wire SNES_ROMSEL_EARLY = (SNES_ROMSELr[2] & SNES_ROMSELr[1]);
+wire SNES_WRITE_early = SNES_WRITEr[1] & SNES_WRITEr[0];
 
 reg SNES_SNOOPPARD_end;
 reg SNES_SNOOPPAWR_end;
@@ -711,6 +719,7 @@ address snes_addr(
   .MAPPER(MAPPER),
   .featurebits(featurebits),
   .SNES_ADDR_early(SNES_ADDR_early), // requested address from SNES
+  .SNES_WRITE_early(SNES_WRITE_early),
   .SNES_PA(SNES_PA),
   .SNES_ROMSEL(SNES_ROMSEL),
   .ROM_ADDR(MAPPED_SNES_ADDR),   // Address to request from SRAM (active low)
@@ -721,6 +730,10 @@ address snes_addr(
   .SAVERAM_MASK(SAVERAM_MASK),
   .ROM_MASK(ROM_MASK),
   .map_unlock(map_unlock),
+  .map_scratch_rd_unlock(map_scratch_rd_unlock_r),
+  .map_scratch_wr_unlock(map_scratch_wr_unlock_r),
+  .map_fullmeg_rd_unlock(map_fullmeg_rd_unlock_r),
+  .map_fullmeg_wr_unlock(map_fullmeg_wr_unlock_r),
   //MSU-1
   .msu_enable(msu_enable),
   //DMA-1
@@ -745,7 +758,8 @@ address snes_addr(
   .return_vector_enable(return_vector_enable),
   .branch1_enable(branch1_enable),
   .branch2_enable(branch2_enable),
-  .exe_enable(exe_enable)
+  .exe_enable(exe_enable),
+  .map_enable(map_enable)
 );
 
 // flop all snes_addr outputs
@@ -840,7 +854,7 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
                                   :(cheat_hit & ~feat_cmd_unlock) ? cheat_data_out
                                   // put spinloop below cheat so we don't overwrite jmp target after NMI
                                   :loop_enable ? loop_data
-                                  :((snescmd_unlock | feat_cmd_unlock) & snescmd_enable) ? snescmd_dout
+                                  :((snescmd_unlock | feat_cmd_unlock | map_snescmd_rd_unlock_r) & snescmd_enable) ? snescmd_dout
                                   :(ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8])
                                   ) : 8'bZ;
 
@@ -1134,7 +1148,7 @@ assign SNES_DATABUS_OE = ((dspx_enable | dspx_dp_enable) & ReadOrWrite_r) ? 1'b0
                          (loop_enable & ~SNES_READ) ? 1'b0 :
                          (bsx_data_ovr & ReadOrWrite_r) ? 1'b0 :
                          (srtc_enable & ReadOrWrite_r) ? 1'b0 :
-                         (snescmd_enable & ReadOrWrite_r) ? (~(snescmd_unlock | feat_cmd_unlock)) :
+                         (snescmd_enable & ReadOrWrite_r) ? (~(snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r)) :
                          (bs_page_enable & SNES_READ) ? 1'b0 :
                          (r213f_enable & ~SNES_PARD) ? 1'b0 :
                          (r2100_enable & ~SNES_PAWR) ? 1'b0 :
@@ -1165,7 +1179,7 @@ assign p113_out = 1'b0;
 
 snescmd_buf snescmd (
   .clka(CLK2), // input clka
-  .wea(SNES_WR_end & ((snescmd_unlock | feat_cmd_unlock) & snescmd_enable)), // input [0 : 0] wea
+  .wea(SNES_WR_end & ((snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & snescmd_enable)), // input [0 : 0] wea
   .addra({~SNES_ADDR[9],SNES_ADDR[8:0]}), // input [9 : 0] addra
   .dina(SNES_DATA), // input [7 : 0] dina
   .douta(snescmd_dout), // output [7 : 0] douta
@@ -1177,8 +1191,11 @@ snescmd_buf snescmd (
 );
 
 always @(posedge CLK2) begin 
-  if      (SNES_WR_end & (snescmd_unlock | feat_cmd_unlock) & exe_enable) exe_present <= (SNES_DATA != 0) ? 1 : 0;
-  else if (snescmd_we_mcu & (snescmd_addr_mcu == 0))                      exe_present <= (snescmd_data_out_mcu != 0) ? 1 : 0;
+  if      (SNES_WR_end & (snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & exe_enable) exe_present <= (SNES_DATA != 0) ? 1 : 0;
+  else if (snescmd_we_mcu & (snescmd_addr_mcu == 0))                                                exe_present <= (snescmd_data_out_mcu != 0) ? 1 : 0;
+  
+  if      (SNES_WR_end & (snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & map_enable) {map_fullmeg_rd_unlock_r,map_fullmeg_wr_unlock_r,map_scratch_rd_unlock_r,map_scratch_wr_unlock_r,map_snescmd_rd_unlock_r,map_snescmd_wr_unlock_r} <= SNES_DATA;
+  else if (snescmd_we_mcu & ({2'b10,snescmd_addr_mcu} == 12'hBB0))                                  {map_fullmeg_rd_unlock_r,map_fullmeg_wr_unlock_r,map_scratch_rd_unlock_r,map_scratch_wr_unlock_r,map_snescmd_rd_unlock_r,map_snescmd_wr_unlock_r} <= snescmd_data_out_mcu;
 end
 
 // spin loop state machine
