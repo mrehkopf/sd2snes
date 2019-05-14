@@ -68,11 +68,16 @@ void smc_id(snes_romprops_t* props) {
   props->load_address = 0;
   props->has_dspx = 0;
   props->has_st0010 = 0;
+  props->has_st0011 = 0;
+  props->has_st0018 = 0;
+  props->has_msu1 = 0;
   props->has_cx4 = 0;
   props->has_obc1 = 0;
   props->has_gsu = 0;
   props->has_sa1 = 0;
   props->has_sdd1 = 0;
+  props->has_spc7110 = 0;
+  props->has_combo = 0;
   props->srambase = 0;
   props->sramsize_bytes = 0;
   props->fpga_features = 0;
@@ -197,6 +202,11 @@ void smc_id(snes_romprops_t* props) {
         props->fpga_dspfeat = CFG.gsu_speed;
         header->ramsize = header->expramsize & 0x7;
       }
+      else if (header->carttype == 0xcb) {
+        // custom combo type
+        props->has_combo = 1;
+        props->fpga_features |= FEAT_COMBO;
+      }
       break;
 
     case 0x21: /* HiROM */
@@ -206,6 +216,11 @@ void smc_id(snes_romprops_t* props) {
         props->has_dspx = 1;
         props->dsp_fw = DSPFW_1B;
         props->fpga_features |= FEAT_DSPX;
+      }
+      else if (header->carttype == 0xcb) {
+        // custom combo type
+        props->has_combo = 1;
+        props->fpga_features |= FEAT_COMBO;
       }
       break;
 

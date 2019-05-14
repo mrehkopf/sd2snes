@@ -197,6 +197,13 @@ void set_mcu_addr(uint32_t address) {
   FPGA_DESELECT();
 }
 
+void set_saveram_base(uint8_t mask) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_SETRAMBASE);
+  FPGA_TX_BYTE((mask) & 0xff);
+  FPGA_DESELECT();
+}
+
 void set_saveram_mask(uint32_t mask) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_SETRAMMASK);

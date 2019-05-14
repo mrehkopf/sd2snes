@@ -47,6 +47,7 @@
 #define FPGA_TX_BLOCK(x,y) spi_tx_block(x,y)
 #define FPGA_RX_BLOCK(x,y) spi_rx_block(x,y)
 
+#define FEAT_COMBO         (1 << 13)
 #define FEAT_SATELLABASE   (1 << 12)
 #define FEAT_2100_LIMIT(x) ((x & 15) << 7)
 #define FEAT_2100_LIMIT_NONE FEAT_2100_LIMIT(15)
@@ -71,6 +72,7 @@
 #define FPGA_CMD_SETADDR         (0x00)
 #define FPGA_CMD_SETROMMASK      (0x10)
 #define FPGA_CMD_SETRAMMASK      (0x20)
+#define FPGA_CMD_SETRAMBASE      (0x20 | 1)
 #define FPGA_CMD_SETMAPPER(x)    (0x30 | (x & 15))
 #define FPGA_CMD_SDDMA           (0x40)
 #define FPGA_CMD_SDDMA_RANGE     (0x60)
@@ -119,6 +121,7 @@ void dac_reset(uint16_t);
 void msu_reset(uint16_t);
 void set_msu_addr(uint16_t);
 void set_msu_status(uint16_t status);
+void set_saveram_base(uint8_t);
 void set_saveram_mask(uint32_t);
 void set_rom_mask(uint32_t);
 void set_mapper(uint8_t val);

@@ -92,6 +92,7 @@ wire [31:0] spi_byte_cnt;
 wire [2:0] spi_bit_cnt;
 wire [23:0] MCU_ADDR;
 wire [2:0] MAPPER;
+wire [7:0] SAVERAM_BASE;
 wire [23:0] SAVERAM_MASK;
 wire [23:0] ROM_MASK;
 wire [7:0] SD_DMA_SRAM_DATA;
@@ -198,10 +199,10 @@ reg [7:0] loop_data = 8'h80; // BRA
 reg exe_present; initial exe_present = 0;
 wire map_unlock;
 
-reg map_fullmeg_rd_unlock_r; initial map_fullmeg_rd_unlock_r = 0;
-reg map_fullmeg_wr_unlock_r; initial map_fullmeg_wr_unlock_r = 0;
-reg map_scratch_rd_unlock_r; initial map_scratch_rd_unlock_r = 0;
-reg map_scratch_wr_unlock_r; initial map_scratch_wr_unlock_r = 0;
+reg map_Fx_rd_unlock_r; initial map_Fx_rd_unlock_r = 0;
+reg map_Fx_wr_unlock_r; initial map_Fx_wr_unlock_r = 0;
+reg map_Ex_rd_unlock_r; initial map_Ex_rd_unlock_r = 0;
+reg map_Ex_wr_unlock_r; initial map_Ex_wr_unlock_r = 0;
 reg map_snescmd_rd_unlock_r; initial map_snescmd_rd_unlock_r = 0;
 reg map_snescmd_wr_unlock_r; initial map_snescmd_wr_unlock_r = 0;
 
@@ -639,6 +640,7 @@ mcu_cmd snes_mcu_cmd(
   .spi_bit_cnt(spi_bit_cnt),
   .spi_data_out(spi_input_data),
   .addr_out(MCU_ADDR),
+  .saveram_base_out(SAVERAM_BASE),
   .saveram_mask_out(SAVERAM_MASK),
   .rom_mask_out(ROM_MASK),
   .SD_DMA_EN(SD_DMA_EN),
@@ -727,13 +729,14 @@ address snes_addr(
   .IS_SAVERAM(IS_SAVERAM),
   .IS_ROM(IS_ROM),
   .IS_WRITABLE(IS_WRITABLE),
+  .SAVERAM_BASE(SAVERAM_BASE),
   .SAVERAM_MASK(SAVERAM_MASK),
   .ROM_MASK(ROM_MASK),
   .map_unlock(map_unlock),
-  .map_scratch_rd_unlock(map_scratch_rd_unlock_r),
-  .map_scratch_wr_unlock(map_scratch_wr_unlock_r),
-  .map_fullmeg_rd_unlock(map_fullmeg_rd_unlock_r),
-  .map_fullmeg_wr_unlock(map_fullmeg_wr_unlock_r),
+  .map_Ex_rd_unlock(map_Ex_rd_unlock_r),
+  .map_Ex_wr_unlock(map_Ex_wr_unlock_r),
+  .map_Fx_rd_unlock(map_Fx_rd_unlock_r),
+  .map_Fx_wr_unlock(map_Fx_wr_unlock_r),
   //MSU-1
   .msu_enable(msu_enable),
   //DMA-1
@@ -1194,8 +1197,8 @@ always @(posedge CLK2) begin
   if      (SNES_WR_end & (snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & exe_enable) exe_present <= (SNES_DATA != 0) ? 1 : 0;
   else if (snescmd_we_mcu & (snescmd_addr_mcu == 0))                                                exe_present <= (snescmd_data_out_mcu != 0) ? 1 : 0;
   
-  if      (SNES_WR_end & (snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & map_enable) {map_fullmeg_rd_unlock_r,map_fullmeg_wr_unlock_r,map_scratch_rd_unlock_r,map_scratch_wr_unlock_r,map_snescmd_rd_unlock_r,map_snescmd_wr_unlock_r} <= SNES_DATA;
-  else if (snescmd_we_mcu & ({2'b10,snescmd_addr_mcu} == 12'hBB0))                                  {map_fullmeg_rd_unlock_r,map_fullmeg_wr_unlock_r,map_scratch_rd_unlock_r,map_scratch_wr_unlock_r,map_snescmd_rd_unlock_r,map_snescmd_wr_unlock_r} <= snescmd_data_out_mcu;
+  if      (SNES_WR_end & (snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & map_enable) {map_Fx_rd_unlock_r,map_Fx_wr_unlock_r,map_Ex_rd_unlock_r,map_Ex_wr_unlock_r,map_snescmd_rd_unlock_r,map_snescmd_wr_unlock_r} <= SNES_DATA;
+  else if (snescmd_we_mcu & ({2'b10,snescmd_addr_mcu} == 12'hBB0))                                  {map_Fx_rd_unlock_r,map_Fx_wr_unlock_r,map_Ex_rd_unlock_r,map_Ex_wr_unlock_r,map_snescmd_rd_unlock_r,map_snescmd_wr_unlock_r} <= snescmd_data_out_mcu;
 end
 
 // spin loop state machine

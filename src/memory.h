@@ -64,6 +64,7 @@ extern char current_filename[];
 #define LOADROM_WITH_RESET  (2)
 #define LOADROM_WAIT_SNES   (4)
 #define LOADROM_WITH_FPGA   (8)
+#define LOADROM_WITH_COMBO  (16)
 
 #define LOADRAM_AUTOSKIP_HEADER (1)
 

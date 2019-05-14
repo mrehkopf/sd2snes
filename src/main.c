@@ -415,6 +415,10 @@ int main(void) {
                 usb_cmd = 0;
                 prepare_reset();
                 goto snes_loop_out;
+              case SNES_CMD_COMBO_TRANSITION:
+                usb_cmd = 0;
+                load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_COMBO | LOADROM_WITH_RESET);
+                break;
               default:
                 printf("unknown cmd: %02x\n", cmd);
                 break;

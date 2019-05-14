@@ -376,6 +376,7 @@ void snes_bootprint(void* msg) {
     fpga_rompgm();
     sram_writebyte(0, SRAM_CMD_ADDR);
     load_bootrle(SRAM_MENU_ADDR);
+    set_saveram_base(0x0);
     set_saveram_mask(0x1fff);
     set_rom_mask(0x3fffff);
     set_mapper(0x7);

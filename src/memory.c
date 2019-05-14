@@ -261,9 +261,26 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     uart_putc(0x30+file_res);
     return 0;
   }
-  filesize = file_handle.fsize;
+  filesize = file_handle.fsize; // won't be correct for combo roms
+  if(flags & LOADROM_WITH_COMBO) {
+    // seek to the proper slot.  slots are naturally aligned on 1MB boundaries.
+    uint32_t rom_slot = snescmd_readbyte(SNESCMD_MCU_CMD + 1);
+    f_lseek(&file_handle, rom_slot * 0x100000);
+  }
   smc_id(&romprops);
   file_close();
+
+  if(flags & LOADROM_WITH_COMBO) {
+    printf("Setting combo settings...");
+    uint32_t rom_slot = snescmd_readbyte(SNESCMD_MCU_CMD + 1);
+    romprops.offset += rom_slot << 20;
+    printf(" rom_slot=0x%lx", rom_slot);
+    printf(" offset=0x%lx", romprops.offset);
+    
+    // force has_combo since only slot 00 has the matching carttype
+    romprops.has_combo = 1;
+    printf(" OK.\n");
+  }
 
   uint16_t fpga_features_preload = romprops.fpga_features | FEAT_CMD_UNLOCK | FEAT_2100_LIMIT_NONE;
   if(is_menu) {
@@ -295,6 +312,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   ff_sd_offload=1;
   sd_offload_tgt=0;
   f_lseek(&file_handle, romprops.offset);
+  uint32_t total_bytes_read = 0;
   for(;;) {
     ff_sd_offload=1;
     sd_offload_tgt=0;
@@ -303,6 +321,11 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     if(!(count++ % 512)) {
       uart_putc('.');
     }
+    total_bytes_read += bytes_read;
+    // FIXME: can we do this in the general (non-combo) case?
+    // FIXME: what does the condition below do that doubles romsize_bytes until it hits the file limit do?  Do some games
+    // misreport size?  Or is this for BSX?
+    if((flags & LOADROM_WITH_COMBO) && total_bytes_read >= romprops.romsize_bytes) break;
   }
   uart_putc('\n');
   file_close();
@@ -349,7 +372,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   uint32_t rammask;
   uint32_t rommask;
 
-  while(filesize > (romprops.romsize_bytes + romprops.offset)) {
+  while(!romprops.has_combo && filesize > (romprops.romsize_bytes + romprops.offset)) {
     romprops.romsize_bytes <<= 1;
   }
 
@@ -367,8 +390,15 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     rammask = romprops.ramsize_bytes - 1;
   }
   rommask = romprops.romsize_bytes - 1;
-  printf("ramsize=%x rammask=%lx\nromsize=%x rommask=%lx\n", romprops.header.ramsize, rammask, romprops.header.romsize, rommask);
+  
+  uint8_t ramslot = 0;
+  if (romprops.has_combo) {
+    ramslot = snescmd_readbyte((romprops.mapper_id == 0 || romprops.mapper_id == 2) ? 0xFFDA : 0x7FDA);
+  }
+  
+  printf("ramsize=%x ramslot=%hx rammask=%lx\nromsize=%x rommask=%lx\n", romprops.header.ramsize, ramslot, rammask, romprops.header.romsize, rommask);
   set_saveram_mask(rammask);
+  set_saveram_base(ramslot);
   set_rom_mask(rommask);
   readled(0);
 
@@ -434,6 +464,25 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
 
   set_mapper(romprops.mapper_id);
 
+  if (romprops.has_combo) {
+    static uint32_t combo_srambase = 0;
+    static uint32_t combo_sramsize_bytes = 0;
+  
+    if (flags & LOADROM_WITH_COMBO) {
+      // restore proper bounds
+      romprops.srambase = combo_srambase;
+      romprops.sramsize_bytes = combo_sramsize_bytes;
+    }
+    else {
+      // base ROM.
+      // set base unlock features.
+      snescmd_writebyte(0x1, SNESCMD_MAP);
+      // record the saveram properties
+      combo_srambase = romprops.srambase;
+      combo_sramsize_bytes = romprops.sramsize_bytes;
+    }
+  }
+
 //printf("%04lx\n", romprops.header_address + ((void*)&romprops.header.vect_irq16 - (void*)&romprops.header));
   if(flags & (LOADROM_WITH_RESET|LOADROM_WAIT_SNES)) {
     assert_reset();
@@ -442,7 +491,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   
   // loading a new rom implies the previous crc is no longer valid
-  sram_crc_valid = 0;
+  sram_crc_valid = romprops.has_combo ? 1 : 0;
   sram_crc_init = 1;
   sram_crc_romsize = filesize - romprops.offset;
 
@@ -720,7 +769,7 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size, uint32_t crc) {
     data = FPGA_RX_BYTE();
     if(get_snes_reset()) {
       crc_valid = 0;
-      sram_crc_valid = 0;
+      sram_crc_valid = romprops.has_combo ? 1 : 0;
       sram_crc_init = 1;
       break;
     }
