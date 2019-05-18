@@ -264,17 +264,17 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   filesize = file_handle.fsize; // won't be correct for combo roms
   if(flags & LOADROM_WITH_COMBO) {
     // seek to the proper slot.  slots are naturally aligned on 1MB boundaries.
-    uint32_t rom_slot = snescmd_readbyte(SNESCMD_MCU_CMD + 1);
-    f_lseek(&file_handle, rom_slot * 0x100000);
+    uint32_t romslot = snescmd_readbyte(SNESCMD_MCU_CMD + 1);
+    f_lseek(&file_handle, romslot * 0x100000);
   }
   smc_id(&romprops);
   file_close();
 
   if(flags & LOADROM_WITH_COMBO) {
     printf("Setting combo settings...");
-    uint32_t rom_slot = snescmd_readbyte(SNESCMD_MCU_CMD + 1);
-    romprops.offset += rom_slot << 20;
-    printf(" rom_slot=0x%lx", rom_slot);
+    uint32_t romslot = snescmd_readbyte(SNESCMD_MCU_CMD + 1);
+    romprops.offset += romslot << 20;
+    printf(" romslot=0x%lx", romslot);
     printf(" offset=0x%lx", romprops.offset);
     
     // force has_combo since only slot 00 has the matching carttype
@@ -393,7 +393,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   
   uint8_t ramslot = 0;
   if (romprops.has_combo) {
-    ramslot = snescmd_readbyte((romprops.mapper_id == 0 || romprops.mapper_id == 2) ? 0xFFDA : 0x7FDA);
+    ramslot = sram_readbyte((romprops.mapper_id == 0 || romprops.mapper_id == 2) ? 0xFFDA : 0x7FDA);
   }
   
   printf("ramsize=%x ramslot=%hx rammask=%lx\nromsize=%x rommask=%lx\n", romprops.header.ramsize, ramslot, rammask, romprops.header.romsize, rommask);
@@ -467,6 +467,9 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   if (romprops.has_combo) {
     static uint32_t combo_srambase = 0;
     static uint32_t combo_sramsize_bytes = 0;
+  
+    // set version number
+    snescmd_writebyte(COMBO_VERSION, SNESCMD_MAP);
   
     if (flags & LOADROM_WITH_COMBO) {
       // restore proper bounds

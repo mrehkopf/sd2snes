@@ -242,7 +242,7 @@ assign dma_enable = (featurebits[FEAT_DMA1] | map_unlock) & (!SNES_ADDR[22] && (
 assign use_bsx = (MAPPER_DEC[3'b011]);
 assign srtc_enable = featurebits[FEAT_SRTC] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h2800));
 assign exe_enable =                           (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hffff) == 16'h2C00));
-assign map_enable =                           (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hffff) == 16'h2BB0));
+assign map_enable =                           (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hffff) == 16'h2BB2));
 
 // DSP1 LoROM: DR=30-3f:8000-bfff; SR=30-3f:c000-ffff
 //          or DR=60-6f:0000-3fff; SR=60-6f:4000-7fff

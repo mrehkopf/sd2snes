@@ -1193,12 +1193,16 @@ snescmd_buf snescmd (
   .doutb(snescmd_data_in_mcu) // output [7 : 0] doutb
 );
 
+reg snescmd_addr_exe_r; always @(posedge CLK2) snescmd_addr_exe_r <= {2'b11,snescmd_addr_mcu} == 12'hC00;
+reg snescmd_addr_map_r; always @(posedge CLK2) snescmd_addr_map_r <= {2'b10,snescmd_addr_mcu} == 12'hBB2;
+
 always @(posedge CLK2) begin 
   if      (SNES_WR_end & (snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & exe_enable) exe_present <= (SNES_DATA != 0) ? 1 : 0;
-  else if (snescmd_we_mcu & (snescmd_addr_mcu == 0))                                                exe_present <= (snescmd_data_out_mcu != 0) ? 1 : 0;
+  // snescmd_addr_mcu is 10b.  $2C00 is inteleaved with $2A00 such that $2C00 comes first at 0
+  else if (snescmd_we_mcu & snescmd_addr_exe_r)                                                     exe_present <= (snescmd_data_out_mcu != 0) ? 1 : 0;
   
   if      (SNES_WR_end & (snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & map_enable) {map_Fx_rd_unlock_r,map_Fx_wr_unlock_r,map_Ex_rd_unlock_r,map_Ex_wr_unlock_r,map_snescmd_rd_unlock_r,map_snescmd_wr_unlock_r} <= SNES_DATA;
-  else if (snescmd_we_mcu & ({2'b10,snescmd_addr_mcu} == 12'hBB0))                                  {map_Fx_rd_unlock_r,map_Fx_wr_unlock_r,map_Ex_rd_unlock_r,map_Ex_wr_unlock_r,map_snescmd_rd_unlock_r,map_snescmd_wr_unlock_r} <= snescmd_data_out_mcu;
+  else if (snescmd_we_mcu & snescmd_addr_map_r)                                                     {map_Fx_rd_unlock_r,map_Fx_wr_unlock_r,map_Ex_rd_unlock_r,map_Ex_wr_unlock_r,map_snescmd_rd_unlock_r,map_snescmd_wr_unlock_r} <= snescmd_data_out_mcu;
 end
 
 // spin loop state machine
@@ -1207,8 +1211,7 @@ end
 // TODO: add this to a more general-purpose debug module
 reg loop_state;
 initial loop_state = 0;
-parameter [`upper(2):0] loop_code = { 8'h80, 8'hFE // BRA $FE
-                                   };
+parameter [`upper(2):0] loop_code = { 8'h80, 8'hFE }; // BRA $FE
 
 always @(posedge CLK2) begin
 

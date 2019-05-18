@@ -80,7 +80,8 @@
 #define SNESCMD_NMI_DISABLE_CHEATS   (0x2ba6)
 #define SNESCMD_NMI_KILL_NMIHOOK     (0x2ba8)
 #define SNESCMD_NMI_TMP_KILL_NMIHOOK (0x2baa)
-#define SNESCMD_MAP                  (0x2bb0)
+#define SNESCMD COMBO_VERSION        (0x2bb0)
+#define SNESCMD_MAP                  (0x2bb2)
 #define SNESCMD_NMI_ENABLE_BUTTONS   (0x2bfc)
 #define SNESCMD_NMI_DISABLE_WRAM     (0x2bfe)
 #define SNESCMD_NMI_WRAM_PATCH_COUNT (0x2bff)
@@ -99,6 +100,8 @@
 
 #define SRAM_REGION_SIZE (0x10000)
 
+#define COMBO_VERSION    (0x1)
+
 enum snes_reset_state { SNES_RESET_NONE = 0, SNES_RESET_SHORT, SNES_RESET_LONG };
 
 typedef struct __attribute__ ((__packed__)) _mcu_status {
@@ -113,7 +116,8 @@ typedef struct __attribute__ ((__packed__)) _snes_status {
   uint8_t has_satellaview;
 } snes_status_t;
 
-uint8_t crc_valid;
+extern uint8_t crc_valid;
+extern uint8_t resetButtonState;
 
 void prepare_reset(void);
 void snes_init(void);

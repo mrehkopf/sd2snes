@@ -389,10 +389,13 @@ int main(void) {
 // TODO have FPGA automatically reset SRTC on detected reset
         fpga_reset_srtc_state();
       }
-      if(get_snes_reset_state() == SNES_RESET_LONG) {
+      uint8_t resetState = get_snes_reset_state();
+      if(resetState == SNES_RESET_LONG) {
         prepare_reset();
         break;
       } else {
+        if (resetState == SNES_RESET_SHORT) resetButtonState = 1;
+        
         if(getticks() > loop_ticks + 25) {
           loop_ticks = getticks();
  //         sram_reliable();

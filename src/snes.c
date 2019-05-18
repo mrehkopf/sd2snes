@@ -47,6 +47,8 @@ uint32_t saveram_crc, saveram_crc_old;
 uint8_t sram_crc_valid;
 uint8_t sram_crc_init;
 uint32_t sram_crc_romsize;
+uint8_t crc_valid;
+
 extern snes_romprops_t romprops;
 extern int snes_boot_configured;
 
@@ -145,12 +147,14 @@ void snes_reset(int state) {
  *
  * returns: upon loop exit returns the current non-reset related command
  */
+uint8_t resetButtonState = 0;
 uint8_t snes_reset_loop(void) {
   uint8_t cmd = 0;
   
   tick_t starttime = getticks();
   while(fpga_test() == FPGA_TEST_TOKEN) {
     cmd = snes_get_mcu_cmd();
+    
     // 100ms timeout in case the reset hook is defeated somehow
     if(getticks() > starttime + SNES_RESET_LOOP_TIMEOUT) {
       cmd = SNES_CMD_RESET_LOOP_TIMEOUT;
@@ -167,14 +171,26 @@ uint8_t snes_reset_loop(void) {
         case SNES_CMD_RESET_LOOP_PASS:
         case SNES_CMD_RESET_LOOP_TIMEOUT:
           snes_set_mcu_cmd(0);
-          cmd = 0;
+          cmd = 0;          
         default:
           goto snes_reset_loop_out;
       }
     }
   }
-
+             
 snes_reset_loop_out:
+  if (romprops.has_combo) {
+    printf("combo reset: resetButtonState: %hhx\n", resetButtonState);
+
+    if (resetButtonState) {
+      // if we are not in ROM slot 0 then reload
+      uint8_t romslot = sram_readbyte((romprops.mapper_id == 0 || romprops.mapper_id == 2) ? 0xFFD9 : 0x7FD9);
+      if (romslot) load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_RESET);
+    }
+  }
+
+  resetButtonState = 0;
+
   return cmd;
 }
 
