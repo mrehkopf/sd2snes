@@ -1151,7 +1151,7 @@ assign SNES_DATABUS_OE = ((dspx_enable | dspx_dp_enable) & ReadOrWrite_r) ? 1'b0
                          (loop_enable & ~SNES_READ) ? 1'b0 :
                          (bsx_data_ovr & ReadOrWrite_r) ? 1'b0 :
                          (srtc_enable & ReadOrWrite_r) ? 1'b0 :
-                         (snescmd_enable & ReadOrWrite_r) ? (~(snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r)) :
+                         (snescmd_enable & ReadOrWrite_r) ? (~(snescmd_unlock | feat_cmd_unlock | (map_snescmd_wr_unlock_r & ~SNES_WRITE) | (map_snescmd_rd_unlock_r & ~SNES_READ))) :
                          (bs_page_enable & SNES_READ) ? 1'b0 :
                          (r213f_enable & ~SNES_PARD) ? 1'b0 :
                          (r2100_enable & ~SNES_PAWR) ? 1'b0 :

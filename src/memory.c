@@ -469,7 +469,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     static uint32_t combo_sramsize_bytes = 0;
   
     // set version number
-    snescmd_writebyte(COMBO_VERSION, SNESCMD_MAP);
+    snescmd_writebyte(COMBO_VERSION, SNESCMD_COMBO_VERSION);
   
     if (flags & LOADROM_WITH_COMBO) {
       // restore proper bounds

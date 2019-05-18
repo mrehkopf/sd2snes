@@ -80,7 +80,7 @@
 #define SNESCMD_NMI_DISABLE_CHEATS   (0x2ba6)
 #define SNESCMD_NMI_KILL_NMIHOOK     (0x2ba8)
 #define SNESCMD_NMI_TMP_KILL_NMIHOOK (0x2baa)
-#define SNESCMD COMBO_VERSION        (0x2bb0)
+#define SNESCMD_COMBO_VERSION        (0x2bb0)
 #define SNESCMD_MAP                  (0x2bb2)
 #define SNESCMD_NMI_ENABLE_BUTTONS   (0x2bfc)
 #define SNESCMD_NMI_DISABLE_WRAM     (0x2bfe)
