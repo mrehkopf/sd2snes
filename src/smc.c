@@ -202,11 +202,6 @@ void smc_id(snes_romprops_t* props) {
         props->fpga_dspfeat = CFG.gsu_speed;
         header->ramsize = header->expramsize & 0x7;
       }
-      else if (header->carttype == 0xcb) {
-        // custom combo type
-        props->has_combo = 1;
-        props->fpga_features |= FEAT_COMBO;
-      }
       break;
 
     case 0x21: /* HiROM */
@@ -282,6 +277,13 @@ void smc_id(snes_romprops_t* props) {
           props->mapper_id = 1; // whatever
       }
   }
+  
+  if (header->carttype == 0xcb) {
+    // custom combo type.  supports all base mappers.  consider moving this to another field to support remaining mappers.
+    props->has_combo = 1;
+    props->fpga_features |= FEAT_COMBO;
+  }
+  
   if(header->romsize == 0 || header->romsize > 13) {
     props->romsize_bytes = 1024;
     header->romsize = 0;
