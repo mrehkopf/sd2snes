@@ -1,21 +1,21 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    06:32:24 02/24/2018 
-// Design Name: 
-// Module Name:    gsu 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    06:32:24 02/24/2018
+// Design Name:
+// Module Name:    gsu
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module gsu(
@@ -34,7 +34,7 @@ module gsu(
   input  [7:0]  DATA_IN,
   output        DATA_ENABLE,
   output [7:0]  DATA_OUT,
-  
+
   // ROM interface
   input         ROM_BUS_RDY,
   output        ROM_BUS_RRQ,
@@ -50,7 +50,7 @@ module gsu(
   output [18:0] RAM_BUS_ADDR,
   input  [7:0]  RAM_BUS_RDDATA,
   output [7:0]  RAM_BUS_WRDATA,
-  
+
   // ACTIVE interface
   output        IRQ,
   output        GO,
@@ -58,7 +58,7 @@ module gsu(
   output        RAN,
 
   input         SPEED,
-  
+
   // State debug read interface
   input  [9:0]  PGM_ADDR, // [9:0]
   output [7:0]  PGM_DATA, // [7:0]
@@ -141,7 +141,7 @@ parameter
   ADDR_R15   = 8'h1E,
   ADDR_GPRL  = 8'b000x_xxx0,
   ADDR_GPRH  = 8'b000x_xxx1,
-  
+
   ADDR_SFR   = 8'h30,
   ADDR_BRAMR = 8'h33,
   ADDR_PBR   = 8'h34,
@@ -153,7 +153,7 @@ parameter
   ADDR_VCR   = 8'h3B,
   ADDR_RAMBR = 8'h3C,
   ADDR_CBR   = 8'h3E,
-  
+
   ADDR_CACHE_BASE = 10'h100
   ;
 
@@ -183,7 +183,7 @@ parameter
 `define OP_ALT3          8'h3F
 `define OP_TO            8'h10,8'h11,8'h12,8'h13,8'h14,8'h15,8'h16,8'h17,8'h18,8'h19,8'h1A,8'h1B,8'h1C,8'h1D,8'h1E,8'h1F
 `define OP_WITH          8'h20,8'h21,8'h22,8'h23,8'h24,8'h25,8'h26,8'h27,8'h28,8'h29,8'h2A,8'h2B,8'h2C,8'h2D,8'h2E,8'h2F
-`define OP_FROM          8'hB0,8'hB1,8'hB2,8'hB3,8'hB4,8'hB5,8'hB6,8'hB7,8'hB8,8'hB9,8'hBA,8'hBB,8'hBC,8'hBD,8'hBE,8'hBF 
+`define OP_FROM          8'hB0,8'hB1,8'hB2,8'hB3,8'hB4,8'hB5,8'hB6,8'hB7,8'hB8,8'hB9,8'hBA,8'hBB,8'hBC,8'hBD,8'hBE,8'hBF
 // mov
 // move/moves paired with/to/from
 `define OP_IBT           8'hA0,8'hA1,8'hA2,8'hA3,8'hA4,8'hA5,8'hA6,8'hA7,8'hA8,8'hA9,8'hAA,8'hAB,8'hAC,8'hAD,8'hAE,8'hAF // x
@@ -229,7 +229,7 @@ parameter
 //-------------------------------------------------------------------
 
 // C0 Control
-// 0 - Go (1) 
+// 0 - Go (1)
 // 1 - MatchFullInst
 
 // C1 StepControl
@@ -537,7 +537,7 @@ wire       cache_wren;
 wire [8:0] cache_addr;
 wire [7:0] cache_wrdata;
 wire [7:0] cache_rddata;
-// 
+//
 wire       debug_cache_wren;
 wire [8:0] debug_cache_addr;
 wire [7:0] debug_cache_wrdata;
@@ -553,13 +553,14 @@ assign debug_cache_addr = {~pgm_addr_r[8],pgm_addr_r[7:0]};
 // valid bits
 reg [31:0] cache_val_r; initial cache_val_r = 0;
 
+`ifdef MK2
 gsu_cache cache (
   .clka(CLK), // input clka
   .wea(cache_wren), // input [0 : 0] wea
   .addra(cache_addr), // input [8 : 0] addra
   .dina(cache_wrdata), // input [7 : 0] dina
   .douta(cache_rddata) // output [7 : 0] douta
-`ifdef CACHE_DEBUG_PORT 
+`ifdef CACHE_DEBUG_PORT
   ,
   .clkb(CLK), // input clkb
   .web(debug_cache_wren), // input [0 : 0] web
@@ -568,6 +569,30 @@ gsu_cache cache (
   .doutb(debug_cache_rddata) // output [7 : 0] doutb
 `endif
 );
+`endif
+`ifdef MK3
+`ifdef CACHE_DEBUG_PORT
+gsu_cache cache (
+  .clock(CLK), // input clka
+  .wren_a(cache_wren), // input [0 : 0] wea
+  .address_a(cache_addr), // input [8 : 0] addra
+  .data_a(cache_wrdata), // input [7 : 0] dina
+  .q_a(cache_rddata), // output [7 : 0] douta
+  .wren_b(debug_cache_wren), // input [0 : 0] web
+  .address_b(debug_cache_addr), // input [8 : 0] addrb
+  .data_b(debug_cache_wrdata), // input [7 : 0] dinb
+  .q_b(debug_cache_rddata) // output [7 : 0] doutb
+);
+`else
+gsu_cache cache (
+  .clock(CLK), // input clka
+  .wren(cache_wren), // input [0 : 0] wea
+  .address(cache_addr), // input [8 : 0] addra
+  .data(cache_wrdata), // input [7 : 0] dina
+  .q(cache_rddata) // output [7 : 0] douta
+);
+`endif
+`endif
 
 //-------------------------------------------------------------------
 // REGISTER/MMIO ACCESS
@@ -596,10 +621,10 @@ always @(posedge CLK) begin
     for (i = 0; i < NUM_GPR; i = i + 1) begin
       REG_r[i] <= 0;
     end
-    
+
     SFR_r[15:7] <= 0;
     SFR_r[5:0]  <= 0;
-    
+
     PBR_r   <= 0;
     //ROMBR_r <= 0;
     //RAMBR_r <= 0;
@@ -611,21 +636,21 @@ always @(posedge CLK) begin
     VCR_r   <= 4;
     CFGR_r  <= 0;
     CLSR_r  <= 0;
-    
+
     SREG_r  <= 0;
     DREG_r  <= 0;
-    
+
     data_enable_r <= 0;
     data_flop_r <= 0;
-    
+
     snes_writebuf_val_r <= 0;
     snes_writebuf_reg_r <= 0;
     snes_writebuf_gpr_r <= 0;
     snes_readbuf_val_r <= 0;
-    
+
     r2i_flush_r <= 0;
     r2i_clear_r <= 0;
-    
+
     cache_mmio_wren_r <= 0;
   end
   else begin
@@ -637,7 +662,7 @@ always @(posedge CLK) begin
           casex (addr_in_r[7:0])
             ADDR_GPRL : begin data_out_r <= REG_r[addr_in_r[4:1]][7:0];  if (~SFR_GO) data_enable_r <= 1; end
             ADDR_GPRH : begin data_out_r <= REG_r[addr_in_r[4:1]][15:8]; if (~SFR_GO) data_enable_r <= 1; end
-          
+
             ADDR_SFR  : begin data_out_r <= SFR_r[7:0];  data_enable_r <= 1; end
             ADDR_SFR+1: begin data_out_r <= SFR_r[15:8]; data_enable_r <= 1; end
             ADDR_PBR  : begin data_out_r <= PBR_r;       if (~SFR_GO) data_enable_r <= 1; end
@@ -660,7 +685,7 @@ always @(posedge CLK) begin
     else begin
       data_enable_r <= 0;
     end
-  
+
     // Register Write Buffer.  snes writes are sent on non-GSU clocks
     if (SNES_WR_end & enable_r) begin
       snes_writebuf_val_r  <= 1;
@@ -681,7 +706,7 @@ always @(posedge CLK) begin
     else if (snes_readbuf_val_r & ~gsu_clock_en) begin
       snes_readbuf_val_r <= 0;
     end
-    
+
     // Cache flush on GO 1->0.  Sync with IDLE.
     if (snes_writebuf_val_r & ~gsu_clock_en) begin
       if (snes_writebuf_reg_r) begin
@@ -701,13 +726,13 @@ always @(posedge CLK) begin
       r2i_flush_r <= 0;
       r2i_clear_r <= 0;
     end
-    
+
     // Registers that can be modifed by both
     if (snes_writebuf_val_r & ~gsu_clock_en) begin
       if (snes_writebuf_reg_r) begin
         case (snes_writebuf_addr_r[7:0])
           ADDR_R15+1: SFR_r[5] <= 1;
-          
+
           ADDR_SFR  : SFR_r[5:1] <= snes_writebuf_data_r[5:1];
           ADDR_SFR+1: {SFR_r[15],SFR_r[12:8]} <= {snes_writebuf_data_r[7],snes_writebuf_data_r[4:0]};
           ADDR_BRAMR: BRAMR_r[0] <= snes_writebuf_data_r[0];
@@ -801,7 +826,7 @@ always @(posedge CLK) begin
     fetch_waitcnt_r <= 0;
     exe_waitcnt_r <= 0;
     waitcnt_zero_r <= 0;
-    
+
     stepcnt_r <= 0;
     step_r <= 0;
   end
@@ -812,10 +837,10 @@ always @(posedge CLK) begin
 
     if (e2c_waitcnt_val_r) exe_waitcnt_r <= e2c_waitcnt_r;
     else if (gsu_clock_en & |exe_waitcnt_r) exe_waitcnt_r <= exe_waitcnt_r - 1;
-    
+
     // ok to advance to next instruction byte
     step_r <= CONFIG_CONTROL_ENABLED || (!op_complete & !CONFIG_CONTROL_MATCHPARTINST) || (stepcnt_r != CONFIG_STEP_COUNT);
-    
+
     if (pipeline_advance & (op_complete | CONFIG_CONTROL_MATCHPARTINST)) stepcnt_r <= CONFIG_STEP_COUNT;
   end
 end
@@ -842,7 +867,7 @@ reg        rom_busy_r; initial rom_busy_r = 0;
 always @(posedge CLK) begin
   if (RST) begin
     ROM_STATE <= ST_ROM_IDLE;
-    
+
     rom_bus_rrq_r <= 0;
 
     rom_busy_r <= 0;
@@ -870,7 +895,7 @@ always @(posedge CLK) begin
       ST_ROM_FETCH_RD,
       ST_ROM_DATA_RD: begin
         rom_bus_rrq_r <= 0;
-        
+
         if (~rom_bus_rrq_r & ROM_BUS_RDY) begin
           rom_bus_data_r <= ROM_BUS_RDDATA;
           ROM_STATE <= (|(ROM_STATE & ST_ROM_FETCH_RD)) ? ST_ROM_FETCH_END : ST_ROM_DATA_END;
@@ -916,10 +941,10 @@ reg        ram_upper_r; initial ram_upper_r = 0;
 always @(posedge CLK) begin
   if (RST) begin
     RAM_STATE <= ST_RAM_IDLE;
-    
+
     ram_bus_rrq_r <= 0;
     ram_bus_wrq_r <= 0;
-    
+
     ram_busy_r <= 0;
   end
   else begin
@@ -955,7 +980,7 @@ always @(posedge CLK) begin
             ram_word_r <= stb_word_r;
             ram_wr_r <= 1;
             RAM_STATE <= ST_RAM_ACCESS;
-            ram_state_end_r <= ST_RAM_STB_END;            
+            ram_state_end_r <= ST_RAM_STB_END;
           end
           else if (bmp_ram_rd_r) begin
             ram_bus_rrq_r <= 1;
@@ -993,19 +1018,19 @@ always @(posedge CLK) begin
       ST_RAM_ACCESS: begin
         ram_bus_rrq_r <= 0;
         ram_bus_wrq_r <= 0;
-        
+
         if ((~ram_bus_rrq_r & ~ram_bus_wrq_r) & RAM_BUS_RDY) begin
           if (ram_word_r) begin
             ram_word_r <= 0;
             ram_upper_r <= 1;
-            
+
             ram_bus_rrq_r <= ~ram_wr_r;
             ram_bus_wrq_r <=  ram_wr_r;
-            
+
             ram_bus_addr_r[0] <= ~ram_bus_addr_r[0];
             // if it's a read we are inserting the lower byte.  If it's a store we are writing the lower byte
             ram_bus_data_r[7:0] <= ram_wr_r ? ram_bus_data_r[15:8] : RAM_BUS_RDDATA[7:0];
-            
+
             // no state change
           end
           else begin
@@ -1112,7 +1137,7 @@ always @(posedge CLK) begin
   for (i = 0; i < 2; i = i + 1) begin
     bmp_x_r[i] <= {PIXBUF_OFFSET_r[i][4:0],3'b000};
     bmp_y_r[i] <= PIXBUF_OFFSET_r[i][12:5];
-          
+
     //case (PIXBUF_MD_r[i])
     case (SCMR_MD)
       0: bmp_char_shift_r[i] <= {bmp_char_r[i],4'h0};
@@ -1121,10 +1146,10 @@ always @(posedge CLK) begin
       3: bmp_char_shift_r[i] <= {bmp_char_r[i],6'h00};
     endcase
   end
-  
+
   bmp_rpix_x_r <= {e2b_offset_r[4:0],3'b000};
   bmp_rpix_y_r <= e2b_offset_r[12:5];
-  
+
   case (SCMR_MD)
     0: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,4'h0};
     1: bmp_rpix_char_shift_r <= {bmp_rpix_char_r,5'h00};
@@ -1155,7 +1180,7 @@ always @(posedge CLK) begin
     end
     // double buffer swap
     // second buffer must be available and we must be idle
-    // Conflict, Flush, or Full    
+    // Conflict, Flush, or Full
     if (~|PIXBUF_VALID_r[~PIXBUF_HEAD_r]                  // available
        & (|(BMP_STATE & ST_BMP_IDLE))                     // idle
        & ( (e2b_plot_r  & ~bmp_hit)                       // conflict
@@ -1183,16 +1208,16 @@ always @(posedge CLK) begin
     if (gsu_clock_en & |bmp_waitcnt_r) bmp_waitcnt_r <= bmp_waitcnt_r - 1;
 
     case (BMP_STATE)
-      ST_BMP_IDLE: begin // overlaps ST_EXE_MEMORY.  Single cycle operations 
+      ST_BMP_IDLE: begin // overlaps ST_EXE_MEMORY.  Single cycle operations
         if (e2b_plot_r) begin
           bmp_mode_r <= BMP_MODE_PLOT;
           bmp_colr_r <= e2b_colr_r;
           bmp_offset_r <= e2b_offset_r;
           bmp_index_r  <= e2b_index_r;
-          
+
           if (bmp_hit) begin
             //bmp_plane_r  <= 0;
-            
+
             BMP_STATE <= ST_BMP_END;
           end
         end
@@ -1219,7 +1244,7 @@ always @(posedge CLK) begin
           // read
           bmp_ram_rd_r <= 1;
           bmp_word_r <= 0;
-          
+
           BMP_STATE <= ST_BMP_FILL_WAIT;
         end
       end
@@ -1228,10 +1253,10 @@ always @(posedge CLK) begin
           bmp_ram_rd_r <= 0;
 
           bmp_plane_r <= bmp_plane_r + 1;
-          
+
           // collect data
           bmp_colr_r[bmp_plane_r] <= ram_bus_data_r[bmp_index_r];
-          
+
           BMP_STATE <= bmp_plane_r == bmp_bppm1_r ? ST_BMP_END : ST_BMP_FILL;
         end
       end
@@ -1273,7 +1298,7 @@ reg [7:0]  bmf_flush_data_r;
 always @(posedge CLK) begin
   if (RST) begin
     BMF_STATE <= ST_BMF_IDLE;
-    
+
     bmf_waitcnt_r <= 0;
     bmf_ram_rd_r <= 0;
     bmf_ram_wr_r <= 0;
@@ -1304,17 +1329,17 @@ always @(posedge CLK) begin
           // read
           bmf_ram_rd_r <= 1;
           bmf_word_r <= 0;
-          
+
           BMF_STATE <= ST_BMF_FLUSH_READ_WAIT;
         end
       end
-      ST_BMF_FLUSH_READ_WAIT: begin        
+      ST_BMF_FLUSH_READ_WAIT: begin
         if (|(RAM_STATE & ST_RAM_BMF_END)) begin
           bmf_ram_rd_r <= 0;
-          
+
           // collect data
           bmf_flush_data_r <= ram_bus_data_r[7:0];
-          
+
           BMF_STATE <= ST_BMF_FLUSH_WRITE;
         end
       end
@@ -1332,16 +1357,16 @@ always @(posedge CLK) begin
           bmf_data_r <= ({PIXBUF_r[~PIXBUF_HEAD_r][7][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][6][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][5][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][4][bmf_plane_r],
                           PIXBUF_r[~PIXBUF_HEAD_r][3][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][2][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][1][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][0][bmf_plane_r]} & PIXBUF_VALID_r[~PIXBUF_HEAD_r])
                         | (bmf_flush_data_r & ~PIXBUF_VALID_r[~PIXBUF_HEAD_r]);
-          
+
           BMF_STATE <= ST_BMF_FLUSH_WRITE_WAIT;
         end
       end
       ST_BMF_FLUSH_WRITE_WAIT: begin
         // test for end
         if (|(RAM_STATE & ST_RAM_BMF_END)) begin
-          bmf_ram_wr_r <= 0;          
+          bmf_ram_wr_r <= 0;
           bmf_plane_r <= bmf_plane_r + 1;
-          
+
           BMF_STATE <= (bmf_plane_r == bmp_bppm1_r) ? ST_BMF_END : bmf_rmw_r ? ST_BMF_FLUSH_READ : ST_BMF_FLUSH_WRITE;
         end
       end
@@ -1357,7 +1382,7 @@ end
 //-------------------------------------------------------------------
 parameter
   ST_STB_IDLE        = 8'b00000001,
-  
+
   ST_STB_MEMORY_WAIT = 8'b00000010,
   ST_STB_MEMORY2_WAIT= 8'b00000100,
   ST_STB_WAIT        = 8'b10000000
@@ -1372,12 +1397,12 @@ always @(posedge CLK) begin
     stb_waitcnt_r <= 0;
     stb_ram_wr_r  <= 0;
     stb_busy_r    <= 0;
-  
+
     STB_STATE <= ST_STB_IDLE;
   end
   else begin
     if (gsu_clock_en & |stb_waitcnt_r) stb_waitcnt_r <= stb_waitcnt_r - 1;
-    
+
     case (STB_STATE)
       ST_STB_IDLE: begin
         if (e2s_req_r) begin
@@ -1404,7 +1429,7 @@ always @(posedge CLK) begin
         if (gsu_clock_en & ~|stb_waitcnt_r) begin
           if (stb_word_r) begin
             stb_waitcnt_r <= lat_ram_r;
-            
+
             stb_ram_wr_r <= 1;
             stb_word_r <= 0;
 
@@ -1435,7 +1460,7 @@ end
 
 // The fetch pipeline is composed primarily of the cache lookup state machine
 // which can access the cache once per GSU clock.  It synchronizes with the
-// 4x FPGA clock and the execution pipeline.  It does this 
+// 4x FPGA clock and the execution pipeline.  It does this
 // - Cache hit
 // - ROM fill (into cache if offset)
 parameter
@@ -1474,16 +1499,16 @@ reg         fetch_rom_r;
 always @(posedge CLK) begin
   if (RST) begin
     FETCH_STATE <= ST_FETCH_IDLE;
-  
+
     cache_val_r <= 0;
-    
+
     i2c_waitcnt_val_r <= 0;
     cache_rom_rd_r <= 0;
     cache_ram_rd_r <= 0;
     fetch_wait_r <= 0;
-    
+
     fetch_data_r <= `OP_NOP;
-    
+
     fetch_install_val_r <= 0;
     fetch_error <= 0;
 
@@ -1511,10 +1536,10 @@ always @(posedge CLK) begin
     else if (pipeline_advance & op_complete) begin
       if (e2r_wcbr_r)  CBR_r[15:4] <= e2r_cbr_r[15:4];
     end
-  
+
     // PBR is updated by SNES or JMP instructions.
     fetch_rom_r <= (PBR_r < 8'h60);
-  
+
     case (FETCH_STATE)
       ST_FETCH_IDLE: begin
         // align to GSU clock
@@ -1531,7 +1556,7 @@ always @(posedge CLK) begin
       ST_FETCH_ADDR: begin
         // address for cache // FIXME: cache seems to corrupt something
         fetch_cache_comp_r <= 0;
-        
+
         fetch_install_val_r <= 0;
         fetch_cache_match_r <= (REG_r[R15][15:0] - CBR_r) < 512;
         cache_gsu_addr_r    <= REG_r[R15][8:0];
@@ -1540,7 +1565,7 @@ always @(posedge CLK) begin
         // need to use PBR directly here because of prior cycle update
         cache_addr_r <= (PBR_r < 8'h60) ? ((PBR_r[6] ? {PBR_r,REG_r[R15]} : {PBR_r,REG_r[R15][14:0]}) & ROM_MASK)
                                         : 24'hE00000 + ({PBR_r[0],REG_r[R15]} & SAVERAM_MASK);
-        
+
         FETCH_STATE <= ST_FETCH_CACHE;
       end
       ST_FETCH_CACHE: begin
@@ -1562,7 +1587,7 @@ always @(posedge CLK) begin
 
           FETCH_STATE <= ST_FETCH_FILL;
         end
-        
+
       end
       ST_FETCH_HIT: begin
         // get data from cache.  Looks like it takes 2 cycles to read out of a true dual port??
@@ -1573,7 +1598,7 @@ always @(posedge CLK) begin
         //fetch_cache_match_r <= 0;
         //FETCH_STATE <= ST_FETCH_FILL;
         //fetch_cache_comp_r <= 1;
-        
+
         FETCH_STATE <= ST_FETCH_WAIT;
         fetch_wait_r <= 1;
       end
@@ -1601,14 +1626,14 @@ always @(posedge CLK) begin
       end
       ST_FETCH_FILL_WAIT: begin
         i2c_waitcnt_val_r <= 0;
-        
+
         // check for end and install in cache
         if (|(ROM_STATE & ST_ROM_FETCH_END) | |(RAM_STATE & ST_RAM_FETCH_END)) begin
           cache_rom_rd_r <= 0;
           cache_ram_rd_r <= 0;
           fetch_data_r <= cache_rom_rd_r ? rom_bus_data_r : ram_bus_data_r;
-          
-          if (~fetch_cache_match_r) begin          
+
+          if (~fetch_cache_match_r) begin
             FETCH_STATE <= ST_FETCH_WAIT;
             fetch_wait_r <= 1;
           end
@@ -1624,12 +1649,12 @@ always @(posedge CLK) begin
       ST_FETCH_WRITE: begin
         cache_gsu_wren_r    <= 0;
         cache_addr_r[3:0] <= cache_addr_r[3:0] + 1; // TODO: could install 16b if we wanted.  Also fix address compare above
-        
+
         if (&cache_addr_r[3:0]) begin
           FETCH_STATE <= ST_FETCH_ADDR; // Go back and check the cache.  FIXME: Is this going to be a problem when GO bit is cleared by the SNES?
 
           fetch_install_val_r <= 1;
-          fetch_install_block_r <= cache_gsu_addr_r[8:4];          
+          fetch_install_block_r <= cache_gsu_addr_r[8:4];
         end
         else begin
           FETCH_STATE <= ST_FETCH_FILL;
@@ -1638,11 +1663,11 @@ always @(posedge CLK) begin
       end
       ST_FETCH_WAIT: begin
         i2c_waitcnt_val_r <= 0;
-        
+
         if (fetch_cache_comp_r) begin
           fetch_error <= fetch_error || (fetch_cache_data_r != fetch_data_r);
         end
-        
+
         if (pipeline_advance) begin
           fetch_wait_r <= 0;
 
@@ -1659,7 +1684,7 @@ end
 //-------------------------------------------------------------------
 parameter
   ST_PRF_IDLE        = 8'b00000001,
-  
+
   ST_PRF_MEMORY      = 8'b00000010,
   ST_PRF_MEMORY_WAIT = 8'b00000100,
   ST_PRF_WAIT        = 8'b00001000
@@ -1681,14 +1706,14 @@ always @(posedge CLK) begin
     SFR_r[6] <= 0;
 
     ROMRDBUF_r <= 0;
-  
+
     PRF_STATE <= ST_PRF_IDLE;
   end
   else begin
     if (gsu_clock_en & |prf_waitcnt_r) begin
       prf_waitcnt_r <= prf_waitcnt_r - 1;
     end
-    
+
     // handle multiple writes to R14.
     if (  (pipeline_advance & op_complete & e2r_val_r & (e2r_destnum_r == R14))
        || (snes_writebuf_val_r & snes_writebuf_gpr_r & ~gsu_clock_en & (snes_writebuf_addr_r[4:0] == (ADDR_R14+1)))
@@ -1698,7 +1723,7 @@ always @(posedge CLK) begin
     else if (|(PRF_STATE & ST_PRF_MEMORY)) begin
        prf_req_r <= 0;
     end
-  
+
     case (PRF_STATE)
       ST_PRF_IDLE: begin
         if (prf_req_r) begin
@@ -1719,9 +1744,9 @@ always @(posedge CLK) begin
       ST_PRF_MEMORY_WAIT: begin
         if (|(ROM_STATE & ST_ROM_DATA_END)) begin
           prf_rom_rd_r <= 0;
-          
+
           prf_data_r <= rom_bus_data_r[7:0];
-        
+
           PRF_STATE <= ST_PRF_WAIT;
         end
       end
@@ -1732,7 +1757,7 @@ always @(posedge CLK) begin
           // trigger another prefetch if another request came in
           SFR_r[6] <= prf_req_r;
           ROMRDBUF_r <= prf_data_r;
-            
+
           PRF_STATE <= prf_req_r ? ST_PRF_MEMORY : ST_PRF_IDLE;
         end
       end
@@ -1745,7 +1770,7 @@ end
 //-------------------------------------------------------------------
 parameter
   ST_EXE_IDLE        = 8'b00000001,
-  
+
   ST_EXE_DECODE      = 8'b00000010,
   ST_EXE_REGREAD     = 8'b00000100,
   ST_EXE_EXECUTE     = 8'b00001000,
@@ -1800,7 +1825,7 @@ reg        exe_error;
 always @(posedge CLK) begin
   if (RST) begin
     EXE_STATE <= ST_EXE_IDLE;
-    
+
     e2r_alt_r  <= 0;
     e2r_sreg_r <= 0;
     e2r_dreg_r <= 0;
@@ -1820,12 +1845,12 @@ always @(posedge CLK) begin
     e2r_wpor_r <= 0;
     e2r_wcolr_r <= 0;
     exe_zs_r <= 0;
-    
+
     e2r_data_r <= 0;
     e2r_data_pre_r <= 0;
     e2r_r15_r <= 0;
     e2r_r4_r <= 0;
-    
+
     exe_branch_r <= 0;
     exe_opcode_r <= `OP_NOP;
     exe_byte_r <= 0;
@@ -1840,13 +1865,13 @@ always @(posedge CLK) begin
 
     e2b_plot_r  <= 0;
     e2b_rpix_r  <= 0;
-    
+
     e2i_flush_r <= 0;
 
     e2s_req_r <= 0;
-    
+
     exe_error <= 0;
-    
+
     exe_wrombr_r <= 0;
     exe_wrambr_r <= 0;
     ROMBR_r <= 0;
@@ -1861,10 +1886,10 @@ always @(posedge CLK) begin
         // align to GSU clock.  Sinks up with fetch.
         if (SFR_GO & gsu_clock_en) begin
           EXE_STATE <= ST_EXE_DECODE;
-        end        
+        end
       end
       ST_EXE_DECODE: begin
-        if (~|exe_opsize_r) begin      
+        if (~|exe_opsize_r) begin
           exe_zs_r <= 0;
 
           // calculate operands
@@ -1880,7 +1905,7 @@ always @(posedge CLK) begin
             `OP_BRA           : exe_branch_r <= 1;
             `OP_BGE           : exe_branch_r <= ( SFR_S == SFR_OV);
             `OP_BLT           : exe_branch_r <= ( SFR_S != SFR_OV);
-            `OP_BNE           : exe_branch_r <= (~SFR_Z);   
+            `OP_BNE           : exe_branch_r <= (~SFR_Z);
             `OP_BEQ           : exe_branch_r <= ( SFR_Z);
             `OP_BPL           : exe_branch_r <= (~SFR_S);
             `OP_BMI           : exe_branch_r <= ( SFR_S);
@@ -1888,17 +1913,17 @@ always @(posedge CLK) begin
             `OP_BCS           : exe_branch_r <= ( SFR_CY);
             `OP_BVC           : exe_branch_r <= (~SFR_OV);
             `OP_BVS           : exe_branch_r <= ( SFR_OV);
-            
+
             `OP_ALT1          : begin e2r_alt_r <= 1; e2r_b_r <= 0; end
             `OP_ALT2          : begin e2r_alt_r <= 2; e2r_b_r <= 0; end
             `OP_ALT3          : begin e2r_alt_r <= 3; e2r_b_r <= 0; end
             `OP_TO            : if (~SFR_B) e2r_dreg_r <= exe_opcode_r[3:0];
             `OP_WITH          : begin e2r_sreg_r <= exe_opcode_r[3:0]; e2r_dreg_r <= exe_opcode_r[3:0]; e2r_b_r <= 1; end
             `OP_FROM          : if (~SFR_B) e2r_sreg_r <= exe_opcode_r[3:0];
-            
+
             default           : begin e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= 0; end
           endcase
-          
+
           // generate dithered color value for PLOT
           if (exe_opcode_r == `OP_PLOT_RPIX) begin
             if (~SFR_ALT1 & POR_DTH & ~&SCMR_MD) begin
@@ -1924,11 +1949,11 @@ always @(posedge CLK) begin
         e2r_g_r    <= SFR_GO;
         // irq should always assumed be 0 (don't write) unless there is a writer
         e2r_irq_r  <= 0;
-        
+
         // get default destination
         e2r_destnum_r <= DREG_r;
         e2r_r15_r <= REG_r[R15];
-        
+
         exe_alt1_r <= SFR_ALT1;
         exe_alt2_r <= SFR_ALT2;
         exe_cy_r   <= SFR_CY;
@@ -1937,12 +1962,12 @@ always @(posedge CLK) begin
         exe_src_r <= REG_r[SREG_r];
         exe_srcn_r <= REG_r[exe_opcode_r[3:0]];
         exe_n_r <= exe_opcode_r[3:0];
-       
+
         exe_r6_r <= REG_r[R6];
-       
+
         exe_plot_offset_r <= {REG_r[R2][7:0],5'h00} + REG_r[R1][7:3];
         exe_plot_index_r  <= ~REG_r[R1][2:0];
-                
+
         EXE_STATE <= ST_EXE_EXECUTE;
       end
       ST_EXE_EXECUTE: begin
@@ -1954,15 +1979,15 @@ always @(posedge CLK) begin
                 e2r_val_r <= 1;
                 e2r_destnum_r <= R15;
                 e2r_data_pre_r <= e2r_r15_r + {{8{exe_operand_r[7]}},exe_operand_r[7:0]};
-                    
+
                 exe_branch_r <= 0;
               end
               // these aren't set to current values in decode so it's possible (but highly unlikely) the first instruction is a branch resulting in bad values being written
               //e2r_alt_r <= {SFR_ALT2,SFR_ALT1};
               // if prior instruction was TO/FROM/WITH then it's dropped on a branch
               //e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= 0;
-              
-            end          
+
+            end
             `OP_STOP           : begin
               e2r_g_r <= 0;
               // mask interrupt write into SFR
@@ -1985,7 +2010,7 @@ always @(posedge CLK) begin
                 e2r_val_r  <= 1;
                 e2r_destnum_r <= exe_n_r; // uses N as destination
                 e2r_data_pre_r <= exe_src_r;
-                
+
                 // reset
                 e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= 0;
               end
@@ -2005,16 +2030,16 @@ always @(posedge CLK) begin
                 e2r_alt_r <= 0; e2r_sreg_r <= 0; e2r_dreg_r <= 0; e2r_b_r <= 0;
               end
             end
-            
+
             `OP_LOOP           : begin
               exe_result = REG_r[R12] - 1;
-              
+
               e2r_val_r  <= 1;
               e2r_destnum_r <= R12;
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
-              
+
               e2r_loop_r <= REG_r[R12] != 1;
             end
 
@@ -2033,7 +2058,7 @@ always @(posedge CLK) begin
               if (exe_alt1_r) begin
                 // RPIX
                 e2r_val_r    <= 1;
-                
+
                 // generate pixel read
                 e2b_rpix_r   <= 1;
                 e2b_offset_r <= exe_plot_offset_r;
@@ -2044,11 +2069,11 @@ always @(posedge CLK) begin
                 e2r_val_r      <= 1;
                 e2r_destnum_r  <= R1;
                 e2r_data_pre_r <= REG_r[R1] + 1;
-                
+
                 // generate plot - skip if transparent
                 //e2b_plot_r     <= POR_TRS || ((SCMR_MD != 3 || POR_FHN) ? (exe_colr_r[3:0] != 0) : (exe_colr_r != 0));
                 e2b_plot_r     <= POR_TRS || ((SCMR_MD != 3 || POR_FHN) ? (COLR_r[3:0] != 0) : (COLR_r != 0));
-                
+
                 e2b_offset_r   <= exe_plot_offset_r;
                 e2b_index_r    <= exe_plot_index_r;
                 e2b_colr_r     <= exe_colr_r;
@@ -2056,13 +2081,13 @@ always @(posedge CLK) begin
             end
 
             // ALU
-            `OP_ADD          : begin 
+            `OP_ADD          : begin
               exe_n      = exe_alt2_r ? {12'h000, exe_n_r} : exe_srcn_r;
               {exe_carry,exe_result} = exe_src_r + exe_n + (exe_alt1_r & exe_cy_r);
-              
+
               e2r_val_r <= 1;
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
               e2r_ov_r   <= (exe_src_r[15] ^ exe_result[15]) & (exe_n[15] ^ exe_result[15]);
               e2r_cy_r   <= exe_carry;
@@ -2070,11 +2095,11 @@ always @(posedge CLK) begin
             `OP_SUB          : begin
               exe_n      = (~exe_alt1_r & exe_alt2_r) ? {12'h000, exe_n_r} : exe_srcn_r;
               {exe_carry,exe_result} = exe_src_r - exe_n - (exe_alt1_r & ~exe_alt2_r & ~exe_cy_r);
-              
+
               // CMP doesn't output the result
               e2r_val_r <= ~(exe_alt1_r & exe_alt2_r);
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
               e2r_ov_r   <= (exe_src_r[15] ^ exe_result[15]) & (exe_src_r[15] ^ exe_n[15]);
               e2r_cy_r   <= ~exe_carry;
@@ -2082,110 +2107,110 @@ always @(posedge CLK) begin
             `OP_AND_BIC      : begin
               exe_n      = exe_alt2_r ? {12'h000, exe_n_r} : exe_srcn_r;
               exe_result = exe_src_r & (exe_alt1_r ? ~exe_n : exe_n);
-              
+
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
             end
             `OP_OR_XOR       : begin
               exe_n      = exe_alt2_r ? {12'h000, exe_n_r} : exe_srcn_r;
               exe_result = exe_alt1_r ? exe_src_r ^ exe_n : exe_src_r | exe_n;
-              
+
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
             end
             `OP_NOT           : begin
               exe_result = ~exe_src_r;
-              
+
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
             end
-            
+
             // ROTATE/SHIFT/INC/DEC
             `OP_LSR           : begin
               exe_result = {1'b0,exe_src_r[15:1]};
-              
+
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
               e2r_cy_r   <= exe_src_r[0];
             end
             `OP_ASR_DIV2      : begin
               exe_result = (exe_alt1_r & (&exe_src_r))? 0 : {exe_src_r[15],exe_src_r[15:1]};
-              
+
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
               e2r_cy_r   <= exe_src_r[0];
             end
             `OP_ROL           : begin
               exe_result = {exe_src_r[14:0],exe_cy_r};
-              
+
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
               e2r_cy_r   <= exe_src_r[15];
             end
             `OP_ROR           : begin
               exe_result = {exe_cy_r,exe_src_r[15:1]};
-              
+
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
               e2r_cy_r   <= exe_src_r[0];
             end
-            
+
             // BYTE
             `OP_SWAP          : begin
               exe_result = {exe_src_r[7:0],exe_src_r[15:8]};
-              
+
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
             end
             `OP_SEX           : begin
               exe_result = {{8{exe_src_r[7]}},exe_src_r[7:0]};
-              
+
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
             end
             `OP_LOB           : begin
               exe_result = {8'h00,exe_src_r[7:0]};
-              
+
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
-              
+
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[7];
             end
             `OP_HIB           : begin
               exe_result = {8'h00,exe_src_r[15:8]};
-              
+
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
-              
+
               e2r_z_r    <= ~|exe_result;
               e2r_s_r    <= exe_result[7];
             end
             `OP_MERGE         : begin
               exe_result = {REG_r[R7][15:8],REG_r[R8][15:8]};
-              
+
               e2r_val_r  <= 1;
               e2r_data_pre_r <= exe_result;
             end
-            
+
             // MULTIPLY
             `OP_FMULT_LMULT   : begin
               exe_fmult_srca_r <= exe_src_r;
@@ -2203,7 +2228,7 @@ always @(posedge CLK) begin
               e2c_waitcnt_val_r <= 1;
               e2c_waitcnt_r     <= lat_mult_r;
             end
-            
+
             `OP_GETC_RAMB_ROMB: begin
               // don't block on stb_busy with RAMBR because old value already flopped
               if      (exe_alt1_r & exe_alt2_r)   exe_wrombr_r <= 1;
@@ -2211,26 +2236,26 @@ always @(posedge CLK) begin
             end
             `OP_INC          : begin
               exe_result = exe_srcn_r + 1;
-              
+
               e2r_val_r  <= 1;
-              e2r_destnum_r <= exe_n_r; // uses N as destination                  
+              e2r_destnum_r <= exe_n_r; // uses N as destination
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
             end
             `OP_DEC          : begin
               exe_result = exe_srcn_r - 1;
-              
+
               e2r_val_r  <= 1;
               e2r_destnum_r <= exe_n_r; // uses N as destination
               e2r_data_pre_r <= exe_result;
-              
+
               exe_zs_r <= 1;
             end
             // LINK
             `OP_LINK         : begin
               exe_result = e2r_r15_r + exe_n_r;
-                
+
               e2r_val_r  <= 1;
               e2r_destnum_r <= R11;
               e2r_data_pre_r <= exe_result;
@@ -2254,7 +2279,7 @@ always @(posedge CLK) begin
                 e2r_data_pre_r   <= exe_srcn_r;
               end
             end
-            
+
           endcase
         end
 
@@ -2269,9 +2294,9 @@ always @(posedge CLK) begin
                 EXE_STATE <= ST_EXE_WAIT;
               end
             end
-            `OP_PLOT_RPIX      : begin             
+            `OP_PLOT_RPIX      : begin
               e2r_data_r <= e2r_data_pre_r; // R1 for PLOT
-              
+
               // if RPIX then wait for data return.  otherwise we need a quick exit for 1 GSU clock PLOT operations
               if (exe_alt1_r | (e2b_plot_r & ~bmp_hit)) begin
                 EXE_STATE <= ST_EXE_MEMORY_WAIT;
@@ -2304,22 +2329,22 @@ always @(posedge CLK) begin
             end
             `OP_MULT         : begin
               e2c_waitcnt_val_r <= 0;
-              
+
               exe_result = exe_alt1_r ? exe_umult_out : exe_mult_out;
-          
+
               e2r_val_r      <= 1;
-           
+
               e2r_data_r     <= exe_result;
-            
+
               e2r_z_r        <= ~|exe_result;
               e2r_s_r        <= exe_result[15];
-              
+
               EXE_STATE <= ST_EXE_WAIT;
-                            
+
               //exe_mult_delay_r <= 2;
               //EXE_STATE <= ST_EXE_MEMORY_WAIT;
             end
-          
+
             `OP_IBT          : begin
               if (exe_alt1_r) begin
                 // LMS Rn, (2*imm8)
@@ -2327,10 +2352,10 @@ always @(posedge CLK) begin
                 if (~stb_busy_r) begin
                   e2r_val_r    <= 1;
                   e2r_destnum_r   <= exe_n_r;
-                 
+
                   e2c_waitcnt_val_r <= 1;
                   e2c_waitcnt_r <= {lat_ram_r,1'b0};
-          
+
                   exe_ram_rd_r <= 1;
                   exe_word_r <= 1;
 
@@ -2340,14 +2365,14 @@ always @(posedge CLK) begin
                 end
               end
               else if (exe_alt2_r) begin
-                // SMS (2*imm8), Rn                
+                // SMS (2*imm8), Rn
 
-                if (~stb_busy_r) begin                  
+                if (~stb_busy_r) begin
                   e2s_req_r <= 1;
                   e2s_word_r <= 1;
                   RAMWRBUF_r <= exe_srcn_r;
                   RAMADDR_r <= {7'h00,exe_operand_r[7:0],1'b0};
-                
+
                   EXE_STATE <= ST_EXE_WAIT;
                 end
               end
@@ -2368,10 +2393,10 @@ always @(posedge CLK) begin
 
                   e2c_waitcnt_val_r <= 1;
                   e2c_waitcnt_r <= {lat_ram_r,1'b0};
-          
+
                   exe_ram_rd_r <= 1;
                   exe_word_r <= 1;
-                  
+
                   RAMADDR_r <= exe_operand_r;
                   exe_addr_r <= {4'hE,3'h0,RAMBR_r,exe_operand_r};
                   EXE_STATE <= ST_EXE_MEMORY_WAIT;
@@ -2385,7 +2410,7 @@ always @(posedge CLK) begin
                   e2s_word_r <= 1;
                   RAMWRBUF_r <= exe_srcn_r;
                   RAMADDR_r <= exe_operand_r;
-                  
+
                   EXE_STATE <= ST_EXE_WAIT;
                 end
               end
@@ -2400,25 +2425,25 @@ always @(posedge CLK) begin
               // wait here for the ROM buffer
               if (~SFR_RR) begin
                 e2r_val_r    <= 1;
-                
+
                 e2r_data_r <= (exe_alt1_r & exe_alt2_r) ? {{8{ROMRDBUF_r[7]}},ROMRDBUF_r[7:0]} : exe_alt2_r ? {exe_src_r[15:8],ROMRDBUF_r[7:0]} : exe_alt1_r ? {ROMRDBUF_r[7:0],exe_src_r[7:0]} : {8'h00,ROMRDBUF_r[7:0]};
                 EXE_STATE <= ST_EXE_WAIT;
               end
             end
-            `OP_SBK           : begin              
+            `OP_SBK           : begin
               if (~stb_busy_r) begin
                 e2s_req_r <= 1;
                 e2s_word_r <= 1;
                 RAMWRBUF_r <= exe_src_r;
                 //RAMADDR_r <= exe_operand_r; // SBK uses prior address
-              
+
                 EXE_STATE <= ST_EXE_WAIT;
               end
             end
             `OP_LD           : begin
               if (~stb_busy_r) begin
                 e2r_val_r    <= 1;
-                 
+
                 e2c_waitcnt_val_r <= 1;
                 e2c_waitcnt_r <= exe_alt1_r ? lat_ram_r : {lat_ram_r,1'b0};
 
@@ -2437,9 +2462,9 @@ always @(posedge CLK) begin
                 e2s_word_r <= ~exe_alt1_r;
                 RAMWRBUF_r <= exe_src_r;
                 RAMADDR_r <= exe_srcn_r;
-              
+
                 EXE_STATE <= ST_EXE_WAIT;
-              end              
+              end
             end
             // hopefully relax timing by setting some condition codes here
             `OP_MERGE         : begin
@@ -2457,7 +2482,7 @@ always @(posedge CLK) begin
                 e2r_s_r    <= e2r_data_pre_r[15];
                 exe_zs_r   <= 0;
               end
-            
+
               e2r_data_r <= e2r_data_pre_r;
               EXE_STATE <= ST_EXE_WAIT;
             end
@@ -2478,15 +2503,15 @@ always @(posedge CLK) begin
             end
             else begin
               e2r_val_r      <= 1;
-           
+
               e2r_data_r     <= exe_fmult_out[31:16];
               e2r_r4_r       <= exe_fmult_out[15:0];
               e2r_lmult_r    <= exe_alt1_r;
-            
+
               e2r_z_r        <= ~|exe_fmult_out[31:16];
               e2r_s_r        <= exe_fmult_out[31];
               e2r_cy_r       <= exe_fmult_out[15];
-              
+
               EXE_STATE <= ST_EXE_WAIT;
             end
 
@@ -2497,14 +2522,14 @@ always @(posedge CLK) begin
 //            end
 //            else begin
 //              exe_result = exe_alt1_r ? exe_umult_out : exe_mult_out;
-//          
+//
 //              e2r_val_r      <= 1;
-//           
+//
 //              e2r_data_r     <= exe_result;
-//            
+//
 //              e2r_z_r        <= ~|exe_result;
 //              e2r_s_r        <= exe_result[15];
-//              
+//
 //              EXE_STATE <= ST_EXE_WAIT;
 //            end
 //          end
@@ -2515,22 +2540,22 @@ always @(posedge CLK) begin
                 e2r_data_r <= {8'h00, bmp_colr_r};
 
                 e2r_z_r    <= ~|bmp_colr_r;
-                e2r_s_r    <= 0; // sign bit is always 0                
+                e2r_s_r    <= 0; // sign bit is always 0
               end
-              
+
               // done with the operations
               e2b_plot_r <= 0;
               e2b_rpix_r <= 0;
-              
+
               EXE_STATE <= ST_EXE_WAIT;
             end
           end
           default: begin
             if (|(RAM_STATE & ST_RAM_DATA_END)) begin
               exe_ram_rd_r <= 0;
-              
+
               e2r_data_r <= exe_word_r ? ram_bus_data_r[15:0] : {8'h00,ram_bus_data_r[7:0]};
-              
+
               EXE_STATE <= ST_EXE_WAIT;
             end
           end
@@ -2539,15 +2564,15 @@ always @(posedge CLK) begin
       ST_EXE_WAIT: begin
         e2c_waitcnt_val_r <= 0;
         e2s_req_r <= 0;
-        
+
         if (gsu_clock_en) e2r_lmult_r <= 0;
-        
+
         if (pipeline_advance) begin
           if (|exe_opsize_r) exe_opsize_r <= exe_opsize_r - 1;
-        
+
           if (e2r_g_r) EXE_STATE <= ST_EXE_DECODE;
           else         EXE_STATE <= ST_EXE_IDLE;
-                    
+
           if (op_complete) begin
             // get next instruction byte
             exe_branch_r <= 0;
@@ -2564,19 +2589,19 @@ always @(posedge CLK) begin
             e2r_wcbr_r <= 0;
             e2r_wpor_r <= 0;
             e2r_wcolr_r <= 0;
-            
+
             // deassert flush
             e2i_flush_r <= 0;
-            
+
             // ROMB needs to write ROMBR
             if (exe_wrombr_r) ROMBR_r <= exe_src_r[6:0];
             if (exe_wrambr_r) RAMBR_r <= exe_src_r[0];
           end
-          
+
           exe_byte_r <= fetch_data_r;
         end
       end
-      
+
     endcase
   end
 end
@@ -2608,7 +2633,7 @@ always @(posedge CLK) begin
     brk_data_wr_addr <= 0;
     brk_stop         <= 0;
     brk_error        <= 0;
-    
+
     brk_addr_r       <= 0;
   end
   else begin
@@ -2621,7 +2646,7 @@ always @(posedge CLK) begin
     //brk_inst_rd_byte <= pipeline_advance ? 0 : brk_inst_rd_rom_m1 ? (rom_bus_data_r == CONFIG_DATA_WATCH) : brk_inst_rd_ram_m1 ? (ram_bus_data_r == CONFIG_DATA_WATCH) : brk_inst_rd_byte;
     //brk_data_rd_byte <= pipeline_advance ? 0 : brk_data_rd_rom_m1 ? (rom_bus_data_r == CONFIG_DATA_WATCH) : brk_data_rd_ram_m1 ? (ram_bus_data_r == CONFIG_DATA_WATCH) : brk_data_rd_byte;
     //brk_data_wr_byte <= pipeline_advance ? 0                                                              : brk_data_wr_ram_m1 ? (RAMWRBUF_r     == CONFIG_DATA_WATCH) : brk_data_wr_byte;
-  
+
     brk_inst_rd_addr <= (debug_inst_addr_r == brk_addr_r);
     brk_data_rd_addr <= (  (exe_ram_rd_r   && (exe_addr_r   == brk_addr_r) || (prf_rom_rd_r && (prf_addr_r   == brk_addr_r)))
                         || (bmp_ram_rd_r   && (bmp_addr_r   == brk_addr_r)                                                  )
@@ -2631,8 +2656,8 @@ always @(posedge CLK) begin
                         );
     brk_stop         <= exe_opcode_r == `OP_STOP;
     brk_error        <= fetch_error; // FIXME: set this state based on opcode or other error condition
-    
-  
+
+
     brk_addr_r <= (CONFIG_ADDR_WATCH[23:16] < 8'h60) ? ((CONFIG_ADDR_WATCH[22] ? CONFIG_ADDR_WATCH : {CONFIG_ADDR_WATCH[20:16],CONFIG_ADDR_WATCH[14:0]}) & ROM_MASK)
                                                      : 24'hE00000 + (CONFIG_ADDR_WATCH & SAVERAM_MASK);
   end
@@ -2643,18 +2668,29 @@ assign pipeline_advance = gsu_clock_en & waitcnt_zero & |(EXE_STATE & ST_EXE_WAI
 assign op_complete = exe_opsize_r == 1;
 
 // Multipliers
+`ifdef MK2
 gsu_fmult gsu_fmult(
   .clk(CLK),
   .a(exe_fmult_srca_r[15:0]),
   .b(exe_fmult_srcb_r[15:0]),
   .p(exe_fmult_out)
 );
+`endif
+`ifdef MK3
+gsu_fmult gsu_fmult(
+  .clock(CLK),
+  .dataa(exe_fmult_srca_r[15:0]),
+  .datab(exe_fmult_srcb_r[15:0]),
+  .result(exe_fmult_out)
+);
+`endif
 
 wire [7:0] exe_mult_srca  = exe_src_r;
 wire [7:0] exe_mult_srcb  = exe_alt2_r ? {12'h000, exe_n_r} : exe_srcn_r;
 wire [7:0] exe_umult_srca = exe_src_r;
 wire [7:0] exe_umult_srcb = exe_alt2_r ? {12'h000, exe_n_r} : exe_srcn_r;
 
+`ifdef MK2
 gsu_mult gsu_mult(
   //.clk(CLK),
   .a(exe_mult_srca[7:0]),
@@ -2668,6 +2704,22 @@ gsu_umult gsu_umult(
   .b(exe_umult_srcb[7:0]),
   .p(exe_umult_out)
 );
+`endif
+`ifdef MK3
+gsu_mult gsu_mult(
+  //.clk(CLK),
+  .dataa(exe_mult_srca[7:0]),
+  .datab(exe_mult_srcb[7:0]),
+  .result(exe_mult_out)
+);
+
+gsu_umult gsu_umult(
+  //.clk(CLK),
+  .dataa(exe_umult_srca[7:0]),
+  .datab(exe_umult_srcb[7:0]),
+  .result(exe_umult_out)
+);
+`endif
 
 always @(posedge CLK) idle_r <= |(FETCH_STATE & ST_FETCH_IDLE) & |(EXE_STATE & ST_EXE_IDLE);
 
@@ -2707,13 +2759,13 @@ always @(posedge CLK) begin
       8'h45            : pgmpre_out[0] <= RAMWRBUF_r;
       8'h46            : pgmpre_out[0] <= RAMADDR_r[7:0];
       8'h47            : pgmpre_out[0] <= RAMADDR_r[15:8];
-  
+
       //8'h4F            : pgmpre_out[0] <= PIXBUF_HEAD_r;
       //8'h50,8'h58      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][15:8];
       //8'h51,8'h59      : pgmpre_out[0] <= PIXBUF_OFFSET_r[pgm_addr_r[3]][7:0];
       //8'h6x            : pgmpre_out[0] <= PIXBUF_VALID_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
       //8'h7x            : pgmpre_out[0] <= PIXBUF_r[pgm_addr_r[3]][pgm_addr_r[2:0]];
-  
+
       // bitmap state
 //      8'h90           : pgmpre_out[0] <= BMP_STATE;
 //      8'h91           : pgmpre_out[0] <= bmp_mode_r;
@@ -2771,8 +2823,8 @@ always @(posedge CLK) begin
       //8'hE2           : pgmpre_out[0] <= snes_write_r;
       //8'hE3           : pgmpre_out[0] <= fetch_waitcnt_r;
       //8'hE4           : pgmpre_out[0] <= exe_waitcnt_r;
-      //8'hE5           : pgmpre_out[0] <= op_complete;      
-      //8'hE6           : pgmpre_out[0] <= e2r_val_r;      
+      //8'hE5           : pgmpre_out[0] <= op_complete;
+      //8'hE6           : pgmpre_out[0] <= e2r_val_r;
       //8'hE7           : pgmpre_out[0] <= e2r_destnum_r;
       //8'hE8           : pgmpre_out[0] <= step_r;
       8'hE9           : pgmpre_out[0] <= gsu_clock_en;
@@ -2783,7 +2835,7 @@ always @(posedge CLK) begin
       8'hED           : pgmpre_out[0] <= lat_ram_r;
       8'hEE           : pgmpre_out[0] <= lat_mult_r;
       8'hEF           : pgmpre_out[0] <= lat_fmult_r;
-      
+
       // big endian to make debugging easier
       8'hF0           : pgmpre_out[0] <= gsu_cycle_cnt_r[31:24];
       8'hF1           : pgmpre_out[0] <= gsu_cycle_cnt_r[23:16];

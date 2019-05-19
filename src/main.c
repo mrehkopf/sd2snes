@@ -1,7 +1,6 @@
 #include <arm/NXP/LPC17xx/LPC17xx.h>
 #include <string.h>
 #include "config.h"
-#include "obj/autoconf.h"
 #include "clock.h"
 #include "uart.h"
 #include "bits.h"
