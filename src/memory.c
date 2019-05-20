@@ -262,16 +262,20 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     return 0;
   }
   filesize = file_handle.fsize; // won't be correct for combo roms
+  
+  uint32_t file_offset = 0;
   if(flags & LOADROM_WITH_COMBO) {
+    printf("Combo Header Check...");
     // seek to the proper slot.  slots are naturally aligned on 1MB boundaries.
-    uint32_t romslot = snescmd_readbyte(SNESCMD_MCU_CMD + 1);
-    f_lseek(&file_handle, romslot * 0x100000);
+    file_offset = 0x100000 * snescmd_readbyte(SNESCMD_MCU_CMD + 1);
+    printf(" file_offset=0x%lx", file_offset);
+    printf(" OK.\n");
   }
-  smc_id(&romprops);
+  smc_id(&romprops, file_offset);
   file_close();
 
   if(flags & LOADROM_WITH_COMBO) {
-    printf("Setting combo settings...");
+    printf("Combo Transition...");
     uint32_t romslot = snescmd_readbyte(SNESCMD_MCU_CMD + 1);
     romprops.offset += romslot << 20;
     printf(" romslot=0x%lx", romslot);
