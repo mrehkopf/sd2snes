@@ -4,7 +4,6 @@ include ../common.mk
 # any IP cores used, has taken place using the vendor's corresponding FPGA
 # development environment.
 
-# build on Windows
 CORE = obc1
 XILINX_PART = xc3s400-pq208-4
 
@@ -59,7 +58,7 @@ smartxplorer: main.ngd
 	rm -rf smartxplorer_results
 	PATH="$(XILINX_PATH)":"$(PATH)"; \
 	export XILINX="$(XILINX)" XILINX_DSP="$(XILINX_DSP)" XILINX_EDK="$(XILINX_EDK)" XILINX_PLANAHEAD="$(XILINX_PLANAHEAD)"; \
-	smartxplorer -sf currentProps.stratfile -p $(XILINX_PART) -b -wd smartxplorer_results main.ngd -to "-v 3 -s 4 -n 3 -fastpaths -xml main.twx -ucf main.ucf" -host_list hostlistfile.txt -max_runs 99 -best_n_runs 1 \
+	$(XILINX_BIN)/smartxplorer -p $(XILINX_PART) -b -wd smartxplorer_results main.ngd -to "-v 3 -s 4 -n 3 -fastpaths -xml main.twx -ucf main.ucf" $(XPLORER_PARAMS) \
 	&& (while true; do \
 		touch $@; \
 		export SX_RUN=`grep "Run index" smartxplorer_results/smartxplorer.log | sed -e 's/^.*\:.*run\([0-9]\+\).*$$/\1/g'`; \
