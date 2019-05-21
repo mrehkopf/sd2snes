@@ -1,19 +1,15 @@
+include ../common.mk
 # This is a rather primitive Makefile to facilitate (re)compilation of the FPGA
 # core. It assumes that an initial project setup/compilation, particularly of
 # any IP cores used, has taken place using the vendor's corresponding FPGA
 # development environment.
 
-# build on Windows
-HOST = CYGWIN
 CORE = sa1
 XILINX_PART = xc3s400-pq208-4
 
 # set paths to Xilinx/Intel tools, adjust these for your environment
 mkpath = $(subst $(eval) ,:,$(wildcard $1))
-XILINX_HOME = /cygdrive/d/Xilinx/14.7/ISE_DS
 XILINX := $(XILINX_HOME)/ISE
-XILINX_BIN = $(XILINX_HOME)/ISE/bin/nt64
-XILINX_PATHS = ISE/bin/nt64 ISE/lib/nt64 PlanAhead/bin EDK/bin/nt64 EDK/lib/nt64
 XILINX_EDK := $(XILINX_HOME)/EDK
 XILINX_PLANAHEAD := $(XILINX_HOME)/PlanAhead
 XILINX_DSP := $(XILINX_HOME)/ISE
@@ -32,8 +28,6 @@ endif
 XILINX_CT = $(shell grep Cost.*Map sd2snes_$(CORE).xise | sed -e 's/.*value="\([0-9]\+\)".*$$/\1/g')
 XILINX_MAP_OPTS = -timing -logic_opt on -ol high -xe n -register_duplication on -cm area -ir off -pr b -power off
 XILINX_PAR_OPTS = -ol high -xe n
-
-INTEL_BIN = /cygdrive/d/intelFPGA_lite/18.1/quartus/bin64
 
 VSRC = address.v cheat.v clk_test.v dac.v dcm.v sa1.v main.v mcu_cmd.v msu.v sd_dma.v spi.v
 VHSRC =
@@ -60,11 +54,11 @@ mk3: fpga_$(CORE).bi3
 # build mk2 using SmartXPlorer (useful for cx4, gsu, sa1, sdd1)
 mk2s: smartxplorer
 
-smartxplorer: main.ngc
+smartxplorer: main.ngd
 	rm -rf smartxplorer_results
 	PATH="$(XILINX_PATH)":"$(PATH)"; \
 	export XILINX="$(XILINX)" XILINX_DSP="$(XILINX_DSP)" XILINX_EDK="$(XILINX_EDK)" XILINX_PLANAHEAD="$(XILINX_PLANAHEAD)"; \
-	smartxplorer -sf currentProps.stratfile -p $(XILINX_PART) -b -wd smartxplorer_results main.ngd -to "-v 3 -s 4 -n 3 -fastpaths -xml main.twx -ucf main.ucf" -host_list hostlistfile.txt -max_runs 99 -best_n_runs 1 \
+	$(XILINX_BIN)/smartxplorer -p $(XILINX_PART) -b -wd smartxplorer_results main.ngd -to "-v 3 -s 4 -n 3 -fastpaths -xml main.twx -ucf main.ucf" $(XPLORER_PARAMS) \
 	&& (while true; do \
 		touch $@; \
 		export SX_RUN=`grep "Run index" smartxplorer_results/smartxplorer.log | sed -e 's/^.*\:.*run\([0-9]\+\).*$$/\1/g'`; \
