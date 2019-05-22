@@ -130,3 +130,14 @@ utils/gentilemap
 utils/mem2lorom
 utils/palremap
 utils/palreorder
+
+release
+src/obj-mk2
+src/obj-mk3
+verilog/*/output_files
+verilog/*/simulation
+verilog/*/smartxplorer
+verilog/*/smartxplorer_results
+verilog/*/smartxplorer_setup
+verilog/*/db
+verilog/*/incremental_db
