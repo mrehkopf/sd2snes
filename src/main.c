@@ -1,7 +1,6 @@
 #include <arm/NXP/LPC17xx/LPC17xx.h>
 #include <string.h>
 #include "config.h"
-#include "obj/autoconf.h"
 #include "clock.h"
 #include "uart.h"
 #include "bits.h"
@@ -34,10 +33,6 @@
 #include "usbhw.h"
 #include "cdcuser.h"
 #include "usbinterface.h"
-
-
-//#define EMC0TOGGLE        (3<<4)
-//#define MR0R              (1<<1)
 
 int i;
 
@@ -105,18 +100,20 @@ int main(void) {
   fpga_spi_init();
   spi_preinit();
   led_init();
-  // USB initialization
-  USB_Init ();
-  CDC_Init (0x00);
  /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
+
   FPGA_CLK_PINSEL |= BV(FPGA_CLK_PINSELBIT) | BV(FPGA_CLK_PINSELBIT - 1); /* MAT3.x (FPGA clock) */
   led_std();
   sdn_init();
-  //usb
-  USB_Connect (0x01);
+
   printf("\n\n" DEVICE_NAME "\n===============\nfw ver.: " CONFIG_VERSION "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
   printf("PCONP=%lx\n", LPC_SC->PCONP);
+
+  // USB initialization
+  USB_Init ();
+  CDC_Init (0x00);
+  USB_Connect (0x01);
 
   file_init();
   cic_init(0);
@@ -412,6 +409,8 @@ int main(void) {
                 break;
               case SNES_CMD_RESET:
                 usb_cmd = 0;
+                // also force full ROM reset if we used button combination
+                resetButtonState = 1;
                 snes_reset_pulse();
                 break;
               case SNES_CMD_RESET_TO_MENU:

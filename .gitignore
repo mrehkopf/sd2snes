@@ -15,10 +15,12 @@
 *.old
 *.elf
 *.img
+*.im3
 autoconf.h
 utils/rle
 utils/derle
 *.bit
+*.bi3
 *.i
 *.s
 *.txt
@@ -120,3 +122,12 @@ cic/supercic/supercic-key.hex
 cic/supercic/supercic-lock.hex
 contrib/*
 docs/*
+
+utils/bin2asm
+utils/bin2c
+utils/chili2chr
+utils/genbsxpage
+utils/gentilemap
+utils/mem2lorom
+utils/palremap
+utils/palreorder

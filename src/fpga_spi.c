@@ -493,15 +493,6 @@ void fpga_set_dspfeat(uint16_t feat) {
   FPGA_DESELECT();
 }
 
-//void set_usb_status(uint16_t status) {
-//  FPGA_SELECT();
-//  FPGA_TX_BYTE(FPGA_CMD_USBSETBITS);
-//  FPGA_TX_BYTE(status & 0xff);
-//  FPGA_TX_BYTE((status >> 8) & 0xff);
-//  FPGA_TX_BYTE(0x00); /* latch reset */
-//  FPGA_DESELECT();
-//}
-
 uint8_t fpga_read_config(uint8_t group, uint8_t index) {
   uint8_t data;
   FPGA_SELECT();

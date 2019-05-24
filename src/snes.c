@@ -150,11 +150,9 @@ void snes_reset(int state) {
 uint8_t resetButtonState = 0;
 uint8_t snes_reset_loop(void) {
   uint8_t cmd = 0;
-  
   tick_t starttime = getticks();
   while(fpga_test() == FPGA_TEST_TOKEN) {
     cmd = snes_get_mcu_cmd();
-    
     // 100ms timeout in case the reset hook is defeated somehow
     if(getticks() > starttime + SNES_RESET_LOOP_TIMEOUT) {
       cmd = SNES_CMD_RESET_LOOP_TIMEOUT;
@@ -171,13 +169,13 @@ uint8_t snes_reset_loop(void) {
         case SNES_CMD_RESET_LOOP_PASS:
         case SNES_CMD_RESET_LOOP_TIMEOUT:
           snes_set_mcu_cmd(0);
-          cmd = 0;          
+          cmd = 0;
         default:
           goto snes_reset_loop_out;
       }
     }
   }
-             
+
 snes_reset_loop_out:
   if (romprops.has_combo) {
     printf("combo reset: resetButtonState: %hhx\n", resetButtonState);
@@ -282,13 +280,11 @@ uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_sav
 uint8_t sram_valid = 0;
 uint8_t snes_main_loop() {
   recalculate_sram_range();
-  
   if(romprops.sramsize_bytes) {
     uint32_t crc_bytes = min(romprops.sramsize_bytes - saveram_offset, SRAM_REGION_SIZE);
     saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase + saveram_offset, romprops.sramsize_bytes, saveram_crc);
     saveram_offset += crc_bytes;
     sram_valid = sram_reliable();
-
     if(crc_valid && sram_valid) {
       if (saveram_offset >= romprops.sramsize_bytes) {
         if(save_failed) didnotsave++;

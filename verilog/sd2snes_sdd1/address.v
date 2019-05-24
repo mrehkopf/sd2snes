@@ -184,34 +184,8 @@ assign use_bsx = 1'b0;
 //assign srtc_enable = featurebits[FEAT_SRTC] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h2800));
 assign srtc_enable = 1'b0;
 
-
-// DSP1 LoROM: DR=30-3f:8000-bfff; SR=30-3f:c000-ffff
-//          or DR=60-6f:0000-3fff; SR=60-6f:4000-7fff
-// DSP1 HiROM: DR=00-0f:6000-6fff; SR=00-0f:7000-7fff
-// MAGNO -> disabled for S-DD1 core
-/*assign dspx_enable =
-  featurebits[FEAT_DSPX]
-  ?((MAPPER == 3'b001)
-    ?(ROM_MASK[20]
-      ?(SNES_ADDR[22] & SNES_ADDR[21] & ~SNES_ADDR[20] & ~SNES_ADDR[15])
-      :(~SNES_ADDR[22] & SNES_ADDR[21] & SNES_ADDR[20] & SNES_ADDR[15])
-     )
-    :(MAPPER == 3'b000)
-      ?(~SNES_ADDR[22] & ~SNES_ADDR[21] & ~SNES_ADDR[20] & ~SNES_ADDR[15]
-        & &SNES_ADDR[14:13])
-    :1'b0)
-  :featurebits[FEAT_ST0010]
-  ?(SNES_ADDR[22] & SNES_ADDR[21] & ~SNES_ADDR[20] & &(~SNES_ADDR[19:16]) & ~SNES_ADDR[15])
-  :1'b0;
-*/
 assign dspx_enable = 1'b0;
 
-// MAGNO -> disabled for S-DD1 core
-/*
-assign dspx_dp_enable = featurebits[FEAT_ST0010]
-                      &(SNES_ADDR[22:19] == 4'b1101
-                     && SNES_ADDR[15:11] == 5'b00000);
-*/
 assign dspx_dp_enable = 1'b0;
 
 assign dspx_a0 = featurebits[FEAT_DSPX]

@@ -4,6 +4,7 @@
 #define PLL_MULT(x)     ((x-1)&0x7fff)
 #define PLL_PREDIV(x)   (((x-1)<<16)&0xff0000)
 #define CCLK_DIV(x)     ((x-1)&0xff)
+#define USBCLK_DIV(x)   ((x-1)&0x0f)
 #define CLKSRC_MAINOSC  (1)
 #define PLLE0           (1<<0)
 #define PLLC0           (1<<1)
@@ -14,6 +15,9 @@
 #define OSCEN           (1<<5)
 #define OSCSTAT         (1<<6)
 #define FLASHTIM(x)     (((x-1)<<12)|0x3A)
+
+#define PLL1_MULT(x)    ((x-1)&0x1f)
+#define PLL1_DIV(x)     (((x-1)<<6)&0x60)
 
 #define PCLK_CCLK(x)    (1<<(x))
 #define PCLK_CCLK4(x)   (0)
@@ -65,7 +69,7 @@ void connectPLL0(void);
 void disconnectPLL0(void);
 void PLL0feed(void);
 
-void setPLL1MultPrediv(uint16_t mult, uint8_t prediv);
+void setPLL1MultDiv(uint8_t mult, uint8_t prediv);
 void enablePLL1(void);
 void disablePLL1(void);
 void connectPLL1(void);
@@ -73,6 +77,7 @@ void disconnectPLL1(void);
 void PLL1feed(void);
 
 void setCCLKDiv(uint8_t div);
+void setUSBCLKDiv(uint8_t div);
 
 void enableMainOsc(void);
 

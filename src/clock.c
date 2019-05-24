@@ -9,6 +9,8 @@
 #include "uart.h"
 
 void clock_disconnect() {
+  disconnectPLL1();
+  disablePLL1();
   disconnectPLL0();
   disablePLL0();
 }
@@ -45,15 +47,21 @@ void clock_init() {
   setPLL0MultPrediv(CONFIG_CLK_MULT, CONFIG_CLK_PREDIV);
   enablePLL0();
   setCCLKDiv(CONFIG_CLK_CCLKDIV);
+#ifdef CONFIG_MK3
+  // MK3 needs to use PLL0 since 8 MHZ is too slow for PLL1 reference clock.
+  setUSBCLKDiv(CONFIG_CLK_USBDIV);
+#endif
   connectPLL0();
 
-
-/* configure PLL1 for USB operation */
   disconnectPLL1();
   disablePLL1();
-  setPLL1MultPrediv(36, 1);
+#ifdef CONFIG_MK2
+/* configure PLL1 for USB operation */
+  // TODO: Should MK2 use PLL0, too?
+  setPLL1MultDiv(CONFIG_PLL1_CLK_MULT, CONFIG_PLL1_CLK_DIV);
   enablePLL1();
   connectPLL1();
+#endif
 
 }
 
@@ -87,8 +95,8 @@ void disconnectPLL0() {
   PLL0feed();
 }
 
-void setPLL1MultPrediv(uint16_t mult, uint8_t prediv) {
-  LPC_SC->PLL1CFG=PLL_MULT(mult) | PLL_PREDIV(prediv);
+void setPLL1MultDiv(uint8_t mult, uint8_t div) {
+  LPC_SC->PLL1CFG=PLL1_MULT(mult) | PLL1_DIV(div);
   PLL1feed();
 }
 
@@ -115,6 +123,10 @@ void disconnectPLL1() {
 
 void setCCLKDiv(uint8_t div) {
   LPC_SC->CCLKCFG=CCLK_DIV(div);
+}
+
+void setUSBCLKDiv(uint8_t div) {
+  LPC_SC->USBCLKCFG=USBCLK_DIV(div);
 }
 
 void enableMainOsc() {

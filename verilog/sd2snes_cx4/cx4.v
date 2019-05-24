@@ -886,6 +886,7 @@ end
 /***************************
  =========== MEM ===========
  ***************************/
+`ifdef MK2
 cx4_datrom cx4_datrom (
   .clka(CLK), // input clka
   .addra(cx4_datrom_addr), // input [9 : 0] addrb
@@ -921,4 +922,40 @@ cx4_mul cx4_mul (
   .b(cpu_mul_b), // input [23 : 0] b
   .p(cpu_mul_result) // output [47 : 0] p
 );
+`endif
+`ifdef MK3
+cx4_datrom cx4_datrom (
+  .clock(CLK), // input clka
+  .address(cx4_datrom_addr), // input [9 : 0] addrb
+  .q(cx4_datrom_do) // output [23 : 0] doutb
+);
+
+cx4_datram cx4_datram (
+  .clock(CLK), // input clka
+  .wren_a(DATRAM_WR_EN), // input [0 : 0] wea
+  .address_a(ADDR[11:0]), // input [11 : 0] addra
+  .data_a(DI), // input [7 : 0] dina
+  .q_a(DATRAM_DO), // output [7 : 0] douta
+  .wren_b(cx4_datram_we), // input [0 : 0] web
+  .address_b(cx4_datram_addr), // input [11 : 0] addrb
+  .data_b(cx4_datram_di), // input [7 : 0] dinb
+  .q_b(cx4_datram_do) // output [7 : 0] doutb
+);
+
+cx4_pgmrom cx4_pgmrom (
+  .clock(CLK), // input clka
+  .wren(cx4_pgmrom_we), // input [0 : 0] wea
+  .wraddress(cx4_pgmrom_addr), // input [9 : 0] addra
+  .data(BUS_DI), // input [7 : 0] dina
+  .rdaddress({cpu_page,cpu_pc}), // input [8 : 0] addrb
+  .q(cpu_op_w) // output [15 : 0] doutb
+);
+
+cx4_mul cx4_mul (
+  .clock(CLK), // input clk
+  .dataa(cpu_mul_a), // input [23 : 0] a
+  .datab(cpu_mul_b), // input [23 : 0] b
+  .result(cpu_mul_result) // output [47 : 0] p
+);
+`endif
 endmodule
