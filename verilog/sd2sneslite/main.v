@@ -52,7 +52,6 @@ module main(
   /* Bus 2: SRAM, 4Mbit, 8bit, 45ns */
   inout [7:0] RAM_DATA,
   output [18:0] RAM_ADDR,
-  output RAM_CE,
   output RAM_OE,
   output RAM_WE,
 

@@ -571,7 +571,9 @@ start:
   dw $5AD0, $FF09,$7F, $2142; goof troop (US)
   dw $614A, $000A,$00, $2142; mickey's magical quest (US)
   dw $24DD, $0176,$7E, $2140; nosferatu (US) ; Something w/ interrupts going on in this game.
-
+  dw $4D73, $0871,$7E, $2140; clock tower (JP)
+  dw $64E9, $174B,$7E, $2142; ultimate mortal kombat 3 (US)
+  
   ; FIXME add a common fix location that can be checked
   dw $0000, $0000,$00, $0000
   

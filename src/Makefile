@@ -207,7 +207,8 @@ build: elf bin hex
 	$(Q)$(ELFSIZE)|grep -v debug
 	cp $(TARGET).bin $(OBJDIR)/firmware.img
 	utils/genhdr $(OBJDIR)/firmware.img SNSD $(CONFIG_FWVER)
-	cp $(OBJDIR)/firmware.img F:/sd2snes/firmware.img
+	cp $(OBJDIR)/firmware.img D:/GDrive/Speedruns/Tools/USB2SNESv8/sd2snes/firmware.img
+#	cp $(OBJDIR)/firmware.img F:/sd2snes/firmware.img
 
 elf: $(TARGET).elf
 bin: $(TARGET).bin

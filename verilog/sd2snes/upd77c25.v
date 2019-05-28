@@ -145,6 +145,7 @@ upd77c25_datram datram (
   .dinb(DI), // input [7 : 0] dinb
   .doutb(DP_DO) // output [7 : 0] doutb
 );
+
 assign ram_wea = ((op != I_JP) && op_dst == 4'b1111 && insn_state == STATE_NEXT);
 assign ram_addra = {regs_dpb,
                     regs_dph | ((|(insn_state & (STATE_ALU1 | STATE_ALU2)) && op_dst == 4'b1100)

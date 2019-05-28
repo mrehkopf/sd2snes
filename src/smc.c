@@ -72,6 +72,7 @@ void smc_id(snes_romprops_t* props) {
   props->has_obc1 = 0;
   props->has_gsu = 0;
   props->has_sa1 = 0;
+  props->has_sdd1 = 0;
   props->srambase = 0;
   props->sramsize_bytes = 0;
   props->fpga_features = 0;
@@ -215,9 +216,9 @@ void smc_id(snes_romprops_t* props) {
       }
       /* S-DD1 */
       else if(header->carttype == 0x43 || header->carttype == 0x45) {
+        props->mapper_id = 4;
         props->has_sdd1 = 1;
-        props->error = MENU_ERR_NOIMPL;
-        props->error_param = (uint8_t*)"S-DD1";
+        props->fpga_conf = FPGA_SDD1;
       }
       /* Standard ExLoROM */
       else {

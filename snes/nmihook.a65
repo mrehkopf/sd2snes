@@ -5,17 +5,12 @@ nmihook:
   php
   rep #$20 : .al
   pha
-  ;lda @NMI_PAD ; check if we have NMI_PAD
-  ;bne nmi_auto_read
-  nop
-  nop
-  nop
-  nop
-  nop
-  nop
-  nop
-  nop
-nmireturn:
+  ;lda @$004218 ; initial backup as early as possible
+  ;sta @NMI_PAD
+  ;jmp read_joypad
+  nop : nop : nop : nop 
+  nop : nop : nop : nop
+nmi_return:
   sep #$20 : .as
 - bra -        ; branch1 filled in by FPGA
 ; rules for branch tgt:
@@ -79,6 +74,7 @@ nmi_exit:
 ; clean up
   sta @NMI_VECT_DISABLE
   rep #$20 : .al
+nmi_end:
   pla
   plp
   jmp ($ff77) ; '77' is replaced by FPGA depending on hook entry
@@ -92,20 +88,78 @@ nmi_stop:
   lda #$80
   sta $2100
 - bra -
+  bra resethook
 
 resethook: ; EMULATION MODE
   .as : .xs
+  bra resethook_skip
+  ; mask interrupt handler call
+  sei
+  ; x stores the count of scanlines
+  ldx #$20
+  ldy #$00
+  ; setup irq on h-position $100.  this value was acquired via manual training
+  lda #$00
+  sta $4207
+  inc
+  sta $4208
+  lda #$10
+  sta $4200
+- wai
+  ; sep seems to set the alignment correctly so an integer value in $4207/$4208 detects h-blank
+  ; there seem to be more distinct phases now.  different padding may change this.
+  sep #$20
+  lda $4212
+  ; ignore lines in v-blank
+  bmi +
+  ; decrement non-vblank scanlines encountered
+  dex
+  ; shift h-blank bit into upper position
+  asl
+  ; no error if not in h-blank
+  bpl +
+  ; increment error counter if h-blank is set (early h-blank)
+  iny
+  ; ack interrupt and check if we have hit all scanlines
++ lda $4211
+  cpx #$00
+  bne -
+  ; stop interrupts and check if we have any errors
+  stz $4200
+  dex
+  stx $4207
+  dey
+  bmi +
+  ; perform reset
+  lda #$85
+  sta @MCU_CMD
+- bra -
+  ; clean up state
++ inx
+  iny
+resethook_skip:
+  lda #$86
+  sta @MCU_CMD
+
+resethook_loop:
 - lda $4212
   bpl -
 - lda $4212
   bmi -
   lda $213f
-  bmi resethook
+  bmi resethook_loop
   stz NMI_VECT_DISABLE
   jmp ($fffc)
 
-nmi_auto_read:
-  lda @$004218
-  sta @NMI_PAD
-  bra nmireturn
+read_joypad:
+  ; verify if nmi_exec is used (it reads the buttons already  )
+  ;sep #$20 : .as
+  ;lda @NMI_EXEC
+  ;bne +
+  ;rep #$20 : .al
+  ;lda @$004218
+  ;sta @NMI_PAD
+;+
+  jmp nmi_return
+
 .byt "bram_end"

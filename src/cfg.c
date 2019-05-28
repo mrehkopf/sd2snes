@@ -33,6 +33,7 @@ cfg_t CFG_DEFAULT = {
   .gsu_speed = 0,
   .reset_to_menu = 0,
   .led_brightness = 15,
+  .enable_cheats = 1,
   .reset_patch = 0,
   .enable_ingame_savestate = 0,
   .loadstate_delay = 10,

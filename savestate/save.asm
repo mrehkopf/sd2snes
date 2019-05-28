@@ -1,20 +1,17 @@
 org $0000 : base !SS_CODE
 print "Savestate Bank Starting at: ", pc
-	php : %ai16() : pha
+	;php : %ai16() : pha
 	; need to access buttons as soon as possible
-
-	lda.l $004218
+	lda.l !SS_PADS
 	sta.l !CS_INPUT_NEXT
-	sta.l $002BF0
 
 	%a8()
 	lda.l !CS_CTRL
 	cmp #$02
 	%ai16()
 	bne +
-	lda.l $00421A
+	lda.l !SS_PADS+2
 	sta.l !CS_INPUT_NEXT
-	sta.l $002BF0
 
 +	%ai16()
 start:
@@ -151,7 +148,7 @@ start:
 	
 ; Code to run before returning back to the game
 .ss_exit
-	%ai16() : pla : plp
+	%ai16(); : pla : plp
 	jmp.l !SS_RETURN
 	;rtl
 
@@ -232,7 +229,16 @@ start:
 	lda.l !CS_INPUT_NEXT
 	sta.l !CS_INPUT_CUR
 
-	%a8()
+	;lda.l !CS_INPUT_CUR
+	cmp #$3030 : beq +
+	cmp #$2070 : beq +
+	cmp #$10B0 : beq +
+	cmp #$9030 : beq +
+	cmp #$5030 : beq +
+	cmp #$1070 : bne ++
++	jmp .ss_exit
+
+++	%a8()
 	lda.l !CS_SLOT
 	cmp #$00
 	%ai16()
@@ -276,7 +282,7 @@ start:
 	%ai16()
 
 ; savestate input check
-	lda.l !CS_INPUT_CUR
+++	lda.l !CS_INPUT_CUR
 	and.l !CS_SAVE_INPUT
 	cmp.l !CS_SAVE_INPUT
 	beq .save_state

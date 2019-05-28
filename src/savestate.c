@@ -16,11 +16,45 @@ extern snes_romprops_t romprops;
 
 
 void savestate_program() {
+  if(romprops.has_gsu || romprops.has_sa1 || romprops.has_cx4 || romprops.has_sdd1)
+    return;
+
   char *savestate_code = "/sd2snes/savestate.bin";
   file_open((uint8_t*) savestate_code, FA_READ);
-  if(!romprops.has_gsu && !romprops.has_sa1 && !romprops.has_cx4 && !romprops.has_sdd1)
+
+  sram_writeset(0x0, SS_CODE_ADDR, 0x10000);
+
+  fpga_set_snescmd_addr(SNESCMD_EXE);
+  // php : rep #$30 : pha
+  fpga_write_snescmd(0x08);
+  fpga_write_snescmd(0xC2);
+  fpga_write_snescmd(0x30);
+  fpga_write_snescmd(0x48);
+  // lda $4218
+  fpga_write_snescmd(0xAD);
+  fpga_write_snescmd(0x18);
+  fpga_write_snescmd(0x42);
+  // sta $2BF0 (for ingame hooks)
+  fpga_write_snescmd(0x8D);
+  fpga_write_snescmd(0xF0);
+  fpga_write_snescmd(0x2B);
+  // sta $FC1FF0
+  fpga_write_snescmd(0x8F);
+  fpga_write_snescmd(0xF0);
+  fpga_write_snescmd(0x1F);
+  fpga_write_snescmd(0xFC);
+  // lda $421A
+  fpga_write_snescmd(0xAD);
+  fpga_write_snescmd(0x1A);
+  fpga_write_snescmd(0x42);
+  // sta $FC1FF2
+  fpga_write_snescmd(0x8F);
+  fpga_write_snescmd(0xF2);
+  fpga_write_snescmd(0x1F);
+  fpga_write_snescmd(0xFC);
+
   if(CFG.enable_ingame_savestate && file_status == FILE_OK) {
-    file_close();
+    //file_close();
     load_sram((uint8_t*) savestate_code, SS_CODE_ADDR);
     sram_writeshort(0x0101, SS_REQ_ADDR);
     sram_writebyte(CFG.loadstate_delay, SS_DELAY_ADDR);
@@ -31,22 +65,23 @@ void savestate_program() {
     savestate_set_fixes();
     load_backup_state();
 
-    fpga_set_snescmd_addr(SNESCMD_EXE);
+    //fpga_set_snescmd_addr(SNESCMD_EXE);
     //jml $FC0000
     fpga_write_snescmd(0x5C);
     fpga_write_snescmd(0x00);
     fpga_write_snescmd(0x00);
     fpga_write_snescmd(0xFC);
 
-    //jmp ($FFEA)
-    fpga_write_snescmd(0x6C);
-    fpga_write_snescmd(0xEA);
-    fpga_write_snescmd(0xFF);
-    return;
-  } 
+    //return;
+  }
+  // plp : pla
+  fpga_write_snescmd(0x68);
+  fpga_write_snescmd(0x28);
 
-  fpga_set_snescmd_addr(SNESCMD_EXE);
-  fpga_write_snescmd(0x00);
+  // jmp ($FFEA)
+  fpga_write_snescmd(0x6C);
+  fpga_write_snescmd(0xEA);
+  fpga_write_snescmd(0xFF);
   file_close();
 }
 
