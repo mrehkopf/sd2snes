@@ -18,6 +18,8 @@
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
+`include "config.vh"
+
 module msu(
   input clkin,
   input enable,
@@ -112,6 +114,7 @@ assign status_out = {msu_address_r[13], // 7
 initial msu_address_r = 14'h1234;
 
 `ifdef MK2
+`ifndef DEBUG
 msu_databuf snes_msu_databuf (
   .clka(clkin),
   .wea(~pgm_we), // Bus [0 : 0]
@@ -121,6 +124,7 @@ msu_databuf snes_msu_databuf (
   .addrb(msu_address), // Bus [13 : 0]
   .doutb(msu_data)
 ); // Bus [7 : 0]
+`endif
 `endif
 `ifdef MK3
 msu_databuf snes_msu_databuf (
