@@ -18,6 +18,8 @@
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
+`include "config.vh"
+
 module dac(
   input clkin,
   input sysclk,
@@ -63,6 +65,7 @@ always @(posedge clkin) begin
   sysclk_sreg <= {sysclk_sreg[1:0], sysclk};
 end
 `ifdef MK2
+`ifndef DEBUG
 dac_buf snes_dac_buf (
   .clka(clkin),
   .wea(~we), // Bus [0 : 0]
@@ -72,6 +75,8 @@ dac_buf snes_dac_buf (
   .addrb(dac_address), // Bus [8 : 0]
   .doutb(dac_data)); // Bus [31 : 0]
 `endif
+`endif
+
 `ifdef MK3
 dac_buf snes_dac_buf (
   .clock(clkin),
@@ -81,6 +86,7 @@ dac_buf snes_dac_buf (
   .rdaddress(dac_address), // Bus [8 : 0]
   .q(dac_data)); // Bus [31 : 0]
 `endif
+
 reg [10:0] cnt;
 reg [15:0] smpcnt;
 reg [1:0] samples;

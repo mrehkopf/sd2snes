@@ -104,6 +104,7 @@ module mcu_cmd(
   input [31:0] snes_pawr_freq,
   input [31:0] snes_refresh_freq,
   input [31:0] snes_romsel_freq,
+  input [31:0] snes_cicclk_freq,
 
   output reg [12:0] mcu_bram_addr,
   input [7:0] mcu_bram_data_in,
@@ -420,6 +421,19 @@ always @(posedge clk) begin
       MCU_DATA_IN_BUF <= msu_volumerq;
     else if (cmd_data[7:0] == 8'hF5)
       MCU_DATA_IN_BUF <= mcu_bram_data_in;
+    else if (cmd_data[7:0] == 8'hF6)
+      case (spi_byte_cnt)
+        32'h1:
+          SNES_SYSCLK_FREQ_BUF <= snes_cicclk_freq;
+        32'h2:
+          MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[31:24];
+        32'h3:
+          MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[23:16];
+        32'h4:
+          MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[15:8];
+        32'h5:
+          MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[7:0];
+      endcase
     else if (cmd_data[7:0] == 8'hF7)
       case (spi_byte_cnt)
         32'h1:
