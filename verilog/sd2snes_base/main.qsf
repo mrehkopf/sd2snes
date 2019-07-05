@@ -525,7 +525,7 @@ set_global_assignment -name QIP_FILE msu_databuf.qip
 set_global_assignment -name QIP_FILE dac_buf.qip
 set_global_assignment -name SDC_FILE main.sdc
 set_global_assignment -name ENABLE_SIGNALTAP OFF
-set_global_assignment -name USE_SIGNALTAP_FILE stp2.stp
+set_global_assignment -name USE_SIGNALTAP_FILE stp1.stp
 set_location_assignment PIN_T5 -to PT5_in
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to PT5_in
 set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to PT5_in

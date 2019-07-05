@@ -100,15 +100,6 @@ initial begin
   SD_DMA_END_MID_BLOCK = 0;
 end
 
-wire [31:0] snes_sysclk_freq;
-
-clk_test snes_clk_test (
-    .clk(clk),
-    .sysclk(snes_sysclk),
-    .snes_sysclk_freq(snes_sysclk_freq)
-);
-
-
 reg [2:0] MAPPER_BUF;
 reg [23:0] ADDR_OUT_BUF;
 reg [10:0] DAC_ADDR_OUT_BUF;
@@ -119,8 +110,6 @@ reg [5:0] msu_status_set_out_buf;
 reg [5:0] msu_status_reset_out_buf;
 reg msu_status_reset_we_buf = 0;
 reg MSU_RESET_OUT_BUF;
-
-reg [31:0] SNES_SYSCLK_FREQ_BUF;
 
 reg [7:0] MCU_DATA_OUT_BUF;
 reg [7:0] MCU_DATA_IN_BUF;
@@ -404,19 +393,6 @@ always @(posedge clk) begin
       endcase
     else if (cmd_data[7:0] == 8'hF4)
       MCU_DATA_IN_BUF <= msu_volumerq;
-    else if (cmd_data[7:0] == 8'hFE)
-      case (spi_byte_cnt)
-        32'h1:
-          SNES_SYSCLK_FREQ_BUF <= snes_sysclk_freq;
-        32'h2:
-          MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[31:24];
-        32'h3:
-          MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[23:16];
-        32'h4:
-          MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[15:8];
-        32'h5:
-          MCU_DATA_IN_BUF <= SNES_SYSCLK_FREQ_BUF[7:0];
-      endcase
     else if (cmd_data[7:0] == 8'hFF)
       MCU_DATA_IN_BUF <= param_data;
     else if (cmd_data[7:0] == 8'hD1)
