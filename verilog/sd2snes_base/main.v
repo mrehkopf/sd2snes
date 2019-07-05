@@ -420,8 +420,7 @@ spi snes_spi(
 );
 
 wire [15:0] dsp_feat;
-`ifdef MK2
-`ifndef DEBUG
+`ifndef MK2_DEBUG
 upd77c25 snes_dspx (
   .DI(DSPX_SNES_DATA_IN),
   .DO(DSPX_SNES_DATA_OUT),
@@ -442,7 +441,6 @@ upd77c25 snes_dspx (
   .DP_ADDR(SNES_ADDR[10:0]),
   .dsp_feat(dsp_feat)
 );
-`endif
 `endif
 
 reg [7:0] MCU_DINr;

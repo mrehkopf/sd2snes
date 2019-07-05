@@ -23,5 +23,11 @@
 `define _config_vh
 
 // `define DEBUG
+
+`ifdef MK2
+  `ifdef DEBUG
+    `define MK2_DEBUG
+  `endif
 `endif
 
+`endif
