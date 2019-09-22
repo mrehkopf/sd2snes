@@ -86,9 +86,9 @@ end
 
 always @(posedge clk) begin
   if(SSEL_inactive)
-    byte_cnt_r <= 0;
+    byte_cnt_r <= 16'h0000;
   else if(byte_received_sync)
-    byte_cnt_r <= byte_cnt_r + 1;
+    byte_cnt_r <= byte_cnt_r + 16'h0001;
 end
 
 reg [7:0] byte_data_sent;

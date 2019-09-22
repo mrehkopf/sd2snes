@@ -328,9 +328,9 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     }
     total_bytes_read += bytes_read;
     // FIXME: can we do this in the general (non-combo) case?
-    // FIXME: what does the condition below do that doubles romsize_bytes until it hits the file limit do?  Do some games
+    // FIXME: what does the condition below do that doubles romsize_bytes until it hits the file limit?  Do some games
     // misreport size?  Or is this for BSX?
-    if((flags & LOADROM_WITH_COMBO) && total_bytes_read >= romprops.romsize_bytes) break;
+    if((flags & LOADROM_WITH_COMBO) && (total_bytes_read >= romprops.romsize_bytes)) break;
   }
   uart_putc('\n');
   file_close();
@@ -403,7 +403,8 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   
   printf("ramsize=%x ramslot=%hx rammask=%lx\nromsize=%x rommask=%lx\n", romprops.header.ramsize, ramslot, rammask, romprops.header.romsize, rommask);
   set_saveram_mask(rammask);
-  set_saveram_base(ramslot);
+  // don't set these for special chips as it may break from not supporting the feature
+  if (!romprops.fpga_conf || romprops.fpga_conf == FPGA_BASE) set_saveram_base(ramslot);
   set_rom_mask(rommask);
   readled(0);
 

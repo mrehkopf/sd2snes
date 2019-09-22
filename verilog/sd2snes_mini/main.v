@@ -19,6 +19,27 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module main(
+`ifdef MK2
+  /* Bus 1: PSRAM, 128Mbit, 16bit, 70ns */
+  output [22:0] ROM_ADDR,
+  output ROM_CE,
+  input MCU_OVR,
+  /* debug */
+  output p113_out,
+`endif
+`ifdef MK3
+  input SNES_CIC_CLK,
+  /* Bus 1: 2x PSRAM, 64Mbit, 16bit, 70ns */
+  output [21:0] ROM_ADDR,
+  output ROM_1CE,
+  output ROM_2CE,
+  output ROM_ZZ,
+  /* debug */
+  output PM6_out,
+  output PN6_out,
+  input  PT5_in,
+`endif
+
   /* input clock */
   input CLKIN,
 
@@ -34,27 +55,13 @@ module main(
   output SNES_DATABUS_OE,
   output SNES_DATABUS_DIR,
   input SNES_SYSCLK,
-`ifdef MK3
-  input SNES_CIC_CLK,
-`endif
 
   input [7:0] SNES_PA_IN,
   input SNES_PARD_IN,
   input SNES_PAWR_IN,
 
   /* SRAM signals */
-  /* Bus 1: PSRAM, 128Mbit, 16bit, 70ns */
   inout [15:0] ROM_DATA,
-`ifdef MK2
-  output [22:0] ROM_ADDR,
-  output ROM_CE,
-`endif
-`ifdef MK3
-  output [21:0] ROM_ADDR,
-  output ROM_1CE,
-  output ROM_2CE,
-  output ROM_ZZ,
-`endif
   output ROM_OE,
   output ROM_WE,
   output ROM_BHE,
@@ -71,9 +78,7 @@ module main(
   inout SPI_MISO,
   input SPI_SS,
   input SPI_SCK,
-`ifdef MK2
-  input MCU_OVR,
-`endif
+
   output MCU_RDY,
 
   output DAC_MCLK,
@@ -83,17 +88,7 @@ module main(
   /* SD signals */
   input [3:0] SD_DAT,
   inout SD_CMD,
-  inout SD_CLK,
-
-  /* debug */
-`ifdef MK2
-  output p113_out
-`endif
-`ifdef MK3
-  output PM6_out,
-  output PN6_out,
-  input  PT5_in
-`endif
+  inout SD_CLK
 );
 
 assign DAC_MCLK = 0;
@@ -113,9 +108,6 @@ wire [23:0] ROM_MASK;
 
 wire [23:0] MAPPED_SNES_ADDR;
 wire ROM_ADDR0;
-`ifdef MK3
-wire ROM_ADDR22;
-`endif
 
 reg [7:0] SNES_PARDr = 8'b11111111;
 reg [7:0] SNES_READr = 8'b11111111;
@@ -207,24 +199,6 @@ mcu_cmd snes_mcu_cmd(
   .mcu_rq_rdy(MCU_RDY)
 );
 
-// dcm1: dfs 4x
-`ifdef MK2
-my_dcm snes_dcm(
-  .CLKIN(CLKIN),
-  .CLKFX(CLK2),
-  .LOCKED(DCM_LOCKED),
-  .RST(DCM_RST)
-);
-`endif
-`ifdef MK3
-pll snes_pll(
-  .inclk0(CLKIN),
-  .c0(CLK2),
-  .locked(DCM_LOCKED),
-  .areset(DCM_RST)
-);
-`endif
-
 address snes_addr(
   .CLK(CLK2),
   .SNES_ADDR(SNES_ADDR), // requested address from SNES
@@ -267,14 +241,39 @@ wire MCU_RD_HIT = |(STATE & (ST_MCU_RD_ADDR | ST_MCU_RD_END));
 wire MCU_HIT = MCU_WR_HIT | MCU_RD_HIT;
 
 `ifdef MK2
+my_dcm snes_dcm(
+  .CLKIN(CLKIN),
+  .CLKFX(CLK2),
+  .LOCKED(DCM_LOCKED),
+  .RST(DCM_RST)
+);
 assign ROM_ADDR  = MCU_HIT ? ROM_ADDRr[23:1] : MAPPED_SNES_ADDR[23:1];
 assign ROM_ADDR0 = MCU_HIT ? ROM_ADDRr[0] : MAPPED_SNES_ADDR[0];
+
+assign ROM_CE = 1'b0;
+
+assign p113_out = 1'b0;
 `endif
 `ifdef MK3
+pll snes_pll(
+  .inclk0(CLKIN),
+  .c0(CLK2),
+  .locked(DCM_LOCKED),
+  .areset(DCM_RST)
+);
+
+wire ROM_ADDR22;
 assign ROM_ADDR22 = MCU_HIT ? ROM_ADDRr[1]    : MAPPED_SNES_ADDR[1];
 assign ROM_ADDR   = MCU_HIT ? ROM_ADDRr[23:2] : MAPPED_SNES_ADDR[23:2];
 assign ROM_ADDR0  = MCU_HIT ? ROM_ADDRr[0]    : MAPPED_SNES_ADDR[0];
+
+assign ROM_ZZ = 1'b1;
+assign ROM_1CE = ROM_ADDR22;
+assign ROM_2CE = ~ROM_ADDR22;
 `endif
+
+// OE always active. Overridden by WE when needed.
+assign ROM_OE = 1'b0;
 
 reg[17:0] SNES_DEAD_CNTr;
 initial SNES_DEAD_CNTr = 0;
@@ -315,8 +314,7 @@ always @(posedge CLK2) begin
         if(MCU_RD_PENDr) begin
           STATE <= ST_MCU_RD_ADDR;
           ST_MEM_DELAYr <= ROM_CYCLE_LEN;
-        end
-        else if(MCU_WR_PENDr) begin
+        end else if(MCU_WR_PENDr) begin
           STATE <= ST_MCU_WR_ADDR;
           ST_MEM_DELAYr <= ROM_CYCLE_LEN;
         end
@@ -355,18 +353,6 @@ assign ROM_WE = (ROM_HIT & IS_SAVERAM & SNES_CPU_CLK) ? SNES_WRITE
                 : MCU_WE_HIT ? 1'b0
                 : 1'b1;
 
-// OE always active. Overridden by WE when needed.
-assign ROM_OE = 1'b0;
-
-`ifdef MK2
-assign ROM_CE = 1'b0;
-`endif
-`ifdef MK3
-assign ROM_ZZ = 1'b1;
-assign ROM_1CE = ROM_ADDR22;
-assign ROM_2CE = ~ROM_ADDR22;
-`endif
-
 assign ROM_BHE = ROM_ADDR0;
 assign ROM_BLE = ~ROM_ADDR0;
 
@@ -376,8 +362,6 @@ assign SNES_DATABUS_OE = (SNES_ROMSEL & ~IS_SAVERAM)
 assign SNES_DATABUS_DIR = ~SNES_READ;
 
 assign SNES_IRQ = 1'b0;
-
-assign p113_out = 1'b0;
 
 /*
 wire [35:0] CONTROL0;

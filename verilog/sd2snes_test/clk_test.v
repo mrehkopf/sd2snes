@@ -28,6 +28,7 @@ module clk_test(
   input refresh,
   input cpuclk,
   input romsel,
+  input cicclk,
   output reg [31:0] snes_sysclk_freq,
   output reg [31:0] snes_read_freq,
   output reg [31:0] snes_write_freq,
@@ -35,7 +36,8 @@ module clk_test(
   output reg [31:0] snes_pard_freq,
   output reg [31:0] snes_refresh_freq,
   output reg [31:0] snes_cpuclk_freq,
-  output reg [31:0] snes_romsel_freq
+  output reg [31:0] snes_romsel_freq,
+  output reg [31:0] snes_cicclk_freq
 );
 
 reg [31:0] sysclk_counter;
@@ -47,6 +49,7 @@ reg [31:0] pawr_value;
 reg [31:0] refresh_value;
 reg [31:0] cpuclk_value;
 reg [31:0] romsel_value;
+reg [31:0] cicclk_value;
 
 initial snes_sysclk_freq = 32'hFFFFFFFF;
 initial sysclk_counter = 0;
@@ -58,6 +61,7 @@ initial pawr_value = 0;
 initial refresh_value = 0;
 initial cpuclk_value = 0;
 initial romsel_value = 0;
+initial cicclk_value = 0;
 
 reg [1:0] sysclk_sreg;
 reg [1:0] read_sreg;
@@ -67,6 +71,7 @@ reg [1:0] pawr_sreg;
 reg [1:0] refresh_sreg;
 reg [1:0] cpuclk_sreg;
 reg [1:0] romsel_sreg;
+reg [1:0] cicclk_sreg;
 
 always @(posedge clk) romsel_sreg <= {romsel_sreg[0], romsel};
 wire romsel_rising = (romsel_sreg == 2'b01);
@@ -84,9 +89,11 @@ always @(posedge clk) pawr_sreg <= {pawr_sreg[0], pawr};
 wire pawr_rising = (pawr_sreg == 2'b01);
 always @(posedge clk) refresh_sreg <= {refresh_sreg[0], refresh};
 wire refresh_rising = (refresh_sreg == 2'b01);
+always @(posedge clk) cicclk_sreg <= {cicclk_sreg[0], cicclk};
+wire cicclk_rising = (cicclk_sreg == 2'b01);
 
 always @(posedge clk) begin
-  if(sysclk_counter < 88000000) begin
+  if(sysclk_counter < 96000000) begin
     sysclk_counter <= sysclk_counter + 1;
     if(sysclk_rising) sysclk_value <= sysclk_value + 1;
     if(read_rising) read_value <= read_value + 1;
@@ -96,6 +103,7 @@ always @(posedge clk) begin
     if(refresh_rising) refresh_value <= refresh_value + 1;
     if(cpuclk_rising) cpuclk_value <= cpuclk_value + 1;
     if(romsel_rising) romsel_value <= romsel_value + 1;
+    if(cicclk_rising) cicclk_value <= cicclk_value + 1;
   end else begin
     snes_sysclk_freq <= sysclk_value;
     snes_read_freq <= read_value;
@@ -105,6 +113,7 @@ always @(posedge clk) begin
     snes_refresh_freq <= refresh_value;
     snes_cpuclk_freq <= cpuclk_value;
     snes_romsel_freq <= romsel_value;
+    snes_cicclk_freq <= cicclk_value;
     sysclk_counter <= 0;
     sysclk_value <= 0;
     read_value <= 0;
@@ -114,6 +123,7 @@ always @(posedge clk) begin
     refresh_value <= 0;
     cpuclk_value <= 0;
     romsel_value <= 0;
+    cicclk_value <= 0;
   end
 end
 
