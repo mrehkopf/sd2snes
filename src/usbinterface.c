@@ -52,7 +52,7 @@ static inline void __DMB2(void) { asm volatile ("dmb" ::: "memory"); }
 
 #define MAX_STRING_LENGTH 255
 
-#if CONFIG_FWVER == 0x44534E53
+#if CONFIG_FWVER == 0x44534E53 || CONFIG_FWVER == 0x33534E53
 #define PRINT_FUNCTION() printf("%-20s ", __FUNCTION__);
 #define PRINT_CMD(buf) printf("header=%c%c%c%c op=%s space=%s flags=%d cmd_size=%d block_size=%d offset=%6x size=%d"\
                                                                         , buf[0], buf[1], buf[2], buf[3]          \
@@ -107,7 +107,7 @@ static inline void __DMB2(void) { asm volatile ("dmb" ::: "memory"); }
                                             \
   OP(USBINT_SERVER_STATE_HANDLE_LOCK)       
 enum usbint_server_state_e { FOREACH_SERVER_STATE(GENERATE_ENUM) };
-#if CONFIG_FWVER == 0x44534E53
+#if CONFIG_FWVER == 0x44534E53 || CONFIG_FWVER == 0x33534E53
 static const char *usbint_server_state_s[] = { FOREACH_SERVER_STATE(GENERATE_STRING) };
 #endif
 
@@ -149,7 +149,7 @@ enum usbint_server_stream_state_e { FOREACH_SERVER_STREAM_STATE(GENERATE_ENUM) }
                                                 \
   OP(USBINT_SERVER_OPCODE_RESPONSE)                  
 enum usbint_server_opcode_e { FOREACH_SERVER_OPCODE(GENERATE_ENUM) };
-#if CONFIG_FWVER == 0x44534E53
+#if CONFIG_FWVER == 0x44534E53 || CONFIG_FWVER == 0x33534E53
 static const char *usbint_server_opcode_s[] = { FOREACH_SERVER_OPCODE(GENERATE_STRING) };
 #endif
 
@@ -160,7 +160,7 @@ static const char *usbint_server_opcode_s[] = { FOREACH_SERVER_OPCODE(GENERATE_S
   OP(USBINT_SERVER_SPACE_CMD)                   \
   OP(USBINT_SERVER_SPACE_CONFIG)
 enum usbint_server_space_e { FOREACH_SERVER_SPACE(GENERATE_ENUM) };
-#if CONFIG_FWVER == 0x44534E53
+#if CONFIG_FWVER == 0x44534E53 || CONFIG_FWVER == 0x33534E53
 static const char *usbint_server_space_s[] = { FOREACH_SERVER_SPACE(GENERATE_STRING) };
 #endif
 
@@ -718,7 +718,8 @@ int usbint_handler_cmd(void) {
         send_buffer[send_buffer_index][257] = (CONFIG_FWVER >> 16) & 0xFF;
         send_buffer[send_buffer_index][258] = (CONFIG_FWVER >>  8) & 0xFF;
         send_buffer[send_buffer_index][259] = (CONFIG_FWVER >>  0) & 0xFF;
-        strncpy((char *)(send_buffer[send_buffer_index]) + 260, CONFIG_VERSION, MAX_STRING_LENGTH - 4);
+        strncpy((char *)(send_buffer[send_buffer_index]) + 256 +  4, CONFIG_VERSION, 64);
+        strncpy((char *)(send_buffer[send_buffer_index]) + 260 + 64, DEVICE_NAME, 64);
         
         // features
         send_buffer[send_buffer_index][6] = current_features;

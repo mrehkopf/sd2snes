@@ -154,12 +154,12 @@ void USB_Init (void) {
   LPC_PINCON->PINSEL1 |=  ((1<<26)|(1<<28));   /* PINSEL1 26.27, 28.29  = 01 */
 
   LPC_PINCON->PINSEL3 &= ~((3<< 4)|(3<<28));   /* P1.18 GoodLink, P1.30 VBUS */
-  LPC_PINCON->PINSEL3 |=  ((1<< 4)|(2<<28));   /* PINSEL3 4.5 = 01, 28.29 = 10 */
+  LPC_PINCON->PINSEL3 |=  (        (2<<28));   /* PINSEL3 4.5 = 01, 28.29 = 10 */
 
 //  LPC_PINCON->PINSEL4 &= ~((3<<18)        );   /* P2.9 SoftConnect */
 //  LPC_PINCON->PINSEL4 |=  ((1<<18)        );   /* PINSEL4 18.19 = 01 */
 
-  LPC_PINCON->PINSEL4 &= ~((3<<18)        );   /* P4.28 Soft-SoftConnect ;) */
+//  LPC_PINCON->PINSEL4 &= ~((3<<18)        );   /* P4.28 Soft-SoftConnect ;) */
 
   LPC_SC->PCONP |= (1UL<<31);                /* USB PCLK -> enable USB Per.       */
 

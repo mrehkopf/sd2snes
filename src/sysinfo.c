@@ -16,7 +16,7 @@
 #include "sysinfo.h"
 #include "usbinterface.h"
 
-extern status_t ST;
+extern snes_status_t STS;
 
 static uint32_t sd_tacc_max, sd_tacc_avg;
 
@@ -61,37 +61,29 @@ int write_sysinfo(int sd_measured) {
   memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
   sram_addr += 40;
-  len = snprintf(linebuf, sizeof(linebuf), "Features: GSU, SA-1, Savestates");
+//frs
+  len = snprintf(linebuf, sizeof(linebuf), "Features: GSU, SA-1, SDD1, Savestates");
   memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
   sram_addr += 40;
   len = snprintf(linebuf, sizeof(linebuf), "                                        ");
   memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
+
   sram_addr += 40;
   if(disk_state == DISK_REMOVED || usbint_server_busy()) {
     sd_measured = 0;
     sd_tacc_max = 0;
     sd_tacc_avg = 0;
-    len = snprintf(linebuf, sizeof(linebuf), "                                        ");
-    memset(linebuf+len, 0x20, 40-len);
-    sram_writeblock(linebuf, sram_addr, 40);
+    sram_memset(sram_addr, 40, 0x20);
     sram_addr += 40;
-    len = snprintf(linebuf, sizeof(linebuf), "                                        ");
-    memset(linebuf+len, 0x20, 40-len);
-    sram_writeblock(linebuf, sram_addr, 40);
+    sram_memset(sram_addr, 40, 0x20);
     sram_addr += 40;
-    len = snprintf(linebuf, sizeof(linebuf), "    *** SD Card removed/USB busy ***    ");
-    memset(linebuf+len, 0x20, 40-len);
-    sram_writeblock(linebuf, sram_addr, 40);
+    sram_writestrn("    *** SD Card removed/USB busy ***    ", sram_addr, 40);
     sram_addr += 40;
-    len = snprintf(linebuf, sizeof(linebuf), "                                        ");
-    memset(linebuf+len, 0x20, 40-len);
-    sram_writeblock(linebuf, sram_addr, 40);
+    sram_memset(sram_addr, 40, 0x20);
     sram_addr += 40;
-    len = snprintf(linebuf, sizeof(linebuf), "                                        ");
-    memset(linebuf+len, 0x20, 40-len);
-    sram_writeblock(linebuf, sram_addr, 40);
+    sram_memset(sram_addr, 40, 0x20);
     sram_addr += 40;
     sd_ok = 0;
   } else {
@@ -121,9 +113,7 @@ int write_sysinfo(int sd_measured) {
     sram_addr += 40;
     sd_ok = 1;
   }
-  len = snprintf(linebuf, sizeof(linebuf), "                                        ");
-  memset(linebuf+len, 0x20, 40-len);
-  sram_writeblock(linebuf, sram_addr, 40);
+  sram_memset(sram_addr, 40, 0x20);
   sram_addr += 40;
   len = snprintf(linebuf, sizeof(linebuf), "CIC state: %s", get_cic_statefriendlyname(get_cic_state()));
   memset(linebuf+len, 0x20, 40-len);
@@ -136,21 +126,19 @@ int write_sysinfo(int sd_measured) {
   memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
   sram_addr += 40;
-  if(ST.is_u16) {
-    if(ST.u16_cfg & 0x01) {
-      len = snprintf(linebuf, sizeof(linebuf), "Ultra16 serial no. %d (Autoboot On)", ST.is_u16);
+  if(STS.is_u16) {
+    if(STS.u16_cfg & 0x01) {
+      len = snprintf(linebuf, sizeof(linebuf), "Ultra16 serial no. %d (Autoboot On)", STS.is_u16);
     } else {
-      len = snprintf(linebuf, sizeof(linebuf), "Ultra16 serial no. %d (Autoboot Off)", ST.is_u16);
+      len = snprintf(linebuf, sizeof(linebuf), "Ultra16 serial no. %d (Autoboot Off)", STS.is_u16);
     }
+    memset(linebuf+len, 0x20, 40-len);
+    sram_writeblock(linebuf, sram_addr, 40);
   } else {
-    len = snprintf(linebuf, sizeof(linebuf), "                                        ");
+    sram_memset(sram_addr, 40, 0x20);
   }
-  memset(linebuf+len, 0x20, 40-len);
-  sram_writeblock(linebuf, sram_addr, 40);
   sram_addr += 40;
-  len = snprintf(linebuf, sizeof(linebuf), "                                        ");
-  memset(linebuf+len, 0x20, 40-len);
-  sram_writeblock(linebuf, sram_addr, 40);
+  sram_memset(sram_addr, 40, 0x20);
   sram_hexdump(SRAM_SYSINFO_ADDR, 13*40);
   if(sysclk != -1 && sd_ok && !sd_measured){
     sdn_gettacc(&sd_tacc_max, &sd_tacc_avg);

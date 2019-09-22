@@ -7,17 +7,17 @@
 // \   \   \/     Version: P.20131013
 //  \   \         Application: netgen
 //  /   /         Filename: gsu_umult.v
-// /___/   /\     Timestamp: Sun Apr 22 08:49:35 2018
+// /___/   /\     Timestamp: Thu Jun 07 01:13:23 2018
 // \   \  /  \ 
 //  \___\/\___\
 //             
-// Command	: -w -sim -ofmt verilog C:/Users/O/dev/sd2snes-gsu/verilog/sd2snes_gsu/ipcore_dir/tmp/_cg/gsu_umult.ngc C:/Users/O/dev/sd2snes-gsu/verilog/sd2snes_gsu/ipcore_dir/tmp/_cg/gsu_umult.v 
+// Command	: -w -sim -ofmt verilog D:/prj/sd2snes/verilog/sd2snes_gsu/ipcore_dir/tmp/_cg/gsu_umult.ngc D:/prj/sd2snes/verilog/sd2snes_gsu/ipcore_dir/tmp/_cg/gsu_umult.v 
 // Device	: 3s400pq208-4
-// Input file	: C:/Users/O/dev/sd2snes-gsu/verilog/sd2snes_gsu/ipcore_dir/tmp/_cg/gsu_umult.ngc
-// Output file	: C:/Users/O/dev/sd2snes-gsu/verilog/sd2snes_gsu/ipcore_dir/tmp/_cg/gsu_umult.v
+// Input file	: D:/prj/sd2snes/verilog/sd2snes_gsu/ipcore_dir/tmp/_cg/gsu_umult.ngc
+// Output file	: D:/prj/sd2snes/verilog/sd2snes_gsu/ipcore_dir/tmp/_cg/gsu_umult.v
 // # of Modules	: 1
 // Design Name	: gsu_umult
-// Xilinx        : C:\Xilinx\14.7\ISE_DS\ISE\
+// Xilinx        : E:\Xilinx\14.7\ISE_DS\ISE\
 //             
 // Purpose:    
 //     This verilog netlist is a verification model and uses simulation 

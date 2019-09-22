@@ -48,7 +48,9 @@ module msu(
   output DBG_msu_address_ext_write_rising
 );
 
-//`define MSU
+`ifdef MK3
+`define MSU
+`endif
 
 `ifndef MSU
 assign reg_data_out = 0;
@@ -128,6 +130,7 @@ assign status_out = {msu_address_r[13], // 7
 
 initial msu_address_r = 14'h1234;
 
+`ifdef MK2
 msu_databuf snes_msu_databuf (
   .clka(clkin),
   .wea(~pgm_we), // Bus [0 : 0]
@@ -137,7 +140,17 @@ msu_databuf snes_msu_databuf (
   .addrb(msu_address), // Bus [13 : 0]
   .doutb(msu_data)
 ); // Bus [7 : 0]
-
+`endif
+`ifdef MK3
+msu_databuf snes_msu_databuf (
+  .clock(clkin),
+  .wren(~pgm_we), // Bus [0 : 0]
+  .wraddress(pgm_address), // Bus [13 : 0]
+  .data(pgm_data), // Bus [7 : 0]
+  .rdaddress(msu_address), // Bus [13 : 0]
+  .q(msu_data)
+); // Bus [7 : 0]
+`endif
 reg [7:0] data_out_r;
 assign reg_data_out = data_out_r;
 

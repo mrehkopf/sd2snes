@@ -52,7 +52,8 @@ extern char current_filename[];
 #define SRAM_MENU_CFG_ADDR      (0xFF0100L)
 #define SRAM_CMD_ADDR           (0xFF1000L)
 #define SRAM_PARAM_ADDR         (0xFF1004L)
-#define SRAM_STATUS_ADDR        (0xFF1100L)
+#define SRAM_MCU_STATUS_ADDR    (0xFF1100L)
+#define SRAM_SNES_STATUS_ADDR   (0xFF1110L)
 #define SRAM_SYSINFO_ADDR       (0xFF1200L)
 #define SRAM_LASTGAME_ADDR      (0xFF1420L)
 #define SRAM_SCRATCHPAD         (0xFFFF00L)
@@ -63,6 +64,7 @@ extern char current_filename[];
 #define LOADROM_WITH_RESET  (2)
 #define LOADROM_WAIT_SNES   (4)
 #define LOADROM_WITH_FPGA   (8)
+#define LOADROM_WITH_COMBO  (16)
 
 #define LOADRAM_AUTOSKIP_HEADER (1)
 
@@ -99,7 +101,7 @@ uint16_t sram_writeblock(void* buf, uint32_t addr, uint16_t size);
 uint32_t sram_writeset(uint8_t val, uint32_t addr, uint32_t size);
 void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
-uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size);
+uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size, uint32_t crc);
 uint16_t calc_sram_sum(uint32_t base_addr, uint32_t size);
 uint8_t sram_reliable(void);
 void sram_memset(uint32_t base_addr, uint32_t len, uint8_t val);

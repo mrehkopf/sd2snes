@@ -959,6 +959,7 @@ reg         math_val_r;  initial math_val_r = 0;
 reg         math_acm_r;  initial math_acm_r = 0;
 reg         math_init_r; initial math_init_r = 0;
 
+`ifdef MK2
 sa1_mult mult(
   .clk(CLK),
   .a(math_ma_r),
@@ -973,6 +974,23 @@ sa1_div div(
   .quotient(divq_out),
   .fractional(divr_out)
 );
+`endif
+`ifdef MK3
+sa1_mult mult(
+  .clock(CLK),
+  .dataa(math_ma_r),
+  .datab(math_mb_r),
+  .result(mult_out)
+);
+
+sa1_div div(
+  .clock(CLK),
+  .numer(math_ma_r),
+  .denom(math_mb_r),
+  .quotient(divq_out),
+  .remain(divr_out)
+);
+`endif
 
 reg  [40:0] math_result;
 
@@ -1195,6 +1213,7 @@ wire [10:0]  snes_iram_addr = snes_iram_addr_r;
 wire [7:0]   snes_iram_din  = snes_writebuf_iram_data_r;
 wire [7:0]   snes_iram_dout;
 
+`ifdef MK2
 sa1_iram iram (
   .clka(CLK), // input clka
   .wea(iram_wren), // input [0 : 0] wea
@@ -1208,6 +1227,21 @@ sa1_iram iram (
   .dinb(snes_iram_din), // input [7 : 0] dinb
   .doutb(snes_iram_dout) // output [7 : 0] doutb
 );
+`endif
+`ifdef MK3
+sa1_iram iram (
+  .clock(CLK), // input clka
+  .wren_a(iram_wren), // input [0 : 0] wea
+  .address_a(iram_addr), // input [10 : 0] addra
+  .data_a(iram_din), // input [7 : 0] dina
+  .q_a(iram_dout), // output [7 : 0] douta
+
+  .wren_b(snes_iram_wren), // input [0 : 0] web
+  .address_b(snes_iram_addr), // input [10 : 0] addrb
+  .data_b(snes_iram_din), // input [7 : 0] dinb
+  .q_b(snes_iram_dout) // output [7 : 0] doutb
+);
+`endif
 
 assign snes_iram_out = snes_iram_dout;
 
@@ -2240,11 +2274,20 @@ end
 wire [7:0]  dec_addr = exe_mmc_int ? 8'h00 : exe_fetch_byte_val ? exe_fetch_byte[7:0] : mmc_exe_end ? exe_mmc_rddata[7:0] : exe_fetch_data[7:0];
 wire [31:0] dec_data;
 
+`ifdef MK2
 dec_table dec (
   .clka(CLK),       // input clka
   .addra(dec_addr), // input [7 : 0] addra
   .douta(dec_data)  // output [31 : 0] douta
 );
+`endif
+`ifdef MK3
+dec_table dec (
+  .clock(CLK),        // input clock
+  .address(dec_addr), // input [7 : 0] address
+  .q(dec_data)        // output [31 : 0] q
+);
+`endif
 
 //-------------------------------------------------------------------
 // Interrupt Controller

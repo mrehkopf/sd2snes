@@ -127,6 +127,8 @@
         FPGA feature enable bits:
         bit        function
    ==========================================================================
+        12         enable Satellaview base unit emulation
+        11         unused
       10-7         $2100 brightness limit (4 bits)
          6         enable $2100 DAC fix for 1CHIP
          5         enable permanent snescmd unlock (during load handshake)
@@ -192,6 +194,13 @@ void set_mcu_addr(uint32_t address) {
   FPGA_TX_BYTE((address >> 16) & 0xff);
   FPGA_TX_BYTE((address >> 8) & 0xff);
   FPGA_TX_BYTE((address) & 0xff);
+  FPGA_DESELECT();
+}
+
+void set_saveram_base(uint8_t mask) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_SETRAMBASE);
+  FPGA_TX_BYTE((mask) & 0xff);
   FPGA_DESELECT();
 }
 
@@ -483,15 +492,6 @@ void fpga_set_dspfeat(uint16_t feat) {
   FPGA_TX_BYTE(feat & 0xff);
   FPGA_DESELECT();
 }
-
-//void set_usb_status(uint16_t status) {
-//  FPGA_SELECT();
-//  FPGA_TX_BYTE(FPGA_CMD_USBSETBITS);
-//  FPGA_TX_BYTE(status & 0xff);
-//  FPGA_TX_BYTE((status >> 8) & 0xff);
-//  FPGA_TX_BYTE(0x00); /* latch reset */
-//  FPGA_DESELECT();
-//}
 
 uint8_t fpga_read_config(uint8_t group, uint8_t index) {
   uint8_t data;

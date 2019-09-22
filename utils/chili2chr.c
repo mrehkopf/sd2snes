@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
 	memset(obuf, 0, dsize);
 	while (!feof(in)) {
 		uint8_t chunk = fgetc(in);
-		printf("%lX\n", out_off);
+		printf("%lX\n", (long unsigned int) out_off);
 		for(i=0; i<pixperbyte; i++) {
 			
 			current_pixel = (in_off*pixperbyte+i)%8;

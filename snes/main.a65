@@ -52,6 +52,7 @@ GAME_MAIN:
   jsr video_init
   jsr setup_hdma
   jsr detect_ultra16
+  jsr detect_satellaview
   lda @CFG_BRIGHTNESS_LIMIT
   sta cur_bright
   sta tgt_bright
@@ -74,6 +75,7 @@ coldboot:       ; Regular, cold-start init
   jsr video_init
   jsr setup_hdma
   jsr detect_ultra16
+  jsr detect_satellaview
   jsr screen_on
   jsr wait_mcu_ready
   jsr filesel_init

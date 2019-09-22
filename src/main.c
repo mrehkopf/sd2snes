@@ -1,7 +1,6 @@
 #include <arm/NXP/LPC17xx/LPC17xx.h>
 #include <string.h>
 #include "config.h"
-#include "obj/autoconf.h"
 #include "clock.h"
 #include "uart.h"
 #include "bits.h"
@@ -36,10 +35,6 @@
 #include "cdcuser.h"
 #include "usbinterface.h"
 
-
-//#define EMC0TOGGLE        (3<<4)
-//#define MR0R              (1<<1)
-
 int i;
 
 int sd_offload = 0, ff_sd_offload = 0, sd_offload_tgt = 0;
@@ -58,7 +53,8 @@ extern snes_romprops_t romprops;
 extern volatile int reset_changed;
 
 extern volatile cfg_t CFG;
-extern volatile status_t ST;
+extern volatile mcu_status_t STM;
+extern volatile snes_status_t STS;
 
 void menu_cmd_readdir(void) {
   uint8_t path[256];
@@ -105,18 +101,20 @@ int main(void) {
   fpga_spi_init();
   spi_preinit();
   led_init();
-  // USB initialization
-  USB_Init ();
-  CDC_Init (0x00);
  /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
+
   FPGA_CLK_PINSEL |= BV(FPGA_CLK_PINSELBIT) | BV(FPGA_CLK_PINSELBIT - 1); /* MAT3.x (FPGA clock) */
   led_std();
   sdn_init();
-  //usb
-  USB_Connect (0x01);
+
   printf("\n\n" DEVICE_NAME "\n===============\nfw ver.: " CONFIG_VERSION "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
   printf("PCONP=%lx\n", LPC_SC->PCONP);
+
+  // USB initialization
+  USB_Init ();
+  CDC_Init (0x00);
+  USB_Connect (0x01);
 
   file_init();
   cic_init(0);
@@ -150,25 +148,26 @@ int main(void) {
         while(disk_status(0) & (STA_NODISK));
         delay_ms(200);
       }
-      file_open((uint8_t*)"/sd2snes/menu.bin", FA_READ);
+      file_open((uint8_t*)MENU_FILENAME, FA_READ);
       if(file_status != FILE_OK) {
-        snes_bootprint("  /sd2snes/menu.bin not found!  \0");
+        snes_bootprint("  " MENU_FILENAME " not found!  \0");
         while(disk_status(0) == 0);
       } else {
         card_go = 1;
       }
       file_close();
     }
-//    snes_bootprint("           Loading ...          \0");
+    if(fpga_config == FPGA_ROM) snes_bootprint("           Loading ...          \0");
     led_pwm();
     rdyled(1);
     readled(0);
     writeled(0);
 
+    cic_init(0);
+
     if(firstboot) {
       cfg_load();
       cfg_save();
-      cic_init(cfg_is_pair_mode_allowed());
       cfg_validity_check_recent_games();
     }
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
@@ -179,7 +178,7 @@ int main(void) {
     sram_writelong(0x12345678, SRAM_SCRATCHPAD);
     fpga_dspx_reset(1);
     uart_putc('(');
-    load_rom((uint8_t*)"/sd2snes/menu.bin", SRAM_MENU_ADDR, 0);
+    load_rom((uint8_t*)MENU_FILENAME, SRAM_MENU_ADDR, 0);
     /* force memory size + mapper */
     set_rom_mask(0x3fffff);
     set_mapper(0x7);
@@ -195,13 +194,13 @@ int main(void) {
 
     if((rtc_state = rtc_isvalid()) != RTC_OK) {
       printf("RTC invalid!\n");
-      ST.rtc_valid = 0xff;
+      STM.rtc_valid = 0xff;
       set_bcdtime(0x20120701000000LL);
       set_fpga_time(0x20120701000000LL);
       invalidate_rtc();
     } else {
       printf("RTC valid!\n");
-      ST.rtc_valid = 0;
+      STM.rtc_valid = 0;
       set_fpga_time(get_bcdtime());
     }
     sram_memset(SRAM_SYSINFO_ADDR, 13*40, 0x20);
@@ -209,30 +208,37 @@ int main(void) {
     snes_reset(1);
     fpga_reset_srtc_state();
     if(!firstboot) {
-      if(ST.is_u16 && (ST.u16_cfg & 0x01)) {
+      if(STS.is_u16 && (STS.u16_cfg & 0x01)) {
         delay_ms(59*SNES_RESET_PULSELEN_MS);
       }
     }
     firstboot = 0;
     delay_ms(SNES_RESET_PULSELEN_MS);
     sram_writebyte(32, SRAM_CMD_ADDR);
+
+    fpga_set_dac_boost(CFG.msu_volume_boost);
+    cfg_load_to_menu();
+    snes_reset(0);
+
+/* Since the Super Nt workaround requires pair mode to be disabled during reset
+   (or the Super Nt doesn't boot), pair mode can only be enabled after reset,
+   so we need to get the CIC state later to actually detect pair mode.
+   A delay is required so the CICs can settle before getting the state. */
+    delay_ms(100);
     enum cicstates cic_state = get_cic_state();
     switch(cic_state) {
       case CIC_PAIR:
-        ST.pairmode = 1;
+        STM.pairmode = 1;
         printf("PAIR MODE ENGAGED!\n");
         cic_pair(CFG.vidmode_menu, CFG.vidmode_menu);
         break;
       case CIC_SCIC:
-        ST.pairmode = 1;
+        STM.pairmode = 1;
         break;
       default:
-        ST.pairmode = 0;
+        STM.pairmode = 0;
     }
-    fpga_set_dac_boost(CFG.msu_volume_boost);
-    cfg_load_to_menu();
     status_load_to_menu();
-    snes_reset(0);
 
     uint8_t cmd = 0;
     uint64_t btime = 0;
@@ -317,7 +323,7 @@ int main(void) {
           cfg_get_from_menu();
           cic_init(CFG.pair_mode_allowed);
           if(CFG.pair_mode_allowed && cic_state == CIC_SCIC) {
-            delay_ms(50);
+            delay_ms(100);
             if(get_cic_state() == CIC_PAIR) {
               cic_pair(CFG.vidmode_menu, CFG.vidmode_menu);
             }
@@ -381,10 +387,13 @@ int main(void) {
 // TODO have FPGA automatically reset SRTC on detected reset
         fpga_reset_srtc_state();
       }
-      if(get_snes_reset_state() == SNES_RESET_LONG) {
+      uint8_t resetState = get_snes_reset_state();
+      if(resetState == SNES_RESET_LONG) {
         prepare_reset();
         break;
       } else {
+        if (resetState == SNES_RESET_SHORT) resetButtonState = 1;
+        
         if(getticks() > loop_ticks + 25) {
           loop_ticks = getticks();
  //         sram_reliable();
@@ -401,6 +410,8 @@ int main(void) {
                 break;
               case SNES_CMD_RESET:
                 usb_cmd = 0;
+                // also force full ROM reset if we used button combination
+                resetButtonState = 1;
                 snes_reset_pulse();
                 break;
               case SNES_CMD_RESET_TO_MENU:
@@ -414,6 +425,9 @@ int main(void) {
               case SNES_CMD_LOADSTATE:
                 usb_cmd = 0;
                 load_backup_state();
+              case SNES_CMD_COMBO_TRANSITION:
+                usb_cmd = 0;
+                load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_COMBO | LOADROM_WITH_RESET);
                 break;
               default:
                 printf("unknown cmd: %02x\n", cmd);

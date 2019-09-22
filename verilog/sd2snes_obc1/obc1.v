@@ -49,6 +49,7 @@ wire [7:0] oam_high_addr = (~reg_en) ? addr_in[5:0] : {~obc_bank, oam_number};
 wire [7:0] low_douta;
 wire [7:0] high_doutb;
 
+`ifdef MK2
 obc_lower oam_low (
   .clka(clk), // input clka
   .wea(oam_low_we), // input [0 : 0] wea
@@ -69,7 +70,28 @@ obc_upper oam_high (
   .dinb(data_in),
   .doutb(high_doutb) // output [7 : 0] doutb
 );
+`endif
+`ifdef MK3
+obc_lower oam_low (
+  .clock(clk), // input clka
+  .wren(oam_low_we), // input [0 : 0] wea
+  .address(oam_low_addr), // input [9 : 0] addra
+  .data(data_in), // input [7 : 0] dina
+  .q(low_douta) // output [7 : 0] douta
+);
 
+obc_upper oam_high (
+  .clock(clk), // input clka
+  .wren_a(oam_high_we), // input [0 : 0] wea
+  .address_a(oam_high_addr), // input [7 : 0] addra
+  .data_a(data_in[1:0]), // input [1 : 0] dina
+  .q_a(douta), // unused
+  .wren_b(snes_high_we), // input [0 : 0] web
+  .address_b(addr_in[5:0]), // input [5 : 0] addrb
+  .data_b(data_in),
+  .q_b(high_doutb) // output [7 : 0] doutb
+);
+`endif
 assign data_out = reg_en ? obc1_regs[addr_in[2:0]]
                   : low_en ? low_douta
                   : high_en ? high_doutb

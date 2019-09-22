@@ -34,16 +34,28 @@ module main(
   output SNES_DATABUS_OE,
   output SNES_DATABUS_DIR,
   input SNES_SYSCLK,
+`ifdef MK3
+  input SNES_CIC_CLK,
+`endif
 
   input [7:0] SNES_PA_IN,
   input SNES_PARD_IN,
   input SNES_PAWR_IN,
 
   /* SRAM signals */
-  /* Bus 1: PSRAM, 128Mbit, 16bit, 70ns */
   inout [15:0] ROM_DATA,
+`ifdef MK2
+  /* Bus 1: PSRAM, 128Mbit, 16bit, 70ns */
   output [22:0] ROM_ADDR,
   output ROM_CE,
+`endif
+`ifdef MK3
+  /* Bus 1: 2x PSRAM, 64Mbit, 16bit, 70ns */
+  output [21:0] ROM_ADDR,
+  output ROM_1CE,
+  output ROM_2CE,
+  output ROM_ZZ,
+`endif
   output ROM_OE,
   output ROM_WE,
   output ROM_BHE,
@@ -60,7 +72,9 @@ module main(
   inout SPI_MISO,
   input SPI_SS,
   input SPI_SCK,
+`ifdef MK2
   input MCU_OVR,
+`endif
   output MCU_RDY,
 
   output DAC_MCLK,
@@ -73,7 +87,14 @@ module main(
   inout SD_CLK,
 
   /* debug */
+`ifdef MK2
   output p113_out
+`endif
+`ifdef MK3
+  output PM6_out,
+  output PN6_out,
+  input  PT5_in
+`endif
 );
 
 wire CLK2;
@@ -125,6 +146,9 @@ wire feat_cmd_unlock = featurebits[5];
 
 wire [23:0] MAPPED_SNES_ADDR;
 wire ROM_ADDR0;
+`ifdef MK3
+wire ROM_ADDR22;
+`endif
 
 wire [13:0] DBG_msu_address;
 wire DBG_msu_reg_oe_rising;
@@ -254,7 +278,13 @@ parameter ST_SA1_RAM_RD_END  = 11'b00100000000;
 parameter ST_SA1_RAM_WR_ADDR = 11'b01000000000;
 parameter ST_SA1_RAM_WR_END  = 11'b10000000000;
 
+`ifdef MK2
 parameter SNES_DEAD_TIMEOUT = 17'd85714; // 1ms
+`endif
+`ifdef MK3
+// Cyclone IV PLL allows us to get a bit closer to original speed
+parameter SNES_DEAD_TIMEOUT = 17'd85867; // 1ms
+`endif
 
 parameter ROM_CYCLE_LEN = 4'd7; // Increased from 6 due to tight timing on some sd2snes.  Two pics from boards with errors had a Micron chip with 0LA41/PW510.  Same build lot.
 
@@ -513,15 +543,23 @@ mcu_cmd snes_mcu_cmd(
   .dsp_feat_out(dsp_feat)
 );
 
-wire [7:0] DCM_STATUS;
 // dcm1: dfs 4x
+`ifdef MK2
 my_dcm snes_dcm(
   .CLKIN(CLKIN),
   .CLKFX(CLK2),
   .LOCKED(DCM_LOCKED),
-  .RST(DCM_RST),
-  .STATUS(DCM_STATUS)
+  .RST(DCM_RST)
 );
+`endif
+`ifdef MK3
+pll snes_pll(
+  .inclk0(CLKIN),
+  .c0(CLK2),
+  .locked(DCM_LOCKED),
+  .areset(DCM_RST)
+);
+`endif
 
 address snes_addr(
   .CLK(CLK2),
@@ -657,8 +695,9 @@ reg [23:0] ROM_ADDRr;
 reg RQ_MCU_RDYr;
 initial RQ_MCU_RDYr = 1'b1;
 
-wire MCU_WR_HIT = |(STATE & ST_MCU_WR_ADDR);
-wire MCU_RD_HIT = |(STATE & ST_MCU_RD_ADDR);
+wire MCU_WE_HIT = |(STATE & ST_MCU_WR_ADDR);
+wire MCU_WR_HIT = |(STATE & (ST_MCU_WR_ADDR | ST_MCU_WR_END));
+wire MCU_RD_HIT = |(STATE & (ST_MCU_RD_ADDR | ST_MCU_RD_END));
 wire MCU_HIT = MCU_WR_HIT | MCU_RD_HIT;
 
 // SA1 ROM
@@ -674,8 +713,15 @@ assign SA1_ROM_RDY = RQ_SA1_ROM_RDYr;
 wire SA1_ROM_RD_HIT = |(STATE & ST_SA1_ROM_RD_ADDR);
 wire SA1_ROM_HIT    = SA1_ROM_RD_HIT;
 
+`ifdef MK2
 assign ROM_ADDR  = (SD_DMA_TO_ROM) ? MCU_ADDR[23:1] : SA1_ROM_HIT ? SA1_ROM_ADDRr[23:1] : MCU_HIT ? ROM_ADDRr[23:1] : MAPPED_SNES_ADDR[23:1];
 assign ROM_ADDR0 = (SD_DMA_TO_ROM) ? MCU_ADDR[0]    : SA1_ROM_HIT ? SA1_ROM_ADDRr[0]    : MCU_HIT ? ROM_ADDRr[0]    : MAPPED_SNES_ADDR[0];
+`endif
+`ifdef MK3
+assign ROM_ADDR22 = (SD_DMA_TO_ROM) ? MCU_ADDR[1]    : SA1_ROM_HIT ? SA1_ROM_ADDRr[1]    : MCU_HIT ? ROM_ADDRr[1]    : MAPPED_SNES_ADDR[1];
+assign ROM_ADDR   = (SD_DMA_TO_ROM) ? MCU_ADDR[23:2] : SA1_ROM_HIT ? SA1_ROM_ADDRr[23:2] : MCU_HIT ? ROM_ADDRr[23:2] : MAPPED_SNES_ADDR[23:2];
+assign ROM_ADDR0  = (SD_DMA_TO_ROM) ? MCU_ADDR[0]    : SA1_ROM_HIT ? SA1_ROM_ADDRr[0]    : MCU_HIT ? ROM_ADDRr[0]    : MAPPED_SNES_ADDR[0];
+`endif
 
 reg[17:0] SNES_DEAD_CNTr;
 initial SNES_DEAD_CNTr = 0;
@@ -810,7 +856,7 @@ always @(posedge CLK2) begin
       r2100_forcewrite_pre <= 1'b1;
       r2100r <= {SNES_DATA[7], 3'b010, r2100_bright}; // 0xAx
     end else if (r2100_patch && SNES_DATA == 8'h00 && r2100r[7]) begin
-    // extend forced blanking when game goes from blanking to brightness 0
+    // extend forced blanking when game goes from blanking to brightness 0 (Star Fox top of screen)
       r2100_forcewrite_pre <= 1'b1;
       r2100r <= {1'b1, 3'b111, r2100_bright}; // 0xFx
     end else if (r2100_patch && SNES_DATA[3:0] < 4'h8 && r2100_bright_orig > 4'hd) begin
@@ -858,13 +904,19 @@ assign ROM_WE = SD_DMA_TO_ROM
                 : (ROM_HIT & IS_WRITABLE
                   & ~IS_SAVERAM
                   & SNES_CPU_CLK) ? SNES_WRITE
-                : MCU_WR_HIT ? 1'b0
+                : MCU_WE_HIT ? 1'b0
                 : 1'b1;
 
 // OE always active. Overridden by WE when needed.
 assign ROM_OE = 1'b0;
-
+`ifdef MK2
 assign ROM_CE = 1'b0;
+`endif
+`ifdef MK3
+assign ROM_ZZ = 1'b1;
+assign ROM_1CE = ROM_ADDR22;
+assign ROM_2CE = ~ROM_ADDR22;
+`endif
 
 // force word enable for SA1
 assign ROM_BHE =  ROM_ADDR0 && !(!SD_DMA_TO_ROM && SA1_ROM_HIT && SA1_ROM_WORDr);
@@ -905,8 +957,9 @@ reg [18:0] RAM_ADDRr;
 reg RQ_RAM_MCU_RDYr;
 initial RQ_RAM_MCU_RDYr = 1'b1;
 
-wire MCU_RAM_WR_HIT = |(RAM_STATE & ST_RAM_MCU_WR_ADDR);
-wire MCU_RAM_RD_HIT = |(RAM_STATE & ST_RAM_MCU_RD_ADDR);
+wire MCU_RAM_WE_HIT = |(RAM_STATE & ST_RAM_MCU_WR_ADDR);
+wire MCU_RAM_WR_HIT = |(RAM_STATE & (ST_RAM_MCU_WR_ADDR | ST_RAM_MCU_WR_END));
+wire MCU_RAM_RD_HIT = |(RAM_STATE & (ST_RAM_MCU_RD_ADDR | ST_RAM_MCU_RD_END));
 wire MCU_RAM_HIT = MCU_RAM_WR_HIT | MCU_RAM_RD_HIT;
 
 always @(posedge CLK2) begin
@@ -936,8 +989,9 @@ reg        SA1_RAM_WORDr;
 reg RQ_SA1_RAM_RDYr; initial RQ_SA1_RAM_RDYr = 1;
 assign SA1_RAM_RDY = RQ_SA1_RAM_RDYr;
 
-wire SA1_RAM_WR_HIT = |(RAM_STATE & ST_RAM_SA1_WR_ADDR);
-wire SA1_RAM_RD_HIT = |(RAM_STATE & ST_RAM_SA1_RD_ADDR);
+wire SA1_RAM_WE_HIT = |(RAM_STATE & ST_RAM_SA1_WR_ADDR);
+wire SA1_RAM_WR_HIT = |(RAM_STATE & (ST_RAM_SA1_WR_ADDR | ST_RAM_SA1_WR_END));
+wire SA1_RAM_RD_HIT = |(RAM_STATE & (ST_RAM_SA1_RD_ADDR | ST_RAM_SA1_RD_END));
 wire SA1_RAM_HIT    = SA1_RAM_WR_HIT | SA1_RAM_RD_HIT;
 
 always @(posedge CLK2) begin
@@ -1017,9 +1071,9 @@ assign RAM_DATA[7:0] = ( SA1_RAM_WR_HIT ? SA1_RAM_DATAr[7:0]
                        : 8'bZ
                        );
 
-assign RAM_WE = ( SA1_RAM_WR_HIT ? 1'b0
+assign RAM_WE = ( SA1_RAM_WE_HIT ? 1'b0
                 : (ROM_HIT & IS_SAVERAM & SNES_CPU_CLK) ? SNES_WRITE
-                : MCU_RAM_WR_HIT ? 1'b0
+                : MCU_RAM_WE_HIT ? 1'b0
                 : 1'b1
                 );
 
@@ -1063,8 +1117,11 @@ assign SNES_DATABUS_DIR = (~SNES_READ | (~SNES_PARD & (r213f_enable)))
 
 assign SNES_IRQ = SA1_IRQ;
 
+`ifdef MK2
 assign p113_out = 1'b0;
+`endif
 
+`ifdef MK2
 snescmd_buf snescmd (
   .clka(CLK2), // input clka
   .wea(SNES_WR_end & ((snescmd_unlock | feat_cmd_unlock) & snescmd_enable)), // input [0 : 0] wea
@@ -1077,5 +1134,19 @@ snescmd_buf snescmd (
   .dinb(snescmd_data_out_mcu), // input [7 : 0] dinb
   .doutb(snescmd_data_in_mcu) // output [7 : 0] doutb
 );
+`endif
+`ifdef MK3
+snescmd_buf snescmd (
+  .clock(CLK2), // input clka
+  .wren_a(SNES_WR_end & ((snescmd_unlock | feat_cmd_unlock) & snescmd_enable)), // input [0 : 0] wea
+  .address_a(SNES_ADDR[8:0]), // input [8 : 0] addra
+  .data_a(SNES_DATA), // input [7 : 0] dina
+  .q_a(snescmd_dout), // output [7 : 0] douta
+  .wren_b(snescmd_we_mcu), // input [0 : 0] web
+  .address_b(snescmd_addr_mcu), // input [8 : 0] addrb
+  .data_b(snescmd_data_out_mcu), // input [7 : 0] dinb
+  .q_b(snescmd_data_in_mcu) // output [7 : 0] doutb
+);
+`endif
 
 endmodule
