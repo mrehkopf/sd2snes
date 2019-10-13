@@ -522,6 +522,7 @@ void status_save_from_menu() {
 
    The full sram location is still loaded and saved.  The restricted bounds are only used to detect when to save.
 */
+// FIXME do the CRC in FPGA while loading
 void recalculate_sram_range() {
   if (!sram_crc_valid && sram_valid) {
     printf("calculating rom hash (base=%06lx, size=%ld): ", SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
@@ -548,42 +549,3 @@ void recalculate_sram_range() {
   }
 }
 
-// The goals of this function are the following:
-// - detect a small, fixed set of popular games where the save location is a known, strict subset of sram.
-//   this avoids switching to the periodic save to sd mode.
-// - revert to full sram save if there is any change in the rom.  this includes minor hacks that don't change save location.
-// - not support any user control beyond rom modification.
-//   user control is very error prone: bad crc when rom is modified, incorrect save region definition, etc.
-// - very limited rom hack coverage.  if the hack changes then it will no longer benefit without an updated crc.
-//
-// The full sram location is still loaded and saved.  The restricted bounds are only used to detect when to save.
-// FIXME do the CRC in FPGA while loading
-void recalculate_sram_range() {
-  // FIXME: don't support yet in usb firmware
-  return;
-
-  if (!sram_crc_valid && sram_valid) {
-    // insert arbitrary delay to avoid startup problem in some games
-    delay_ms(2000);
-
-    printf("calculating rom hash (base=%06lx, size=%ld): ", SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
-    // there is a very small chance of collision.  there are several ways to avoid this:
-    // - incorporate (concatenate) checksum16 or other information
-    // - use a better hash function like sha-256
-    uint32_t crc = calc_sram_crc(SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
-    printf("%08lx\n", crc);
-
-    if (crc_valid) {
-      sram_crc_valid = 1;
-
-      for (uint32_t i = 0; i < (sizeof(SramOffsetTable)/sizeof(SramOffset)); i++) {
-        if (crc == SramOffsetTable[i].crc) {
-          romprops.srambase       = SramOffsetTable[i].base;
-          romprops.sramsize_bytes = SramOffsetTable[i].size;
-          printf("rom hash match: base=%lx size=%lx\n", romprops.srambase, romprops.sramsize_bytes);
-          break;
-        }
-      }
-    }
-  }
-}

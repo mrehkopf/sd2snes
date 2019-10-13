@@ -176,11 +176,7 @@ void USB_StatusOutStage (void) {
  *    Return Value:    1 - Success, 0 - Error
  */
 
-#if defined (  __IAR_SYSTEMS_ICC__  )
-inline uint32_t USB_ReqGetStatus (void) {
-#else  
-__inline uint32_t USB_ReqGetStatus (void) {
-#endif
+static inline uint32_t USB_ReqGetStatus (void) {
   uint32_t n, m;
 
   switch (SetupPacket.bmRequestType.BM.Recipient) {
@@ -223,11 +219,7 @@ __inline uint32_t USB_ReqGetStatus (void) {
  *    Return Value:    1 - Success, 0 - Error
  */
 
-#if defined (  __IAR_SYSTEMS_ICC__  )
-inline uint32_t USB_ReqSetClrFeature (uint32_t sc) {
-#else
-__inline uint32_t USB_ReqSetClrFeature (uint32_t sc) {
-#endif
+static inline uint32_t USB_ReqSetClrFeature (uint32_t sc) {
   uint32_t n, m;
 
   switch (SetupPacket.bmRequestType.BM.Recipient) {
@@ -289,11 +281,7 @@ __inline uint32_t USB_ReqSetClrFeature (uint32_t sc) {
  *    Return Value:    1 - Success, 0 - Error
  */
 
-#if defined (  __IAR_SYSTEMS_ICC__  )
-inline uint32_t USB_ReqSetAddress (void) {
-#else
-__inline uint32_t USB_ReqSetAddress (void) {
-#endif
+static inline uint32_t USB_ReqSetAddress (void) {
   switch (SetupPacket.bmRequestType.BM.Recipient) {
     case REQUEST_TO_DEVICE:
       USB_DeviceAddress = 0x80 | SetupPacket.wValue.WB.L;
@@ -311,11 +299,7 @@ __inline uint32_t USB_ReqSetAddress (void) {
  *    Return Value:    1 - Success, 0 - Error
  */
 
-#if defined (  __IAR_SYSTEMS_ICC__  )
-inline uint32_t USB_ReqGetDescriptor (void) {
-#else
-__inline uint32_t USB_ReqGetDescriptor (void) {
-#endif
+static inline uint32_t USB_ReqGetDescriptor (void) {
   uint8_t  *pD;
   uint32_t len, n;
 
@@ -398,11 +382,7 @@ __inline uint32_t USB_ReqGetDescriptor (void) {
  *    Return Value:    1 - Success, 0 - Error
  */
 
-#if defined (  __IAR_SYSTEMS_ICC__  )
-inline uint32_t USB_ReqGetConfiguration (void) {
-#else
-__inline uint32_t USB_ReqGetConfiguration (void) {
-#endif
+static inline uint32_t USB_ReqGetConfiguration (void) {
   switch (SetupPacket.bmRequestType.BM.Recipient) {
     case REQUEST_TO_DEVICE:
       //EP0Data.pData = &USB_Configuration;
@@ -421,11 +401,7 @@ __inline uint32_t USB_ReqGetConfiguration (void) {
  *    Return Value:    1 - Success, 0 - Error
  */
 
-#if defined (  __IAR_SYSTEMS_ICC__  )
-inline uint32_t USB_ReqSetConfiguration (void) {
-#else
-__inline uint32_t USB_ReqSetConfiguration (void) {
-#endif
+static inline uint32_t USB_ReqSetConfiguration (void) {
   USB_COMMON_DESCRIPTOR *pD;
   uint32_t alt = 0;
   uint32_t n, m;
@@ -527,11 +503,7 @@ __inline uint32_t USB_ReqSetConfiguration (void) {
  *    Return Value:    1 - Success, 0 - Error
  */
 
-#if defined (  __IAR_SYSTEMS_ICC__  )
-inline uint32_t USB_ReqGetInterface (void) {
-#else
-__inline uint32_t USB_ReqGetInterface (void) {
-#endif
+static inline uint32_t USB_ReqGetInterface (void) {
   switch (SetupPacket.bmRequestType.BM.Recipient) {
     case REQUEST_TO_INTERFACE:
       if ((USB_Configuration != 0) && (SetupPacket.wIndex.WB.L < USB_NumInterfaces)) {
@@ -552,11 +524,7 @@ __inline uint32_t USB_ReqGetInterface (void) {
  *    Parameters:      None (global SetupPacket)
  *    Return Value:    1 - Success, 0 - Error
  */
-#if defined (  __IAR_SYSTEMS_ICC__  )
-inline uint32_t USB_ReqSetInterface (void) {
-#else
-__inline uint32_t USB_ReqSetInterface (void) {
-#endif
+static inline uint32_t USB_ReqSetInterface (void) {
   USB_COMMON_DESCRIPTOR *pD;
   uint32_t ifn = 0, alt = 0, old = 0, msk = 0;
   uint32_t n, m;
