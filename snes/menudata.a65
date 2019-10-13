@@ -434,6 +434,51 @@ menu_enttab_ingame:
  .byt  ^(mfunc_isenabled_hooks-1)
 
  .byt  MTYPE_VALUE
+ .word !mtext_ingame_savestate
+ .byt  ^mtext_ingame_savestate
+ .word !kv_savestates
+ .byt  ^kv_savestates
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_ENABLE_INGAME_SAVESTATE
+ .byt  ^CFG_ENABLE_INGAME_SAVESTATE
+ .word !mdesc_ingame_savestate
+ .byt  ^mdesc_ingame_savestate
+ .byt  0,0,0
+ .byt  0,0,0
+ .word !(mfunc_isenabled_hooks-1)
+ .byt  ^(mfunc_isenabled_hooks-1)
+
+ .byt  MTYPE_VALUE
+ .word !mtext_savestate_slots
+ .byt  ^mtext_savestate_slots
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_ENABLE_SAVESTATE_SLOTS
+ .byt  ^CFG_ENABLE_SAVESTATE_SLOTS
+ .word !mdesc_savestate_slots
+ .byt  ^mdesc_savestate_slots
+ .byt  0,0,0
+ .byt  0,0,0
+ .word !(mfunc_isenabled_savestate-1)
+ .byt  ^(mfunc_isenabled_savestate-1)
+
+ .byt  MTYPE_VALUE
+ .word !mtext_loadstate_delay
+ .byt  ^mtext_loadstate_delay
+ .word !opt_0_to_30
+ .byt  ^opt_0_to_30
+ .byt  OPTTYPE_BYTE
+ .word !CFG_LOADSTATE_DELAY
+ .byt  ^CFG_LOADSTATE_DELAY
+ .word !mdesc_loadstate_delay
+ .byt  ^mdesc_loadstate_delay
+ .byt  0,0,0
+ .byt  0,0,0
+ .word !(mfunc_isenabled_savestate-1)
+ .byt  ^(mfunc_isenabled_savestate-1)
+
+ .byt  MTYPE_VALUE
  .word !mtext_ingame_regionpatch
  .byt  ^mtext_ingame_regionpatch
  .word !kv_onoff
@@ -570,6 +615,14 @@ mfunc_isenabled_hooks:
   ror
   rtl
 
+mfunc_isenabled_savestate:
+  lda @CFG_ENABLE_INGAME_SAVESTATE
+  bne +
+  sec
+  rtl
++ clc
+  rtl
+
 mfunc_isenabled_scic:
   lda @CFG_PAIR_MODE_ALLOWED
   and @ST_PAIRMODE
@@ -685,6 +738,15 @@ kv_led_bright:
 .word $000e, !text_14 : .byt ^text_14
 .word $000f, !text_15_max : .byt ^text_15_max
 .word $ffff
+
+kv_savestates:
+.word $0000, !text_off : .byt ^text_off
+.word $0001, !text_on_p1 : .byt ^text_on_p1
+.word $0002, !text_on_p2 : .byt ^text_on_p2
+.word $ffff
+
+opt_0_to_30:
+.word $0000, $001E
 
 menu_enttab_test:
 ; HEADER
