@@ -46,9 +46,12 @@
 #define SNES_CMD_ENABLE_CHEATS      (0x82)
 #define SNES_CMD_DISABLE_CHEATS     (0x83)
 #define SNES_CMD_KILL_NMIHOOK       (0x84)
-#define SNES_CMD_RESET_LOOP_FAIL    (0x85)
-#define SNES_CMD_RESET_LOOP_PASS    (0x86)
-#define SNES_CMD_RESET_LOOP_TIMEOUT (0x87)
+#define SNES_CMD_TEMP_KILL_NMIHOOK  (0x85)
+#define SNES_CMD_RESET_LOOP_FAIL    (0x90)
+#define SNES_CMD_RESET_LOOP_PASS    (0x91)
+#define SNES_CMD_RESET_LOOP_TIMEOUT (0x92)
+#define SNES_CMD_SAVESTATE          (0x40)
+#define SNES_CMD_LOADSTATE          (0x41)
 #define SNES_CMD_GAMELOOP           (0xff)
 
 #define MCU_CMD_RDY                 (0x55)
@@ -82,6 +85,7 @@
 #define SNESCMD_NMI_ENABLE_BUTTONS   (0x2bfc)
 #define SNESCMD_NMI_DISABLE_WRAM     (0x2bfe)
 #define SNESCMD_NMI_WRAM_PATCH_COUNT (0x2bff)
+#define SNESCMD_EXE                  (0x2c00)
 
 #define ASM_LDA_IMM      (0xa9)
 #define ASM_STA_ABSLONG  (0x8f)
@@ -131,10 +135,11 @@ void echo_mcu_cmd(void);
 uint32_t snes_get_mcu_param(void);
 void snescmd_writeshort(uint16_t val, uint16_t addr);
 void snescmd_writebyte(uint8_t val, uint16_t addr);
-void snescmd_writeblock(void *buf, uint16_t addr, uint16_t size);
+uint16_t snescmd_writeblock(void *buf, uint16_t addr, uint16_t size);
 uint16_t snescmd_readshort(uint16_t addr);
 uint8_t snescmd_readbyte(uint16_t addr);
 uint32_t snescmd_readlong(uint16_t addr);
+uint16_t snescmd_readblock(void *buf, uint16_t addr, uint16_t size);
 uint64_t snescmd_gettime(void);
 uint16_t snescmd_readstrn(void *buf, uint16_t addr, uint16_t size);
 void snescmd_prepare_nmihook(void);

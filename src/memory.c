@@ -48,6 +48,7 @@ memory.c: RAM operations
 #include "cli.h"
 #include "cheat.h"
 #include "rtc.h"
+#include "savestate.h"
 
 #include <string.h>
 char* hex = "0123456789ABCDEF";
@@ -160,7 +161,7 @@ void sram_readlongblock(uint32_t* buf, uint32_t addr, uint16_t count) {
   FPGA_DESELECT();
 }
 
-void sram_readblock(void* buf, uint32_t addr, uint16_t size) {
+uint16_t sram_readblock(void* buf, uint32_t addr, uint16_t size) {
   uint16_t count=size;
   uint8_t* tgt = buf;
   set_mcu_addr(addr);
@@ -171,6 +172,7 @@ void sram_readblock(void* buf, uint32_t addr, uint16_t size) {
     *(tgt++) = FPGA_RX_BYTE();
   }
   FPGA_DESELECT();
+  return size;
 }
 
 uint16_t sram_readstrn(void* buf, uint32_t addr, uint16_t size) {
@@ -213,7 +215,7 @@ uint16_t sram_writestrn(void* buf, uint32_t addr, uint16_t size) {
   return elemcount;
 }
 
-void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
+uint16_t sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
   uint16_t count = size;
   uint8_t* src = buf;
   set_mcu_addr(addr);
@@ -224,14 +226,34 @@ void sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
     FPGA_WAIT_RDY();
   }
   FPGA_DESELECT();
+  return size;
 }
 
+uint32_t sram_writeset(uint8_t val, uint32_t addr, uint32_t size) {
+  uint32_t count = size;
+  set_mcu_addr(addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0x98);   /* WRITE */
+  while(count--) {
+    FPGA_TX_BYTE(val);
+    FPGA_WAIT_RDY();
+  }
+  FPGA_DESELECT();
+  return size;
+}
+
+char current_filename[258];
 uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   UINT bytes_read;
   DWORD filesize;
   UINT count=0;
+  UINT is_menu = filename == (uint8_t*)"/sd2snes/menu.bin";
   tick_t ticksstart, ticks_total=0;
   ticksstart=getticks();
+
+  // copy the full name and path
+  strncpy(current_filename, (char *)filename, sizeof(current_filename)-1);
+  
   printf("%s\n", filename);
   file_open(filename, FA_READ);
   if(file_res) {
@@ -244,18 +266,27 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   file_close();
 
   uint16_t fpga_features_preload = romprops.fpga_features | FEAT_CMD_UNLOCK | FEAT_2100_LIMIT_NONE;
-  if(filename == (uint8_t*)MENU_FILENAME) {
+  if(is_menu) {
+    printf("Setting menu features...");
     fpga_set_features(fpga_features_preload);
+    printf("OK.\n");
   }
   /* TODO check prerequisites and set error code here */
-  if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x55);
+  if(flags & LOADROM_WAIT_SNES) {
+    printf("Setting cmd=0x55...");
+    snes_set_snes_cmd(0x55);
+    printf("OK.\n");
+  }
   /* reconfigure FPGA if necessary */
   if(flags & LOADROM_WAIT_SNES) {
+    printf("Checking if ok to reconfigure...");
     while(snes_get_mcu_cmd() != SNES_CMD_FPGA_RECONF);
+    printf("OK.\n");
   }
-  if(romprops.fpga_conf) {
-    printf("reconfigure FPGA with %s...\n", romprops.fpga_conf);
-    fpga_pgm((uint8_t*)romprops.fpga_conf);
+  if(romprops.fpga_conf || (flags & LOADROM_WITH_FPGA)) {
+    const uint8_t *fpga_conf = romprops.fpga_conf ? romprops.fpga_conf : FPGA_BASE;
+    printf("reconfigure FPGA with %s...\n", fpga_conf);
+    fpga_pgm((uint8_t*)fpga_conf);
     fpga_set_features(fpga_features_preload);
   }
   if(flags & LOADROM_WAIT_SNES) snes_set_snes_cmd(0x77);
@@ -364,7 +395,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   printf("done\n");
 
-  if(cfg_is_r213f_override_enabled() && (filename != (uint8_t*)MENU_FILENAME) && !STS.is_u16) {
+  if(cfg_is_r213f_override_enabled() && !is_menu && !STS.is_u16) {
     romprops.fpga_features |= FEAT_213F; /* e.g. for general consoles */
   }
   fpga_set_213f(romprops.region);
@@ -401,29 +432,15 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
 
   set_mapper(romprops.mapper_id);
 
+  // loading a new rom implies the previous crc is no longer valid
+  sram_crc_valid = 0;
+  sram_crc_romsize = filesize - romprops.offset;
+
 //printf("%04lx\n", romprops.header_address + ((void*)&romprops.header.vect_irq16 - (void*)&romprops.header));
   if(flags & (LOADROM_WITH_RESET|LOADROM_WAIT_SNES)) {
-    printf("resetting SNES\n");
-    fpga_dspx_reset(1);
-    snes_reset(1);
-    if(STS.is_u16 && (STS.u16_cfg & 0x01)) {
-      delay_ms(60*SNES_RESET_PULSELEN_MS);
-    } else {
-      delay_ms(SNES_RESET_PULSELEN_MS);
-    }
-    snescmd_prepare_nmihook();
-    if (CFG.reset_patch) snescmd_writebyte(0, SNESCMD_RESET_HOOK+1);
-    cheat_yaml_load(filename);
-// XXX    cheat_yaml_save(filename);
-    cheat_program();
-    fpga_set_features(romprops.fpga_features);
-    fpga_reset_srtc_state();
-    snes_set_mcu_cmd(0);
-    snes_reset(0);
-    fpga_dspx_reset(0);
-
-    // handle reset loop from hook
-    snes_reset_loop();
+    assert_reset();
+    init(filename);
+    deassert_reset();
   }
 
   // loading a new rom implies the previous crc is no longer valid
@@ -431,6 +448,38 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   sram_crc_romsize = filesize - romprops.offset;
 
   return (uint32_t)filesize;
+}
+
+void assert_reset() {
+  printf("resetting SNES\n");
+  fpga_dspx_reset(1);
+  snes_reset(1);
+
+  if(STS.is_u16 && (STS.u16_cfg & 0x01)) {
+    delay_ms(60*SNES_RESET_PULSELEN_MS);
+  } else {
+    delay_ms(SNES_RESET_PULSELEN_MS);
+  }
+}
+
+void init(uint8_t *filename) {
+  snescmd_prepare_nmihook();
+  //if (CFG.reset_patch) snescmd_writebyte(0, SNESCMD_RESET_HOOK+1);
+  cheat_yaml_load(filename);
+// XXX    cheat_yaml_save(filename);
+  cheat_program();
+  savestate_program();
+  fpga_set_features(romprops.fpga_features);
+  snes_set_mcu_cmd(0);
+  // init save state region - VRAM, APURAM, CGRAM, OAM only
+  sram_writeset(0x0, 0xF70000, 0x30000);
+}
+
+void deassert_reset() {
+  snes_reset(0);
+  fpga_dspx_reset(0);
+  // handle reset loop from hook
+  snes_reset_loop();
 }
 
 uint32_t load_spc(uint8_t* filename, uint32_t spc_data_addr, uint32_t spc_header_addr) {

@@ -27,6 +27,14 @@
 #include "rtc.h"
 #include "sysinfo.h"
 #include "cfg.h"
+#include "savestate.h"
+
+//usb
+#include "usb.h"
+#include "usbhw.h"
+#include "cdcuser.h"
+#include "usbinterface.h"
+
 
 int i;
 
@@ -94,11 +102,17 @@ int main(void) {
   fpga_spi_init();
   spi_preinit();
   led_init();
+  // USB initialization
+  USB_Init ();
+  CDC_Init (0x00);
  /* do this last because the peripheral init()s change PCLK dividers */
   clock_init();
   FPGA_CLK_PINSEL |= BV(FPGA_CLK_PINSELBIT) | BV(FPGA_CLK_PINSELBIT - 1); /* MAT3.x (FPGA clock) */
   led_std();
   sdn_init();
+  //usb
+  USB_Connect (0x01);
+
   printf("\n\n" DEVICE_NAME "\n===============\nfw ver.: " CONFIG_VERSION "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
 printf("PCONP=%lx\n", LPC_SC->PCONP);
 
@@ -353,11 +367,20 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 
     cmd=0;
     int loop_ticks = getticks();
+    uint8_t usb_cmd = 0;
 // uint8_t snes_res;
     while(fpga_test() == FPGA_TEST_TOKEN) {
       cli_entrycheck();
+      //usb upload/boot/lock  
+      usb_cmd |= usbint_handler();
+      if (usb_cmd == SNES_CMD_GAMELOOP) usb_cmd = 0;
+
 //        sleep_ms(250);
       sram_reliable();
+      
+      // loop if we are in the middle of a reset
+      if (usbint_server_reset()) continue;
+      
       if(reset_changed) {
         printf("reset\n");
         reset_changed = 0;
@@ -373,17 +396,30 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
  //         sram_reliable();
           printf("%s ", get_cic_statename(get_cic_state()));
           cmd=snes_main_loop();
+          if (usb_cmd && !cmd) cmd = usb_cmd;
           if(cmd) {
+            printf("snes loop cmd=%d\n", cmd);
             switch(cmd) {
               case SNES_CMD_RESET_LOOP_FAIL:
+                usb_cmd = 0;
                 snes_reset_loop();
                 break;
               case SNES_CMD_RESET:
+                usb_cmd = 0;
                 snes_reset_pulse();
                 break;
               case SNES_CMD_RESET_TO_MENU:
+                usb_cmd = 0;
                 prepare_reset();
                 goto snes_loop_out;
+              case SNES_CMD_SAVESTATE:
+                usb_cmd = 0;
+                save_backup_state(snes_get_mcu_param());
+                break;
+              case SNES_CMD_LOADSTATE:
+                usb_cmd = 0;
+                load_backup_state(snes_get_mcu_param());
+                break;
               default:
                 printf("unknown cmd: %02x\n", cmd);
                 break;

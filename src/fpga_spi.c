@@ -314,6 +314,17 @@ uint16_t get_msu_track() {
   return result;
 }
 
+uint32_t get_msu_pointer() {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_MSUGETSCADDR);
+  uint32_t result = (FPGA_RX_BYTE()) << 24;
+  result |= (FPGA_RX_BYTE()) << 16;
+  result |= (FPGA_RX_BYTE()) <<  8;
+  result |= (FPGA_RX_BYTE()) <<  0;
+  FPGA_DESELECT();
+  return result;
+}
+
 uint32_t get_msu_offset() {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_MSUGETADDR);
@@ -411,6 +422,7 @@ void fpga_set_dac_boost(uint8_t boost) {
   FPGA_DESELECT();
 }
 
+uint16_t current_features;
 void fpga_set_features(uint16_t feat) {
   printf("set features: %04x\n", feat);
   FPGA_SELECT();
@@ -418,6 +430,7 @@ void fpga_set_features(uint16_t feat) {
   FPGA_TX_BYTE((feat >> 8) & 0xff);
   FPGA_TX_BYTE((feat) & 0xff);
   FPGA_DESELECT();
+  current_features = feat;
 }
 
 void fpga_set_213f(uint8_t data) {
@@ -470,5 +483,37 @@ void fpga_set_dspfeat(uint16_t feat) {
   FPGA_TX_BYTE(FPGA_CMD_DSPFEAT);
   FPGA_TX_BYTE(feat >> 8);
   FPGA_TX_BYTE(feat & 0xff);
+  FPGA_DESELECT();
+}
+
+//void set_usb_status(uint16_t status) {
+//  FPGA_SELECT();
+//  FPGA_TX_BYTE(FPGA_CMD_USBSETBITS);
+//  FPGA_TX_BYTE(status & 0xff);
+//  FPGA_TX_BYTE((status >> 8) & 0xff);
+//  FPGA_TX_BYTE(0x00); /* latch reset */
+//  FPGA_DESELECT();
+//}
+
+uint8_t fpga_read_config(uint8_t group, uint8_t index) {
+  uint8_t data;
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_CONFIG_READ);
+  FPGA_TX_BYTE(group);
+  FPGA_TX_BYTE(index);
+  FPGA_RX_BYTE(); // null read to create delay
+  data = FPGA_RX_BYTE();
+  FPGA_DESELECT();
+  return data;
+}
+
+void fpga_write_config(uint8_t group, uint8_t index, uint8_t value, uint8_t invmask) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_CONFIG_WRITE);
+  FPGA_TX_BYTE(group);
+  FPGA_TX_BYTE(index);
+  FPGA_TX_BYTE(value);
+  FPGA_TX_BYTE(invmask);
+  FPGA_TX_BYTE(0x00); // flop reset
   FPGA_DESELECT();
 }

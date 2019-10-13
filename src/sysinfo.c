@@ -14,6 +14,7 @@
 #include "cic.h"
 #include "sdnative.h"
 #include "sysinfo.h"
+#include "usbinterface.h"
 
 extern snes_status_t STS;
 
@@ -27,6 +28,7 @@ void sysinfo_loop() {
   while(snes_get_mcu_cmd() == SNES_CMD_SYSINFO) {
     sd_measured = write_sysinfo(sd_measured);
     delay_ms(100);
+    usbint_handler();
   }
   echo_mcu_cmd();
 }
@@ -61,7 +63,7 @@ int write_sysinfo(int sd_measured) {
   sram_addr += 40;
   sram_memset(sram_addr, 40, 0x20);
   sram_addr += 40;
-  if(disk_state == DISK_REMOVED) {
+  if(disk_state == DISK_REMOVED || usbint_server_busy()) {
     sd_measured = 0;
     sd_tacc_max = 0;
     sd_tacc_avg = 0;
@@ -69,7 +71,7 @@ int write_sysinfo(int sd_measured) {
     sram_addr += 40;
     sram_memset(sram_addr, 40, 0x20);
     sram_addr += 40;
-    sram_writestrn("         *** SD Card removed ***        ", sram_addr, 40);
+    sram_writestrn("    *** SD Card removed/USB busy ***    ", sram_addr, 40);
     sram_addr += 40;
     sram_memset(sram_addr, 40, 0x20);
     sram_addr += 40;
@@ -132,7 +134,7 @@ int write_sysinfo(int sd_measured) {
   sram_hexdump(SRAM_SYSINFO_ADDR, 13*40);
   if(sysclk != -1 && sd_ok && !sd_measured){
     sdn_gettacc(&sd_tacc_max, &sd_tacc_avg);
-    sd_measured = 1;
+    if (sd_tacc_max && sd_tacc_avg) sd_measured = 1;
   }
   return sd_measured;
 }
