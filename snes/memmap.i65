@@ -55,12 +55,14 @@
 #define SYSINFO_BLK                 $FF1200
 #define LAST_GAME                   $FF1420
 #define WRAM_BAK                    $FF2000
+#define FAVORITE_GAMES              $FF4000
 
 #define CMD_LOADROM                 $01 /* shortcut - load ROM with default settings */
 #define CMD_SETRTC                  $02
 #define CMD_SYSINFO                 $03
 #define CMD_LOADLAST                $04
 #define CMD_LOADSPC                 $05
+#define CMD_LOADFAVORITE            $06
 #define CMD_SET_ALLOW_PAIR          $07
 #define CMD_SET_VIDMODE_GAME        $08
 #define CMD_SET_VIDMODE_MENU        $09
@@ -73,6 +75,8 @@
 #define CMD_SELECTROM               $10
 #define CMD_RUNROM                  $11 /* ROM must first be selected by SELECTROM */
 #define CMD_LED_BRIGHTNESS          $12
+#define CMD_ADD_FAVORITE_ROM        $13
+#define CMD_REMOVE_FAVORITE_ROM     $14
 #define CMD_MCU_RDY                 $55
 #define CMD_RESET                   $80
 #define CMD_RESET_TO_MENU           $81
@@ -111,6 +115,7 @@
 #define ST_RTC_VALID                ST_MCU_ADDR+$0000
 #define ST_NUM_RECENT_GAMES         ST_MCU_ADDR+$0001
 #define ST_PAIRMODE                 ST_MCU_ADDR+$0002
+#define ST_NUM_FAVORITE_GAMES       ST_MCU_ADDR+$0003
 
 #define ST_IS_U16                   ST_SNES_ADDR+$0000
 #define ST_U16_CFG                  ST_SNES_ADDR+$0001
@@ -119,6 +124,7 @@
 #define MTYPE_FUNC                  $01
 #define MTYPE_SUBMENU               $02
 #define MTYPE_VALUE                 $03
+#define MTYPE_FUNC_CLOSE            $04
 
 #define OPTTYPE_NONE                $00
 #define OPTTYPE_BYTE                $01

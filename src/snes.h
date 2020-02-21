@@ -32,6 +32,7 @@
 #define SNES_CMD_SYSINFO            (0x03)
 #define SNES_CMD_LOADLAST           (0x04)
 #define SNES_CMD_LOADSPC            (0x05)
+#define SNES_CMD_LOADFAVORITE       (0x06)
 #define SNES_CMD_SET_ALLOW_PAIR     (0x07)
 #define SNES_CMD_SET_VIDMODE_GAME   (0x08)
 #define SNES_CMD_SET_VIDMODE_MENU   (0x09)
@@ -41,6 +42,8 @@
 #define SNES_CMD_SAVE_CHT           (0x0d)
 #define SNES_CMD_SAVE_CFG           (0x0e)
 #define SNES_CMD_LED_BRIGHTNESS     (0x12)
+#define SNES_CMD_ADD_FAVORITE_ROM   (0x13)
+#define SNES_CMD_REMOVE_FAVORITE_ROM (0x14)
 #define SNES_CMD_RESET              (0x80)
 #define SNES_CMD_RESET_TO_MENU      (0x81)
 #define SNES_CMD_ENABLE_CHEATS      (0x82)
@@ -100,6 +103,7 @@ typedef struct __attribute__ ((__packed__)) _mcu_status {
   uint8_t rtc_valid;
   uint8_t num_recent_games;
   uint8_t pairmode;
+  uint8_t num_favorite_games;
 } mcu_status_t;
 
 typedef struct __attribute__ ((__packed__)) _snes_status {
