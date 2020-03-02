@@ -188,6 +188,7 @@ last_win_w      .byt 60
 text_ellipse                      .byt 127, 128, 0
 text_mm_file                      .byt "File Browser", 0
 text_mm_last                      .byt "Recent games", 0
+text_mm_favorites                 .byt "Favorite games", 0
 mtext_mm_cfg                      .byt "Configuration", 0
 mtext_mm_sysinfo                  .byt "System Information", 0
 mtext_cfg_time                    .byt "Set Clock", 0
@@ -220,6 +221,7 @@ mtext_chip_gsu_speed              .byt "SuperFX speed", 0
 mtext_chip_msu1_volume_boost      .byt "MSU-1 volume boost", 0
 
 mdesc_mm_last                     .byt "Show up to 10 most recently played games", 0
+mdesc_mm_favorites                .byt "Show up to 10 favorite games", 0
 mdesc_mm_cfg                      .byt "Configure the sd2snes", 0
 mdesc_mm_sysinfo                  .byt "Info about FW version, SD Card, SNES, CIC", 127, 128, 0
 mdesc_cfg_time                    .byt "Set the date and time", 0
@@ -255,10 +257,18 @@ mdesc_cx4_speed_normal            .byt "Run at approx. original speed", 0
 mdesc_gsu_speed_fast              .byt "Run as fast as possible", 0
 mdesc_gsu_speed_normal            .byt "Run at approx. original speed", 0
 
-text_statusbar_keys .byt "A:Select B:Back X:Menu", 0
+text_filesel_selected_file .byt "Selected file", 0
+text_filesel_context_add_to_favorites .byt "Add to favorites", 0
+mdesc_filesel_context_add_to_favorites .byt "Add the selected file to favorites", 0
+
+text_filesel_favorites_context_remove_from_favorites .byt "Remove from favorites", 0
+mdesc_filesel_favorites_context_remove_from_favorites .byt "Remove the selected file from favorites", 0
+
+text_statusbar_keys .byt "A:Select B:Back X:Menu Y:Context", 0
 text_statusbar_spc  .byt "B:Back", 0
 text_statusbar_menu .byt "A:Select B:Back", 0
 text_last           .byt "Recent games", 0
+text_favorite       .byt "Favorite games", 0
 text_system         .byt "CPU/PPU1/PPU2: a/b/c        VMode: x0Hz",0
 
 text_on         .byt "On", 0
