@@ -177,3 +177,35 @@ void testbattery() {
   delay_ms(20);
   LPC_RTC->CCR = BV(CLKEN);
 }
+
+void time2gtime(struct gtm *gtime, struct tm *time) {
+  gtime->gtm_sec  = time->tm_sec;
+  gtime->gtm_min  = time->tm_min;
+  gtime->gtm_hour = time->tm_hour;
+
+  /* compute a day count from some fixed date */
+  /* see http://howardhinnant.github.io/date_algorithms.html */
+  int32_t year = time->tm_year;
+  uint32_t mon = time->tm_mon;
+  uint32_t day = time->tm_mday; // already starts at 1
+  if (mon <= 2) year--;
+  int32_t era = (year >= 0 ? year : year - 399) / 400;
+  uint32_t yoe = (uint32_t)(year - era * 400);
+  uint32_t doy = (153 * (mon + (mon > 2 ? -3 : 9)) + 2) / 5 + day - 1;
+  uint32_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+  
+  // force a positive value by making start of era -1 (-0400/03/01 y/m/d) a value of 0
+  gtime->gtm_days = (uint32_t)((era + 1) * 146097 + (int32_t)doe);
+}
+
+uint8_t get_deltagtime(struct gtm *time1, struct gtm *time2) {
+  uint8_t borrow = 0;
+  
+  time1->gtm_sec  -= borrow; borrow = (time1->gtm_sec  < time2->gtm_sec ) ? 1 : 0; time1->gtm_sec  = time1->gtm_sec  + (borrow ? 60 : 0) - time2->gtm_sec;
+  time1->gtm_min  -= borrow; borrow = (time1->gtm_min  < time2->gtm_min ) ? 1 : 0; time1->gtm_min  = time1->gtm_min  + (borrow ? 60 : 0) - time2->gtm_min;
+  time1->gtm_hour -= borrow; borrow = (time1->gtm_hour < time2->gtm_hour) ? 1 : 0; time1->gtm_hour = time1->gtm_hour + (borrow ? 24 : 0) - time2->gtm_hour;
+  time1->gtm_days -= borrow; borrow = (time1->gtm_days < time2->gtm_days) ? 1 : 0; time1->gtm_days = time1->gtm_days + 0                 - time2->gtm_days;
+  
+  // borrowing a day signifies underflow and the delta is not valid
+  return borrow;
+}

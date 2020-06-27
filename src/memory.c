@@ -48,11 +48,13 @@ memory.c: RAM operations
 #include "cli.h"
 #include "cheat.h"
 #include "rtc.h"
+#include "sgb.h"
 
 #include <string.h>
 char* hex = "0123456789ABCDEF";
 
 extern snes_romprops_t romprops;
+extern sgb_romprops_t sgb_romprops;
 extern uint32_t saveram_crc_old;
 extern uint8_t sram_crc_valid;
 extern uint32_t sram_crc_romsize;
@@ -239,9 +241,18 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     uart_putc(0x30+file_res);
     return 0;
   }
+  /* SGB detect and file management */
+  uint8_t *sgb_filename = filename;
+  DWORD sgb_filesize = file_handle.fsize;
+  sgb_id(&sgb_romprops, sgb_filename);
+  if (!sgb_update_file(&filename)) return 0;
+  
   filesize = file_handle.fsize;
   smc_id(&romprops);
   file_close();
+
+  /* SGB assign the SGB FPGA file and relocate the snes image to the 512KB RAM */
+  if (!sgb_update_romprops(&romprops, sgb_filename)) return 0;
 
   uint16_t fpga_features_preload = romprops.fpga_features | FEAT_CMD_UNLOCK | FEAT_2100_LIMIT_NONE;
   if(filename == (uint8_t*)MENU_FILENAME) {
@@ -336,6 +347,31 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     rammask = romprops.ramsize_bytes - 1;
   }
   rommask = romprops.romsize_bytes - 1;
+
+  /* SGB send the GB file and boot ROM.  Also update the SaveRAM properties */
+  if (sgb_romprops.has_sgb) {
+    /* reset the filename to match the GB file */
+    filename = sgb_filename;
+    filesize = sgb_filesize;
+
+    /* update SaveRAM */
+    romprops.ramsize_bytes = (CFG.sgb_enable_state && sgb_romprops.ramsize_bytes <= 64 * 1024) ? (128 * 1024) : sgb_romprops.ramsize_bytes;
+    romprops.srambase = sgb_romprops.srambase;
+    romprops.sramsize_bytes = (CFG.sgb_enable_state && sgb_romprops.ramsize_bytes <= 64 * 1024) ? (128 * 1024) : sgb_romprops.sramsize_bytes;
+
+    rammask = sgb_romprops.ramsize_bytes ? (sgb_romprops.ramsize_bytes - 1) : 0;
+    rommask = sgb_romprops.romsize_bytes ? (sgb_romprops.romsize_bytes - 1) : 0;
+
+    /* load images */
+    printf("attempting to load SGB boot ROM %s...\n", SGBFW);
+    load_sram_offload((uint8_t *)SGBFW, 0x800000, 0);
+    printf("attempting to load GB ROM %s...\n", sgb_filename);
+    load_sram_offload(sgb_filename, 0x0, 0);    
+
+    /* load GB RTC */
+    sgb_gtc_load(sgb_filename);
+  }
+
   printf("ramsize=%x rammask=%lx\nromsize=%x rommask=%lx\n", romprops.header.ramsize, rammask, romprops.header.romsize, rommask);
   set_saveram_mask(rammask);
   set_rom_mask(rommask);
@@ -399,7 +435,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     while(snes_get_mcu_cmd() != SNES_CMD_RESET) cli_entrycheck();
   }
 
-  set_mapper(romprops.mapper_id);
+  set_mapper(sgb_romprops.has_sgb ? sgb_romprops.mapper_id : romprops.mapper_id);
 
 //printf("%04lx\n", romprops.header_address + ((void*)&romprops.header.vect_irq16 - (void*)&romprops.header));
   if(flags & (LOADROM_WITH_RESET|LOADROM_WAIT_SNES)) {

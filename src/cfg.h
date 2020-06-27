@@ -31,6 +31,8 @@
 #define CFG_LED_BRIGHTNESS        ("LEDBrightness")
 #define CFG_ENABLE_CHEATS         ("EnableCheats")
 #define CFG_RESET_PATCH           ("ResetPatch")
+#define CFG_SGB_ENABLE_STATE      ("SGBEnableState")
+#define CFG_SGB_BIOS_OVERRIDE     ("SGBBiosOverride")
 
 typedef enum {
   VIDMODE_60 = 0,
@@ -63,6 +65,8 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t  led_brightness;          /* LED brightness (0..15) */
   uint8_t  enable_cheats;           /* initial cheat enable state */
   uint8_t  reset_patch;             /* enable reset patch */
+  uint8_t  sgb_enable_state;        /* enable SGB save states if present */
+  uint8_t  sgb_bios_override;       /* override the bios checks when enabling features */
 } cfg_t;
 
 int cfg_save(void);
