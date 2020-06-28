@@ -268,12 +268,19 @@ reg         cpu_ireset_r; always @(posedge CLK) cpu_ireset_r <= RST | CPU_RST | 
 // will spill into the first free slot, but that will just remove that slot for MCU use.
 
 // The delay needs to match the mct request pipe to the system:
-// -1 - CLK_CPU_EDGE 
-//  0 - BIU request
-//  1 - BIU decode
-//  2 - BIU mct_req_r/SYS_REQ
+// -1 - CLK_BUS_EDGE 
+//  0 - MCT request             dma_req_r SYS/REQ
+//  1 - MCT decode              ReqPendr
+//  2 - MCT mct_req_r/SYS_REQ
 //  3 - ReqPendr
-reg  [3:0]  cpu_free_slot_r; always @(posedge CLK) cpu_free_slot_r <= {cpu_free_slot_r[2:0],(CLK_CPU_EDGE & ~CLK_BUS_EDGE)};
+reg  [5:0]  cpu_free_slot_r;
+always @(posedge CLK) begin
+  //cpu_free_slot_r <= {cpu_free_slot_r[2:0],(CLK_CPU_EDGE & ~CLK_BUS_EDGE)};
+  // MCU needs more bandwidth so now we only block the last empty CPU clock cycle shifted by a value greater than the MCT delay
+  cpu_free_slot_r <= {cpu_free_slot_r[4:0],(~&clk_bus_ctr_r)};
+end
+
+assign FREE_SLOT = cpu_free_slot_r[5];
 
 reg  [1:0]  ppu_vblank_sync_r;
 reg         hlt_req_sync_r;
@@ -283,7 +290,6 @@ always @(posedge CLK) begin
   hlt_req_sync_r <= cpu_ireset_r ? 0 : (CLK_BUS_EDGE && ppu_vblank_sync_r == 2'b01) ? HLT_REQ : hlt_req_sync_r;
 end
 
-assign FREE_SLOT = cpu_free_slot_r[3];
 assign HLT_REQ_sync = hlt_req_sync_r;
 
 //-------------------------------------------------------------------
@@ -2240,9 +2246,9 @@ reg  [10:0] apu_square1_sweep_freq_r;
 wire [15:0] apu_square1_sweep_freq_next = REG_NR10_r[`NR10_SWEEP_NEG] ? ({5'h00,apu_square1_sweep_freq_r} - ({5'h00,apu_square1_sweep_freq_r} >> REG_NR10_r[`NR10_SWEEP_SHIFT])) : ({5'h00,apu_square1_sweep_freq_r} + ({5'h00,apu_square1_sweep_freq_r} >> REG_NR10_r[`NR10_SWEEP_SHIFT]));
 
 wire [12:0] apu_square1_period = {REG_NR14_r[`NR14_FREQ_MSB],REG_NR13_r[`NR13_FREQ_LSB],2'b00};
-wire [7:0]  apu_square1_duty = {2'b11, ~&REG_NR11_r[`NR11_DUTY], ~&REG_NR11_r[`NR11_DUTY], ~REG_NR11_r[7], ~REG_NR11_r[7], ~|REG_NR11_r[`NR11_DUTY], 1'b0} | {8{apu_square1_cutoff_r}}; // FIXME: temporary bandaid fix for FFA
+//wire [7:0]  apu_square1_duty = {2'b11, ~&REG_NR11_r[`NR11_DUTY], ~&REG_NR11_r[`NR11_DUTY], ~REG_NR11_r[7], ~REG_NR11_r[7], ~|REG_NR11_r[`NR11_DUTY], 1'b0} | {8{apu_square1_cutoff_r}}; // FIXME: temporary bandaid fix for FFA
 reg  [7:0]  apu_square1_duty_r;
-wire signed [15:0] apu_square1_output = apu_square1_enable_r ? ((apu_square1_duty_r[apu_square1_pos_r] ? -apu_square1_volume_r : apu_square1_volume_r)) : 16'h0000;
+wire signed [15:0] apu_square1_output = apu_square1_enable_r ? ((~apu_square1_duty_r[apu_square1_pos_r] ? 16'h0000 : apu_square1_volume_r) -16'd8): 16'h0000;
 
 // square2
 reg         apu_square2_enable_r;
@@ -2255,9 +2261,9 @@ reg  [2:0]  apu_square2_pos_r;
 reg         apu_square2_cutoff_r;
 
 wire [12:0] apu_square2_period = {REG_NR24_r[`NR24_FREQ_MSB],REG_NR23_r[`NR23_FREQ_LSB],2'b00};
-wire [7:0]  apu_square2_duty = {2'b11, ~&REG_NR21_r[`NR21_DUTY], ~&REG_NR21_r[`NR21_DUTY], ~REG_NR21_r[7], ~REG_NR21_r[7], ~|REG_NR21_r[`NR21_DUTY], 1'b0} | {8{apu_square2_cutoff_r}}; // FIXME: temporary bandaid fix for FFA
+//wire [7:0]  apu_square2_duty = {2'b11, ~&REG_NR21_r[`NR21_DUTY], ~&REG_NR21_r[`NR21_DUTY], ~REG_NR21_r[7], ~REG_NR21_r[7], ~|REG_NR21_r[`NR21_DUTY], 1'b0} | {8{apu_square2_cutoff_r}}; // FIXME: temporary bandaid fix for FFA
 reg  [7:0]  apu_square2_duty_r;
-wire signed [15:0] apu_square2_output = apu_square2_enable_r ? ((apu_square2_duty_r[apu_square2_pos_r] ? -apu_square2_volume_r : apu_square2_volume_r)) : 16'h0000;
+wire signed [15:0] apu_square2_output = apu_square2_enable_r ? ((~apu_square2_duty_r[apu_square2_pos_r] ? 16'h0000: apu_square2_volume_r) - 16'd8) : 16'h0000;
 
 // wave
 reg         apu_wave_enable_r;
@@ -2270,7 +2276,7 @@ reg  [3:0]  apu_wave_data_r;
 reg  [3:0]  apu_wave_data_shifted_r;
 wire [11:0] apu_wave_period = {REG_NR34_r[`NR34_FREQ_MSB],REG_NR33_r[`NR33_FREQ_LSB],1'b0};
 
-wire signed [15:0] apu_wave_output = apu_wave_enable_r ? ((~|REG_NR32_r[`NR32_LEVEL] ? 16'h0000 : apu_wave_data_shifted_r - 16'd8)) : 16'h0000;
+wire signed [15:0] apu_wave_output = apu_wave_enable_r ? ((~|REG_NR32_r[`NR32_LEVEL] ? 16'h0000 : apu_wave_data_shifted_r) - 16'd8) : 16'h0000;
 
 // noise
 reg         apu_noise_enable_r;
@@ -2281,7 +2287,7 @@ reg  [3:0]  apu_noise_volume_r;
 reg  [14:0] apu_noise_lfsr_r;
 
 wire [21:0] apu_noise_period = {15'h0000,REG_NR43_r[`NR43_LFSR_DIV],~|REG_NR43_r[`NR43_LFSR_DIV],3'h0} << REG_NR43_r[`NR43_LFSR_SHIFT];
-wire signed [15:0] apu_noise_output = apu_noise_enable_r ? ((apu_noise_lfsr_r[0] ? -apu_noise_volume_r : apu_noise_volume_r)) : 16'h0000;
+wire signed [15:0] apu_noise_output = apu_noise_enable_r ? ((apu_noise_lfsr_r[0] ? 16'h0000 : apu_noise_volume_r) - 16'd8) : 16'h0000;
 
 reg  [31:0] apu_data_r;
 reg  [31:0] apu_data_volume_r;
@@ -2325,10 +2331,21 @@ always @(posedge CLK) begin
   // FIXME: hack to ignore high frequency FFA noise.  need to check if it's fixed now.
   apu_square1_cutoff_r <= &{REG_NR14_r[`NR14_FREQ_MSB],REG_NR13_r[`NR13_FREQ_LSB]};
   apu_square2_cutoff_r <= &{REG_NR24_r[`NR24_FREQ_MSB],REG_NR23_r[`NR23_FREQ_LSB]};
-    
-  apu_square1_duty_r <= apu_square1_duty;
-  apu_square2_duty_r <= apu_square2_duty;
-    
+  
+  case (REG_NR11_r[`NR11_DUTY])
+    0: apu_square1_duty_r <= 8'b01111111 | {8{apu_square1_cutoff_r}};
+    1: apu_square1_duty_r <= 8'b01111110 | {8{apu_square1_cutoff_r}};
+    2: apu_square1_duty_r <= 8'b00011110 | {8{apu_square1_cutoff_r}};
+    3: apu_square1_duty_r <= 8'b10000001 | {8{apu_square1_cutoff_r}};
+  endcase
+
+  case (REG_NR21_r[`NR21_DUTY])
+    0: apu_square2_duty_r <= 8'b01111111 | {8{apu_square2_cutoff_r}};
+    1: apu_square2_duty_r <= 8'b01111110 | {8{apu_square2_cutoff_r}};
+    2: apu_square2_duty_r <= 8'b00011110 | {8{apu_square2_cutoff_r}};
+    3: apu_square2_duty_r <= 8'b10000001 | {8{apu_square2_cutoff_r}};
+  endcase
+  
   if (cpu_ireset_r | ~REG_NR52_r[`NR52_CONTROL_ENABLE]) begin
     REG_NR10_r    <= 8'h00; // FF10
     if (cpu_ireset_r) REG_NR11_r[`NR11_LENGTH] <= 0; // FF11
@@ -2412,7 +2429,7 @@ always @(posedge CLK) begin
         end
         8'h14: begin // NR14
           if (REG_NR14_r[`NR14_FREQ_ENABLE]) begin
-            apu_square1_enable_r    <= |REG_NR12_r[`NR12_ENV_VOLUME] | REG_NR12_r[`NR12_ENV_DIR];
+            apu_square1_enable_r    <= (|REG_NR12_r[`NR12_ENV_VOLUME] | REG_NR12_r[`NR12_ENV_DIR]) & ~HLT_RSP;
             apu_square1_timer_r     <= apu_square1_period;
             apu_square1_length_r    <= REG_NR11_r[`NR11_LENGTH];
             apu_square1_env_timer_r <= REG_NR12_r[`NR12_ENV_PERIOD];
@@ -2432,7 +2449,7 @@ always @(posedge CLK) begin
         end
         8'h19: begin // NR24
           if (REG_NR24_r[`NR24_FREQ_ENABLE]) begin
-            apu_square2_enable_r    <= |REG_NR22_r[`NR22_ENV_VOLUME] | REG_NR22_r[`NR22_ENV_DIR];
+            apu_square2_enable_r    <= (|REG_NR22_r[`NR22_ENV_VOLUME] | REG_NR22_r[`NR22_ENV_DIR]) & ~HLT_RSP;
             apu_square2_timer_r     <= apu_square2_period;
             apu_square2_length_r    <= REG_NR21_r[`NR21_LENGTH];
             apu_square2_env_timer_r <= REG_NR22_r[`NR22_ENV_PERIOD];
@@ -2445,7 +2462,7 @@ always @(posedge CLK) begin
         8'h1B:  apu_wave_length_r <= REG_NR31_r[`NR31_LENGTH];    // NR31
         8'h1E:  begin                                                         // NR34
           if (REG_NR34_r[`NR34_FREQ_ENABLE]) begin
-            apu_wave_enable_r     <= REG_NR30_r[`NR30_WAVE_ENABLE];
+            apu_wave_enable_r     <= REG_NR30_r[`NR30_WAVE_ENABLE] & ~HLT_RSP;
             apu_wave_timer_r      <= apu_wave_period;
             apu_wave_length_r     <= REG_NR31_r[`NR31_LENGTH];
             apu_wave_pos_r        <= 0;
@@ -2457,7 +2474,7 @@ always @(posedge CLK) begin
         8'h21:  if (apu_noise_enable_r) apu_noise_enable_r <= (REG_NR42_r[`NR42_ENV_DIR] | |REG_NR42_r[`NR42_ENV_VOLUME]);// NR42
         8'h23:  begin                                                         // NR44
           if (REG_NR44_r[`NR44_FREQ_ENABLE]) begin
-            apu_noise_enable_r    <= REG_NR42_r[`NR42_ENV_DIR] | |REG_NR42_r[`NR42_ENV_VOLUME];
+            apu_noise_enable_r    <= (REG_NR42_r[`NR42_ENV_DIR] | |REG_NR42_r[`NR42_ENV_VOLUME]) & ~HLT_RSP;
             apu_noise_timer_r     <= apu_noise_period;
             apu_noise_lfsr_r      <= 15'h7FFF;
             apu_noise_length_r    <= REG_NR41_r[`NR41_LENGTH];
@@ -2578,7 +2595,7 @@ always @(posedge CLK) begin
       end
     
       apu_wave_timer_r <= apu_wave_timer_r + 1;
-      if (&apu_wave_timer_r) begin              
+      if (&apu_wave_timer_r) begin
         apu_wave_sample_r <= apu_wave_pos_r[0] ? REG_WAV_r[apu_wave_pos_r[4:1]][3:0] : REG_WAV_r[apu_wave_pos_r[4:1]][7:4];
         apu_wave_pos_r <= apu_wave_pos_r + 1;
         apu_wave_timer_r <= apu_wave_period;
@@ -3277,7 +3294,7 @@ always @(posedge CLK) begin
             8'hA9:    dbg_misc_data_r <= apu_square1_sweep_freq_r[10:8];
             8'hAA:    dbg_misc_data_r <= apu_square1_period[7:0];
             8'hAB:    dbg_misc_data_r <= apu_square1_period[12:8];
-            8'hAC:    dbg_misc_data_r <= apu_square1_duty;
+            //8'hAC:    dbg_misc_data_r <= apu_square1_duty;
             8'hAF:    dbg_misc_data_r <= apu_square1_output[7:0];
 
             8'hB0:    dbg_misc_data_r <= apu_square2_enable_r;
@@ -3292,7 +3309,7 @@ always @(posedge CLK) begin
             //8'hB9:    dbg_misc_data_r <= apu_square2_sweep_freq_r[15:8];
             8'hBA:    dbg_misc_data_r <= apu_square2_period[7:0];
             8'hBB:    dbg_misc_data_r <= apu_square2_period[12:8];
-            8'hBC:    dbg_misc_data_r <= apu_square2_duty;
+            //8'hBC:    dbg_misc_data_r <= apu_square2_duty;
             8'hBF:    dbg_misc_data_r <= apu_square2_output[7:0];
 
             8'hC0:    dbg_misc_data_r <= apu_wave_enable_r;
