@@ -445,7 +445,8 @@ menu_enttab_ingame:
  .byt  ^mdesc_ingame_savestate
  .byt  0,0,0
  .byt  0,0,0
- .byt  0,0,0
+ .word !(mfunc_isdisabled_hooks-1)
+ .byt  ^(mfunc_isdisabled_hooks-1)
 
  .byt  MTYPE_VALUE
  .word !mtext_savestate_slots
@@ -614,12 +615,20 @@ mfunc_isenabled_hooks:
   ror
   rtl
 
-mfunc_isenabled_savestate:
-  lda @CFG_ENABLE_INGAME_SAVESTATE
-  bne +
-  sec
+mfunc_isdisabled_hooks:
+  lda @CFG_ENABLE_INGAME_HOOK
+  eor #$00
+  ror
   rtl
-+ clc
+
+mfunc_isenabled_savestate:
+  jsl mfunc_isenabled_hooks
+  bcc +
+  lda @CFG_ENABLE_INGAME_SAVESTATE
+  bne ++
++ sec
+  rtl
+++clc
   rtl
 
 mfunc_isenabled_scic:
@@ -721,8 +730,9 @@ kv_bright_limit:
 
 kv_savestates:
 .word $0000, !text_off : .byt ^text_off
-.word $0001, !text_on_p1 : .byt ^text_on_p1
-.word $0002, !text_on_p2 : .byt ^text_on_p2
+.word $0001, !text_on : .byt ^text_on
+;.word $0001, !text_on_p1 : .byt ^text_on_p1
+;.word $0002, !text_on_p2 : .byt ^text_on_p2
 .word $ffff
 
 opt_0_to_30:

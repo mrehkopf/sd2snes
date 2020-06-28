@@ -19,6 +19,7 @@
 
 void savestate_program(void);
 void savestate_set_inputs(void);
+uint16_t savestate_parse_input(char * str);
 void savestate_set_fixes(void);
 void load_backup_state(void);
 void save_backup_state(void);

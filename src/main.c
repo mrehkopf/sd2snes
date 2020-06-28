@@ -425,6 +425,7 @@ int main(void) {
               case SNES_CMD_LOADSTATE:
                 usb_cmd = 0;
                 load_backup_state();
+                break;
               case SNES_CMD_COMBO_TRANSITION:
                 usb_cmd = 0;
                 load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_COMBO | LOADROM_WITH_RESET);

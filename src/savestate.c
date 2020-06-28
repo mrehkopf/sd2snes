@@ -12,50 +12,30 @@
 #include <stdlib.h>
 
 extern cfg_t CFG;
+extern cfg_t CFG_DEFAULT;
 extern snes_romprops_t romprops;
 
+char * inputs = "BYsSudlrAXLR";
 
 void savestate_program() {
-  if(romprops.has_gsu || romprops.has_sa1 || romprops.has_cx4 || romprops.has_sdd1)
+  if(romprops.fpga_conf != NULL) // currently only works with fpga_base
     return;
+
+  sram_writeset(0x0, SS_CODE_ADDR, 0x10000);
 
   char *savestate_code = "/sd2snes/savestate.bin";
   file_open((uint8_t*) savestate_code, FA_READ);
 
-  sram_writeset(0x0, SS_CODE_ADDR, 0x10000);
-
   fpga_set_snescmd_addr(SNESCMD_EXE);
-  // php : rep #$30 : pha
-  fpga_write_snescmd(0x08);
-  fpga_write_snescmd(0xC2);
-  fpga_write_snescmd(0x30);
-  fpga_write_snescmd(0x48);
-  // lda $4218
-  fpga_write_snescmd(0xAD);
-  fpga_write_snescmd(0x18);
-  fpga_write_snescmd(0x42);
-  // sta $2BF0 (for ingame hooks)
-  fpga_write_snescmd(0x8D);
-  fpga_write_snescmd(0xF0);
-  fpga_write_snescmd(0x2B);
-  // sta $FC1FF0
-  fpga_write_snescmd(0x8F);
-  fpga_write_snescmd(0xF0);
-  fpga_write_snescmd(0x1F);
-  fpga_write_snescmd(0xFC);
-  // lda $421A
-  fpga_write_snescmd(0xAD);
-  fpga_write_snescmd(0x1A);
-  fpga_write_snescmd(0x42);
-  // sta $FC1FF2
-  fpga_write_snescmd(0x8F);
-  fpga_write_snescmd(0xF2);
-  fpga_write_snescmd(0x1F);
-  fpga_write_snescmd(0xFC);
 
-  if(CFG.enable_ingame_savestate && file_status == FILE_OK) {
-    //file_close();
-    load_sram((uint8_t*) savestate_code, SS_CODE_ADDR);
+  if(CFG.enable_ingame_savestate && CFG.enable_ingame_hook == 0 && file_status == FILE_OK) {
+    file_close();
+
+    load_sram((uint8_t*) savestate_code, SS_CODE_ADDR);    
+    uint8_t size = sram_readbyte(SS_CODE_ADDR);
+    for(uint8_t x = 1; x < size; x++)
+      fpga_write_snescmd(sram_readbyte(SS_CODE_ADDR + x));
+
     sram_writeshort(0x0101, SS_REQ_ADDR);
     sram_writebyte(CFG.loadstate_delay, SS_DELAY_ADDR);
     sram_writebyte(CFG.enable_savestate_slots, SS_SLOTS_ADDR);
@@ -64,35 +44,30 @@ void savestate_program() {
     savestate_set_inputs();
     savestate_set_fixes();
     load_backup_state();
-
-    //fpga_set_snescmd_addr(SNESCMD_EXE);
-    //jml $FC0000
-    fpga_write_snescmd(0x5C);
+  } else {
     fpga_write_snescmd(0x00);
-    fpga_write_snescmd(0x00);
-    fpga_write_snescmd(0xFC);
-
-    //return;
+    file_close();
   }
-  // plp : pla
-  fpga_write_snescmd(0x68);
-  fpga_write_snescmd(0x28);
-
-  // jmp ($FFEA)
-  fpga_write_snescmd(0x6C);
-  fpga_write_snescmd(0xEA);
-  fpga_write_snescmd(0xFF);
-  file_close();
 }
 
 void savestate_set_inputs() {
   int err = 0;
   char buf[5];
+  char * str;
+  uint16_t input;
   snprintf(buf, 5, "%04X", romprops.header.chk);
 
-  sram_writeshort(CFG.ingame_savestate_buttons, SS_SAVE_INPUT_ADDR);
-  sram_writeshort(CFG.ingame_loadstate_buttons, SS_LOAD_INPUT_ADDR);
-  sram_writeshort(CFG.ingame_changestate_buttons, SS_SLOTS_INPUT_ADDR);
+  input = savestate_parse_input(CFG.ingame_savestate_buttons);
+  if(input == 0) input = savestate_parse_input(CFG_DEFAULT.ingame_savestate_buttons);
+  sram_writeshort(input, SS_SAVE_INPUT_ADDR);
+
+  input = savestate_parse_input(CFG.ingame_loadstate_buttons);
+  if(input == 0) input = savestate_parse_input(CFG_DEFAULT.ingame_loadstate_buttons);
+  sram_writeshort(input, SS_LOAD_INPUT_ADDR);
+
+  input = savestate_parse_input(CFG.ingame_changestate_buttons);
+  if(input == 0) input = savestate_parse_input(CFG_DEFAULT.ingame_changestate_buttons);
+  sram_writeshort(input, SS_SLOTS_INPUT_ADDR);
   
   yaml_file_open(SS_INPUTFILE, FA_READ);
   if(file_res) {
@@ -101,16 +76,26 @@ void savestate_set_inputs() {
   if(!err) {
     yaml_token_t tok;
     if(yaml_get_itemvalue(buf, &tok)) { 
-      uint16_t input;
-      strncpy(buf, tok.stringvalue, 4);
-      input = strtol(buf, NULL, 16);
-      sram_writeshort(input, SS_SAVE_INPUT_ADDR);
-      strncpy(buf, strrchr(tok.stringvalue, ',')+1, 4);
-      input = strtol(buf, NULL, 16);
-      sram_writeshort(input, SS_LOAD_INPUT_ADDR);
+      str = strtok(tok.stringvalue, ";, \t");
+      input = savestate_parse_input(str);
+      if(input > 0) sram_writeshort(input, SS_SAVE_INPUT_ADDR);
+      str = strtok(NULL, ";, \t");
+      input = savestate_parse_input(str);
+      if(input > 0) sram_writeshort(input, SS_LOAD_INPUT_ADDR);
     }
   }
   yaml_file_close();
+}
+
+
+uint16_t savestate_parse_input(char * str) {
+  uint16_t input = 0;
+
+  for(uint8_t x=0; x < strlen(str); x++){
+    input |= 1 << (0xF - (strchr(inputs, str[x]) - inputs));
+  }
+
+  return input;
 }
 
 void savestate_set_fixes() {
@@ -168,7 +153,7 @@ void load_backup_state() {
   snprintf(line, 256, line, slot);
 
   load_sram((uint8_t*) line, 0xF00000L);
-  if(file_res == FR_NO_FILE) file_res = 0;
+  file_res = FR_OK;
 }
 
 void save_backup_state() {

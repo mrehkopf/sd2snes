@@ -1,10 +1,13 @@
-
+VERSION := 1.10.3-frs-v11
 MCUSRC := src
 
 MK2MCUPATH := $(MCUSRC)/obj-mk2
 MK3MCUPATH := $(MCUSRC)/obj-mk3
 MK2MCU := firmware.img
 MK3MCU := firmware.im3
+
+SAVESTATEPATH := savestate
+SAVESTATEFILES := savestate*
 
 MENUPATH := snes
 MK2MENU := menu.bin
@@ -31,13 +34,15 @@ all: version release
 release: version bsxpage
 	rm -rf $(TARGETPARENT)
 	mkdir -p $(TARGET)
-	cp bsxpage.bin $(TARGET)
+	cp bin/*.bin $(TARGET)
+	cp README.md $(TARGET)/readme.txt
 	cp $(MK2FPGA) $(TARGET)
 	cp $(MK3FPGA) $(TARGET)
 	cp $(MK2MCUPATH)/$(MK2MCU) $(TARGET)
 	cp $(MK3MCUPATH)/$(MK3MCU) $(TARGET)
 	cp $(MENUPATH)/$(MK2MENU) $(TARGET)
 	cp $(MENUPATH)/$(MK3MENU) $(TARGET)
+	cp $(SAVESTATEPATH)/$(SAVESTATEFILES) $(TARGET)
 	cd $(TARGETPARENT) && zip -r sd2snes_firmware_v$(VERSION).zip sd2snes
 
 bsxpage:

@@ -72,9 +72,9 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t  enable_ingame_savestate; /* enable in-game savestates */
   uint8_t  loadstate_delay;         /* load state delay (frames) */
   uint8_t  enable_savestate_slots;  /* enable savestate slots (select+dpad to change) */
-  uint16_t ingame_savestate_buttons; /* save state buttons */
-  uint16_t ingame_loadstate_buttons; /* load state buttons */
-  uint16_t ingame_changestate_buttons; /* change slot state buttons + dpad */
+  char ingame_savestate_buttons[16]; /* save state buttons */
+  char ingame_loadstate_buttons[16]; /* load state buttons */
+  char ingame_changestate_buttons[16]; /* change slot state buttons + dpad */
 } cfg_t;
 
 int cfg_save(void);

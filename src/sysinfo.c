@@ -57,12 +57,12 @@ int write_sysinfo(int sd_measured) {
   fssize = ((uint64_t)fatfs.n_fatent - 2LL) * (uint64_t)fatfs.csize * 512LL / 1048576LL;
   fsfree = ((uint64_t)fsfree) * (uint64_t)fatfs.csize * 512LL / 1048576LL;
 
-  len = snprintf(linebuf, sizeof(linebuf), "Firmware version: %s", CONFIG_VERSION);
+  len = snprintf(linebuf, sizeof(linebuf), "    Firmware version: %s", CONFIG_VERSION);
   memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
   sram_addr += 40;
-//frs
-  len = snprintf(linebuf, sizeof(linebuf), "Features: GSU, SA-1, SDD1, Savestates");
+//frs                                      "Features: GSU, SA-1, SDD1, Savestates"
+  len = snprintf(linebuf, sizeof(linebuf), "          furious.pro/sd2snes           ");
   memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
   sram_addr += 40;

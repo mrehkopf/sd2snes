@@ -44,6 +44,8 @@ extern char current_filename[];
 #define SRAM_NUM_CHEATS         (0xCFFFFEL)
 #define SRAM_CHEAT_ADDR         (0xD00000L) /* banks D0-DF for 2048 cheats per YML file */
 
+#define SRAM_SAVESTATE_ADDR     (0xFC0000L)
+
 #define SRAM_SPC_DATA_ADDR      (0xFD0000L)
 #define SRAM_SPC_HEADER_ADDR    (0xFE0000L)
 

@@ -5,12 +5,8 @@ nmihook:
   php
   rep #$20 : .al
   pha
-  ;lda @$004218 ; initial backup as early as possible
-  ;sta @NMI_PAD
-  ;jmp read_joypad
-  nop : nop : nop : nop 
-  nop : nop : nop : nop
-nmi_return:
+  lda @$004218 ; initial backup as early as possible
+  sta @NMI_PAD
   sep #$20 : .as
 - bra -        ; branch1 filled in by FPGA
 ; rules for branch tgt:
@@ -74,7 +70,6 @@ nmi_exit:
 ; clean up
   sta @NMI_VECT_DISABLE
   rep #$20 : .al
-nmi_end:
   pla
   plp
   jmp ($ff77) ; '77' is replaced by FPGA depending on hook entry
@@ -88,7 +83,6 @@ nmi_stop:
   lda #$80
   sta $2100
 - bra -
-  bra resethook
 
 resethook: ; EMULATION MODE
   .as : .xs
@@ -150,16 +144,5 @@ resethook_loop:
   bmi resethook_loop
   stz NMI_VECT_DISABLE
   jmp ($fffc)
-
-read_joypad:
-  ; verify if nmi_exec is used (it reads the buttons already  )
-  ;sep #$20 : .as
-  ;lda @NMI_EXEC
-  ;bne +
-  ;rep #$20 : .al
-  ;lda @$004218
-  ;sta @NMI_PAD
-;+
-  jmp nmi_return
 
 .byt "bram_end"

@@ -22,6 +22,7 @@
 #----------------------------------------------------------------------------
 
 # Read configuration file
+CONFIG=config-mk3
 ifndef CONFIG
 $(info ERROR: Please use $(MAKE) CONFIG=... to specify at least one config file.)
 $(info Available configs:)
@@ -211,8 +212,6 @@ build: elf bin hex
 	$(Q)$(ELFSIZE)|grep -v debug
 	cp $(TARGET).bin $(OBJDIR)/$(CONFIG_FW_FILE)
 	utils/genhdr $(OBJDIR)/$(CONFIG_FW_FILE) $(CONFIG_FW_MAGIC) $(CONFIG_FWVER)
-	cp $(OBJDIR)/$(CONFIG_FW_FILE) D:/GDrive/Speedruns/Tools/USB2SNESv8/sd2snes/firmware.img
-#	cp $(OBJDIR)/$(CONFIG_FW_FILE) F:/sd2snes/firmware.img
 
 elf: $(TARGET).elf
 bin: $(TARGET).bin
