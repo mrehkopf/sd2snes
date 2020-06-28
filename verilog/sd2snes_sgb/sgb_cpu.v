@@ -235,6 +235,8 @@ wire [7:0]  DMA_OAM_req_data;
 // APU outputs
 wire [3:0]  APU_REG_enable;
 
+wire        SER_REG_done;
+
 wire        DBG_EXE_step;
 
 wire        DBG_REG_req_val;
@@ -604,6 +606,7 @@ always @(posedge CLK) begin
         REG_IF_r[`IE_VBLANK]   <= (REG_IF_r[`IE_VBLANK]   | PPU_REG_vblank              ) & ~IFD_REG_ic[`IE_VBLANK];
         REG_IF_r[`IE_LCD_STAT] <= (REG_IF_r[`IE_LCD_STAT] | PPU_REG_lcd_stat            ) & ~IFD_REG_ic[`IE_LCD_STAT];
         REG_IF_r[`IE_TIMER]    <= (REG_IF_r[`IE_TIMER]    | tmr_ovf_tima_r              ) & ~IFD_REG_ic[`IE_TIMER];
+        REG_IF_r[`IE_SERIAL]   <= (REG_IF_r[`IE_SERIAL]   | SER_REG_done                ) & ~IFD_REG_ic[`IE_SERIAL];
         REG_IF_r[`IE_JOYPAD]   <= (REG_IF_r[`IE_JOYPAD]   | |(REG_P1_r[3:0] & ~P1I[3:0])) & ~IFD_REG_ic[`IE_JOYPAD];
       end
     end
@@ -2893,6 +2896,9 @@ reg         ser_active_d1_r;
 reg         ser_clk_d1_r;
 reg  [9:0]  ser_ctr_r;
 reg  [2:0]  ser_pos_r;
+reg         ser_done_r;
+
+assign      SER_REG_done = ser_done_r;
 
 assign HLT_SER_rsp = HLT_REQ_sync & ~REG_SC_r[7];
 
@@ -2902,10 +2908,12 @@ always @(posedge CLK) begin
     REG_SC_r <= 8'h7F;
     
     ser_active_d1_r <= 0;
+    ser_done_r      <= 0;
   end
   else begin
     if (CLK_CPU_EDGE) begin
       ser_active_d1_r <= REG_SC_r[7];
+      ser_done_r      <= 0;
       
       if (REG_SC_r[7]) begin
         if (~ser_active_d1_r) begin
@@ -2921,7 +2929,10 @@ always @(posedge CLK) begin
             REG_SB_r[~ser_pos_r] <= 1'b1;
             ser_pos_r <= ser_pos_r + 1;
             
-            if (&ser_pos_r) REG_SC_r[7] <= 0;
+            if (&ser_pos_r) begin
+              REG_SC_r[7] <= 0;
+              ser_done_r <= 1;
+            end
           end
         end        
       end
