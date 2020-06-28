@@ -71,6 +71,7 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
   props->has_st0011 = 0;
   props->has_st0018 = 0;
   props->has_msu1 = 0;
+  props->has_spc7110 = 0;
   props->has_cx4 = 0;
   props->has_obc1 = 0;
   props->has_gsu = 0;

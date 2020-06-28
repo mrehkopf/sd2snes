@@ -479,6 +479,21 @@ menu_enttab_ingame:
  .byt  ^(mfunc_isenabled_savestate-1)
 
  .byt  MTYPE_VALUE
+ .word !mtext_sgb_enable_state
+ .byt  ^mtext_sgb_enable_state
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_SGB_ENABLE_STATE
+ .byt  ^CFG_SGB_ENABLE_STATE
+ .word !mdesc_sgb_enable_state
+ .byt  ^mdesc_sgb_enable_state
+ .byt  0,0,0
+ .byt  0,0,0
+ .word !(mfunc_isenabled_savestate-1)
+ .byt  ^(mfunc_isenabled_savestate-1)
+
+ .byt  MTYPE_VALUE
  .word !mtext_ingame_regionpatch
  .byt  ^mtext_ingame_regionpatch
  .word !kv_onoff

@@ -41,6 +41,8 @@ cfg_t CFG_DEFAULT = {
   .ingame_savestate_buttons = "SL",
   .ingame_loadstate_buttons = "SR",
   .ingame_changestate_buttons = "s",
+  .sgb_enable_state = 0,
+  .sgb_bios_override = 0
 };
 
 cfg_t CFG;
@@ -93,6 +95,8 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %s\n", CFG_INGAME_SAVESTATE_BUTTONS, CFG.ingame_savestate_buttons);
   f_printf(&file_handle, "%s: %s\n", CFG_INGAME_LOADSTATE_BUTTONS, CFG.ingame_loadstate_buttons);
   f_printf(&file_handle, "%s: %s\n", CFG_INGAME_CHANGESTATE_BUTTONS, CFG.ingame_changestate_buttons);
+  f_printf(&file_handle, "%s: %s\n", CFG_SGB_ENABLE_STATE, CFG.sgb_enable_state ? "true" : "false");
+  f_printf(&file_handle, "%s: %s\n", CFG_SGB_BIOS_OVERRIDE, CFG.sgb_bios_override ? "true" : "false");
   f_puts("\n# Screensaver settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Enable screensaver\n", CFG_ENABLE_SCREENSAVER);
 //  f_printf(&file_handle, "#  %s: Dim screen after n seconds\n", CFG_SCREENSAVER_TIMEOUT);
@@ -208,6 +212,12 @@ int cfg_load() {
     }
     if(yaml_get_itemvalue(CFG_INGAME_LOADSTATE_BUTTONS, &tok)) {
       strcpy(CFG.ingame_loadstate_buttons, tok.stringvalue);
+    }
+    if(yaml_get_itemvalue(CFG_SGB_ENABLE_STATE, &tok)) {
+      CFG.sgb_enable_state = tok.boolvalue ? 1 : 0;
+    }
+    if(yaml_get_itemvalue(CFG_SGB_BIOS_OVERRIDE, &tok)) {
+      CFG.sgb_bios_override = tok.boolvalue ? 1 : 0;
     }
   }
   yaml_file_close();

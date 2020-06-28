@@ -88,6 +88,7 @@
 #define FPGA_CMD_DACSETPTR       (0xe3)
 #define FPGA_CMD_MSUSETPTR       (0xe4)
 #define FPGA_CMD_RTCSET          (0xe5)
+#define FPGA_CMD_RTCGET          (0xe6)
 #define FPGA_CMD_BSXSETBITS      (0xe6)
 #define FPGA_CMD_SRTCRESET       (0xe7)
 #define FPGA_CMD_DSPRESETPTR     (0xe8)
@@ -131,8 +132,9 @@ uint16_t get_msu_track(void);
 uint32_t get_msu_pointer(void);
 uint32_t get_msu_offset(void);
 uint32_t get_snes_sysclk(void);
-void set_bsx_regs(uint8_t set, uint8_t reset);
 void set_fpga_time(uint64_t time);
+uint64_t get_fpga_time(void);
+void set_bsx_regs(uint8_t set, uint8_t reset);
 void fpga_reset_srtc_state(void);
 void fpga_reset_dspx_addr(void);
 void fpga_write_dspx_pgm(uint32_t data);

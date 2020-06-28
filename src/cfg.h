@@ -37,6 +37,8 @@
 #define CFG_INGAME_SAVESTATE_BUTTONS  ("IngameSavestateButtons")
 #define CFG_INGAME_LOADSTATE_BUTTONS  ("IngameLoadstateButtons")
 #define CFG_INGAME_CHANGESTATE_BUTTONS  ("IngameChangestateButtons")
+#define CFG_SGB_ENABLE_STATE          ("SGBEnableState")
+#define CFG_SGB_BIOS_OVERRIDE         ("SGBBiosOverride")
 
 typedef enum {
   VIDMODE_60 = 0,
@@ -75,6 +77,8 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   char ingame_savestate_buttons[16]; /* save state buttons */
   char ingame_loadstate_buttons[16]; /* load state buttons */
   char ingame_changestate_buttons[16]; /* change slot state buttons + dpad */
+  uint8_t  sgb_enable_state;        /* enable SGB save states if present */
+  uint8_t  sgb_bios_override;       /* override the bios checks when enabling features */
 } cfg_t;
 
 int cfg_save(void);

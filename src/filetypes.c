@@ -147,6 +147,8 @@ SNES_FTYPE determine_filetype(FILINFO fno) {
      ||(!strcasecmp(ext+1, "FIG"))
      ||(!strcasecmp(ext+1, "SWC"))
      ||(!strcasecmp(ext+1, "BS"))
+     ||(!strcasecmp(ext+1, "GB"))
+     ||(!strcasecmp(ext+1, "GBC"))
     ) {
     return TYPE_ROM;
   }

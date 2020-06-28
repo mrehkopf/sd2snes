@@ -15,6 +15,7 @@
 #include "sdnative.h"
 #include "sysinfo.h"
 #include "usbinterface.h"
+#include "sgb.h"
 
 extern snes_status_t STS;
 
@@ -66,11 +67,12 @@ int write_sysinfo(int sd_measured) {
   memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
   sram_addr += 40;
-  len = snprintf(linebuf, sizeof(linebuf), "                                        ");
+
+/*  len = snprintf(linebuf, sizeof(linebuf), "                                        ");
   memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
-
-  sram_addr += 40;
+  sram_addr += 40;*/
+  
   if(disk_state == DISK_REMOVED || usbint_server_busy()) {
     sd_measured = 0;
     sd_tacc_max = 0;
@@ -139,6 +141,17 @@ int write_sysinfo(int sd_measured) {
   }
   sram_addr += 40;
   sram_memset(sram_addr, 40, 0x20);
+
+  static uint8_t sgb_state = SGB_BIOS_CHECK;
+  if (!sd_measured) sgb_state = SGB_BIOS_CHECK; else if (sgb_state == SGB_BIOS_CHECK) sgb_state = sgb_bios_state();
+  len = snprintf(linebuf, sizeof(linebuf), "sgb2_boot.bin/sgb2_snes.bin: %s", ( sgb_state == SGB_BIOS_MISSING  ? "missing"
+                                                                              : sgb_state == SGB_BIOS_MISMATCH ? "mismatch"
+                                                                              : sgb_state == SGB_BIOS_OK       ? "ok"
+                                                                              :                                  "checking"
+                                                                              ));
+  memset(linebuf+len, 0x20, 40-len);
+  sram_writeblock(linebuf, sram_addr, 40);
+
   sram_hexdump(SRAM_SYSINFO_ADDR, 13*40);
   if(sysclk != -1 && sd_ok && !sd_measured){
     sdn_gettacc(&sd_tacc_max, &sd_tacc_avg);

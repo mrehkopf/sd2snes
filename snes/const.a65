@@ -214,6 +214,7 @@ mtext_ingame_holdoff              .byt " ",129,"Initial holdoff", 0
 mtext_ingame_savestate            .byt "In-game savestates", 0
 mtext_savestate_slots             .byt " ",129,"Savestate slots", 0
 mtext_loadstate_delay             .byt " ",129,"Load delay (frames)", 0
+mdesc_sgb_enable_state            .byt " ",129,"SGB2 savestates (XR, XL)", 0
 mtext_ingame_regionpatch          .byt "Auto region patch", 0
 mtext_ingame_1chiptransientfixes  .byt "1CHIP transient fixes", 0
 mtext_ingame_brightlimit          .byt "Brightness limit", 0
@@ -249,6 +250,7 @@ mdesc_ingame_holdoff              .byt "Wait 10 seconds before enabling hook (he
 mdesc_ingame_savestate            .byt "Enable in-game savestates and choose controller. Default: Save - Start+L / Load - Start+R", 0
 mdesc_savestate_slots             .byt "Enable savestate slots. Select+Dpad: Each direction is a slot to choose", 0
 mdesc_loadstate_delay             .byt "Adjust the load state delay (frames)", 0
+mdesc_sgb_enable_state            .byt "Enable built-in savestates on SGB2 (XR, XL)", 0
 mdesc_ingame_regionpatch          .byt "Bypass simple region protection by games", 0
 mdesc_ingame_1chiptransientfixes  .byt "Patch brightness changes to fix sync glitches, fading scanlines and missing shadow on 1CHIP/Jr. consoles", 0
 mdesc_ingame_brightlimit          .byt "Limit overall brightness (e.g. on 1CHIP consoles to meet RGB line levels)", 0

@@ -73,7 +73,7 @@ main.ncd: main.ngc $(XIL_IP)
 	$(XILINX_BIN)/xtclsh ../xrun.tcl sd2snes_$(CORE).xise $(XILINX_IMPL)
 
 currentProps.stratfile:
-	$(XILINX_BIN)/xtclsh ../xgenstratfile.tcl sd2snes_$(CORE).xise $(XPLORER_CPUS)
+	$(XILINX_BIN)/xtclsh ../xgenstratfile.tcl sd2snes_$(CORE).xise
 
 hostlistfile.txt:
 	n=0; while [ $$n -lt $(XPLORER_CPUS) ]; do echo localhost; n=$$(( n + 1 )); done > $@

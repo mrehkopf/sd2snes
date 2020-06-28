@@ -46,6 +46,15 @@ struct tm {
   // A Unix struct tm has a few more fields we don't need in this application
 };
 
+/* for use with GB RTC */
+struct __attribute__ ((__packed__)) gtm {
+  uint8_t gtm_sec;  // 0..59
+  uint8_t gtm_min;  // 0..59
+  uint8_t gtm_hour; // 0..23
+  uint8_t gtm_pad;
+  uint32_t gtm_days; // 0..N
+};
+
 #define RTC_MAGIC        (0x43545253L)
 
 extern rtcstate_t rtc_state;
@@ -79,5 +88,11 @@ void testbattery(void);
 /* convert date-time between S-RTC and packed BCD format */
 void bcdtime2srtctime(uint64_t bcdtime, uint8_t *srtctime);
 uint64_t srtctime2bcdtime(uint8_t *srtctime);
+
+/* convert time to gtime */
+void time2gtime(struct gtm *gtime, struct tm *time);
+
+/* get delta time: time1-time2.  returns 1 if invalid (underflow) */
+uint8_t get_deltagtime(struct gtm *delta, struct gtm *time);
 
 #endif

@@ -18,7 +18,7 @@ extern snes_romprops_t romprops;
 char * inputs = "BYsSudlrAXLR";
 
 void savestate_program() {
-  if(romprops.fpga_conf != NULL) // currently only works with fpga_base
+  if(romprops.fpga_conf != FPGA_BASE) // currently only works with fpga_base
     return;
 
   sram_writeset(0x0, SS_CODE_ADDR, 0x10000);

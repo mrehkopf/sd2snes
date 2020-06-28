@@ -364,6 +364,20 @@ void set_bsx_regs(uint8_t set, uint8_t reset) {
   FPGA_DESELECT();
 }
 
+uint64_t get_fpga_time() {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_RTCGET);
+  uint64_t result = ((uint64_t)FPGA_RX_BYTE()) << 48;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 40;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 32;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 24;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 16;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 8;
+  result |= ((uint64_t)FPGA_RX_BYTE());
+  FPGA_DESELECT();
+  return result;
+}
+
 void set_fpga_time(uint64_t time) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_RTCSET);

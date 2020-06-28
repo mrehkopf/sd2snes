@@ -8,7 +8,6 @@ if { [llength $argv] < 1 } {
     exit
 }
 set projfile [lindex $argv 0]
-set cores [lindex $argv 1]
 
 project open $projfile
 
@@ -28,10 +27,4 @@ puts $of "\"map\"\: \"$mapopts\","
 puts $of "\"par\"\: \"$paropts\"},"
 puts $of "),"
 puts $of "}"
-close $of
-
-set of [open "hostlistfile.txt" "w"]
-for {set index 0} { $index < $cores } { incr index } {
-    puts $of localhost
-}
 close $of
