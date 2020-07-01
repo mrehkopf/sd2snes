@@ -243,6 +243,7 @@ wire        DBG_REG_req_val;
 wire        DBG_REG_wren;
 wire [7:0]  DBG_REG_address;
 wire [7:0]  DBG_REG_data;
+wire        DBG_advance;
 
 wire        HLT_REQ_sync;
 wire        HLT_IFD_rsp;
@@ -567,7 +568,7 @@ always @(posedge CLK) begin
   else begin
   
     // timers
-    if (CLK_CPU_EDGE) begin     
+    if (CLK_CPU_EDGE & DBG_advance) begin     
       {tmr_ovf_16_r,  REG_DIV_r[3:0]  } <= REG_DIV_r[3:0]   + 1;
       {tmr_ovf_64_r,  REG_DIV_r[5:4]  } <= REG_DIV_r[5:4]   + tmr_ovf_16_r;
       {tmr_ovf_256_r, REG_DIV_r[7:6]  } <= REG_DIV_r[7:6]   + tmr_ovf_64_r;
@@ -857,7 +858,7 @@ always @(posedge CLK) begin
         // Adjust current instrucion size
         ifd_size_r      <= ifd_complete_r ? 0 : ifd_size_r + 1;
 
-        if (ifd_complete_r) ifd_reg_ic_r <= ifd_int_ic_r;
+        if (ifd_complete_r & ifd_int_r) ifd_reg_ic_r <= ifd_int_ic_r;
       end
       else begin
         // force bypassed PC to be accounted for in state
@@ -902,8 +903,8 @@ always @(posedge CLK) begin
                    :  (REG_IE_r[`IE_JOYPAD]   & REG_IF_r[`IE_JOYPAD])   ? 3'h4
                    :                                                      3'h7
                    );
-  if      (~ifd_int_r)                                      ifd_int_ic_r <= 8'b00000000;
-  else if (REG_IE_r[`IE_VBLANK]   & REG_IF_r[`IE_VBLANK]  ) ifd_int_ic_r <= 8'b00000001;
+  //if      (~ifd_int_r)                                      ifd_int_ic_r <= 8'b00000000;
+  if      (REG_IE_r[`IE_VBLANK]   & REG_IF_r[`IE_VBLANK]  ) ifd_int_ic_r <= 8'b00000001;
   else if (REG_IE_r[`IE_LCD_STAT] & REG_IF_r[`IE_LCD_STAT]) ifd_int_ic_r <= 8'b00000010;
   else if (REG_IE_r[`IE_TIMER]    & REG_IF_r[`IE_TIMER]   ) ifd_int_ic_r <= 8'b00000100;
   else if (REG_IE_r[`IE_SERIAL]   & REG_IF_r[`IE_SERIAL]  ) ifd_int_ic_r <= 8'b00001000;
@@ -1041,7 +1042,7 @@ reg [15:0]  exe_target_prev_redirect_r;
 assign EXE_IFD_redirect = IFD_EXE_valid & exe_ifd_redirect_r;
 assign EXE_IFD_target   = exe_ifd_redirect_target_r;
 assign EXE_IFD_ready    = exe_ready_r;
-assign EXE_IFD_ime      = exe_ime_r & ~IFD_EXE_int & ~exe_res_int_disable_r; // disables need bypasses
+assign EXE_IFD_ime      = (exe_ime_r | (exe_res_int_enable_r & ~IFD_EXE_op[5])) & ~IFD_EXE_int & ~exe_res_int_disable_r; // RETI and disables need bypass.  EI is delayed a clock.
 
 assign EXE_MCT_req_val     = IFD_EXE_valid & exe_mem_req_r & ^exe_stage[1:0];
 assign EXE_MCT_req_addr_d1 = ( EXE_MCT_req_wr ? {((IFD_EXE_decode[`DEC_DST] == `OPR_S8 || IFD_EXE_decode[`DEC_DST] == `OPR_C) ? 8'hFF : exe_dst_r[15:8]),exe_dst_r[7:0]}
@@ -1057,11 +1058,16 @@ assign EXE_MCT_req_data_d1 = exe_loadopstore ? exe_res_los_r[7:0] : (exe_stage[1
 
 assign HLT_EXE_rsp = HLT_REQ_sync & ~IFD_EXE_valid;
 
+reg         dbg_advance_r;
+assign DBG_advance = dbg_advance_r;
+
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
     exe_ctr_r <= 0;
     
     exe_ime_r <= 0;
+    
+    dbg_advance_r <= 1;
   end
   else begin
     if (CLK_BUS_EDGE & exe_advance_r) begin
@@ -1095,6 +1101,8 @@ always @(posedge CLK) begin
         if (exe_ifd_redirect_r) exe_target_prev_redirect_r <= exe_ifd_redirect_target_r;
       end
     end
+    
+    if (CLK_BUS_EDGE) dbg_advance_r <= ~IFD_EXE_valid | ~exe_complete_r | DBG_EXE_step;
   end
 
   // alu/bit/los input
@@ -1102,13 +1110,13 @@ always @(posedge CLK) begin
   
   // default to no redirect and no extended latency
   exe_ifd_redirect_r <= 0;
-  exe_lat_add_r <= 0;
+  exe_lat_add_r      <= 0;
 
   // default no mod to SP
   exe_res_sp_mod_r <= 0;
-  exe_res_sp_r <= SP_r;
+  exe_res_sp_r     <= SP_r;
   
-  exe_res_int_enable_r <= 0;
+  exe_res_int_enable_r  <= 0;
   exe_res_int_disable_r <= 0;
 
   exe_res_r    <= exe_dst_r;
@@ -1356,9 +1364,9 @@ always @(posedge CLK) begin
   
   // op completion and pipe advance
   exe_complete_r <= IFD_EXE_valid & ~|exe_stage;
-  exe_advance_r  <= IFD_EXE_valid & (~exe_complete_r | DBG_EXE_step) & ~exe_stall;
+  exe_advance_r  <= IFD_EXE_valid & (~exe_complete_r | DBG_EXE_step & ~exe_stall);
   exe_ready_r    <= ~IFD_EXE_valid | (exe_complete_r & ~exe_stall & DBG_EXE_step);
-
+  
   // operand read
   case (IFD_EXE_decode[`DEC_SRC])
     //`OPR_I  : exe_src_r <= 0;
@@ -1980,7 +1988,7 @@ always @(posedge CLK) begin
     end    
     
     // scanline/state rendering datapath
-    if (ppu_dot_edge) begin      
+    if (ppu_dot_edge & DBG_advance) begin      
       ppu_pix_phase_r <= 0;
     
       // read pointer advance
@@ -2126,7 +2134,14 @@ always @(posedge CLK) begin
             if (~ppu_pix_oam_lut_found_r) ppu_tile_ctr_r <= ppu_tile_ctr_r + 1;
             if (~ppu_pix_oam_lut_found_r) ppu_pix_win_tile_r <= ppu_pix_win_tile_r + 1;
 
-            ppu_state_r <= ppu_pix_oam_lut_found_r ? ST_PPU_PIX_OB1 : (ppu_tile_end ? ST_PPU_PIX_DRN : ST_PPU_PIX_MAP);
+            ppu_state_r <= ppu_pix_oam_lut_found_r ? ST_PPU_PIX_OB1 : (ppu_tile_end ? ST_PPU_HBL : ST_PPU_PIX_MAP);
+
+            // transitioning to h-blank
+            if (~ppu_pix_oam_lut_found_r & ppu_tile_end) begin
+              if (REG_STAT_r[`STAT_INT_H_EN]) ppu_lcd_stat_pulse_r <= 1;
+              REG_STAT_r[`STAT_MODE] <= `MODE_H;
+            end
+
           end
 
           ppu_pix_phase_r <= ~ppu_pix_phase_r;
@@ -2166,25 +2181,27 @@ always @(posedge CLK) begin
 
           ppu_pix_phase_r <= ~ppu_pix_phase_r;
         end
-        ST_PPU_PIX_DRN : begin
-          // we need to wait for the fifo to drain before moving to HBL
-          if (~ppu_fifo_data) begin
-
-            ppu_tile_ctr_r <= 0;
-            ppu_pix_ctr_r <= 0;
-                       
-            // interrupt signals
-            if (REG_STAT_r[`STAT_INT_H_EN]) ppu_lcd_stat_pulse_r <= 1;
-            REG_STAT_r[`STAT_MODE] <= `MODE_H;
-
-            ppu_state_r <= ST_PPU_HBL;
-          end
-        end
+//        ST_PPU_PIX_DRN : begin
+//          if (~ppu_fifo_data) begin
+//
+//            ppu_tile_ctr_r <= 0;
+//            ppu_pix_ctr_r <= 0;
+//                       
+//            REG_STAT_r[`STAT_MODE] <= `MODE_H;
+//
+//            ppu_state_r <= ST_PPU_HBL;
+//          end
+//        end
         ST_PPU_HBL     : begin
+          if (~ppu_fifo_data) begin
+            ppu_tile_ctr_r <= 0;
+            ppu_pix_ctr_r  <= 0;
+          end
+          
           if (ppu_dot_end) begin
-            REG_LY_r <= REG_LY_r + 1;
+            //REG_LY_r <= REG_LY_r + 1;
 
-            // interrupt signals
+            // transitioning to v-blank
             if (ppu_vis_end) begin
               ppu_vblank_pulse_r <= 1;
               if (REG_STAT_r[`STAT_INT_V_EN]) ppu_lcd_stat_pulse_r <= 1;
@@ -2198,7 +2215,7 @@ always @(posedge CLK) begin
           if (ppu_dot_end) begin
             ppu_first_frame_r <= 0;
           
-            REG_LY_r <= ppu_disp_end ? 0 : (REG_LY_r + 1);
+            //REG_LY_r <= ppu_disp_end ? 0 : (REG_LY_r + 1);
 
             if (ppu_disp_end) ppu_state_r <= ST_PPU_FRM_NEW;
           end
@@ -2206,8 +2223,19 @@ always @(posedge CLK) begin
       endcase
 
       if (~|(ppu_state_r & ST_PPU_OFF)) begin
-        // FIXME: figure out when this is supposed to happen.  For now do it at 0+1 dot delay of a new line.
         // It's possible for a write to happen on the last dot cycle which will cause us to miss a 1->0->1 transition.
+        //
+        // FIXME: below is what we are expecting, but it seems higher than expected.
+        //
+        // dot clk
+        // 0 - LY_r
+        // 1 - match
+        // 2 - ppu_lcd_stat_pulse_r
+        // 3 - IF/earliest interrupt point
+        // 3+?    - Wait for current instruction to finish. 4 * (0-6)
+        // 3+?+20 - +20 = 5 * 4 dot clocks to take interrupt
+        
+        if (ppu_dot_end) REG_LY_r <= ppu_disp_end ? 0 : REG_LY_r + 1;
         REG_STAT_r[`STAT_LYC_MATCH] <= (REG_LY_r == REG_LYC_r) ? 1 : 0;
         ppu_lyc_match_d1_r <= REG_STAT_r[`STAT_LYC_MATCH];
         if (~ppu_lyc_match_d1_r & REG_STAT_r[`STAT_LYC_MATCH] & REG_STAT_r[`STAT_INT_M_EN]) ppu_lcd_stat_pulse_r <= 1;
@@ -3444,7 +3472,7 @@ always @(posedge CLK) begin
     dbg_brk_data_rd_addr <= (exe_advance_r && exe_complete_r) ? 0 : (IFD_EXE_valid && dbg_mem_req_val_d1_r && ~dbg_mem_req_wr_d1_r && EXE_MCT_req_addr_d1 == dbg_brk_addr_r); //&& (!config_r[2][0] ||     mmc_data_r[7:0] == dbg_brk_data_r);
     dbg_brk_data_wr_addr <= (exe_advance_r && exe_complete_r) ? 0 : (IFD_EXE_valid && dbg_mem_req_val_d1_r &&  dbg_mem_req_wr_d1_r && EXE_MCT_req_addr_d1 == dbg_brk_addr_r && (!config_r[2][0] || EXE_MCT_req_data_d1 == dbg_brk_data_r));
     dbg_brk_stop         <= IFD_EXE_valid & IFD_EXE_int;
-    dbg_brk_error        <= IFD_EXE_valid && (IFD_EXE_pc_start[15:14] == 4'hC || IFD_EXE_pc_start[15:12] == 4'hD || IFD_EXE_pc_start[15:12] == 4'hE || IFD_EXE_pc_start[15:8] == 8'hF6 || SP_r[15:8] != 8'hFF || (IFD_EXE_pc_start[15:0] == 16'h3537 && IFD_EXE_op[7:0] != 8'h21));
+    dbg_brk_error        <= IFD_EXE_valid && (SP_r[15:0] < 16'hFF7F); // SP overflow with HRAM stack
 
     dbg_brk_addr_r <= dbg_brk_addr_watch;
     dbg_brk_data_r <= dbg_brk_data_watch;
