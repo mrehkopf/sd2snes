@@ -2265,6 +2265,7 @@ reg  [2:0]  apu_frame_step_r;
 reg         apu_square1_enable_r;
 reg  [12:0] apu_square1_timer_r;
 reg  [5:0]  apu_square1_length_r;
+reg         apu_square1_env_enable_r;
 reg  [2:0]  apu_square1_env_timer_r;
 reg  [3:0]  apu_square1_volume_r;
 reg  [2:0]  apu_square1_pos_r;
@@ -2285,6 +2286,7 @@ wire signed [15:0] apu_square1_output = apu_square1_enable_r ? ((~apu_square1_du
 reg         apu_square2_enable_r;
 reg  [12:0] apu_square2_timer_r;
 reg  [5:0]  apu_square2_length_r;
+reg         apu_square2_env_enable_r;
 reg  [2:0]  apu_square2_env_timer_r;
 reg  [3:0]  apu_square2_volume_r;
 reg  [2:0]  apu_square2_pos_r;
@@ -2313,6 +2315,7 @@ wire signed [15:0] apu_wave_output = apu_wave_enable_r ? ((~|REG_NR32_r[`NR32_LE
 reg         apu_noise_enable_r;
 reg  [21:0] apu_noise_timer_r;
 reg  [5:0]  apu_noise_length_r;
+//reg         apu_noise_env_enable_r; // TODO: determine if noise channel has envelope enable and associated boundary conditions
 reg  [2:0]  apu_noise_env_timer_r;
 reg  [3:0]  apu_noise_volume_r;
 reg  [14:0] apu_noise_lfsr_r;
@@ -2346,6 +2349,7 @@ reg         apu_reg_update_r;
 reg  [7:0]  apu_reg_update_address_r;
 reg         apu_reg_update_nr12_dir_r;
 reg         apu_reg_update_nr22_dir_r;
+reg         apu_reg_update_nr42_dir_r;
 
 assign APU_DAT = apu_data_volume_r;
 
@@ -2410,6 +2414,7 @@ always @(posedge CLK) begin
     
     apu_square1_enable_r       <= 0;
     apu_square1_timer_r        <= 0;
+    apu_square1_env_enable_r   <= 0;
     apu_square1_env_timer_r    <= 0;
     apu_square1_volume_r       <= 0;
     apu_square1_pos_r          <= 0;
@@ -2417,22 +2422,24 @@ always @(posedge CLK) begin
     apu_square1_sweep_timer_r  <= 0;
     apu_square1_sweep_freq_r   <= 0;
 
-    apu_square2_enable_r    <= 0;
-    apu_square2_timer_r     <= 0;
-    apu_square2_env_timer_r <= 0;
-    apu_square2_volume_r    <= 0;
-    apu_square2_pos_r       <= 0;
+    apu_square2_enable_r     <= 0;
+    apu_square2_timer_r      <= 0;
+    apu_square2_env_enable_r <= 0;
+    apu_square2_env_timer_r  <= 0;
+    apu_square2_volume_r     <= 0;
+    apu_square2_pos_r        <= 0;
     
     apu_wave_enable_r <= 0;
     apu_wave_timer_r  <= 0;
     apu_wave_pos_r    <= 0;
     apu_wave_sample_r <= 0;
 
-    apu_noise_enable_r    <= 0;
-    apu_noise_timer_r     <= 0;
-    apu_noise_env_timer_r <= 0;
-    apu_noise_volume_r    <= 0;
-    apu_noise_lfsr_r      <= 0;
+    apu_noise_enable_r     <= 0;
+    apu_noise_timer_r      <= 0;
+    //apu_noise_env_enable_r <= 0;
+    apu_noise_env_timer_r  <= 0;
+    apu_noise_volume_r     <= 0;
+    apu_noise_lfsr_r       <= 0;
   
     apu_cpu_edge_d1_r <= 0;
     apu_reg_update_r  <= 0;
@@ -2456,15 +2463,20 @@ always @(posedge CLK) begin
         8'h11:  apu_square1_length_r <= REG_NR11_r[`NR11_LENGTH];    // NR11
         8'h12: begin // NR12
           // FIXME: some corner cases to handle with volume  
+          // FIXME: is it ok to use updated period?
+          if      (apu_square1_env_enable_r & ~|REG_NR12_r[`NR12_ENV_PERIOD]) apu_square1_volume_r <= apu_square1_volume_r + 1;
+          else if (~apu_reg_update_nr12_dir_r)                                apu_square1_volume_r <= apu_square1_volume_r + 2;
+          
           if (apu_square1_enable_r) apu_square1_enable_r <= |REG_NR12_r[7:3];
         end
         8'h14: begin // NR14
           if (REG_NR14_r[`NR14_FREQ_ENABLE]) begin
-            apu_square1_enable_r    <= (|REG_NR12_r[`NR12_ENV_VOLUME] | REG_NR12_r[`NR12_ENV_DIR]) & ~HLT_RSP;
-            apu_square1_timer_r     <= apu_square1_period;
-            apu_square1_length_r    <= REG_NR11_r[`NR11_LENGTH];
-            apu_square1_env_timer_r <= REG_NR12_r[`NR12_ENV_PERIOD];
-            apu_square1_volume_r    <= REG_NR12_r[`NR12_ENV_VOLUME];
+            apu_square1_enable_r     <= (|REG_NR12_r[`NR12_ENV_VOLUME] | REG_NR12_r[`NR12_ENV_DIR]) & ~HLT_RSP;
+            apu_square1_timer_r      <= apu_square1_period;
+            apu_square1_length_r     <= REG_NR11_r[`NR11_LENGTH];
+            apu_square1_env_enable_r <= 1;
+            apu_square1_env_timer_r  <= REG_NR12_r[`NR12_ENV_PERIOD];
+            apu_square1_volume_r     <= REG_NR12_r[`NR12_ENV_VOLUME];
             
             apu_square1_sweep_enable_r <= |REG_NR10_r[`NR10_SWEEP_TIME] | |REG_NR10_r[`NR10_SWEEP_SHIFT];
             apu_square1_sweep_timer_r  <= {~|REG_NR10_r[`NR10_SWEEP_TIME],REG_NR10_r[`NR10_SWEEP_TIME]};
@@ -2476,15 +2488,20 @@ always @(posedge CLK) begin
         8'h16:  apu_square2_length_r <= REG_NR21_r[`NR21_LENGTH];    // NR21
         8'h17: begin // NR22
           // FIXME: some corner cases to handle with volume  
+          // FIXME: is it ok to use updated period?
+          if      (apu_square2_env_enable_r & ~|REG_NR22_r[`NR22_ENV_PERIOD]) apu_square2_volume_r <= apu_square2_volume_r + 1;
+          else if (~apu_reg_update_nr22_dir_r)                                apu_square2_volume_r <= apu_square2_volume_r + 2;
+
           if (apu_square2_enable_r) apu_square2_enable_r <= |REG_NR22_r[7:3];
         end
         8'h19: begin // NR24
           if (REG_NR24_r[`NR24_FREQ_ENABLE]) begin
-            apu_square2_enable_r    <= (|REG_NR22_r[`NR22_ENV_VOLUME] | REG_NR22_r[`NR22_ENV_DIR]) & ~HLT_RSP;
-            apu_square2_timer_r     <= apu_square2_period;
-            apu_square2_length_r    <= REG_NR21_r[`NR21_LENGTH];
-            apu_square2_env_timer_r <= REG_NR22_r[`NR22_ENV_PERIOD];
-            apu_square2_volume_r    <= REG_NR22_r[`NR22_ENV_VOLUME];
+            apu_square2_enable_r     <= (|REG_NR22_r[`NR22_ENV_VOLUME] | REG_NR22_r[`NR22_ENV_DIR]) & ~HLT_RSP;
+            apu_square2_timer_r      <= apu_square2_period;
+            apu_square2_length_r     <= REG_NR21_r[`NR21_LENGTH];
+            apu_square2_env_enable_r <= 1;
+            apu_square2_env_timer_r  <= REG_NR22_r[`NR22_ENV_PERIOD];
+            apu_square2_volume_r     <= REG_NR22_r[`NR22_ENV_VOLUME];
           end
         end
     
@@ -2502,15 +2519,21 @@ always @(posedge CLK) begin
       
         // noise
         8'h20:  apu_noise_length_r <= REG_NR41_r[`NR41_LENGTH];    // NR41
-        8'h21:  if (apu_noise_enable_r) apu_noise_enable_r <= (REG_NR42_r[`NR42_ENV_DIR] | |REG_NR42_r[`NR42_ENV_VOLUME]);// NR42
+        8'h21:  begin
+          //if      (apu_noise_env_enable_r & ~|REG_NR42_r[`NR42_ENV_PERIOD]) apu_noise_volume_r <= apu_noise_volume_r + 1;
+          //else if (~apu_reg_update_nr42_dir_r)                              apu_noise_volume_r <= apu_noise_volume_r + 2;        
+        
+          if (apu_noise_enable_r) apu_noise_enable_r <= (REG_NR42_r[`NR42_ENV_DIR] | |REG_NR42_r[`NR42_ENV_VOLUME]);// NR42
+        end
         8'h23:  begin                                                         // NR44
           if (REG_NR44_r[`NR44_FREQ_ENABLE]) begin
-            apu_noise_enable_r    <= (REG_NR42_r[`NR42_ENV_DIR] | |REG_NR42_r[`NR42_ENV_VOLUME]) & ~HLT_RSP;
-            apu_noise_timer_r     <= apu_noise_period;
-            apu_noise_lfsr_r      <= 15'h7FFF;
-            apu_noise_length_r    <= REG_NR41_r[`NR41_LENGTH];
-            apu_noise_env_timer_r <= REG_NR42_r[`NR42_ENV_PERIOD];
-            apu_noise_volume_r    <= REG_NR42_r[`NR42_ENV_VOLUME];
+            apu_noise_enable_r     <= (REG_NR42_r[`NR42_ENV_DIR] | |REG_NR42_r[`NR42_ENV_VOLUME]) & ~HLT_RSP;
+            apu_noise_timer_r      <= apu_noise_period;
+            apu_noise_lfsr_r       <= 15'h7FFF;
+            apu_noise_length_r     <= REG_NR41_r[`NR41_LENGTH];
+            //apu_noise_env_enable_r <= 1;
+            apu_noise_env_timer_r  <= REG_NR42_r[`NR42_ENV_PERIOD];
+            apu_noise_volume_r     <= REG_NR42_r[`NR42_ENV_VOLUME];
           end
           
         end
@@ -2532,12 +2555,13 @@ always @(posedge CLK) begin
       
         // envelope
         if (&apu_frame_step_r) begin          
-          if (|apu_square1_env_timer_r) begin
+          if (apu_square1_env_enable_r & |apu_square1_env_timer_r) begin
             apu_square1_env_timer_r <= apu_square1_env_timer_r - 1;
             
             if (apu_square1_env_timer_r == 1) begin
               if      ( REG_NR12_r[`NR12_ENV_DIR] & ~&apu_square1_volume_r) apu_square1_volume_r <= apu_square1_volume_r + 1;
               else if (~REG_NR12_r[`NR12_ENV_DIR] &  |apu_square1_volume_r) apu_square1_volume_r <= apu_square1_volume_r - 1;
+              else                                                          apu_square1_env_enable_r <= 0;
         
               apu_square1_env_timer_r <= REG_NR12_r[`NR12_ENV_PERIOD];
             end
@@ -2594,11 +2618,12 @@ always @(posedge CLK) begin
       
         // envelope
         if (&apu_frame_step_r) begin
-          if (|apu_square2_env_timer_r) begin
+          if (apu_square2_env_enable_r & |apu_square2_env_timer_r) begin
             apu_square2_env_timer_r <= apu_square2_env_timer_r - 1;
             if (apu_square2_env_timer_r == 1) begin
               if      ( REG_NR22_r[`NR22_ENV_DIR] & ~&apu_square2_volume_r) apu_square2_volume_r <= apu_square2_volume_r + 1;
               else if (~REG_NR22_r[`NR22_ENV_DIR] &  |apu_square2_volume_r) apu_square2_volume_r <= apu_square2_volume_r - 1;
+              else                                                          apu_square2_env_enable_r <= 0;
 
               apu_square2_env_timer_r <= REG_NR22_r[`NR22_ENV_PERIOD];
             end
@@ -2645,11 +2670,12 @@ always @(posedge CLK) begin
       
         // envelope
         if (&apu_frame_step_r) begin
-          if (|apu_noise_env_timer_r) begin
+          if (/*apu_noise_env_enable_r & */|apu_noise_env_timer_r) begin
             apu_noise_env_timer_r <= apu_noise_env_timer_r - 1;
             if (apu_noise_env_timer_r == 1) begin
               if      ( REG_NR42_r[`NR42_ENV_DIR] & ~&apu_noise_volume_r) apu_noise_volume_r <= apu_noise_volume_r + 1;
               else if (~REG_NR42_r[`NR42_ENV_DIR] &  |apu_noise_volume_r) apu_noise_volume_r <= apu_noise_volume_r - 1;
+              //else                                                        apu_noise_env_enable_r <= 0;
 
               apu_noise_env_timer_r <= REG_NR42_r[`NR42_ENV_PERIOD];
             end
@@ -2680,6 +2706,7 @@ always @(posedge CLK) begin
       apu_reg_update_address_r <= REG_address;
       apu_reg_update_nr12_dir_r <= REG_NR12_r[`NR12_ENV_DIR];
       apu_reg_update_nr22_dir_r <= REG_NR22_r[`NR22_ENV_DIR];
+      apu_reg_update_nr42_dir_r <= REG_NR42_r[`NR42_ENV_DIR];
     
       case (REG_address)
         8'h10: REG_NR10_r[7:0] <= REG_req_data[7:0];
