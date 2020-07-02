@@ -2350,6 +2350,8 @@ reg  [7:0]  apu_reg_update_address_r;
 reg         apu_reg_update_nr12_dir_r;
 reg         apu_reg_update_nr22_dir_r;
 reg         apu_reg_update_nr42_dir_r;
+reg         apu_reg_update_nr14_enable_r;
+reg         apu_reg_update_nr24_enable_r;
 
 assign APU_DAT = apu_data_volume_r;
 
@@ -2368,17 +2370,17 @@ always @(posedge CLK) begin
   apu_square2_cutoff_r <= &{REG_NR24_r[`NR24_FREQ_MSB],REG_NR23_r[`NR23_FREQ_LSB]};
   
   case (REG_NR11_r[`NR11_DUTY])
-    0: apu_square1_duty_r <= 8'b01111111 | {8{apu_square1_cutoff_r}};
-    1: apu_square1_duty_r <= 8'b01111110 | {8{apu_square1_cutoff_r}};
-    2: apu_square1_duty_r <= 8'b00011110 | {8{apu_square1_cutoff_r}};
-    3: apu_square1_duty_r <= 8'b10000001 | {8{apu_square1_cutoff_r}};
+    0: apu_square1_duty_r <= 8'b00000001 | {8{apu_square1_cutoff_r}};
+    1: apu_square1_duty_r <= 8'b10000001 | {8{apu_square1_cutoff_r}};
+    2: apu_square1_duty_r <= 8'b10000111 | {8{apu_square1_cutoff_r}};
+    3: apu_square1_duty_r <= 8'b01111110 | {8{apu_square1_cutoff_r}};
   endcase
 
   case (REG_NR21_r[`NR21_DUTY])
-    0: apu_square2_duty_r <= 8'b01111111 | {8{apu_square2_cutoff_r}};
-    1: apu_square2_duty_r <= 8'b01111110 | {8{apu_square2_cutoff_r}};
-    2: apu_square2_duty_r <= 8'b00011110 | {8{apu_square2_cutoff_r}};
-    3: apu_square2_duty_r <= 8'b10000001 | {8{apu_square2_cutoff_r}};
+    0: apu_square2_duty_r <= 8'b00000001 | {8{apu_square2_cutoff_r}};
+    1: apu_square2_duty_r <= 8'b10000001 | {8{apu_square2_cutoff_r}};
+    2: apu_square2_duty_r <= 8'b10000111 | {8{apu_square2_cutoff_r}};
+    3: apu_square2_duty_r <= 8'b01111110 | {8{apu_square2_cutoff_r}};
   endcase
   
   if (cpu_ireset_r | ~REG_NR52_r[`NR52_CONTROL_ENABLE]) begin
@@ -2467,6 +2469,8 @@ always @(posedge CLK) begin
           if      (apu_square1_env_enable_r & ~|REG_NR12_r[`NR12_ENV_PERIOD]) apu_square1_volume_r <= apu_square1_volume_r + 1;
           else if (~apu_reg_update_nr12_dir_r)                                apu_square1_volume_r <= apu_square1_volume_r + 2;
           
+          if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
+          
           if (apu_square1_enable_r) apu_square1_enable_r <= |REG_NR12_r[7:3];
         end
         8'h14: begin // NR14
@@ -2481,6 +2485,8 @@ always @(posedge CLK) begin
             apu_square1_sweep_enable_r <= |REG_NR10_r[`NR10_SWEEP_TIME] | |REG_NR10_r[`NR10_SWEEP_SHIFT];
             apu_square1_sweep_timer_r  <= {~|REG_NR10_r[`NR10_SWEEP_TIME],REG_NR10_r[`NR10_SWEEP_TIME]};
             apu_square1_sweep_freq_r   <= {REG_NR14_r[`NR14_FREQ_MSB],REG_NR13_r[`NR13_FREQ_LSB]};
+
+            if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
           end
         end
   
@@ -2492,6 +2498,8 @@ always @(posedge CLK) begin
           if      (apu_square2_env_enable_r & ~|REG_NR22_r[`NR22_ENV_PERIOD]) apu_square2_volume_r <= apu_square2_volume_r + 1;
           else if (~apu_reg_update_nr22_dir_r)                                apu_square2_volume_r <= apu_square2_volume_r + 2;
 
+          if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
+
           if (apu_square2_enable_r) apu_square2_enable_r <= |REG_NR22_r[7:3];
         end
         8'h19: begin // NR24
@@ -2502,6 +2510,8 @@ always @(posedge CLK) begin
             apu_square2_env_enable_r <= 1;
             apu_square2_env_timer_r  <= REG_NR22_r[`NR22_ENV_PERIOD];
             apu_square2_volume_r     <= REG_NR22_r[`NR22_ENV_VOLUME];
+
+            if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
           end
         end
     
@@ -2707,6 +2717,8 @@ always @(posedge CLK) begin
       apu_reg_update_nr12_dir_r <= REG_NR12_r[`NR12_ENV_DIR];
       apu_reg_update_nr22_dir_r <= REG_NR22_r[`NR22_ENV_DIR];
       apu_reg_update_nr42_dir_r <= REG_NR42_r[`NR42_ENV_DIR];
+      apu_reg_update_nr14_enable_r <= REG_NR14_r[`NR14_FREQ_ENABLE];
+      apu_reg_update_nr24_enable_r <= REG_NR24_r[`NR24_FREQ_ENABLE];
     
       case (REG_address)
         8'h10: REG_NR10_r[7:0] <= REG_req_data[7:0];
