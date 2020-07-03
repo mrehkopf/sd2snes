@@ -2020,7 +2020,7 @@ always @(posedge CLK) begin
           ppu_hblank_start_r <= 0;
           ppu_vblank_start_r <= 0;
           
-          if (REG_LCDC_r[`LCDC_DS_EN]) ppu_state_r <= ST_PPU_VBL;
+          if (REG_LCDC_r[`LCDC_DS_EN]) ppu_state_r <= ST_PPU_FRM_NEW;
         end
         ST_PPU_FRM_NEW : begin
           // next frame
@@ -2226,10 +2226,10 @@ always @(posedge CLK) begin
             if (REG_STAT_r[`STAT_INT_V_EN]) ppu_lcd_stat_pulse_r <= 1;
             REG_STAT_r[`STAT_MODE] <= `MODE_V;
             
-            ppu_vblank_start_r <= 0;
-            
-            ppu_first_frame_r <= 0;
+            ppu_vblank_start_r <= 0;            
           end
+
+          ppu_first_frame_r <= 0;
         
           if (ppu_dot_end) begin          
             if (ppu_disp_end) ppu_state_r <= ST_PPU_FRM_NEW;
