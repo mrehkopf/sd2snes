@@ -171,7 +171,7 @@ integer i;
 //   FFFF        Interrupt Enable Register                                       // Reg
 // 
 // SNES
-//   000000-07FFFF   SGB SNES ROM (256KB)                                        // 512KB RAM
+//   000000-07FFFF   SGB SNES ROM (512KB)                                        // 512KB RAM
 // 
 // MCU
 //   000000-7FFFFF   PSRAM
@@ -381,9 +381,10 @@ end
 //-------------------------------------------------------------------
 
 `define MAPPER_ID  2:0
-`define MAPPER_RTC 3:3
+`define MAPPER_EX  3:3
 
 reg  [8:0]  mbc_rom_bank_r;
+reg  [8:0]  mbc_rom0_bank_r;
 reg  [6:0]  mbc_ram_bank_r;
 
 reg         mbc_reg_ram_enabled_r;
@@ -419,6 +420,10 @@ always @(*) begin
   endcase
 end
 
+// handle expansion bit
+wire        mbc_map_rtc = MAPPER[`MAPPER_EX] && MAPPER[`MAPPER_ID] == 3; // MBC3 supports RTC
+wire        mbc_map_mlt = MAPPER[`MAPPER_EX] && MAPPER[`MAPPER_ID] == 1; // MBC1 supports (M)ulticart (MBC1M)
+
 // MAP has logic to translate the CPU address
 // to ROM (bootROM), SaveRAM, and WRAM addresses.  It represents
 // the cartridge addressing logic, some basic CPU address
@@ -428,7 +433,7 @@ end
 // These are only valid on the first cycle of the request.
 assign mbc_bus_mbc = CPU_SYS_REQ & CPU_SYS_WR & ~CPU_SYS_ADDR[15];
 assign mbc_bus_dis = CPU_SYS_REQ & CPU_SYS_WR &  CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14] & ~mbc_reg_ram_enabled_r;
-assign mbc_bus_rtc = CPU_SYS_REQ &               CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14] &  mbc_reg_ram_enabled_r & |mbc_reg_bank_r[7:3] & MAPPER[`MAPPER_RTC];
+assign mbc_bus_rtc = CPU_SYS_REQ &               CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14] &  mbc_reg_ram_enabled_r & |mbc_reg_bank_r[7:3] & mbc_map_rtc;
 assign mbc_bus_req = mbc_bus_mbc | mbc_bus_rtc | mbc_bus_dis;
                      
 assign ROM_BUS_RRQ = CPU_SYS_REQ & ~CPU_SYS_WR & ~mbc_bus_req;
@@ -437,8 +442,8 @@ assign ROM_BUS_WORD = 0; // SGB has 8b data bus
 
 wire   BOOTROM = CPU_BOOTROM_ACTIVE & ~|CPU_SYS_ADDR[13:8];
 
-assign ROM_BUS_ADDR = ( (~|CPU_SYS_ADDR[15:14]) ? {BOOTROM,9'h000,          CPU_SYS_ADDR[13:0]}                                                // ROM     0000-3FFF -> 000000-003FFF,800000-8000FF (cart+boot) - 16KB fixed
-                      : (~CPU_SYS_ADDR[15])     ? ({1'h0,mbc_rom_bank_r[8:0],CPU_SYS_ADDR[13:0]} & ROM_MASK)                                   // ROM     4000-7FFF -> 004000-7FFFFF (cart) - 16KB programmable
+assign ROM_BUS_ADDR = ( (~|CPU_SYS_ADDR[15:14]) ? ({BOOTROM,(mbc_rom0_bank_r[8:0] & ROM_MASK[22:14]),(CPU_SYS_ADDR[13:0] & ROM_MASK[13:0])})   // ROM     0000-3FFF -> 000000-003FFF,800000-8000FF (cart+boot) - 16KB programmable MBC1 else fixed
+                      : (~CPU_SYS_ADDR[15])     ? ({1'h0,   (mbc_rom_bank_r[8:0]  & ROM_MASK[22:14]),(CPU_SYS_ADDR[13:0] & ROM_MASK[13:0])})   // ROM     4000-7FFF -> 004000-7FFFFF (cart) - 16KB programmable
                                                                                                                                                // VRAM    8000-9FFF -> NA - 8 KB (BRAM)
                       : (~CPU_SYS_ADDR[14])     ? {4'hE,(mbc_ram_bank_r[6:0] & SAVERAM_MASK[19:13]),(CPU_SYS_ADDR[12:0] & SAVERAM_MASK[12:0])} // SaveRAM A000-BFFF -> E00000-EFFFFF - 8KB programmable
                       :                           {8'h80,3'b110,              CPU_SYS_ADDR[12:0]}                                              // WRAM    C000-DFFF -> 80C000-80DFFF 4+4=8 KB fixed
@@ -540,20 +545,25 @@ always @(posedge CLK) begin
     end
   end
   
-  mbc_ram_bank_r[6:0] <= ( MAPPER[`MAPPER_ID] == 1 ? {5'h00,(mbc_reg_mode_r ? mbc_reg_bank_r[1:0] : 2'h0)}
+  mbc_ram_bank_r[6:0] <= ( MAPPER[`MAPPER_ID] == 1 ? {5'h00,((mbc_reg_mode_r & ~mbc_map_mlt) ? mbc_reg_bank_r[1:0] : 2'h0)}
                          : MAPPER[`MAPPER_ID] == 2 ? 7'h00
                          : MAPPER[`MAPPER_ID] == 3 ? {3'h0,mbc_reg_bank_r[3:0]}
                          : MAPPER[`MAPPER_ID] == 5 ? {3'h0,mbc_reg_bank_r[3:0]}
                          :                           7'h00
                          );
     
-  mbc_rom_bank_r[8:0] <= ( MAPPER[`MAPPER_ID] == 1 ? {2'h0,(mbc_reg_mode_r ? 2'h0 : mbc_reg_bank_r[1:0]),(mbc_reg_rom_bank_r[4:0] | ~|mbc_reg_rom_bank_r[4:0])}
+  mbc_rom_bank_r[8:0] <= ( MAPPER[`MAPPER_ID] == 1 ? (mbc_map_mlt ? {3'h0,mbc_reg_bank_r[1],({mbc_reg_bank_r[0],mbc_reg_rom_bank_r[3:0]} | ~|{mbc_reg_bank_r[0],mbc_reg_rom_bank_r[3:0]})}
+                                                                  : {2'h0,mbc_reg_bank_r[1:0],(mbc_reg_rom_bank_r[4:0] | ~|mbc_reg_rom_bank_r[4:0])})
                          : MAPPER[`MAPPER_ID] == 2 ? {5'h00,mbc_reg_rom_bank_r[3:0] | ~|mbc_reg_rom_bank_r[3:0]}
-                         : MAPPER[`MAPPER_ID] == 3 ? {2'h0,mbc_reg_rom_bank_r[6:0] | ~|mbc_reg_rom_bank_r[6:0]}
+                         : MAPPER[`MAPPER_ID] == 3 ? {1'b0,mbc_reg_rom_bank_r[7:0] | ~|mbc_reg_rom_bank_r[7:0]}
                          : MAPPER[`MAPPER_ID] == 5 ? {mbc_reg_rom_bank_upper_r,mbc_reg_rom_bank_r[7:0]}
                          :                           9'h001
                          );
-
+                         
+  mbc_rom0_bank_r[8:0] <= ( MAPPER[`MAPPER_ID] == 1 ? {2'h0,(mbc_reg_mode_r ? (mbc_map_mlt ? {1'b0,mbc_reg_bank_r[1:0]} : {mbc_reg_bank_r[1:0],1'b0}) : 3'h0),4'h00}
+                          :                           9'h000
+                          );
+                         
   // write in state for loads
   if (REG_REQ) begin
     case (REG_ADDR)

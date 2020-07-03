@@ -67,7 +67,17 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
   
   file_readblock(header, 0x100, sizeof(sgb_header_t));
 
-  /* FPGA mapper */
+  /* FPGA mapper
+      0 = MBC0
+      1 = MBC1      mapper_id[3] = MBC1M/Multicart
+      2 = MBC2
+      3 = MBC3      mapper_id[3] = RTC
+      5 = MBC5
+      6 = Unmapped
+      7 = Unmapped
+
+      
+  */
   switch (header->carttype) {
     case 0x00:
       // MBC0
@@ -120,6 +130,15 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
       props->romsize_bytes += (uint32_t)(32 * 1024) << ((header->romsize >> 0) & 0x0F);
       break;
     default:   props->romsize_bytes = 0; break;
+  }
+  
+  /* Handle MBC1M.  Size is minimum to support 2+ files and logo region needs to match.  This is a hack.  See SameBoy */
+  if (props->mapper_id == 0x01 && props->romsize_bytes >= (256 + 16) * 1024) {
+    uint8_t logo[0x30];
+    file_readblock(logo, 0x40104, sizeof(logo));
+    if (!memcmp(header->logo, logo, sizeof(logo))) {
+      props->mapper_id |= 0x08;
+    }
   }
   
   /* SGB BOOT ROM filename */
