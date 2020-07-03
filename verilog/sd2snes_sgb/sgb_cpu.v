@@ -2253,10 +2253,7 @@ end
 //-------------------------------------------------------------------
 
 // Things to link into:
-// - don't need 16b of precision on output
-// - figure out the best place to deal with signed input for the DAC.  Maybe move that code out of here and into that module?
 // - determine if env/sweep timers are enabled/disabled correctly
-// - popping/clicked noise problems seems to have improved with wave output sign conversion and doing +/- vol for other channels.  any issues left?
 
 `ifdef APU
 reg  [2:0]  apu_frame_step_r;
@@ -2271,6 +2268,7 @@ reg  [3:0]  apu_square1_volume_r;
 reg  [2:0]  apu_square1_pos_r;
 
 reg         apu_square1_cutoff_r;
+reg  [7:0]  apu_square1_duty_r;
 
 reg         apu_square1_sweep_enable_r;
 reg  [3:0]  apu_square1_sweep_timer_r;
@@ -2278,9 +2276,7 @@ reg  [10:0] apu_square1_sweep_freq_r;
 wire [15:0] apu_square1_sweep_freq_next = REG_NR10_r[`NR10_SWEEP_NEG] ? ({5'h00,apu_square1_sweep_freq_r} - ({5'h00,apu_square1_sweep_freq_r} >> REG_NR10_r[`NR10_SWEEP_SHIFT])) : ({5'h00,apu_square1_sweep_freq_r} + ({5'h00,apu_square1_sweep_freq_r} >> REG_NR10_r[`NR10_SWEEP_SHIFT]));
 
 wire [12:0] apu_square1_period = {REG_NR14_r[`NR14_FREQ_MSB],REG_NR13_r[`NR13_FREQ_LSB],2'b00};
-//wire [7:0]  apu_square1_duty = {2'b11, ~&REG_NR11_r[`NR11_DUTY], ~&REG_NR11_r[`NR11_DUTY], ~REG_NR11_r[7], ~REG_NR11_r[7], ~|REG_NR11_r[`NR11_DUTY], 1'b0} | {8{apu_square1_cutoff_r}}; // FIXME: temporary bandaid fix for FFA
-reg  [7:0]  apu_square1_duty_r;
-wire signed [15:0] apu_square1_output = apu_square1_enable_r ? ((~apu_square1_duty_r[apu_square1_pos_r] ? 16'h0000 : apu_square1_volume_r) -16'd8): 16'h0000;
+wire signed [4:0] apu_square1_output = apu_square1_enable_r ? (~apu_square1_duty_r[apu_square1_pos_r] ? ({1'b1,~apu_square1_volume_r} + 1) : {1'b0,apu_square1_volume_r}) : 5'h00;
 
 // square2
 reg         apu_square2_enable_r;
@@ -2292,25 +2288,23 @@ reg  [3:0]  apu_square2_volume_r;
 reg  [2:0]  apu_square2_pos_r;
 
 reg         apu_square2_cutoff_r;
+reg  [7:0]  apu_square2_duty_r;
 
 wire [12:0] apu_square2_period = {REG_NR24_r[`NR24_FREQ_MSB],REG_NR23_r[`NR23_FREQ_LSB],2'b00};
-//wire [7:0]  apu_square2_duty = {2'b11, ~&REG_NR21_r[`NR21_DUTY], ~&REG_NR21_r[`NR21_DUTY], ~REG_NR21_r[7], ~REG_NR21_r[7], ~|REG_NR21_r[`NR21_DUTY], 1'b0} | {8{apu_square2_cutoff_r}}; // FIXME: temporary bandaid fix for FFA
-reg  [7:0]  apu_square2_duty_r;
-wire signed [15:0] apu_square2_output = apu_square2_enable_r ? ((~apu_square2_duty_r[apu_square2_pos_r] ? 16'h0000: apu_square2_volume_r) - 16'd8) : 16'h0000;
+wire signed [4:0] apu_square2_output = apu_square2_enable_r ? (~apu_square2_duty_r[apu_square2_pos_r] ? ({1'b1,~apu_square2_volume_r} + 1) : {1'b0,apu_square2_volume_r}) : 5'h00;
 
 // wave
 reg         apu_wave_enable_r;
 reg  [11:0] apu_wave_timer_r;
 reg  [7:0]  apu_wave_length_r;
 reg  [4:0]  apu_wave_pos_r;
+reg         apu_wave_sample_update_r;
 reg  [3:0]  apu_wave_sample_r;
 
 reg  [3:0]  apu_wave_data_r;
-reg  [3:0]  apu_wave_data_shifted_r;
+reg  [4:0]  apu_wave_data_shifted_r;
 wire [11:0] apu_wave_period = {REG_NR34_r[`NR34_FREQ_MSB],REG_NR33_r[`NR33_FREQ_LSB],1'b0};
-
-wire signed [15:0] apu_wave_output = apu_wave_enable_r ? ((~|REG_NR32_r[`NR32_LEVEL] ? 16'h0000 : apu_wave_data_shifted_r) - 16'd8) : 16'h0000;
-
+wire signed [4:0] apu_wave_output = (apu_wave_enable_r & |REG_NR32_r[`NR32_LEVEL]) ? apu_wave_data_shifted_r : 5'h00;
 // noise
 reg         apu_noise_enable_r;
 reg  [21:0] apu_noise_timer_r;
@@ -2321,26 +2315,22 @@ reg  [3:0]  apu_noise_volume_r;
 reg  [14:0] apu_noise_lfsr_r;
 
 wire [21:0] apu_noise_period = {15'h0000,REG_NR43_r[`NR43_LFSR_DIV],~|REG_NR43_r[`NR43_LFSR_DIV],3'h0} << REG_NR43_r[`NR43_LFSR_SHIFT];
-wire signed [15:0] apu_noise_output = apu_noise_enable_r ? ((apu_noise_lfsr_r[0] ? 16'h0000 : apu_noise_volume_r) - 16'd8) : 16'h0000;
+wire signed [4:0] apu_noise_output = apu_noise_enable_r ? (apu_noise_lfsr_r[0] ? ({1'b1,~apu_noise_volume_r} + 1) : {1'b0,apu_noise_volume_r}) : 5'h00;
 
-reg  [31:0] apu_data_r;
-reg  [31:0] apu_data_volume_r;
-wire [31:0] apu_data;
+wire signed [6:0]  apu_data[1:0];
+reg  signed [6:0]  apu_data_r[1:0];
+reg  signed [15:0] apu_data_volume_r[1:0];
 
-assign apu_data[15:0]  = REG_NR52_r[`NR52_CONTROL_ENABLE] ? ( ( (apu_square1_output & {16{REG_NR51_r[`NR51_SELECT_LEFT_CH0]}})
-                                                              + (apu_square2_output & {16{REG_NR51_r[`NR51_SELECT_LEFT_CH1]}})
-                                                              + (apu_wave_output    & {16{REG_NR51_r[`NR51_SELECT_LEFT_CH2]}})
-                                                              + (apu_noise_output   & {16{REG_NR51_r[`NR51_SELECT_LEFT_CH3]}})
-                                                              )
-                                                            )
-                                                            : 16'h0000;
-assign apu_data[31:16] = REG_NR52_r[`NR52_CONTROL_ENABLE] ? ( ( (apu_square1_output & {16{REG_NR51_r[`NR51_SELECT_RIGHT_CH0]}})
-                                                              + (apu_square2_output & {16{REG_NR51_r[`NR51_SELECT_RIGHT_CH1]}})
-                                                              + (apu_wave_output    & {16{REG_NR51_r[`NR51_SELECT_RIGHT_CH2]}})
-                                                              + (apu_noise_output   & {16{REG_NR51_r[`NR51_SELECT_RIGHT_CH3]}})
-                                                              )
-                                                            )
-                                                            : 16'h0000;
+assign apu_data[0][6:0] = ( $signed(apu_square1_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH0]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
+                          + $signed(apu_square2_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH1]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
+                          + $signed(apu_wave_output[4:0]    & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH2]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
+                          + $signed(apu_noise_output[4:0]   & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH3]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
+                          );
+assign apu_data[1][6:0] = ( $signed(apu_square1_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_RIGHT_CH0] & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
+                          + $signed(apu_square2_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_RIGHT_CH1] & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
+                          + $signed(apu_wave_output[4:0]    & {5{REG_NR51_r[`NR51_SELECT_RIGHT_CH2] & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
+                          + $signed(apu_noise_output[4:0]   & {5{REG_NR51_r[`NR51_SELECT_RIGHT_CH3] & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
+                          );
 
 assign APU_REG_enable = {apu_noise_enable_r, apu_wave_enable_r, apu_square2_enable_r, apu_square1_enable_r};
 
@@ -2353,17 +2343,18 @@ reg         apu_reg_update_nr42_dir_r;
 reg         apu_reg_update_nr14_enable_r;
 reg         apu_reg_update_nr24_enable_r;
 
-assign APU_DAT = apu_data_volume_r;
+assign APU_DAT = {apu_data_volume_r[1],apu_data_volume_r[0]};
 
 always @(posedge CLK) begin
   // Flop audio state since it is a critical path on MK2
-  apu_data_r <= apu_data;
+  for (i = 0; i < 2; i = i + 1) apu_data_r[i] <= apu_data[i];
 
   // TODO: arbitrary volume scaling constant used for now
-  apu_data_volume_r[15:0]  <= apu_data_r[15:0]  * ({1'b0,REG_NR50_r[`NR50_MASTER_LEFT_VOLUME]}  + 1) * 16'sd64;
-  apu_data_volume_r[31:16] <= apu_data_r[31:16] * ({1'b0,REG_NR50_r[`NR50_MASTER_RIGHT_VOLUME]} + 1) * 16'sd64;
+  apu_data_volume_r[0][15:0] <= $signed(apu_data_r[0][6:0]) * ({13'h0000,REG_NR50_r[`NR50_MASTER_LEFT_VOLUME]}  + 1) * 16'd16;
+  apu_data_volume_r[1][15:0] <= $signed(apu_data_r[1][6:0]) * ({13'h0000,REG_NR50_r[`NR50_MASTER_RIGHT_VOLUME]} + 1) * 16'd16;
   
-  apu_wave_data_shifted_r[3:0] <= {1'b0,apu_wave_sample_r} >> (REG_NR32_r[`NR32_LEVEL]-1);
+  // sign conversion with arithmetic shift right
+  apu_wave_data_shifted_r[4:0] <= $signed({(apu_wave_sample_r[3:0] ^ 4'h8),1'b0}) >>> (REG_NR32_r[`NR32_LEVEL] - 1);
   
   // FIXME: hack to ignore high frequency FFA noise.  need to check if it's fixed now.
   apu_square1_cutoff_r <= &{REG_NR14_r[`NR14_FREQ_MSB],REG_NR13_r[`NR13_FREQ_LSB]};
@@ -2382,6 +2373,9 @@ always @(posedge CLK) begin
     2: apu_square2_duty_r <= 8'b10000111 | {8{apu_square2_cutoff_r}};
     3: apu_square2_duty_r <= 8'b01111110 | {8{apu_square2_cutoff_r}};
   endcase
+
+  apu_wave_sample_update_r <= 0;
+  if (apu_wave_sample_update_r) apu_wave_sample_r <= apu_wave_pos_r[0] ? REG_WAV_r[apu_wave_pos_r[4:1]][3:0] : REG_WAV_r[apu_wave_pos_r[4:1]][7:4];
   
   if (cpu_ireset_r | ~REG_NR52_r[`NR52_CONTROL_ENABLE]) begin
     REG_NR10_r    <= 8'h00; // FF10
@@ -2434,7 +2428,6 @@ always @(posedge CLK) begin
     apu_wave_enable_r <= 0;
     apu_wave_timer_r  <= 0;
     apu_wave_pos_r    <= 0;
-    apu_wave_sample_r <= 0;
 
     apu_noise_enable_r     <= 0;
     apu_noise_timer_r      <= 0;
@@ -2662,9 +2655,10 @@ always @(posedge CLK) begin
     
       apu_wave_timer_r <= apu_wave_timer_r + 1;
       if (&apu_wave_timer_r) begin
-        apu_wave_sample_r <= apu_wave_pos_r[0] ? REG_WAV_r[apu_wave_pos_r[4:1]][3:0] : REG_WAV_r[apu_wave_pos_r[4:1]][7:4];
-        apu_wave_pos_r <= apu_wave_pos_r + 1;
+        apu_wave_pos_r   <= apu_wave_pos_r + 1;
         apu_wave_timer_r <= apu_wave_period;
+        
+        apu_wave_sample_update_r <= 1;
       end
           
       ////////////
@@ -3373,7 +3367,7 @@ always @(posedge CLK) begin
             8'hAA:    dbg_misc_data_r <= apu_square1_period[7:0];
             8'hAB:    dbg_misc_data_r <= apu_square1_period[12:8];
             //8'hAC:    dbg_misc_data_r <= apu_square1_duty;
-            8'hAF:    dbg_misc_data_r <= apu_square1_output[7:0];
+            8'hAF:    dbg_misc_data_r <= apu_square1_output[4:0];
 
             8'hB0:    dbg_misc_data_r <= apu_square2_enable_r;
             8'hB1:    dbg_misc_data_r <= apu_square2_timer_r[7:0];
@@ -3388,7 +3382,7 @@ always @(posedge CLK) begin
             8'hBA:    dbg_misc_data_r <= apu_square2_period[7:0];
             8'hBB:    dbg_misc_data_r <= apu_square2_period[12:8];
             //8'hBC:    dbg_misc_data_r <= apu_square2_duty;
-            8'hBF:    dbg_misc_data_r <= apu_square2_output[7:0];
+            8'hBF:    dbg_misc_data_r <= apu_square2_output[4:0];
 
             8'hC0:    dbg_misc_data_r <= apu_wave_enable_r;
             8'hC1:    dbg_misc_data_r <= apu_wave_length_r[7:0];
@@ -3400,7 +3394,7 @@ always @(posedge CLK) begin
             //8'hC7:    dbg_misc_data_r <= apu_wave_timer_r[31:24];
             8'hC8:    dbg_misc_data_r <= apu_wave_period[7:0];
             8'hC9:    dbg_misc_data_r <= apu_wave_period[11:8];
-            8'hCF:    dbg_misc_data_r <= apu_wave_output[7:0];
+            8'hCF:    dbg_misc_data_r <= apu_wave_output[4:0];
 
             8'hD0:    dbg_misc_data_r <= apu_noise_enable_r;
             8'hD1:    dbg_misc_data_r <= apu_noise_length_r;
@@ -3416,7 +3410,7 @@ always @(posedge CLK) begin
             //8'hDB:    dbg_misc_data_r <= apu_noise_period[31:24];
             8'hDC:    dbg_misc_data_r <= apu_noise_lfsr_r[7:0];
             8'hDD:    dbg_misc_data_r <= apu_noise_lfsr_r[14:8];
-            8'hDF:    dbg_misc_data_r <= apu_noise_output[7:0];
+            8'hDF:    dbg_misc_data_r <= apu_noise_output[4:0];
             
             8'hE0:    dbg_misc_data_r <= APU_DAT[7:0];
             8'hE1:    dbg_misc_data_r <= APU_DAT[15:8];
