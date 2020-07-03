@@ -1664,8 +1664,10 @@ wire        ppu_vsync    = ppu_dot_edge & ppu_dot_end & ppu_disp_end;
 
 reg         ppu_pix_phase_r;
 reg         ppu_vblank_pulse_r;
+reg         ppu_vblank_start_r;
 reg         ppu_lcd_stat_pulse_r;
 reg         ppu_lyc_match_d1_r;
+reg         ppu_hblank_start_r;
 
 // OAM LUT lookup operation
 reg         ppu_oam_lut_found;
@@ -1790,6 +1792,7 @@ assign PPU_PIXEL_VALID = ppu_fifo_data;
 reg         dbg_state_valid_r;
 reg  [7:0]  dbg_reg_ly_r;
 reg  [8:0]  dbg_dot_ctr_r;
+reg  [8:0]  dbg_dot_ctr_next_r;
 reg         dbg_oam_active_r;
 reg         dbg_vram_active_r;
 reg         dbg_dma_active_r;
@@ -1815,6 +1818,9 @@ always @(posedge CLK) begin
     ppu_bgw_fifo_wr_active_r <= 0;
     ppu_obj_fifo_wr_req_r <= 0;
     ppu_obj_fifo_wr_active_r <= 0;
+    
+    dbg_dot_ctr_next_r <= 0;
+    dbg_dot_ctr_r      <= 0;
   end
   else begin    
     // The scanline pixel output is composed of 3 distinct phases:
@@ -1851,11 +1857,11 @@ always @(posedge CLK) begin
       else if (~dbg_state_valid_r) begin
         dbg_state_valid_r <= 1;
       
-        dbg_reg_ly_r      <= REG_LY_r;
-        dbg_dot_ctr_r     <= ppu_dot_ctr_r;
-        dbg_oam_active_r  <= PPU_OAM_active;
-        dbg_vram_active_r <= PPU_VRAM_active;
-        dbg_dma_active_r  <= DMA_active;
+        dbg_reg_ly_r       <= REG_LY_r;
+        {dbg_dot_ctr_r,dbg_dot_ctr_next_r} <= {dbg_dot_ctr_next_r,ppu_dot_ctr_r};
+        dbg_oam_active_r   <= PPU_OAM_active;
+        dbg_vram_active_r  <= PPU_VRAM_active;
+        dbg_dma_active_r   <= DMA_active;
       end
     end
 
@@ -2011,7 +2017,10 @@ always @(posedge CLK) begin
 
           ppu_first_frame_r <= 1;
           
-          if (REG_LCDC_r[`LCDC_DS_EN]) ppu_state_r <= ST_PPU_FRM_NEW;
+          ppu_hblank_start_r <= 0;
+          ppu_vblank_start_r <= 0;
+          
+          if (REG_LCDC_r[`LCDC_DS_EN]) ppu_state_r <= ST_PPU_VBL;
         end
         ST_PPU_FRM_NEW : begin
           // next frame
@@ -2033,11 +2042,16 @@ always @(posedge CLK) begin
           // initialize all entries to be invalid
           ppu_oam_lut_cnt_r <= 0;
           
-          // interrupt signals
-          if (REG_STAT_r[`STAT_INT_O_EN]) ppu_lcd_stat_pulse_r <= 1;
-          REG_STAT_r[`STAT_MODE] <= `MODE_O;
+          if (ppu_pix_phase_r) begin
+            // interrupt signals
+            // for lines > 0 the interrupt request line is asserted on DOT clock 2.
+            if (REG_STAT_r[`STAT_INT_O_EN] & REG_LCDC_r[`LCDC_SP_EN]) ppu_lcd_stat_pulse_r <= 1;
+            REG_STAT_r[`STAT_MODE] <= `MODE_O;
 
-          ppu_state_r <= ST_PPU_OAM_POS;
+            ppu_state_r <= ST_PPU_OAM_POS;
+          end  
+          
+          ppu_pix_phase_r <= ~ppu_pix_phase_r;
         end
         ST_PPU_OAM_POS : begin
           // read in xpos if ypos is on this line
@@ -2129,19 +2143,14 @@ always @(posedge CLK) begin
           ppu_oam_address_r <= {ppu_oam_address_r[7:1],1'b1};
           
           if (~ppu_pix_phase_r) ppu_pix_oam_tile_num_r <= ppu_oam_rddata_r; else ppu_pix_oam_flag_r <= ppu_oam_rddata_r;
-                                        
+                            
+          ppu_hblank_start_r <= 1;
+                
           if (ppu_pix_phase_r) begin
             if (~ppu_pix_oam_lut_found_r) ppu_tile_ctr_r <= ppu_tile_ctr_r + 1;
             if (~ppu_pix_oam_lut_found_r) ppu_pix_win_tile_r <= ppu_pix_win_tile_r + 1;
 
             ppu_state_r <= ppu_pix_oam_lut_found_r ? ST_PPU_PIX_OB1 : (ppu_tile_end ? ST_PPU_HBL : ST_PPU_PIX_MAP);
-
-            // transitioning to h-blank
-            if (~ppu_pix_oam_lut_found_r & ppu_tile_end) begin
-              if (REG_STAT_r[`STAT_INT_H_EN]) ppu_lcd_stat_pulse_r <= 1;
-              REG_STAT_r[`STAT_MODE] <= `MODE_H;
-            end
-
           end
 
           ppu_pix_phase_r <= ~ppu_pix_phase_r;
@@ -2179,7 +2188,7 @@ always @(posedge CLK) begin
             ppu_state_r <= ST_PPU_PIX_OB0;
           end
 
-          ppu_pix_phase_r <= ~ppu_pix_phase_r;
+          ppu_pix_phase_r <= ~ppu_pix_phase_r;  
         end
 //        ST_PPU_PIX_DRN : begin
 //          if (~ppu_fifo_data) begin
@@ -2197,26 +2206,32 @@ always @(posedge CLK) begin
             ppu_tile_ctr_r <= 0;
             ppu_pix_ctr_r  <= 0;
           end
+
+          if (ppu_hblank_start_r & ppu_dot_ctr_r[0]) begin
+            if (REG_STAT_r[`STAT_INT_H_EN]) ppu_lcd_stat_pulse_r <= 1;
+            REG_STAT_r[`STAT_MODE] <= `MODE_H;
+            ppu_hblank_start_r <= 0;
+          end
+          
+          ppu_vblank_start_r <= 1;
           
           if (ppu_dot_end) begin
-            //REG_LY_r <= REG_LY_r + 1;
-
-            // transitioning to v-blank
-            if (ppu_vis_end) begin
-              ppu_vblank_pulse_r <= 1;
-              if (REG_STAT_r[`STAT_INT_V_EN]) ppu_lcd_stat_pulse_r <= 1;
-              REG_STAT_r[`STAT_MODE] <= `MODE_V;
-            end
-            
             ppu_state_r <= ppu_vis_end ? ST_PPU_VBL : ST_PPU_OAM_NEW; 
           end
         end
         ST_PPU_VBL     : begin
-          if (ppu_dot_end) begin
+          if (ppu_vblank_start_r & ppu_dot_ctr_r[0]) begin
+            // assert on dot clock 2
+            ppu_vblank_pulse_r <= 1;
+            if (REG_STAT_r[`STAT_INT_V_EN]) ppu_lcd_stat_pulse_r <= 1;
+            REG_STAT_r[`STAT_MODE] <= `MODE_V;
+            
+            ppu_vblank_start_r <= 0;
+            
             ppu_first_frame_r <= 0;
-          
-            //REG_LY_r <= ppu_disp_end ? 0 : (REG_LY_r + 1);
-
+          end
+        
+          if (ppu_dot_end) begin          
             if (ppu_disp_end) ppu_state_r <= ST_PPU_FRM_NEW;
           end
         end
@@ -2224,8 +2239,6 @@ always @(posedge CLK) begin
 
       if (~|(ppu_state_r & ST_PPU_OFF)) begin
         // It's possible for a write to happen on the last dot cycle which will cause us to miss a 1->0->1 transition.
-        //
-        // FIXME: below is what we are expecting, but it seems higher than expected.
         //
         // dot clk
         // 0 - LY_r
@@ -3505,7 +3518,8 @@ always @(posedge CLK) begin
     dbg_brk_data_rd_addr <= (exe_advance_r && exe_complete_r) ? 0 : (IFD_EXE_valid && dbg_mem_req_val_d1_r && ~dbg_mem_req_wr_d1_r && EXE_MCT_req_addr_d1 == dbg_brk_addr_r); //&& (!config_r[2][0] ||     mmc_data_r[7:0] == dbg_brk_data_r);
     dbg_brk_data_wr_addr <= (exe_advance_r && exe_complete_r) ? 0 : (IFD_EXE_valid && dbg_mem_req_val_d1_r &&  dbg_mem_req_wr_d1_r && EXE_MCT_req_addr_d1 == dbg_brk_addr_r && (!config_r[2][0] || EXE_MCT_req_data_d1 == dbg_brk_data_r));
     dbg_brk_stop         <= IFD_EXE_valid & IFD_EXE_int;
-    dbg_brk_error        <= IFD_EXE_valid && (SP_r[15:0] < 16'hFF7F); // SP overflow with HRAM stack
+    dbg_brk_error        <= //IFD_EXE_valid && (SP_r[15:0] < 16'hFF7F); // SP overflow with HRAM stack
+                            IFD_EXE_valid && (SP_r[15:0] < 16'hDF00); // SP overflow with WRAM stack
 
     dbg_brk_addr_r <= dbg_brk_addr_watch;
     dbg_brk_data_r <= dbg_brk_data_watch;
