@@ -200,11 +200,22 @@ void time2gtime(struct gtm *gtime, struct tm *time) {
 
 uint8_t get_deltagtime(struct gtm *time1, struct gtm *time2) {
   uint8_t borrow = 0;
+
+  /* the struct contains unsigned fields.  need to be careful not to underflow */
+  if (time1->gtm_sec  < time2->gtm_sec  + borrow) { time1->gtm_sec  += 60 - borrow; borrow = 1; } else { time1->gtm_sec  -= borrow; borrow = 0; }
+  time1->gtm_sec -= time2->gtm_sec;
+  if (time1->gtm_min  < time2->gtm_min  + borrow) { time1->gtm_min  += 60 - borrow; borrow = 1; } else { time1->gtm_min  -= borrow; borrow = 0; }
+  time1->gtm_min -= time2->gtm_min;
+  if (time1->gtm_hour < time2->gtm_hour + borrow) { time1->gtm_hour += 24 - borrow; borrow = 1; } else { time1->gtm_hour -= borrow; borrow = 0; }
+  time1->gtm_hour -= time2->gtm_hour;
+  if (time1->gtm_days < time2->gtm_days + borrow) { time1->gtm_days += 1  - borrow; borrow = 1; } else { time1->gtm_days -= borrow; borrow = 0; }
+  if (!borrow) time1->gtm_days -= time2->gtm_days;
   
-  time1->gtm_sec  -= borrow; borrow = (time1->gtm_sec  < time2->gtm_sec ) ? 1 : 0; time1->gtm_sec  = time1->gtm_sec  + (borrow ? 60 : 0) - time2->gtm_sec;
-  time1->gtm_min  -= borrow; borrow = (time1->gtm_min  < time2->gtm_min ) ? 1 : 0; time1->gtm_min  = time1->gtm_min  + (borrow ? 60 : 0) - time2->gtm_min;
-  time1->gtm_hour -= borrow; borrow = (time1->gtm_hour < time2->gtm_hour) ? 1 : 0; time1->gtm_hour = time1->gtm_hour + (borrow ? 24 : 0) - time2->gtm_hour;
-  time1->gtm_days -= borrow; borrow = (time1->gtm_days < time2->gtm_days) ? 1 : 0; time1->gtm_days = time1->gtm_days + 0                 - time2->gtm_days;
+  if (!(time1->gtm_sec < 60 && time1->gtm_min < 60 && time1->gtm_hour < 24))
+    printf("GTC delta error gtime: days=%ld, hour=%hhd, min=%hhd, sec=%hhd\n", time1->gtm_days,
+                                                                               time1->gtm_hour,
+                                                                               time1->gtm_min,
+                                                                               time1->gtm_sec);
   
   // borrowing a day signifies underflow and the delta is not valid
   return borrow;
