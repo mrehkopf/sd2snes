@@ -2419,6 +2419,26 @@ always @(posedge CLK) begin
     REG_NR51_r    <= 8'h00; // FF25
     REG_NR52_r    <= 8'h00; // FF26
 
+    // r-type uses uninitialized WAV RAM data.  SGB2 values used.
+    if (cpu_ireset_r) begin
+      REG_WAV_r[0]  <= 8'h08;//8'hAC;
+      REG_WAV_r[1]  <= 8'hF7;//8'hDD;
+      REG_WAV_r[2]  <= 8'h04;//8'hDA;
+      REG_WAV_r[3]  <= 8'hDF;//8'h48;
+      REG_WAV_r[4]  <= 8'h08;//8'h36;
+      REG_WAV_r[5]  <= 8'h66;//8'h02;
+      REG_WAV_r[6]  <= 8'h00;//8'hCF;
+      REG_WAV_r[7]  <= 8'h7F;//8'h16;
+      REG_WAV_r[8]  <= 8'h00;//8'h2C;
+      REG_WAV_r[9]  <= 8'h57;//8'h04;
+      REG_WAV_r[10] <= 8'h02;//8'hE5;
+      REG_WAV_r[11] <= 8'hFF;//8'h2C;
+      REG_WAV_r[12] <= 8'h08;//8'hAC;
+      REG_WAV_r[13] <= 8'hFF;//8'hDD;
+      REG_WAV_r[14] <= 8'h00;//8'hDA;
+      REG_WAV_r[15] <= 8'h9F;//8'h48;
+    end
+
     apu_frame_step_r <= 0;
     
     apu_square1_enable_r       <= 0;
