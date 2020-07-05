@@ -1583,28 +1583,27 @@ oam oam (
 `define OBJ_FIFO_PAL    3:3
 
 parameter
-  ST_PPU_OFF     = 14'b00000000000001,
-  ST_PPU_FRM_NEW = 14'b00000000000010,
-  ST_PPU_OAM_NEW = 14'b00000000000100,
-  ST_PPU_OAM_POS = 14'b00000000001000,
-  ST_PPU_PIX_NEW = 14'b00000000010000,
-  ST_PPU_PIX_MAP = 14'b00000000100000,
-  ST_PPU_PIX_DT0 = 14'b00000001000000,
-  ST_PPU_PIX_DT1 = 14'b00000010000000,
-  ST_PPU_PIX_OB0 = 14'b00000100000000,
-  ST_PPU_PIX_OB1 = 14'b00001000000000,
-  ST_PPU_PIX_OB2 = 14'b00010000000000,
-  ST_PPU_PIX_DRN = 14'b00100000000000,
-  ST_PPU_HBL     = 14'b01000000000000,
-  ST_PPU_VBL     = 14'b10000000000000;
+  ST_PPU_OFF     = 13'b0000000000001,
+  ST_PPU_FRM_NEW = 13'b0000000000010,
+  ST_PPU_OAM_NEW = 13'b0000000000100,
+  ST_PPU_OAM_POS = 13'b0000000001000,
+  ST_PPU_PIX_NEW = 13'b0000000010000,
+  ST_PPU_PIX_MAP = 13'b0000000100000,
+  ST_PPU_PIX_DT0 = 13'b0000001000000,
+  ST_PPU_PIX_DT1 = 13'b0000010000000,
+  ST_PPU_PIX_OB0 = 13'b0000100000000,
+  ST_PPU_PIX_OB1 = 13'b0001000000000,
+  ST_PPU_PIX_OB2 = 13'b0010000000000,
+  ST_PPU_HBL     = 13'b0100000000000,
+  ST_PPU_VBL     = 13'b1000000000000;
 
-reg  [13:0] ppu_state_r;
+reg  [12:0] ppu_state_r;
 
 reg  [8:0]  ppu_dot_ctr_r;
 reg  [5:0]  ppu_tile_ctr_r;   // 32 tiles with 8 pixels in a 256 pixel source tile data.  extra bit covers negative values
 reg  [7:0]  ppu_pix_ctr_r;
 
-wire        ppu_vram_active = |(ppu_state_r & (ST_PPU_PIX_NEW | ST_PPU_PIX_MAP | ST_PPU_PIX_DT0 | ST_PPU_PIX_DT1 | ST_PPU_PIX_OB0 | ST_PPU_PIX_OB1 | ST_PPU_PIX_OB2 | ST_PPU_PIX_DRN));  
+wire        ppu_vram_active = |(ppu_state_r & (ST_PPU_PIX_NEW | ST_PPU_PIX_MAP | ST_PPU_PIX_DT0 | ST_PPU_PIX_DT1 | ST_PPU_PIX_OB0 | ST_PPU_PIX_OB1 | ST_PPU_PIX_OB2));  
 wire        ppu_oam_active  = ~|(ppu_state_r & (ST_PPU_OFF | ST_PPU_HBL | ST_PPU_VBL));
 assign      PPU_vblank      = |(ppu_state_r & ST_PPU_VBL);
 
@@ -1648,8 +1647,9 @@ wire        ppu_disp_end = REG_LY_r[7] & REG_LY_r[4] & REG_LY_r[3] & REG_LY_r[0]
 wire        ppu_tile_end = ~ppu_tile_dummy & ppu_tile_ctr_r[4] & &ppu_tile_ctr_r[1:0];      // 159+1 = 160 pixels, 19+1 = 20 tiles
 
 wire        ppu_fifo_data = ~ppu_tile_dummy && ppu_pix_ctr_r[5:3] != ppu_tile_ctr_r[2:0] && ~ppu_pix_end;
-// there is a race here due to sprites overwriting up to two tiles, but the reader should always win since we first had to read the BG tile (bandwidth matched with reads) and then the sprite takes additional clocks for the rd to catch up.
-wire        ppu_fifo_full = ~ppu_tile_dummy && (ppu_pix_ctr_r[4:3] == ppu_tile_ctr_r[1:0] || ppu_pix_ctr_r[4:3] == ppu_tile_ctr_r[1:0] + 1) && ppu_pix_ctr_r[5] != ppu_tile_ctr_r[2];
+// TODO: is this logic necessary?  reads are never blocked and take 8 dot clocks to consume a tile.  writes should take a minimum of 8 dot clocks to write a tile, but they can span across two tiles.
+// with 4 tiles a write should never be more than 2 tiles ahead of a read and 4 tile buffers implies there is an extra buffer of space.
+wire        ppu_fifo_full = ~ppu_tile_dummy && (ppu_pix_ctr_r[4:3] == ppu_tile_ctr_r[1:0] || ppu_pix_ctr_r[4:3] == ppu_tile_ctr_next) && ppu_pix_ctr_r[5] != ppu_tile_ctr_r[2];
 
 wire [2:0]  ppu_bgw_fifo_index_start = (ppu_pix_win_active_r ? REG_WX_r[2:0] : ~REG_SCX_r[2:0]) + 1;
 reg  [1:0]  ppu_bgw_fifo_r[31:0]; // 4 [tiles] * 8 [pixels/tile] * 2 [bpp]
@@ -1668,6 +1668,8 @@ reg         ppu_vblank_start_r;
 reg         ppu_lcd_stat_pulse_r;
 reg         ppu_lyc_match_d1_r;
 reg         ppu_hblank_start_r;
+reg  [7:0]  ppu_ly_compare_r;
+reg         ppu_dot_start_r;
 
 // OAM LUT lookup operation
 reg         ppu_oam_lut_found;
@@ -1802,6 +1804,8 @@ always @(posedge CLK) begin
     REG_STAT_r[`STAT_MODE]      <= `MODE_H;
     REG_STAT_r[`STAT_LYC_MATCH] <= 0;
     REG_LY_r                    <= 0;
+    
+    ppu_ly_compare_r <= 0;
 
     ppu_tile_ctr_r <= 0;
     ppu_pix_ctr_r  <= 0;
@@ -2010,7 +2014,8 @@ always @(posedge CLK) begin
           // clear display state
           REG_STAT_r[`STAT_MODE] <= `MODE_H;
 
-          REG_LY_r <= 0;
+          REG_LY_r         <= 0;
+          ppu_ly_compare_r <= 0;
 
           ppu_tile_ctr_r <= 0;
           ppu_pix_ctr_r <= 0;
@@ -2058,7 +2063,7 @@ always @(posedge CLK) begin
           if (~ppu_oam_lut_full & ppu_pix_phase_r) begin
             if (ppu_oam_data_r <= (REG_LY_r + 16) && (REG_LY_r + 16) < (ppu_oam_data_r + (REG_LCDC_r[`LCDC_SP_SIZE] ? 16 : 8))) begin
               ppu_oam_lut_ypos_r[ppu_oam_lut_cnt_r]  <= ppu_oam_data_r[3:0];
-              ppu_oam_lut_xpos_r[ppu_oam_lut_cnt_r]  <= ppu_oam_rddata_r - 8;
+              ppu_oam_lut_xpos_r[ppu_oam_lut_cnt_r]  <= ppu_oam_rddata_r - (|ppu_oam_rddata_r ? 8 : 16);
               ppu_oam_lut_index_r[ppu_oam_lut_cnt_r] <= ppu_oam_address_r[7:2];
               
               ppu_oam_lut_cnt_r <= ppu_oam_lut_cnt_r + 1;
@@ -2190,17 +2195,6 @@ always @(posedge CLK) begin
 
           ppu_pix_phase_r <= ~ppu_pix_phase_r;  
         end
-//        ST_PPU_PIX_DRN : begin
-//          if (~ppu_fifo_data) begin
-//
-//            ppu_tile_ctr_r <= 0;
-//            ppu_pix_ctr_r <= 0;
-//                       
-//            REG_STAT_r[`STAT_MODE] <= `MODE_H;
-//
-//            ppu_state_r <= ST_PPU_HBL;
-//          end
-//        end
         ST_PPU_HBL     : begin
           if (~ppu_fifo_data) begin
             ppu_tile_ctr_r <= 0;
@@ -2224,11 +2218,12 @@ always @(posedge CLK) begin
             // assert on dot clock 2
             ppu_vblank_pulse_r <= 1;
             if (REG_STAT_r[`STAT_INT_V_EN]) ppu_lcd_stat_pulse_r <= 1;
+            if (REG_STAT_r[`STAT_INT_O_EN] & REG_LCDC_r[`LCDC_SP_EN]) ppu_lcd_stat_pulse_r <= 1;
             REG_STAT_r[`STAT_MODE] <= `MODE_V;
             
             ppu_vblank_start_r <= 0;            
           end
-
+          
           ppu_first_frame_r <= 0;
         
           if (ppu_dot_end) begin          
@@ -2241,17 +2236,25 @@ always @(posedge CLK) begin
         // It's possible for a write to happen on the last dot cycle which will cause us to miss a 1->0->1 transition.
         //
         // dot clk
-        // 0 - LY_r
+        // 0 - LY_r/ppu_ly_compare_r
         // 1 - match
         // 2 - ppu_lcd_stat_pulse_r
         // 3 - IF/earliest interrupt point
         // 3+?    - Wait for current instruction to finish. 4 * (0-6)
         // 3+?+20 - +20 = 5 * 4 dot clocks to take interrupt
         
-        if (ppu_dot_end) REG_LY_r <= ppu_disp_end ? 0 : REG_LY_r + 1;
-        REG_STAT_r[`STAT_LYC_MATCH] <= (REG_LY_r == REG_LYC_r) ? 1 : 0;
+        // last line transitions to 0 early which road rash uses to trigger lyc == 0 interrupt on consecutive lines (153, 0)
+        // prehistorik man breaks if the transition to 0 on line 153 happens too early.
+        // FIXME: the compare logic needs more work
+        if (ppu_dot_end) REG_LY_r         <= ppu_disp_end ? 0 : REG_LY_r + 1;
+        if (ppu_dot_end) ppu_ly_compare_r <= ppu_disp_end ? 0 : ppu_ly_compare_r + 1; else if (&ppu_dot_ctr_r[3:2] & ppu_disp_end) ppu_ly_compare_r <= 0;
+
+        REG_STAT_r[`STAT_LYC_MATCH] <= (ppu_ly_compare_r == REG_LYC_r && ~ppu_dot_end) ? 1 : 0;
+        
         ppu_lyc_match_d1_r <= REG_STAT_r[`STAT_LYC_MATCH];
-        if (~ppu_lyc_match_d1_r & REG_STAT_r[`STAT_LYC_MATCH] & REG_STAT_r[`STAT_INT_M_EN]) ppu_lcd_stat_pulse_r <= 1;
+        
+        if (~ppu_lyc_match_d1_r & REG_STAT_r[`STAT_LYC_MATCH] & REG_STAT_r[`STAT_INT_M_EN]) ppu_lcd_stat_pulse_r <= 1;  // 3
+        
       end
       
       // 1->0 display disable happens imediately.  it's only possible to go from 0->1 during vblank 
@@ -3369,7 +3372,7 @@ always @(posedge CLK) begin
             8'h04:    dbg_misc_data_r <= PPU_DOT_EDGE;
             
             8'h10:    dbg_misc_data_r <= ppu_state_r[7:0];
-            8'h11:    dbg_misc_data_r <= ppu_state_r[13:8];
+            8'h11:    dbg_misc_data_r <= ppu_state_r[12:8];
             8'h12:    dbg_misc_data_r <= ppu_dot_ctr_r[7:0];
             8'h13:    dbg_misc_data_r <= ppu_dot_ctr_r[8];
 
