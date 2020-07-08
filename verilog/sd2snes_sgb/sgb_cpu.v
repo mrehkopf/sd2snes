@@ -1871,7 +1871,7 @@ always @(posedge CLK) begin
 
     // flop match
     ppu_pix_oam_lut_match_r <= ppu_oam_lut_match;
-    ppu_pix_oam_lut_found_r <= ppu_oam_lut_found & ~(ppu_first_frame_r|~REG_LCDC_r[`LCDC_SP_EN]);
+    ppu_pix_oam_lut_found_r <= ppu_oam_lut_found & ~(ppu_first_frame_r|~REG_LCDC_r[`LCDC_SP_EN] | DMA_active);
   
     ppu_oam_rddata_r <= oam_rddata;
 
@@ -2060,7 +2060,7 @@ always @(posedge CLK) begin
         end
         ST_PPU_OAM_POS : begin
           // read in xpos if ypos is on this line
-          if (~ppu_oam_lut_full & ppu_pix_phase_r) begin
+          if (~ppu_oam_lut_full & ppu_pix_phase_r & ~DMA_active) begin
             if (ppu_oam_data_r <= (REG_LY_r + 16) && (REG_LY_r + 16) < (ppu_oam_data_r + (REG_LCDC_r[`LCDC_SP_SIZE] ? 16 : 8))) begin
               ppu_oam_lut_ypos_r[ppu_oam_lut_cnt_r]  <= ppu_oam_data_r[3:0];
               ppu_oam_lut_xpos_r[ppu_oam_lut_cnt_r]  <= ppu_oam_rddata_r - (|ppu_oam_rddata_r ? 8 : 16);
