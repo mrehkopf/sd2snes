@@ -599,23 +599,20 @@ always @(posedge CLK) begin
 
     // interrupt flags
     if (CLK_CPU_EDGE) begin
-      if (reg_int_write_r) begin
-        REG_IF_r <= reg_int_write_data_r;
-      end
       // once we have halted instruction fetch then time has stopped and we need to avoid recording new interrupts
-      else if (~HLT_IFD_rsp) begin
-        REG_IF_r[`IE_VBLANK]   <= (REG_IF_r[`IE_VBLANK]   | PPU_REG_vblank              ) & ~IFD_REG_ic[`IE_VBLANK];
-        REG_IF_r[`IE_LCD_STAT] <= (REG_IF_r[`IE_LCD_STAT] | PPU_REG_lcd_stat            ) & ~IFD_REG_ic[`IE_LCD_STAT];
-        REG_IF_r[`IE_TIMER]    <= (REG_IF_r[`IE_TIMER]    | tmr_ovf_tima_r              ) & ~IFD_REG_ic[`IE_TIMER];
-        REG_IF_r[`IE_SERIAL]   <= (REG_IF_r[`IE_SERIAL]   | SER_REG_done                ) & ~IFD_REG_ic[`IE_SERIAL];
-        REG_IF_r[`IE_JOYPAD]   <= (REG_IF_r[`IE_JOYPAD]   | |(REG_P1_r[3:0] & ~P1I[3:0])) & ~IFD_REG_ic[`IE_JOYPAD];
+      if (~HLT_IFD_rsp) begin
+        REG_IF_r[`IE_VBLANK]   <= (REG_IF_r[`IE_VBLANK]   | PPU_REG_vblank               | (reg_int_write_r & reg_int_write_data_r[`IE_VBLANK])  ) & ~(IFD_REG_ic[`IE_VBLANK]   | (reg_int_write_r & ~reg_int_write_data_r[`IE_VBLANK])  );
+        REG_IF_r[`IE_LCD_STAT] <= (REG_IF_r[`IE_LCD_STAT] | PPU_REG_lcd_stat             | (reg_int_write_r & reg_int_write_data_r[`IE_LCD_STAT])) & ~(IFD_REG_ic[`IE_LCD_STAT] | (reg_int_write_r & ~reg_int_write_data_r[`IE_LCD_STAT]));
+        REG_IF_r[`IE_TIMER]    <= (REG_IF_r[`IE_TIMER]    | tmr_ovf_tima_r               | (reg_int_write_r & reg_int_write_data_r[`IE_TIMER])   ) & ~(IFD_REG_ic[`IE_TIMER]    | (reg_int_write_r & ~reg_int_write_data_r[`IE_TIMER])   );
+        REG_IF_r[`IE_SERIAL]   <= (REG_IF_r[`IE_SERIAL]   | SER_REG_done                 | (reg_int_write_r & reg_int_write_data_r[`IE_SERIAL])  ) & ~(IFD_REG_ic[`IE_SERIAL]   | (reg_int_write_r & ~reg_int_write_data_r[`IE_SERIAL])  );
+        REG_IF_r[`IE_JOYPAD]   <= (REG_IF_r[`IE_JOYPAD]   | |(REG_P1_r[3:0] & ~P1I[3:0]) | (reg_int_write_r & reg_int_write_data_r[`IE_JOYPAD])  ) & ~(IFD_REG_ic[`IE_JOYPAD]   | (reg_int_write_r & ~reg_int_write_data_r[`IE_JOYPAD])  );
       end
     end
 
     REG_P1_r[3:0] <= P1I[3:0];
   
     if (CLK_BUS_EDGE) reg_dma_start_r <= 0;
-    if (CLK_BUS_EDGE) reg_int_write_r <= 0;
+    if (CLK_CPU_EDGE) reg_int_write_r <= 0;
   
     case (reg_state_r)
       ST_REG_IDLE: begin
@@ -830,6 +827,9 @@ assign IFD_REG_ic = ifd_reg_ic_r;
 // - no in-progress serial transfers
 assign HLT_IFD_rsp = HLT_REQ_sync & ~|ifd_size_r & ~ifd_int_r & EXE_IFD_ime & IDL_ICD;
 
+//reg  [7:0]  dbg_timer_ly_r;
+//reg  [8:0]  dbg_timer_dot_ctr_r;
+
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
     PC_r <= 0;
@@ -859,6 +859,10 @@ always @(posedge CLK) begin
         ifd_size_r      <= ifd_complete_r ? 0 : ifd_size_r + 1;
 
         if (ifd_complete_r & ifd_int_r) ifd_reg_ic_r <= ifd_int_ic_r;
+        //if (ifd_complete_r & ifd_int_r & ifd_int_ic_r[`IE_TIMER]) begin
+        //  dbg_timer_ly_r <= REG_LY_r;
+        //  dbg_timer_dot_ctr_r <= ppu_dot_ctr_r;
+        //end
       end
       else begin
         // force bypassed PC to be accounted for in state
@@ -1664,12 +1668,12 @@ wire        ppu_vsync    = ppu_dot_edge & ppu_dot_end & ppu_disp_end;
 
 reg         ppu_pix_phase_r;
 reg         ppu_vblank_pulse_r;
-reg         ppu_vblank_start_r;
-reg         ppu_lcd_stat_pulse_r;
-reg         ppu_lyc_match_d1_r;
-reg         ppu_hblank_start_r;
+reg         ppu_vblank_seen_r;
+reg         ppu_stat_active_r;
+reg  [7:0]  ppu_stat_match_r;
 reg  [7:0]  ppu_ly_compare_r;
 reg         ppu_dot_start_r;
+//reg         ppu_stat_write_r;
 
 // OAM LUT lookup operation
 reg         ppu_oam_lut_found;
@@ -1719,7 +1723,7 @@ assign PPU_VRAM_address = ppu_vram_address_r;
 assign PPU_OAM_active   = ppu_oam_active;
 assign PPU_OAM_address  = ppu_oam_address_r;
 assign PPU_REG_vblank   = ppu_vblank_pulse_r;
-assign PPU_REG_lcd_stat = ppu_lcd_stat_pulse_r;
+assign PPU_REG_lcd_stat = ~ppu_stat_active_r & |ppu_stat_match_r;
 
 assign PPU_MCT_vram_active = ppu_vram_active;
 assign PPU_MCT_oam_active  = ppu_oam_active;
@@ -1798,6 +1802,8 @@ reg  [8:0]  dbg_dot_ctr_next_r;
 reg         dbg_oam_active_r;
 reg         dbg_vram_active_r;
 reg         dbg_dma_active_r;
+reg  [7:0]  dbg_ppu_stat_match_r;
+reg  [8:0]  dbg_ppu_stat_dot_ctr_r;
 
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
@@ -1815,8 +1821,8 @@ always @(posedge CLK) begin
     ppu_state_r <= ST_PPU_OFF;
     
     ppu_vblank_pulse_r <= 0;
-    ppu_lcd_stat_pulse_r <= 0;
-    ppu_lyc_match_d1_r <= 0;
+    ppu_stat_active_r <= 0;
+    ppu_stat_match_r <= 0;
     
     ppu_bgw_fifo_wr_req_r <= 0;
     ppu_bgw_fifo_wr_active_r <= 0;
@@ -1825,6 +1831,8 @@ always @(posedge CLK) begin
     
     dbg_dot_ctr_next_r <= 0;
     dbg_dot_ctr_r      <= 0;
+    
+    //ppu_stat_write_r <= 0;
   end
   else begin    
     // The scanline pixel output is composed of 3 distinct phases:
@@ -1853,6 +1861,9 @@ always @(posedge CLK) begin
     // - [HBL->OAM] From HBL we can transition back to OAM if the new line is visible
     // - [HBL->VBL] From HBL we can transition to VBL (vblank) if the visible lines are complete
 
+    //if      (REG_req_val && REG_address == 8'h41) ppu_stat_write_r <= 1;
+    //else if (CLK_CPU_EDGE)                        ppu_stat_write_r <= 0;
+    
     // debug
     if (CLK_BUS_EDGE) begin
       if      (exe_advance_r) begin
@@ -2005,7 +2016,11 @@ always @(posedge CLK) begin
       if (ppu_fifo_data) ppu_pix_ctr_r <= ppu_pix_ctr_r + 1;
 
       ppu_vblank_pulse_r <= 0;
-      ppu_lcd_stat_pulse_r <= 0;
+      ppu_stat_active_r <= |ppu_stat_match_r;
+      if (~ppu_stat_active_r & |ppu_stat_match_r) begin
+        dbg_ppu_stat_match_r <= ppu_stat_match_r;
+        dbg_ppu_stat_dot_ctr_r <= ppu_dot_ctr_r;
+      end
 
       ppu_oam_data_r <= ppu_oam_rddata_r;
       
@@ -2022,8 +2037,9 @@ always @(posedge CLK) begin
 
           ppu_first_frame_r <= 1;
           
-          ppu_hblank_start_r <= 0;
-          ppu_vblank_start_r <= 0;
+          ppu_vblank_seen_r <= 0;
+
+          ppu_stat_match_r <= 0;
           
           if (REG_LCDC_r[`LCDC_DS_EN]) ppu_state_r <= ST_PPU_FRM_NEW;
         end
@@ -2037,6 +2053,7 @@ always @(posedge CLK) begin
         end
         ST_PPU_OAM_NEW : begin
           // start of new line
+          //ppu_stat_active_r[0] <= 0;
           
           // setup initial address
           ppu_oam_address_r <= 0;
@@ -2047,16 +2064,10 @@ always @(posedge CLK) begin
           // initialize all entries to be invalid
           ppu_oam_lut_cnt_r <= 0;
           
-          if (ppu_pix_phase_r) begin
-            // interrupt signals
-            // for lines > 0 the interrupt request line is asserted on DOT clock 2.
-            if (REG_STAT_r[`STAT_INT_O_EN] & REG_LCDC_r[`LCDC_SP_EN]) ppu_lcd_stat_pulse_r <= 1;
-            REG_STAT_r[`STAT_MODE] <= `MODE_O;
-
-            ppu_state_r <= ST_PPU_OAM_POS;
-          end  
-          
-          ppu_pix_phase_r <= ~ppu_pix_phase_r;
+          REG_STAT_r[`STAT_MODE] <= `MODE_O;
+ 
+          // WARNING: this needs to only be one dot cycle to avoid multiple interrupts.  Or we need to guard the interrupt with the same condition.
+          ppu_state_r <= ST_PPU_OAM_POS;
         end
         ST_PPU_OAM_POS : begin
           // read in xpos if ypos is on this line
@@ -2148,8 +2159,6 @@ always @(posedge CLK) begin
           ppu_oam_address_r <= {ppu_oam_address_r[7:1],1'b1};
           
           if (~ppu_pix_phase_r) ppu_pix_oam_tile_num_r <= ppu_oam_rddata_r; else ppu_pix_oam_flag_r <= ppu_oam_rddata_r;
-                            
-          ppu_hblank_start_r <= 1;
                 
           if (ppu_pix_phase_r) begin
             if (~ppu_pix_oam_lut_found_r) ppu_tile_ctr_r <= ppu_tile_ctr_r + 1;
@@ -2199,29 +2208,29 @@ always @(posedge CLK) begin
           if (~ppu_fifo_data) begin
             ppu_tile_ctr_r <= 0;
             ppu_pix_ctr_r  <= 0;
-          end
-
-          if (ppu_hblank_start_r & ppu_dot_ctr_r[0]) begin
-            if (REG_STAT_r[`STAT_INT_H_EN]) ppu_lcd_stat_pulse_r <= 1;
-            REG_STAT_r[`STAT_MODE] <= `MODE_H;
-            ppu_hblank_start_r <= 0;
+            
+            // FIXME: late timer interrupt causes us to miss MODE_D during stat interrupt in PBF.  Check if dot clock count is larger than some amount
+            // Need to look at:
+            // 1) timer interrupt starting at the very last cycle is not supposed to happen
+            // 2) draw mode needs to be exented by a few clocks to account for this
+            // 3) interrupts are supposed to be faster.  e.g. is taking interrupt actually 4 bus clocks like RST (should solve the problem)
+            if (ppu_dot_ctr_r > 260) REG_STAT_r[`STAT_MODE] <= `MODE_H; // H-Blank mode starts when the fifos have been consumed
           end
           
-          ppu_vblank_start_r <= 1;
+          ppu_vblank_seen_r <= 0;
           
           if (ppu_dot_end) begin
             ppu_state_r <= ppu_vis_end ? ST_PPU_VBL : ST_PPU_OAM_NEW; 
           end
         end
         ST_PPU_VBL     : begin
-          if (ppu_vblank_start_r & ppu_dot_ctr_r[0]) begin
+          REG_STAT_r[`STAT_MODE] <= `MODE_V;
+          
+          if (~ppu_vblank_seen_r & ppu_dot_ctr_r[0]) begin
             // assert on dot clock 2
             ppu_vblank_pulse_r <= 1;
-            if (REG_STAT_r[`STAT_INT_V_EN]) ppu_lcd_stat_pulse_r <= 1;
-            if (REG_STAT_r[`STAT_INT_O_EN] & REG_LCDC_r[`LCDC_SP_EN]) ppu_lcd_stat_pulse_r <= 1;
-            REG_STAT_r[`STAT_MODE] <= `MODE_V;
             
-            ppu_vblank_start_r <= 0;            
+            ppu_vblank_seen_r <= 1;            
           end
           
           ppu_first_frame_r <= 0;
@@ -2238,7 +2247,7 @@ always @(posedge CLK) begin
         // dot clk
         // 0 - LY_r/ppu_ly_compare_r
         // 1 - match
-        // 2 - ppu_lcd_stat_pulse_r
+        // 2 - ppu_stat_active_r[0]
         // 3 - IF/earliest interrupt point
         // 3+?    - Wait for current instruction to finish. 4 * (0-6)
         // 3+?+20 - +20 = 5 * 4 dot clocks to take interrupt
@@ -2250,11 +2259,12 @@ always @(posedge CLK) begin
         if (ppu_dot_end) ppu_ly_compare_r <= ppu_disp_end ? 0 : ppu_ly_compare_r + 1; else if (&ppu_dot_ctr_r[3:2] & ppu_disp_end) ppu_ly_compare_r <= 0;
 
         REG_STAT_r[`STAT_LYC_MATCH] <= (ppu_ly_compare_r == REG_LYC_r && ~ppu_dot_end) ? 1 : 0;
-        
-        ppu_lyc_match_d1_r <= REG_STAT_r[`STAT_LYC_MATCH];
-        
-        if (~ppu_lyc_match_d1_r & REG_STAT_r[`STAT_LYC_MATCH] & REG_STAT_r[`STAT_INT_M_EN]) ppu_lcd_stat_pulse_r <= 1;  // 3
-        
+
+        // PBF limits IRQs by transitioning between enabled modes on the same cycle (M->O)
+        ppu_stat_match_r[`STAT_INT_H_EN] <= (REG_STAT_r[`STAT_INT_H_EN]) & |(ppu_state_r & ST_PPU_HBL);
+        ppu_stat_match_r[`STAT_INT_V_EN] <= (REG_STAT_r[`STAT_INT_V_EN]) & |(ppu_state_r & ST_PPU_VBL);
+        ppu_stat_match_r[`STAT_INT_O_EN] <= (REG_STAT_r[`STAT_INT_O_EN]) & ((|(ppu_state_r & ST_PPU_OAM_NEW) & |REG_LY_r) | (|(ppu_state_r & ST_PPU_VBL) & ~ppu_vblank_seen_r & ppu_dot_ctr_r[0]));  // pulse
+        ppu_stat_match_r[`STAT_INT_M_EN] <= (REG_STAT_r[`STAT_INT_M_EN]) & REG_STAT_r[`STAT_LYC_MATCH];
       end
       
       // 1->0 display disable happens imediately.  it's only possible to go from 0->1 during vblank 
@@ -3389,6 +3399,15 @@ always @(posedge CLK) begin
             8'h33:    dbg_misc_data_r <= dbg_oam_active_r;
             8'h34:    dbg_misc_data_r <= dbg_vram_active_r;
             8'h35:    dbg_misc_data_r <= dbg_dma_active_r;
+
+            8'h40:    dbg_misc_data_r <= ppu_stat_active_r;
+            8'h41:    dbg_misc_data_r <= ppu_stat_match_r;
+            8'h42:    dbg_misc_data_r <= dbg_ppu_stat_match_r;
+            8'h43:    dbg_misc_data_r <= dbg_ppu_stat_dot_ctr_r[7:0];
+            8'h44:    dbg_misc_data_r <= dbg_ppu_stat_dot_ctr_r[8:8];
+            //8'h45:    dbg_misc_data_r <= dbg_timer_ly_r;
+            //8'h46:    dbg_misc_data_r <= dbg_timer_dot_ctr_r[7:0];
+            //8'h47:    dbg_misc_data_r <= dbg_timer_dot_ctr_r[8:8];
             
             8'hA0:    dbg_misc_data_r <= apu_square1_enable_r;
             8'hA1:    dbg_misc_data_r <= apu_square1_timer_r[7:0];
@@ -3508,6 +3527,8 @@ reg         dbg_brk_data         = 0;
 reg         dbg_brk_stop         = 0;
 reg         dbg_brk_error        = 0;
 
+//reg         dbg_ppu_stat_match_stuck_r;
+
 reg [15:0]  dbg_brk_addr_r;
 reg [7:0]   dbg_brk_data_r;
 
@@ -3535,20 +3556,34 @@ always @(posedge CLK) begin
     dbg_brk_error        <= 0;
 
     dbg_brk_addr_r       <= 0;
+    
+    //dbg_ppu_stat_match_stuck_r <= 0;
   end
   else begin
     dbg_brk_inst_rd_addr <= IFD_EXE_valid && (IFD_EXE_pc_start == dbg_brk_addr_r);
     dbg_brk_data_rd_addr <= (exe_advance_r && exe_complete_r) ? 0 : (IFD_EXE_valid && dbg_mem_req_val_d1_r && ~dbg_mem_req_wr_d1_r && EXE_MCT_req_addr_d1 == dbg_brk_addr_r); //&& (!config_r[2][0] ||     mmc_data_r[7:0] == dbg_brk_data_r);
     dbg_brk_data_wr_addr <= (exe_advance_r && exe_complete_r) ? 0 : (IFD_EXE_valid && dbg_mem_req_val_d1_r &&  dbg_mem_req_wr_d1_r && EXE_MCT_req_addr_d1 == dbg_brk_addr_r && (!config_r[2][0] || EXE_MCT_req_data_d1 == dbg_brk_data_r));
     dbg_brk_stop         <= IFD_EXE_valid & IFD_EXE_int;
-    dbg_brk_error        <= //IFD_EXE_valid && (SP_r[15:0] < 16'hFF7F); // SP overflow with HRAM stack
-                            IFD_EXE_valid && (SP_r[15:0] < 16'hDF00); // SP overflow with WRAM stack
+    dbg_brk_error        <= (
+                              (0)
+                            //|| (IFD_EXE_valid && SP_r[15:0] < 16'hFF7F) // SP overflow with HRAM stack
+                            //|| (IFD_EXE_valid && SP_r[15:0] < 16'hDF7F && IFD_EXE_pc_start == 16'h0048) // SP overflow with WRAM stack
+                            //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h0048 && ppu_dot_ctr_r > 200)
+                            //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h0048 && REG_IF_r[`IE_LCD_STAT]) // still set
+                            //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h12E8 && ppu_dot_ctr_r > 200 && REG_IF_r[`IE_LCD_STAT])
+                            //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h0050 && ppu_dot_ctr_r > 150 && REG_IF_r[`IE_LCD_STAT])
+                            //|| (REG_IF_r[`IE_LCD_STAT] && ppu_dot_ctr_r > 150 && REG_LY_r < 144) // PBF
+                            //|| (dbg_ppu_stat_match_stuck_r && ppu_dot_ctr_r > 420 && REG_LY_r < 144 && REG_LY_r != 126) // PBF
+                            );
 
     dbg_brk_addr_r <= dbg_brk_addr_watch;
     dbg_brk_data_r <= dbg_brk_data_watch;
     
     dbg_mem_req_val_d1_r <= EXE_MCT_req_val;
     dbg_mem_req_wr_d1_r <= EXE_MCT_req_wr;
+    
+    //if      (IFD_EXE_valid && IFD_EXE_pc_start == 16'h0048) dbg_ppu_stat_match_stuck_r <= 1;
+    //else if (IFD_EXE_valid && IFD_EXE_pc_start == 16'h136C) dbg_ppu_stat_match_stuck_r <= 0;
   end
 end
 
