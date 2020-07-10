@@ -39,6 +39,7 @@
 #include "rtc.h"
 #include "cheat.h"
 #include "msu1.h"
+#include "led.h"
 
 extern cfg_t CFG;
 sgb_romprops_t sgb_romprops;
@@ -314,7 +315,9 @@ void sgb_gtc_load(uint8_t* filename) {
       }
   
       gtime_ts = gtime_cur;
+      writeled(1);
       file_writeblock(&gtime_ts, 0, sizeof(gtime_ts));
+      writeled(0);
     }
     else {
       file_readblock(&gtime_ts, 0, sizeof(gtime_ts));

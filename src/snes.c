@@ -108,7 +108,7 @@ void prepare_reset() {
     save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
     writeled(0);
   }
-  sgb_gtc_save(file_lfn);
+  // don't save SGB RTC since we are in reset and it may be undefined
   rdyled(1);
   readled(1);
   writeled(1);
