@@ -33,11 +33,15 @@
 `ifdef MK2
   //`define MSU_AUDIO // doesn't fit with SGB_SAVE_STATES
   //`define MSU_DATA
-  `define SGB_SAVE_STATES
+  `ifndef MSU_AUDIO
+    `define SGB_MCU_ACCESS
+    `define SGB_SAVE_STATES
+  `endif
   //`define SGB_DEBUG
 `else
   `define MSU_AUDIO
   `define MSU_DATA
+  `define SGB_MCU_ACCESS
   `define SGB_SAVE_STATES
   `define SGB_DEBUG
 `endif

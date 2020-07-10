@@ -359,10 +359,14 @@ spi snes_spi(
   .bit_cnt(spi_bit_cnt)
 );
 
-// 800000-8FFFFF is owned by RAM and SGB except for WRAM at 80C000-80DFFF.  Any MCU accesses to mirrored SRAM needs to instead access Exxxxx directly and not 80A000.
-assign MCU_ROM = (MCU_ADDR[23:20] != 4'h8 || {MCU_ADDR[19:13],1'b0} == 8'h0C || MCU_ADDR[23:8] == 16'h8000);
 // RAM contains the SNES ROM and is memory mapped to 880000-8FFFFF
 assign MCU_RAM = MCU_ADDR[23:19] == {4'h8,1'b1};
+`ifdef SGB_MCU_ACCESS
+// 800000-8FFFFF is owned by RAM and SGB except for WRAM at 80C000-80DFFF.  Any MCU accesses to mirrored SRAM needs to instead access Exxxxx directly and not 80A000.
+assign MCU_ROM = (MCU_ADDR[23:20] != 4'h8 || {MCU_ADDR[19:13],1'b0} == 8'h0C || MCU_ADDR[23:8] == 16'h8000);
+`else
+assign MCU_ROM = ~MCU_RAM;
+`endif
 
 reg  [7:0]  SGB_ROM_DINr;
 wire [23:0] SGB_ROM_ADDR;

@@ -162,7 +162,7 @@ integer i;
 //   8000-9FFF   8KB Video RAM (VRAM) (switchable bank 0-1 in CGB Mode)          // BRAM 8KB
 //   A000-BFFF   8KB External RAM     (in cartridge, switchable bank, if any)    // PSRAM E00000-EFFFFF 512KB
 //   C000-CFFF   4KB Work RAM Bank 0 (WRAM)                                      // PSRAM 80C000-80CFFF 4KB
-//   D000-DFFF   4KB Work RAM Bank 1 (WRAM)  (switchable bank 1-7 in CGB Mode)   // PSRAM 80D000-80DFFF 4KB
+//   D000-DFFF   4KB Work RAM Bank 1 (WRAM)                                      // PSRAM 80D000-80DFFF 4KB
 //   E000-FDFF   Same as C000-DDFF (ECHO)    (typically not used)                // Mirror
 //   FE00-FE9F   Sprite Attribute Table (OAM)                                    // BRAM
 //   FEA0-FEFF   Not Usable
@@ -177,8 +177,9 @@ integer i;
 //   000000-7FFFFF   PSRAM
 //   800000-87FFFF   SGB
 //     800000-8000FF   BOOT ROM
+//     800100-807FFF   <unmapped> see 000000-7FFFFF
 //     808000-809FFF   VRAM
-//     80A000-80BFFF   <unmapped>
+//     80A000-80BFFF   <unmapped> see E00000-EFFFFF
 //     80C000-80DFFF   WRAM
 //     80FE00-80FFFF   OAM, IO, etc
 //     810000-810FFF   Debug (read only)

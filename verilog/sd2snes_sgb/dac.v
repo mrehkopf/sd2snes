@@ -367,6 +367,7 @@ wire signed [25:0] dac_vol_sample;
 wire signed [25:0] vol_sample;
 wire signed [15:0] vol_sample_sat;
 
+//wire signed [15:0] sgb_data_ch = lrck ? sgb_apu_dat[31:16] : sgb_apu_dat[15:0];
 wire signed [15:0] sgb_data_ch = lrck ? sgb_co[2][59:44] : sgb_co[2][27:12];
 wire signed [25:0] sgb_vol_sample;
 

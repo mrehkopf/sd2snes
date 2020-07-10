@@ -94,8 +94,9 @@ integer i;
 //   ICT - Interrupt Controller
 // PPU - Pixel Processing Unit
 // APU - Audio Processing Unit
-// MCT - Memory ConTroller for internal (VRAM, OAM, HRAM, REG) and external state (WRAM, ICD2, and CART)
+// MCT - Memory ConTroller for internal (VRAM, OAM, HRAM, REG) and external state (WRAM and CART)
 // DMA - DMA engine for copying data to the OAM
+// SER - Serial state machine
 //
 // DBG - Debug state is available for breakpoint/watchpoint.
 
@@ -278,7 +279,6 @@ reg         cpu_ireset_r; always @(posedge CLK) cpu_ireset_r <= RST | CPU_RST | 
 //  3 - ReqPendr
 reg  [5:0]  cpu_free_slot_r;
 always @(posedge CLK) begin
-  //cpu_free_slot_r <= {cpu_free_slot_r[2:0],(CLK_CPU_EDGE & ~CLK_BUS_EDGE)};
   // MCU needs more bandwidth so now we only block the last empty CPU clock cycle shifted by a value greater than the MCT delay
   cpu_free_slot_r <= {cpu_free_slot_r[4:0],(~&clk_bus_ctr_r)};
 end
@@ -827,9 +827,6 @@ assign IFD_REG_ic = ifd_reg_ic_r;
 // - no in-progress serial transfers
 assign HLT_IFD_rsp = HLT_REQ_sync & ~|ifd_size_r & ~ifd_int_r & EXE_IFD_ime & IDL_ICD;
 
-//reg  [7:0]  dbg_timer_ly_r;
-//reg  [8:0]  dbg_timer_dot_ctr_r;
-
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
     PC_r <= 0;
@@ -859,10 +856,6 @@ always @(posedge CLK) begin
         ifd_size_r      <= ifd_complete_r ? 0 : ifd_size_r + 1;
 
         if (ifd_complete_r & ifd_int_r) ifd_reg_ic_r <= ifd_int_ic_r;
-        //if (ifd_complete_r & ifd_int_r & ifd_int_ic_r[`IE_TIMER]) begin
-        //  dbg_timer_ly_r <= REG_LY_r;
-        //  dbg_timer_dot_ctr_r <= ppu_dot_ctr_r;
-        //end
       end
       else begin
         // force bypassed PC to be accounted for in state
@@ -907,7 +900,7 @@ always @(posedge CLK) begin
                    :  (REG_IE_r[`IE_JOYPAD]   & REG_IF_r[`IE_JOYPAD])   ? 3'h4
                    :                                                      3'h7
                    );
-  //if      (~ifd_int_r)                                      ifd_int_ic_r <= 8'b00000000;
+
   if      (REG_IE_r[`IE_VBLANK]   & REG_IF_r[`IE_VBLANK]  ) ifd_int_ic_r <= 8'b00000001;
   else if (REG_IE_r[`IE_LCD_STAT] & REG_IF_r[`IE_LCD_STAT]) ifd_int_ic_r <= 8'b00000010;
   else if (REG_IE_r[`IE_TIMER]    & REG_IF_r[`IE_TIMER]   ) ifd_int_ic_r <= 8'b00000100;
@@ -1653,7 +1646,8 @@ wire        ppu_tile_end = ~ppu_tile_dummy & ppu_tile_ctr_r[4] & &ppu_tile_ctr_r
 wire        ppu_fifo_data = ~ppu_tile_dummy && ppu_pix_ctr_r[5:3] != ppu_tile_ctr_r[2:0] && ~ppu_pix_end;
 // TODO: is this logic necessary?  reads are never blocked and take 8 dot clocks to consume a tile.  writes should take a minimum of 8 dot clocks to write a tile, but they can span across two tiles.
 // with 4 tiles a write should never be more than 2 tiles ahead of a read and 4 tile buffers implies there is an extra buffer of space.
-wire        ppu_fifo_full = ~ppu_tile_dummy && (ppu_pix_ctr_r[4:3] == ppu_tile_ctr_r[1:0] || ppu_pix_ctr_r[4:3] == ppu_tile_ctr_next) && ppu_pix_ctr_r[5] != ppu_tile_ctr_r[2];
+//wire        ppu_fifo_full = ~ppu_tile_dummy && (ppu_pix_ctr_r[4:3] == ppu_tile_ctr_r[1:0] || ppu_pix_ctr_r[4:3] == ppu_tile_ctr_next) && ppu_pix_ctr_r[5] != ppu_tile_ctr_r[2];
+wire        ppu_fifo_full = 0;
 
 wire [2:0]  ppu_bgw_fifo_index_start = (ppu_pix_win_active_r ? REG_WX_r[2:0] : ~REG_SCX_r[2:0]) + 1;
 reg  [1:0]  ppu_bgw_fifo_r[31:0]; // 4 [tiles] * 8 [pixels/tile] * 2 [bpp]
@@ -1831,8 +1825,6 @@ always @(posedge CLK) begin
     
     dbg_dot_ctr_next_r <= 0;
     dbg_dot_ctr_r      <= 0;
-    
-    //ppu_stat_write_r <= 0;
   end
   else begin    
     // The scanline pixel output is composed of 3 distinct phases:
@@ -1860,9 +1852,6 @@ always @(posedge CLK) begin
     // - [PIX->HBL] HBL is when we are in hblank
     // - [HBL->OAM] From HBL we can transition back to OAM if the new line is visible
     // - [HBL->VBL] From HBL we can transition to VBL (vblank) if the visible lines are complete
-
-    //if      (REG_req_val && REG_address == 8'h41) ppu_stat_write_r <= 1;
-    //else if (CLK_CPU_EDGE)                        ppu_stat_write_r <= 0;
     
     // debug
     if (CLK_BUS_EDGE) begin
@@ -2053,8 +2042,7 @@ always @(posedge CLK) begin
         end
         ST_PPU_OAM_NEW : begin
           // start of new line
-          //ppu_stat_active_r[0] <= 0;
-          
+
           // setup initial address
           ppu_oam_address_r <= 0;
           
@@ -2253,8 +2241,7 @@ always @(posedge CLK) begin
         // 3+?+20 - +20 = 5 * 4 dot clocks to take interrupt
         
         // last line transitions to 0 early which road rash uses to trigger lyc == 0 interrupt on consecutive lines (153, 0)
-        // prehistorik man breaks if the transition to 0 on line 153 happens too early.
-        // FIXME: the compare logic needs more work
+        // P-M breaks if the transition to 0 on line 153 happens too early.
         if (ppu_dot_end) REG_LY_r         <= ppu_disp_end ? 0 : REG_LY_r + 1;
         if (ppu_dot_end) ppu_ly_compare_r <= ppu_disp_end ? 0 : ppu_ly_compare_r + 1; else if (&ppu_dot_ctr_r[3:2] & ppu_disp_end) ppu_ly_compare_r <= 0;
 
@@ -2277,9 +2264,6 @@ end
 //-------------------------------------------------------------------
 // APU
 //-------------------------------------------------------------------
-
-// Things to link into:
-// - determine if env/sweep timers are enabled/disabled correctly
 
 `ifdef APU
 reg  [2:0]  apu_frame_step_r;
@@ -2432,7 +2416,7 @@ always @(posedge CLK) begin
     REG_NR51_r    <= 8'h00; // FF25
     REG_NR52_r    <= 8'h00; // FF26
 
-    // r-type uses uninitialized WAV RAM data.  SGB2 values used.
+    // RT1 uses uninitialized WAV RAM data.  One possible set of SGB2 values used.
     if (cpu_ireset_r) begin
       REG_WAV_r[0]  <= 8'h08;//8'hAC;
       REG_WAV_r[1]  <= 8'hF7;//8'hDD;
@@ -2882,7 +2866,6 @@ reg         mct_src_r;
 reg         mct_wr_r;
 reg  [7:0]  mct_mdr_r;
 
-//wire [15:0] mct_addr = |(mct_state_r & ST_MCT_DEC) ? (mct_src_r ? EXE_MCT_req_addr_d1 : IFD_MCT_req_addr_d1) : mct_addr_r;
 wire [15:0] mct_addr_d1 = mct_src_r ? EXE_MCT_req_addr_d1 : IFD_MCT_req_addr_d1;
 
 assign HRAM_MCT_data = hram_rddata;
@@ -2930,7 +2913,7 @@ always @(posedge CLK) begin
       ST_MCT_IDLE: begin
         if      (EXE_MCT_req_val) begin
           mct_src_r   <= 1;
-          mct_wr_r    <= EXE_MCT_req_wr; // TODO: do we need to guard OAM writes here?  Could run into boundary condition with PPU.
+          mct_wr_r    <= EXE_MCT_req_wr;
           
           mct_state_r <= ST_MCT_DEC;
         end
@@ -3527,8 +3510,6 @@ reg         dbg_brk_data         = 0;
 reg         dbg_brk_stop         = 0;
 reg         dbg_brk_error        = 0;
 
-//reg         dbg_ppu_stat_match_stuck_r;
-
 reg [15:0]  dbg_brk_addr_r;
 reg [7:0]   dbg_brk_data_r;
 
@@ -3556,8 +3537,6 @@ always @(posedge CLK) begin
     dbg_brk_error        <= 0;
 
     dbg_brk_addr_r       <= 0;
-    
-    //dbg_ppu_stat_match_stuck_r <= 0;
   end
   else begin
     dbg_brk_inst_rd_addr <= IFD_EXE_valid && (IFD_EXE_pc_start == dbg_brk_addr_r);
@@ -3565,15 +3544,14 @@ always @(posedge CLK) begin
     dbg_brk_data_wr_addr <= (exe_advance_r && exe_complete_r) ? 0 : (IFD_EXE_valid && dbg_mem_req_val_d1_r &&  dbg_mem_req_wr_d1_r && EXE_MCT_req_addr_d1 == dbg_brk_addr_r && (!config_r[2][0] || EXE_MCT_req_data_d1 == dbg_brk_data_r));
     dbg_brk_stop         <= IFD_EXE_valid & IFD_EXE_int;
     dbg_brk_error        <= (
-                              (0)
-                            //|| (IFD_EXE_valid && SP_r[15:0] < 16'hFF7F) // SP overflow with HRAM stack
+                               0
+                            || (IFD_EXE_valid && SP_r[15:0] < 16'hFF7F) // SP overflow with HRAM stack
                             //|| (IFD_EXE_valid && SP_r[15:0] < 16'hDF7F && IFD_EXE_pc_start == 16'h0048) // SP overflow with WRAM stack
                             //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h0048 && ppu_dot_ctr_r > 200)
                             //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h0048 && REG_IF_r[`IE_LCD_STAT]) // still set
                             //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h12E8 && ppu_dot_ctr_r > 200 && REG_IF_r[`IE_LCD_STAT])
                             //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h0050 && ppu_dot_ctr_r > 150 && REG_IF_r[`IE_LCD_STAT])
                             //|| (REG_IF_r[`IE_LCD_STAT] && ppu_dot_ctr_r > 150 && REG_LY_r < 144) // PBF
-                            //|| (dbg_ppu_stat_match_stuck_r && ppu_dot_ctr_r > 420 && REG_LY_r < 144 && REG_LY_r != 126) // PBF
                             );
 
     dbg_brk_addr_r <= dbg_brk_addr_watch;
@@ -3581,9 +3559,6 @@ always @(posedge CLK) begin
     
     dbg_mem_req_val_d1_r <= EXE_MCT_req_val;
     dbg_mem_req_wr_d1_r <= EXE_MCT_req_wr;
-    
-    //if      (IFD_EXE_valid && IFD_EXE_pc_start == 16'h0048) dbg_ppu_stat_match_stuck_r <= 1;
-    //else if (IFD_EXE_valid && IFD_EXE_pc_start == 16'h136C) dbg_ppu_stat_match_stuck_r <= 0;
   end
 end
 
