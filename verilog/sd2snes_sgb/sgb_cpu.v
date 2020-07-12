@@ -2492,8 +2492,9 @@ always @(posedge CLK) begin
         8'h12: begin // NR12
           // FIXME: is it ok to use updated period?
           // FIXME: maybe move values using prior state (2 and 3) to register write
-          if      (apu_reg_update_nr12_dir_r ^ REG_NR12_r[`NR12_ENV_DIR])     apu_square1_volume_r <= ~apu_square1_volume_r + 1;
-          else if (apu_square1_env_enable_r & ~|REG_NR12_r[`NR12_ENV_PERIOD]) apu_square1_volume_r <= apu_square1_volume_r + 1;
+          // FIXME: The volume inversion is a problem in P-M with the way it's coded.  Comment out for now.
+          //if      (apu_reg_update_nr12_dir_r ^ REG_NR12_r[`NR12_ENV_DIR])     apu_square1_volume_r <= ~apu_square1_volume_r + 1;
+          if      (apu_square1_env_enable_r & ~|REG_NR12_r[`NR12_ENV_PERIOD]) apu_square1_volume_r <= apu_square1_volume_r + 1;
           else if (~apu_reg_update_nr12_dir_r)                                apu_square1_volume_r <= apu_square1_volume_r + 2;
           
           if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
@@ -2522,8 +2523,9 @@ always @(posedge CLK) begin
         8'h17: begin // NR22
           // FIXME: is it ok to use updated period?
           // FIXME: maybe move values using prior state (2 and 3) to register write
-          if      (apu_reg_update_nr22_dir_r ^ REG_NR22_r[`NR22_ENV_DIR])     apu_square2_volume_r <= ~apu_square2_volume_r + 1;
-          else if (apu_square2_env_enable_r & ~|REG_NR22_r[`NR22_ENV_PERIOD]) apu_square2_volume_r <= apu_square2_volume_r + 1;
+          // FIXME: The volume inversion is a problem in P-M with the way it's coded.  Comment out for now.
+          //if      (apu_reg_update_nr22_dir_r ^ REG_NR22_r[`NR22_ENV_DIR])     apu_square2_volume_r <= ~apu_square2_volume_r + 1;
+          if      (apu_square2_env_enable_r & ~|REG_NR22_r[`NR22_ENV_PERIOD]) apu_square2_volume_r <= apu_square2_volume_r + 1;
           else if (~apu_reg_update_nr22_dir_r)                                apu_square2_volume_r <= apu_square2_volume_r + 2;
 
           if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
