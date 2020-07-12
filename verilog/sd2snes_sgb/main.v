@@ -132,7 +132,7 @@ wire [5:0] msu_status_set_bits;
 
 wire [7:0] SGB_SNES_DATA_IN;
 wire [7:0] SGB_SNES_DATA_OUT;
-wire [31:0] SGB_APU_DAT;
+wire [19:0] SGB_APU_DAT;
 wire [55:0] SGB_RTC_DAT;
 wire [55:0] MCU_RTC_DAT;
 wire        MCU_RTC_WE;
@@ -305,6 +305,7 @@ dac snes_dac(
   .DAC_STATUS(DAC_STATUS),
   .volume(msu_volumerq_out),
   .sgb_apu_dat(SGB_APU_DAT),
+  .sgb_apu_clk_edge(SGB_APU_CLK_EDGE),
   .vol_latch(msu_volume_latch_out),
   .vol_select(dac_vol_select_out),
   .palmode(dac_palmode_out),
@@ -529,6 +530,7 @@ sgb snes_sgb (
 
   // Audio interface
   .APU_DAT(SGB_APU_DAT),
+  .APU_CLK_EDGE(SGB_APU_CLK_EDGE),
   
   // RTC interface
   .RTC_DAT(SGB_RTC_DAT),

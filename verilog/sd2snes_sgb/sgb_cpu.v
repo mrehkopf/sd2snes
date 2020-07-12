@@ -45,7 +45,7 @@ module sgb_cpu(
   output        PPU_HSYNC_EDGE,
   
   // APU out
-  output [31:0] APU_DAT,
+  output [19:0] APU_DAT,
   
   // P1
   output [1:0]  P1O,
@@ -2277,7 +2277,6 @@ reg  [2:0]  apu_square1_env_timer_r;
 reg  [3:0]  apu_square1_volume_r;
 reg  [2:0]  apu_square1_pos_r;
 
-reg         apu_square1_cutoff_r;
 reg  [7:0]  apu_square1_duty_r;
 
 reg         apu_square1_sweep_enable_r;
@@ -2297,7 +2296,6 @@ reg  [2:0]  apu_square2_env_timer_r;
 reg  [3:0]  apu_square2_volume_r;
 reg  [2:0]  apu_square2_pos_r;
 
-reg         apu_square2_cutoff_r;
 reg  [7:0]  apu_square2_duty_r;
 
 wire [12:0] apu_square2_period = {REG_NR24_r[`NR24_FREQ_MSB],REG_NR23_r[`NR23_FREQ_LSB],2'b00};
@@ -2329,7 +2327,7 @@ wire signed [4:0] apu_noise_output = apu_noise_enable_r ? (apu_noise_lfsr_r[0] ?
 
 wire signed [6:0]  apu_data[1:0];
 reg  signed [6:0]  apu_data_r[1:0];
-reg  signed [15:0] apu_data_volume_r[1:0];
+reg  signed [9:0] apu_data_volume_r[1:0];
 
 assign apu_data[0][6:0] = ( $signed(apu_square1_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH0]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
                           + $signed(apu_square2_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH1]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
@@ -2359,29 +2357,24 @@ always @(posedge CLK) begin
   // Flop audio state since it is a critical path on MK2
   for (i = 0; i < 2; i = i + 1) apu_data_r[i] <= apu_data[i];
 
-  // TODO: arbitrary volume scaling constant used for now
-  apu_data_volume_r[0][15:0] <= $signed(apu_data_r[0][6:0]) * ({13'h0000,REG_NR50_r[`NR50_MASTER_LEFT_VOLUME]}  + 1) * 16'd16;
-  apu_data_volume_r[1][15:0] <= $signed(apu_data_r[1][6:0]) * ({13'h0000,REG_NR50_r[`NR50_MASTER_RIGHT_VOLUME]} + 1) * 16'd16;
+  apu_data_volume_r[0][9:0] <= $signed(apu_data_r[0][6:0]) * ({7'h00,REG_NR50_r[`NR50_MASTER_LEFT_VOLUME]}  + 1);
+  apu_data_volume_r[1][9:0] <= $signed(apu_data_r[1][6:0]) * ({7'h00,REG_NR50_r[`NR50_MASTER_RIGHT_VOLUME]} + 1);
   
   // sign conversion with arithmetic shift right
   apu_wave_data_shifted_r[4:0] <= $signed({(apu_wave_sample_r[3:0] ^ 4'h8),1'b0}) >>> (REG_NR32_r[`NR32_LEVEL] - 1);
   
-  // FIXME: hack to ignore high frequency FFA noise.  need to check if it's fixed now.
-  apu_square1_cutoff_r <= &{REG_NR14_r[`NR14_FREQ_MSB],REG_NR13_r[`NR13_FREQ_LSB]};
-  apu_square2_cutoff_r <= &{REG_NR24_r[`NR24_FREQ_MSB],REG_NR23_r[`NR23_FREQ_LSB]};
-  
   case (REG_NR11_r[`NR11_DUTY])
-    0: apu_square1_duty_r <= 8'b00000001 | {8{apu_square1_cutoff_r}};
-    1: apu_square1_duty_r <= 8'b10000001 | {8{apu_square1_cutoff_r}};
-    2: apu_square1_duty_r <= 8'b10000111 | {8{apu_square1_cutoff_r}};
-    3: apu_square1_duty_r <= 8'b01111110 | {8{apu_square1_cutoff_r}};
+    0: apu_square1_duty_r <= 8'b00000001;
+    1: apu_square1_duty_r <= 8'b10000001;
+    2: apu_square1_duty_r <= 8'b10000111;
+    3: apu_square1_duty_r <= 8'b01111110;
   endcase
 
   case (REG_NR21_r[`NR21_DUTY])
-    0: apu_square2_duty_r <= 8'b00000001 | {8{apu_square2_cutoff_r}};
-    1: apu_square2_duty_r <= 8'b10000001 | {8{apu_square2_cutoff_r}};
-    2: apu_square2_duty_r <= 8'b10000111 | {8{apu_square2_cutoff_r}};
-    3: apu_square2_duty_r <= 8'b01111110 | {8{apu_square2_cutoff_r}};
+    0: apu_square2_duty_r <= 8'b00000001;
+    1: apu_square2_duty_r <= 8'b10000001;
+    2: apu_square2_duty_r <= 8'b10000111;
+    3: apu_square2_duty_r <= 8'b01111110;
   endcase
 
   apu_wave_sample_update_r <= 0;
@@ -2487,9 +2480,10 @@ always @(posedge CLK) begin
         // square1
         8'h11:  apu_square1_length_r <= REG_NR11_r[`NR11_LENGTH];    // NR11
         8'h12: begin // NR12
-          // FIXME: some corner cases to handle with volume  
           // FIXME: is it ok to use updated period?
-          if      (apu_square1_env_enable_r & ~|REG_NR12_r[`NR12_ENV_PERIOD]) apu_square1_volume_r <= apu_square1_volume_r + 1;
+          // FIXME: maybe move values using prior state (2 and 3) to register write
+          if      (apu_reg_update_nr12_dir_r ^ REG_NR12_r[`NR12_ENV_DIR])     apu_square1_volume_r <= ~apu_square1_volume_r + 1;
+          else if (apu_square1_env_enable_r & ~|REG_NR12_r[`NR12_ENV_PERIOD]) apu_square1_volume_r <= apu_square1_volume_r + 1;
           else if (~apu_reg_update_nr12_dir_r)                                apu_square1_volume_r <= apu_square1_volume_r + 2;
           
           if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
@@ -2516,9 +2510,10 @@ always @(posedge CLK) begin
         // square2
         8'h16:  apu_square2_length_r <= REG_NR21_r[`NR21_LENGTH];    // NR21
         8'h17: begin // NR22
-          // FIXME: some corner cases to handle with volume  
           // FIXME: is it ok to use updated period?
-          if      (apu_square2_env_enable_r & ~|REG_NR22_r[`NR22_ENV_PERIOD]) apu_square2_volume_r <= apu_square2_volume_r + 1;
+          // FIXME: maybe move values using prior state (2 and 3) to register write
+          if      (apu_reg_update_nr22_dir_r ^ REG_NR22_r[`NR22_ENV_DIR])     apu_square2_volume_r <= ~apu_square2_volume_r + 1;
+          else if (apu_square2_env_enable_r & ~|REG_NR22_r[`NR22_ENV_PERIOD]) apu_square2_volume_r <= apu_square2_volume_r + 1;
           else if (~apu_reg_update_nr22_dir_r)                                apu_square2_volume_r <= apu_square2_volume_r + 2;
 
           if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
@@ -3451,9 +3446,9 @@ always @(posedge CLK) begin
             8'hDF:    dbg_misc_data_r <= apu_noise_output[4:0];
             
             8'hE0:    dbg_misc_data_r <= APU_DAT[7:0];
-            8'hE1:    dbg_misc_data_r <= APU_DAT[15:8];
-            8'hE2:    dbg_misc_data_r <= APU_DAT[23:16];
-            8'hE3:    dbg_misc_data_r <= APU_DAT[31:24];
+            8'hE1:    dbg_misc_data_r <= APU_DAT[9:8];
+            8'hE2:    dbg_misc_data_r <= APU_DAT[17:10];
+            8'hE3:    dbg_misc_data_r <= APU_DAT[19:18];
 
             default:  dbg_misc_data_r <= 0;
           endcase

@@ -44,7 +44,8 @@ module sgb(
   output        ROM_FREE_SLOT,
 
   // Audio interface
-  output [31:0] APU_DAT,
+  output [19:0] APU_DAT,
+  output        APU_CLK_EDGE,
 
   // RTC interface
   output [55:0] RTC_DAT,
@@ -208,6 +209,8 @@ wire [7:0]   MBC_BUS_RDDATA;
 
 parameter CONFIG_REGISTERS = 8;
 reg [7:0] config_r[CONFIG_REGISTERS-1:0]; initial for (i = 0; i < CONFIG_REGISTERS; i = i + 1) config_r[i] = 8'h00;
+
+assign       APU_CLK_EDGE = ICD2_CLK_CPU_EDGE;
 
 //-------------------------------------------------------------------
 // SGB2-CPU

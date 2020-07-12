@@ -27,7 +27,8 @@ module dac(
   input[10:0] pgm_address,
   input[7:0] pgm_data,
   input[7:0] volume,
-  input [31:0] sgb_apu_dat,
+  input [19:0] sgb_apu_dat,
+  input        sgb_apu_clk_edge,
   input vol_latch,
   input [2:0] vol_select,
   input [8:0] dac_address_ext,
@@ -223,89 +224,75 @@ always @(posedge clkin) begin
 end
 `endif
 
-// downsampler for SGB
-// TODO: Go through code and confirm it functions as intended.  Do we need more stages?
-// FIXME: This helps with high frequency FFA noise, but there are still issues
 /*
-  21477272.727272... /   9375 *   2464 = 44100 * 128
-  21281370           / 709379 * 188160 = 44100 * 128
+  Downsampler for SGB
+  4 MHz input sample rate
+  /64 downsample
+  
+  10b input.
 */
-reg [19:0] sgb_phaseacc = 0;
-wire [18:0] sgb_phasemul = (palmode ? 188160 :  2464);
-wire [19:0] sgb_phasediv = (palmode ? 709379 :  9375);
-reg [6:0] sgb_subcount = 0;
 
-reg sgb_int_strobe = 0, sgb_comb_strobe = 0;
+// TODO: what accumulator precision is required?
+`define SGB_CIC_BITS (10+3*6) // 3 stages, /64 (2^6)
 
-always @(posedge clkin) begin
-  sgb_int_strobe <= 0;
-  sgb_comb_strobe <= 0;
-  if(reset) begin
-    sgb_phaseacc <= 0;
-    sgb_subcount <= 0;
-  end else if(sysclk_rising) begin
-    if(sgb_phaseacc >= sgb_phasediv) begin
-      sgb_phaseacc <= sgb_phaseacc - sgb_phasediv + sgb_phasemul;
-      sgb_subcount <= sgb_subcount + 1;
-      sgb_int_strobe <= 1;
-      if (sgb_subcount == 0) begin
-        sgb_comb_strobe <= 1;
-      end
-    end else begin
-      sgb_phaseacc <= sgb_phaseacc + sgb_phasemul;
-    end
-  end
-end
-
-reg [63:0] sgb_ci[2:0], sgb_io[2:0], sgb_co[2:0];
+reg [(`SGB_CIC_BITS*2-1):0] sgb_ci[2:0], sgb_io[2:0], sgb_co[2:0];
 reg [9:0] sgb_cicstate = 10'h200;
 reg [9:0] sgb_cicstate_next = 10'h200;
-wire [63:0] sgb_bufi = {{16{sgb_apu_dat[31]}}, sgb_apu_dat[31:16], {16{sgb_apu_dat[15]}}, sgb_apu_dat[15:0]};
+reg [5:0] sgb_phasediv = 0;
+reg       sgb_apu_clk_edge_r = 0;
+
+wire [(`SGB_CIC_BITS*2-1):0] sgb_bufi = {{(`SGB_CIC_BITS-10){sgb_apu_dat[19]}}, sgb_apu_dat[19:10], {(`SGB_CIC_BITS-10){sgb_apu_dat[9]}}, sgb_apu_dat[9:0]};
 
 always @(posedge clkin) begin
+  sgb_apu_clk_edge_r <= sgb_apu_clk_edge;
+
   if(reset) begin
     sgb_cicstate <= ST0_IDLE;
-    {sgb_ci[2], sgb_ci[1], sgb_ci[0]} <= 192'h0;
-    {sgb_io[2], sgb_io[1], sgb_io[0]} <= 192'h0;
-    {sgb_co[2], sgb_co[1], sgb_co[0]} <= 192'h0;
-  end else if(int_strobe) begin
+    {sgb_ci[2], sgb_ci[1], sgb_ci[0]} <= 0;
+    {sgb_io[2], sgb_io[1], sgb_io[0]} <= 0;
+    {sgb_co[2], sgb_co[1], sgb_co[0]} <= 0;
+    
+    sgb_phasediv <= 0;
+  end else if(sgb_apu_clk_edge_r) begin
     sgb_cicstate <= ST4_INT1;
-    sgb_cicstate_next <= comb_strobe ? ST1_COMB1 : ST0_IDLE;
+    sgb_cicstate_next <= ~|sgb_phasediv ? ST1_COMB1 : ST0_IDLE;
+    
+    sgb_phasediv <= sgb_phasediv + 1;
   end else begin
     case(sgb_cicstate)
 /****** COMB STAGES ******/
       ST1_COMB1: begin
         sgb_cicstate <= ST2_COMB2;
         sgb_ci[0] <= sgb_io[2];
-        sgb_co[0][63:32] <= sgb_io[2][63:32] - sgb_ci[0][63:32];
-        sgb_co[0][31:0] <= sgb_io[2][31:0] - sgb_ci[0][31:0];
+        sgb_co[0][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] <= sgb_io[2][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] - sgb_ci[0][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS];
+        sgb_co[0][(`SGB_CIC_BITS-1):0] <= sgb_io[2][(`SGB_CIC_BITS-1):0] - sgb_ci[0][(`SGB_CIC_BITS-1):0];
       end
       ST2_COMB2: begin
         sgb_cicstate <= ST3_COMB3;
         sgb_ci[1] <= sgb_co[0];
-        sgb_co[1][63:32] <= sgb_co[0][63:32] - sgb_ci[1][63:32];
-        sgb_co[1][31:0] <= sgb_co[0][31:0] - sgb_ci[1][31:0];
+        sgb_co[1][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] <= sgb_co[0][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] - sgb_ci[1][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS];
+        sgb_co[1][(`SGB_CIC_BITS-1):0] <= sgb_co[0][(`SGB_CIC_BITS-1):0] - sgb_ci[1][(`SGB_CIC_BITS-1):0];
       end
       ST3_COMB3: begin
         sgb_cicstate <= ST0_IDLE;
         sgb_ci[2] <= sgb_co[1];
-        sgb_co[2][63:32] <= sgb_co[1][63:32] - sgb_ci[2][63:32];
-        sgb_co[2][31:0] <= sgb_co[1][31:0] - sgb_ci[2][31:0];
+        sgb_co[2][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] <= sgb_co[1][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] - sgb_ci[2][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS];
+        sgb_co[2][(`SGB_CIC_BITS-1):0] <= sgb_co[1][(`SGB_CIC_BITS-1):0] - sgb_ci[2][(`SGB_CIC_BITS-1):0];
       end
 /****** INTEGRATOR STAGES ******/
       ST4_INT1: begin
-        sgb_io[0][63:32] <= sgb_bufi[63:32] + sgb_io[0][63:32];
-        sgb_io[0][31:0] <= sgb_bufi[31:0] + sgb_io[0][31:0];
+        sgb_io[0][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] <= sgb_bufi[(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] + sgb_io[0][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS];
+        sgb_io[0][(`SGB_CIC_BITS-1):0] <= sgb_bufi[(`SGB_CIC_BITS-1):0] + sgb_io[0][(`SGB_CIC_BITS-1):0];
         sgb_cicstate <= ST5_INT2;
       end
       ST5_INT2: begin
-        sgb_io[1][63:32] <= sgb_io[0][63:32] + sgb_io[1][63:32];
-        sgb_io[1][31:0] <= sgb_io[0][31:0] + sgb_io[1][31:0];
+        sgb_io[1][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] <= sgb_io[0][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] + sgb_io[1][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS];
+        sgb_io[1][(`SGB_CIC_BITS-1):0] <= sgb_io[0][(`SGB_CIC_BITS-1):0] + sgb_io[1][(`SGB_CIC_BITS-1):0];
         sgb_cicstate <= ST6_INT3;
       end
       ST6_INT3: begin
-        sgb_io[2][63:32] <= sgb_io[1][63:32] + sgb_io[2][63:32];
-        sgb_io[2][31:0] <= sgb_io[1][31:0] + sgb_io[2][31:0];
+        sgb_io[2][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] <= sgb_io[1][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] + sgb_io[2][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS];
+        sgb_io[2][(`SGB_CIC_BITS-1):0] <= sgb_io[1][(`SGB_CIC_BITS-1):0] + sgb_io[2][(`SGB_CIC_BITS-1):0];
         sgb_cicstate <= sgb_cicstate_next;
       end
       default: begin
@@ -367,8 +354,8 @@ wire signed [25:0] dac_vol_sample;
 wire signed [25:0] vol_sample;
 wire signed [15:0] vol_sample_sat;
 
-//wire signed [15:0] sgb_data_ch = lrck ? sgb_apu_dat[31:16] : sgb_apu_dat[15:0];
-wire signed [15:0] sgb_data_ch = lrck ? sgb_co[2][59:44] : sgb_co[2][27:12];
+// TODO: arbitrary scaling which used to be in SGB APU
+wire signed [15:0] sgb_data_ch = lrck ? {{(16+18-`SGB_CIC_BITS-4){sgb_co[2][(2*`SGB_CIC_BITS-1)]}},sgb_co[2][(2*`SGB_CIC_BITS-1):(`SGB_CIC_BITS+18)],4'h0} : {{(16+18-`SGB_CIC_BITS-4){sgb_co[2][(`SGB_CIC_BITS-1)]}},sgb_co[2][(`SGB_CIC_BITS-1):(0+18)],4'h0};
 wire signed [25:0] sgb_vol_sample;
 
 assign dac_vol_sample = dac_data_ch * $signed({1'b0, vol_reg});
