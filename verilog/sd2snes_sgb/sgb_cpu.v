@@ -1667,7 +1667,7 @@ reg         ppu_stat_active_r;
 reg  [7:0]  ppu_stat_match_r;
 reg  [7:0]  ppu_ly_compare_r;
 reg         ppu_dot_start_r;
-//reg         ppu_stat_write_r;
+reg         ppu_stat_write_r;
 
 // OAM LUT lookup operation
 reg         ppu_oam_lut_found;
@@ -1823,6 +1823,8 @@ always @(posedge CLK) begin
     ppu_obj_fifo_wr_req_r <= 0;
     ppu_obj_fifo_wr_active_r <= 0;
     
+    ppu_stat_write_r <= 0;
+    
     dbg_dot_ctr_next_r <= 0;
     dbg_dot_ctr_r      <= 0;
   end
@@ -1869,6 +1871,9 @@ always @(posedge CLK) begin
       end
     end
 
+    if      (REG_req_val && REG_address == 8'h41) ppu_stat_write_r <= 1;
+    else if (ppu_dot_edge)                        ppu_stat_write_r <= 0;
+    
     // flop match
     ppu_pix_oam_lut_match_r <= ppu_oam_lut_match;
     ppu_pix_oam_lut_found_r <= ppu_oam_lut_found & ~(ppu_first_frame_r|~REG_LCDC_r[`LCDC_SP_EN] | DMA_active);
@@ -2037,6 +2042,8 @@ always @(posedge CLK) begin
           ppu_pix_win_line_r <= 8'hFF;
           
           // FIXME: should we flop WY here for current frame?
+          
+          REG_STAT_r[`STAT_MODE] <= `MODE_H;
           
           ppu_state_r <= ST_PPU_OAM_NEW;
         end
@@ -2240,18 +2247,20 @@ always @(posedge CLK) begin
         // 3+?    - Wait for current instruction to finish. 4 * (0-6)
         // 3+?+20 - +20 = 5 * 4 dot clocks to take interrupt
         
-        // last line transitions to 0 early which road rash uses to trigger lyc == 0 interrupt on consecutive lines (153, 0)
         // P-M breaks if the transition to 0 on line 153 happens too early.
         if (ppu_dot_end) REG_LY_r         <= ppu_disp_end ? 0 : REG_LY_r + 1;
         if (ppu_dot_end) ppu_ly_compare_r <= ppu_disp_end ? 0 : ppu_ly_compare_r + 1; else if (&ppu_dot_ctr_r[3:2] & ppu_disp_end) ppu_ly_compare_r <= 0;
 
-        REG_STAT_r[`STAT_LYC_MATCH] <= (ppu_ly_compare_r == REG_LYC_r && ~ppu_dot_end) ? 1 : 0;
+        // TODO: is the match clear necessary?  Seems like the use case for it originally was actually a STAT write spurious interrupt.
+        // Definitely can't clear on the last line or it causes problems with double interrupts for LYC==0.
+        REG_STAT_r[`STAT_LYC_MATCH] <= (ppu_ly_compare_r == REG_LYC_r && ~(ppu_dot_end & ~ppu_disp_end)) ? 1 : 0;
 
         // PBF limits IRQs by transitioning between enabled modes on the same cycle (M->O)
-        ppu_stat_match_r[`STAT_INT_H_EN] <= (REG_STAT_r[`STAT_INT_H_EN]) & |(ppu_state_r & ST_PPU_HBL);
-        ppu_stat_match_r[`STAT_INT_V_EN] <= (REG_STAT_r[`STAT_INT_V_EN]) & |(ppu_state_r & ST_PPU_VBL);
-        ppu_stat_match_r[`STAT_INT_O_EN] <= (REG_STAT_r[`STAT_INT_O_EN]) & ((|(ppu_state_r & ST_PPU_OAM_NEW) & |REG_LY_r) | (|(ppu_state_r & ST_PPU_VBL) & ~ppu_vblank_seen_r & ppu_dot_ctr_r[0]));  // pulse
-        ppu_stat_match_r[`STAT_INT_M_EN] <= (REG_STAT_r[`STAT_INT_M_EN]) & REG_STAT_r[`STAT_LYC_MATCH];
+        // RR expects stat write to trigger spurious interrupt during V-Blank to make menu->game not lock.  144 V-Blank Int -> 147-148 Spurious STAT (V-Blank) Int -> 153 STAT (LY==LYC==0) Int -> 0 STAT (H-Blank) Int
+        ppu_stat_match_r[`STAT_INT_H_EN] <= (REG_STAT_r[`STAT_INT_H_EN] | ppu_stat_write_r) & |(ppu_state_r & ST_PPU_HBL);
+        ppu_stat_match_r[`STAT_INT_V_EN] <= (REG_STAT_r[`STAT_INT_V_EN] | ppu_stat_write_r) & |(ppu_state_r & ST_PPU_VBL);
+        ppu_stat_match_r[`STAT_INT_O_EN] <= (REG_STAT_r[`STAT_INT_O_EN] | ppu_stat_write_r) & ((|(ppu_state_r & ST_PPU_OAM_NEW) & |REG_LY_r) | (|(ppu_state_r & ST_PPU_VBL) & ~ppu_vblank_seen_r & ppu_dot_ctr_r[0]));  // pulse
+        ppu_stat_match_r[`STAT_INT_M_EN] <= (REG_STAT_r[`STAT_INT_M_EN] | ppu_stat_write_r) & REG_STAT_r[`STAT_LYC_MATCH];
       end
       
       // 1->0 display disable happens imediately.  it's only possible to go from 0->1 during vblank 
@@ -2361,7 +2370,8 @@ always @(posedge CLK) begin
   apu_data_volume_r[1][9:0] <= $signed(apu_data_r[1][6:0]) * ({7'h00,REG_NR50_r[`NR50_MASTER_RIGHT_VOLUME]} + 1);
   
   // sign conversion with arithmetic shift right
-  apu_wave_data_shifted_r[4:0] <= $signed({(apu_wave_sample_r[3:0] ^ 4'h8),1'b0}) >>> (REG_NR32_r[`NR32_LEVEL] - 1);
+  // TODO: this doesn't sound right compared to a SGB2.  The sign conversion seems necessary, though.
+  apu_wave_data_shifted_r[4:0] <= $signed({~apu_wave_sample_r[3],apu_wave_sample_r[2:0],1'b0}) >>> (REG_NR32_r[`NR32_LEVEL] - 1);
   
   case (REG_NR11_r[`NR11_DUTY])
     0: apu_square1_duty_r <= 8'b00000001;
@@ -2549,7 +2559,7 @@ always @(posedge CLK) begin
         8'h20:  apu_noise_length_r <= REG_NR41_r[`NR41_LENGTH];    // NR41
         8'h21:  begin
           //if      (apu_noise_env_enable_r & ~|REG_NR42_r[`NR42_ENV_PERIOD]) apu_noise_volume_r <= apu_noise_volume_r + 1;
-          //else if (~apu_reg_update_nr42_dir_r)                              apu_noise_volume_r <= apu_noise_volume_r + 2;        
+          //else if (~apu_reg_update_nr42_dir_r)                              apu_noise_volume_r <= apu_noise_volume_r + 2;
         
           if (apu_noise_enable_r) apu_noise_enable_r <= (REG_NR42_r[`NR42_ENV_DIR] | |REG_NR42_r[`NR42_ENV_VOLUME]);// NR42
         end
