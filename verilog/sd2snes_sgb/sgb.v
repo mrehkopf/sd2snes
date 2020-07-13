@@ -451,7 +451,7 @@ assign ROM_BUS_ADDR = ( (~|CPU_SYS_ADDR[15:14]) ? ({BOOTROM,(mbc_rom0_bank_r[8:0
                                                                                                                                                // VRAM    8000-9FFF -> NA - 8 KB (BRAM)
                       : (~CPU_SYS_ADDR[14])     ? {4'hE,(mbc_ram_bank_r[6:0] & SAVERAM_MASK[19:13]),(CPU_SYS_ADDR[12:0] & SAVERAM_MASK[12:0])} // SaveRAM A000-BFFF -> E00000-EFFFFF - 8KB programmable
                       :                           {8'h80,3'b110,              CPU_SYS_ADDR[12:0]}                                              // WRAM    C000-DFFF -> 80C000-80DFFF 4+4=8 KB fixed
-                      );                                                                                                                       //         E000-FDFF -> 80C000-80DFFF (mirror of C000-DDFF)
+                      );                                                                                                                       //         E000-FDFF -> 80C000-80DDFF (mirror of C000-DDFF)
                                                                                                                                                // OAM     FE00-FE9F -> NA - 160B (BRAM)
                                                                                                                                                // -       FEA0-FEFF -> NA
                                                                                                                                                // REG     FF00-FF7F -> NA - 128B (REG)
@@ -567,7 +567,8 @@ always @(posedge CLK) begin
   mbc_rom0_bank_r[8:0] <= ( MAPPER[`MAPPER_ID] == 1 ? {2'h0,(mbc_reg_mode_r ? (mbc_map_mlt ? {1'b0,mbc_reg_bank_r[1:0]} : {mbc_reg_bank_r[1:0],1'b0}) : 3'h0),4'h00}
                           :                           9'h000
                           );
-                         
+
+`ifdef SGB_SAVE_STATES                        
   // write in state for loads
   if (REG_REQ) begin
     case (REG_ADDR)
@@ -578,7 +579,9 @@ always @(posedge CLK) begin
       8'h74: mbc_reg_mode_r           <= REG_DATA;
     endcase
   end
-                         
+`endif
+
+`ifdef SGB_DEBUG                         
   casez(DBG_ADDR[3:0])
     4'h0:    dbg_data_r <= mbc_reg_ram_enabled_r;
     4'h1:    dbg_data_r <= mbc_reg_mode_r;
@@ -601,6 +604,8 @@ always @(posedge CLK) begin
 
     default:  dbg_data_r <= 0;
   endcase
+`endif
+
 end
 
 `ifdef SGB_DEBUG

@@ -356,6 +356,7 @@ wire signed [15:0] vol_sample_sat;
 
 // TODO: arbitrary scaling which used to be in SGB APU
 wire signed [15:0] sgb_data_ch = lrck ? {{(16+18-`SGB_CIC_BITS-4){sgb_co[2][(2*`SGB_CIC_BITS-1)]}},sgb_co[2][(2*`SGB_CIC_BITS-1):(`SGB_CIC_BITS+18)],4'h0} : {{(16+18-`SGB_CIC_BITS-4){sgb_co[2][(`SGB_CIC_BITS-1)]}},sgb_co[2][(`SGB_CIC_BITS-1):(0+18)],4'h0};
+//wire signed [15:0] sgb_data_ch = lrck ? {{2{sgb_apu_dat[19]}},sgb_apu_dat[19:10],4'h0} : {{2{sgb_apu_dat[9]}},sgb_apu_dat[9:0],4'h0};
 wire signed [25:0] sgb_vol_sample;
 
 assign dac_vol_sample = dac_data_ch * $signed({1'b0, vol_reg});
