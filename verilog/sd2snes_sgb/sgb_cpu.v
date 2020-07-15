@@ -673,22 +673,22 @@ always @(posedge CLK) begin
           8'h25: reg_mdr_r[7:0] <= REG_NR51_r;
           8'h26: reg_mdr_r[7:0] <= {REG_NR52_r[7:7],3'h7,({4{REG_NR52_r[7]}} & {APU_REG_enable})};
 
-          8'h30: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h31: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h32: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h33: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h34: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h35: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h36: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h37: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h38: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h39: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h3A: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h3B: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h3C: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h3D: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h3E: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h3F: reg_mdr_r[7:0] <= REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h30: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h31: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h32: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h33: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h34: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h35: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h36: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h37: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h38: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h39: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h3A: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h3B: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h3C: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h3D: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h3E: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h3F: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
           
           8'h40: begin reg_mdr_r[7:0] <= REG_LCDC_r;                    if (reg_wr_r) REG_LCDC_r[7:0] <= reg_mdr_r[7:0]; end
           8'h41: begin reg_mdr_r[7:0] <= {1'b1,REG_STAT_r[6:0]};        if (reg_wr_r) REG_STAT_r[7:3] <= reg_mdr_r[7:3]; end
@@ -2371,6 +2371,7 @@ always @(posedge CLK) begin
   // sign conversion with arithmetic shift right
   // TODO: this doesn't sound right compared to a SGB2.  The sign conversion seems necessary, though.
   apu_wave_data_shifted_r[4:0] <= $signed({~apu_wave_sample_r[3],apu_wave_sample_r[2:0],1'b0}) >>> (REG_NR32_r[`NR32_LEVEL] - 1);
+  //apu_wave_data_shifted_r[4:0] <= ~{(apu_wave_sample_r[3:0] >>> (REG_NR32_r[`NR32_LEVEL] - 1)),1'b0} ^ 5'h10;
   
   case (REG_NR11_r[`NR11_DUTY])
     0: apu_square1_duty_r <= 8'b00000001;
@@ -2499,7 +2500,7 @@ always @(posedge CLK) begin
           if (REG_NR14_r[`NR14_FREQ_ENABLE]) begin
             apu_square1_enable_r     <= (|REG_NR12_r[`NR12_ENV_VOLUME] | REG_NR12_r[`NR12_ENV_DIR]) & ~HLT_RSP;
             apu_square1_timer_r      <= apu_square1_period;
-            apu_square1_length_r     <= REG_NR11_r[`NR11_LENGTH];
+            apu_square1_length_r     <= &apu_square1_length_r ? 0 : apu_square1_length_r;
             apu_square1_env_enable_r <= 1;
             apu_square1_env_timer_r  <= REG_NR12_r[`NR12_ENV_PERIOD];
             apu_square1_volume_r     <= REG_NR12_r[`NR12_ENV_VOLUME];
@@ -2526,7 +2527,7 @@ always @(posedge CLK) begin
           if (REG_NR24_r[`NR24_FREQ_ENABLE]) begin
             apu_square2_enable_r     <= (|REG_NR22_r[`NR22_ENV_VOLUME] | REG_NR22_r[`NR22_ENV_DIR]) & ~HLT_RSP;
             apu_square2_timer_r      <= apu_square2_period;
-            apu_square2_length_r     <= REG_NR21_r[`NR21_LENGTH];
+            apu_square2_length_r     <= &apu_square2_length_r ? 0 : apu_square2_length_r;
             apu_square2_env_enable_r <= 1;
             apu_square2_env_timer_r  <= REG_NR22_r[`NR22_ENV_PERIOD];
             apu_square2_volume_r     <= REG_NR22_r[`NR22_ENV_VOLUME];
@@ -2542,7 +2543,7 @@ always @(posedge CLK) begin
           if (REG_NR34_r[`NR34_FREQ_ENABLE]) begin
             apu_wave_enable_r     <= REG_NR30_r[`NR30_WAVE_ENABLE] & ~HLT_RSP;
             apu_wave_timer_r      <= apu_wave_period;
-            apu_wave_length_r     <= REG_NR31_r[`NR31_LENGTH];
+            apu_wave_length_r     <= &apu_wave_length_r ? 0 : apu_wave_length_r;
             apu_wave_pos_r        <= 0;
           end
         end
@@ -2555,7 +2556,7 @@ always @(posedge CLK) begin
             apu_noise_enable_r     <= (REG_NR42_r[`NR42_ENV_DIR] | |REG_NR42_r[`NR42_ENV_VOLUME]) & ~HLT_RSP;
             apu_noise_timer_r      <= apu_noise_period;
             apu_noise_lfsr_r       <= 15'h7FFF;
-            apu_noise_length_r     <= REG_NR41_r[`NR41_LENGTH];
+            apu_noise_length_r     <= &apu_noise_length_r ? 0 : apu_noise_length_r;
             apu_noise_env_timer_r  <= REG_NR42_r[`NR42_ENV_PERIOD];
             apu_noise_volume_r     <= REG_NR42_r[`NR42_ENV_VOLUME];
           end
@@ -2775,7 +2776,7 @@ always @(posedge CLK) begin
         8'h26: {REG_NR52_r[7:7],REG_NR52_r[3:0]} <= {REG_req_data[7:7],REG_req_data[3:0]};
 
         8'h30, 8'h31, 8'h32, 8'h33, 8'h34, 8'h35, 8'h36, 8'h37,
-        8'h38, 8'h39, 8'h3A, 8'h3B, 8'h3C, 8'h3D, 8'h3E, 8'h3F: REG_WAV_r[REG_address[3:0]] <= REG_req_data;
+        8'h38, 8'h39, 8'h3A, 8'h3B, 8'h3C, 8'h3D, 8'h3E, 8'h3F: if (~apu_wave_enable_r) REG_WAV_r[REG_address[3:0]] <= REG_req_data;
         
       endcase
     end  
@@ -2985,6 +2986,7 @@ end
 
 // Basic functionality to allow multiplayer games to pass.  missing external clock/data.  
 
+`ifdef SGB_SERIAL
 reg         ser_active_d1_r;
 reg         ser_clk_d1_r;
 reg  [9:0]  ser_ctr_r;
@@ -3039,6 +3041,7 @@ always @(posedge CLK) begin
     end
   end
 end
+`endif
 
 //-------------------------------------------------------------------
 // DBG
