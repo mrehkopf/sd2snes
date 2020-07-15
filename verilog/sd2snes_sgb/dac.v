@@ -42,6 +42,8 @@ module dac(
   output DAC_STATUS
 );
 
+integer i;
+
 reg[8:0] dac_address_r;
 reg[8:0] dac_address_r_sync;
 wire[8:0] dac_address = dac_address_r_sync;
@@ -165,17 +167,23 @@ parameter ST4_INT1  = 10'b0000010000;
 parameter ST5_INT2  = 10'b0000100000;
 parameter ST6_INT3  = 10'b0001000000;
 
-reg [63:0] ci[2:0], co[2:0], io[2:0];
+`define MSU_CIC_BITS (16+3*4) // 3 stages, *16 (2^4)
+
+reg [(`MSU_CIC_BITS-1):0] ci[2:0][1:0], co[2:0][1:0], io[2:0][1:0];
 reg [9:0] cicstate = 10'h200;
-wire [63:0] bufi = {{16{dac_data[31]}}, dac_data[31:16], {16{dac_data[15]}}, dac_data[15:0]};
+wire [(`MSU_CIC_BITS-1):0] bufi[1:0];
+assign bufi[1] = {{(`MSU_CIC_BITS-16){dac_data[31]}}, dac_data[31:16]};
+assign bufi[0] = {{(`MSU_CIC_BITS-16){dac_data[15]}}, dac_data[15:0]};
 
 `ifdef MSU_AUDIO
 always @(posedge clkin) begin
   if(reset) begin
     cicstate <= ST0_IDLE;
-    {ci[2], ci[1], ci[0]} <= 192'h0;
-    {co[2], co[1], co[0]} <= 192'h0;
-    {io[2], io[1], io[0]} <= 192'h0;
+    for (i = 0; i < 2; i = i + 1) begin
+      {ci[2][i], ci[1][i], ci[0][i]} <= 0;
+      {co[2][i], co[1][i], co[0][i]} <= 0;
+      {io[2][i], io[1][i], io[0][i]} <= 0;
+    end
   end else if(int_strobe) begin
     if(comb_strobe) cicstate <= ST1_COMB1;
     else cicstate <= ST4_INT1;
@@ -184,36 +192,42 @@ always @(posedge clkin) begin
 /****** COMB STAGES ******/
       ST1_COMB1: begin
         cicstate <= ST2_COMB2;
-        ci[0] <= bufi;
-        co[0][63:32] <= bufi[63:32] - ci[0][63:32];
-        co[0][31:0] <= bufi[31:0] - ci[0][31:0];
+        for (i = 0; i < 2; i = i + 1) begin
+          ci[0][i] <= bufi[i];
+          co[0][i] <= bufi[i] - ci[0][i];
+        end
       end
       ST2_COMB2: begin
         cicstate <= ST3_COMB3;
-        ci[1] <= co[0];
-        co[1][63:32] <= co[0][63:32] - ci[1][63:32];
-        co[1][31:0] <= co[0][31:0] - ci[1][31:0];
+        for (i = 0; i < 2; i = i + 1) begin
+          ci[1][i] <= co[0][i];
+          co[1][i] <= co[0][i] - ci[1][i];
+        end
       end
       ST3_COMB3: begin
         cicstate <= ST4_INT1;
-        ci[2] <= co[1];
-        co[2][63:32] <= co[1][63:32] - ci[2][63:32];
-        co[2][31:0] <= co[1][31:0] - ci[2][31:0];
+        for (i = 0; i < 2; i = i + 1) begin
+          ci[2][i] <= co[1][i];
+          co[2][i] <= co[1][i] - ci[2][i];
+        end
       end
 /****** INTEGRATOR STAGES ******/
       ST4_INT1: begin
-        io[0][63:32] <= co[2][63:32] + io[0][63:32];
-        io[0][31:0] <= co[2][31:0] + io[0][31:0];
+        for (i = 0; i < 2; i = i + 1) begin
+          io[0][i] <= co[2][i] + io[0][i];
+        end
         cicstate <= ST5_INT2;
       end
       ST5_INT2: begin
-        io[1][63:32] <= io[0][63:32] + io[1][63:32];
-        io[1][31:0] <= io[0][31:0] + io[1][31:0];
+        for (i = 0; i < 2; i = i + 1) begin
+          io[1][i] <= io[0][i] + io[1][i];
+        end
         cicstate <= ST6_INT3;
       end
       ST6_INT3: begin
-        io[2][63:32] <= io[1][63:32] + io[2][63:32];
-        io[2][31:0] <= io[1][31:0] + io[2][31:0];
+        for (i = 0; i < 2; i = i + 1) begin
+          io[2][i] <= io[1][i] + io[2][i];
+        end
         cicstate <= ST0_IDLE;
       end
       default: begin
@@ -232,25 +246,28 @@ end
   10b input.
 */
 
-// TODO: what accumulator precision is required?
 `define SGB_CIC_BITS (10+3*6) // 3 stages, /64 (2^6)
 
-reg [(`SGB_CIC_BITS*2-1):0] sgb_ci[2:0], sgb_io[2:0], sgb_co[2:0];
+reg [(`SGB_CIC_BITS-1):0] sgb_ci[2:0][1:0], sgb_io[2:0][1:0], sgb_co[2:0][1:0];
 reg [9:0] sgb_cicstate = 10'h200;
 reg [9:0] sgb_cicstate_next = 10'h200;
 reg [5:0] sgb_phasediv = 0;
 reg       sgb_apu_clk_edge_r = 0;
 
-wire [(`SGB_CIC_BITS*2-1):0] sgb_bufi = {{(`SGB_CIC_BITS-10){sgb_apu_dat[19]}}, sgb_apu_dat[19:10], {(`SGB_CIC_BITS-10){sgb_apu_dat[9]}}, sgb_apu_dat[9:0]};
+wire [(`SGB_CIC_BITS-1):0] sgb_bufi[1:0];
+assign sgb_bufi[1] = {{(`SGB_CIC_BITS-10){sgb_apu_dat[19]}}, sgb_apu_dat[19:10]};
+assign sgb_bufi[0] = {{(`SGB_CIC_BITS-10){sgb_apu_dat[9]}}, sgb_apu_dat[9:0]};
 
 always @(posedge clkin) begin
   sgb_apu_clk_edge_r <= sgb_apu_clk_edge;
 
   if(reset) begin
     sgb_cicstate <= ST0_IDLE;
-    {sgb_ci[2], sgb_ci[1], sgb_ci[0]} <= 0;
-    {sgb_io[2], sgb_io[1], sgb_io[0]} <= 0;
-    {sgb_co[2], sgb_co[1], sgb_co[0]} <= 0;
+    for (i = 0; i < 2; i = i + 1) begin
+      {sgb_ci[2][i], sgb_ci[1][i], sgb_ci[0][i]} <= 0;
+      {sgb_io[2][i], sgb_io[1][i], sgb_io[0][i]} <= 0;
+      {sgb_co[2][i], sgb_co[1][i], sgb_co[0][i]} <= 0;
+    end
     
     sgb_phasediv <= 0;
   end else if(sgb_apu_clk_edge_r) begin
@@ -263,36 +280,42 @@ always @(posedge clkin) begin
 /****** COMB STAGES ******/
       ST1_COMB1: begin
         sgb_cicstate <= ST2_COMB2;
-        sgb_ci[0] <= sgb_io[2];
-        sgb_co[0][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] <= sgb_io[2][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] - sgb_ci[0][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS];
-        sgb_co[0][(`SGB_CIC_BITS-1):0] <= sgb_io[2][(`SGB_CIC_BITS-1):0] - sgb_ci[0][(`SGB_CIC_BITS-1):0];
+        for (i = 0; i < 2; i = i + 1) begin
+          sgb_ci[0][i] <= sgb_io[2][i];
+          sgb_co[0][i] <= sgb_io[2][i] - sgb_ci[0][i];
+        end
       end
       ST2_COMB2: begin
         sgb_cicstate <= ST3_COMB3;
-        sgb_ci[1] <= sgb_co[0];
-        sgb_co[1][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] <= sgb_co[0][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] - sgb_ci[1][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS];
-        sgb_co[1][(`SGB_CIC_BITS-1):0] <= sgb_co[0][(`SGB_CIC_BITS-1):0] - sgb_ci[1][(`SGB_CIC_BITS-1):0];
+        for (i = 0; i < 2; i = i + 1) begin
+          sgb_ci[1][i] <= sgb_co[0][i];
+          sgb_co[1][i] <= sgb_co[0][i] - sgb_ci[1][i];
+        end
       end
       ST3_COMB3: begin
         sgb_cicstate <= ST0_IDLE;
-        sgb_ci[2] <= sgb_co[1];
-        sgb_co[2][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] <= sgb_co[1][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] - sgb_ci[2][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS];
-        sgb_co[2][(`SGB_CIC_BITS-1):0] <= sgb_co[1][(`SGB_CIC_BITS-1):0] - sgb_ci[2][(`SGB_CIC_BITS-1):0];
+        for (i = 0; i < 2; i = i + 1) begin
+          sgb_ci[2][i] <= sgb_co[1][i];
+          sgb_co[2][i] <= sgb_co[1][i] - sgb_ci[2][i];
+        end
       end
 /****** INTEGRATOR STAGES ******/
       ST4_INT1: begin
-        sgb_io[0][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] <= sgb_bufi[(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] + sgb_io[0][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS];
-        sgb_io[0][(`SGB_CIC_BITS-1):0] <= sgb_bufi[(`SGB_CIC_BITS-1):0] + sgb_io[0][(`SGB_CIC_BITS-1):0];
+        for (i = 0; i < 2; i = i + 1) begin
+          sgb_io[0][i] <= sgb_bufi[i] + sgb_io[0][i];
+        end
         sgb_cicstate <= ST5_INT2;
       end
       ST5_INT2: begin
-        sgb_io[1][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] <= sgb_io[0][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] + sgb_io[1][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS];
-        sgb_io[1][(`SGB_CIC_BITS-1):0] <= sgb_io[0][(`SGB_CIC_BITS-1):0] + sgb_io[1][(`SGB_CIC_BITS-1):0];
+        for (i = 0; i < 2; i = i + 1) begin
+          sgb_io[1][i] <= sgb_io[0][i] + sgb_io[1][i];
+        end
         sgb_cicstate <= ST6_INT3;
       end
       ST6_INT3: begin
-        sgb_io[2][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] <= sgb_io[1][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS] + sgb_io[2][(2*`SGB_CIC_BITS-1):`SGB_CIC_BITS];
-        sgb_io[2][(`SGB_CIC_BITS-1):0] <= sgb_io[1][(`SGB_CIC_BITS-1):0] + sgb_io[2][(`SGB_CIC_BITS-1):0];
+        for (i = 0; i < 2; i = i + 1) begin
+          sgb_io[2][i] <= sgb_io[1][i] + sgb_io[2][i];
+        end
         sgb_cicstate <= sgb_cicstate_next;
       end
       default: begin
@@ -349,13 +372,13 @@ always @(posedge clkin) begin
   end
 end
 
-wire signed [15:0] dac_data_ch = lrck ? io[2][59:44] : io[2][27:12];
+wire signed [15:0] dac_data_ch = lrck ? {{(16+12-`MSU_CIC_BITS){io[2][1][(`MSU_CIC_BITS-1)]}},io[2][1][(`MSU_CIC_BITS-1):12]} : {{(16+12-`MSU_CIC_BITS){io[2][0][(`MSU_CIC_BITS-1)]}},io[2][0][(`MSU_CIC_BITS-1):12]};
 wire signed [25:0] dac_vol_sample;
 wire signed [25:0] vol_sample;
 wire signed [15:0] vol_sample_sat;
 
 // TODO: arbitrary scaling which used to be in SGB APU
-wire signed [15:0] sgb_data_ch = lrck ? {{(16+18-`SGB_CIC_BITS-4){sgb_co[2][(2*`SGB_CIC_BITS-1)]}},sgb_co[2][(2*`SGB_CIC_BITS-1):(`SGB_CIC_BITS+18)],4'h0} : {{(16+18-`SGB_CIC_BITS-4){sgb_co[2][(`SGB_CIC_BITS-1)]}},sgb_co[2][(`SGB_CIC_BITS-1):(0+18)],4'h0};
+wire signed [15:0] sgb_data_ch = lrck ? {{(16+18-`SGB_CIC_BITS-4){sgb_co[2][1][(`SGB_CIC_BITS-1)]}},sgb_co[2][1][(`SGB_CIC_BITS-1):18],4'h0} : {{(16+18-`SGB_CIC_BITS-4){sgb_co[2][0][(`SGB_CIC_BITS-1)]}},sgb_co[2][0][(`SGB_CIC_BITS-1):18],4'h0};
 //wire signed [15:0] sgb_data_ch = lrck ? {{2{sgb_apu_dat[19]}},sgb_apu_dat[19:10],4'h0} : {{2{sgb_apu_dat[9]}},sgb_apu_dat[9:0],4'h0};
 wire signed [25:0] sgb_vol_sample;
 
@@ -369,10 +392,8 @@ always @(posedge clkin) begin
   dac_vol_sample_r <= dac_vol_sample;
   sgb_vol_sample_r <= sgb_vol_sample;
 end
-// TODO: may need more precision and associated checking here
-assign vol_sample = dac_vol_sample_r + sgb_vol_sample_r;
-//assign vol_sample = dac_vol_sample + sgb_vol_sample;
 
+assign vol_sample = dac_vol_sample_r + sgb_vol_sample_r;
 assign vol_sample_sat = ((vol_sample[25:23] == 3'b000 || vol_sample[25:23] == 3'b111) ? vol_sample[23:8]
                       : vol_sample[25] ? 16'sh8000
                       : 16'sh7fff);                      

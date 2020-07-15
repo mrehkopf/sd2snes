@@ -481,6 +481,11 @@ always @(posedge CLK2) begin
         if (~ctx_req_r & mcu_rdy_int) begin
           ctx_req_r   <= 1;
           ctx_addr_r  <= ctx_addr_r + 1;
+          // TODO: decide if making save states a little faster is worth the extra logic (and bugs?)
+          //ctx_addr_r  <= ( (~ctx_addr_r[15] && ctx_addr_r[14:0] == SAVERAM_MASK[14:0]) ? 16'h8000
+          //               : (ctx_addr_r == 16'h9FFF)                                    ? 16'hC000
+          //               :                                                               ctx_addr_r + 1
+          //               );
           ctx_state_r <= &ctx_addr_r ? ST_CTX_IDLE : ST_CTX_READ;
         end
       end

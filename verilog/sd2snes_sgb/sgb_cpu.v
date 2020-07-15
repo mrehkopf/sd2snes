@@ -2369,9 +2369,7 @@ always @(posedge CLK) begin
   apu_data_volume_r[1][9:0] <= $signed(apu_data_r[1][6:0]) * ({7'h00,REG_NR50_r[`NR50_MASTER_RIGHT_VOLUME]} + 1);
   
   // sign conversion with arithmetic shift right
-  // TODO: this doesn't sound right compared to a SGB2.  The sign conversion seems necessary, though.
   apu_wave_data_shifted_r[4:0] <= $signed({~apu_wave_sample_r[3],apu_wave_sample_r[2:0],1'b0}) >>> (REG_NR32_r[`NR32_LEVEL] - 1);
-  //apu_wave_data_shifted_r[4:0] <= ~{(apu_wave_sample_r[3:0] >>> (REG_NR32_r[`NR32_LEVEL] - 1)),1'b0} ^ 5'h10;
   
   case (REG_NR11_r[`NR11_DUTY])
     0: apu_square1_duty_r <= 8'b00000001;
