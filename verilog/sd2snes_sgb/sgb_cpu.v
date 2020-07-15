@@ -1599,6 +1599,7 @@ reg  [12:0] ppu_state_r;
 reg  [8:0]  ppu_dot_ctr_r;
 reg  [5:0]  ppu_tile_ctr_r;   // 32 tiles with 8 pixels in a 256 pixel source tile data.  extra bit covers negative values
 reg  [7:0]  ppu_pix_ctr_r;
+reg  [7:0]  ppu_scanline_r;
 
 wire        ppu_vram_active = |(ppu_state_r & (ST_PPU_PIX_NEW | ST_PPU_PIX_MAP | ST_PPU_PIX_DT0 | ST_PPU_PIX_DT1 | ST_PPU_PIX_OB0 | ST_PPU_PIX_OB1 | ST_PPU_PIX_OB2));  
 wire        ppu_oam_active  = ~|(ppu_state_r & (ST_PPU_OFF | ST_PPU_HBL | ST_PPU_VBL));
@@ -1625,10 +1626,10 @@ wire        ppu_oam_end      = ppu_oam_address_r[7] & &ppu_oam_address_r[4:2]; /
 reg  [7:0]  ppu_pix_win_line_r;
 reg  [4:0]  ppu_pix_win_tile_r;
 wire [8:0]  ppu_pix_wx_m7      = {1'b0,REG_WX_r} - 7;
-wire        ppu_pix_win_active = REG_LCDC_r[`LCDC_WD_EN] && REG_LY_r >= REG_WY_r && $signed(ppu_tile_ctr_r[5:0]) >= $signed(ppu_pix_wx_m7[8:3]);
+wire        ppu_pix_win_active = REG_LCDC_r[`LCDC_WD_EN] && ppu_scanline_r >= REG_WY_r && $signed(ppu_tile_ctr_r[5:0]) >= $signed(ppu_pix_wx_m7[8:3]);
 reg         ppu_pix_win_active_r;
 
-wire [7:0]  ppu_pix_row      = REG_LY_r + REG_SCY_r;
+wire [7:0]  ppu_pix_row      = ppu_scanline_r + REG_SCY_r;
 wire [4:0]  ppu_pix_col      = ppu_tile_ctr_r[4:0] + REG_SCX_r[7:3] + (|REG_SCX_r[2:0] ? 1 : 0);
 wire [7:0]  ppu_pix_win_row  = ppu_pix_win_line_r;
 wire [4:0]  ppu_pix_win_col  = ppu_pix_win_tile_r[4:0];
@@ -1639,8 +1640,8 @@ wire        ppu_tile_dummy = ppu_tile_ctr_r[4] & ppu_tile_ctr_r[3];
 wire        ppu_pix_end = ppu_pix_ctr_r[7] & ppu_pix_ctr_r[5];
 wire        ppu_dot_edge = CLK_CPU_EDGE;
 wire        ppu_dot_end  = &ppu_dot_ctr_r[8:6] & &ppu_dot_ctr_r[2:0];             // 455+1 = 456 dots
-wire        ppu_vis_end  = REG_LY_r[7] & &REG_LY_r[3:0];                          // 143+1 = 144 lines
-wire        ppu_disp_end = REG_LY_r[7] & REG_LY_r[4] & REG_LY_r[3] & REG_LY_r[0]; // 153+1 = 154 lines
+wire        ppu_vis_end  = ppu_scanline_r[7] & &ppu_scanline_r[3:0];                          // 143+1 = 144 lines
+wire        ppu_disp_end = ppu_scanline_r[7] & ppu_scanline_r[4] & ppu_scanline_r[3] & ppu_scanline_r[0]; // 153+1 = 154 lines
 wire        ppu_tile_end = ~ppu_tile_dummy & ppu_tile_ctr_r[4] & &ppu_tile_ctr_r[1:0];      // 159+1 = 160 pixels, 19+1 = 20 tiles
 
 wire        ppu_fifo_data = ~ppu_tile_dummy && ppu_pix_ctr_r[5:3] != ppu_tile_ctr_r[2:0] && ~ppu_pix_end;
@@ -1665,7 +1666,6 @@ reg         ppu_vblank_pulse_r;
 reg         ppu_vblank_seen_r;
 reg         ppu_stat_active_r;
 reg  [7:0]  ppu_stat_match_r;
-reg  [7:0]  ppu_ly_compare_r;
 reg         ppu_dot_start_r;
 reg         ppu_stat_write_r;
 
@@ -1690,7 +1690,7 @@ reg  [3:0]  ppu_pix_oam_lut_match_r;
 reg  [7:0]  ppu_pix_oam_tile_num_r;
 reg  [7:0]  ppu_pix_oam_flag_r;
 reg  [7:0]  ppu_oam_obj_xpos_r;
-wire [3:0]  ppu_pix_obj_row = (REG_LY_r[3:0] - ppu_oam_lut_ypos_r[ppu_pix_oam_lut_match_r][3:0]) ^ {4{ppu_pix_oam_flag_r[6]}};
+wire [3:0]  ppu_pix_obj_row = (ppu_scanline_r[3:0] - ppu_oam_lut_ypos_r[ppu_pix_oam_lut_match_r][3:0]) ^ {4{ppu_pix_oam_flag_r[6]}};
 
 reg         ppu_bgw_fifo_wr_req_r;
 reg  [4:0]  ppu_bgw_fifo_wr_req_index_r;
@@ -1805,7 +1805,7 @@ always @(posedge CLK) begin
     REG_STAT_r[`STAT_LYC_MATCH] <= 0;
     REG_LY_r                    <= 0;
     
-    ppu_ly_compare_r <= 0;
+    ppu_scanline_r <= 0;
 
     ppu_tile_ctr_r <= 0;
     ppu_pix_ctr_r  <= 0;
@@ -2024,10 +2024,10 @@ always @(posedge CLK) begin
           REG_STAT_r[`STAT_MODE] <= `MODE_H;
 
           REG_LY_r         <= 0;
-          ppu_ly_compare_r <= 0;
+          ppu_scanline_r   <= 0;
 
           ppu_tile_ctr_r <= 0;
-          ppu_pix_ctr_r <= 0;
+          ppu_pix_ctr_r  <= 0;
 
           ppu_first_frame_r <= 1;
           
@@ -2067,7 +2067,7 @@ always @(posedge CLK) begin
         ST_PPU_OAM_POS : begin
           // read in xpos if ypos is on this line
           if (~ppu_oam_lut_full & ppu_pix_phase_r & ~DMA_active) begin
-            if (ppu_oam_data_r <= (REG_LY_r + 16) && (REG_LY_r + 16) < (ppu_oam_data_r + (REG_LCDC_r[`LCDC_SP_SIZE] ? 16 : 8))) begin
+            if (ppu_oam_data_r <= (ppu_scanline_r + 16) && (ppu_scanline_r + 16) < (ppu_oam_data_r + (REG_LCDC_r[`LCDC_SP_SIZE] ? 16 : 8))) begin
               ppu_oam_lut_ypos_r[ppu_oam_lut_cnt_r]  <= ppu_oam_data_r[3:0];
               ppu_oam_lut_xpos_r[ppu_oam_lut_cnt_r]  <= ppu_oam_rddata_r - (|ppu_oam_rddata_r ? 8 : 16);
               ppu_oam_lut_index_r[ppu_oam_lut_cnt_r] <= ppu_oam_address_r[7:2];
@@ -2240,7 +2240,7 @@ always @(posedge CLK) begin
         // It's possible for a write to happen on the last dot cycle which will cause us to miss a 1->0->1 transition.
         //
         // dot clk
-        // 0 - LY_r/ppu_ly_compare_r
+        // 0 - LY_r
         // 1 - match
         // 2 - ppu_stat_active_r[0]
         // 3 - IF/earliest interrupt point
@@ -2248,18 +2248,19 @@ always @(posedge CLK) begin
         // 3+?+20 - +20 = 5 * 4 dot clocks to take interrupt
         
         // P-M breaks if the transition to 0 on line 153 happens too early.
-        if (ppu_dot_end) REG_LY_r         <= ppu_disp_end ? 0 : REG_LY_r + 1;
-        if (ppu_dot_end) ppu_ly_compare_r <= ppu_disp_end ? 0 : ppu_ly_compare_r + 1; else if (&ppu_dot_ctr_r[3:2] & ppu_disp_end) ppu_ly_compare_r <= 0;
+        // BMF expects REG_LY_r to transition from 153->0 early in the line.
+        if (ppu_dot_end) ppu_scanline_r <= ppu_disp_end ? 0 : ppu_scanline_r + 1;
+        if (ppu_dot_end) REG_LY_r <= ppu_disp_end ? 0 : REG_LY_r + 1; else if (&ppu_dot_ctr_r[3:2] & ppu_disp_end) REG_LY_r <= 0;
 
         // TODO: is the match clear necessary?  Seems like the use case for it originally was actually a STAT write spurious interrupt.
         // Definitely can't clear on the last line or it causes problems with double interrupts for LYC==0.
-        REG_STAT_r[`STAT_LYC_MATCH] <= (ppu_ly_compare_r == REG_LYC_r && ~(ppu_dot_end & ~ppu_disp_end)) ? 1 : 0;
+        REG_STAT_r[`STAT_LYC_MATCH] <= (REG_LY_r == REG_LYC_r && ~(ppu_dot_end & ~ppu_disp_end)) ? 1 : 0;
 
         // PBF limits IRQs by transitioning between enabled modes on the same cycle (M->O)
         // RR expects stat write to trigger spurious interrupt during V-Blank to make menu->game not lock.  144 V-Blank Int -> 147-148 Spurious STAT (V-Blank) Int -> 153 STAT (LY==LYC==0) Int -> 0 STAT (H-Blank) Int
         ppu_stat_match_r[`STAT_INT_H_EN] <= (REG_STAT_r[`STAT_INT_H_EN] | ppu_stat_write_r) & |(ppu_state_r & ST_PPU_HBL);
         ppu_stat_match_r[`STAT_INT_V_EN] <= (REG_STAT_r[`STAT_INT_V_EN] | ppu_stat_write_r) & |(ppu_state_r & ST_PPU_VBL);
-        ppu_stat_match_r[`STAT_INT_O_EN] <= (REG_STAT_r[`STAT_INT_O_EN] | ppu_stat_write_r) & ((|(ppu_state_r & ST_PPU_OAM_NEW) & |REG_LY_r) | (|(ppu_state_r & ST_PPU_VBL) & ~ppu_vblank_seen_r & ppu_dot_ctr_r[0]));  // pulse
+        ppu_stat_match_r[`STAT_INT_O_EN] <= (REG_STAT_r[`STAT_INT_O_EN] | ppu_stat_write_r) & ((|(ppu_state_r & ST_PPU_OAM_NEW) & |ppu_scanline_r) | (|(ppu_state_r & ST_PPU_VBL) & ~ppu_vblank_seen_r & ppu_dot_ctr_r[0]));  // pulse
         ppu_stat_match_r[`STAT_INT_M_EN] <= (REG_STAT_r[`STAT_INT_M_EN] | ppu_stat_write_r) & REG_STAT_r[`STAT_LYC_MATCH];
       end
       
@@ -2944,13 +2945,15 @@ always @(posedge CLK) begin
       ST_MCT_VRAM: begin
         if (~mct_wr_r) mct_mdr_r <= PPU_MCT_vram_active ? 0 : VRAM_MCT_data;
         
-        if (~|mct_req_r & PPU_MCT_vram_active) mct_vram_error_r <= mct_vram_error_r + 1;
+        // avoid false errors by only looking at EXE src
+        if (~|mct_req_r & PPU_MCT_vram_active & mct_src_r) mct_vram_error_r <= mct_vram_error_r + 1;
         if (~|mct_req_r) mct_state_r <= ST_MCT_END;
       end
       ST_MCT_OAM: begin
         if (~mct_wr_r) mct_mdr_r <= PPU_MCT_oam_active ? 0 : OAM_MCT_data;
 
-        if (~|mct_req_r & PPU_MCT_oam_active) mct_oam_error_r <= mct_oam_error_r + 1;
+        // avoid false errors by only looking at EXE src
+        if (~|mct_req_r & PPU_MCT_oam_active & mct_src_r) mct_oam_error_r <= mct_oam_error_r + 1;
         if (~|mct_req_r) mct_state_r <= ST_MCT_END;
       end
       ST_MCT_REG: begin
@@ -3528,6 +3531,9 @@ assign DBG_BRK = |(config_r[2] & {dbg_brk_error,dbg_brk_stop,dbg_brk_data_wr_add
 reg dbg_mem_req_val_d1_r;
 reg dbg_mem_req_wr_d1_r;
 
+reg  [15:0] dbg_mct_vram_error_r;
+reg  [15:0] dbg_mct_oam_error_r;
+
 always @(posedge CLK) begin
   if (RST) begin
     dbg_brk_inst_rd_byte <= 0;
@@ -3550,6 +3556,8 @@ always @(posedge CLK) begin
     dbg_brk_error        <= (
                                0
                             || (IFD_EXE_valid && SP_r[15:0] < 16'hFF7F) // SP overflow with HRAM stack
+                            || (mct_vram_error_r != dbg_mct_vram_error_r)
+                            || (mct_oam_error_r != dbg_mct_oam_error_r)
                             //|| (IFD_EXE_valid && SP_r[15:0] < 16'hDF7F && IFD_EXE_pc_start == 16'h0048) // SP overflow with WRAM stack
                             //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h0048 && ppu_dot_ctr_r > 200)
                             //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h0048 && REG_IF_r[`IE_LCD_STAT]) // still set
@@ -3563,6 +3571,9 @@ always @(posedge CLK) begin
     
     dbg_mem_req_val_d1_r <= EXE_MCT_req_val;
     dbg_mem_req_wr_d1_r <= EXE_MCT_req_wr;
+    
+    dbg_mct_vram_error_r <= mct_vram_error_r;
+    dbg_mct_oam_error_r <= mct_oam_error_r;
   end
 end
 
