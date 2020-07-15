@@ -113,11 +113,12 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
   
   /* CartRAM size in bytes */
   switch (header->ramsize) {
-    case 0x00: props->ramsize_bytes = 0;       break;
-    case 0x01: props->ramsize_bytes = 2*1024;  break;
-    case 0x02: props->ramsize_bytes = 8*1024;  break;
-    case 0x03: props->ramsize_bytes = 32*1024; break;
-    default:   props->ramsize_bytes = 0;       break;
+    case 0x00: props->ramsize_bytes = 0;        break;
+    case 0x01: props->ramsize_bytes = 2*1024;   break;
+    case 0x02: props->ramsize_bytes = 8*1024;   break;
+    case 0x03: props->ramsize_bytes = 32*1024;  break;
+    case 0x04: props->ramsize_bytes = 128*1024; break;
+    default:   props->ramsize_bytes = 0;        break;
   }
   if (props->mapper_id == 2) props->ramsize_bytes = 512;
   
