@@ -564,7 +564,7 @@ always @(posedge CLK) begin
                          :                           9'h001
                          );
                          
-  mbc_rom0_bank_r[8:0] <= ( MAPPER[`MAPPER_ID] == 1 ? {2'h0,(mbc_reg_mode_r ? (mbc_map_mlt ? {1'b0,mbc_reg_bank_r[1:0]} : {mbc_reg_bank_r[1:0],1'b0}) : 3'h0),4'h00}
+  mbc_rom0_bank_r[8:0] <= ( MAPPER[`MAPPER_ID] == 1 ? {2'h0,(mbc_reg_mode_r ? (mbc_map_mlt ? {1'b0,mbc_reg_bank_r[1:0]} : {mbc_reg_bank_r[1:0],1'b0}) : 3'h0),4'h0}
                           :                           9'h000
                           );
 
