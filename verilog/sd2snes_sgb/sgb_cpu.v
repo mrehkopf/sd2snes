@@ -56,6 +56,9 @@ module sgb_cpu(
   output        HLT_RSP,
   input         IDL_ICD,
 
+  // Features
+  input  [3:0]  FEAT,
+  
   // State
   output        REG_REQ,
   output [7:0]  REG_ADDR,
@@ -707,7 +710,6 @@ always @(posedge CLK) begin
 
 `ifdef SGB_SAVE_STATES
           // special case debug source reads to read out arch state that isn't normally memory mapped
-          // TODO: check if this address range is safe.  Needs to be < 8'h80 (HRAM)
           
           // ARCH state
           8'h60: if (reg_src_r) reg_mdr_r <= A_r;
@@ -737,7 +739,7 @@ always @(posedge CLK) begin
 `endif
           
           8'hFF: begin reg_mdr_r[7:0] <= {3'h0,REG_IE_r[4:0]};          if (reg_wr_r) REG_IE_r[4:0]   <= reg_mdr_r[4:0]; end
-          default: reg_mdr_r <= 8'hFF; // TODO: is this "open bus" state correct?
+          default: reg_mdr_r <= 8'hFF;
         endcase
         
         reg_state_r <= ST_REG_END;
@@ -972,10 +974,6 @@ end
 // 2/1  - Up to 2 memory data bus operation will be performed in the format of
 //        LD, ST, LD-LD, ST-ST, or LD-ST.  These always occur in stage 2 and 1.
 // 3    - This serves as an optional delay stage.  No arch state is modified.
-
-// TODO: Decide if DEC_GRP was actually a good idea.  Seems like it's not used very much and may just add comparators.
-// TODO: Try to simplify memory addressing.  The fixed type stages is convenient for identifying the type but there's
-//       still a lot of work to form addresses, etc.
 
 // Local
 reg         exe_advance_r;
@@ -1490,8 +1488,6 @@ end
 // PPU
 //-------------------------------------------------------------------
 
-// TODO: Lots of edge cases involving register updates and interrupts to still work through.
-
 wire        vram_wren    = PPU_VRAM_active ? 0                : MCT_VRAM_wren;
 wire [12:0] vram_address = PPU_VRAM_active ? PPU_VRAM_address : MCT_VRAM_address;
 wire [7:0]  vram_rddata;
@@ -1645,10 +1641,6 @@ wire        ppu_disp_end = ppu_scanline_r[7] & ppu_scanline_r[4] & ppu_scanline_
 wire        ppu_tile_end = ~ppu_tile_dummy & ppu_tile_ctr_r[4] & &ppu_tile_ctr_r[1:0];      // 159+1 = 160 pixels, 19+1 = 20 tiles
 
 wire        ppu_fifo_data = ~ppu_tile_dummy && ppu_pix_ctr_r[5:3] != ppu_tile_ctr_r[2:0] && ~ppu_pix_end;
-// TODO: is this logic necessary?  reads are never blocked and take 8 dot clocks to consume a tile.  writes should take a minimum of 8 dot clocks to write a tile, but they can span across two tiles.
-// with 4 tiles a write should never be more than 2 tiles ahead of a read and 4 tile buffers implies there is an extra buffer of space.
-//wire        ppu_fifo_full = ~ppu_tile_dummy && (ppu_pix_ctr_r[4:3] == ppu_tile_ctr_r[1:0] || ppu_pix_ctr_r[4:3] == ppu_tile_ctr_next) && ppu_pix_ctr_r[5] != ppu_tile_ctr_r[2];
-wire        ppu_fifo_full = 0;
 
 wire [2:0]  ppu_bgw_fifo_index_start = (ppu_pix_win_active_r ? REG_WX_r[2:0] : ~REG_SCX_r[2:0]) + 1;
 reg  [1:0]  ppu_bgw_fifo_r[31:0]; // 4 [tiles] * 8 [pixels/tile] * 2 [bpp]
@@ -2041,7 +2033,7 @@ always @(posedge CLK) begin
           // next frame
           ppu_pix_win_line_r <= 8'hFF;
           
-          // FIXME: should we flop WY here for current frame?
+          // TODO: should we flop WY here for current frame?
           
           REG_STAT_r[`STAT_MODE] <= `MODE_H;
           
@@ -2114,7 +2106,7 @@ always @(posedge CLK) begin
           
           ppu_pix_bgw_data_r <= vram_rddata;
           
-          if (ppu_pix_phase_r & ~ppu_fifo_full) ppu_state_r <= ST_PPU_PIX_DT1;
+          if (ppu_pix_phase_r) ppu_state_r <= ST_PPU_PIX_DT1;
 
           ppu_pix_phase_r <= ~ppu_pix_phase_r;
         end
@@ -2204,7 +2196,7 @@ always @(posedge CLK) begin
             ppu_tile_ctr_r <= 0;
             ppu_pix_ctr_r  <= 0;
             
-            // FIXME: late timer interrupt causes us to miss MODE_D during stat interrupt in PBF.  Check if dot clock count is larger than some amount
+            // TODO: late timer interrupt causes us to miss MODE_D during stat interrupt in PBF.  Check if dot clock count is larger than some amount
             // Need to look at:
             // 1) timer interrupt starting at the very last cycle is not supposed to happen
             // 2) draw mode needs to be exented by a few clocks to account for this
@@ -2606,7 +2598,7 @@ always @(posedge CLK) begin
   
                   // need to update both reg and shadow here because period uses reg.  period needs to use reg because the program may update that manually.
                   // the shadow is used to compute the next frequency for shutting down the output for sweep
-                  // FIXME: determine if looking one frequency shift in the future is enough.
+                  // TODO: determine if looking one frequency shift in the future is enough.
                   if (|REG_NR10_r[`NR10_SWEEP_SHIFT]) {REG_NR14_r[`NR14_FREQ_MSB],REG_NR13_r[`NR13_FREQ_LSB]} <= apu_square1_sweep_freq_next[10:0];
                   if (|REG_NR10_r[`NR10_SWEEP_SHIFT]) apu_square1_sweep_freq_r[10:0] <= apu_square1_sweep_freq_next[10:0];
                 end

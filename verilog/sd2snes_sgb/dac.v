@@ -31,6 +31,7 @@ module dac(
   input        sgb_apu_clk_edge,
   input vol_latch,
   input [2:0] vol_select,
+  input [2:0] sgb_vol_select,
   input [8:0] dac_address_ext,
   input play,
   input reset,
@@ -57,7 +58,7 @@ reg vol_valid;
 reg[2:0] sysclk_sreg;
 wire sysclk_rising = (sysclk_sreg[2:1] == 2'b01);
 
-reg[8:0] sgb_vol_reg = 9'h100;
+reg[10:0] sgb_vol_reg = 11'h100;
 
 always @(posedge clkin) begin
   sysclk_sreg <= {sysclk_sreg[1:0], sysclk};
@@ -372,6 +373,18 @@ always @(posedge clkin) begin
   end
 end
 
+// assign SGB volume boost
+always @(posedge clkin) begin
+  case(sgb_vol_select)
+    3'b000:  sgb_vol_reg = 11'h100;//11'h101;
+    3'b001:  sgb_vol_reg = 11'h160;//11'h181;
+    3'b010:  sgb_vol_reg = 11'h220;//11'h202;
+    3'b011:  sgb_vol_reg = 11'h300;//11'h302;
+    3'b100:  sgb_vol_reg = 11'h380;//11'h402;
+    default: sgb_vol_reg = 11'h100;
+  endcase
+end
+
 wire signed [15:0] dac_data_ch = lrck ? {{(16+12-`MSU_CIC_BITS){io[2][1][(`MSU_CIC_BITS-1)]}},io[2][1][(`MSU_CIC_BITS-1):12]} : {{(16+12-`MSU_CIC_BITS){io[2][0][(`MSU_CIC_BITS-1)]}},io[2][0][(`MSU_CIC_BITS-1):12]};
 wire signed [25:0] dac_vol_sample;
 wire signed [25:0] vol_sample;
@@ -383,7 +396,6 @@ wire signed [15:0] sgb_data_ch = lrck ? {{(16+18-`SGB_CIC_BITS-4){sgb_co[2][1][(
 wire signed [25:0] sgb_vol_sample;
 
 assign dac_vol_sample = dac_data_ch * $signed({1'b0, vol_reg});
-// TODO: using arbitrary volume reg (constant) for now
 assign sgb_vol_sample = sgb_data_ch * $signed({1'b0, sgb_vol_reg});
 
 reg signed [25:0] dac_vol_sample_r;

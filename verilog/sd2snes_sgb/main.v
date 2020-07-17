@@ -117,6 +117,7 @@ wire [10:0] SD_DMA_PARTIAL_END;
 
 wire [10:0] dac_addr;
 wire [2:0] dac_vol_select_out;
+wire [2:0] sgb_vol_select_out;
 wire [8:0] dac_ptr_addr;
 //wire [7:0] dac_volume;
 wire [7:0] msu_volumerq_out;
@@ -141,6 +142,7 @@ wire        MCU_RTC_RD;
 wire       SGB_ROM_RRQ;
 wire       SGB_ROM_WRQ;
 wire       sgb_enable;
+wire [3:0] sgb_feat;
 
 wire [15:0] featurebits;
 wire feat_cmd_unlock = featurebits[5];
@@ -308,6 +310,7 @@ dac snes_dac(
   .sgb_apu_clk_edge(SGB_APU_CLK_EDGE),
   .vol_latch(msu_volume_latch_out),
   .vol_select(dac_vol_select_out),
+  .sgb_vol_select(sgb_vol_select_out),
   .palmode(dac_palmode_out),
   .play(dac_play),
   .reset(dac_reset),
@@ -560,6 +563,9 @@ sgb snes_sgb (
   .MCU_RSP(SGB_MCU_RSP),
   .MCU_DATA_OUT(SGB_MCU_DIN),
 
+  // features
+  .FEAT(sgb_feat),
+  
   // config
   .reg_group_in(reg_group),
   .reg_index_in(reg_index),
@@ -632,6 +638,8 @@ mcu_cmd snes_mcu_cmd(
   .rtc_data_out(MCU_RTC_DAT),
   .rtc_pgm_we(MCU_RTC_WE),
   .rtc_pgm_rd(MCU_RTC_RD),
+  .sgb_vol_select_out(sgb_vol_select_out),
+  .sgb_feat_out(sgb_feat),
   // config
   .reg_group_out(reg_group),
   .reg_index_out(reg_index),
@@ -740,7 +748,11 @@ reg r2100_forcewrite = 0;
 reg r2100_forcewrite_pre = 0;
 wire [3:0] r2100_limit = featurebits[10:7];
 wire [3:0] r2100_limited = (SNES_DATA[3:0] > r2100_limit) ? r2100_limit : SNES_DATA[3:0];
+`ifdef BRIGHTNESS_PATCH
 wire r2100_patch = featurebits[6];
+`else
+wire r2100_patch = 0;
+`endif
 wire r2100_enable = r2100_hit & (r2100_patch | ~(&r2100_limit));
 
 wire snoop_4200_enable = {SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h04200;
@@ -783,7 +795,7 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
                                   : sgb_enable ? SGB_SNES_DATA_OUT  // SGB MMIO read
                                   : (cheat_hit & ~feat_cmd_unlock) ? cheat_data_out
                                   : ((snescmd_unlock | feat_cmd_unlock) & snescmd_enable) ? snescmd_dout
-                                  : RAM_DATA // the RAM module holds up to a 512KB SNES ROM
+                                  : RAM_DATA // the RAM module holds up to 512KB
                                   ) : 8'bZ;
 
 reg [3:0] ST_MEM_DELAYr;

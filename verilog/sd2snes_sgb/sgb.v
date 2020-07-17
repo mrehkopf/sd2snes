@@ -70,6 +70,9 @@ module sgb(
   output        MCU_RSP,
   output [7:0]  MCU_DATA_OUT,
 
+  // Features
+  input  [3:0]  FEAT,
+  
   // Configuration
   input  [7:0]  reg_group_in,
   input  [7:0]  reg_index_in,
@@ -208,9 +211,23 @@ wire         MBC_BUS_RDY;
 wire [7:0]   MBC_BUS_RDDATA;
 
 parameter CONFIG_REGISTERS = 8;
-reg [7:0] config_r[CONFIG_REGISTERS-1:0]; initial for (i = 0; i < CONFIG_REGISTERS; i = i + 1) config_r[i] = 8'h00;
+reg  [7:0]   config_r[CONFIG_REGISTERS-1:0]; initial for (i = 0; i < CONFIG_REGISTERS; i = i + 1) config_r[i] = 8'h00;
 
 assign       APU_CLK_EDGE = ICD2_CLK_CPU_EDGE;
+
+wire         CPU_SYS_REQ;
+wire         CPU_SYS_WR;
+wire         CPU_BOOTROM_ACTIVE;
+wire         CPU_FREE_SLOT;
+wire         CPU_PPU_DOT_EDGE;
+wire         CPU_PPU_PIXEL_VALID;
+wire         CPU_PPU_VSYNC_EDGE;
+wire         CPU_PPU_HSYNC_EDGE;
+wire         IDL_ICD;
+wire         DBG_ICD2_DATA_OUT;
+wire         CPU_DBG_BRK;
+
+assign       DBG = 0;
 
 //-------------------------------------------------------------------
 // SGB2-CPU
@@ -245,6 +262,8 @@ sgb_cpu cpu(
   .HLT_REQ(HLT_REQ),
   .HLT_RSP(HLT_RSP),
   .IDL_ICD(IDL_ICD),
+
+  .FEAT(FEAT),
   
   .REG_REQ(REG_REQ),
   .REG_ADDR(REG_ADDR),
@@ -257,7 +276,7 @@ sgb_cpu cpu(
   .MCU_DATA_IN(MCU_DATA_IN),
   .MCU_RSP(MCU_RSP),
   .MCU_DATA_OUT(MCU_DATA_OUT),
-
+  
   .DBG_ADDR(DBG_ADDR),
   .DBG_ICD2_DATA_IN(DBG_ICD2_DATA_OUT),
   .DBG_MBC_DATA_IN(DBG_MBC_DATA_OUT),
@@ -283,6 +302,8 @@ sgb_icd2 icd2(
   .SNES_ADDR(SNES_ADDR),
   .DATA_IN(DATA_IN),
   .DATA_OUT(DATA_OUT),
+
+  .BOOTROM_ACTIVE(CPU_BOOTROM_ACTIVE),
   
   .PPU_DOT_EDGE(CPU_PPU_DOT_EDGE),
   .PPU_PIXEL_VALID(CPU_PPU_PIXEL_VALID),
@@ -294,6 +315,8 @@ sgb_icd2 icd2(
   .P1O(CPU_P1I),
 
   .IDL(IDL_ICD),
+  
+  .FEAT(FEAT),
   
   .DBG_ADDR(DBG_ADDR),
   .DBG_DATA_OUT(DBG_ICD2_DATA_OUT)
@@ -322,11 +345,11 @@ reg         rtc_written_r = 0;
 
 reg         dbg_rtc_write_r = 0;
 
-assign rtc_tick_ast = &rtc_tick_r[26:26] & &rtc_tick_r[24:24] & &rtc_tick_r[16:15] & &rtc_tick_r[13:10] & &rtc_tick_r[7:0]; // 84000000-1
-assign rtc_sec_ast  = &rtc_sec_r[5:3] & &rtc_sec_r[1:0]; // 60-1
-assign rtc_min_ast  = &rtc_min_r[5:3] & &rtc_min_r[1:0]; // 60-1
-assign rtc_hrs_ast  =  rtc_min_r[4:4] & &rtc_min_r[2:0]; // 23-1
-assign rtc_day_ast  = &{rtc_ctl_r[`RTC_CTL_DAY],rtc_day_r}; // 511
+wire        rtc_tick_ast = &rtc_tick_r[26:26] & &rtc_tick_r[24:24] & &rtc_tick_r[16:15] & &rtc_tick_r[13:10] & &rtc_tick_r[7:0]; // 84000000-1
+wire        rtc_sec_ast  = &rtc_sec_r[5:3] & &rtc_sec_r[1:0]; // 60-1
+wire        rtc_min_ast  = &rtc_min_r[5:3] & &rtc_min_r[1:0]; // 60-1
+wire        rtc_hrs_ast  =  rtc_min_r[4:4] & &rtc_min_r[2:0]; // 23-1
+wire        rtc_day_ast  = &{rtc_ctl_r[`RTC_CTL_DAY],rtc_day_r}; // 511
 
 wire        MBC_RTC_write;
 wire [7:0]  MBC_RTC_address;
@@ -337,10 +360,10 @@ assign RTC_DAT = {rtc_written_r, rtc_tick_r[30:24],rtc_tick_r[23:16],rtc_ctl_r,r
 always @(posedge CLK) begin
   rtc_tick_r <= (rtc_tick_ast | rtc_ctl_r[`RTC_CTL_HALT]) ? 0 : rtc_tick_r + 1;
 
-  if (rtc_tick_ast)                                                         rtc_sec_r <= rtc_sec_ast ? 0 : rtc_sec_r + 1;
-  if (rtc_tick_ast & rtc_sec_ast)                                           rtc_min_r <= rtc_min_ast ? 0 : rtc_min_r + 1;
-  if (rtc_tick_ast & rtc_sec_ast & rtc_min_ast)                             rtc_hrs_r <= rtc_hrs_ast ? 0 : rtc_hrs_r + 1;
-  if (rtc_tick_ast & rtc_sec_ast & rtc_min_ast & rtc_hrs_ast)               {rtc_ctl_r[`RTC_CTL_DAY],rtc_day_r} <= rtc_day_ast ? 0 : {rtc_ctl_r[`RTC_CTL_DAY],rtc_day_r} + 1;
+  if (rtc_tick_ast)                                                         rtc_sec_r <= rtc_sec_ast ? 6'd0 : rtc_sec_r + 6'd1;
+  if (rtc_tick_ast & rtc_sec_ast)                                           rtc_min_r <= rtc_min_ast ? 6'd0 : rtc_min_r + 6'd1;
+  if (rtc_tick_ast & rtc_sec_ast & rtc_min_ast)                             rtc_hrs_r <= rtc_hrs_ast ? 5'd0 : rtc_hrs_r + 5'd1;
+  if (rtc_tick_ast & rtc_sec_ast & rtc_min_ast & rtc_hrs_ast)               {rtc_ctl_r[`RTC_CTL_DAY],rtc_day_r} <= rtc_day_ast ? 9'd0 : {rtc_ctl_r[`RTC_CTL_DAY],rtc_day_r} + 9'd1;
   if (rtc_tick_ast & rtc_sec_ast & rtc_min_ast & rtc_hrs_ast & rtc_day_ast) rtc_ctl_r[`RTC_CTL_CARRY] <= 1;  
   
   if (ICD2_CPU_RST) begin
@@ -435,39 +458,39 @@ wire        mbc_map_mlt = MAPPER[`MAPPER_EX] && MAPPER[`MAPPER_ID] == 1; // MBC1
 
 // NOTE: we can ignore checking address for 8000-9FFF because they are never sent here
 // These are only valid on the first cycle of the request.
-assign mbc_bus_mbc = CPU_SYS_REQ & CPU_SYS_WR & ~CPU_SYS_ADDR[15];
-assign mbc_bus_dis = CPU_SYS_REQ & CPU_SYS_WR &  CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14] & ~mbc_reg_ram_enabled_r;
-assign mbc_bus_rtc = CPU_SYS_REQ &               CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14] &  mbc_reg_ram_enabled_r & |mbc_reg_bank_r[7:3] & mbc_map_rtc;
-assign mbc_bus_req = mbc_bus_mbc | mbc_bus_rtc | mbc_bus_dis;
+wire        mbc_bus_mbc = CPU_SYS_REQ & CPU_SYS_WR & ~CPU_SYS_ADDR[15];
+wire        mbc_bus_dis = CPU_SYS_REQ & CPU_SYS_WR &  CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14] & ~mbc_reg_ram_enabled_r;
+wire        mbc_bus_rtc = CPU_SYS_REQ &               CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14] &  mbc_reg_ram_enabled_r & |mbc_reg_bank_r[7:3] & mbc_map_rtc;
+wire        mbc_bus_req = mbc_bus_mbc | mbc_bus_rtc | mbc_bus_dis;
                      
-assign ROM_BUS_RRQ = CPU_SYS_REQ & ~CPU_SYS_WR & ~mbc_bus_req;
-assign ROM_BUS_WRQ = CPU_SYS_REQ &  CPU_SYS_WR & ~mbc_bus_req;
-assign ROM_BUS_WORD = 0; // SGB has 8b data bus
+assign      ROM_BUS_RRQ = CPU_SYS_REQ & ~CPU_SYS_WR & ~mbc_bus_req;
+assign      ROM_BUS_WRQ = CPU_SYS_REQ &  CPU_SYS_WR & ~mbc_bus_req;
+assign      ROM_BUS_WORD = 0; // SGB has 8b data bus
 
-wire   BOOTROM = CPU_BOOTROM_ACTIVE & ~|CPU_SYS_ADDR[13:8];
+wire        BOOTROM = CPU_BOOTROM_ACTIVE & ~|CPU_SYS_ADDR[13:8];
 
-assign ROM_BUS_ADDR = ( (~|CPU_SYS_ADDR[15:14]) ? ({BOOTROM,(mbc_rom0_bank_r[8:0] & ROM_MASK[22:14]),(CPU_SYS_ADDR[13:0] & ROM_MASK[13:0])})   // ROM     0000-3FFF -> 000000-003FFF,800000-8000FF (cart+boot) - 16KB programmable MBC1 else fixed
-                      : (~CPU_SYS_ADDR[15])     ? ({1'h0,   (mbc_rom_bank_r[8:0]  & ROM_MASK[22:14]),(CPU_SYS_ADDR[13:0] & ROM_MASK[13:0])})   // ROM     4000-7FFF -> 004000-7FFFFF (cart) - 16KB programmable
-                                                                                                                                               // VRAM    8000-9FFF -> NA - 8 KB (BRAM)
-                      : (~CPU_SYS_ADDR[14])     ? {4'hE,(mbc_ram_bank_r[6:0] & SAVERAM_MASK[19:13]),(CPU_SYS_ADDR[12:0] & SAVERAM_MASK[12:0])} // SaveRAM A000-BFFF -> E00000-EFFFFF - 8KB programmable
-                      :                           {8'h80,3'b110,              CPU_SYS_ADDR[12:0]}                                              // WRAM    C000-DFFF -> 80C000-80DFFF 4+4=8 KB fixed
-                      );                                                                                                                       //         E000-FDFF -> 80C000-80DDFF (mirror of C000-DDFF)
-                                                                                                                                               // OAM     FE00-FE9F -> NA - 160B (BRAM)
-                                                                                                                                               // -       FEA0-FEFF -> NA
-                                                                                                                                               // REG     FF00-FF7F -> NA - 128B (REG)
-                                                                                                                                               //              FFFF
-                                                                                                                                               // HRAM    FF80-FFFE -> NA - 127B (BRAM)
+assign      ROM_BUS_ADDR = ( (~|CPU_SYS_ADDR[15:14]) ? ({BOOTROM,(mbc_rom0_bank_r[8:0] & ROM_MASK[22:14]),(CPU_SYS_ADDR[13:0] & ROM_MASK[13:0])})   // ROM     0000-3FFF -> 000000-003FFF,800000-8000FF (cart+boot) - 16KB programmable MBC1 else fixed
+                           : (~CPU_SYS_ADDR[15])     ? ({1'h0,   (mbc_rom_bank_r[8:0]  & ROM_MASK[22:14]),(CPU_SYS_ADDR[13:0] & ROM_MASK[13:0])})   // ROM     4000-7FFF -> 004000-7FFFFF (cart) - 16KB programmable
+                                                                                                                                                    // VRAM    8000-9FFF -> NA - 8 KB (BRAM)
+                           : (~CPU_SYS_ADDR[14])     ? {4'hE,(mbc_ram_bank_r[6:0] & SAVERAM_MASK[19:13]),(CPU_SYS_ADDR[12:0] & SAVERAM_MASK[12:0])} // SaveRAM A000-BFFF -> E00000-EFFFFF - 8KB programmable
+                           :                           {8'h80,3'b110,              CPU_SYS_ADDR[12:0]}                                              // WRAM    C000-DFFF -> 80C000-80DFFF 4+4=8 KB fixed
+                           );                                                                                                                       //         E000-FDFF -> 80C000-80DDFF (mirror of C000-DDFF)
+                                                                                                                                                    // OAM     FE00-FE9F -> NA - 160B (BRAM)
+                                                                                                                                                    // -       FEA0-FEFF -> NA
+                                                                                                                                                    // REG     FF00-FF7F -> NA - 128B (REG)
+                                                                                                                                                    //              FFFF
+                                                                                                                                                    // HRAM    FF80-FFFE -> NA - 127B (BRAM)
 
-assign DBG_MBC_DATA_OUT = dbg_data_r;
+assign      DBG_MBC_DATA_OUT = dbg_data_r;
 
-assign ROM_FREE_SLOT = CPU_FREE_SLOT;
+assign      ROM_FREE_SLOT = CPU_FREE_SLOT;
 
-assign MBC_BUS_RDY    = ~|mbc_req_r ? ROM_BUS_RDY                                                             : mbc_req_r[`MBC_DELAY-1];
-assign MBC_BUS_RDDATA = ~|mbc_req_r ? {(mbc_req_srm_mbc2_r ? 4'hF : ROM_BUS_RDDATA[7:4]),ROM_BUS_RDDATA[3:0]} : mbc_data_r;
+assign      MBC_BUS_RDY    = ~|mbc_req_r ? ROM_BUS_RDY                                                             : mbc_req_r[`MBC_DELAY-1];
+assign      MBC_BUS_RDDATA = ~|mbc_req_r ? {(mbc_req_srm_mbc2_r ? 4'hF : ROM_BUS_RDDATA[7:4]),ROM_BUS_RDDATA[3:0]} : mbc_data_r;
 
-assign MBC_RTC_write = mbc_rtc_write_r;
-assign MBC_RTC_address = mbc_reg_bank_r[7:0];
-assign MBC_RTC_data = ROM_BUS_WRDATA;
+assign      MBC_RTC_write = mbc_rtc_write_r;
+assign      MBC_RTC_address = mbc_reg_bank_r[7:0];
+assign      MBC_RTC_data = ROM_BUS_WRDATA;
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -480,11 +503,11 @@ always @(posedge CLK) begin
   else begin
     if (mbc_bus_mbc) begin
       if (MAPPER[`MAPPER_ID] == 2) begin
-        if (CPU_SYS_ADDR[8]) mbc_reg_rom_bank_r[7:0] <= ROM_BUS_WRDATA[7:0]; else mbc_reg_ram_enabled_r <= (ROM_BUS_WRDATA[3:0] == 4'hA) ? 1 : 0;
+        if (CPU_SYS_ADDR[8]) mbc_reg_rom_bank_r[7:0] <= ROM_BUS_WRDATA[7:0]; else mbc_reg_ram_enabled_r <= (ROM_BUS_WRDATA[3:0] == 4'hA) ? 1'b1 : 1'b0;
       end
       else begin
         case (CPU_SYS_ADDR[14:13])
-          0: mbc_reg_ram_enabled_r   <= (ROM_BUS_WRDATA[3:0] == 4'hA) ? 1 : 0;
+          0: mbc_reg_ram_enabled_r   <= (ROM_BUS_WRDATA[3:0] == 4'hA) ? 1'b1 : 1'b0;
           1: begin
             if (MAPPER[`MAPPER_ID] == 3) begin
               if (CPU_SYS_ADDR[12]) mbc_reg_rom_bank_upper_r <= ROM_BUS_WRDATA[0]; else mbc_reg_rom_bank_r[7:0] <= ROM_BUS_WRDATA[7:0];
@@ -572,11 +595,11 @@ always @(posedge CLK) begin
   // write in state for loads
   if (REG_REQ) begin
     case (REG_ADDR)
-      8'h70: mbc_reg_ram_enabled_r    <= REG_DATA;
-      8'h71: mbc_reg_rom_bank_upper_r <= REG_DATA;
+      8'h70: mbc_reg_ram_enabled_r    <= REG_DATA[0];
+      8'h71: mbc_reg_rom_bank_upper_r <= REG_DATA[0];
       8'h72: mbc_reg_rom_bank_r       <= REG_DATA;
       8'h73: mbc_reg_bank_r           <= REG_DATA;
-      8'h74: mbc_reg_mode_r           <= REG_DATA;
+      8'h74: mbc_reg_mode_r           <= REG_DATA[0];
     endcase
   end
 `endif
@@ -587,7 +610,7 @@ always @(posedge CLK) begin
     4'h1:    dbg_data_r <= mbc_reg_mode_r;
     4'h2:    dbg_data_r <= mbc_reg_rom_bank_r;
     4'h3:    dbg_data_r <= mbc_reg_bank_r;
-    4'h4:    dbg_data_r <= mbc_rom_bank_r;
+    4'h4:    dbg_data_r <= mbc_rom_bank_r[7:0]; // missing bit 8
     4'h5:    dbg_data_r <= mbc_ram_bank_r;
     4'h6:    dbg_data_r <= CPU_BOOTROM_ACTIVE;
     4'h7:    dbg_data_r <= dbg_rtc_write_r;

@@ -37,6 +37,7 @@
   `define SGB_MCU_ACCESS
   `define SGB_SAVE_STATES
   `define SGB_SERIAL
+  `define BRIGHTNESS_PATCH
 `endif
 
   // doesn't fit
@@ -49,6 +50,9 @@
   `define SGB_SAVE_STATES
   `define SGB_SERIAL
   `define SGB_DEBUG
+  `define BRIGHTNESS_PATCH
 `endif
+
+`define FEAT_ENH_OVERRIDE 0:0
 
 `endif
