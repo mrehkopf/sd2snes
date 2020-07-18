@@ -50,7 +50,7 @@ module sgb_icd2(
   output        IDL,
 
   // Features
-  input  [3:0]  FEAT,
+  input  [15:0]  FEAT,
   
   // Debug state
   input  [11:0] DBG_ADDR,
@@ -483,7 +483,7 @@ always @(posedge CLK) begin
       btn_prev_r <= P1I;
 
       if (P1I != btn_prev_r) begin
-        if (~|P1I & (BOOTROM_ACTIVE | ~FEAT[`FEAT_ENH_OVERRIDE])) begin
+        if (~|P1I & (BOOTROM_ACTIVE | ~FEAT[`SGB_FEAT_ENH_OVERRIDE])) begin
           // *->00 from any state causes us to go to serial transfer mode
           // Is this true if we are already in serial transfer mode?  Convenient to assume so.
           btn_bit_pos_r <= 0;

@@ -57,6 +57,7 @@ typedef struct __attribute__ ((__packed__)) _sgb_romprops {
   uint8_t has_rtc;            /* RTC presence flag */
   uint32_t srambase;          /* saveram base address */
   uint32_t sramsize_bytes;    /* saveram size in bytes */
+  uint16_t fpga_sgbfeat;      /* SGB configuration bits */
   uint8_t error;              /* error text ID */
   uint8_t* error_param;       /* \0 separated list of parameters for error text */
   sgb_header_t header;        /* original header from ROM image */

@@ -152,6 +152,11 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
   /* saveram size in bytes */
   props->sramsize_bytes = props->ramsize_bytes;
 
+  /* features */
+  props->fpga_sgbfeat = ( (((uint16_t)CFG.sgb_volume_boost & 0x7) << 0)
+                        | (((uint16_t)CFG.sgb_enh_override & 0x1) << 8)
+                        );
+
   /* SGB debug print */
   if (props->has_sgb) {
     printf("SGB:  has_sgb=%1d  mapper=0x%02x  ramsize_bytes=%ld  romsize_bytes=%ld  srambase=0x%06lx  sramsize_bytes=%ld\n", props->has_sgb,

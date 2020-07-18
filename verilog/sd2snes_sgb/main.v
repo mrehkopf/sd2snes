@@ -117,7 +117,6 @@ wire [10:0] SD_DMA_PARTIAL_END;
 
 wire [10:0] dac_addr;
 wire [2:0] dac_vol_select_out;
-wire [2:0] sgb_vol_select_out;
 wire [8:0] dac_ptr_addr;
 //wire [7:0] dac_volume;
 wire [7:0] msu_volumerq_out;
@@ -142,7 +141,7 @@ wire        MCU_RTC_RD;
 wire       SGB_ROM_RRQ;
 wire       SGB_ROM_WRQ;
 wire       sgb_enable;
-wire [3:0] sgb_feat;
+wire [15:0] sgb_feat;
 
 wire [15:0] featurebits;
 wire feat_cmd_unlock = featurebits[5];
@@ -310,7 +309,7 @@ dac snes_dac(
   .sgb_apu_clk_edge(SGB_APU_CLK_EDGE),
   .vol_latch(msu_volume_latch_out),
   .vol_select(dac_vol_select_out),
-  .sgb_vol_select(sgb_vol_select_out),
+  .sgb_vol_select(sgb_feat[`SGB_FEAT_VOL_BOOST]),
   .palmode(dac_palmode_out),
   .play(dac_play),
   .reset(dac_reset),
@@ -638,7 +637,6 @@ mcu_cmd snes_mcu_cmd(
   .rtc_data_out(MCU_RTC_DAT),
   .rtc_pgm_we(MCU_RTC_WE),
   .rtc_pgm_rd(MCU_RTC_RD),
-  .sgb_vol_select_out(sgb_vol_select_out),
   .sgb_feat_out(sgb_feat),
   // config
   .reg_group_out(reg_group),

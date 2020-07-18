@@ -57,7 +57,7 @@ module sgb_cpu(
   input         IDL_ICD,
 
   // Features
-  input  [3:0]  FEAT,
+  input  [15:0]  FEAT,
   
   // State
   output        REG_REQ,

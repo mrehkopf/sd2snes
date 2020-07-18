@@ -59,7 +59,6 @@ module mcu_cmd(
   output reg dac_play_out = 0,
   output reg dac_reset_out = 0,
   output reg [2:0] dac_vol_select_out = 3'b000,
-  output reg [2:0] sgb_vol_select_out = 3'b000,
   output reg dac_palmode_out = 0,
   output reg [8:0] dac_ptr_out = 0,
 
@@ -113,7 +112,7 @@ module mcu_cmd(
   output reg [15:0] dsp_feat_out = 16'h0000,
 
   // SGB core features
-  output reg [3:0] sgb_feat_out = 4'h0
+  output reg [15:0] sgb_feat_out = 16'h0000
 );
 
 initial begin
@@ -164,8 +163,9 @@ reg [2:0] mcu_nextaddr_buf;
 
 wire mcu_nextaddr;
 
-reg [7:0] dsp_feat_tmp;
 reg [7:0] feat_tmp;
+
+reg [7:0] sgb_feat_tmp;
 
 reg DAC_STATUSr;
 reg SD_DMA_STATUSr;
@@ -374,10 +374,12 @@ always @(posedge clk) begin
       8'hee:
         region_out <= param_data[0];
       8'hef:
-        begin
-          sgb_vol_select_out <= param_data[2:0];
-          sgb_feat_out <= param_data[7:4];
-        end
+        case (spi_byte_cnt)
+          32'h2: sgb_feat_tmp <= param_data[7:0];
+          32'h3: begin
+            sgb_feat_out <= {sgb_feat_tmp, param_data[7:0]};
+          end
+        endcase
 `ifdef SGB_DEBUG
       8'hfa: // handles all group, index, value, invmask writes.  unit is responsible for decoding group for match
         case (spi_byte_cnt)

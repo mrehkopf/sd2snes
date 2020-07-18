@@ -53,6 +53,7 @@
   `define BRIGHTNESS_PATCH
 `endif
 
-`define FEAT_ENH_OVERRIDE 0:0
+`define SGB_FEAT_VOL_BOOST    2:0
+`define SGB_FEAT_ENH_OVERRIDE 8:8
 
 `endif

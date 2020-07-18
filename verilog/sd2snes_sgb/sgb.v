@@ -71,7 +71,7 @@ module sgb(
   output [7:0]  MCU_DATA_OUT,
 
   // Features
-  input  [3:0]  FEAT,
+  input  [15:0]  FEAT,
   
   // Configuration
   input  [7:0]  reg_group_in,

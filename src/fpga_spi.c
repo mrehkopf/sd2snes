@@ -479,19 +479,11 @@ void fpga_write_cheat(uint8_t index, uint32_t code) {
   FPGA_DESELECT();
 }
 
-void fpga_set_dspfeat(uint16_t feat) {
-  printf("dspfeat <= %d\n", feat);
+void fpga_set_chipfeat(uint16_t feat) {
+  printf("chipfeat <= %d\n", feat);
   FPGA_SELECT();
-  FPGA_TX_BYTE(FPGA_CMD_DSPFEAT);
+  FPGA_TX_BYTE(FPGA_CMD_CHIPFEAT);
   FPGA_TX_BYTE(feat >> 8);
   FPGA_TX_BYTE(feat & 0xff);
-  FPGA_DESELECT();
-}
-
-void fpga_set_sgbfeat(uint8_t feat) {
-  printf("sgbfeat <= %02x\n", feat);
-  FPGA_SELECT();
-  FPGA_TX_BYTE(FPGA_CMD_SGBFEAT);
-  FPGA_TX_BYTE(feat);
   FPGA_DESELECT();
 }

@@ -405,16 +405,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   fpga_set_213f(romprops.region);
 //  fpga_set_features(romprops.fpga_features);
-  if (sgb_romprops.has_sgb) {
-    /* set features */
-    uint8_t sgb_feat = ( ((CFG.sgb_volume_boost & 0x7) << 0)
-                       | ((CFG.sgb_enh_override & 0x1) << 4)
-                       );
-    fpga_set_sgbfeat(sgb_feat);
-  }
-  else {
-    fpga_set_dspfeat(romprops.fpga_dspfeat);
-  }
+  fpga_set_chipfeat(sgb_romprops.has_sgb ? sgb_romprops.fpga_sgbfeat : romprops.fpga_dspfeat);
   fpga_set_dac_boost(CFG.msu_volume_boost);
   dac_pause();
   dac_reset(0);
