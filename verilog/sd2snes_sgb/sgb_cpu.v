@@ -706,7 +706,7 @@ always @(posedge CLK) begin
           8'h4A: begin reg_mdr_r[7:0] <= REG_WY_r;                      if (reg_wr_r) REG_WY_r[7:0]   <= reg_mdr_r[7:0]; end
           8'h4B: begin reg_mdr_r[7:0] <= REG_WX_r;                      if (reg_wr_r) REG_WX_r[7:0]   <= reg_mdr_r[7:0]; end
 
-          8'h50: begin reg_mdr_r[7:0] <= {7'h7F,REG_BOOT_r[`BOOT_ROM_DI]}; if (reg_wr_r) REG_BOOT_r[`BOOT_ROM_DI] <= REG_BOOT_r[`BOOT_ROM_DI] | reg_mdr_r[`BOOT_ROM_DI]; end
+          8'h50: begin reg_mdr_r[7:0] <= {7'h7F,REG_BOOT_r[`BOOT_ROM_DI]}; if (reg_wr_r) REG_BOOT_r[`BOOT_ROM_DI] <= 1'b1; end
 
 `ifdef SGB_SAVE_STATES
           // special case debug source reads to read out arch state that isn't normally memory mapped

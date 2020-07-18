@@ -226,9 +226,11 @@ uint8_t sgb_update_romprops(snes_romprops_t *romprops, uint8_t *filename) {
 void sgb_cheat_program(void) {
   if (sgb_romprops.has_sgb) {
     /* update cheats based on SGB file and configuration state */
-    uint8_t state = sgb_bios_state();
-        
+    if (CFG.sgb_enable_ingame_hook) cheat_nmi_enable(1);
+    if (CFG.sgb_enable_ingame_hook) cheat_irq_enable(1);
+   
     /* hooks disabled if bios files don't match */
+    uint8_t state = sgb_bios_state();
     if (state != SGB_BIOS_OK && !CFG.sgb_bios_override) cheat_nmi_enable(0);
     if (state != SGB_BIOS_OK && !CFG.sgb_bios_override) cheat_irq_enable(0);
     
@@ -256,7 +258,11 @@ uint8_t sgb_bios_state(void) {
 
       for (UINT i = 0; i < bytes_read; i++) crc = crc32_update(crc, file_buf[i]);
     }
-    if (state <= SGB_BIOS_MISMATCH && crc != 0x5e46583b) {
+    if (state <= SGB_BIOS_MISMATCH
+       && (  (crc != 0x5e46583b) // sgb2_boot.bin
+          && (crc != 0xe11c06e1) // sgb_boot.bin
+          )
+       ) {
       printf("SGB sgb2_boot.bin CRC mismatch: 0x%08x\n", (unsigned int)crc);
       state = SGB_BIOS_MISMATCH;
     }
@@ -276,7 +282,12 @@ uint8_t sgb_bios_state(void) {
 
       for (UINT i = 0; i < bytes_read; i++) crc = crc32_update(crc, file_buf[i]);
     }
-    if (state <= SGB_BIOS_MISMATCH && crc != 0xbe7164e9) {
+    if (state <= SGB_BIOS_MISMATCH
+       && (  (crc != 0xbe7164e9) // sgb2 bios (JP)
+          && (crc != 0xcc3b0799) // sgb bios (JP)
+          && (crc != 0x6844fd6d) // sgb bios v1.2 (UE)
+          )
+       ) {
       printf("SGB sgb2_snes.bin CRC mismatch: 0x%08x\n", (unsigned int)crc);
       state = SGB_BIOS_MISMATCH;
     }

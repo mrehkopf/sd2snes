@@ -35,10 +35,11 @@ cfg_t CFG_DEFAULT = {
   .led_brightness = 15,
   .enable_cheats = 1,
   .reset_patch = 0,
+  .sgb_enable_ingame_hook = 0,
   .sgb_enable_state = 0,
   .sgb_bios_override = 0,
   .sgb_volume_boost = 0,
-  .sgb_enh_override = 0,
+  .sgb_enh_override = 0
 };
 
 cfg_t CFG;
@@ -81,11 +82,15 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %s\n", CFG_RESET_PATCH, CFG.reset_patch ? "true" : "false");
 
   f_puts("\n", &file_handle);
+  f_printf(&file_handle, "#  %s: SGB enable hooks (%s or %s enables SGB hooks.  zero overhead.)\n", CFG_SGB_ENABLE_INGAME_HOOK, CFG_SGB_ENABLE_INGAME_HOOK, CFG_ENABLE_INGAME_HOOK);
+  f_printf(&file_handle, "%s: %s\n", CFG_SGB_ENABLE_INGAME_HOOK, CFG.sgb_enable_ingame_hook ? "true" : "false");
+  f_printf(&file_handle, "#  %s: SGB enable save states (only works with ingame hooks when supported boot and bios/snes is used)\n", CFG_SGB_ENABLE_STATE);
   f_printf(&file_handle, "%s: %s\n", CFG_SGB_ENABLE_STATE, CFG.sgb_enable_state ? "true" : "false");
+  f_printf(&file_handle, "#  %s: SGB override boot/bios check for hooks (debug only).\n", CFG_SGB_BIOS_OVERRIDE);
   f_printf(&file_handle, "%s: %s\n", CFG_SGB_BIOS_OVERRIDE, CFG.sgb_bios_override ? "true" : "false");
   f_printf(&file_handle, "#  %s: SGB audio volume boost\n#    (0: none; 1: +3.5dBFS; 2: +6dBFS; 3: +9.5dBFS; 4: +12dBFS)\n", CFG_SGB_VOLUME_BOOST);
   f_printf(&file_handle, "%s: %d\n", CFG_SGB_VOLUME_BOOST, CFG.sgb_volume_boost);
-  f_printf(&file_handle, "#  %s: SGB enhancements override\n# (false: enhancements enabled; true: enhancements disabled)\n", CFG_SGB_ENH_OVERRIDE);
+  f_printf(&file_handle, "#  %s: SGB enhancements override (false: enhancements enabled; true: enhancements disabled)\n", CFG_SGB_ENH_OVERRIDE);
   f_printf(&file_handle, "%s: %s\n", CFG_SGB_ENH_OVERRIDE, CFG.sgb_enh_override ? "true" : "false");
 
   f_puts("\n# Screensaver settings\n", &file_handle);
@@ -189,6 +194,9 @@ int cfg_load() {
     if(yaml_get_itemvalue(CFG_RESET_PATCH, &tok)) {
       CFG.reset_patch = tok.boolvalue ? 1 : 0;
     }
+    if(yaml_get_itemvalue(CFG_SGB_ENABLE_INGAME_HOOK, &tok)) {
+      CFG.sgb_enable_ingame_hook = tok.boolvalue ? 1 : 0;
+    }    
     if(yaml_get_itemvalue(CFG_SGB_ENABLE_STATE, &tok)) {
       CFG.sgb_enable_state = tok.boolvalue ? 1 : 0;
     }
