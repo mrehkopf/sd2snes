@@ -214,9 +214,9 @@ wire [7:0]  MCT_REG_data;
 //
 // MCT input data
 //
-wire [7:0]  VRAM_MCT_data;
-wire [7:0]  OAM_MCT_data;
-wire [7:0]  HRAM_MCT_data;
+wire [7:0]  VRAM_data;
+wire [7:0]  OAM_data;
+wire [7:0]  HRAM_data;
 //
 // PPU outputs
 //
@@ -227,16 +227,22 @@ wire [7:0]  PPU_OAM_address;
 wire        PPU_REG_vblank;
 wire        PPU_REG_lcd_stat;
 wire        PPU_vblank;
+//
 // DMA outputs
+//
+wire        DMA_SYS_active;
+wire        DMA_VRAM_active;
 wire        DMA_active;
 
-wire        DMA_SYS_req_val;
-wire [15:0] DMA_SYS_address;
+wire        DMA_req_val;
+wire [15:0] DMA_address;
 
 wire        DMA_OAM_req_val;
 wire [7:0]  DMA_OAM_address;
 wire [7:0]  DMA_OAM_req_data;
+//
 // APU outputs
+//
 wire [3:0]  APU_REG_enable;
 
 wire        SER_REG_done;
@@ -1434,26 +1440,31 @@ parameter
 
 reg  [3:0]  dma_state_r;
 reg  [7:0]  dma_addr_r;
-reg         dma_sys_req_r;
+reg         dma_req_r;
+reg         dma_src_r;
 reg  [7:0]  dma_data_r;
 
-assign DMA_active = ~|(dma_state_r & ST_DMA_IDLE);
+assign      DMA_SYS_active  = ~|(dma_state_r & ST_DMA_IDLE) & ~dma_src_r;
+assign      DMA_VRAM_active = ~|(dma_state_r & ST_DMA_IDLE) &  dma_src_r;
+assign      DMA_active      = DMA_SYS_active | DMA_VRAM_active;
 
-assign DMA_SYS_req_val = dma_sys_req_r;
-assign DMA_SYS_address = {REG_DMA_r,dma_addr_r};
+assign      DMA_req_val = |(dma_state_r & ST_DMA_READ_WAIT) & dma_req_r;
+assign      DMA_address = {REG_DMA_r,dma_addr_r};
 
-assign DMA_OAM_req_val  = |(dma_state_r & ST_DMA_WRITE);
-assign DMA_OAM_address  = dma_addr_r;
-assign DMA_OAM_req_data = dma_data_r;
+assign      DMA_OAM_req_val  = |(dma_state_r & ST_DMA_WRITE);
+assign      DMA_OAM_address  = dma_addr_r;
+assign      DMA_OAM_req_data = dma_data_r;
 
-assign HLT_DMA_rsp = HLT_REQ_sync & ~DMA_active;
+assign      HLT_DMA_rsp = HLT_REQ_sync & ~DMA_active;
 
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
     dma_state_r <= ST_DMA_IDLE;
-    dma_sys_req_r <= 0;
+    dma_req_r <= 0;
   end
   else begin
+    dma_src_r <= (REG_DMA_r[7:5] == 3'b100) ? 1 : 0;
+
     case (dma_state_r)
       ST_DMA_IDLE: begin
         dma_addr_r <= 0;
@@ -1464,16 +1475,17 @@ always @(posedge CLK) begin
       ST_DMA_READ: begin
         if (CLK_BUS_EDGE) begin
           // sync to one read/write pair per cycle
-          dma_sys_req_r <= 1;
-            
+          dma_req_r <= 1;
+          
           dma_state_r <= ST_DMA_READ_WAIT;
         end
       end
       ST_DMA_READ_WAIT: begin
-        dma_sys_req_r <= 0;
-        dma_data_r <= SYS_RDDATA;
+        dma_req_r <= 0;
+        dma_data_r <= dma_src_r ? VRAM_data : SYS_RDDATA;
       
-        if (~dma_sys_req_r & SYS_RDY) dma_state_r <= ST_DMA_WRITE;
+        // address available 1 cycle early and we have the VRAM bus so not necessary to wait an extra clock
+        if (~dma_req_r & (dma_src_r | SYS_RDY)) dma_state_r <= ST_DMA_WRITE;
       end
       ST_DMA_WRITE: begin
         dma_addr_r <= dma_addr_r + 1;
@@ -1488,8 +1500,8 @@ end
 // PPU
 //-------------------------------------------------------------------
 
-wire        vram_wren    = PPU_VRAM_active ? 0                : MCT_VRAM_wren;
-wire [12:0] vram_address = PPU_VRAM_active ? PPU_VRAM_address : MCT_VRAM_address;
+wire        vram_wren    = DMA_VRAM_active ? 0                 : PPU_VRAM_active ? 0                : MCT_VRAM_wren;
+wire [12:0] vram_address = DMA_VRAM_active ? DMA_address[12:0] : PPU_VRAM_active ? PPU_VRAM_address : MCT_VRAM_address;
 wire [7:0]  vram_rddata;
 wire [7:0]  vram_wrdata  = MCT_VRAM_data;
 
@@ -1701,8 +1713,8 @@ reg  [2:0]  ppu_obj_fifo_wr_cnt_r;
 reg  [3:0]  ppu_obj_fifo_wr_data_r;
 reg         ppu_obj_fifo_wr_req_clear_r;
 
-assign VRAM_MCT_data = vram_rddata;
-assign OAM_MCT_data = oam_rddata;
+assign VRAM_data = vram_rddata;
+assign OAM_data  = oam_rddata;
 
 assign PPU_VRAM_active  = ppu_vram_active;
 assign PPU_VRAM_address = ppu_vram_address_r;
@@ -2863,7 +2875,7 @@ reg  [7:0]  mct_mdr_r;
 
 wire [15:0] mct_addr_d1 = mct_src_r ? EXE_MCT_req_addr_d1 : IFD_MCT_req_addr_d1;
 
-assign HRAM_MCT_data = hram_rddata;
+assign HRAM_data = hram_rddata;
 
 assign MCT_VRAM_wren = mct_wr_r & |(mct_state_r & ST_MCT_VRAM) & mct_req_r[0];
 assign MCT_VRAM_address = mct_addr_r[12:0];
@@ -2881,9 +2893,9 @@ assign MCT_REG_wren = mct_wr_r & |(mct_state_r & ST_MCT_REG) & mct_req_r[0];
 assign MCT_REG_address = mct_addr_r[7:0];
 assign MCT_REG_data = mct_mdr_r;
 
-assign SYS_REQ    = DMA_active ? DMA_SYS_req_val : (|(mct_state_r & ST_MCT_EXT) & mct_req_r[0]);
-assign SYS_WR     = DMA_active ? 0 : mct_wr_r & mct_req_r[0];
-assign SYS_ADDR   = DMA_active ? DMA_SYS_address : mct_addr_r;
+assign SYS_REQ    = DMA_SYS_active ? DMA_req_val : (|(mct_state_r & ST_MCT_EXT) & mct_req_r[0]);
+assign SYS_WR     = DMA_SYS_active ? 0           : mct_wr_r & mct_req_r[0];
+assign SYS_ADDR   = DMA_SYS_active ? DMA_address : mct_addr_r;
 assign SYS_WRDATA = mct_mdr_r;
 
 assign MCT_IFD_rsp_val = |(mct_state_r & ST_MCT_END) & ~mct_src_r;
@@ -2935,14 +2947,14 @@ always @(posedge CLK) begin
         end
       end
       ST_MCT_VRAM: begin
-        if (~mct_wr_r) mct_mdr_r <= PPU_MCT_vram_active ? 0 : VRAM_MCT_data;
+        if (~mct_wr_r) mct_mdr_r <= PPU_MCT_vram_active ? 0 : VRAM_data;
         
         // avoid false errors by only looking at EXE src
         if (~|mct_req_r & PPU_MCT_vram_active & mct_src_r) mct_vram_error_r <= mct_vram_error_r + 1;
         if (~|mct_req_r) mct_state_r <= ST_MCT_END;
       end
       ST_MCT_OAM: begin
-        if (~mct_wr_r) mct_mdr_r <= PPU_MCT_oam_active ? 0 : OAM_MCT_data;
+        if (~mct_wr_r) mct_mdr_r <= PPU_MCT_oam_active ? 0 : OAM_data;
 
         // avoid false errors by only looking at EXE src
         if (~|mct_req_r & PPU_MCT_oam_active & mct_src_r) mct_oam_error_r <= mct_oam_error_r + 1;
@@ -2954,7 +2966,7 @@ always @(posedge CLK) begin
         if (~|mct_req_r & REG_MCT_rsp_val) mct_state_r <= ST_MCT_END;
       end
       ST_MCT_HRAM: begin
-        if (~mct_wr_r) mct_mdr_r <= HRAM_MCT_data;
+        if (~mct_wr_r) mct_mdr_r <= HRAM_data;
         
         if (~|mct_req_r) mct_state_r <= ST_MCT_END;
       end
@@ -3260,6 +3272,7 @@ always @(posedge CLK) begin
             8'h01:    dbg_misc_data_r <= IFD_EXE_op[7:0];
             8'h02:    dbg_misc_data_r <= IFD_EXE_op[15:8];
             8'h03:    dbg_misc_data_r <= IFD_EXE_op[23:16];
+            8'h04:    dbg_misc_data_r <= exe_ime_r;
             
             8'h10:    dbg_misc_data_r <= IFD_EXE_decode[`DEC_GRP];
             8'h11:    dbg_misc_data_r <= IFD_EXE_decode[`DEC_LAT];
