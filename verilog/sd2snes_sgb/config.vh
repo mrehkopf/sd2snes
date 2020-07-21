@@ -43,6 +43,7 @@
   // doesn't fit
   //`define MSU_DATA
   //`define SGB_DEBUG
+  //`define BRIGHTNESS_LIMIT
 `else
   `define MSU_AUDIO
   `define MSU_DATA
@@ -51,6 +52,7 @@
   `define SGB_SERIAL
   `define SGB_DEBUG
   `define BRIGHTNESS_PATCH
+  `define BRIGHTNESS_LIMIT
 `endif
 
 `define SGB_FEAT_VOL_BOOST    2:0

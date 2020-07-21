@@ -744,7 +744,11 @@ initial r213f_delay = 3'b000;
 reg [7:0] r2100r = 0;
 reg r2100_forcewrite = 0;
 reg r2100_forcewrite_pre = 0;
+`ifdef BRIGHTNESS_LIMIT
 wire [3:0] r2100_limit = featurebits[10:7];
+`else
+wire [3:0] r2100_limit = 4'hF;
+`endif
 wire [3:0] r2100_limited = (SNES_DATA[3:0] > r2100_limit) ? r2100_limit : SNES_DATA[3:0];
 `ifdef BRIGHTNESS_PATCH
 wire r2100_patch = featurebits[6];

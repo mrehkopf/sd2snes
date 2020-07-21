@@ -62,7 +62,7 @@ module sgb_cpu(
   // State
   output        REG_REQ,
   output [7:0]  REG_ADDR,
-  output [7:0]  REG_DATA,
+  output [7:0]  REG_REQ_DATA,
   input  [7:0]  MBC_REG_DATA,
   
   // DBG
@@ -177,6 +177,8 @@ wire        EXE_IFD_redirect;
 wire [15:0] EXE_IFD_target;
 wire        EXE_IFD_ready;
 wire        EXE_IFD_ime;
+
+wire        EXE_DMA_halt;
 //
 // REG outputs
 //
@@ -497,6 +499,7 @@ reg [2:0]   reg_state_r;
 reg [7:0]   reg_addr_r;
 reg         reg_src_r;
 reg         reg_wr_r;
+reg [7:0]   reg_wr_data_r;
 reg [7:0]   reg_mdr_r;
 
 reg         tmr_apu_step_r;
@@ -527,11 +530,11 @@ assign REG_req_dbg  = |(reg_state_r & ST_REG_REQ) & reg_wr_r &  reg_src_r;
 assign REG_req_dbg  = 0;
 `endif
 assign REG_address  = reg_addr_r;
-assign REG_req_data = reg_mdr_r;
+assign REG_req_data = reg_wr_data_r;
 
-assign REG_REQ  = REG_req_dbg;
-assign REG_ADDR = REG_address;
-assign REG_DATA = REG_req_data;
+assign REG_REQ      = REG_req_dbg;
+assign REG_ADDR     = REG_address;
+assign REG_REQ_DATA = REG_req_data;
 
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
@@ -626,34 +629,34 @@ always @(posedge CLK) begin
     case (reg_state_r)
       ST_REG_IDLE: begin
         if      (MCT_REG_req_val) begin
-          reg_src_r   <= 0;
-          reg_addr_r  <= MCT_REG_address;
-          reg_wr_r    <= MCT_REG_wren;
-          reg_mdr_r   <= MCT_REG_data;
+          reg_src_r     <= 0;
+          reg_addr_r    <= MCT_REG_address;
+          reg_wr_r      <= MCT_REG_wren;
+          reg_wr_data_r <= MCT_REG_data;
           
           reg_state_r <= ST_REG_REQ;
         end
         else if (DBG_REG_req_val) begin
-          reg_src_r   <= 1;
-          reg_addr_r  <= DBG_REG_address;
-          reg_wr_r    <= DBG_REG_wren;
-          reg_mdr_r   <= DBG_REG_data;
+          reg_src_r     <= 1;
+          reg_addr_r    <= DBG_REG_address;
+          reg_wr_r      <= DBG_REG_wren;
+          reg_wr_data_r <= DBG_REG_data;
           
           reg_state_r <= ST_REG_REQ;
         end
       end
       ST_REG_REQ: begin
         case (reg_addr_r)
-          8'h00: begin reg_mdr_r[7:0] <= {2'b11, REG_P1_r[5:0]}; if (reg_wr_r) REG_P1_r[5:4]   <= reg_mdr_r[5:4];   end
+          8'h00: begin reg_mdr_r[7:0] <= {2'b11, REG_P1_r[5:0]}; if (reg_wr_r) REG_P1_r[5:4]   <= reg_wr_data_r[5:4];   end
           8'h01: reg_mdr_r[7:0] <= REG_SB_r;
           8'h02: reg_mdr_r[7:0] <= {REG_SC_r[7],6'h3F,REG_SC_r[0]};
           
           8'h04: begin reg_mdr_r[7:0] <= REG_DIV_r[15:8];         if (reg_wr_r) REG_DIV_r[15:0] <= 0;               end
-          8'h05: begin reg_mdr_r[7:0] <= REG_TIMA_r;              if (reg_wr_r) REG_TIMA_r[7:0] <= reg_mdr_r[7:0];  end
-          8'h06: begin reg_mdr_r[7:0] <= REG_TMA_r;               if (reg_wr_r) REG_TMA_r[7:0]  <= reg_mdr_r[7:0];  end
-          8'h07: begin reg_mdr_r[7:0] <= {5'h1F,REG_TAC_r[2:0]};  if (reg_wr_r) REG_TAC_r[2:0]  <= reg_mdr_r[2:0];  end
+          8'h05: begin reg_mdr_r[7:0] <= REG_TIMA_r;              if (reg_wr_r) REG_TIMA_r[7:0] <= reg_wr_data_r[7:0];  end
+          8'h06: begin reg_mdr_r[7:0] <= REG_TMA_r;               if (reg_wr_r) REG_TMA_r[7:0]  <= reg_wr_data_r[7:0];  end
+          8'h07: begin reg_mdr_r[7:0] <= {5'h1F,REG_TAC_r[2:0]};  if (reg_wr_r) REG_TAC_r[2:0]  <= reg_wr_data_r[2:0];  end
 
-          8'h0F: begin reg_mdr_r[7:0] <= REG_IF_r;                if (reg_wr_r) begin reg_int_write_data_r <= reg_mdr_r[7:0]; reg_int_write_r <= 1; end end
+          8'h0F: begin reg_mdr_r[7:0] <= REG_IF_r;                if (reg_wr_r) begin reg_int_write_data_r <= reg_wr_data_r[7:0]; reg_int_write_r <= 1; end end
           
           // APU registers read here for MMIO accesses and written in APU
           8'h10: reg_mdr_r[7:0] <= {1'h1,REG_NR10_r[6:0]};
@@ -699,18 +702,18 @@ always @(posedge CLK) begin
           8'h3E: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
           8'h3F: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
           
-          8'h40: begin reg_mdr_r[7:0] <= REG_LCDC_r;                    if (reg_wr_r) REG_LCDC_r[7:0] <= reg_mdr_r[7:0]; end
-          8'h41: begin reg_mdr_r[7:0] <= {1'b1,REG_STAT_r[6:0]};        if (reg_wr_r) REG_STAT_r[7:3] <= reg_mdr_r[7:3]; end
-          8'h42: begin reg_mdr_r[7:0] <= REG_SCY_r;                     if (reg_wr_r) REG_SCY_r[7:0]  <= reg_mdr_r[7:0]; end
-          8'h43: begin reg_mdr_r[7:0] <= REG_SCX_r;                     if (reg_wr_r) REG_SCX_r[7:0]  <= reg_mdr_r[7:0]; end
+          8'h40: begin reg_mdr_r[7:0] <= REG_LCDC_r;                    if (reg_wr_r) REG_LCDC_r[7:0] <= reg_wr_data_r[7:0]; end
+          8'h41: begin reg_mdr_r[7:0] <= {1'b1,REG_STAT_r[6:0]};        if (reg_wr_r) REG_STAT_r[7:3] <= reg_wr_data_r[7:3]; end
+          8'h42: begin reg_mdr_r[7:0] <= REG_SCY_r;                     if (reg_wr_r) REG_SCY_r[7:0]  <= reg_wr_data_r[7:0]; end
+          8'h43: begin reg_mdr_r[7:0] <= REG_SCX_r;                     if (reg_wr_r) REG_SCX_r[7:0]  <= reg_wr_data_r[7:0]; end
           8'h44: reg_mdr_r[7:0] <= REG_LY_r;
-          8'h45: begin reg_mdr_r[7:0] <= REG_LYC_r;                     if (reg_wr_r) REG_LYC_r[7:0]  <= reg_mdr_r[7:0]; end
-          8'h46: begin reg_mdr_r[7:0] <= REG_DMA_r;                     if (reg_wr_r) begin REG_DMA_r[7:0]  <= reg_mdr_r[7:0]; reg_dma_start_r <= ~HLT_RSP; end end // don't trigger DMA on HLT
-          8'h47: begin reg_mdr_r[7:0] <= REG_BGP_r;                     if (reg_wr_r) REG_BGP_r[7:0]  <= reg_mdr_r[7:0]; end
-          8'h48: begin reg_mdr_r[7:0] <= REG_OBP0_r;                    if (reg_wr_r) REG_OBP0_r[7:0] <= reg_mdr_r[7:0]; end
-          8'h49: begin reg_mdr_r[7:0] <= REG_OBP1_r;                    if (reg_wr_r) REG_OBP1_r[7:0] <= reg_mdr_r[7:0]; end
-          8'h4A: begin reg_mdr_r[7:0] <= REG_WY_r;                      if (reg_wr_r) REG_WY_r[7:0]   <= reg_mdr_r[7:0]; end
-          8'h4B: begin reg_mdr_r[7:0] <= REG_WX_r;                      if (reg_wr_r) REG_WX_r[7:0]   <= reg_mdr_r[7:0]; end
+          8'h45: begin reg_mdr_r[7:0] <= REG_LYC_r;                     if (reg_wr_r) REG_LYC_r[7:0]  <= reg_wr_data_r[7:0]; end
+          8'h46: begin reg_mdr_r[7:0] <= REG_DMA_r;                     if (reg_wr_r) begin REG_DMA_r[7:0]  <= reg_wr_data_r[7:0]; reg_dma_start_r <= ~HLT_RSP; end end // don't trigger DMA on HLT
+          8'h47: begin reg_mdr_r[7:0] <= REG_BGP_r;                     if (reg_wr_r) REG_BGP_r[7:0]  <= reg_wr_data_r[7:0]; end
+          8'h48: begin reg_mdr_r[7:0] <= REG_OBP0_r;                    if (reg_wr_r) REG_OBP0_r[7:0] <= reg_wr_data_r[7:0]; end
+          8'h49: begin reg_mdr_r[7:0] <= REG_OBP1_r;                    if (reg_wr_r) REG_OBP1_r[7:0] <= reg_wr_data_r[7:0]; end
+          8'h4A: begin reg_mdr_r[7:0] <= REG_WY_r;                      if (reg_wr_r) REG_WY_r[7:0]   <= reg_wr_data_r[7:0]; end
+          8'h4B: begin reg_mdr_r[7:0] <= REG_WX_r;                      if (reg_wr_r) REG_WX_r[7:0]   <= reg_wr_data_r[7:0]; end
 
           8'h50: begin reg_mdr_r[7:0] <= {7'h7F,REG_BOOT_r[`BOOT_ROM_DI]}; if (reg_wr_r) REG_BOOT_r[`BOOT_ROM_DI] <= 1'b1; end
 
@@ -744,7 +747,7 @@ always @(posedge CLK) begin
           // RTC?
 `endif
           
-          8'hFF: begin reg_mdr_r[7:0] <= {3'h0,REG_IE_r[4:0]};          if (reg_wr_r) REG_IE_r[4:0]   <= reg_mdr_r[4:0]; end
+          8'hFF: begin reg_mdr_r[7:0] <= {3'h0,REG_IE_r[4:0]};          if (reg_wr_r) REG_IE_r[4:0]   <= reg_wr_data_r[4:0]; end
           default: reg_mdr_r <= 8'hFF;
         endcase
         
@@ -929,8 +932,8 @@ always @(posedge CLK) begin
   // debug/state writes
   if (REG_req_dbg) begin
     case (REG_address)
-      8'h6A: PC_r[7:0]  <= REG_data;
-      8'h6B: PC_r[15:8] <= REG_data;
+      8'h6A: PC_r[7:0]  <= REG_req_data;
+      8'h6B: PC_r[15:8] <= REG_req_data;
     endcase
   end
 end
@@ -1040,27 +1043,29 @@ reg [15:0]  exe_pc_prev_r;
 reg [15:0]  exe_pc_prev_redirect_r;
 reg [15:0]  exe_target_prev_redirect_r;
 
-assign EXE_IFD_redirect = IFD_EXE_valid & exe_ifd_redirect_r;
-assign EXE_IFD_target   = exe_ifd_redirect_target_r;
-assign EXE_IFD_ready    = exe_ready_r;
-assign EXE_IFD_ime      = (exe_ime_r | (exe_res_int_enable_r & ~IFD_EXE_op[5])) & ~IFD_EXE_int & ~exe_res_int_disable_r; // RETI and disables need bypass.  EI is delayed a clock.
+assign      EXE_IFD_redirect = IFD_EXE_valid & exe_ifd_redirect_r;
+assign      EXE_IFD_target   = exe_ifd_redirect_target_r;
+assign      EXE_IFD_ready    = exe_ready_r;
+assign      EXE_IFD_ime      = (exe_ime_r | (exe_res_int_enable_r & ~IFD_EXE_op[5])) & ~IFD_EXE_int & ~exe_res_int_disable_r; // RETI and disables need bypass.  EI is delayed a clock.
 
-assign EXE_MCT_req_val     = IFD_EXE_valid & exe_mem_req_r & ^exe_stage[1:0];
-assign EXE_MCT_req_addr_d1 = ( EXE_MCT_req_wr ? {((IFD_EXE_decode[`DEC_DST] == `OPR_S8 || IFD_EXE_decode[`DEC_DST] == `OPR_C) ? 8'hFF : exe_dst_r[15:8]),exe_dst_r[7:0]}
+assign      EXE_MCT_req_val     = IFD_EXE_valid & exe_mem_req_r & ^exe_stage[1:0];
+assign      EXE_MCT_req_addr_d1 = ( EXE_MCT_req_wr ? {((IFD_EXE_decode[`DEC_DST] == `OPR_S8 || IFD_EXE_decode[`DEC_DST] == `OPR_C) ? 8'hFF : exe_dst_r[15:8]),exe_dst_r[7:0]}
                                               : {((IFD_EXE_decode[`DEC_SRC] == `OPR_S8 || IFD_EXE_decode[`DEC_SRC] == `OPR_C) ? 8'hFF : exe_src_r[15:8]),exe_src_r[7:0]})
-                             + exe_mem_addr_mod_r;
-assign EXE_MCT_req_wr = (  IFD_EXE_decode[`DEC_GRP] == `GRP_MST
-                        || IFD_EXE_decode[`DEC_GRP] == `GRP_CLL
-                        // load-op-store operations need ST on second stage
-                        || (exe_stage[0] & exe_loadopstore)
-                        );
+                                  + exe_mem_addr_mod_r;
+assign      EXE_MCT_req_wr = (  IFD_EXE_decode[`DEC_GRP] == `GRP_MST
+                             || IFD_EXE_decode[`DEC_GRP] == `GRP_CLL
+                             // load-op-store operations need ST on second stage
+                             || (exe_stage[0] & exe_loadopstore)
+                             );
 // always write MSB followed by LSB.  LOS ops need the result of math
-assign EXE_MCT_req_data_d1 = exe_loadopstore ? exe_res_los_r[7:0] : (exe_stage[1] ? exe_src_r[15:8] : exe_src_r[7:0]);
+assign      EXE_MCT_req_data_d1 = exe_loadopstore ? exe_res_los_r[7:0] : (exe_stage[1] ? exe_src_r[15:8] : exe_src_r[7:0]);
 
-assign HLT_EXE_rsp = HLT_REQ_sync & ~IFD_EXE_valid;
+assign      EXE_DMA_halt = exe_res_halt_r;
+
+assign      HLT_EXE_rsp = HLT_REQ_sync & ~IFD_EXE_valid;
 
 reg         dbg_advance_r;
-assign DBG_advance = dbg_advance_r;
+assign      DBG_advance = dbg_advance_r;
 
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
@@ -1414,16 +1419,16 @@ always @(posedge CLK) begin
   // debug writes
   if (REG_req_dbg) begin
     case (REG_address)
-      8'h60: if (reg_src_r) A_r <= REG_data;
-      8'h61: if (reg_src_r) F_r[7:4] <= REG_data[7:4];
-      8'h62: if (reg_src_r) B_r <= REG_data;
-      8'h63: if (reg_src_r) C_r <= REG_data;
-      8'h64: if (reg_src_r) D_r <= REG_data;
-      8'h65: if (reg_src_r) E_r <= REG_data;
-      8'h66: if (reg_src_r) H_r <= REG_data;
-      8'h67: if (reg_src_r) L_r <= REG_data;
-      8'h68: if (reg_src_r) SP_r[7:0] <= REG_data;
-      8'h69: if (reg_src_r) SP_r[15:8] <= REG_data;
+      8'h60: if (reg_src_r) A_r <= REG_req_data;
+      8'h61: if (reg_src_r) F_r[7:4] <= REG_req_data[7:4];
+      8'h62: if (reg_src_r) B_r <= REG_req_data;
+      8'h63: if (reg_src_r) C_r <= REG_req_data;
+      8'h64: if (reg_src_r) D_r <= REG_req_data;
+      8'h65: if (reg_src_r) E_r <= REG_req_data;
+      8'h66: if (reg_src_r) H_r <= REG_req_data;
+      8'h67: if (reg_src_r) L_r <= REG_req_data;
+      8'h68: if (reg_src_r) SP_r[7:0] <= REG_req_data;
+      8'h69: if (reg_src_r) SP_r[15:8] <= REG_req_data;
     endcase
   end  
 end
@@ -1473,7 +1478,7 @@ always @(posedge CLK) begin
         if (REG_DMA_start & CLK_BUS_EDGE) dma_state_r <= ST_DMA_READ;
       end
       ST_DMA_READ: begin
-        if (CLK_BUS_EDGE) begin
+        if (CLK_BUS_EDGE & ~EXE_DMA_halt) begin
           // sync to one read/write pair per cycle
           dma_req_r <= 1;
           

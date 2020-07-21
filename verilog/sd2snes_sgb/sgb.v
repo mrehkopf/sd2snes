@@ -199,7 +199,7 @@ wire         ICD2_CLK_CPU_EDGE;
 
 wire         REG_REQ;
 wire [7:0]   REG_ADDR;
-wire [7:0]   REG_DATA;
+wire [7:0]   REG_REQ_DATA;
 reg  [7:0]   MBC_REG_DATA;
 
 wire [7:0]   DBG_DBG_DATA_OUT;
@@ -267,7 +267,7 @@ sgb_cpu cpu(
   
   .REG_REQ(REG_REQ),
   .REG_ADDR(REG_ADDR),
-  .REG_DATA(REG_DATA),
+  .REG_REQ_DATA(REG_REQ_DATA),
   .MBC_REG_DATA(MBC_REG_DATA),
   
   .MCU_RRQ(MCU_RRQ),
@@ -595,11 +595,11 @@ always @(posedge CLK) begin
   // write in state for loads
   if (REG_REQ) begin
     case (REG_ADDR)
-      8'h70: mbc_reg_ram_enabled_r    <= REG_DATA[0];
-      8'h71: mbc_reg_rom_bank_upper_r <= REG_DATA[0];
-      8'h72: mbc_reg_rom_bank_r       <= REG_DATA;
-      8'h73: mbc_reg_bank_r           <= REG_DATA;
-      8'h74: mbc_reg_mode_r           <= REG_DATA[0];
+      8'h70: mbc_reg_ram_enabled_r    <= REG_REQ_DATA[0];
+      8'h71: mbc_reg_rom_bank_upper_r <= REG_REQ_DATA[0];
+      8'h72: mbc_reg_rom_bank_r       <= REG_REQ_DATA;
+      8'h73: mbc_reg_bank_r           <= REG_REQ_DATA;
+      8'h74: mbc_reg_mode_r           <= REG_REQ_DATA[0];
     endcase
   end
 `endif
