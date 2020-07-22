@@ -155,6 +155,7 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
   /* features */
   props->fpga_sgbfeat = ( (((uint16_t)CFG.sgb_volume_boost & 0x7) << 0)
                         | (((uint16_t)CFG.sgb_enh_override & 0x1) << 8)
+                        | (((uint16_t)CFG.sgb_spr_increase & 0x1) << 9)
                         );
 
   /* SGB debug print */

@@ -44,6 +44,7 @@
   //`define MSU_DATA
   //`define SGB_DEBUG
   //`define BRIGHTNESS_LIMIT
+  //`define SGB_SPR_INCREASE
 `else
   `define MSU_AUDIO
   `define MSU_DATA
@@ -53,9 +54,11 @@
   `define SGB_DEBUG
   `define BRIGHTNESS_PATCH
   `define BRIGHTNESS_LIMIT
+  `define SGB_SPR_INCREASE
 `endif
 
 `define SGB_FEAT_VOL_BOOST    2:0
 `define SGB_FEAT_ENH_OVERRIDE 8:8
+`define SGB_FEAT_SPR_INCREASE 9:9
 
 `endif

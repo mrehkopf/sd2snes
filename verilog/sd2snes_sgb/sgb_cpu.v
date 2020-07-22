@@ -1586,8 +1586,6 @@ oam oam (
 `define MODE_O      2 // OAM READ
 `define MODE_D      3 // DISPLAY WRITE
 
-`define NUM_OAM_LUT 10
-
 `define OBJ_FIFO_PIXEL  1:0
 `define OBJ_FIFO_PRI    2:2
 `define OBJ_FIFO_PAL    3:3
@@ -1627,12 +1625,19 @@ reg  [12:0] ppu_vram_address_r;
 reg  [7:0]  ppu_vram_data_r;
 
 // OAM lookup table
-// TODO: should there be a mode supporting more than 10 sprites per line?
+`ifdef SGB_SPR_INCREASE
+`define NUM_OAM_LUT 16
+reg  [5:0]  ppu_oam_lut_cnt_r;
+wire        ppu_feat_spr_increase = FEAT[`SGB_FEAT_SPR_INCREASE];
+wire        ppu_oam_lut_full = ppu_feat_spr_increase ? ppu_oam_lut_cnt_r[4] : (ppu_oam_lut_cnt_r[3] & ppu_oam_lut_cnt_r[1]);
+`else
+`define NUM_OAM_LUT 10
 reg  [3:0]  ppu_oam_lut_cnt_r;
+wire        ppu_oam_lut_full = ppu_oam_lut_cnt_r[3] & ppu_oam_lut_cnt_r[1];
+`endif
 reg  [3:0]  ppu_oam_lut_ypos_r[`NUM_OAM_LUT-1:0];
 reg  [7:0]  ppu_oam_lut_xpos_r[`NUM_OAM_LUT-1:0];
 reg  [5:0]  ppu_oam_lut_index_r[`NUM_OAM_LUT-1:0];
-wire        ppu_oam_lut_full = ppu_oam_lut_cnt_r[3] & ppu_oam_lut_cnt_r[1];
 wire        ppu_oam_end      = ppu_oam_address_r[7] & &ppu_oam_address_r[4:2]; // 159 + 1 = 160 bytes (40 entries of 4 bytes each)
 
 // window
@@ -1718,24 +1723,23 @@ reg  [2:0]  ppu_obj_fifo_wr_cnt_r;
 reg  [3:0]  ppu_obj_fifo_wr_data_r;
 reg         ppu_obj_fifo_wr_req_clear_r;
 
-assign VRAM_data = vram_rddata;
-assign OAM_data  = oam_rddata;
+assign      VRAM_data = vram_rddata;
+assign      OAM_data  = oam_rddata;
 
-assign PPU_VRAM_active  = ppu_vram_active;
-assign PPU_VRAM_address = ppu_vram_address_r;
-assign PPU_OAM_active   = ppu_oam_active;
-assign PPU_OAM_address  = ppu_oam_address_r;
-assign PPU_REG_vblank   = ppu_vblank_pulse_r;
-assign PPU_REG_lcd_stat = ~ppu_stat_active_r & |ppu_stat_match_r;
+assign      PPU_VRAM_active  = ppu_vram_active;
+assign      PPU_VRAM_address = ppu_vram_address_r;
+assign      PPU_OAM_active   = ppu_oam_active;
+assign      PPU_OAM_address  = ppu_oam_address_r;
+assign      PPU_REG_vblank   = ppu_vblank_pulse_r;
+assign      PPU_REG_lcd_stat = ~ppu_stat_active_r & |ppu_stat_match_r;
 
-assign PPU_MCT_vram_active = ppu_vram_active;
-assign PPU_MCT_oam_active  = ppu_oam_active;
+assign      PPU_MCT_vram_active = ppu_vram_active;
+assign      PPU_MCT_oam_active  = ppu_oam_active;
 
-wire   [1:0] ppu_bgw_index = ppu_bgw_fifo_r[ppu_pix_ctr_r[4:0]][1:0];
-wire   [1:0] ppu_obj_index = ppu_obj_fifo_r[ppu_pix_ctr_r[4:0]][1:0];
-
-reg          ppu_obj_pal;
-reg          ppu_obj_pri;
+wire  [1:0] ppu_bgw_index = ppu_bgw_fifo_r[ppu_pix_ctr_r[4:0]][1:0];
+wire  [1:0] ppu_obj_index = ppu_obj_fifo_r[ppu_pix_ctr_r[4:0]][1:0];
+reg         ppu_obj_pal;
+reg         ppu_obj_pri;
 
 // Xilinx compiler can silently fail if we don't expand out the obj fifo reads in a case statement.
 always @(ppu_pix_ctr_r,
@@ -1781,22 +1785,22 @@ always @(ppu_pix_ctr_r,
 end
 
 // merge background and object indices and derive pixel values
-assign PPU_PIXEL = HLT_REQ_sync ? 2'b00
-                 : (~|ppu_obj_index | (|ppu_bgw_index & ppu_obj_pri)) ? ( (ppu_bgw_index == 0) ? REG_BGP_r[1:0]
-                                                                        : (ppu_bgw_index == 1) ? REG_BGP_r[3:2]
-                                                                        : (ppu_bgw_index == 2) ? REG_BGP_r[5:4]
-                                                                        :                        REG_BGP_r[7:6]
-                                                                        )
-                                                                      : ( (ppu_obj_index == 0) ? (ppu_obj_pal ? REG_OBP1_r[1:0] : REG_OBP0_r[1:0])
-                                                                        : (ppu_obj_index == 1) ? (ppu_obj_pal ? REG_OBP1_r[3:2] : REG_OBP0_r[3:2])
-                                                                        : (ppu_obj_index == 2) ? (ppu_obj_pal ? REG_OBP1_r[5:4] : REG_OBP0_r[5:4])
-                                                                        :                        (ppu_obj_pal ? REG_OBP1_r[7:6] : REG_OBP0_r[7:6])
-                                                                        );
+assign      PPU_PIXEL = HLT_REQ_sync ? 2'b00
+                      : (~|ppu_obj_index | (|ppu_bgw_index & ppu_obj_pri)) ? ( (ppu_bgw_index == 0) ? REG_BGP_r[1:0]
+                                                                             : (ppu_bgw_index == 1) ? REG_BGP_r[3:2]
+                                                                             : (ppu_bgw_index == 2) ? REG_BGP_r[5:4]
+                                                                             :                        REG_BGP_r[7:6]
+                                                                             )
+                                                                           : ( (ppu_obj_index == 0) ? (ppu_obj_pal ? REG_OBP1_r[1:0] : REG_OBP0_r[1:0])
+                                                                             : (ppu_obj_index == 1) ? (ppu_obj_pal ? REG_OBP1_r[3:2] : REG_OBP0_r[3:2])
+                                                                             : (ppu_obj_index == 2) ? (ppu_obj_pal ? REG_OBP1_r[5:4] : REG_OBP0_r[5:4])
+                                                                             :                        (ppu_obj_pal ? REG_OBP1_r[7:6] : REG_OBP0_r[7:6])
+                                                                           );
 
-assign PPU_DOT_EDGE    = ppu_dot_edge;
-assign PPU_HSYNC_EDGE  = ppu_hsync;
-assign PPU_VSYNC_EDGE  = ppu_vsync;
-assign PPU_PIXEL_VALID = ppu_fifo_data;
+assign      PPU_DOT_EDGE    = ppu_dot_edge;
+assign      PPU_HSYNC_EDGE  = ppu_hsync;
+assign      PPU_VSYNC_EDGE  = ppu_vsync;
+assign      PPU_PIXEL_VALID = ppu_fifo_data;
 
 reg         dbg_state_valid_r;
 reg  [7:0]  dbg_reg_ly_r;
@@ -2214,9 +2218,9 @@ always @(posedge CLK) begin
             ppu_pix_ctr_r  <= 0;
             
             // TODO: late timer interrupt causes us to miss MODE_D during stat interrupt in PBF.  Check if dot clock count is larger than some amount
-            // Need to look at:
+            // Need to look at potential problems:
             // 1) timer interrupt starting at the very last cycle is not supposed to happen
-            // 2) draw mode needs to be exented by a few clocks to account for this
+            // 2) draw mode needs to be extended by a few clocks
             // 3) interrupts are supposed to be faster.  e.g. is taking interrupt actually 4 bus clocks like RST (should solve the problem)
             if (ppu_dot_ctr_r > 260) REG_STAT_r[`STAT_MODE] <= `MODE_H; // H-Blank mode starts when the fifos have been consumed
           end

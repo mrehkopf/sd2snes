@@ -92,6 +92,10 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %d\n", CFG_SGB_VOLUME_BOOST, CFG.sgb_volume_boost);
   f_printf(&file_handle, "#  %s: SGB enhancements override (false: enhancements enabled; true: enhancements disabled)\n", CFG_SGB_ENH_OVERRIDE);
   f_printf(&file_handle, "%s: %s\n", CFG_SGB_ENH_OVERRIDE, CFG.sgb_enh_override ? "true" : "false");
+#ifdef CONFIG_MK3
+  f_printf(&file_handle, "#  %s: SGB sprite increase per scanline.  not compatible with all games  (false: 10 sprites (default); true: 16 sprites)\n", CFG_SGB_SPR_INCREASE);
+  f_printf(&file_handle, "%s: %s\n", CFG_SGB_SPR_INCREASE, CFG.sgb_spr_increase ? "true" : "false");
+#endif
 
   f_puts("\n# Screensaver settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Enable screensaver\n", CFG_ENABLE_SCREENSAVER);
@@ -209,6 +213,11 @@ int cfg_load() {
     if(yaml_get_itemvalue(CFG_SGB_ENH_OVERRIDE, &tok)) {
       CFG.sgb_enh_override = tok.boolvalue ? 1 : 0;
     }
+#ifdef CONFIG_MK3
+    if(yaml_get_itemvalue(CFG_SGB_SPR_INCREASE, &tok)) {
+      CFG.sgb_spr_increase = tok.boolvalue ? 1 : 0;
+    }
+#endif
   }
   yaml_file_close();
   return err;
