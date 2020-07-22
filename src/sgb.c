@@ -262,6 +262,8 @@ uint8_t sgb_bios_state(void) {
     if (state <= SGB_BIOS_MISMATCH
        && (  (crc != 0x5e46583b) // sgb2_boot.bin
           && (crc != 0xe11c06e1) // sgb_boot.bin
+          && (crc != 0x7e2b1384) // sgb2_boot.bin (SB)
+          && (crc != 0xe03aed56) // sgb_boot.bin (SB)
           )
        ) {
       printf("SGB sgb2_boot.bin CRC mismatch: 0x%08x\n", (unsigned int)crc);

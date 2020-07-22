@@ -547,7 +547,7 @@ always @(posedge CLK) begin
     reg_dma_start_r <= 0;
     reg_int_write_r <= 0;
     
-    //REG_P1_r;   // FF00
+    REG_P1_r[5:4] <= 2'b11;   // FF00
     //REG_SB_r;   // FF01
     //REG_SC_r;   // FF02
 

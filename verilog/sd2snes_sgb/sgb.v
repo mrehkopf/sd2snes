@@ -84,9 +84,7 @@ module sgb(
 
   output [11:0] DBG_ADDR,
   input  [7:0]  DBG_CHEAT_DATA_IN,
-  input  [7:0]  DBG_MAIN_DATA_IN,
-  
-  output        DBG
+  input  [7:0]  DBG_MAIN_DATA_IN
 );
 
 integer i;
@@ -226,8 +224,6 @@ wire         CPU_PPU_HSYNC_EDGE;
 wire         IDL_ICD;
 wire         DBG_ICD2_DATA_OUT;
 wire         CPU_DBG_BRK;
-
-assign       DBG = 0;
 
 //-------------------------------------------------------------------
 // SGB2-CPU

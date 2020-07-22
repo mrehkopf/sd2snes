@@ -576,8 +576,7 @@ sgb snes_sgb (
   
   .DBG_ADDR(DBG_ADDR),
   .DBG_CHEAT_DATA_IN(DBG_CHEAT_DATA_OUT),
-  .DBG_MAIN_DATA_IN(dbg_data_r),
-  .DBG(DBG_SGB)
+  .DBG_MAIN_DATA_IN(dbg_data_r)
 );
 
 reg [7:0] MCU_DINr;
