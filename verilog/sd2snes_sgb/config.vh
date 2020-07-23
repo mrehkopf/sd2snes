@@ -37,8 +37,9 @@
   `define SGB_MCU_ACCESS
   `define SGB_SAVE_STATES
   `define SGB_SERIAL
-  `define BRIGHTNESS_PATCH
 `endif
+
+  `define BRIGHTNESS_PATCH
 
   // doesn't fit
   //`define MSU_DATA
