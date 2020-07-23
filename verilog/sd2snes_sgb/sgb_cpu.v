@@ -685,22 +685,22 @@ always @(posedge CLK) begin
           8'h25: reg_mdr_r[7:0] <= REG_NR51_r;
           8'h26: reg_mdr_r[7:0] <= {REG_NR52_r[7:7],3'h7,({4{REG_NR52_r[7]}} & {APU_REG_enable})};
 
-          8'h30: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h31: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h32: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h33: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h34: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h35: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h36: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h37: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h38: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h39: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h3A: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h3B: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h3C: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h3D: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h3E: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          8'h3F: reg_mdr_r[7:0] <= APU_REG_enable[2] ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h30: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h31: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h32: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h33: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h34: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h35: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h36: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h37: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h38: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h39: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h3A: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h3B: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h3C: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h3D: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h3E: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
+          8'h3F: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
           
           8'h40: begin reg_mdr_r[7:0] <= REG_LCDC_r;                    if (reg_wr_r) REG_LCDC_r[7:0] <= reg_wr_data_r[7:0]; end
           8'h41: begin reg_mdr_r[7:0] <= {1'b1,REG_STAT_r[6:0]};        if (reg_wr_r) REG_STAT_r[7:3] <= reg_wr_data_r[7:3]; end
@@ -2788,7 +2788,7 @@ always @(posedge CLK) begin
         8'h26: {REG_NR52_r[7:7],REG_NR52_r[3:0]} <= {REG_req_data[7:7],REG_req_data[3:0]};
 
         8'h30, 8'h31, 8'h32, 8'h33, 8'h34, 8'h35, 8'h36, 8'h37,
-        8'h38, 8'h39, 8'h3A, 8'h3B, 8'h3C, 8'h3D, 8'h3E, 8'h3F: if (~apu_wave_enable_r) REG_WAV_r[REG_address[3:0]] <= REG_req_data;
+        8'h38, 8'h39, 8'h3A, 8'h3B, 8'h3C, 8'h3D, 8'h3E, 8'h3F: if (~apu_wave_enable_r | REG_req_dbg) REG_WAV_r[REG_address[3:0]] <= REG_req_data;
         
       endcase
     end  
