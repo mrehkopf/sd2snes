@@ -3009,7 +3009,7 @@ reg         ser_done_r;
 
 assign      SER_REG_done = ser_done_r;
 
-assign HLT_SER_rsp = HLT_REQ_sync & ~REG_SC_r[7];
+assign HLT_SER_rsp = HLT_REQ_sync & (~REG_SC_r[7] | ~REG_SC_r[0]);
 
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
