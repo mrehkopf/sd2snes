@@ -37,25 +37,27 @@
   `define SGB_MCU_ACCESS
   `define SGB_SAVE_STATES
   `define SGB_SERIAL
+  `define SGB_EXTRA_MAPPERS
 `endif
 
   `define BRIGHTNESS_PATCH
 
   // doesn't fit
   //`define MSU_DATA
-  //`define SGB_DEBUG
   //`define BRIGHTNESS_LIMIT
+  //`define SGB_DEBUG
   //`define SGB_SPR_INCREASE
 `else
   `define MSU_AUDIO
   `define MSU_DATA
+  `define BRIGHTNESS_PATCH
+  `define BRIGHTNESS_LIMIT
   `define SGB_MCU_ACCESS
   `define SGB_SAVE_STATES
   `define SGB_SERIAL
   `define SGB_DEBUG
-  `define BRIGHTNESS_PATCH
-  `define BRIGHTNESS_LIMIT
   `define SGB_SPR_INCREASE
+  `define SGB_EXTRA_MAPPERS
 `endif
 
 `define SGB_FEAT_VOL_BOOST    2:0

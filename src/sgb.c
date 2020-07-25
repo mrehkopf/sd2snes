@@ -80,7 +80,7 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
       
   */
   switch (header->carttype) {
-    case 0x00:
+    case 0x00: case 0xFD:
       // MBC0
       props->mapper_id = 0x00;
       break;
@@ -101,9 +101,16 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
       // MBC3 no RTC
       props->mapper_id = 0x03;
       break;
+    case 0xFC:
+      props->mapper_id |= 0x08;
     case 0x19: case 0x1A: case 0x1B: case 0x1C: case 0x1D: case 0x1E:
       // MBC5
-      props->mapper_id = 0x05;
+      props->mapper_id |= 0x05;
+      break;
+    case 0xFE:
+      props->mapper_id |= 0x08; // HUC3
+    case 0xFF:
+      props->mapper_id |= 0x04; // HUC1
       break;
     default:
       // unsupported mapper.  default to MBC1 which is most widely used

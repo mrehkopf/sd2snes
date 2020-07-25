@@ -154,7 +154,7 @@ integer i;
 // 512KB RAM  - SNES ROM
 // 32KB BRAM  - VRAM, OAM, HRAM, SNESCMD, MSU/DAC
 // (FPGA)
-// 1 PLL      - mult=7, div=2 -> 24 MHz * 7 / 2 = 84 MHz.  Skip 1 after 737 -> 83.8861789 MHz vs an equivalent 88.608 MHz on a real SGB2.
+// 1 DCM/PLL  - mult=7, div=2 -> 24 MHz * 7 / 2 = 84 MHz.  Skip 1 after 736 (1/ 737) -> 83.8861789 MHz vs an equivalent 83.88608 MHz on the original SGB2.
 //
 // Address Maps
 // ------------
@@ -411,6 +411,7 @@ reg  [8:0]  mbc_rom0_bank_r;
 reg  [6:0]  mbc_ram_bank_r;
 
 reg         mbc_reg_ram_enabled_r;
+reg  [7:0]  mbc_reg_ram_r;
 reg         mbc_reg_rom_bank_upper_r;
 reg  [7:0]  mbc_reg_rom_bank_r;
 reg  [7:0]  mbc_reg_bank_r;
@@ -425,9 +426,13 @@ reg  [7:0]  mbc_rtc_ctl_r = 0;
 
 `define MBC_DELAY 2 // minimum 2
 reg  [`MBC_DELAY-1:0]  mbc_req_r;
-reg                    mbc_req_rtc_r;
-reg                    mbc_req_srm_mbc2_r;
-reg  [7:0]             mbc_data_r;
+reg         mbc_req_rtc_r;
+reg         mbc_req_hc3_r;
+reg         mbc_req_cam_r;
+reg         mbc_req_srm_mbc2_r;
+reg  [7:0]  mbc_data_r;
+
+reg  [7:0]  mbc_hc3_data_r;
 
 reg  [7:0]  dbg_data_r;
 
@@ -444,8 +449,15 @@ always @(*) begin
 end
 
 // handle expansion bit
-wire        mbc_map_rtc = MAPPER[`MAPPER_EX] && MAPPER[`MAPPER_ID] == 3; // MBC3 supports RTC
-wire        mbc_map_mlt = MAPPER[`MAPPER_EX] && MAPPER[`MAPPER_ID] == 1; // MBC1 supports (M)ulticart (MBC1M)
+`ifdef SGB_EXTRA_MAPPERS
+wire        mbc_map_hc3 =  MAPPER[`MAPPER_EX] && MAPPER[`MAPPER_ID] == 4; // HUC3 (incomplete)
+wire        mbc_map_cam =  MAPPER[`MAPPER_EX] && MAPPER[`MAPPER_ID] == 5; // CAM (incomplete)
+`else
+wire        mbc_map_hc3 = 0;
+wire        mbc_map_cam = 0;
+`endif
+wire        mbc_map_rtc =  MAPPER[`MAPPER_EX] && MAPPER[`MAPPER_ID] == 3; // MBC3 supports RTC
+wire        mbc_map_mlt =  MAPPER[`MAPPER_EX] && MAPPER[`MAPPER_ID] == 1; // MBC1 supports (M)ulticart (MBC1M)
 
 // MAP has logic to translate the CPU address
 // to ROM (bootROM), SaveRAM, and WRAM addresses.  It represents
@@ -457,7 +469,10 @@ wire        mbc_map_mlt = MAPPER[`MAPPER_EX] && MAPPER[`MAPPER_ID] == 1; // MBC1
 wire        mbc_bus_mbc = CPU_SYS_REQ & CPU_SYS_WR & ~CPU_SYS_ADDR[15];
 wire        mbc_bus_dis = CPU_SYS_REQ & CPU_SYS_WR &  CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14] & ~mbc_reg_ram_enabled_r;
 wire        mbc_bus_rtc = CPU_SYS_REQ &               CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14] &  mbc_reg_ram_enabled_r & |mbc_reg_bank_r[7:3] & mbc_map_rtc;
-wire        mbc_bus_req = mbc_bus_mbc | mbc_bus_rtc | mbc_bus_dis;
+wire        mbc_bus_hc3 = CPU_SYS_REQ &               CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14] & (8'hB <= mbc_reg_ram_r[7:0] && mbc_reg_ram_r[7:0] <= 8'hD) & mbc_map_hc3;
+wire        mbc_bus_cam = CPU_SYS_REQ &               CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14] & mbc_reg_bank_r[4] & mbc_map_cam;
+
+wire        mbc_bus_req = mbc_bus_mbc | mbc_bus_rtc | mbc_bus_hc3 | mbc_bus_cam | mbc_bus_dis;
                      
 assign      ROM_BUS_RRQ = CPU_SYS_REQ & ~CPU_SYS_WR & ~mbc_bus_req;
 assign      ROM_BUS_WRQ = CPU_SYS_REQ &  CPU_SYS_WR & ~mbc_bus_req;
@@ -490,11 +505,14 @@ assign      MBC_RTC_data = ROM_BUS_WRDATA;
 
 always @(posedge CLK) begin
   if (RST) begin
-    mbc_reg_ram_enabled_r <= 0;
-    mbc_reg_rom_bank_upper_r <= 0;
-    mbc_reg_rom_bank_r    <= 8'h01;
-    mbc_reg_bank_r        <= 8'h00;
-    mbc_reg_mode_r        <= 0;
+    mbc_reg_ram_enabled_r     <= 0;
+    mbc_reg_ram_r             <= 0;
+    mbc_reg_rom_bank_upper_r  <= 0;
+    mbc_reg_rom_bank_r        <= 8'h01;
+    mbc_reg_bank_r            <= 8'h00;
+    mbc_reg_mode_r            <= 0;
+    
+    mbc_hc3_data_r <= 1;
   end
   else begin
     if (mbc_bus_mbc) begin
@@ -503,7 +521,10 @@ always @(posedge CLK) begin
       end
       else begin
         case (CPU_SYS_ADDR[14:13])
-          0: mbc_reg_ram_enabled_r   <= (ROM_BUS_WRDATA[3:0] == 4'hA) ? 1'b1 : 1'b0;
+          0: begin
+            mbc_reg_ram_enabled_r <= (ROM_BUS_WRDATA[3:0] == 4'hA) ? 1'b1 : 1'b0;
+            mbc_reg_ram_r <= ROM_BUS_WRDATA[7:0];
+          end
           1: begin
             if (MAPPER[`MAPPER_ID] == 3) begin
               if (CPU_SYS_ADDR[12]) mbc_reg_rom_bank_upper_r <= ROM_BUS_WRDATA[0]; else mbc_reg_rom_bank_r[7:0] <= ROM_BUS_WRDATA[7:0];
@@ -541,6 +562,8 @@ always @(posedge CLK) begin
     // MBC memory requests
     mbc_req_r <= {mbc_req_r[`MBC_DELAY-2:0],mbc_bus_req};
     if (CPU_SYS_REQ) mbc_req_rtc_r      <= mbc_bus_rtc;
+    if (CPU_SYS_REQ) mbc_req_hc3_r      <= mbc_bus_hc3;
+    if (CPU_SYS_REQ) mbc_req_cam_r      <= mbc_bus_cam;
     if (CPU_SYS_REQ) mbc_req_srm_mbc2_r <= MAPPER[`MAPPER_ID] == 2 && (CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14]);
     
     if (mbc_req_r[0]) begin
@@ -554,6 +577,16 @@ always @(posedge CLK) begin
           
           default: mbc_data_r <= 8'hFF;
         endcase
+      end
+      else if (mbc_req_hc3_r) begin
+        case (mbc_reg_ram_r)
+          8'h0D:   mbc_data_r <= 1;
+          
+          default: mbc_data_r <= mbc_hc3_data_r;
+        endcase
+      end
+      else if (mbc_req_cam_r) begin
+        mbc_data_r <= 0; // not implemented
       end
       else begin
         mbc_data_r <= 8'hFF;
@@ -571,6 +604,9 @@ always @(posedge CLK) begin
   mbc_ram_bank_r[6:0] <= ( MAPPER[`MAPPER_ID] == 1 ? {5'h00,((mbc_reg_mode_r & ~mbc_map_mlt) ? mbc_reg_bank_r[1:0] : 2'h0)}
                          : MAPPER[`MAPPER_ID] == 2 ? 7'h00
                          : MAPPER[`MAPPER_ID] == 3 ? {3'h0,mbc_reg_bank_r[3:0]}
+`ifdef SGB_EXTRA_MAPPERS
+                         : MAPPER[`MAPPER_ID] == 4 ? ((MAPPER[`MAPPER_EX] | mbc_reg_mode_r) ? {3'h0,mbc_reg_bank_r[3:0]} : 7'h00)
+`endif
                          : MAPPER[`MAPPER_ID] == 5 ? {3'h0,mbc_reg_bank_r[3:0]}
                          :                           7'h00
                          );
@@ -579,6 +615,9 @@ always @(posedge CLK) begin
                                                                   : {2'h0,mbc_reg_bank_r[1:0],(mbc_reg_rom_bank_r[4:0] | ~|mbc_reg_rom_bank_r[4:0])})
                          : MAPPER[`MAPPER_ID] == 2 ? {5'h00,mbc_reg_rom_bank_r[3:0] | ~|mbc_reg_rom_bank_r[3:0]}
                          : MAPPER[`MAPPER_ID] == 3 ? {1'b0,mbc_reg_rom_bank_r[7:0] | ~|mbc_reg_rom_bank_r[7:0]}
+`ifdef SGB_EXTRA_MAPPERS
+                         : MAPPER[`MAPPER_ID] == 4 ? {((MAPPER[`MAPPER_EX] | mbc_reg_mode_r) ? {1'b0,mbc_reg_rom_bank_r[7:6]} : mbc_reg_bank_r[2:0]),(mbc_reg_rom_bank_r[5:0] | ~|mbc_reg_rom_bank_r[5:0])}
+`endif
                          : MAPPER[`MAPPER_ID] == 5 ? {mbc_reg_rom_bank_upper_r,mbc_reg_rom_bank_r[7:0]}
                          :                           9'h001
                          );
