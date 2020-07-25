@@ -73,48 +73,56 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
       1 = MBC1      mapper_id[3] = MBC1M/Multicart
       2 = MBC2
       3 = MBC3      mapper_id[3] = RTC
-      5 = MBC5
+      4 = HUC1      mapper_id[3] = HUC3
+      5 = MBC5      mapper_id[3] = CAM
       6 = Unmapped
-      7 = Unmapped
-
-      
+      7 = Unmapped      
   */
   switch (header->carttype) {
-    case 0x00: case 0xFD:
-      // MBC0
-      props->mapper_id = 0x00;
+    // MBC0
+    case 0x00: // case 0xFD:
+      props->mapper_id |= 0x00;
       break;
+
+    // MBC1
     case 0x01: case 0x02: case 0x03:
-      // MBC1
-      props->mapper_id = 0x01;
+      props->mapper_id |= 0x01;
       break;
+
+    // MBC2
     case 0x05: case 0x06:
-      // MBC2
-      props->mapper_id = 0x02;
+      props->mapper_id |= 0x02;
       break;
+
+    // MBC3
     case 0x0F: case 0x10:
-      // MBC3 RTC
+      // RTC
       props->has_rtc = 1;
-      props->mapper_id = 0x03 | 0x08; // add RTC bit
-      break;
+      props->mapper_id |= 0x08;
     case 0x11: case 0x12: case 0x13:
-      // MBC3 no RTC
-      props->mapper_id = 0x03;
+      props->mapper_id |= 0x03;
       break;
+
+    // HUC
+    case 0xFE:
+      // HUC3
+      props->mapper_id |= 0x08;
+    case 0xFF:
+      // HUC1
+      props->mapper_id |= 0x04;
+      break;
+
+    // MBC5
     case 0xFC:
+      // CAM
       props->mapper_id |= 0x08;
     case 0x19: case 0x1A: case 0x1B: case 0x1C: case 0x1D: case 0x1E:
-      // MBC5
       props->mapper_id |= 0x05;
       break;
-    case 0xFE:
-      props->mapper_id |= 0x08; // HUC3
-    case 0xFF:
-      props->mapper_id |= 0x04; // HUC1
-      break;
+
     default:
       // unsupported mapper.  default to MBC1 which is most widely used
-      props->mapper_id = 0x01;
+      props->mapper_id |= 0x01;
       break;
   }
   
