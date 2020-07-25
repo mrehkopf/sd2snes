@@ -453,15 +453,11 @@ reg         btn_pktrdy_set_r;
 
 // Output assignment is:
 // IDLE P1I = 11 -> ~CurId (0=F,1=E,2=D,3=C)
-// IDLE P1I = 01 -> ~Btn[7:0][CurID]  // buttons
-// IDLE P1I = 10 -> ~Btn[15:8][CurID] // d-pad
+// IDLE P1I = 01 -> ~Btn[7:4][CurID] // buttons
+// IDLE P1I = 10 -> ~Btn[3:0][CurID] // d-pad
 // 
 // IDLE P1I = 01 -> 10 or 11 -> Increment ID mod NumPad
-assign P1O = ( (~^P1I       ) ? ~{2'h0,btn_curr_id_r}
-             : (P1I == 2'b01) ? REG_PAD_r[btn_curr_id_r][7:4]
-             : (P1I == 2'b10) ? REG_PAD_r[btn_curr_id_r][3:0]
-             :                  4'h0 // should never get here
-             );
+assign P1O = &P1I ? ~{2'h0,btn_curr_id_r} : (({4{P1I[1]}} | REG_PAD_r[btn_curr_id_r][7:4]) & ({4{P1I[0]}} | REG_PAD_r[btn_curr_id_r][3:0]));
 
 assign IDL = |(btn_state_r & ST_BTN_IDLE);
 

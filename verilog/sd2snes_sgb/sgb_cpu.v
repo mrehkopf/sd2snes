@@ -621,7 +621,7 @@ always @(posedge CLK) begin
       end
     end
 
-    REG_P1_r[3:0] <= P1I[3:0];
+    if (CLK_CPU_EDGE) REG_P1_r[3:0] <= P1I[3:0];
   
     if (CLK_BUS_EDGE) reg_dma_start_r <= 0;
     if (CLK_CPU_EDGE) reg_int_write_r <= 0;
