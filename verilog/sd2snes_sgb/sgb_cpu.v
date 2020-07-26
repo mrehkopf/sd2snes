@@ -179,6 +179,7 @@ wire        EXE_IFD_ready;
 wire        EXE_IFD_ime;
 
 wire        EXE_DMA_halt;
+wire        EXE_REG_ime;
 //
 // REG outputs
 //
@@ -733,6 +734,7 @@ always @(posedge CLK) begin
           8'h69: if (reg_src_r) reg_mdr_r <= SP_r[15:8];
           8'h6A: if (reg_src_r) reg_mdr_r <= PC_r[7:0];   // current PC needs to account for bypass
           8'h6B: if (reg_src_r) reg_mdr_r <= PC_r[15:8];
+          8'h6C: if (reg_src_r) reg_mdr_r <= EXE_REG_ime;
           
           // MBC 
           8'h70: if (reg_src_r) reg_mdr_r <= MBC_REG_DATA;
@@ -834,9 +836,8 @@ assign IFD_REG_ic = ifd_reg_ic_r;
 // idle when:
 // - at instruction boundary
 // - not taking an interrupt
-// - not in the middle of an interrupt to avoid saving extra state
-// - no in-progress serial transfers
-assign HLT_IFD_rsp = HLT_REQ_sync & ~|ifd_size_r & ~ifd_int_r & EXE_IFD_ime & IDL_ICD;
+// - no in-progress ICD transfers
+assign HLT_IFD_rsp = HLT_REQ_sync & ~|ifd_size_r & ~ifd_int_r & IDL_ICD;
 
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
@@ -1061,6 +1062,8 @@ assign      EXE_MCT_req_wr = (  IFD_EXE_decode[`DEC_GRP] == `GRP_MST
 assign      EXE_MCT_req_data_d1 = exe_loadopstore ? exe_res_los_r[7:0] : (exe_stage[1] ? exe_src_r[15:8] : exe_src_r[7:0]);
 
 assign      EXE_DMA_halt = exe_res_halt_r;
+
+assign      EXE_REG_ime = exe_ime_r;
 
 assign      HLT_EXE_rsp = HLT_REQ_sync & ~IFD_EXE_valid;
 
@@ -1429,6 +1432,9 @@ always @(posedge CLK) begin
       8'h67: if (reg_src_r) L_r <= REG_req_data;
       8'h68: if (reg_src_r) SP_r[7:0] <= REG_req_data;
       8'h69: if (reg_src_r) SP_r[15:8] <= REG_req_data;
+      //8'h6A:
+      //8'h6B:
+      8'h6C: if (reg_src_r) exe_ime_r <= REG_req_data[0];
     endcase
   end  
 end
