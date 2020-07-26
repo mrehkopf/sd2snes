@@ -517,7 +517,9 @@ always @(posedge CLK) begin
   else begin
     if (mbc_bus_mbc) begin
       if (MAPPER[`MAPPER_ID] == 2) begin
-        if (CPU_SYS_ADDR[8]) mbc_reg_rom_bank_r[7:0] <= ROM_BUS_WRDATA[7:0]; else mbc_reg_ram_enabled_r <= (ROM_BUS_WRDATA[3:0] == 4'hA) ? 1'b1 : 1'b0;
+        if (~CPU_SYS_ADDR[14]) begin
+          if (CPU_SYS_ADDR[8]) mbc_reg_rom_bank_r[7:0] <= ROM_BUS_WRDATA[7:0]; else mbc_reg_ram_enabled_r <= (ROM_BUS_WRDATA[3:0] == 4'hA) ? 1'b1 : 1'b0;
+        end
       end
       else begin
         case (CPU_SYS_ADDR[14:13])
