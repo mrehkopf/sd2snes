@@ -3370,6 +3370,10 @@ always @(posedge CLK) begin
             8'hC3:    dbg_misc_data_r <= HLT_EXE_rsp;
             8'hC4:    dbg_misc_data_r <= HLT_DMA_rsp;
             8'hC5:    dbg_misc_data_r <= HLT_SER_rsp;
+            8'hC6:    dbg_misc_data_r <= ~|ifd_size_r;
+            8'hC7:    dbg_misc_data_r <= ~ifd_int_r;
+            8'hC8:    dbg_misc_data_r <= EXE_IFD_ime;
+            8'hC9:    dbg_misc_data_r <= IDL_ICD;
 
             8'hD?:    dbg_misc_data_r <= DBG_MAIN_DATA_IN;
             8'hE?:    dbg_misc_data_r <= DBG_CHEAT_DATA_IN;

@@ -459,7 +459,7 @@ reg         btn_pktrdy_set_r;
 // IDLE P1I = 01 -> 10 or 11 -> Increment ID mod NumPad
 assign P1O = &P1I ? ~{2'h0,btn_curr_id_r} : (({4{P1I[1]}} | REG_PAD_r[btn_curr_id_r][7:4]) & ({4{P1I[0]}} | REG_PAD_r[btn_curr_id_r][3:0]));
 
-assign IDL = |(btn_state_r & ST_BTN_IDLE);
+assign IDL = |(btn_state_r & ST_BTN_IDLE) | (|(btn_state_r & ST_BTN_WAIT) & ~|btn_bit_pos_r);
 
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
