@@ -81,15 +81,14 @@ integer i;
 //-------------------------------------------------------------------
 
 // GB Crystal - 20.97152 MHz
-// GB Machine Frequency - 4.194304 MHz
+// GB CPU Frequency - 4.194304 MHz
 // GB Bus Frequency - 1.048576 MHz
 
 // To approximate the SGB2 frequency the SD2SNES implements a 84 MHz 
 // base clock which may be further divided down.  With a skip
 // clock every 737 base clocks the effective base frequency is:
-//   84 MHz * 737 / 738 = 83.88618 MHz
-// With /20 the frequency is roughly .00012% faster than the SGB2
-// system clock.
+//   84 MHz * 736 / 737 = 83.886024 MHz
+// With /20 the frequency is roughly .000024% slower than the original SGB2.
 //
 // The CPU implementation is pipelined into a fetch and execute stage.
 // Each stage is multiple base clocks some of which may be idle to
@@ -110,8 +109,8 @@ reg         clk_cpu_edge_r;
 
 wire [1:0]  clk_mult;
 
-// assert on every 737th clock (ctr == 736) of 84 MHz.
-assign clk_skp_ast = clk_skp_ctr_r[9] & clk_skp_ctr_r[7] & clk_skp_ctr_r[6] & clk_skp_ctr_r[5];
+// assert on 736
+assign clk_skp_ast = clk_skp_ctr_r[9] & &clk_skp_ctr_r[7:5];
 
 // check for 15, 19, 27, and 35 based on divisor
 assign clk_cpu_ast = ( ~clk_skp_ast
@@ -132,7 +131,7 @@ always @(posedge CLK) begin
   else begin  
     clk_skp_ctr_r <= clk_skp_ast ? 0 : clk_skp_ctr_r + 1;
     
-    // The machine clock absorbs the skip clock since it's the primary that feeds all GB logic
+    // The CPU clock absorbs the skip clock since it's the primary that feeds all GB logic
     clk_cpu_ctr_r <= clk_skp_ast ? clk_cpu_ctr_r : (clk_cpu_ast ? 0 : (clk_cpu_ctr_r + 1));
     // arbitrary point assigned to define edge for cpu clock
     clk_cpu_edge_r <= clk_cpu_ast;

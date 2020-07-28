@@ -131,7 +131,7 @@ integer i;
 // the SGB2's ICD2.
 //
 // Clocks/Rates:
-// 4.194304 MHz fast/machine clock
+// 4.194304 MHz fast/cpu clock
 // 1.048576 MHz slow/system/bus clock
 // 9198 KHz Horizontal Freq
 // 59.73 Hz Vertical Freq
@@ -154,7 +154,7 @@ integer i;
 // 512KB RAM  - SNES ROM
 // 32KB BRAM  - VRAM, OAM, HRAM, SNESCMD, MSU/DAC
 // (FPGA)
-// 1 DCM/PLL  - mult=7, div=2 -> 24 MHz * 7 / 2 = 84 MHz.  Skip 1 after 736 (1/ 737) -> 83.8861789 MHz vs an equivalent 83.88608 MHz on the original SGB2.
+// 1 DCM/PLL
 //
 // Address Maps
 // ------------
