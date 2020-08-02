@@ -2225,10 +2225,11 @@ always @(posedge CLK) begin
             
             // TODO: late timer interrupt causes us to miss MODE_D during stat interrupt in PBF.  Check if dot clock count is larger than some amount
             // Need to look at potential problems:
+            // PBD wanted it pushed another bus clock (260->264).
             // 1) timer interrupt starting at the very last cycle is not supposed to happen
             // 2) draw mode needs to be extended by a few clocks
             // 3) interrupts are supposed to be faster.  e.g. is taking interrupt actually 4 bus clocks like RST (should solve the problem)
-            if (ppu_dot_ctr_r > 260) REG_STAT_r[`STAT_MODE] <= `MODE_H; // H-Blank mode starts when the fifos have been consumed
+            if (ppu_dot_ctr_r >= 264) REG_STAT_r[`STAT_MODE] <= `MODE_H; // H-Blank mode starts when the fifos have been consumed
           end
           
           ppu_vblank_seen_r <= 0;
