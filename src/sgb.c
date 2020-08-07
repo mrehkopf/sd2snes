@@ -149,12 +149,28 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
     default:   props->romsize_bytes = 0; break;
   }
   
-  /* Handle MBC1M.  Size is minimum to support 2+ files and logo region needs to match.  This is a hack.  See SameBoy */
-  if (props->mapper_id == 0x01 && props->romsize_bytes >= (256 + 16) * 1024) {
-    uint8_t logo[0x30];
-    file_readblock(logo, 0x40104, sizeof(logo));
-    if (!memcmp(header->logo, logo, sizeof(logo))) {
-      props->mapper_id |= 0x08;
+  /* Handle MBC1M. */
+  if (props->mapper_id == 0x01) {
+    uint32_t header_pos[] = {0x40100 /*, 0x80100*/};
+
+    for (unsigned h = 0; h < sizeof(header_pos)/sizeof(uint32_t); h++) {
+      if (props->romsize_bytes >= header_pos[h] + sizeof(sgb_header_t)) {
+        sgb_header_t multi_header;
+        uint32_t crc = 0;
+      
+        file_readblock(&multi_header, header_pos[h], sizeof(sgb_header_t));
+        for (UINT i = 0; i < sizeof(multi_header.logo); i++) crc = crc32_update(crc, multi_header.logo[i]);
+
+        if (  crc == 0xb491e782
+           && (  multi_header.carttype == 0x01
+              || multi_header.carttype == 0x02
+              || multi_header.carttype == 0x03
+              )
+           ) {
+          props->mapper_id |= 0x08;
+          break;
+        }        
+      }
     }
   }
   
