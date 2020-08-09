@@ -18,6 +18,8 @@
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
+`include "config.vh"
+
 module my_dcm (
   input CLKIN,
   output CLKFX,
@@ -38,8 +40,13 @@ module my_dcm (
     //.CLKFX_MULTIPLY(4), // Can be any integer from 2 to 32
     //.CLKFX_DIVIDE(5),   // Can be any integer from 1 to 32 // 21.6 MHz
     //.CLKFX_MULTIPLY(18), // Can be any integer from 2 to 32
+`ifdef SGB_SGB1_TIMING
+    .CLKFX_DIVIDE(5),   // Can be any integer from 1 to 32
+    .CLKFX_MULTIPLY(18),// Can be any integer from 2 to 32
+`else
     .CLKFX_DIVIDE(2),   // Can be any integer from 1 to 32
     .CLKFX_MULTIPLY(7), // Can be any integer from 2 to 32
+`endif
     .CLKIN_DIVIDE_BY_2("FALSE"), // TRUE/FALSE to enable CLKIN divide by two feature
     .CLKIN_PERIOD(41.667),  // Specify period of input clock
     .CLKOUT_PHASE_SHIFT("NONE"), // Specify phase shift of NONE, FIXED or VARIABLE

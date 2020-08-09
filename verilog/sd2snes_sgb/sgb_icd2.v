@@ -50,7 +50,7 @@ module sgb_icd2(
   output        IDL,
 
   // Features
-  input  [15:0]  FEAT,
+  input  [15:0] FEAT,
   
   // Debug state
   input  [11:0] DBG_ADDR,
@@ -109,8 +109,13 @@ reg         clk_cpu_edge_r;
 
 wire [1:0]  clk_mult;
 
+`ifdef SGB_SGB1_TIMING
+// assert on 175
+assign clk_skp_ast = clk_skp_ctr_r[7] & clk_skp_ctr_r[5] & &clk_skp_ctr_r[3:0];
+`else
 // assert on 736
 assign clk_skp_ast = clk_skp_ctr_r[9] & &clk_skp_ctr_r[7:5];
+`endif
 
 // check for 15, 19, 27, and 35 based on divisor
 assign clk_cpu_ast = ( ~clk_skp_ast
@@ -324,8 +329,8 @@ always @(posedge CLK) begin
       {1'b0,16'h6000}: if (SNES_RD_start) reg_mdr_r         <= REG_LCDCHW_r; // R
       {1'b0,16'h6001}: begin
         if (SNES_WR_end) begin
-          REG_LCDCHR_r[1:0]    <= DATA_IN[1:0]; // W
-          reg_row_index_read_r <= 0;
+          REG_LCDCHR_r[`LCDC_ROW_INDEX] <= DATA_IN[`LCDC_ROW_INDEX]; // W
+          reg_row_index_read_r          <= 0;
         end
       end
       {1'b0,16'h6002}: if (SNES_RD_start) reg_mdr_r         <= REG_PKTRDY_r; // R
@@ -371,10 +376,10 @@ reg  [7:0]  pix_data_r[1:0];
 reg  [1:0]  pix_row_write_r;
 reg  [8:0]  pix_row_index_write_r;
 
-assign row_address[0] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 0) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
-assign row_address[1] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 1) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
-assign row_address[2] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 2) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
-assign row_address[3] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 3) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
+assign row_address[0] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 0 && |pix_row_write_r) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
+assign row_address[1] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 1 && |pix_row_write_r) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
+assign row_address[2] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 2 && |pix_row_write_r) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
+assign row_address[3] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 3 && |pix_row_write_r) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
 
 assign row_wrdata[0] = pix_data_r[pix_row_write_r[1]];
 assign row_wrdata[1] = pix_data_r[pix_row_write_r[1]];

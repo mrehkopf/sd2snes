@@ -222,7 +222,7 @@ wire         CPU_PPU_PIXEL_VALID;
 wire         CPU_PPU_VSYNC_EDGE;
 wire         CPU_PPU_HSYNC_EDGE;
 wire         IDL_ICD;
-wire         DBG_ICD2_DATA_OUT;
+wire [7:0]   DBG_ICD2_DATA_OUT;
 wire         CPU_DBG_BRK;
 
 //-------------------------------------------------------------------

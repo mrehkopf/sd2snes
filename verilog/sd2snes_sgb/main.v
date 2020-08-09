@@ -859,12 +859,22 @@ snescmd_buf snescmd (
 `endif
 
 `ifdef MK3
+`ifdef SGB_SGB1_TIMING
+// dynamic configuration would eliminate this PLL, but MK2's DCM doesn't support this.  the two clock ratios are not supported by one MK3 PLL.  use separate PLL to simplify code.
+sgb1_pll snes_pll(
+  .inclk0(CLKIN),
+  .c0(CLK2),
+  .locked(DCM_LOCKED),
+  .areset(DCM_RST)
+);
+`else
 pll snes_pll(
   .inclk0(CLKIN),
   .c0(CLK2),
   .locked(DCM_LOCKED),
   .areset(DCM_RST)
 );
+`endif
 
 wire ROM_ADDR22;
 assign ROM_ADDR22 = (SD_DMA_TO_ROM) ? MCU_ADDR[1]    : MCU_HIT ? ROM_ADDRr[1]    : SGB_ROM_ADDRr[1];
