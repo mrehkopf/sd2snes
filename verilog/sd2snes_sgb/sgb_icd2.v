@@ -166,13 +166,13 @@ reg         cpu_ireset_r; always @(posedge CLK) cpu_ireset_r <= RST | CPU_RST | 
 
 wire        row_wren[`ROW_CNT-1:0];
 wire [8:0]  row_address[`ROW_CNT-1:0];
-wire [7:0]  row_rddata[`ROW_CNT-1:0];
+//wire [7:0]  row_rddata[`ROW_CNT-1:0];
 wire [7:0]  row_wrdata[`ROW_CNT-1:0];
 
-wire        dbg_row_wren[`ROW_CNT-1:0];
-wire [8:0]  dbg_row_address[`ROW_CNT-1:0];
-wire [7:0]  dbg_row_rddata[`ROW_CNT-1:0];
-wire [7:0]  dbg_row_wrdata[`ROW_CNT-1:0];
+//wire        icd_row_wren[`ROW_CNT-1:0];
+wire [8:0]  icd_row_address[`ROW_CNT-1:0];
+wire [7:0]  icd_row_rddata[`ROW_CNT-1:0];
+//wire [7:0]  icd_row_wrdata[`ROW_CNT-1:0];
 
 `ifdef MK2
 row_buf row0 (
@@ -180,97 +180,97 @@ row_buf row0 (
   .wea(row_wren[0]), // input [0 : 0] wea
   .addra(row_address[0]), // input [8 : 0] addra
   .dina(row_wrdata[0]), // input [7 : 0] dina
-  .douta(row_rddata[0]), // output [7 : 0] douta
+  //.douta(row_rddata[0]), // output [7 : 0] douta
   .clkb(CLK), // input clkb
-  .web(dbg_row_wren[0]), // input [0 : 0] web
-  .addrb(dbg_row_address[0]), // input [12 : 0] addrb
-  .dinb(dbg_row_wrdata[0]), // input [7 : 0] dinb
-  .doutb(dbg_row_rddata[0]) // output [7 : 0] doutb
+  //.web(icd_row_wren[0]), // input [0 : 0] web
+  .addrb(icd_row_address[0]), // input [12 : 0] addrb
+  //.dinb(icd_row_wrdata[0]), // input [7 : 0] dinb
+  .doutb(icd_row_rddata[0]) // output [7 : 0] doutb
 );
 row_buf row1 (
   .clka(CLK), // input clka
   .wea(row_wren[1]), // input [0 : 0] wea
   .addra(row_address[1]), // input [8 : 0] addra
   .dina(row_wrdata[1]), // input [7 : 0] dina
-  .douta(row_rddata[1]), // output [7 : 0] douta
+  //.douta(row_rddata[1]), // output [7 : 0] douta
   .clkb(CLK), // input clkb
-  .web(dbg_row_wren[1]), // input [0 : 0] web
-  .addrb(dbg_row_address[1]), // input [12 : 0] addrb
-  .dinb(dbg_row_wrdata[1]), // input [7 : 0] dinb
-  .doutb(dbg_row_rddata[1]) // output [7 : 0] doutb
+  //.web(icd_row_wren[1]), // input [0 : 0] web
+  .addrb(icd_row_address[1]), // input [12 : 0] addrb
+  //.dinb(icd_row_wrdata[1]), // input [7 : 0] dinb
+  .doutb(icd_row_rddata[1]) // output [7 : 0] doutb
 );
 row_buf row2 (
   .clka(CLK), // input clka
   .wea(row_wren[2]), // input [0 : 0] wea
   .addra(row_address[2]), // input [8 : 0] addra
   .dina(row_wrdata[2]), // input [7 : 0] dina
-  .douta(row_rddata[2]), // output [7 : 0] douta
+  //.douta(row_rddata[2]), // output [7 : 0] douta
   .clkb(CLK), // input clkb
-  .web(dbg_row_wren[2]), // input [0 : 0] web
-  .addrb(dbg_row_address[2]), // input [12 : 0] addrb
-  .dinb(dbg_row_wrdata[2]), // input [7 : 0] dinb
-  .doutb(dbg_row_rddata[2]) // output [7 : 0] doutb
+  //.web(icd_row_wren[2]), // input [0 : 0] web
+  .addrb(icd_row_address[2]), // input [12 : 0] addrb
+  //.dinb(icd_row_wrdata[2]), // input [7 : 0] dinb
+  .doutb(icd_row_rddata[2]) // output [7 : 0] doutb
 );
 row_buf row3 (
   .clka(CLK), // input clka
   .wea(row_wren[3]), // input [0 : 0] wea
   .addra(row_address[3]), // input [8 : 0] addra
   .dina(row_wrdata[3]), // input [7 : 0] dina
-  .douta(row_rddata[3]), // output [7 : 0] douta
+  //.douta(row_rddata[3]), // output [7 : 0] douta
   .clkb(CLK), // input clkb
-  .web(dbg_row_wren[3]), // input [0 : 0] web
-  .addrb(dbg_row_address[3]), // input [12 : 0] addrb
-  .dinb(dbg_row_wrdata[3]), // input [7 : 0] dinb
-  .doutb(dbg_row_rddata[3]) // output [7 : 0] doutb
+  //.web(icd_row_wren[3]), // input [0 : 0] web
+  .addrb(icd_row_address[3]), // input [12 : 0] addrb
+  //.dinb(icd_row_wrdata[3]), // input [7 : 0] dinb
+  .doutb(icd_row_rddata[3]) // output [7 : 0] doutb
 );
 `endif
 `ifdef MK3
 row_buf row0 (
   .clock(CLK), // input clka
-  .wren_a(row_wren[0]), // input [0 : 0] wea
-  .address_a(row_address[0]), // input [8 : 0] addra
-  .data_a(row_wrdata[0]), // input [7 : 0] dina
-  .q_a(row_rddata[0]), // output [7 : 0] douta
-  .wren_b(dbg_row_wren[0]), // input [0 : 0] web
-  .address_b(dbg_row_address[0]), // input [12 : 0] addrb
-  .data_b(dbg_row_wrdata[0]), // input [7 : 0] dinb
-  .q_b(dbg_row_rddata[0]) // output [7 : 0] doutb
+  .wren(row_wren[0]), // input [0 : 0] wea
+  .wraddress(row_address[0]), // input [8 : 0] addra
+  .data(row_wrdata[0]), // input [7 : 0] dina
+  //.q_a(row_rddata[0]), // output [7 : 0] douta
+  //.wren_b(icd_row_wren[0]), // input [0 : 0] web
+  .rdaddress(icd_row_address[0]), // input [12 : 0] addrb
+  //.data_b(icd_row_wrdata[0]), // input [7 : 0] dinb
+  .q(icd_row_rddata[0]) // output [7 : 0] doutb
 );
 
 row_buf row1 (
   .clock(CLK), // input clka
-  .wren_a(row_wren[1]), // input [0 : 0] wea
-  .address_a(row_address[1]), // input [8 : 0] addra
-  .data_a(row_wrdata[1]), // input [7 : 0] dina
-  .q_a(row_rddata[1]), // output [7 : 0] douta
-  .wren_b(dbg_row_wren[1]), // input [0 : 0] web
-  .address_b(dbg_row_address[1]), // input [12 : 0] addrb
-  .data_b(dbg_row_wrdata[1]), // input [7 : 0] dinb
-  .q_b(dbg_row_rddata[1]) // output [7 : 0] doutb
+  .wren(row_wren[1]), // input [0 : 0] wea
+  .wraddress(row_address[1]), // input [8 : 0] addra
+  .data(row_wrdata[1]), // input [7 : 0] dina
+  //.q_a(row_rddata[1]), // output [7 : 0] douta
+  //.wren_b(icd_row_wren[1]), // input [0 : 0] web
+  .rdaddress(icd_row_address[1]), // input [12 : 0] addrb
+  //.data_b(icd_row_wrdata[1]), // input [7 : 0] dinb
+  .q(icd_row_rddata[1]) // output [7 : 0] doutb
 );
 
 row_buf row2 (
   .clock(CLK), // input clka
-  .wren_a(row_wren[2]), // input [0 : 0] wea
-  .address_a(row_address[2]), // input [8 : 0] addra
-  .data_a(row_wrdata[2]), // input [7 : 0] dina
-  .q_a(row_rddata[2]), // output [7 : 0] douta
-  .wren_b(dbg_row_wren[2]), // input [0 : 0] web
-  .address_b(dbg_row_address[2]), // input [12 : 0] addrb
-  .data_b(dbg_row_wrdata[2]), // input [7 : 0] dinb
-  .q_b(dbg_row_rddata[2]) // output [7 : 0] doutb
+  .wren(row_wren[2]), // input [0 : 0] wea
+  .wraddress(row_address[2]), // input [8 : 0] addra
+  .data(row_wrdata[2]), // input [7 : 0] dina
+  //.q_a(row_rddata[2]), // output [7 : 0] douta
+  //.wren_b(icd_row_wren[2]), // input [0 : 0] web
+  .rdaddress(icd_row_address[2]), // input [12 : 0] addrb
+  //.data_b(icd_row_wrdata[2]), // input [7 : 0] dinb
+  .q(icd_row_rddata[2]) // output [7 : 0] doutb
 );
 
 row_buf row3 (
   .clock(CLK), // input clka
-  .wren_a(row_wren[3]), // input [0 : 0] wea
-  .address_a(row_address[3]), // input [8 : 0] addra
-  .data_a(row_wrdata[3]), // input [7 : 0] dina
-  .q_a(row_rddata[3]), // output [7 : 0] douta
-  .wren_b(dbg_row_wren[3]), // input [0 : 0] web
-  .address_b(dbg_row_address[3]), // input [12 : 0] addrb
-  .data_b(dbg_row_wrdata[3]), // input [7 : 0] dinb
-  .q_b(dbg_row_rddata[3]) // output [7 : 0] doutb
+  .wren(row_wren[3]), // input [0 : 0] wea
+  .wraddress(row_address[3]), // input [8 : 0] addra
+  .data(row_wrdata[3]), // input [7 : 0] dina
+  //.q_a(row_rddata[3]), // output [7 : 0] douta
+  //.wren_b(icd_row_wren[3]), // input [0 : 0] web
+  .rdaddress(icd_row_address[3]), // input [12 : 0] addrb
+  //.data_b(icd_row_wrdata[3]), // input [7 : 0] dinb
+  .q(icd_row_rddata[3]) // output [7 : 0] doutb
 );
 `endif
 
@@ -355,7 +355,7 @@ always @(posedge CLK) begin
       end
     endcase
     
-    REG_CHDAT_r <= row_rddata[REG_LCDCHR_r[`LCDC_ROW_INDEX]];
+    REG_CHDAT_r <= icd_row_rddata[REG_LCDCHR_r[`LCDC_ROW_INDEX]];
   end
 
   // COLD reset forces a complete reinit.  Otherwise this register is not affected by a WARM (CPU) reset.
@@ -376,10 +376,10 @@ reg  [7:0]  pix_data_r[1:0];
 reg  [1:0]  pix_row_write_r;
 reg  [8:0]  pix_row_index_write_r;
 
-assign row_address[0] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 0 && |pix_row_write_r) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
-assign row_address[1] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 1 && |pix_row_write_r) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
-assign row_address[2] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 2 && |pix_row_write_r) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
-assign row_address[3] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 3 && |pix_row_write_r) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
+assign row_address[0] = {pix_row_index_write_r[8:1],pix_row_write_r[1]};
+assign row_address[1] = {pix_row_index_write_r[8:1],pix_row_write_r[1]};
+assign row_address[2] = {pix_row_index_write_r[8:1],pix_row_write_r[1]};
+assign row_address[3] = {pix_row_index_write_r[8:1],pix_row_write_r[1]};
 
 assign row_wrdata[0] = pix_data_r[pix_row_write_r[1]];
 assign row_wrdata[1] = pix_data_r[pix_row_write_r[1]];
@@ -390,6 +390,21 @@ assign row_wren[0] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 0) ? |pix_row_write_r : 0
 assign row_wren[1] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 1) ? |pix_row_write_r : 0;
 assign row_wren[2] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 2) ? |pix_row_write_r : 0;
 assign row_wren[3] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 3) ? |pix_row_write_r : 0;
+
+assign icd_row_address[0] = reg_row_index_read_r;
+assign icd_row_address[1] = reg_row_index_read_r;
+assign icd_row_address[2] = reg_row_index_read_r;
+assign icd_row_address[3] = reg_row_index_read_r;
+
+//assign icd_row_wrdata[0] = 0;
+//assign icd_row_wrdata[1] = 0;
+//assign icd_row_wrdata[2] = 0;
+//assign icd_row_wrdata[3] = 0;
+
+//assign icd_row_wren[0] = 0;
+//assign icd_row_wren[1] = 0;
+//assign icd_row_wren[2] = 0;
+//assign icd_row_wren[3] = 0;
 
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
@@ -564,21 +579,6 @@ reg [7:0]   dbg_data_r = 0;
 
 assign DBG_DATA_OUT = dbg_data_r;
 
-assign dbg_row_address[0] = DBG_ADDR[8:0];
-assign dbg_row_address[1] = DBG_ADDR[8:0];
-assign dbg_row_address[2] = DBG_ADDR[8:0];
-assign dbg_row_address[3] = DBG_ADDR[8:0];
-
-assign dbg_row_wrdata[0] = 0;
-assign dbg_row_wrdata[1] = 0;
-assign dbg_row_wrdata[2] = 0;
-assign dbg_row_wrdata[3] = 0;
-
-assign dbg_row_wren[0] = 0;
-assign dbg_row_wren[1] = 0;
-assign dbg_row_wren[2] = 0;
-assign dbg_row_wren[3] = 0;
-
 always @(posedge CLK) begin
   if (~DBG_ADDR[11]) begin
     casez(DBG_ADDR[7:0])
@@ -607,9 +607,6 @@ always @(posedge CLK) begin
       
       default:  dbg_data_r <= 0;
     endcase
-  end
-  else begin
-    dbg_data_r <= dbg_row_rddata[DBG_ADDR[10:9]];
   end
 
 end

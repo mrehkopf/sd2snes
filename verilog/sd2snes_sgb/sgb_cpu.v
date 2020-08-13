@@ -3507,10 +3507,6 @@ always @(posedge CLK) begin
 
             default:  dbg_misc_data_r <= 0;
           endcase
-
-`ifndef MK2
-    4'h8, 4'h9, 4'hA, 4'hB, 4'hC, 4'hD, 4'hE, 4'hF: dbg_misc_data_r <= DBG_ICD2_DATA_IN;
-`endif
                     
     default: dbg_misc_data_r <= 0;
   endcase
