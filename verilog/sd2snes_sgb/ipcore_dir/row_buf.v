@@ -49,10 +49,10 @@ module row_buf(
 input clka;
 input [0 : 0] wea;
 input [8 : 0] addra;
-input [15 : 0] dina;
+input [7 : 0] dina;
 input clkb;
 input [8 : 0] addrb;
-output [15 : 0] doutb;
+output [7 : 0] doutb;
 
 // synthesis translate_off
 
@@ -95,8 +95,8 @@ output [15 : 0] doutb;
     .C_PRIM_TYPE(1),
     .C_READ_DEPTH_A(512),
     .C_READ_DEPTH_B(512),
-    .C_READ_WIDTH_A(16),
-    .C_READ_WIDTH_B(16),
+    .C_READ_WIDTH_A(8),
+    .C_READ_WIDTH_B(8),
     .C_RST_PRIORITY_A("CE"),
     .C_RST_PRIORITY_B("CE"),
     .C_RST_TYPE("SYNC"),
@@ -115,8 +115,8 @@ output [15 : 0] doutb;
     .C_WRITE_DEPTH_B(512),
     .C_WRITE_MODE_A("READ_FIRST"),
     .C_WRITE_MODE_B("READ_FIRST"),
-    .C_WRITE_WIDTH_A(16),
-    .C_WRITE_WIDTH_B(16),
+    .C_WRITE_WIDTH_A(8),
+    .C_WRITE_WIDTH_B(8),
     .C_XDEVICEFAMILY("spartan3")
   )
   inst (
