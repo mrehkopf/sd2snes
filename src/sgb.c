@@ -255,6 +255,16 @@ uint8_t sgb_update_romprops(snes_romprops_t *romprops, uint8_t *filename) {
   return 1;
 }
 
+void sgb_load_sram(uint8_t *sgb_filename) {
+  if (sgb_romprops.has_sgb) {
+    /* load images */
+    printf("attempting to load SGB boot ROM %s...\n", SGBFW);
+    load_sram_offload((uint8_t *)SGBFW, 0x800000, 0);
+    printf("attempting to load GB ROM %s...\n", sgb_filename);
+    load_sram_offload(sgb_filename, 0x0, 0);
+  }
+}
+
 void sgb_cheat_program(void) {
   if (sgb_romprops.has_sgb) {
     /* update cheats based on SGB file and configuration state */

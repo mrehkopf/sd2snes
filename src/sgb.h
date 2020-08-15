@@ -69,6 +69,7 @@ void sgb_id(sgb_romprops_t*, uint8_t *);
 uint8_t sgb_update_file(uint8_t **);
 uint8_t sgb_update_romprops(snes_romprops_t*, uint8_t *filename);
 void sgb_cheat_program(void);
+void sgb_load_sram(uint8_t *);
 uint8_t sgb_bios_state(void);
 void sgb_gtc_load(uint8_t* filename);
 void sgb_gtc_save(uint8_t* filename);
