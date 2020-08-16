@@ -270,11 +270,6 @@ void sgb_cheat_program(void) {
     /* update cheats based on SGB file and configuration state */
     if (CFG.sgb_enable_ingame_hook) cheat_nmi_enable(1);
     if (CFG.sgb_enable_ingame_hook) cheat_irq_enable(1);
-   
-    /* hooks disabled if bios files don't match */
-    uint8_t state = sgb_bios_state();
-    if (state != SGB_BIOS_OK && !CFG.sgb_bios_override) cheat_nmi_enable(0);
-    if (state != SGB_BIOS_OK && !CFG.sgb_bios_override) cheat_irq_enable(0);
     
     /* save states (repurpose cheats) enabled via config */
     cheat_enable((CFG.sgb_enable_state && sgb_romprops.ramsize_bytes <= 64 * 1024) ? 1 : 0);

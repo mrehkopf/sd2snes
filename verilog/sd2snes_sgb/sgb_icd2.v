@@ -438,7 +438,9 @@ always @(posedge CLK) begin
         
         REG_LCDCHW_r[`LCDC_CHAR_ROW] <= 0;
       end
-      else if (PPU_HSYNC_EDGE) begin
+      // early advance of line and row buffer write pointer on dot after 2b pixel 159
+      // fixes occasional flashing line 120 on BMGB (SGB + 4 controllers)
+      else if (pix_row_index_r[8] & pix_row_index_r[6]/*PPU_HSYNC_EDGE*/) begin
         if (~REG_LCDCHW_r[7] | ~REG_LCDCHW_r[4]) begin
           pix_row_index_r[3:1] <= pix_row_index_r[3:1] + 1;
           pix_row_index_r[8:4] <= 0;

@@ -33,7 +33,6 @@
 #define CFG_RESET_PATCH            ("ResetPatch")
 #define CFG_SGB_ENABLE_INGAME_HOOK ("SGBEnableIngameHook")
 #define CFG_SGB_ENABLE_STATE       ("SGBEnableState")
-#define CFG_SGB_BIOS_OVERRIDE      ("SGBBiosOverride")
 #define CFG_SGB_VOLUME_BOOST       ("SGBVolumeBoost")
 #define CFG_SGB_ENH_OVERRIDE       ("SGBEnhOverride")
 #define CFG_SGB_SPR_INCREASE       ("SGBSprIncrease")
@@ -71,7 +70,6 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t  reset_patch;             /* enable reset patch */
   uint8_t  sgb_enable_ingame_hook;  /* SGB enable hook routines */
   uint8_t  sgb_enable_state;        /* SGB enable save states if present */
-  uint8_t  sgb_bios_override;       /* SGB override the bios checks when enabling features */
   uint8_t  sgb_volume_boost;        /* SGB volume boost (0: none; 1=+3.5dB; 2=+6dB; 3=+9dB; 4=+12dB) */
   uint8_t  sgb_enh_override;        /* SGB override (disable) the SGB enhancements */
   uint8_t  sgb_spr_increase;        /* SGB increase number of supported visible sprites */
