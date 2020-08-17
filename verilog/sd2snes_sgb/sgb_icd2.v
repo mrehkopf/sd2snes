@@ -24,6 +24,7 @@ module sgb_icd2(
   input         RST,
   output        CPU_RST,
   input         CLK,
+  input         CLK_SYSCLK,
   output        CLK_CPU_EDGE,
 
   // MMIO interface
@@ -103,19 +104,16 @@ integer i;
 
 reg  [9:0]  clk_skp_ctr_r; // in base domain
 reg  [5:0]  clk_cpu_ctr_r; // in base domain
+reg  [2:0]  clk_sys_r;
+reg  [3:0]  clk_cpu_snes_ctr_r;
 reg  [1:0]  clk_mult_r;
 
 reg         clk_cpu_edge_r;
 
 wire [1:0]  clk_mult;
 
-`ifdef SGB_SGB1_TIMING
-// assert on 175
-assign clk_skp_ast = clk_skp_ctr_r[7] & clk_skp_ctr_r[5] & &clk_skp_ctr_r[3:0];
-`else
 // assert on 736
 assign clk_skp_ast = clk_skp_ctr_r[9] & &clk_skp_ctr_r[7:5];
-`endif
 
 // check for 15, 19, 27, and 35 based on divisor
 assign clk_cpu_ast = ( ~clk_skp_ast
@@ -126,20 +124,35 @@ assign clk_cpu_ast = ( ~clk_skp_ast
                        )
                      );
 
+wire        clk_sysclk_edge = (clk_sys_r[2:1] == 2'b01);
+assign clk_cpu_snes_ast = ( clk_sysclk_edge
+                          & ( (~clk_mult_r[1] & ~clk_mult_r[0] & &clk_cpu_snes_ctr_r[1:0]) // 4-1
+                            | (~clk_mult_r[1] &  clk_mult_r[0] & &clk_cpu_snes_ctr_r[2:2]) // 5-1
+                            | ( clk_mult_r[1] & ~clk_mult_r[0] & &clk_cpu_snes_ctr_r[2:1]) // 7-1
+                            | ( clk_mult_r[1] &  clk_mult_r[0] & &clk_cpu_snes_ctr_r[3:3]) // 9-1
+                            )
+                          );
+                     
 assign CLK_CPU_EDGE = clk_cpu_edge_r;
 
 always @(posedge CLK) begin
   if (RST) begin
-    clk_skp_ctr_r <= 0;
-    clk_cpu_ctr_r <= 0;    
+    clk_skp_ctr_r      <= 0;
+    clk_cpu_ctr_r      <= 0;
+    clk_sys_r          <= 0;
+    clk_cpu_snes_ctr_r <= 0;
   end
   else begin  
     clk_skp_ctr_r <= clk_skp_ast ? 0 : clk_skp_ctr_r + 1;
     
     // The CPU clock absorbs the skip clock since it's the primary that feeds all GB logic
     clk_cpu_ctr_r <= clk_skp_ast ? clk_cpu_ctr_r : (clk_cpu_ast ? 0 : (clk_cpu_ctr_r + 1));
+    
+    clk_sys_r <= {clk_sys_r[1:0], CLK_SYSCLK};
+    clk_cpu_snes_ctr_r <= ~clk_sysclk_edge ? clk_cpu_snes_ctr_r : (clk_cpu_snes_ast ? 0 : clk_cpu_snes_ctr_r + 1);
+    
     // arbitrary point assigned to define edge for cpu clock
-    clk_cpu_edge_r <= clk_cpu_ast;
+    clk_cpu_edge_r <= FEAT[`SGB_FEAT_SGB1_TIMING] ? clk_cpu_snes_ast : clk_cpu_ast;
   end
 end
 

@@ -24,6 +24,7 @@ module sgb(
   input         RST,
   output        CPU_RST,
   input         CLK,
+  input         CLK_SYSCLK,
 
   // MMIO interface
   //input         ENABLE,
@@ -291,6 +292,7 @@ sgb_icd2 icd2(
   .RST(RST),
   .CPU_RST(ICD2_CPU_RST),
   .CLK(CLK),
+  .CLK_SYSCLK(CLK_SYSCLK),
   .CLK_CPU_EDGE(ICD2_CLK_CPU_EDGE),
 
   .SNES_RD_start(SNES_RD_start),

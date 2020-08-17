@@ -60,10 +60,9 @@
   `define SGB_EXTRA_MAPPERS
 `endif
 
-//`define SGB_SGB1_TIMING
-
 `define SGB_FEAT_VOL_BOOST    2:0
 `define SGB_FEAT_ENH_OVERRIDE 8:8
 `define SGB_FEAT_SPR_INCREASE 9:9
+`define SGB_FEAT_SGB1_TIMING  10:10
 
 `endif

@@ -36,6 +36,7 @@
 #define CFG_SGB_VOLUME_BOOST       ("SGBVolumeBoost")
 #define CFG_SGB_ENH_OVERRIDE       ("SGBEnhOverride")
 #define CFG_SGB_SPR_INCREASE       ("SGBSprIncrease")
+#define CFG_SGB_SGB1_TIMING        ("SGBSgb1Timing")
 
 typedef enum {
   VIDMODE_60 = 0,
@@ -73,6 +74,7 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t  sgb_volume_boost;        /* SGB volume boost (0: none; 1=+3.5dB; 2=+6dB; 3=+9dB; 4=+12dB) */
   uint8_t  sgb_enh_override;        /* SGB override (disable) the SGB enhancements */
   uint8_t  sgb_spr_increase;        /* SGB increase number of supported visible sprites */
+  uint8_t  sgb_sgb1_timing;         /* SGB use SGB1 timing based on SNES CPU clock */
 } cfg_t;
 
 int cfg_save(void);

@@ -38,7 +38,8 @@ cfg_t CFG_DEFAULT = {
   .sgb_enable_ingame_hook = 0,
   .sgb_enable_state = 0,
   .sgb_volume_boost = 0,
-  .sgb_enh_override = 0
+  .sgb_enh_override = 0,
+  .sgb_sgb1_timing = 0
 };
 
 cfg_t CFG;
@@ -93,6 +94,8 @@ int cfg_save() {
   f_printf(&file_handle, "#  %s: SGB sprite increase per scanline.  not compatible with all games  (false: 10 sprites (default); true: 16 sprites)\n", CFG_SGB_SPR_INCREASE);
   f_printf(&file_handle, "%s: %s\n", CFG_SGB_SPR_INCREASE, CFG.sgb_spr_increase ? "true" : "false");
 #endif
+  f_printf(&file_handle, "#  %s: SGB enable SGB1 timing based on SNES CPU clock\n", CFG_SGB_SGB1_TIMING);
+  f_printf(&file_handle, "%s: %s\n", CFG_SGB_SGB1_TIMING, CFG.sgb_sgb1_timing ? "true" : "false");
 
   f_puts("\n# Screensaver settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Enable screensaver\n", CFG_ENABLE_SCREENSAVER);
@@ -212,6 +215,9 @@ int cfg_load() {
       CFG.sgb_spr_increase = tok.boolvalue ? 1 : 0;
     }
 #endif
+    if(yaml_get_itemvalue(CFG_SGB_SGB1_TIMING, &tok)) {
+      CFG.sgb_sgb1_timing = tok.boolvalue ? 1 : 0;
+    }
   }
   yaml_file_close();
   return err;
