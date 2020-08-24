@@ -195,6 +195,7 @@ mtext_cfg_bsx                     .byt "BS-X Settings", 0
 mtext_cfg_browser                 .byt "Browser Settings", 0
 mtext_cfg_chip                    .byt "Chip Options", 0
 mtext_cfg_ingame                  .byt "In-game Settings", 0
+mtext_cfg_savestates              .byt "Savestates Settings", 0
 mtext_cfg_scic                    .byt "SuperCIC Settings", 0
 mtext_bsx_timesource              .byt "BS-X clock", 0
 mtext_bsx_time                    .byt "Custom time", 0
@@ -214,7 +215,7 @@ mtext_ingame_holdoff              .byt " ",129,"Initial holdoff", 0
 mtext_ingame_savestate            .byt "In-game savestates", 0
 mtext_savestate_slots             .byt " ",129,"Savestate slots", 0
 mtext_loadstate_delay             .byt " ",129,"Load delay (frames)", 0
-mdesc_sgb_enable_state            .byt " ",129,"SGB2 savestates (XR, XL)", 0
+mtext_sgb_enable_state            .byt "SGB2 savestates (XR, XL)", 0
 mtext_ingame_regionpatch          .byt "Auto region patch", 0
 mtext_ingame_1chiptransientfixes  .byt "1CHIP transient fixes", 0
 mtext_ingame_brightlimit          .byt "Brightness limit", 0
@@ -231,6 +232,7 @@ mdesc_cfg_bsx                     .byt "BS-X/Satellaview specific settings", 0
 mdesc_cfg_browser                 .byt "Change file browser settings", 0
 mdesc_cfg_chip                    .byt "Set special chip features", 0
 mdesc_cfg_ingame                  .byt "Set in-game features", 0
+mdesc_cfg_savestates              .byt "Set savestates features", 0
 mdesc_cfg_scic                    .byt "Enable/Disable SuperCIC and set video modes", 0
 mdesc_bsx_timesource              .byt "Choose what date and time BS-X games see", 0
 mdesc_bsx_time                    .byt "Set custom time and date for BS-X games", 0

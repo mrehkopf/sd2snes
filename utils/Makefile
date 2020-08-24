@@ -1,4 +1,4 @@
-CC := gcc
+CC := D:/Development/mingw32/bin/gcc
 
 CFLAGS = -Wall -Wstrict-prototypes -Werror
 

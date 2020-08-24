@@ -275,8 +275,6 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     printf(" file_offset=0x%lx", file_offset);
     printf(" OK.\n");
   }
-  smc_id(&romprops, file_offset);
-  file_close();
 
   if(flags & LOADROM_WITH_COMBO) {
     printf("Combo Transition...");
@@ -296,7 +294,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   if (!sgb_update_file(&filename)) return 0;
   
   filesize = file_handle.fsize;
-  smc_id(&romprops, 0);
+  smc_id(&romprops, file_offset);
   file_close();
 
   /* SGB assign the SGB FPGA file and relocate the snes image to the 512KB RAM */

@@ -7,6 +7,7 @@
 #include "savestate.h"
 #include "yaml.h"
 #include "cfg.h"
+#include "cheat.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -18,7 +19,7 @@ extern snes_romprops_t romprops;
 char * inputs = "BYsSudlrAXLR";
 
 void savestate_program() {
-  if(romprops.fpga_conf != FPGA_BASE) // currently only works with fpga_base
+  if(romprops.fpga_conf != NULL) // currently only works with fpga_base
     return;
 
   sram_writeset(0x0, SS_CODE_ADDR, 0x10000);
@@ -28,7 +29,8 @@ void savestate_program() {
 
   fpga_set_snescmd_addr(SNESCMD_EXE);
 
-  if(CFG.enable_ingame_savestate && CFG.enable_ingame_hook == 0 && file_status == FILE_OK) {
+  if(CFG.enable_ingame_savestate && file_status == FILE_OK) {
+    cheat_nmi_enable(0); // disable ingame hooks because it doesn't work with savestates currently
     file_close();
 
     load_sram((uint8_t*) savestate_code, SS_CODE_ADDR);    

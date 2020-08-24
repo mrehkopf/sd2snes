@@ -22,7 +22,7 @@
 #----------------------------------------------------------------------------
 
 # Read configuration file
-CONFIG=config-mk2
+CONFIG=config-mk3
 ifndef CONFIG
 $(info ERROR: Please use $(MAKE) CONFIG=... to specify at least one config file.)
 $(info Available configs:)
