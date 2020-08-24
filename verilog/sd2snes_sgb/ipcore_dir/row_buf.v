@@ -41,11 +41,8 @@ module row_buf(
   wea,
   addra,
   dina,
-  douta,
   clkb,
-  web,
   addrb,
-  dinb,
   doutb
 );
 
@@ -53,11 +50,8 @@ input clka;
 input [0 : 0] wea;
 input [8 : 0] addra;
 input [7 : 0] dina;
-output [7 : 0] douta;
 input clkb;
-input [0 : 0] web;
 input [8 : 0] addrb;
-input [7 : 0] dinb;
 output [7 : 0] doutb;
 
 // synthesis translate_off
@@ -71,7 +65,7 @@ output [7 : 0] doutb;
     .C_AXI_TYPE(1),
     .C_BYTE_SIZE(9),
     .C_COMMON_CLK(1),
-    .C_DEFAULT_DATA("FF"),
+    .C_DEFAULT_DATA("0"),
     .C_DISABLE_WARN_BHV_COLL(0),
     .C_DISABLE_WARN_BHV_RANGE(0),
     .C_ENABLE_32BIT_ADDRESS(0),
@@ -96,7 +90,7 @@ output [7 : 0] doutb;
     .C_INITB_VAL("0"),
     .C_INTERFACE_TYPE(0),
     .C_LOAD_INIT_FILE(0),
-    .C_MEM_TYPE(2),
+    .C_MEM_TYPE(1),
     .C_MUX_PIPELINE_STAGES(0),
     .C_PRIM_TYPE(1),
     .C_READ_DEPTH_A(512),
@@ -112,7 +106,7 @@ output [7 : 0] doutb;
     .C_USE_BRAM_BLOCK(0),
     .C_USE_BYTE_WEA(0),
     .C_USE_BYTE_WEB(0),
-    .C_USE_DEFAULT_DATA(1),
+    .C_USE_DEFAULT_DATA(0),
     .C_USE_ECC(0),
     .C_USE_SOFTECC(0),
     .C_WEA_WIDTH(1),
@@ -130,18 +124,18 @@ output [7 : 0] doutb;
     .WEA(wea),
     .ADDRA(addra),
     .DINA(dina),
-    .DOUTA(douta),
     .CLKB(clkb),
-    .WEB(web),
     .ADDRB(addrb),
-    .DINB(dinb),
     .DOUTB(doutb),
     .RSTA(),
     .ENA(),
     .REGCEA(),
+    .DOUTA(),
     .RSTB(),
     .ENB(),
     .REGCEB(),
+    .WEB(),
+    .DINB(),
     .INJECTSBITERR(),
     .INJECTDBITERR(),
     .SBITERR(),

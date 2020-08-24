@@ -37,8 +37,12 @@
 #define CFG_INGAME_SAVESTATE_BUTTONS  ("IngameSavestateButtons")
 #define CFG_INGAME_LOADSTATE_BUTTONS  ("IngameLoadstateButtons")
 #define CFG_INGAME_CHANGESTATE_BUTTONS  ("IngameChangestateButtons")
+#define CFG_SGB_ENABLE_INGAME_HOOK    ("SGBEnableIngameHook")
 #define CFG_SGB_ENABLE_STATE          ("SGBEnableState")
-#define CFG_SGB_BIOS_OVERRIDE         ("SGBBiosOverride")
+#define CFG_SGB_VOLUME_BOOST          ("SGBVolumeBoost")
+#define CFG_SGB_ENH_OVERRIDE          ("SGBEnhOverride")
+#define CFG_SGB_SPR_INCREASE          ("SGBSprIncrease")
+#define CFG_SGB_SGB1_TIMING           ("SGBSgb1Timing")
 
 typedef enum {
   VIDMODE_60 = 0,
@@ -74,11 +78,15 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t  enable_ingame_savestate; /* enable in-game savestates */
   uint8_t  loadstate_delay;         /* load state delay (frames) */
   uint8_t  enable_savestate_slots;  /* enable savestate slots (select+dpad to change) */
-  char ingame_savestate_buttons[16]; /* save state buttons */
-  char ingame_loadstate_buttons[16]; /* load state buttons */
-  char ingame_changestate_buttons[16]; /* change slot state buttons + dpad */
-  uint8_t  sgb_enable_state;        /* enable SGB save states if present */
-  uint8_t  sgb_bios_override;       /* override the bios checks when enabling features */
+  char     ingame_savestate_buttons[16]; /* save state buttons */
+  char     ingame_loadstate_buttons[16]; /* load state buttons */
+  char     ingame_changestate_buttons[16]; /* change slot state buttons + dpad */
+  uint8_t  sgb_enable_ingame_hook;  /* SGB enable hook routines */
+  uint8_t  sgb_enable_state;        /* SGB enable save states if present */
+  uint8_t  sgb_volume_boost;        /* SGB volume boost (0: none; 1=+3.5dB; 2=+6dB; 3=+9dB; 4=+12dB) */
+  uint8_t  sgb_enh_override;        /* SGB override (disable) the SGB enhancements */
+  uint8_t  sgb_spr_increase;        /* SGB increase number of supported visible sprites */
+  uint8_t  sgb_sgb1_timing;         /* SGB use SGB1 timing based on SNES CPU clock */
 } cfg_t;
 
 int cfg_save(void);

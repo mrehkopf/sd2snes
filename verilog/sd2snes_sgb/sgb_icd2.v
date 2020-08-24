@@ -24,6 +24,7 @@ module sgb_icd2(
   input         RST,
   output        CPU_RST,
   input         CLK,
+  input         CLK_SYSCLK,
   output        CLK_CPU_EDGE,
 
   // MMIO interface
@@ -33,6 +34,8 @@ module sgb_icd2(
   input  [7:0]  DATA_IN,
   output [7:0]  DATA_OUT,
 
+  input         BOOTROM_ACTIVE,
+  
   // Pixel interface
   input         PPU_DOT_EDGE,
   input         PPU_PIXEL_VALID,
@@ -46,6 +49,9 @@ module sgb_icd2(
 
   // Halt interface
   output        IDL,
+
+  // Features
+  input  [15:0] FEAT,
   
   // Debug state
   input  [11:0] DBG_ADDR,
@@ -76,15 +82,14 @@ integer i;
 //-------------------------------------------------------------------
 
 // GB Crystal - 20.97152 MHz
-// GB Machine Frequency - 4.194304 MHz
+// GB CPU Frequency - 4.194304 MHz
 // GB Bus Frequency - 1.048576 MHz
 
 // To approximate the SGB2 frequency the SD2SNES implements a 84 MHz 
 // base clock which may be further divided down.  With a skip
 // clock every 737 base clocks the effective base frequency is:
-//   84 MHz * 737 / 738 = 83.88618 MHz
-// With /20 the frequency is roughly .00012% faster than the SGB2
-// system clock.
+//   84 MHz * 736 / 737 = 83.886024 MHz
+// With /20 the frequency is roughly .000024% slower than the original SGB2.
 //
 // The CPU implementation is pipelined into a fetch and execute stage.
 // Each stage is multiple base clocks some of which may be idle to
@@ -99,14 +104,16 @@ integer i;
 
 reg  [9:0]  clk_skp_ctr_r; // in base domain
 reg  [5:0]  clk_cpu_ctr_r; // in base domain
+reg  [2:0]  clk_sys_r;
+reg  [3:0]  clk_cpu_snes_ctr_r;
 reg  [1:0]  clk_mult_r;
 
 reg         clk_cpu_edge_r;
 
 wire [1:0]  clk_mult;
 
-// assert on every 737th clock (ctr == 736) of 84 MHz.
-assign clk_skp_ast = clk_skp_ctr_r[9] & clk_skp_ctr_r[7] & clk_skp_ctr_r[6] & clk_skp_ctr_r[5];
+// assert on 736
+assign clk_skp_ast = clk_skp_ctr_r[9] & &clk_skp_ctr_r[7:5];
 
 // check for 15, 19, 27, and 35 based on divisor
 assign clk_cpu_ast = ( ~clk_skp_ast
@@ -117,20 +124,35 @@ assign clk_cpu_ast = ( ~clk_skp_ast
                        )
                      );
 
+wire        clk_sysclk_edge = (clk_sys_r[2:1] == 2'b01);
+assign clk_cpu_snes_ast = ( clk_sysclk_edge
+                          & ( (~clk_mult_r[1] & ~clk_mult_r[0] & &clk_cpu_snes_ctr_r[1:0]) // 4-1
+                            | (~clk_mult_r[1] &  clk_mult_r[0] & &clk_cpu_snes_ctr_r[2:2]) // 5-1
+                            | ( clk_mult_r[1] & ~clk_mult_r[0] & &clk_cpu_snes_ctr_r[2:1]) // 7-1
+                            | ( clk_mult_r[1] &  clk_mult_r[0] & &clk_cpu_snes_ctr_r[3:3]) // 9-1
+                            )
+                          );
+                     
 assign CLK_CPU_EDGE = clk_cpu_edge_r;
 
 always @(posedge CLK) begin
   if (RST) begin
-    clk_skp_ctr_r <= 0;
-    clk_cpu_ctr_r <= 0;    
+    clk_skp_ctr_r      <= 0;
+    clk_cpu_ctr_r      <= 0;
+    clk_sys_r          <= 0;
+    clk_cpu_snes_ctr_r <= 0;
   end
   else begin  
     clk_skp_ctr_r <= clk_skp_ast ? 0 : clk_skp_ctr_r + 1;
     
-    // The machine clock absorbs the skip clock since it's the primary that feeds all GB logic
+    // The CPU clock absorbs the skip clock since it's the primary that feeds all GB logic
     clk_cpu_ctr_r <= clk_skp_ast ? clk_cpu_ctr_r : (clk_cpu_ast ? 0 : (clk_cpu_ctr_r + 1));
+    
+    clk_sys_r <= {clk_sys_r[1:0], CLK_SYSCLK};
+    clk_cpu_snes_ctr_r <= ~clk_sysclk_edge ? clk_cpu_snes_ctr_r : (clk_cpu_snes_ast ? 0 : clk_cpu_snes_ctr_r + 1);
+    
     // arbitrary point assigned to define edge for cpu clock
-    clk_cpu_edge_r <= clk_cpu_ast;
+    clk_cpu_edge_r <= FEAT[`SGB_FEAT_SGB1_TIMING] ? clk_cpu_snes_ast : clk_cpu_ast;
   end
 end
 
@@ -157,13 +179,13 @@ reg         cpu_ireset_r; always @(posedge CLK) cpu_ireset_r <= RST | CPU_RST | 
 
 wire        row_wren[`ROW_CNT-1:0];
 wire [8:0]  row_address[`ROW_CNT-1:0];
-wire [7:0]  row_rddata[`ROW_CNT-1:0];
+//wire [7:0]  row_rddata[`ROW_CNT-1:0];
 wire [7:0]  row_wrdata[`ROW_CNT-1:0];
 
-wire        dbg_row_wren[`ROW_CNT-1:0];
-wire [8:0]  dbg_row_address[`ROW_CNT-1:0];
-wire [7:0]  dbg_row_rddata[`ROW_CNT-1:0];
-wire [7:0]  dbg_row_wrdata[`ROW_CNT-1:0];
+//wire        icd_row_wren[`ROW_CNT-1:0];
+wire [8:0]  icd_row_address[`ROW_CNT-1:0];
+wire [7:0]  icd_row_rddata[`ROW_CNT-1:0];
+//wire [7:0]  icd_row_wrdata[`ROW_CNT-1:0];
 
 `ifdef MK2
 row_buf row0 (
@@ -171,97 +193,97 @@ row_buf row0 (
   .wea(row_wren[0]), // input [0 : 0] wea
   .addra(row_address[0]), // input [8 : 0] addra
   .dina(row_wrdata[0]), // input [7 : 0] dina
-  .douta(row_rddata[0]), // output [7 : 0] douta
+  //.douta(row_rddata[0]), // output [7 : 0] douta
   .clkb(CLK), // input clkb
-  .web(dbg_row_wren[0]), // input [0 : 0] web
-  .addrb(dbg_row_address[0]), // input [12 : 0] addrb
-  .dinb(dbg_row_wrdata[0]), // input [7 : 0] dinb
-  .doutb(dbg_row_rddata[0]) // output [7 : 0] doutb
+  //.web(icd_row_wren[0]), // input [0 : 0] web
+  .addrb(icd_row_address[0]), // input [12 : 0] addrb
+  //.dinb(icd_row_wrdata[0]), // input [7 : 0] dinb
+  .doutb(icd_row_rddata[0]) // output [7 : 0] doutb
 );
 row_buf row1 (
   .clka(CLK), // input clka
   .wea(row_wren[1]), // input [0 : 0] wea
   .addra(row_address[1]), // input [8 : 0] addra
   .dina(row_wrdata[1]), // input [7 : 0] dina
-  .douta(row_rddata[1]), // output [7 : 0] douta
+  //.douta(row_rddata[1]), // output [7 : 0] douta
   .clkb(CLK), // input clkb
-  .web(dbg_row_wren[1]), // input [0 : 0] web
-  .addrb(dbg_row_address[1]), // input [12 : 0] addrb
-  .dinb(dbg_row_wrdata[1]), // input [7 : 0] dinb
-  .doutb(dbg_row_rddata[1]) // output [7 : 0] doutb
+  //.web(icd_row_wren[1]), // input [0 : 0] web
+  .addrb(icd_row_address[1]), // input [12 : 0] addrb
+  //.dinb(icd_row_wrdata[1]), // input [7 : 0] dinb
+  .doutb(icd_row_rddata[1]) // output [7 : 0] doutb
 );
 row_buf row2 (
   .clka(CLK), // input clka
   .wea(row_wren[2]), // input [0 : 0] wea
   .addra(row_address[2]), // input [8 : 0] addra
   .dina(row_wrdata[2]), // input [7 : 0] dina
-  .douta(row_rddata[2]), // output [7 : 0] douta
+  //.douta(row_rddata[2]), // output [7 : 0] douta
   .clkb(CLK), // input clkb
-  .web(dbg_row_wren[2]), // input [0 : 0] web
-  .addrb(dbg_row_address[2]), // input [12 : 0] addrb
-  .dinb(dbg_row_wrdata[2]), // input [7 : 0] dinb
-  .doutb(dbg_row_rddata[2]) // output [7 : 0] doutb
+  //.web(icd_row_wren[2]), // input [0 : 0] web
+  .addrb(icd_row_address[2]), // input [12 : 0] addrb
+  //.dinb(icd_row_wrdata[2]), // input [7 : 0] dinb
+  .doutb(icd_row_rddata[2]) // output [7 : 0] doutb
 );
 row_buf row3 (
   .clka(CLK), // input clka
   .wea(row_wren[3]), // input [0 : 0] wea
   .addra(row_address[3]), // input [8 : 0] addra
   .dina(row_wrdata[3]), // input [7 : 0] dina
-  .douta(row_rddata[3]), // output [7 : 0] douta
+  //.douta(row_rddata[3]), // output [7 : 0] douta
   .clkb(CLK), // input clkb
-  .web(dbg_row_wren[3]), // input [0 : 0] web
-  .addrb(dbg_row_address[3]), // input [12 : 0] addrb
-  .dinb(dbg_row_wrdata[3]), // input [7 : 0] dinb
-  .doutb(dbg_row_rddata[3]) // output [7 : 0] doutb
+  //.web(icd_row_wren[3]), // input [0 : 0] web
+  .addrb(icd_row_address[3]), // input [12 : 0] addrb
+  //.dinb(icd_row_wrdata[3]), // input [7 : 0] dinb
+  .doutb(icd_row_rddata[3]) // output [7 : 0] doutb
 );
 `endif
 `ifdef MK3
 row_buf row0 (
   .clock(CLK), // input clka
-  .wren_a(row_wren[0]), // input [0 : 0] wea
-  .address_a(row_address[0]), // input [8 : 0] addra
-  .data_a(row_wrdata[0]), // input [7 : 0] dina
-  .q_a(row_rddata[0]), // output [7 : 0] douta
-  .wren_b(dbg_row_wren[0]), // input [0 : 0] web
-  .address_b(dbg_row_address[0]), // input [12 : 0] addrb
-  .data_b(dbg_row_wrdata[0]), // input [7 : 0] dinb
-  .q_b(dbg_row_rddata[0]) // output [7 : 0] doutb
+  .wren(row_wren[0]), // input [0 : 0] wea
+  .wraddress(row_address[0]), // input [8 : 0] addra
+  .data(row_wrdata[0]), // input [7 : 0] dina
+  //.q_a(row_rddata[0]), // output [7 : 0] douta
+  //.wren_b(icd_row_wren[0]), // input [0 : 0] web
+  .rdaddress(icd_row_address[0]), // input [12 : 0] addrb
+  //.data_b(icd_row_wrdata[0]), // input [7 : 0] dinb
+  .q(icd_row_rddata[0]) // output [7 : 0] doutb
 );
 
 row_buf row1 (
   .clock(CLK), // input clka
-  .wren_a(row_wren[1]), // input [0 : 0] wea
-  .address_a(row_address[1]), // input [8 : 0] addra
-  .data_a(row_wrdata[1]), // input [7 : 0] dina
-  .q_a(row_rddata[1]), // output [7 : 0] douta
-  .wren_b(dbg_row_wren[1]), // input [0 : 0] web
-  .address_b(dbg_row_address[1]), // input [12 : 0] addrb
-  .data_b(dbg_row_wrdata[1]), // input [7 : 0] dinb
-  .q_b(dbg_row_rddata[1]) // output [7 : 0] doutb
+  .wren(row_wren[1]), // input [0 : 0] wea
+  .wraddress(row_address[1]), // input [8 : 0] addra
+  .data(row_wrdata[1]), // input [7 : 0] dina
+  //.q_a(row_rddata[1]), // output [7 : 0] douta
+  //.wren_b(icd_row_wren[1]), // input [0 : 0] web
+  .rdaddress(icd_row_address[1]), // input [12 : 0] addrb
+  //.data_b(icd_row_wrdata[1]), // input [7 : 0] dinb
+  .q(icd_row_rddata[1]) // output [7 : 0] doutb
 );
 
 row_buf row2 (
   .clock(CLK), // input clka
-  .wren_a(row_wren[2]), // input [0 : 0] wea
-  .address_a(row_address[2]), // input [8 : 0] addra
-  .data_a(row_wrdata[2]), // input [7 : 0] dina
-  .q_a(row_rddata[2]), // output [7 : 0] douta
-  .wren_b(dbg_row_wren[2]), // input [0 : 0] web
-  .address_b(dbg_row_address[2]), // input [12 : 0] addrb
-  .data_b(dbg_row_wrdata[2]), // input [7 : 0] dinb
-  .q_b(dbg_row_rddata[2]) // output [7 : 0] doutb
+  .wren(row_wren[2]), // input [0 : 0] wea
+  .wraddress(row_address[2]), // input [8 : 0] addra
+  .data(row_wrdata[2]), // input [7 : 0] dina
+  //.q_a(row_rddata[2]), // output [7 : 0] douta
+  //.wren_b(icd_row_wren[2]), // input [0 : 0] web
+  .rdaddress(icd_row_address[2]), // input [12 : 0] addrb
+  //.data_b(icd_row_wrdata[2]), // input [7 : 0] dinb
+  .q(icd_row_rddata[2]) // output [7 : 0] doutb
 );
 
 row_buf row3 (
   .clock(CLK), // input clka
-  .wren_a(row_wren[3]), // input [0 : 0] wea
-  .address_a(row_address[3]), // input [8 : 0] addra
-  .data_a(row_wrdata[3]), // input [7 : 0] dina
-  .q_a(row_rddata[3]), // output [7 : 0] douta
-  .wren_b(dbg_row_wren[3]), // input [0 : 0] web
-  .address_b(dbg_row_address[3]), // input [12 : 0] addrb
-  .data_b(dbg_row_wrdata[3]), // input [7 : 0] dinb
-  .q_b(dbg_row_rddata[3]) // output [7 : 0] doutb
+  .wren(row_wren[3]), // input [0 : 0] wea
+  .wraddress(row_address[3]), // input [8 : 0] addra
+  .data(row_wrdata[3]), // input [7 : 0] dina
+  //.q_a(row_rddata[3]), // output [7 : 0] douta
+  //.wren_b(icd_row_wren[3]), // input [0 : 0] web
+  .rdaddress(icd_row_address[3]), // input [12 : 0] addrb
+  //.data_b(icd_row_wrdata[3]), // input [7 : 0] dinb
+  .q(icd_row_rddata[3]) // output [7 : 0] doutb
 );
 `endif
 
@@ -320,8 +342,8 @@ always @(posedge CLK) begin
       {1'b0,16'h6000}: if (SNES_RD_start) reg_mdr_r         <= REG_LCDCHW_r; // R
       {1'b0,16'h6001}: begin
         if (SNES_WR_end) begin
-          REG_LCDCHR_r[1:0]    <= DATA_IN[1:0]; // W
-          reg_row_index_read_r <= 0;
+          REG_LCDCHR_r[`LCDC_ROW_INDEX] <= DATA_IN[`LCDC_ROW_INDEX]; // W
+          reg_row_index_read_r          <= 0;
         end
       end
       {1'b0,16'h6002}: if (SNES_RD_start) reg_mdr_r         <= REG_PKTRDY_r; // R
@@ -346,7 +368,7 @@ always @(posedge CLK) begin
       end
     endcase
     
-    REG_CHDAT_r <= row_rddata[REG_LCDCHR_r[`LCDC_ROW_INDEX]];
+    REG_CHDAT_r <= icd_row_rddata[REG_LCDCHR_r[`LCDC_ROW_INDEX]];
   end
 
   // COLD reset forces a complete reinit.  Otherwise this register is not affected by a WARM (CPU) reset.
@@ -367,10 +389,10 @@ reg  [7:0]  pix_data_r[1:0];
 reg  [1:0]  pix_row_write_r;
 reg  [8:0]  pix_row_index_write_r;
 
-assign row_address[0] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 0) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
-assign row_address[1] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 1) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
-assign row_address[2] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 2) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
-assign row_address[3] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 3) ? {pix_row_index_write_r[8:1],pix_row_write_r[1]} : reg_row_index_read_r;
+assign row_address[0] = {pix_row_index_write_r[8:1],pix_row_write_r[1]};
+assign row_address[1] = {pix_row_index_write_r[8:1],pix_row_write_r[1]};
+assign row_address[2] = {pix_row_index_write_r[8:1],pix_row_write_r[1]};
+assign row_address[3] = {pix_row_index_write_r[8:1],pix_row_write_r[1]};
 
 assign row_wrdata[0] = pix_data_r[pix_row_write_r[1]];
 assign row_wrdata[1] = pix_data_r[pix_row_write_r[1]];
@@ -381,6 +403,21 @@ assign row_wren[0] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 0) ? |pix_row_write_r : 0
 assign row_wren[1] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 1) ? |pix_row_write_r : 0;
 assign row_wren[2] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 2) ? |pix_row_write_r : 0;
 assign row_wren[3] = (REG_LCDCHW_r[`LCDC_ROW_INDEX] == 3) ? |pix_row_write_r : 0;
+
+assign icd_row_address[0] = reg_row_index_read_r;
+assign icd_row_address[1] = reg_row_index_read_r;
+assign icd_row_address[2] = reg_row_index_read_r;
+assign icd_row_address[3] = reg_row_index_read_r;
+
+//assign icd_row_wrdata[0] = 0;
+//assign icd_row_wrdata[1] = 0;
+//assign icd_row_wrdata[2] = 0;
+//assign icd_row_wrdata[3] = 0;
+
+//assign icd_row_wren[0] = 0;
+//assign icd_row_wren[1] = 0;
+//assign icd_row_wren[2] = 0;
+//assign icd_row_wren[3] = 0;
 
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
@@ -414,7 +451,9 @@ always @(posedge CLK) begin
         
         REG_LCDCHW_r[`LCDC_CHAR_ROW] <= 0;
       end
-      else if (PPU_HSYNC_EDGE) begin
+      // early advance of line and row buffer write pointer on dot after 2b pixel 159
+      // fixes occasional flashing line 120 on BMGB (SGB + 4 controllers)
+      else if (pix_row_index_r[8] & pix_row_index_r[6]/*PPU_HSYNC_EDGE*/) begin
         if (~REG_LCDCHW_r[7] | ~REG_LCDCHW_r[4]) begin
           pix_row_index_r[3:1] <= pix_row_index_r[3:1] + 1;
           pix_row_index_r[8:4] <= 0;
@@ -448,17 +487,13 @@ reg         btn_pktrdy_set_r;
 
 // Output assignment is:
 // IDLE P1I = 11 -> ~CurId (0=F,1=E,2=D,3=C)
-// IDLE P1I = 01 -> ~Btn[7:0][CurID]  // buttons
-// IDLE P1I = 10 -> ~Btn[15:8][CurID] // d-pad
+// IDLE P1I = 01 -> ~Btn[7:4][CurID] // buttons
+// IDLE P1I = 10 -> ~Btn[3:0][CurID] // d-pad
 // 
 // IDLE P1I = 01 -> 10 or 11 -> Increment ID mod NumPad
-assign P1O = ( (~^P1I       ) ? ~{2'h0,btn_curr_id_r}
-             : (P1I == 2'b01) ? REG_PAD_r[btn_curr_id_r][7:4]
-             : (P1I == 2'b10) ? REG_PAD_r[btn_curr_id_r][3:0]
-             :                  4'h0 // should never get here
-             );
+assign P1O = &P1I ? ~{2'h0,btn_curr_id_r} : (({4{P1I[1]}} | REG_PAD_r[btn_curr_id_r][7:4]) & ({4{P1I[0]}} | REG_PAD_r[btn_curr_id_r][3:0]));
 
-assign IDL = |(btn_state_r & ST_BTN_IDLE);
+assign IDL = |(btn_state_r & ST_BTN_IDLE) | (|(btn_state_r & ST_BTN_WAIT) & ~|btn_bit_pos_r);
 
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
@@ -478,7 +513,7 @@ always @(posedge CLK) begin
       btn_prev_r <= P1I;
 
       if (P1I != btn_prev_r) begin
-        if (~|P1I) begin
+        if (~|P1I & (BOOTROM_ACTIVE | ~FEAT[`SGB_FEAT_ENH_OVERRIDE])) begin
           // *->00 from any state causes us to go to serial transfer mode
           // Is this true if we are already in serial transfer mode?  Convenient to assume so.
           btn_bit_pos_r <= 0;
@@ -559,21 +594,6 @@ reg [7:0]   dbg_data_r = 0;
 
 assign DBG_DATA_OUT = dbg_data_r;
 
-assign dbg_row_address[0] = DBG_ADDR[8:0];
-assign dbg_row_address[1] = DBG_ADDR[8:0];
-assign dbg_row_address[2] = DBG_ADDR[8:0];
-assign dbg_row_address[3] = DBG_ADDR[8:0];
-
-assign dbg_row_wrdata[0] = 0;
-assign dbg_row_wrdata[1] = 0;
-assign dbg_row_wrdata[2] = 0;
-assign dbg_row_wrdata[3] = 0;
-
-assign dbg_row_wren[0] = 0;
-assign dbg_row_wren[1] = 0;
-assign dbg_row_wren[2] = 0;
-assign dbg_row_wren[3] = 0;
-
 always @(posedge CLK) begin
   if (~DBG_ADDR[11]) begin
     casez(DBG_ADDR[7:0])
@@ -602,9 +622,6 @@ always @(posedge CLK) begin
       
       default:  dbg_data_r <= 0;
     endcase
-  end
-  else begin
-    dbg_data_r <= dbg_row_rddata[DBG_ADDR[10:9]];
   end
 
 end

@@ -132,7 +132,7 @@ wire [5:0] msu_status_set_bits;
 
 wire [7:0] SGB_SNES_DATA_IN;
 wire [7:0] SGB_SNES_DATA_OUT;
-wire [31:0] SGB_APU_DAT;
+wire [19:0] SGB_APU_DAT;
 wire [55:0] SGB_RTC_DAT;
 wire [55:0] MCU_RTC_DAT;
 wire        MCU_RTC_WE;
@@ -141,6 +141,7 @@ wire        MCU_RTC_RD;
 wire       SGB_ROM_RRQ;
 wire       SGB_ROM_WRQ;
 wire       sgb_enable;
+wire [15:0] sgb_feat;
 
 wire [15:0] featurebits;
 wire feat_cmd_unlock = featurebits[5];
@@ -305,8 +306,10 @@ dac snes_dac(
   .DAC_STATUS(DAC_STATUS),
   .volume(msu_volumerq_out),
   .sgb_apu_dat(SGB_APU_DAT),
+  .sgb_apu_clk_edge(SGB_APU_CLK_EDGE),
   .vol_latch(msu_volume_latch_out),
   .vol_select(dac_vol_select_out),
+  .sgb_vol_select(sgb_feat[`SGB_FEAT_VOL_BOOST]),
   .palmode(dac_palmode_out),
   .play(dac_play),
   .reset(dac_reset),
@@ -359,10 +362,14 @@ spi snes_spi(
   .bit_cnt(spi_bit_cnt)
 );
 
-// 800000-8FFFFF is owned by RAM and SGB except for WRAM at 80C000-80DFFF.  Any MCU accesses to mirrored SRAM needs to instead access Exxxxx directly and not 80A000.
-assign MCU_ROM = (MCU_ADDR[23:20] != 4'h8 || {MCU_ADDR[19:13],1'b0} == 8'h0C || MCU_ADDR[23:8] == 16'h8000);
 // RAM contains the SNES ROM and is memory mapped to 880000-8FFFFF
 assign MCU_RAM = MCU_ADDR[23:19] == {4'h8,1'b1};
+`ifdef SGB_MCU_ACCESS
+// 800000-8FFFFF is owned by RAM and SGB except for WRAM at 80C000-80DFFF.  Any MCU accesses to mirrored SRAM needs to instead access Exxxxx directly and not 80A000.
+assign MCU_ROM = (MCU_ADDR[23:20] != 4'h8 || {MCU_ADDR[19:13],1'b0} == 8'h0C || MCU_ADDR[23:8] == 16'h8000);
+`else
+assign MCU_ROM = ~MCU_RAM;
+`endif
 
 reg  [7:0]  SGB_ROM_DINr;
 wire [23:0] SGB_ROM_ADDR;
@@ -476,6 +483,11 @@ always @(posedge CLK2) begin
         if (~ctx_req_r & mcu_rdy_int) begin
           ctx_req_r   <= 1;
           ctx_addr_r  <= ctx_addr_r + 1;
+          // TODO: decide if making save states a little faster is worth the extra logic (and bugs?)
+          //ctx_addr_r  <= ( (~ctx_addr_r[15] && ctx_addr_r[14:0] == SAVERAM_MASK[14:0]) ? 16'h8000
+          //               : (ctx_addr_r == 16'h9FFF)                                    ? 16'hC000
+          //               :                                                               ctx_addr_r + 1
+          //               );
           ctx_state_r <= &ctx_addr_r ? ST_CTX_IDLE : ST_CTX_READ;
         end
       end
@@ -505,6 +517,7 @@ sgb snes_sgb (
   .RST(SNES_reset_strobe),
   .CPU_RST(SGB_reset),
   .CLK(CLK2),
+  .CLK_SYSCLK(SNES_SYSCLK),
   
   // MMIO interface
   .SNES_RD_start(SNES_RD_start),
@@ -525,6 +538,7 @@ sgb snes_sgb (
 
   // Audio interface
   .APU_DAT(SGB_APU_DAT),
+  .APU_CLK_EDGE(SGB_APU_CLK_EDGE),
   
   // RTC interface
   .RTC_DAT(SGB_RTC_DAT),
@@ -549,6 +563,9 @@ sgb snes_sgb (
   .MCU_RSP(SGB_MCU_RSP),
   .MCU_DATA_OUT(SGB_MCU_DIN),
 
+  // features
+  .FEAT(sgb_feat),
+  
   // config
   .reg_group_in(reg_group),
   .reg_index_in(reg_index),
@@ -560,8 +577,7 @@ sgb snes_sgb (
   
   .DBG_ADDR(DBG_ADDR),
   .DBG_CHEAT_DATA_IN(DBG_CHEAT_DATA_OUT),
-  .DBG_MAIN_DATA_IN(dbg_data_r),
-  .DBG(DBG_SGB)
+  .DBG_MAIN_DATA_IN(dbg_data_r)
 );
 
 reg [7:0] MCU_DINr;
@@ -621,6 +637,7 @@ mcu_cmd snes_mcu_cmd(
   .rtc_data_out(MCU_RTC_DAT),
   .rtc_pgm_we(MCU_RTC_WE),
   .rtc_pgm_rd(MCU_RTC_RD),
+  .sgb_feat_out(sgb_feat),
   // config
   .reg_group_out(reg_group),
   .reg_index_out(reg_index),
@@ -727,9 +744,17 @@ initial r213f_delay = 3'b000;
 reg [7:0] r2100r = 0;
 reg r2100_forcewrite = 0;
 reg r2100_forcewrite_pre = 0;
+`ifdef BRIGHTNESS_LIMIT
 wire [3:0] r2100_limit = featurebits[10:7];
+`else
+wire [3:0] r2100_limit = 4'hF;
+`endif
 wire [3:0] r2100_limited = (SNES_DATA[3:0] > r2100_limit) ? r2100_limit : SNES_DATA[3:0];
+`ifdef BRIGHTNESS_PATCH
 wire r2100_patch = featurebits[6];
+`else
+wire r2100_patch = 0;
+`endif
 wire r2100_enable = r2100_hit & (r2100_patch | ~(&r2100_limit));
 
 wire snoop_4200_enable = {SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h04200;
@@ -772,7 +797,7 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
                                   : sgb_enable ? SGB_SNES_DATA_OUT  // SGB MMIO read
                                   : (cheat_hit & ~feat_cmd_unlock) ? cheat_data_out
                                   : ((snescmd_unlock | feat_cmd_unlock) & snescmd_enable) ? snescmd_dout
-                                  : RAM_DATA // the RAM module holds up to a 512KB SNES ROM
+                                  : RAM_DATA // the RAM module holds up to 512KB
                                   ) : 8'bZ;
 
 reg [3:0] ST_MEM_DELAYr;

@@ -18,6 +18,8 @@
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
+`include "config.vh"
+
 module cheat(
   input clk,
   input [7:0] SNES_PA,
@@ -154,7 +156,6 @@ always @(posedge clk) begin
   end else begin
     snescmd_unlock_disable_strobe <= 1'b0;
     
-    //TODO: move these to internal control
     if(snescmd_unlock & snescmd_wr_strobe) begin
       if(~|SNES_ADDR[8:0]) begin
         case(SNES_DATA)
@@ -193,16 +194,16 @@ reg  [15:0] cmd_data_r;
 // L+R+Start+B      : $9030 // unsupported
 // L+R+Start+Y      : $5030
 // L+R+Start+X      : $1070
-assign button_reset_game  = (cmd_data_r == 16'h3030);
-assign button_reset_menu  = (cmd_data_r == 16'h2070);
-assign button_hook_dis    = (cmd_data_r == 16'h5030);
-assign button_hook_dis_10 = (cmd_data_r == 16'h1070);
-assign button_valid       = button_reset_game | button_reset_menu | button_hook_dis | button_hook_dis_10;
+wire        button_reset_game  = (cmd_data_r == 16'h3030);
+wire        button_reset_menu  = (cmd_data_r == 16'h2070);
+wire        button_hook_dis    = (cmd_data_r == 16'h5030);
+wire        button_hook_dis_10 = (cmd_data_r == 16'h1070);
+wire        button_valid       = button_reset_game | button_reset_menu | button_hook_dis | button_hook_dis_10;
 
 // allow any directional buttons and yba values.  anything involving select should press select first
-assign button_state_save  = ({2'b00,cmd_data_r[13:12],1'b0,cmd_data_r[6:4]} == 8'h05);
-assign button_state_load  = ({2'b00,cmd_data_r[13:12],1'b0,cmd_data_r[6:4]} == 8'h06);
-assign button_state       = button_state_save | button_state_load;
+wire        button_state_save  = ({2'b00,cmd_data_r[13:12],1'b0,cmd_data_r[6:4]} == 8'h05);
+wire        button_state_load  = ({2'b00,cmd_data_r[13:12],1'b0,cmd_data_r[6:4]} == 8'h06);
+wire        button_state       = button_state_save | button_state_load;
 
 always @(posedge clk) begin
   pad_valid_r <= 0;

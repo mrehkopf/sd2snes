@@ -41,8 +41,11 @@ cfg_t CFG_DEFAULT = {
   .ingame_savestate_buttons = "SL",
   .ingame_loadstate_buttons = "SR",
   .ingame_changestate_buttons = "s",
+  .sgb_enable_ingame_hook = 0,
   .sgb_enable_state = 0,
-  .sgb_bios_override = 0
+  .sgb_volume_boost = 0,
+  .sgb_enh_override = 0,
+  .sgb_sgb1_timing = 0
 };
 
 cfg_t CFG;
@@ -95,8 +98,22 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %s\n", CFG_INGAME_SAVESTATE_BUTTONS, CFG.ingame_savestate_buttons);
   f_printf(&file_handle, "%s: %s\n", CFG_INGAME_LOADSTATE_BUTTONS, CFG.ingame_loadstate_buttons);
   f_printf(&file_handle, "%s: %s\n", CFG_INGAME_CHANGESTATE_BUTTONS, CFG.ingame_changestate_buttons);
+  f_puts("\n", &file_handle);
+  f_printf(&file_handle, "#  %s: SGB enable hooks (%s or %s enables SGB hooks.  zero overhead.)\n", CFG_SGB_ENABLE_INGAME_HOOK, CFG_SGB_ENABLE_INGAME_HOOK, CFG_ENABLE_INGAME_HOOK);
+  f_printf(&file_handle, "%s: %s\n", CFG_SGB_ENABLE_INGAME_HOOK, CFG.sgb_enable_ingame_hook ? "true" : "false");
+  f_printf(&file_handle, "#  %s: SGB enable save states (only works with ingame hooks when supported boot and bios/snes is used)\n", CFG_SGB_ENABLE_STATE);
   f_printf(&file_handle, "%s: %s\n", CFG_SGB_ENABLE_STATE, CFG.sgb_enable_state ? "true" : "false");
-  f_printf(&file_handle, "%s: %s\n", CFG_SGB_BIOS_OVERRIDE, CFG.sgb_bios_override ? "true" : "false");
+  f_printf(&file_handle, "#  %s: SGB audio volume boost\n#    (0: none; 1: +3.5dBFS; 2: +6dBFS; 3: +9.5dBFS; 4: +12dBFS)\n", CFG_SGB_VOLUME_BOOST);
+  f_printf(&file_handle, "%s: %d\n", CFG_SGB_VOLUME_BOOST, CFG.sgb_volume_boost);
+  f_printf(&file_handle, "#  %s: SGB enhancements override (false: enhancements enabled; true: enhancements disabled)\n", CFG_SGB_ENH_OVERRIDE);
+  f_printf(&file_handle, "%s: %s\n", CFG_SGB_ENH_OVERRIDE, CFG.sgb_enh_override ? "true" : "false");
+#ifdef CONFIG_MK3
+  f_printf(&file_handle, "#  %s: SGB sprite increase per scanline.  not compatible with all games  (false: 10 sprites (default); true: 16 sprites)\n", CFG_SGB_SPR_INCREASE);
+  f_printf(&file_handle, "%s: %s\n", CFG_SGB_SPR_INCREASE, CFG.sgb_spr_increase ? "true" : "false");
+#endif
+  f_printf(&file_handle, "#  %s: SGB enable SGB1 timing based on SNES CPU clock\n", CFG_SGB_SGB1_TIMING);
+  f_printf(&file_handle, "%s: %s\n", CFG_SGB_SGB1_TIMING, CFG.sgb_sgb1_timing ? "true" : "false");
+
   f_puts("\n# Screensaver settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Enable screensaver\n", CFG_ENABLE_SCREENSAVER);
 //  f_printf(&file_handle, "#  %s: Dim screen after n seconds\n", CFG_SCREENSAVER_TIMEOUT);
@@ -213,11 +230,25 @@ int cfg_load() {
     if(yaml_get_itemvalue(CFG_INGAME_LOADSTATE_BUTTONS, &tok)) {
       strcpy(CFG.ingame_loadstate_buttons, tok.stringvalue);
     }
+    if(yaml_get_itemvalue(CFG_SGB_ENABLE_INGAME_HOOK, &tok)) {
+      CFG.sgb_enable_ingame_hook = tok.boolvalue ? 1 : 0;
+    }
     if(yaml_get_itemvalue(CFG_SGB_ENABLE_STATE, &tok)) {
       CFG.sgb_enable_state = tok.boolvalue ? 1 : 0;
     }
-    if(yaml_get_itemvalue(CFG_SGB_BIOS_OVERRIDE, &tok)) {
-      CFG.sgb_bios_override = tok.boolvalue ? 1 : 0;
+    if(yaml_get_itemvalue(CFG_SGB_VOLUME_BOOST, &tok)) {
+      CFG.sgb_volume_boost = tok.longvalue;
+    }
+    if(yaml_get_itemvalue(CFG_SGB_ENH_OVERRIDE, &tok)) {
+      CFG.sgb_enh_override = tok.boolvalue ? 1 : 0;
+    }
+#ifdef CONFIG_MK3
+    if(yaml_get_itemvalue(CFG_SGB_SPR_INCREASE, &tok)) {
+      CFG.sgb_spr_increase = tok.boolvalue ? 1 : 0;
+    }
+#endif
+    if(yaml_get_itemvalue(CFG_SGB_SGB1_TIMING, &tok)) {
+      CFG.sgb_sgb1_timing = tok.boolvalue ? 1 : 0;
     }
   }
   yaml_file_close();

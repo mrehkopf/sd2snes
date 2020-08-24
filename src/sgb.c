@@ -39,6 +39,7 @@
 #include "rtc.h"
 #include "cheat.h"
 #include "msu1.h"
+#include "led.h"
 
 extern cfg_t CFG;
 sgb_romprops_t sgb_romprops;
@@ -67,46 +68,72 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
   
   file_readblock(header, 0x100, sizeof(sgb_header_t));
 
-  /* FPGA mapper */
+  /* FPGA mapper
+      0 = MBC0
+      1 = MBC1      mapper_id[3] = MBC1M/Multicart
+      2 = MBC2
+      3 = MBC3      mapper_id[3] = RTC
+      4 = HUC1      mapper_id[3] = HUC3
+      5 = MBC5      mapper_id[3] = CAM
+      6 = Unmapped
+      7 = Unmapped      
+  */
   switch (header->carttype) {
-    case 0x00:
-      // MBC0
-      props->mapper_id = 0x00;
+    // MBC0
+    case 0x00: // case 0xFD:
+      props->mapper_id |= 0x00;
       break;
+
+    // MBC1
     case 0x01: case 0x02: case 0x03:
-      // MBC1
-      props->mapper_id = 0x01;
+      props->mapper_id |= 0x01;
       break;
+
+    // MBC2
     case 0x05: case 0x06:
-      // MBC2
-      props->mapper_id = 0x02;
+      props->mapper_id |= 0x02;
       break;
+
+    // MBC3
     case 0x0F: case 0x10:
-      // MBC3 RTC
+      // RTC
       props->has_rtc = 1;
-      props->mapper_id = 0x03 | 0x08; // add RTC bit
-      break;
+      props->mapper_id |= 0x08;
     case 0x11: case 0x12: case 0x13:
-      // MBC3 no RTC
-      props->mapper_id = 0x03;
+      props->mapper_id |= 0x03;
       break;
+
+    // HUC
+    case 0xFE:
+      // HUC3
+      props->mapper_id |= 0x08;
+    case 0xFF:
+      // HUC1
+      props->mapper_id |= 0x04;
+      break;
+
+    // MBC5
+    case 0xFC:
+      // CAM
+      props->mapper_id |= 0x08;
     case 0x19: case 0x1A: case 0x1B: case 0x1C: case 0x1D: case 0x1E:
-      // MBC5
-      props->mapper_id = 0x05;
+      props->mapper_id |= 0x05;
       break;
+
     default:
       // unsupported mapper.  default to MBC1 which is most widely used
-      props->mapper_id = 0x01;
+      props->mapper_id |= 0x01;
       break;
   }
   
   /* CartRAM size in bytes */
   switch (header->ramsize) {
-    case 0x00: props->ramsize_bytes = 0;       break;
-    case 0x01: props->ramsize_bytes = 2*1024;  break;
-    case 0x02: props->ramsize_bytes = 8*1024;  break;
-    case 0x03: props->ramsize_bytes = 32*1024; break;
-    default:   props->ramsize_bytes = 0;       break;
+    case 0x00: props->ramsize_bytes = 0;        break;
+    case 0x01: props->ramsize_bytes = 2*1024;   break;
+    case 0x02: props->ramsize_bytes = 8*1024;   break;
+    case 0x03: props->ramsize_bytes = 32*1024;  break;
+    case 0x04: props->ramsize_bytes = 128*1024; break;
+    default:   props->ramsize_bytes = 0;        break;
   }
   if (props->mapper_id == 2) props->ramsize_bytes = 512;
   
@@ -122,6 +149,31 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
     default:   props->romsize_bytes = 0; break;
   }
   
+  /* Handle MBC1M. */
+  if (props->mapper_id == 0x01) {
+    uint32_t header_pos[] = {0x40100 /*, 0x80100*/};
+
+    for (unsigned h = 0; h < sizeof(header_pos)/sizeof(uint32_t); h++) {
+      if (props->romsize_bytes >= header_pos[h] + sizeof(sgb_header_t)) {
+        sgb_header_t multi_header;
+        uint32_t crc = 0;
+      
+        file_readblock(&multi_header, header_pos[h], sizeof(sgb_header_t));
+        for (UINT i = 0; i < sizeof(multi_header.logo); i++) crc = crc32_update(crc, multi_header.logo[i]);
+
+        if (  crc == 0xb491e782
+           && (  multi_header.carttype == 0x01
+              || multi_header.carttype == 0x02
+              || multi_header.carttype == 0x03
+              )
+           ) {
+          props->mapper_id |= 0x08;
+          break;
+        }        
+      }
+    }
+  }
+  
   /* SGB BOOT ROM filename */
   props->sgb_boot = SGBFW;
   
@@ -130,6 +182,13 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
 
   /* saveram size in bytes */
   props->sramsize_bytes = props->ramsize_bytes;
+
+  /* features */
+  props->fpga_sgbfeat = ( (((uint16_t)CFG.sgb_volume_boost & 0x7) <<  0)
+                        | (((uint16_t)CFG.sgb_enh_override & 0x1) <<  8)
+                        | (((uint16_t)CFG.sgb_spr_increase & 0x1) <<  9)
+                        | (((uint16_t)CFG.sgb_sgb1_timing  & 0x1) << 10)
+                        );
 
   /* SGB debug print */
   if (props->has_sgb) {
@@ -197,14 +256,21 @@ uint8_t sgb_update_romprops(snes_romprops_t *romprops, uint8_t *filename) {
   return 1;
 }
 
+void sgb_load_sram(uint8_t *sgb_filename) {
+  if (sgb_romprops.has_sgb) {
+    /* load images */
+    printf("attempting to load SGB boot ROM %s...\n", SGBFW);
+    load_sram_offload((uint8_t *)SGBFW, 0x800000, 0);
+    printf("attempting to load GB ROM %s...\n", sgb_filename);
+    load_sram_offload(sgb_filename, 0x0, 0);
+  }
+}
+
 void sgb_cheat_program(void) {
   if (sgb_romprops.has_sgb) {
     /* update cheats based on SGB file and configuration state */
-    uint8_t state = sgb_bios_state();
-        
-    /* hooks disabled if bios files don't match */
-    if (state != SGB_BIOS_OK && !CFG.sgb_bios_override) cheat_nmi_enable(0);
-    if (state != SGB_BIOS_OK && !CFG.sgb_bios_override) cheat_irq_enable(0);
+    if (CFG.sgb_enable_ingame_hook) cheat_nmi_enable(1);
+    if (CFG.sgb_enable_ingame_hook) cheat_irq_enable(1);
     
     /* save states (repurpose cheats) enabled via config */
     cheat_enable((CFG.sgb_enable_state && sgb_romprops.ramsize_bytes <= 64 * 1024) ? 1 : 0);
@@ -230,7 +296,13 @@ uint8_t sgb_bios_state(void) {
 
       for (UINT i = 0; i < bytes_read; i++) crc = crc32_update(crc, file_buf[i]);
     }
-    if (state <= SGB_BIOS_MISMATCH && crc != 0x5e46583b) {
+    if (state <= SGB_BIOS_MISMATCH
+       && (  (crc != 0x5e46583b) // sgb2_boot.bin
+          && (crc != 0xe11c06e1) // sgb_boot.bin
+          && (crc != 0x7e2b1384) // sgb2_boot.bin (SB)
+          && (crc != 0xe03aed56) // sgb_boot.bin (SB)
+          )
+       ) {
       printf("SGB sgb2_boot.bin CRC mismatch: 0x%08x\n", (unsigned int)crc);
       state = SGB_BIOS_MISMATCH;
     }
@@ -250,7 +322,12 @@ uint8_t sgb_bios_state(void) {
 
       for (UINT i = 0; i < bytes_read; i++) crc = crc32_update(crc, file_buf[i]);
     }
-    if (state <= SGB_BIOS_MISMATCH && crc != 0xbe7164e9) {
+    if (state <= SGB_BIOS_MISMATCH
+       && (  (crc != 0xbe7164e9) // sgb2 bios (JP)
+          && (crc != 0xcc3b0799) // sgb bios (JP)
+          && (crc != 0x6844fd6d) // sgb bios v1.2 (UE)
+          )
+       ) {
       printf("SGB sgb2_snes.bin CRC mismatch: 0x%08x\n", (unsigned int)crc);
       state = SGB_BIOS_MISMATCH;
     }
@@ -295,7 +372,9 @@ void sgb_gtc_load(uint8_t* filename) {
       }
   
       gtime_ts = gtime_cur;
+      writeled(1);
       file_writeblock(&gtime_ts, 0, sizeof(gtime_ts));
+      writeled(0);
     }
     else {
       file_readblock(&gtime_ts, 0, sizeof(gtime_ts));

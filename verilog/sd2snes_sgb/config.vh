@@ -31,15 +31,38 @@
 `endif
 
 `ifdef MK2
-  //`define MSU_AUDIO // doesn't fit with SGB_SAVE_STATES
-  //`define MSU_DATA
+  //`define MSU_AUDIO // doesn't fit with features below
+  
+`ifndef MSU_AUDIO
+  `define SGB_MCU_ACCESS
   `define SGB_SAVE_STATES
+  `define SGB_SERIAL
+  `define SGB_EXTRA_MAPPERS
+`endif
+
+  `define BRIGHTNESS_PATCH
+
+  // doesn't fit
+  //`define MSU_DATA
+  //`define BRIGHTNESS_LIMIT
   //`define SGB_DEBUG
+  //`define SGB_SPR_INCREASE
 `else
   `define MSU_AUDIO
   `define MSU_DATA
+  `define BRIGHTNESS_PATCH
+  `define BRIGHTNESS_LIMIT
+  `define SGB_MCU_ACCESS
   `define SGB_SAVE_STATES
+  `define SGB_SERIAL
   `define SGB_DEBUG
+  `define SGB_SPR_INCREASE
+  `define SGB_EXTRA_MAPPERS
 `endif
+
+`define SGB_FEAT_VOL_BOOST    2:0
+`define SGB_FEAT_ENH_OVERRIDE 8:8
+`define SGB_FEAT_SPR_INCREASE 9:9
+`define SGB_FEAT_SGB1_TIMING  10:10
 
 `endif

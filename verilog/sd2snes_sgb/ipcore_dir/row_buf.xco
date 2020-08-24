@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Fri Jun 19 22:53:37 2020
+# Date: Fri Aug 14 17:24:48 2020
 #
 ##############################################################
 #
@@ -57,11 +57,11 @@ CSET enable_32bit_address=false
 CSET enable_a=Always_Enabled
 CSET enable_b=Always_Enabled
 CSET error_injection_type=Single_Bit_Error_Injection
-CSET fill_remaining_memory_locations=true
+CSET fill_remaining_memory_locations=false
 CSET interface_type=Native
 CSET load_init_file=false
 CSET mem_file=no_Mem_file_loaded
-CSET memory_type=True_Dual_Port_RAM
+CSET memory_type=Simple_Dual_Port_RAM
 CSET operating_mode_a=READ_FIRST
 CSET operating_mode_b=READ_FIRST
 CSET output_reset_value_a=0
@@ -72,7 +72,7 @@ CSET port_a_enable_rate=100
 CSET port_a_write_rate=50
 CSET port_b_clock=100
 CSET port_b_enable_rate=100
-CSET port_b_write_rate=50
+CSET port_b_write_rate=0
 CSET primitive=8kx2
 CSET read_width_a=8
 CSET read_width_b=8
@@ -82,7 +82,7 @@ CSET register_porta_output_of_memory_primitives=false
 CSET register_portb_output_of_memory_core=false
 CSET register_portb_output_of_memory_primitives=false
 CSET register_portb_output_of_softecc=false
-CSET remaining_memory_locations=FF
+CSET remaining_memory_locations=0
 CSET reset_memory_latch_a=false
 CSET reset_memory_latch_b=false
 CSET reset_priority_a=CE
@@ -105,4 +105,4 @@ CSET write_width_b=8
 MISC pkg_timestamp=2012-11-19T16:22:25Z
 # END Extra information
 GENERATE
-# CRC: 30b504c3
+# CRC:  6b069ac

@@ -415,29 +415,26 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   
   printf("ramsize=%x ramslot=%hx rammask=%lx\nromsize=%x rommask=%lx\n", romprops.header.ramsize, ramslot, rammask, romprops.header.romsize, rommask);
 
-  /* SGB send the GB file and boot ROM.  Also update the SaveRAM properties */
+  /* SGB setup romprops and load SRAM */
+  sgb_load_sram(sgb_filename);
+
+  /* SGB update local file properties */
   if (sgb_romprops.has_sgb) {
     /* reset the filename to match the GB file */
     filename = sgb_filename;
     filesize = sgb_filesize;
 
-    /* update SaveRAM */
+    /* update SaveRAM properties */
     romprops.ramsize_bytes = (CFG.sgb_enable_state && sgb_romprops.ramsize_bytes <= 64 * 1024) ? (128 * 1024) : sgb_romprops.ramsize_bytes;
     romprops.srambase = sgb_romprops.srambase;
     romprops.sramsize_bytes = (CFG.sgb_enable_state && sgb_romprops.ramsize_bytes <= 64 * 1024) ? (128 * 1024) : sgb_romprops.sramsize_bytes;
 
     rammask = sgb_romprops.ramsize_bytes ? (sgb_romprops.ramsize_bytes - 1) : 0;
     rommask = sgb_romprops.romsize_bytes ? (sgb_romprops.romsize_bytes - 1) : 0;
-
-    /* load images */
-    printf("attempting to load SGB boot ROM %s...\n", SGBFW);
-    load_sram_offload((uint8_t *)SGBFW, 0x800000, 0);
-    printf("attempting to load GB ROM %s...\n", sgb_filename);
-    load_sram_offload(sgb_filename, 0x0, 0);    
-
-    /* load GB RTC */
-    sgb_gtc_load(sgb_filename);
   }
+
+  /* SGB load GB RTC */
+  sgb_gtc_load(sgb_filename);
 
   printf("ramsize=%x rammask=%lx\nromsize=%x rommask=%lx\n", romprops.header.ramsize, rammask, romprops.header.romsize, rommask);
   set_saveram_mask(rammask);
@@ -476,7 +473,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   fpga_set_213f(romprops.region);
 //  fpga_set_features(romprops.fpga_features);
-  fpga_set_dspfeat(romprops.fpga_dspfeat);
+  fpga_set_chipfeat(sgb_romprops.has_sgb ? sgb_romprops.fpga_sgbfeat : romprops.fpga_dspfeat);
   fpga_set_dac_boost(CFG.msu_volume_boost);
   dac_pause();
   dac_reset(0);

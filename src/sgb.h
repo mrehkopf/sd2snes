@@ -57,6 +57,7 @@ typedef struct __attribute__ ((__packed__)) _sgb_romprops {
   uint8_t has_rtc;            /* RTC presence flag */
   uint32_t srambase;          /* saveram base address */
   uint32_t sramsize_bytes;    /* saveram size in bytes */
+  uint16_t fpga_sgbfeat;      /* SGB configuration bits */
   uint8_t error;              /* error text ID */
   uint8_t* error_param;       /* \0 separated list of parameters for error text */
   sgb_header_t header;        /* original header from ROM image */
@@ -68,6 +69,7 @@ void sgb_id(sgb_romprops_t*, uint8_t *);
 uint8_t sgb_update_file(uint8_t **);
 uint8_t sgb_update_romprops(snes_romprops_t*, uint8_t *filename);
 void sgb_cheat_program(void);
+void sgb_load_sram(uint8_t *);
 uint8_t sgb_bios_state(void);
 void sgb_gtc_load(uint8_t* filename);
 void sgb_gtc_save(uint8_t* filename);
