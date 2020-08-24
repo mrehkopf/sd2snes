@@ -22,6 +22,7 @@
 ; 01  function call
 ; 02  submenu
 ; 03  value setting
+; 04  function call where the menu should be closed upon return
 
 ; data types:
 ; 00  no parameter
@@ -63,6 +64,19 @@ menu_enttab_mm:
  .byt  0,0,0
  .word !mdesc_mm_last
  .byt  ^mdesc_mm_last
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_FUNC
+ .word !text_mm_favorites
+ .byt  ^text_mm_favorites
+ .word !select_favorite_file-1
+ .byt  ^select_favorite_file-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_mm_favorites
+ .byt  ^mdesc_mm_favorites
  .byt  0,0,0
  .byt  0,0,0
  .byt  0,0,0
@@ -475,7 +489,7 @@ menu_enttab_ingame:
  .byt  ^(mfunc_chg_brightness-1)
  .byt  0,0,0
  .byt  0,0,0
- 
+
  .byt  MTYPE_VALUE
  .word !mtext_ingame_resetpatch
  .byt  ^mtext_ingame_resetpatch
@@ -543,6 +557,49 @@ menu_enttab_scic:
  .byt  ^(mfunc_isenabled_scic-1)
 
  .byt 0
+
+menu_enttab_filesel_context_file:
+; HEADER
+ .byt  1              ; listsel_step=1
+ .word !text_filesel_selected_file ; window title
+ .byt  ^text_filesel_selected_file ; for this menu
+; ENTRIES
+ .byt  MTYPE_FUNC_CLOSE
+ .word !text_filesel_context_add_to_favorites
+ .byt  ^text_filesel_context_add_to_favorites
+ .word !add_selected_file_to_favorites-1
+ .byt  ^add_selected_file_to_favorites-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_filesel_context_add_to_favorites
+ .byt  ^mdesc_filesel_context_add_to_favorites
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  0
+
+menu_enttab_filesel_favorites_context:
+; HEADER
+ .byt  1              ; listsel_step=1
+ .word !text_filesel_selected_file ; window title
+ .byt  ^text_filesel_selected_file ; for this menu
+; ENTRIES
+ .byt  MTYPE_FUNC_CLOSE
+ .word !text_filesel_favorites_context_remove_from_favorites
+ .byt  ^text_filesel_favorites_context_remove_from_favorites
+ .word !remove_selected_favorite_file-1
+ .byt  ^remove_selected_favorite_file-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_filesel_favorites_context_remove_from_favorites
+ .byt  ^mdesc_filesel_favorites_context_remove_from_favorites
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  0
+
 mfunc_set_bsx_time:
   php
   sep #$20 : .as

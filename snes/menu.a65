@@ -31,6 +31,60 @@ mainmenu:
   jsr pop_window
   rts
 
+filesel_contextmenu_file:
+  sep #$20 : .as
+  rep #$10 : .xl
+  lda #$02
+  sta window_x
+  lda #$09
+  sta window_y
+  lda #60
+  sta window_w
+  lda #18
+  sta window_h
+  jsr push_window
+  jsr window_greyout
+  lda #$06
+  sta window_x
+  lda #$0b
+  sta window_y
+  phb
+    lda #^menu_enttab_filesel_context_file
+    pha
+    plb
+    ldx #!menu_enttab_filesel_context_file
+    jsr show_menu
+  plb
+  jsr pop_window
+  rts
+
+filesel_favorites_contextmenu:
+  sep #$20 : .as
+  rep #$10 : .xl
+  lda #$02
+  sta window_x
+  lda #$09
+  sta window_y
+  lda #60
+  sta window_w
+  lda #18
+  sta window_h
+  jsr push_window
+  jsr window_greyout
+  lda #$06
+  sta window_x
+  lda #$0b
+  sta window_y
+  phb
+    lda #^menu_enttab_filesel_favorites_context
+    pha
+    plb
+    ldx #!menu_enttab_filesel_favorites_context
+    jsr show_menu
+  plb
+  jsr pop_window
+  rts
+
 ; menu_select:
 ; helper routine to select a list entry
 ; window and list items must be printed in advance
@@ -39,9 +93,14 @@ mainmenu:
 ; window_x, window_y, window_w, window_h: for select bar setup
 ; listsel_max: number of list entries to select from
 ; listsel_step: spacing between list entries (y text lines)
+; listsel_pickbutton: if 00, only allow button A to select an item,
+;                     if 01, allow button A and Y to select an item
 ;
-; return value: index of selected item in A
+; return value: index of selected item in A,
 ;               or #$FF if no item was selected
+;               listsel_pickbutton = 00 if button A was used,
+;               listsel_pickbutton = 01 if button Y was used,
+;               listsel_pickbutton = FF if button B (cancel) was used
 menu_select:
   php
   sep #$20 : rep #$10 : .as : .xl
@@ -80,9 +139,11 @@ menu_select_loop1
   lda pad_down
   bne menu_select_down
   lda pad_a
-  bne menu_select_item
+  bne menu_select_button_a
+  lda pad_y
+  bne menu_select_button_y
   lda pad_b
-  bne menu_select_none
+  bne menu_select_button_b
   bra menu_select_loop1
 menu_select_up
   lda listsel_sel
@@ -104,11 +165,22 @@ menu_select_down
   adc listsel_step
   sta bar_yl
   bra menu_select_loop1
-menu_select_item
+menu_select_button_a ; always allow button a
+  lda #$00
+  sta listsel_pickbutton
   lda listsel_sel
   bra menu_select_exit
-menu_select_none
+menu_select_button_y ; check if we should allow button y
+  lda listsel_pickbutton
+  cmp #$01
+  bne menu_select_loop1
+  lda #$01
+  sta listsel_pickbutton
+  lda listsel_sel
+  bra menu_select_exit
+menu_select_button_b ; cancel
   lda #$ff
+  sta listsel_pickbutton
 menu_select_exit
   plp
   rts
@@ -188,6 +260,7 @@ show_menu:
     lda w_numentries
     sta listsel_max
 show_menu_loop:
+    stz listsel_pickbutton
     jsr menu_select_noinit
     cmp #$ff
     beq show_menu_out
@@ -210,6 +283,8 @@ show_menu_loop:
     beq show_menu_submenu
     cmp #MTYPE_FUNC
     beq show_menu_func
+    cmp #MTYPE_FUNC_CLOSE
+    beq show_menu_func_close
     cmp #MTYPE_VALUE
     bne show_menu_cont
     jmp show_menu_editvalue
@@ -299,6 +374,29 @@ show_menu_func_cont:
     jsr pop_window
     ply
     jmp show_menu_cont
+
+show_menu_func_close:
+    phy
+    jsr push_window
+    jsr window_greyout
+    ply
+    phk
+    per show_menu_func_close_cont-1
+    rep #$20 : .al
+    lda [w_menu_addr], y
+    tax
+    sep #$20 : .as
+    iny
+    iny
+    lda [w_menu_addr], y
+    pha
+    phx
+    rtl
+show_menu_func_close_cont:
+    phy
+    jsr pop_window
+    ply
+    jmp show_menu_out
 
 show_menu_editvalue:
     phy

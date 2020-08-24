@@ -281,6 +281,140 @@ void cfg_dump_recent_games_for_snes(uint32_t address) {
   file_close();
 }
 
+int cfg_validity_check_favorite_games() {
+  int err = 0, index, index_max, write_indices[10], rewrite_favoritefile = 0;
+  TCHAR fntmp[10][256];
+  file_open(FAVORITES_FILE, FA_READ);
+  if(file_status == FILE_ERR) {
+    return 0;
+  }
+  for(index = 0; index < 10 && !f_eof(&file_handle); index++) {
+    f_gets(fntmp[index], 255, &file_handle);
+  }
+  if(!f_eof(&file_handle))
+    index_max = 10;
+  else
+    index_max = index;
+  file_close();
+  for(index = 0; index < index_max; index++) {
+    file_open((uint8_t*)fntmp[index], FA_READ);
+    write_indices[index] = file_status;
+    if(file_status != FILE_OK)
+      rewrite_favoritefile = 1;
+    file_close();
+  }
+  if(rewrite_favoritefile) {
+    f_rename ((TCHAR*)FAVORITES_FILE, (TCHAR*)FAVORITES_FILE_BAK);
+    file_open(FAVORITES_FILE, FA_CREATE_ALWAYS | FA_WRITE);
+    for(index = 0; index < index_max; index++) {
+      if(write_indices[index] == FILE_OK) {
+        err = f_puts(fntmp[index], &file_handle);
+        err = f_putc(0, &file_handle);
+      }
+    }
+    file_close();
+  }
+  return err;
+}
+
+int cfg_add_favorite_game(uint8_t *fn) {
+  int err = 0, index, index2, found = 0, foundindex = 0, written = 0;
+  TCHAR fqfn[256];
+  TCHAR fntmp[10][256];
+  file_open(FAVORITES_FILE, FA_READ);
+  fqfn[0] = 0;
+  if(fn[0] !=  '/') {
+    strncpy(fqfn, (const char*)file_path, 256);
+    fqfn[255] = 0;
+  }
+  strncat(fqfn, (const char*)fn, 256 - strlen(fqfn) - 1);
+  for(index = 0; index < 10; index++) {
+    f_gets(fntmp[index], 255, &file_handle);
+    if((*fntmp[index] == 0) || (*fntmp[index] == '\n')) {
+      break; /* last entry found */
+    }
+    if(!strncasecmp((TCHAR*)fqfn, fntmp[index], 255)) {
+      found = 1; /* file already in list */
+      foundindex = index;
+    }
+  }
+  file_close();
+
+  if(index > 9 + found) {
+    //List is full and game is not already in list, refuse to add it
+    return 1;
+  }
+
+  file_open(FAVORITES_FILE, FA_CREATE_ALWAYS | FA_WRITE);
+  /* always put new entry on top of list */
+  err = f_puts((const TCHAR*)fqfn, &file_handle);
+  err = f_putc(0, &file_handle);
+  written++;
+  if(index > 9 + found) index = 9 + found; /* truncate oldest entry */
+  /* allow number of destination entries to be the same as source in case
+   * we're only moving a previous entry to top */
+  for(index2 = 0; index2 < index; index2++) {
+    if(found && (index2 == foundindex)){
+      continue; /* omit found entry here to prevent dupe */
+    }
+    err = f_puts(fntmp[index2], &file_handle);
+    err = f_putc(0, &file_handle);
+    written++;
+  }
+  file_close();
+  return err;
+}
+
+int cfg_remove_favorite_game(uint8_t index_to_remove) {
+  int err = 0, index, index2, written = 0;
+  TCHAR fntmp[10][256];
+
+  // Load current favorites list into memory
+  file_open(FAVORITES_FILE, FA_READ);
+  for(index = 0; index < 10; index++) {
+    f_gets(fntmp[index], 255, &file_handle);
+    if((*fntmp[index] == 0) || (*fntmp[index] == '\n')) {
+      break; /* last entry found */
+    }
+  }
+  file_close();
+
+  //Write back all favorites except the one at index_to_remove
+  file_open(FAVORITES_FILE, FA_CREATE_ALWAYS | FA_WRITE);
+  for(index2 = 0; index2 < index; index2++) {
+    if(index2 == index_to_remove){
+      continue;
+    }
+    err = f_puts(fntmp[index2], &file_handle);
+    err = f_putc(0, &file_handle);
+    written++;
+  }
+  file_close();
+  return err;
+}
+
+int cfg_get_favorite_game(uint8_t *fn, uint8_t index) {
+  int err = 0;
+  file_open(FAVORITES_FILE, FA_READ);
+  do {
+    f_gets((TCHAR*)fn, 255, &file_handle);
+  } while (index--);
+  file_close();
+  return err;
+}
+
+void cfg_dump_favorite_games_for_snes(uint32_t address) {
+  TCHAR fntmp[256];
+  int index;
+  file_open(FAVORITES_FILE, FA_READ);
+  for(index = 0; index < 10 && !f_eof(&file_handle); index++) {
+    f_gets(fntmp, 255, &file_handle);
+    sram_writestrn(strrchr((const char*)fntmp, '/')+1, address+256*index, 256);
+  }
+  STM.num_favorite_games = index;
+  file_close();
+}
+
 /* make binary config available to menu */
 void cfg_load_to_menu() {
   sram_writeblock(&CFG, SRAM_MENU_CFG_ADDR, sizeof(cfg_t));

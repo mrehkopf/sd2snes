@@ -134,6 +134,8 @@ filesel_updates:
   bne key_a
   lda pad_x
   bne key_x
+  lda pad_y
+  bne key_y
   lda pad_l
   bne key_l
   lda pad_r
@@ -159,6 +161,9 @@ key_a
   bra fileselupd_out
 key_x
   jsr filesel_key_x
+  bra fileselupd_out
+key_y
+  jsr filesel_key_y
   bra fileselupd_out
 key_select
   jsr filesel_key_select
@@ -482,6 +487,7 @@ filesel_key_a:
   rts
 
 filesel_key_select:
+  jsl select_favorite_file
   rts
 
 filesel_key_start:
@@ -774,6 +780,90 @@ filesel_key_x:
   jsr mainmenu
   rts
 
+filesel_key_y:
+  jsr open_context_menu
+  rts
+
+open_context_menu:
+  rep #$20 : .al
+  lda filesel_sel
+  and #$00ff
+  asl
+  asl
+  tay
+  sep #$20 : .as
+  iny
+  iny
+  iny
+  lda [dirptr_addr], y
+  cmp #TYPE_ROM
+  beq ctx_is_file
+  cmp #TYPE_SPC
+  beq ctx_is_spc
+  cmp #TYPE_SUBDIR
+  beq ctx_is_dir
+  cmp #TYPE_PARENT
+  beq ctx_is_parent
+open_context_menu_cont
+  rts
+ctx_is_file
+; "save" selected file path to MCU_PARAM in case we need to send it there later
+  dey
+  rep #$20 : .al
+  lda [dirptr_addr], y
+  and #$00ff
+  sta @MCU_PARAM+6
+  dey
+  dey
+  lda [dirptr_addr], y
+  sta @MCU_PARAM+4
+  lda #!FILESEL_CWD
+  sta @MCU_PARAM
+  sep #$20 : .as
+  lda #^FILESEL_CWD
+  sta @MCU_PARAM+2
+  lda #$00
+  sta @MCU_PARAM+3
+  jsr filesel_contextmenu_file
+  bra open_context_menu_cont
+ctx_is_parent
+  bra open_context_menu_cont
+ctx_is_dir
+  bra open_context_menu_cont
+ctx_is_spc
+  bra open_context_menu_cont
+
+add_selected_file_to_favorites:
+; have MCU save the file to the favorites list
+; the file path should already have been saved to MCU_PARAM before calling
+; this routine
+  php
+  phb
+  sep #$20 : .as
+  lda #$01
+  jsr hide_cursor
+  jsr draw_loading_window
+  jsr waitblank
+  lda #$00
+  sta @SNES_CMD
+  lda #CMD_ADD_FAVORITE_ROM
+  sta @MCU_CMD
+; wait for ACK/NACK
+- lda @SNES_CMD
+  cmp #$55
+; success
+  beq +
+  cmp #$aa
+; failure
+  beq +
+  bra -
++ lda #$55
+  sta @MCU_CMD
+  jsr pop_window
+  plb
+  plp
+  rtl
+
 setup_224:
   php
   rep #$30 : .xl : .al
@@ -894,6 +984,7 @@ select_last_file:
   bne -
   lda #$01
   sta listsel_step
+  stz listsel_pickbutton
   jsr menu_select
   sta @MCU_PARAM
   cmp #$ff
@@ -902,6 +993,115 @@ select_last_file:
   lda #CMD_LOADLAST
   jsr game_handshake
 + jsr pop_window
+  plp
+  rtl
+
+select_favorite_file:
+; shows a window with a list of favorite games
+  php
+  sep #$20 : .as
+  rep #$10 : .xl
+  lda @ST_NUM_FAVORITE_GAMES
+  sta num_favorite_games
+  bne +
+  plp
+  rtl
++ lda #^text_favorite
+  sta window_tbank
+  ldx #!text_favorite
+  stx window_taddr
+  lda @last_win_x
+  sta window_x
+  inc
+  inc
+  pha
+  lda @last_win_y
+  sta window_y
+  inc
+  pha
+  lda @last_win_w
+  sta window_w
+  lda @ST_NUM_FAVORITE_GAMES
+  inc
+  inc
+  sta window_h
+  jsr push_window
+  lda num_favorite_games
+  sta listsel_max
+  jsr draw_window
+  stz print_pal
+  lda #^FAVORITE_GAMES
+  ldx #!FAVORITE_GAMES
+  sta print_bank
+  stx print_src
+  stz print_pal
+  pla
+  sta print_y
+  pla
+  sta print_x
+- lda #56
+  sta print_count
+  jsr hiprint
+  inc print_src+1
+  inc print_y
+  dec num_favorite_games
+  bne -
+  lda #$01
+  sta listsel_step
+  sta listsel_pickbutton
+  jsr menu_select
+  sta @MCU_PARAM ; store selected item index in mcu param
+  cmp #$ff ; if no selected item, do nothing
+  beq select_favorite_file_done
+  lda listsel_pickbutton
+  cmp #$00 ; if button A was pressed
+  beq select_favorite_file_play
+  cmp #$01 ; if button Y was pressed
+  beq select_favorite_file_context_menu
+  bra select_favorite_file_done ; unknown button was pressed
+select_favorite_file_play
+  sep #$20 : .as
+  lda #CMD_LOADFAVORITE
+  jsr game_handshake
+  bra select_favorite_file_done
+select_favorite_file_context_menu
+  jsr filesel_favorites_contextmenu
+  jsr pop_window
+  plp
+  jmp select_favorite_file ; return to favorite list after closing the ctx menu
+select_favorite_file_done
+  jsr pop_window
+  plp
+  rtl
+
+remove_selected_favorite_file:
+; have MCU remove the file from the favorites list
+; the list index of the file should already have been saved to MCU_PARAM before
+; calling this routine
+  php
+  phb
+  sep #$20 : .as
+  lda #$01
+  jsr hide_cursor
+  jsr draw_loading_window
+  jsr waitblank
+  lda #$00
+  sta @SNES_CMD
+  lda #CMD_REMOVE_FAVORITE_ROM
+  sta @MCU_CMD
+  ; wait for ACK/NACK
+  - lda @SNES_CMD
+  cmp #$55
+  ; success
+  beq +
+  cmp #$aa
+  ; failure
+  beq +
+  bra -
+  + lda #$55
+  sta @MCU_CMD
+  jsr pop_window
+  plb
   plp
   rtl
 
