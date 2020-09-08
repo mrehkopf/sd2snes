@@ -130,15 +130,15 @@ void savestate_set_fixes() {
       src = strtol(buf, NULL, 16);
       sram_writeshort(src, SS_FIXES_ADDR+6);
 
-
-
       //rompatch
-      strncpy(buf, strchr(tok.stringvalue, ';')+1, 6); buf[6] = '\0';
-      dst = strtol(buf, NULL, 16);
-      strncpy(buf, strrchr(tok.stringvalue, ',')+1, 2); buf[2] = '\0';
-      uint8_t byte = strtol(buf, NULL, 16);
-      if(dst > 0){
-        sram_writebyte(byte, dst);        
+      if(strchr(tok.stringvalue, ';') != NULL){
+        strncpy(buf, strchr(tok.stringvalue, ';')+1, 6); buf[6] = '\0';
+        dst = strtol(buf, NULL, 16);
+        strncpy(buf, strrchr(tok.stringvalue, ',')+1, 2); buf[2] = '\0';
+        uint8_t byte = strtol(buf, NULL, 16);
+        if(dst > 0){
+          sram_writebyte(byte, dst);        
+        }
       }
     }
   }

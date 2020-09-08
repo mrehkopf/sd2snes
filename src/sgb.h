@@ -27,8 +27,8 @@
 #ifndef SGB_H
 #define SGB_H
 
-#define SGBFW   ((const uint8_t*)"/sd2snes/sgb2_boot.bin")
-#define SGBSR   ((const uint8_t*)"/sd2snes/sgb2_snes.bin")
+char SGBFW[30];
+char SGBSR[30];
 
 typedef struct __attribute__ ((__packed__)) _sgb_header {
   uint8_t entry[4];      /* 0x100 */
@@ -51,8 +51,8 @@ typedef struct __attribute__ ((__packed__)) _sgb_romprops {
   uint8_t pad1;               /* for alignment */
   uint32_t ramsize_bytes;     /* CartRAM size in bytes */
   uint32_t romsize_bytes;     /* ROM size in bytes (rounded up) */
-  const uint8_t* sgb_boot;    /* SGB BOOT ROM filename */
-  const uint8_t* fpga_conf;   /* FPGA config file to load (default: base) */
+  uint8_t* sgb_boot;    /* SGB BOOT ROM filename */
+  uint8_t* fpga_conf;   /* FPGA config file to load (default: base) */
   uint8_t has_sgb;            /* SGB presence flag */
   uint8_t has_rtc;            /* RTC presence flag */
   uint32_t srambase;          /* saveram base address */

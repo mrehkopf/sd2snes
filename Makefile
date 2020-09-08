@@ -1,4 +1,4 @@
-VERSION := 1.10.3-frs-v11
+VERSION := 1.10.3-frs-v12
 MCUSRC := src
 
 MK2MCUPATH := $(MCUSRC)/obj-mk2
@@ -29,7 +29,13 @@ VERSION ?= SNAPSHOT
 TARGETPARENT := release/v$(VERSION)
 TARGET := $(TARGETPARENT)/sd2snes
 
-all: version release
+all: version build release
+
+build:
+	@cd snes && make
+	@cd src && make CONFIG=config-mk2
+	@cd src && make CONFIG=config-mk3
+	@cd savestate && make
 
 release: version bsxpage
 	rm -rf $(TARGETPARENT)
@@ -43,10 +49,10 @@ release: version bsxpage
 	cp $(MENUPATH)/$(MK2MENU) $(TARGET)
 	cp $(MENUPATH)/$(MK3MENU) $(TARGET)
 	cp $(SAVESTATEPATH)/$(SAVESTATEFILES) $(TARGET)
-	cd $(TARGETPARENT) && zip -r sd2snes_firmware_v$(VERSION).zip sd2snes
+	cd $(TARGETPARENT) && zip -r sd2snes_v$(VERSION).zip sd2snes
 
 bsxpage:
-	$(UTILS)/genbsxpage
+	cd bin && ../$(UTILS)/genbsxpage
 
 version:
 	@echo Version: $(VERSION)

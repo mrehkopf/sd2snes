@@ -45,7 +45,8 @@ cfg_t CFG_DEFAULT = {
   .sgb_enable_state = 0,
   .sgb_volume_boost = 0,
   .sgb_enh_override = 0,
-  .sgb_sgb1_timing = 0
+  .sgb_clock_fix = 1,
+  .sgb_bios_version = 2
 };
 
 cfg_t CFG;
@@ -80,23 +81,24 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_CHEATS, CFG.enable_cheats ? "true" : "false");
   f_puts("\n\n# IRQ hook related settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Overall enable IRQ hooks (required for in-game buttons & WRAM cheats)\n", CFG_ENABLE_INGAME_HOOK);
-  f_printf(&file_handle, "#  %s: Enable in-game buttons (en/disable cheats, reset sd2snes...)\n", CFG_ENABLE_INGAME_BUTTONS);
-  f_printf(&file_handle, "#  %s: Enable 10s grace period after reset before enabling in-game hooks\n", CFG_ENABLE_HOOK_HOLDOFF);
-  f_printf(&file_handle, "#  %s: Enable in-game savestate\n", CFG_ENABLE_INGAME_SAVESTATE);
-  f_printf(&file_handle, "#  %s: Load state delay (frames),\n", CFG_LOADSTATE_DELAY);
-  f_printf(&file_handle, "#  %s: Enable in-game savestate (0: disabled, 1: enabled)\n", CFG_ENABLE_INGAME_SAVESTATE);
-  f_printf(&file_handle, "#  %s: In-game save state buttons (buttons: BYsSudlrAXLR, default: start+l),\n", CFG_INGAME_SAVESTATE_BUTTONS);
-  f_printf(&file_handle, "#  %s: In-game load state buttons (buttons: BYsSudlrAXLR, default: start+r),\n", CFG_INGAME_LOADSTATE_BUTTONS);
-  f_printf(&file_handle, "#  %s: In-game change state slot buttons (buttons: BYsSudlrAXLR, don't use dpad buttons, default: select),\n", CFG_INGAME_CHANGESTATE_BUTTONS);
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_INGAME_HOOK, CFG.enable_ingame_hook ? "true" : "false");
+  f_printf(&file_handle, "#  %s: Enable in-game buttons (en/disable cheats, reset sd2snes...)\n", CFG_ENABLE_INGAME_BUTTONS);
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_INGAME_BUTTONS, CFG.enable_ingame_buttons ? "true" : "false");
+  f_printf(&file_handle, "#  %s: Enable 10s grace period after reset before enabling in-game hooks\n", CFG_ENABLE_HOOK_HOLDOFF);
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_HOOK_HOLDOFF, CFG.enable_hook_holdoff ? "true" : "false");
   f_printf(&file_handle, "%s: %s\n", CFG_RESET_PATCH, CFG.reset_patch ? "true" : "false");
+  f_puts("\n", &file_handle);
+  f_printf(&file_handle, "#  %s: Enable in-game savestate\n", CFG_ENABLE_INGAME_SAVESTATE);
   f_printf(&file_handle, "%s: %d\n", CFG_ENABLE_INGAME_SAVESTATE, CFG.enable_ingame_savestate);
+  f_printf(&file_handle, "#  %s: Load state delay (frames),\n", CFG_LOADSTATE_DELAY);
   f_printf(&file_handle, "%s: %d\n", CFG_LOADSTATE_DELAY, CFG.loadstate_delay);
+  f_printf(&file_handle, "#  %s: Enable in-game savestate (0: disabled, 1: enabled)\n", CFG_ENABLE_INGAME_SAVESTATE);
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_SAVESTATE_SLOTS, CFG.enable_savestate_slots ? "true" : "false");
+  f_printf(&file_handle, "#  %s: In-game save state buttons (buttons: BYsSudlrAXLR, default: start+l),\n", CFG_INGAME_SAVESTATE_BUTTONS);
   f_printf(&file_handle, "%s: %s\n", CFG_INGAME_SAVESTATE_BUTTONS, CFG.ingame_savestate_buttons);
+  f_printf(&file_handle, "#  %s: In-game load state buttons (buttons: BYsSudlrAXLR, default: start+r),\n", CFG_INGAME_LOADSTATE_BUTTONS);
   f_printf(&file_handle, "%s: %s\n", CFG_INGAME_LOADSTATE_BUTTONS, CFG.ingame_loadstate_buttons);
+  f_printf(&file_handle, "#  %s: In-game change state slot buttons (buttons: BYsSudlrAXLR, don't use dpad buttons, default: select),\n", CFG_INGAME_CHANGESTATE_BUTTONS);
   f_printf(&file_handle, "%s: %s\n", CFG_INGAME_CHANGESTATE_BUTTONS, CFG.ingame_changestate_buttons);
   f_puts("\n", &file_handle);
   f_printf(&file_handle, "#  %s: SGB enable hooks (%s or %s enables SGB hooks.  zero overhead.)\n", CFG_SGB_ENABLE_INGAME_HOOK, CFG_SGB_ENABLE_INGAME_HOOK, CFG_ENABLE_INGAME_HOOK);
@@ -111,8 +113,10 @@ int cfg_save() {
   f_printf(&file_handle, "#  %s: SGB sprite increase per scanline.  not compatible with all games  (false: 10 sprites (default); true: 16 sprites)\n", CFG_SGB_SPR_INCREASE);
   f_printf(&file_handle, "%s: %s\n", CFG_SGB_SPR_INCREASE, CFG.sgb_spr_increase ? "true" : "false");
 #endif
-  f_printf(&file_handle, "#  %s: SGB enable SGB1 timing based on SNES CPU clock\n", CFG_SGB_SGB1_TIMING);
-  f_printf(&file_handle, "%s: %s\n", CFG_SGB_SGB1_TIMING, CFG.sgb_sgb1_timing ? "true" : "false");
+  f_printf(&file_handle, "#  %s: SGB timing/clock (true: original/sgb2, false: snes/sgb1)\n", CFG_SGB_CLOCK_FIX);
+  f_printf(&file_handle, "%s: %s\n", CFG_SGB_CLOCK_FIX, CFG.sgb_clock_fix ? "true" : "false");
+  f_printf(&file_handle, "#  %s: SGB bios firmware version (defined number loads: sgbX_boot.bin and sgbX_snes.bin)\n", CFG_SGB_BIOS_VERSION);
+  f_printf(&file_handle, "%s: %d\n", CFG_SGB_BIOS_VERSION, CFG.sgb_bios_version);
 
   f_puts("\n# Screensaver settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Enable screensaver\n", CFG_ENABLE_SCREENSAVER);
@@ -247,8 +251,11 @@ int cfg_load() {
       CFG.sgb_spr_increase = tok.boolvalue ? 1 : 0;
     }
 #endif
-    if(yaml_get_itemvalue(CFG_SGB_SGB1_TIMING, &tok)) {
-      CFG.sgb_sgb1_timing = tok.boolvalue ? 1 : 0;
+    if(yaml_get_itemvalue(CFG_SGB_CLOCK_FIX, &tok)) {
+      CFG.sgb_clock_fix = tok.boolvalue ? 1 : 0;
+    }
+    if(yaml_get_itemvalue(CFG_SGB_BIOS_VERSION, &tok)) {
+      CFG.sgb_bios_version = tok.longvalue;
     }
   }
   yaml_file_close();

@@ -65,6 +65,9 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
 
   printf("Loading SGB\n");
   props->has_sgb = 1;
+
+  snprintf(SGBFW, sizeof(SGBFW), "/sd2snes/sgb%d_boot.bin", CFG.sgb_bios_version);
+  snprintf(SGBSR, sizeof(SGBSR), "/sd2snes/sgb%d_snes.bin", CFG.sgb_bios_version);
   
   file_readblock(header, 0x100, sizeof(sgb_header_t));
 
@@ -175,7 +178,7 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
   }
   
   /* SGB BOOT ROM filename */
-  props->sgb_boot = SGBFW;
+  props->sgb_boot = (uint8_t *)SGBFW;
   
   /* saveram base address */
   props->srambase = 0;
@@ -184,23 +187,24 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
   props->sramsize_bytes = props->ramsize_bytes;
 
   /* features */
-  props->fpga_sgbfeat = ( (((uint16_t)CFG.sgb_volume_boost & 0x7) <<  0)
-                        | (((uint16_t)CFG.sgb_enh_override & 0x1) <<  8)
-                        | (((uint16_t)CFG.sgb_spr_increase & 0x1) <<  9)
-                        | (((uint16_t)CFG.sgb_sgb1_timing  & 0x1) << 10)
-                        );
+  props->fpga_sgbfeat = (
+    (((uint16_t)CFG.sgb_volume_boost & 0x7) <<  0)
+    | (((uint16_t)CFG.sgb_enh_override & 0x1) <<  8)
+    | (((uint16_t)CFG.sgb_spr_increase & 0x1) <<  9)
+    | (((!(uint16_t)CFG.sgb_clock_fix) & 0x1) << 10)
+  );
 
   /* SGB debug print */
   if (props->has_sgb) {
     printf("SGB:  has_sgb=%1d  mapper=0x%02x  ramsize_bytes=%ld  romsize_bytes=%ld  srambase=0x%06lx  sramsize_bytes=%ld\n", props->has_sgb,
-                                                                                                                             props->mapper_id,
-                                                                                                                             props->ramsize_bytes,
-                                                                                                                             props->romsize_bytes,
-                                                                                                                             props->srambase,
-                                                                                                                             props->sramsize_bytes);
+      props->mapper_id,
+      props->ramsize_bytes,
+      props->romsize_bytes,
+      props->srambase,
+      props->sramsize_bytes);
     printf("SGB:  carttype=0x%02x  romsize=0x%02x  ramsize=0x%02x\n", props->header.carttype,
-                                                                      props->header.romsize,
-                                                                      props->header.ramsize);
+      props->header.romsize,
+      props->header.ramsize);
   }
 
 }
@@ -233,9 +237,9 @@ uint8_t sgb_update_romprops(snes_romprops_t *romprops, uint8_t *filename) {
        ) {
       sgb_romprops.has_sgb = 0;
       printf("SGB SNES image does meet requirements: mapper=0x%02x, romsize=0x%02x, filesize=%ld, sramsize_bytes=%ld.\n", romprops->mapper_id,
-                                                                                                                          romprops->header.romsize,
-                                                                                                                          file_handle.fsize,
-                                                                                                                          romprops->sramsize_bytes);
+        romprops->header.romsize,
+        file_handle.fsize,
+        romprops->sramsize_bytes);
       return 0;
     }
     
@@ -259,8 +263,8 @@ uint8_t sgb_update_romprops(snes_romprops_t *romprops, uint8_t *filename) {
 void sgb_load_sram(uint8_t *sgb_filename) {
   if (sgb_romprops.has_sgb) {
     /* load images */
-    printf("attempting to load SGB boot ROM %s...\n", SGBFW);
-    load_sram_offload((uint8_t *)SGBFW, 0x800000, 0);
+    printf("attempting to load SGB boot ROM %s...\n", (uint8_t*) SGBFW);
+    load_sram_offload((uint8_t*) SGBFW, 0x800000, 0);
     printf("attempting to load GB ROM %s...\n", sgb_filename);
     load_sram_offload(sgb_filename, 0x0, 0);
   }
@@ -283,7 +287,10 @@ void sgb_cheat_program(void) {
 uint8_t sgb_bios_state(void) {
   uint8_t state = SGB_BIOS_OK;
 
-  file_open(SGBFW, FA_READ);
+  snprintf(SGBFW, sizeof(SGBFW), "/sd2snes/sgb%d_boot.bin", CFG.sgb_bios_version);
+  snprintf(SGBSR, sizeof(SGBSR), "/sd2snes/sgb%d_snes.bin", CFG.sgb_bios_version);
+
+  file_open((uint8_t*) SGBFW, FA_READ);
   if (file_res) {
     state = SGB_BIOS_MISSING;
   }
@@ -298,18 +305,18 @@ uint8_t sgb_bios_state(void) {
     }
     if (state <= SGB_BIOS_MISMATCH
        && (  (crc != 0x5e46583b) // sgb2_boot.bin
-          && (crc != 0xe11c06e1) // sgb_boot.bin
+          && (crc != 0xec8a83b9) // sgb_boot.bin
           && (crc != 0x7e2b1384) // sgb2_boot.bin (SB)
           && (crc != 0xe03aed56) // sgb_boot.bin (SB)
           )
        ) {
-      printf("SGB sgb2_boot.bin CRC mismatch: 0x%08x\n", (unsigned int)crc);
+      printf("SGB sgb%d_boot.bin CRC mismatch: 0x%08x\n", CFG.sgb_bios_version, (unsigned int)crc);
       state = SGB_BIOS_MISMATCH;
     }
   }
   file_close();
 
-  file_open(SGBSR, FA_READ);
+  file_open((uint8_t*) SGBSR, FA_READ);
   if (file_res) {
     state = SGB_BIOS_MISSING;
   }
@@ -328,7 +335,7 @@ uint8_t sgb_bios_state(void) {
           && (crc != 0x6844fd6d) // sgb bios v1.2 (UE)
           )
        ) {
-      printf("SGB sgb2_snes.bin CRC mismatch: 0x%08x\n", (unsigned int)crc);
+      printf("SGB sgb%d_snes.bin CRC mismatch: 0x%08x\n", CFG.sgb_bios_version, (unsigned int)crc);
       state = SGB_BIOS_MISMATCH;
     }
   }
@@ -353,15 +360,15 @@ void sgb_gtc_load(uint8_t* filename) {
     time2gtime(&gtime_cur, &time);
 
     printf("SGB load curr time: year=%hd, mon=%hhd, days=%hhd, hour=%hhd, min=%hhd, sec=%hhd\n", time.tm_year,
-                                                                                                 time.tm_mon,
-                                                                                                 time.tm_mday,
-                                                                                                 time.tm_hour,
-                                                                                                 time.tm_min,
-                                                                                                 time.tm_sec);
+      time.tm_mon,
+      time.tm_mday,
+      time.tm_hour,
+      time.tm_min,
+      time.tm_sec);
     printf("SGB load curr gtime RTC: days=%ld, hour=%hhd, min=%hhd, sec=%hhd\n", gtime_cur.gtm_days,
-                                                                                 gtime_cur.gtm_hour,
-                                                                                 gtime_cur.gtm_min,
-                                                                                 gtime_cur.gtm_sec);
+      gtime_cur.gtm_hour,
+      gtime_cur.gtm_min,
+      gtime_cur.gtm_sec);
   
     if(file_res) {
       /* create GTC file if it doesn't exist.  load the delta of the current time and the contents of the file into the GB RTC */
@@ -399,11 +406,11 @@ void sgb_gtc_load(uint8_t* filename) {
     unsigned ftimel = (ftime >>  0) & 0xFFFFFFFF;
     unsigned ftimeh = (ftime >> 32) & 0xFFFFFFFF;
     printf("SGB load GB RTC: days=%ld, hour=%hhd, min=%hhd, sec=%hhd, ftime=0x%04x%04x\n", gtime_cur.gtm_days,
-                                                                                           gtime_cur.gtm_hour,
-                                                                                           gtime_cur.gtm_min,
-                                                                                           gtime_cur.gtm_sec,
-                                                                                           ftimeh, ftimel);
-    
+      gtime_cur.gtm_hour,
+      gtime_cur.gtm_min,
+      gtime_cur.gtm_sec,
+      ftimeh, ftimel);
+
     file_close();
   }
 }
@@ -446,11 +453,11 @@ void sgb_gtc_save(uint8_t* filename) {
       unsigned ftimel = (ftime >>  0) & 0xFFFFFFFF;
       unsigned ftimeh = (ftime >> 32) & 0xFFFFFFFF;
       printf("SGB save GB RTC: days=%ld, hour=%hhd, min=%hhd, sec=%hhd, ftime=0x%04x%04x\n", gtime_cur.gtm_days,
-                                                                                             gtime_cur.gtm_hour,
-                                                                                             gtime_cur.gtm_min,
-                                                                                             gtime_cur.gtm_sec,
-                                                                                             ftimeh, ftimel);
-                                                                         
+        gtime_cur.gtm_hour,
+        gtime_cur.gtm_min,
+        gtime_cur.gtm_sec,
+        ftimeh, ftimel); 
+
       file_close();
     }
   }

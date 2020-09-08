@@ -2280,7 +2280,7 @@ always @(posedge CLK) begin
         // RR expects stat write to trigger spurious interrupt during V-Blank to make menu->game not lock.  144 V-Blank Int -> 147-148 Spurious STAT (V-Blank) Int -> 153 STAT (LY==LYC==0) Int -> 0 STAT (H-Blank) Int
         ppu_stat_match_r[`STAT_INT_H_EN] <= (REG_STAT_r[`STAT_INT_H_EN] | ppu_stat_write_r) & |(ppu_state_r & ST_PPU_HBL);
         ppu_stat_match_r[`STAT_INT_V_EN] <= (REG_STAT_r[`STAT_INT_V_EN] | ppu_stat_write_r) & |(ppu_state_r & ST_PPU_VBL);
-        ppu_stat_match_r[`STAT_INT_O_EN] <= (REG_STAT_r[`STAT_INT_O_EN] | ppu_stat_write_r) & ((|(ppu_state_r & ST_PPU_OAM_NEW) & |ppu_scanline_r) | (|(ppu_state_r & ST_PPU_VBL) & ~ppu_vblank_seen_r & ppu_dot_ctr_r[0]));  // pulse
+        ppu_stat_match_r[`STAT_INT_O_EN] <= (REG_STAT_r[`STAT_INT_O_EN] | ppu_stat_write_r) & ((|ppu_scanline_r ? |(ppu_state_r & ST_PPU_OAM_NEW) : |(ppu_state_r & ST_PPU_FRM_NEW)) | (|(ppu_state_r & ST_PPU_VBL) & ~ppu_vblank_seen_r & ppu_dot_ctr_r[0]));  // pulse
         ppu_stat_match_r[`STAT_INT_M_EN] <= (REG_STAT_r[`STAT_INT_M_EN] | ppu_stat_write_r) & REG_STAT_r[`STAT_LYC_MATCH];
       end
       
