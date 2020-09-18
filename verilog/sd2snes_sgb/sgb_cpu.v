@@ -3057,7 +3057,13 @@ always @(posedge CLK) begin
     if (REG_req_val) begin
       case (REG_address)
         8'h01: REG_SB_r[7:0] <= REG_req_data[7:0];
-        8'h02: REG_SC_r[7:0] <= REG_req_data[7:0];
+        8'h02: begin
+         REG_SC_r[7:0] <= REG_req_data[7:0];
+         // support MCU/DBG triggering interrupt on 1->0 transition.  it's possible, but highly unlikely save states could trigger this and we
+         // may not want that.  that would happen only on the few games that use this and require saving and then loading a state in
+         // external clock mode when the state machine is active.  BMQ doesn't want to assert interrupt on CPU write of SC.
+         if (reg_src_r & ~HLT_RSP) ser_done_r <= REG_SC_r[7] & ~REG_req_data[7];
+        end
       endcase
     end
   end
