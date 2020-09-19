@@ -65,7 +65,7 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
 
   printf("Loading SGB\n");
   props->has_sgb = 1;
-  
+
   file_readblock(header, 0x100, sizeof(sgb_header_t));
 
   /* FPGA mapper
@@ -76,7 +76,7 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
       4 = HUC1      mapper_id[3] = HUC3
       5 = MBC5      mapper_id[3] = CAM
       6 = Unmapped
-      7 = Unmapped      
+      7 = Unmapped
   */
   switch (header->carttype) {
     // MBC0
@@ -125,7 +125,7 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
       props->mapper_id |= 0x01;
       break;
   }
-  
+
   /* CartRAM size in bytes */
   switch (header->ramsize) {
     case 0x00: props->ramsize_bytes = 0;        break;
@@ -136,7 +136,7 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
     default:   props->ramsize_bytes = 0;        break;
   }
   if (props->mapper_id == 2) props->ramsize_bytes = 512;
-  
+
   /* ROM size in bytes */
   switch (header->romsize) {
     case 0x52: case 0x53: case 0x54:
@@ -148,7 +148,7 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
       break;
     default:   props->romsize_bytes = 0; break;
   }
-  
+
   /* Handle MBC1M. */
   if (props->mapper_id == 0x01) {
     uint32_t header_pos[] = {0x40100 /*, 0x80100*/};
@@ -157,7 +157,7 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
       if (props->romsize_bytes >= header_pos[h] + sizeof(sgb_header_t)) {
         sgb_header_t multi_header;
         uint32_t crc = 0;
-      
+
         file_readblock(&multi_header, header_pos[h], sizeof(sgb_header_t));
         for (UINT i = 0; i < sizeof(multi_header.logo); i++) crc = crc32_update(crc, multi_header.logo[i]);
 
@@ -169,14 +169,14 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
            ) {
           props->mapper_id |= 0x08;
           break;
-        }        
+        }
       }
     }
   }
-  
+
   /* SGB BOOT ROM filename */
   props->sgb_boot = SGBFW;
-  
+
   /* saveram base address */
   props->srambase = 0;
 
@@ -219,7 +219,7 @@ uint8_t sgb_update_file(uint8_t **filename_ref) {
       return 0;
     }
   }
-  
+
   return 1;
 }
 
@@ -238,7 +238,7 @@ uint8_t sgb_update_romprops(snes_romprops_t *romprops, uint8_t *filename) {
                                                                                                                           romprops->sramsize_bytes);
       return 0;
     }
-    
+
     romprops->fpga_conf = FPGA_SGB;
     romprops->load_address = 0x880000;
 
@@ -246,13 +246,13 @@ uint8_t sgb_update_romprops(snes_romprops_t *romprops, uint8_t *filename) {
     // FIXME: temporary workaround for MSU
     if (msu1_check(filename)) {
       // msu1_check has several side effects.  assume they can be safely ignored for this workaround
-      extern FIL msudata;      
+      extern FIL msudata;
       f_close(&msudata);
       romprops->fpga_conf = ((const uint8_t*)"/sd2snes/fpga_sgb_msu." FPGA_CONF_EXT);
     }
 #endif
   }
-  
+
   return 1;
 }
 
@@ -271,10 +271,10 @@ void sgb_cheat_program(void) {
     /* update cheats based on SGB file and configuration state */
     if (CFG.sgb_enable_ingame_hook) cheat_nmi_enable(1);
     if (CFG.sgb_enable_ingame_hook) cheat_irq_enable(1);
-    
+
     /* save states (repurpose cheats) enabled via config */
     cheat_enable((CFG.sgb_enable_state && sgb_romprops.ramsize_bytes <= 64 * 1024) ? 1 : 0);
-    
+
     /* wram never present */
     cheat_wram_present(0);
   }
@@ -290,7 +290,7 @@ uint8_t sgb_bios_state(void) {
   else {
     uint32_t crc = 0;
     UINT bytes_read = 0;
-    
+
     while ((bytes_read = file_read())) {
       if (file_res) break;
 
@@ -316,7 +316,7 @@ uint8_t sgb_bios_state(void) {
   else {
     uint32_t crc = 0;
     UINT bytes_read = 0;
-    
+
     while ((bytes_read = file_read())) {
       if (file_res) break;
 
@@ -333,7 +333,7 @@ uint8_t sgb_bios_state(void) {
     }
   }
   file_close();
-  
+
   return state;
 }
 
@@ -342,12 +342,12 @@ void sgb_gtc_load(uint8_t* filename) {
     struct tm time;
     struct gtm gtime_cur;
     struct gtm gtime_ts;
-  
+
     char gtcfile[256] = SAVE_BASEDIR;
     check_or_create_folder(SAVE_BASEDIR);
     append_file_basename(gtcfile, (char*)filename, ".gtc", sizeof(gtcfile));
     file_open((uint8_t *)gtcfile, FA_READ);
-  
+
     /* get current time in gtime format */
     read_rtc(&time);
     time2gtime(&gtime_cur, &time);
@@ -362,7 +362,7 @@ void sgb_gtc_load(uint8_t* filename) {
                                                                                  gtime_cur.gtm_hour,
                                                                                  gtime_cur.gtm_min,
                                                                                  gtime_cur.gtm_sec);
-  
+
     if(file_res) {
       /* create GTC file if it doesn't exist.  load the delta of the current time and the contents of the file into the GB RTC */
       file_open((uint8_t *)gtcfile, FA_CREATE_ALWAYS | FA_WRITE);
@@ -370,7 +370,7 @@ void sgb_gtc_load(uint8_t* filename) {
         uart_putc(0x30+file_res);
         return;
       }
-  
+
       gtime_ts = gtime_cur;
       writeled(1);
       file_writeblock(&gtime_ts, 0, sizeof(gtime_ts));
@@ -387,7 +387,7 @@ void sgb_gtc_load(uint8_t* filename) {
       file_writeblock(&gtime_cur, 0, sizeof(gtime_cur));
       memset(&gtime_cur, 0, sizeof(gtime_cur));
     }
-    
+
     uint64_t ftime = 0;
     ftime |= (uint64_t)(gtime_cur.gtm_sec               ) <<  0; // sec
     ftime |= (uint64_t)(gtime_cur.gtm_min               ) <<  8; // min
@@ -403,7 +403,7 @@ void sgb_gtc_load(uint8_t* filename) {
                                                                                            gtime_cur.gtm_min,
                                                                                            gtime_cur.gtm_sec,
                                                                                            ftimeh, ftimel);
-    
+
     file_close();
   }
 }
@@ -417,7 +417,7 @@ void sgb_gtc_save(uint8_t* filename) {
 
     /* read GTC */
     uint64_t ftime = get_fpga_time();
-    
+
     /* read RTC */
     read_rtc(&time);
     time2gtime(&gtime_cur, &time);
@@ -425,9 +425,9 @@ void sgb_gtc_save(uint8_t* filename) {
     gtime_gtc.gtm_min  = (ftime >> 8)  & 0x3F;
     gtime_gtc.gtm_hour = (ftime >> 16) & 0x1F;
     gtime_gtc.gtm_days = (ftime >> 24) & 0x1FF;
-    
+
     /* if it has been written and is not halted then compute a new delta */
-    if (((ftime >> 55) & 0x1) && !((ftime >> 38) & 0x1)) {      
+    if (((ftime >> 55) & 0x1) && !((ftime >> 38) & 0x1)) {
       /* update the timestamp file.  gtime_ts = (gtime_cur - gtime_gtc) */
       char gtcfile[256] = SAVE_BASEDIR;
       check_or_create_folder(SAVE_BASEDIR);
@@ -437,7 +437,7 @@ void sgb_gtc_save(uint8_t* filename) {
         uart_putc(0x30+file_res);
         return;
       }
-      
+
       if (get_deltagtime(&gtime_cur, &gtime_gtc)) {
         printf("SGB save GB RTC underflow.  This should never happen.\n");
       }
@@ -450,7 +450,7 @@ void sgb_gtc_save(uint8_t* filename) {
                                                                                              gtime_cur.gtm_min,
                                                                                              gtime_cur.gtm_sec,
                                                                                              ftimeh, ftimel);
-                                                                         
+
       file_close();
     }
   }

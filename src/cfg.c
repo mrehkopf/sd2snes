@@ -200,7 +200,7 @@ int cfg_load() {
     }
     if(yaml_get_itemvalue(CFG_SGB_ENABLE_INGAME_HOOK, &tok)) {
       CFG.sgb_enable_ingame_hook = tok.boolvalue ? 1 : 0;
-    }    
+    }
     if(yaml_get_itemvalue(CFG_SGB_ENABLE_STATE, &tok)) {
       CFG.sgb_enable_state = tok.boolvalue ? 1 : 0;
     }

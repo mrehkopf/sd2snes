@@ -5,7 +5,7 @@
 //
 // Create Date:
 // Design Name:
-// Module Name:    
+// Module Name:
 // Project Name:
 // Target Devices:
 // Tool versions:
@@ -36,17 +36,17 @@ module sgb_cpu(
 
   output        BOOTROM_ACTIVE,
   output        FREE_SLOT,
-  
+
   // PPU out
   output        PPU_DOT_EDGE,
   output        PPU_PIXEL_VALID,
   output [1:0]  PPU_PIXEL,
   output        PPU_VSYNC_EDGE,
   output        PPU_HSYNC_EDGE,
-  
+
   // APU out
   output [19:0] APU_DAT,
-  
+
   // P1
   output [1:0]  P1O,
   input  [3:0]  P1I,
@@ -58,13 +58,13 @@ module sgb_cpu(
 
   // Features
   input  [15:0]  FEAT,
-  
+
   // State
   output        REG_REQ,
   output [7:0]  REG_ADDR,
   output [7:0]  REG_REQ_DATA,
   input  [7:0]  MBC_REG_DATA,
-  
+
   // DBG
   input         MCU_RRQ,
   input         MCU_WRQ,
@@ -72,13 +72,13 @@ module sgb_cpu(
   input  [7:0]  MCU_DATA_IN,
   output        MCU_RSP,
   output [7:0]  MCU_DATA_OUT,
-  
+
   output [11:0] DBG_ADDR,
   input  [7:0]  DBG_ICD2_DATA_IN,
   input  [7:0]  DBG_MBC_DATA_IN,
   input  [7:0]  DBG_CHEAT_DATA_IN,
   input  [7:0]  DBG_MAIN_DATA_IN,
-  
+
   input  [8*8-1:0] DBG_CONFIG,
   output        DBG_BRK
 );
@@ -93,15 +93,15 @@ integer i;
 //
 // CPU - Central Processing Unit
 //   IFD - Instruction Fetch and Decode
-//   EXE - Register Read, Execute/Memory, and Writeback
-//   ICT - Interrupt Controller
+//   EXE - Register Read, EXEcute/Memory, and Writeback
+//   ICT - Interrupt ConTroller
 // PPU - Pixel Processing Unit
 // APU - Audio Processing Unit
 // MCT - Memory ConTroller for internal (VRAM, OAM, HRAM, REG) and external state (WRAM and CART)
 // DMA - DMA engine for copying data to the OAM
-// SER - Serial state machine
+// SER - SERial state machine
 //
-// DBG - Debug state is available for breakpoint/watchpoint.
+// DBG - DeBuG state available for breakpoint/watchpoint
 
 //-------------------------------------------------------------------
 // MISC
@@ -271,8 +271,7 @@ assign      HLT_RSP = HLT_REQ_sync & HLT_IFD_rsp & HLT_EXE_rsp & HLT_DMA_rsp & H
 //-------------------------------------------------------------------
 
 // Generate a BUS clock edge from the incoming CPU clock edge.  The
-// BUS clock is always /4.  IFD and EXE are separated by a single entry
-// op queue.
+// BUS clock is always /4.
 reg  [1:0]  clk_bus_ctr_r; always @(posedge CLK) clk_bus_ctr_r <= RST ? 0 : clk_bus_ctr_r + (CLK_CPU_EDGE ? 1 : 0);
 wire        CLK_BUS_EDGE = CLK_CPU_EDGE & &clk_bus_ctr_r;
 
@@ -284,7 +283,7 @@ reg         cpu_ireset_r; always @(posedge CLK) cpu_ireset_r <= RST | CPU_RST | 
 // will spill into the first free slot, but that will just remove that slot for MCU use.
 
 // The delay needs to match the mct request pipe to the system:
-// -1 - CLK_BUS_EDGE 
+// -1 - CLK_BUS_EDGE
 //  0 - MCT request             dma_req_r SYS/REQ
 //  1 - MCT decode              ReqPendr
 //  2 - MCT mct_req_r/SYS_REQ
@@ -544,10 +543,10 @@ always @(posedge CLK) begin
 
     tmr_cpu_edge_d1_r <= 0;
     tmr_ovf_tima_r <= 0;
-    
+
     reg_dma_start_r <= 0;
     reg_int_write_r <= 0;
-    
+
     REG_P1_r[5:4] <= 2'b11;   // FF00
     //REG_SB_r;   // FF01
     //REG_SC_r;   // FF02
@@ -560,7 +559,7 @@ always @(posedge CLK) begin
     REG_IF_r      <= 8'h00;   // FF0F
 
     // Audio registers written by APU
-    
+
     REG_LCDC_r    <= 8'h00; // FF40
     REG_STAT_r[7:3] <= 0;
     REG_SCY_r     <= 8'h00; // FF42
@@ -573,15 +572,15 @@ always @(posedge CLK) begin
     REG_OBP1_r    <= 8'hFF; // FF49
     REG_WY_r      <= 8'h00; // FF4A
     REG_WX_r      <= 8'h00; // FF4B
-    
+
     REG_BOOT_r    <= 8'h00; // FF50
-    
+
     REG_IE_r      <= 8'h00; // FFFF
   end
   else begin
-  
+
     // timers
-    if (CLK_CPU_EDGE & DBG_advance) begin     
+    if (CLK_CPU_EDGE & DBG_advance) begin
       {tmr_ovf_16_r,  REG_DIV_r[3:0]  } <= REG_DIV_r[3:0]   + 1;
       {tmr_ovf_64_r,  REG_DIV_r[5:4]  } <= REG_DIV_r[5:4]   + tmr_ovf_16_r;
       {tmr_ovf_256_r, REG_DIV_r[7:6]  } <= REG_DIV_r[7:6]   + tmr_ovf_64_r;
@@ -589,9 +588,9 @@ always @(posedge CLK) begin
       {tmr_apu_step_r,REG_DIV_r[12:10]} <= REG_DIV_r[12:10] + tmr_ovf_1024_r;
       {               REG_DIV_r[15:13]} <= REG_DIV_r[15:13] + tmr_apu_step_r;
     end
-    
+
     tmr_cpu_edge_d1_r <= CLK_CPU_EDGE;
-    
+
     // there are at least 16 base clocks in a CPU clock so update the timer state using a base clock delay
     if (REG_TAC_r[`TAC_ENABLE]) begin
       if (tmr_cpu_edge_d1_r) begin
@@ -623,10 +622,10 @@ always @(posedge CLK) begin
     end
 
     if (CLK_CPU_EDGE) REG_P1_r[3:0] <= P1I[3:0];
-  
+
     if (CLK_BUS_EDGE) reg_dma_start_r <= 0;
     if (CLK_CPU_EDGE) reg_int_write_r <= 0;
-  
+
     case (reg_state_r)
       ST_REG_IDLE: begin
         if      (MCT_REG_req_val) begin
@@ -634,7 +633,7 @@ always @(posedge CLK) begin
           reg_addr_r    <= MCT_REG_address;
           reg_wr_r      <= MCT_REG_wren;
           reg_wr_data_r <= MCT_REG_data;
-          
+
           reg_state_r <= ST_REG_REQ;
         end
         else if (DBG_REG_req_val) begin
@@ -642,7 +641,7 @@ always @(posedge CLK) begin
           reg_addr_r    <= DBG_REG_address;
           reg_wr_r      <= DBG_REG_wren;
           reg_wr_data_r <= DBG_REG_data;
-          
+
           reg_state_r <= ST_REG_REQ;
         end
       end
@@ -651,14 +650,14 @@ always @(posedge CLK) begin
           8'h00: begin reg_mdr_r[7:0] <= {2'b11, REG_P1_r[5:0]}; if (reg_wr_r) REG_P1_r[5:4]   <= reg_wr_data_r[5:4];   end
           8'h01: reg_mdr_r[7:0] <= REG_SB_r;
           8'h02: reg_mdr_r[7:0] <= {REG_SC_r[7],6'h3F,REG_SC_r[0]};
-          
+
           8'h04: begin reg_mdr_r[7:0] <= REG_DIV_r[15:8];         if (reg_wr_r) REG_DIV_r[15:0] <= 0;               end
           8'h05: begin reg_mdr_r[7:0] <= REG_TIMA_r;              if (reg_wr_r) REG_TIMA_r[7:0] <= reg_wr_data_r[7:0];  end
           8'h06: begin reg_mdr_r[7:0] <= REG_TMA_r;               if (reg_wr_r) REG_TMA_r[7:0]  <= reg_wr_data_r[7:0];  end
           8'h07: begin reg_mdr_r[7:0] <= {5'h1F,REG_TAC_r[2:0]};  if (reg_wr_r) REG_TAC_r[2:0]  <= reg_wr_data_r[2:0];  end
 
           8'h0F: begin reg_mdr_r[7:0] <= REG_IF_r;                if (reg_wr_r) begin reg_int_write_data_r <= reg_wr_data_r[7:0]; reg_int_write_r <= 1; end end
-          
+
           // APU registers read here for MMIO accesses and written in APU
           8'h10: reg_mdr_r[7:0] <= {1'h1,REG_NR10_r[6:0]};
           8'h11: reg_mdr_r[7:0] <= {REG_NR11_r[7:6],6'h3F};
@@ -702,7 +701,7 @@ always @(posedge CLK) begin
           8'h3D: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
           8'h3E: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
           8'h3F: reg_mdr_r[7:0] <= (APU_REG_enable[2] & ~reg_src_r) ? 8'hFF : REG_WAV_r[reg_addr_r[3:0]][7:0];
-          
+
           8'h40: begin reg_mdr_r[7:0] <= REG_LCDC_r;                    if (reg_wr_r) REG_LCDC_r[7:0] <= reg_wr_data_r[7:0]; end
           8'h41: begin reg_mdr_r[7:0] <= {1'b1,REG_STAT_r[6:0]};        if (reg_wr_r) REG_STAT_r[7:3] <= reg_wr_data_r[7:3]; end
           8'h42: begin reg_mdr_r[7:0] <= REG_SCY_r;                     if (reg_wr_r) REG_SCY_r[7:0]  <= reg_wr_data_r[7:0]; end
@@ -720,7 +719,7 @@ always @(posedge CLK) begin
 
 `ifdef SGB_SAVE_STATES
           // special case debug source reads to read out arch state that isn't normally memory mapped
-          
+
           // ARCH state
           8'h60: if (reg_src_r) reg_mdr_r <= A_r;
           8'h61: if (reg_src_r) reg_mdr_r <= F_r[7:0];
@@ -732,11 +731,11 @@ always @(posedge CLK) begin
           8'h67: if (reg_src_r) reg_mdr_r <= L_r;
           8'h68: if (reg_src_r) reg_mdr_r <= SP_r[7:0];
           8'h69: if (reg_src_r) reg_mdr_r <= SP_r[15:8];
-          8'h6A: if (reg_src_r) reg_mdr_r <= PC_r[7:0];   // current PC needs to account for bypass
+          8'h6A: if (reg_src_r) reg_mdr_r <= PC_r[7:0];
           8'h6B: if (reg_src_r) reg_mdr_r <= PC_r[15:8];
           8'h6C: if (reg_src_r) reg_mdr_r <= EXE_REG_ime;
-          
-          // MBC 
+
+          // MBC
           8'h70: if (reg_src_r) reg_mdr_r <= MBC_REG_DATA;
           8'h71: if (reg_src_r) reg_mdr_r <= MBC_REG_DATA;
           8'h72: if (reg_src_r) reg_mdr_r <= MBC_REG_DATA;
@@ -745,14 +744,12 @@ always @(posedge CLK) begin
           8'h75: if (reg_src_r) reg_mdr_r <= MBC_REG_DATA;
           8'h76: if (reg_src_r) reg_mdr_r <= MBC_REG_DATA;
           8'h77: if (reg_src_r) reg_mdr_r <= MBC_REG_DATA;
-          
-          // RTC?
 `endif
-          
+
           8'hFF: begin reg_mdr_r[7:0] <= {3'h0,REG_IE_r[4:0]};          if (reg_wr_r) REG_IE_r[4:0]   <= reg_wr_data_r[4:0]; end
           default: reg_mdr_r <= 8'hFF;
         endcase
-        
+
         reg_state_r <= ST_REG_END;
       end
       ST_REG_END: begin
@@ -842,28 +839,28 @@ assign HLT_IFD_rsp = HLT_REQ_sync & ~|ifd_size_r & ~ifd_int_r & IDL_ICD;
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
     PC_r <= 0;
-    
+
     ifd_exe_valid_r <= 0;
     ifd_size_r <= 0;
     ifd_req_r <= 1; // generate the initial request out of reset
     ifd_exe_new_r <= 0;
-    
+
     ifd_int_ic_r <= 0;
   end
   else begin
     ifd_exe_new_r <= 0;
-    
+
     if (CLK_CPU_EDGE) ifd_reg_ic_r <= 0;
-    
+
     if (CLK_BUS_EDGE & EXE_IFD_ready) begin
       if (~HLT_IFD_rsp) begin
         PC_r <= ifd_pc + 1;
-      
+
         // Flop pipeline registers
         ifd_exe_valid_r <= ifd_complete_r;
         ifd_exe_new_r   <= ifd_complete_r;
         ifd_exe_int_r   <= ifd_complete_r & ifd_int_r;
-        
+
         // Adjust current instrucion size
         ifd_size_r      <= ifd_complete_r ? 0 : ifd_size_r + 1;
 
@@ -888,7 +885,7 @@ always @(posedge CLK) begin
       1: ifd_exe_op_r[15:8]  <=                                         ifd_data_r;
       2: ifd_exe_op_r[23:16] <=                                         ifd_data_r;
     endcase
-    
+
     ifd_exe_decode_r <= ifd_decode_r;
 
     if (ifd_size_r == 0) ifd_exe_pc_start_r <= ifd_pc;
@@ -918,8 +915,8 @@ always @(posedge CLK) begin
   else if (REG_IE_r[`IE_TIMER]    & REG_IF_r[`IE_TIMER]   ) ifd_int_ic_r <= 8'b00000100;
   else if (REG_IE_r[`IE_SERIAL]   & REG_IF_r[`IE_SERIAL]  ) ifd_int_ic_r <= 8'b00001000;
   else if (REG_IE_r[`IE_JOYPAD]   & REG_IF_r[`IE_JOYPAD]  ) ifd_int_ic_r <= 8'b00010000;
-  else                                                      ifd_int_ic_r <= 8'b00000000;   
-  
+  else                                                      ifd_int_ic_r <= 8'b00000000;
+
   ifd_complete_r <= (ifd_decode_r[`DEC_SZE] == ifd_size_r);
 
   ifd_cb_r <= ifd_op_r == 8'hCB;
@@ -929,7 +926,7 @@ always @(posedge CLK) begin
                   : ifd_cb_r  ? {2'h1,{(ifd_data_r[2:0] == 3'h6 ? 1'b1 : 1'b0),1'b0},{1'b1,ifd_data_r[2:0]},{1'b1,ifd_data_r[2:0]},({{(ifd_data_r[2:0] == 3'h6 ? 1'b1 : 1'b0),3'h0} | `GRP_BIT})}
                   :             dec_data
                   );
-                  
+
   // debug/state writes
   if (REG_req_dbg) begin
     case (REG_address)
@@ -947,7 +944,7 @@ end
 //
 // Overall instruction latency is defined as the following:
 //
-// OP         [operand fetch + execution/memory time + writeback]
+// OP         [operand fetch-1 + execution/memory time + writeback]
 //
 // For example:
 // LD R,R     [0 + 0 + 1 = 1]
@@ -1073,9 +1070,9 @@ assign      DBG_advance = dbg_advance_r;
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
     exe_ctr_r <= 0;
-    
+
     exe_ime_r <= 0;
-    
+
     dbg_advance_r <= 1;
   end
   else begin
@@ -1102,7 +1099,7 @@ always @(posedge CLK) begin
           `OPR_HL : begin `HL_r <= exe_res_hl_mod_r ? exe_res_hl_r : exe_res_r; SP_r <= exe_res_sp_r; F_r[7:4] <= exe_res_cc_r[7:4]; end
           `OPR_A  : begin A_r   <= exe_res_r[7:0]; if (exe_res_hl_mod_r) `HL_r <= exe_res_hl_r;       F_r[7:4] <= exe_res_cc_r[7:4]; end
         endcase
-        
+
         // delay 1 inst because fetch will see this in the following cycle
         exe_ime_r <= (exe_ime_r | exe_res_int_enable_r) & ~exe_res_int_disable_r & ~IFD_EXE_int;
         exe_pc_prev_r <= IFD_EXE_pc_start;
@@ -1110,13 +1107,13 @@ always @(posedge CLK) begin
         if (exe_ifd_redirect_r) exe_target_prev_redirect_r <= exe_ifd_redirect_target_r;
       end
     end
-    
+
     if (CLK_BUS_EDGE) dbg_advance_r <= ~IFD_EXE_valid | ~exe_complete_r | DBG_EXE_step;
   end
 
   // alu/bit/los input
   exe_src_alu_r[7:0] <= IFD_EXE_decode[3] ? exe_mem_data_r[7:0] : exe_src_r[7:0];
-  
+
   // default to no redirect and no extended latency
   exe_ifd_redirect_r <= 0;
   exe_lat_add_r      <= 0;
@@ -1124,24 +1121,24 @@ always @(posedge CLK) begin
   // default no mod to SP
   exe_res_sp_mod_r <= 0;
   exe_res_sp_r     <= SP_r;
-  
+
   exe_res_int_enable_r  <= 0;
   exe_res_int_disable_r <= 0;
 
   exe_res_r    <= exe_dst_r;
   exe_res_cc_r <= exe_cc_r;
-  
+
   exe_res_halt_r <= 0;
   exe_res_stop_r <= 0;
-  
+
   // result computation
   case (IFD_EXE_decode[`DEC_GRP])
     `GRP_SPC: begin
       // NOP (0x00), STOP (0x10), HALT (0x76), EI (0xFB), DI (0xF3)
-      
+
       exe_res_halt_r <= ~IFD_EXE_op[7] & IFD_EXE_op[4] &  IFD_EXE_op[2];
       exe_res_stop_r <= ~IFD_EXE_op[7] & IFD_EXE_op[4] & ~IFD_EXE_op[2];
-      
+
       exe_res_int_enable_r  <= IFD_EXE_op[7] &  IFD_EXE_op[3];
       exe_res_int_disable_r <= IFD_EXE_op[7] & ~IFD_EXE_op[3];
     end
@@ -1176,8 +1173,8 @@ always @(posedge CLK) begin
           exe_lat_add_r <= 1;
         end
         else if (IFD_EXE_op[3:0] == 4'h7) begin
-          if (~IFD_EXE_op[4]) begin           
-            // DAA           
+          if (~IFD_EXE_op[4]) begin
+            // DAA
             if (exe_cc_r[`FLAG_N]) begin
               exe_res_r[7:0] <= exe_src_r[7:0] - {(exe_cc_r[`FLAG_C] ? 4'h6 : 4'h0), (exe_cc_r[`FLAG_H] ? 4'h6 : 4'h0)};
               exe_res_c7_r <= 0;
@@ -1186,7 +1183,7 @@ always @(posedge CLK) begin
               {exe_res_c3_r,exe_res_r[3:0]} <= exe_src_r[3:0] + ((exe_cc_r[`FLAG_H] | (exe_src_r[3] & | exe_src_r[2:1])) ? 4'h6 : 4'h0);
               {exe_res_c7_r,exe_res_r[7:4]} <= exe_src_r[7:4] + ((exe_cc_r[`FLAG_C] | (exe_src_r[7:0] > 8'h99)) ? 4'h6 : 4'h0) + exe_res_c3_r;
             end
-            
+
             exe_res_cc_r <= {~|exe_res_r[7:0],exe_cc_r[`FLAG_N],1'b0,(exe_res_c7_r | exe_cc_r[`FLAG_C]),exe_cc_r[3:0]};
           end
           else begin
@@ -1224,7 +1221,7 @@ always @(posedge CLK) begin
             {exe_res_c7_r,exe_res_r[7:4]} <= SP_r[7:4] + exe_src_r[7:4] + exe_res_c3_r;
             exe_res_r[15:8]               <= SP_r[15:8] + exe_src_r[15:8] + exe_res_c7_r;
             exe_res_cc_r                  <= {1'b0,1'b0,exe_res_c3_r,exe_res_c7_r,exe_cc_r[3:0]};
-  
+
             exe_lat_add_r <= 1;
           end
         end
@@ -1313,7 +1310,7 @@ always @(posedge CLK) begin
       // It's ok to cause a redirect even if this isn't the final stage as long as we don't advance EXE.
       exe_ifd_redirect_r        <= (IFD_EXE_op[0] | (~IFD_EXE_op[7] & ~IFD_EXE_op[5])) | exe_redirect_taken;
       exe_ifd_redirect_target_r <= IFD_EXE_op[7] ? (IFD_EXE_op[5] ? `HL_r : exe_src_r) : (IFD_EXE_pc_next + exe_src_r);
-      
+
       // JMP HL needs to be special cased since HL looks like it can be bypassed.
       exe_lat_add_r <= (exe_ifd_redirect_r & ~(IFD_EXE_op[7] & IFD_EXE_op[5])) ? 1 : 0;
     end
@@ -1321,12 +1318,12 @@ always @(posedge CLK) begin
       // RET
       exe_ifd_redirect_r        <= IFD_EXE_op[0] | exe_redirect_taken;
       exe_ifd_redirect_target_r <= exe_mem_data_r;
-      
+
       exe_lat_add_r <= exe_ifd_redirect_r ? (IFD_EXE_op[0] ? 3 : 4) : 1;
 
       exe_res_sp_mod_r <= exe_ifd_redirect_r;
       exe_res_sp_r     <= SP_r + 2;
-      
+
       // RETI enables interrupts
       exe_res_int_enable_r <= IFD_EXE_op[4] & IFD_EXE_op[0];
     end
@@ -1346,7 +1343,7 @@ always @(posedge CLK) begin
       // CALL + RST
       exe_ifd_redirect_r        <= IFD_EXE_op[0] | exe_redirect_taken;
       exe_ifd_redirect_target_r <= IFD_EXE_op[1] ? {1'h0,IFD_EXE_int, IFD_EXE_op[5:3], 3'h0} : IFD_EXE_op[23:8];
-      
+
       exe_lat_add_r <= exe_ifd_redirect_r ? (IFD_EXE_int ? 4 : 3) : 0;
 
       exe_res_sp_mod_r <= exe_ifd_redirect_r;
@@ -1358,7 +1355,7 @@ always @(posedge CLK) begin
 
   exe_res_hl_mod_r <= IFD_EXE_op[7:0] == 8'h22 || IFD_EXE_op[7:0] == 8'h2A || IFD_EXE_op[7:0] == 8'h32 || IFD_EXE_op[7:0] == 8'h3A;
   exe_res_hl_r     <= IFD_EXE_op[4] ? `HL_r - 1 : `HL_r + 1;
-  
+
   // memory operations
   exe_mem_req_r <= ~cpu_ireset_r & CLK_BUS_EDGE;
 
@@ -1370,12 +1367,12 @@ always @(posedge CLK) begin
   // LD-OP-ST       +0    +0
   exe_mem_addr_mod_r <= ((exe_stage[1] & ~exe_loadopstore) ? 1 : 0) + ((IFD_EXE_decode[`DEC_DST] == `OPR_SP) ? -2 : 0);
   if (MCT_EXE_rsp_val & ~EXE_MCT_req_wr) if (exe_stage[1] & ~exe_loadopstore) exe_mem_data_r[15:8] <= MCT_data; else exe_mem_data_r[7:0] <= MCT_data;
-  
+
   // op completion and pipe advance
   exe_complete_r <= IFD_EXE_valid & ~|exe_stage;
   exe_advance_r  <= IFD_EXE_valid & (~exe_complete_r | DBG_EXE_step & ~exe_stall);
   exe_ready_r    <= ~IFD_EXE_valid | (exe_complete_r & ~exe_stall & DBG_EXE_step);
-  
+
   // operand read
   case (IFD_EXE_decode[`DEC_SRC])
     //`OPR_I  : exe_src_r <= 0;
@@ -1415,7 +1412,7 @@ always @(posedge CLK) begin
     `OPR_HL : exe_dst_r[15:0] <= `HL_r;
     `OPR_A  : exe_dst_r[15:0] <= {8'h0,A_r};
   endcase
-  
+
   // condition code read
   exe_cc_r <= F_r;
 
@@ -1436,7 +1433,7 @@ always @(posedge CLK) begin
       //8'h6B:
       8'h6C: if (reg_src_r) exe_ime_r <= REG_req_data[0];
     endcase
-  end  
+  end
 end
 
 //-------------------------------------------------------------------
@@ -1479,7 +1476,7 @@ always @(posedge CLK) begin
     case (dma_state_r)
       ST_DMA_IDLE: begin
         dma_addr_r <= 0;
-        
+
         // sync start of DMA request to BUS edge
         if (REG_DMA_start & CLK_BUS_EDGE) dma_state_r <= ST_DMA_READ;
       end
@@ -1487,20 +1484,20 @@ always @(posedge CLK) begin
         if (CLK_BUS_EDGE & ~EXE_DMA_halt) begin
           // sync to one read/write pair per cycle
           dma_req_r <= 1;
-          
+
           dma_state_r <= ST_DMA_READ_WAIT;
         end
       end
       ST_DMA_READ_WAIT: begin
         dma_req_r <= 0;
         dma_data_r <= dma_src_r ? VRAM_data : SYS_RDDATA;
-      
+
         // address available 1 cycle early and we have the VRAM bus so not necessary to wait an extra clock
         if (~dma_req_r & (dma_src_r | SYS_RDY)) dma_state_r <= ST_DMA_WRITE;
       end
       ST_DMA_WRITE: begin
         dma_addr_r <= dma_addr_r + 1;
-        
+
         dma_state_r <= (dma_addr_r[7] & dma_addr_r[4] & &dma_addr_r[3:0]) ? ST_DMA_IDLE : ST_DMA_READ;
       end
     endcase
@@ -1618,7 +1615,7 @@ reg  [5:0]  ppu_tile_ctr_r;   // 32 tiles with 8 pixels in a 256 pixel source ti
 reg  [7:0]  ppu_pix_ctr_r;
 reg  [7:0]  ppu_scanline_r;
 
-wire        ppu_vram_active = |(ppu_state_r & (ST_PPU_PIX_NEW | ST_PPU_PIX_MAP | ST_PPU_PIX_DT0 | ST_PPU_PIX_DT1 | ST_PPU_PIX_OB0 | ST_PPU_PIX_OB1 | ST_PPU_PIX_OB2));  
+wire        ppu_vram_active = |(ppu_state_r & (ST_PPU_PIX_NEW | ST_PPU_PIX_MAP | ST_PPU_PIX_DT0 | ST_PPU_PIX_DT1 | ST_PPU_PIX_OB0 | ST_PPU_PIX_OB1 | ST_PPU_PIX_OB2));
 wire        ppu_oam_active  = ~|(ppu_state_r & (ST_PPU_OFF | ST_PPU_HBL | ST_PPU_VBL));
 assign      PPU_vblank      = |(ppu_state_r & ST_PPU_VBL);
 
@@ -1823,32 +1820,32 @@ always @(posedge CLK) begin
     REG_STAT_r[`STAT_MODE]      <= `MODE_H;
     REG_STAT_r[`STAT_LYC_MATCH] <= 0;
     REG_LY_r                    <= 0;
-    
+
     ppu_scanline_r <= 0;
 
     ppu_tile_ctr_r <= 0;
     ppu_pix_ctr_r  <= 0;
-    
+
     ppu_dot_ctr_r <= 0;
-    
+
     ppu_state_r <= ST_PPU_OFF;
-    
+
     ppu_vblank_pulse_r <= 0;
     ppu_stat_active_r <= 0;
     ppu_stat_match_r <= 0;
-    
+
     ppu_bgw_fifo_wr_req_r <= 0;
     ppu_bgw_fifo_wr_active_r <= 0;
     ppu_obj_fifo_wr_req_r <= 0;
     ppu_obj_fifo_wr_active_r <= 0;
-    
+
     ppu_stat_write_r <= 0;
-    
+
     dbg_dot_ctr_next_r <= 0;
     dbg_dot_ctr_r      <= 0;
   end
-  else begin    
-    // The scanline pixel output is composed of 3 distinct phases:
+  else begin
+    // The active scanline pixel output is composed of 3 distinct phases:
     // - OAM test and buffer (~80 dot clocks)
     // - pixel output        (166-180 dot clocks)
     // - h-blank             (remaining dot clocks in 456 scanline)
@@ -1873,7 +1870,7 @@ always @(posedge CLK) begin
     // - [PIX->HBL] HBL is when we are in hblank
     // - [HBL->OAM] From HBL we can transition back to OAM if the new line is visible
     // - [HBL->VBL] From HBL we can transition to VBL (vblank) if the visible lines are complete
-    
+
     // debug
     if (CLK_BUS_EDGE) begin
       if      (exe_advance_r) begin
@@ -1881,7 +1878,7 @@ always @(posedge CLK) begin
       end
       else if (~dbg_state_valid_r) begin
         dbg_state_valid_r <= 1;
-      
+
         dbg_reg_ly_r       <= REG_LY_r;
         {dbg_dot_ctr_r,dbg_dot_ctr_next_r} <= {dbg_dot_ctr_next_r,ppu_dot_ctr_r};
         dbg_oam_active_r   <= PPU_OAM_active;
@@ -1892,11 +1889,11 @@ always @(posedge CLK) begin
 
     if      (REG_req_val && REG_address == 8'h41) ppu_stat_write_r <= 1;
     else if (ppu_dot_edge)                        ppu_stat_write_r <= 0;
-    
+
     // flop match
     ppu_pix_oam_lut_match_r <= ppu_oam_lut_match;
     ppu_pix_oam_lut_found_r <= ppu_oam_lut_found & ~(ppu_first_frame_r|~REG_LCDC_r[`LCDC_SP_EN] | DMA_active);
-  
+
     ppu_oam_rddata_r <= oam_rddata;
 
     // Xilinx compiler (MK2) can silently fail if we don't expand out the pixel fifo writes in a case statement.  Same goes for the packet buffer in ICD and others.
@@ -1906,7 +1903,7 @@ always @(posedge CLK) begin
       ppu_bgw_fifo_wr_active_r <= 1;
       ppu_bgw_fifo_wr_index_r <= ppu_bgw_fifo_wr_req_index_r;
       ppu_bgw_fifo_wr_cnt_r <= 1;
-                
+
       ppu_bgw_fifo_wr_data_r <= ppu_bgw_fifo_wr_req_data_r[0];
     end
     else if (ppu_bgw_fifo_wr_active_r) begin
@@ -1957,16 +1954,16 @@ always @(posedge CLK) begin
         7:  ppu_bgw_fifo_wr_data_r <= ppu_bgw_fifo_wr_req_data_r[7];
       endcase
       ppu_bgw_fifo_wr_cnt_r <= ppu_bgw_fifo_wr_cnt_r + 1;
-                
+
       ppu_bgw_fifo_wr_active_r <= |ppu_bgw_fifo_wr_cnt_r;
     end
-         
+
     ppu_obj_fifo_wr_req_r <= 0;
     if (ppu_obj_fifo_wr_req_r) begin
       ppu_obj_fifo_wr_active_r <= 1;
       ppu_obj_fifo_wr_index_r <= ppu_obj_fifo_wr_req_index_r;
       ppu_obj_fifo_wr_cnt_r <= 1;
-                
+
       ppu_obj_fifo_wr_data_r <= ppu_obj_fifo_wr_req_data_r[0];
     end
     else if (ppu_obj_fifo_wr_active_r) begin
@@ -2017,14 +2014,14 @@ always @(posedge CLK) begin
         7:  ppu_obj_fifo_wr_data_r <= ppu_obj_fifo_wr_req_data_r[7];
       endcase
       ppu_obj_fifo_wr_cnt_r <= ppu_obj_fifo_wr_cnt_r + 1;
-                
+
       ppu_obj_fifo_wr_active_r <= |ppu_obj_fifo_wr_cnt_r;
-    end    
-    
+    end
+
     // scanline/state rendering datapath
-    if (ppu_dot_edge & DBG_advance) begin      
+    if (ppu_dot_edge & DBG_advance) begin
       ppu_pix_phase_r <= 0;
-    
+
       // read pointer advance
       if (ppu_fifo_data) ppu_pix_ctr_r <= ppu_pix_ctr_r + 1;
 
@@ -2036,7 +2033,7 @@ always @(posedge CLK) begin
       end
 
       ppu_oam_data_r <= ppu_oam_rddata_r;
-      
+
       case (ppu_state_r)
         ST_PPU_OFF     : begin
           // clear display state
@@ -2049,21 +2046,21 @@ always @(posedge CLK) begin
           ppu_pix_ctr_r  <= 0;
 
           ppu_first_frame_r <= 1;
-          
+
           ppu_vblank_seen_r <= 0;
 
           ppu_stat_match_r <= 0;
-          
+
           if (REG_LCDC_r[`LCDC_DS_EN]) ppu_state_r <= ST_PPU_FRM_NEW;
         end
         ST_PPU_FRM_NEW : begin
           // next frame
           ppu_pix_win_line_r <= 8'hFF;
-          
+
           // TODO: should we flop WY here for current frame?
-          
+
           REG_STAT_r[`STAT_MODE] <= `MODE_H;
-          
+
           ppu_state_r <= ST_PPU_OAM_NEW;
         end
         ST_PPU_OAM_NEW : begin
@@ -2071,15 +2068,15 @@ always @(posedge CLK) begin
 
           // setup initial address
           ppu_oam_address_r <= 0;
-          
+
           // use -16 (instead of -8) in order to put the xpos before the dummy tile for empty entries
           for (i = 0; i < `NUM_OAM_LUT; i = i + 1) ppu_oam_lut_xpos_r[i] <= 0-16;
-          
+
           // initialize all entries to be invalid
           ppu_oam_lut_cnt_r <= 0;
-          
+
           REG_STAT_r[`STAT_MODE] <= `MODE_O;
- 
+
           // WARNING: this needs to only be one dot cycle to avoid multiple interrupts.  Or we need to guard the interrupt with the same condition.
           ppu_state_r <= ST_PPU_OAM_POS;
         end
@@ -2090,14 +2087,14 @@ always @(posedge CLK) begin
               ppu_oam_lut_ypos_r[ppu_oam_lut_cnt_r]  <= ppu_oam_data_r[3:0];
               ppu_oam_lut_xpos_r[ppu_oam_lut_cnt_r]  <= ppu_oam_rddata_r - (|ppu_oam_rddata_r ? 8 : 16);
               ppu_oam_lut_index_r[ppu_oam_lut_cnt_r] <= ppu_oam_address_r[7:2];
-              
+
               ppu_oam_lut_cnt_r <= ppu_oam_lut_cnt_r + 1;
             end
           end
 
           // calculate new address
           ppu_oam_address_r <= ppu_oam_address_r + (ppu_pix_phase_r ? 3 : 1);
-          
+
           if (ppu_oam_end & ppu_pix_phase_r) begin
             ppu_state_r <= ST_PPU_PIX_NEW;
           end
@@ -2113,16 +2110,16 @@ always @(posedge CLK) begin
           ppu_pix_ctr_r <= 0;       // fifo read pointer
 
           ppu_pix_win_active_r <= 0;
-          
+
           REG_STAT_r[`STAT_MODE] <= `MODE_D;
-          
+
           ppu_state_r <= ST_PPU_PIX_MAP;
         end
         ST_PPU_PIX_MAP : begin
           // generate map address
           ppu_vram_address_r <= ppu_pix_win_active_r ? {1'b1,1'b1,REG_LCDC_r[`LCDC_WD_MAP_SEL],ppu_pix_win_row[7:3],ppu_pix_win_col[4:0]} : {1'b1,1'b1,REG_LCDC_r[`LCDC_BG_MAP_SEL],ppu_pix_row[7:3],ppu_pix_col[4:0]};
           ppu_vram_data_r <= vram_rddata;
-          
+
           if (ppu_pix_phase_r) ppu_state_r <= ST_PPU_PIX_DT0;
 
           ppu_pix_phase_r <= ~ppu_pix_phase_r;
@@ -2130,9 +2127,9 @@ always @(posedge CLK) begin
         ST_PPU_PIX_DT0 : begin
           // all BG tiles are consecutive 16B and naturally aligned
           ppu_vram_address_r <= {(~REG_LCDC_r[`LCDC_BG_TILE_SEL] & ~ppu_vram_data_r[7]),ppu_vram_data_r[7:0],(ppu_pix_win_active_r ? ppu_pix_win_row[2:0] : ppu_pix_row[2:0]),1'b0};
-          
+
           ppu_pix_bgw_data_r <= vram_rddata;
-          
+
           if (ppu_pix_phase_r) ppu_state_r <= ST_PPU_PIX_DT1;
 
           ppu_pix_phase_r <= ~ppu_pix_phase_r;
@@ -2140,7 +2137,7 @@ always @(posedge CLK) begin
         ST_PPU_PIX_DT1 : begin
           ppu_oam_address_r <= {ppu_oam_lut_index_r[ppu_pix_oam_lut_match_r],2'b10};
           ppu_vram_address_r <= {ppu_vram_address_r[12:1],1'b1};
-          
+
           if (ppu_pix_phase_r) begin
             ppu_bgw_fifo_wr_req_r <= 1;
 
@@ -2160,7 +2157,7 @@ always @(posedge CLK) begin
             // determine if there is a transition to window.  If so, render the new active mode on top of the old by repeating the BGW tile fetch
             ppu_pix_win_active_r <= ppu_pix_win_active;
             if (ppu_pix_win_active_r ^ ppu_pix_win_active) ppu_pix_win_line_r <= ppu_pix_win_line_r + 1;
-            if (ppu_pix_win_active_r ^ ppu_pix_win_active) ppu_pix_win_tile_r <= 0; 
+            if (ppu_pix_win_active_r ^ ppu_pix_win_active) ppu_pix_win_tile_r <= 0;
 
             ppu_state_r <= (ppu_pix_win_active_r ^ ppu_pix_win_active) ? ST_PPU_PIX_MAP : ST_PPU_PIX_OB0;
           end
@@ -2169,11 +2166,11 @@ always @(posedge CLK) begin
         end
         ST_PPU_PIX_OB0 : begin
           ppu_oam_obj_xpos_r <= ppu_oam_lut_xpos_r[ppu_pix_oam_lut_match_r];
-        
+
           ppu_oam_address_r <= {ppu_oam_address_r[7:1],1'b1};
-          
+
           if (~ppu_pix_phase_r) ppu_pix_oam_tile_num_r <= ppu_oam_rddata_r; else ppu_pix_oam_flag_r <= ppu_oam_rddata_r;
-                
+
           if (ppu_pix_phase_r) begin
             if (~ppu_pix_oam_lut_found_r) ppu_tile_ctr_r <= ppu_tile_ctr_r + 1;
             if (~ppu_pix_oam_lut_found_r) ppu_pix_win_tile_r <= ppu_pix_win_tile_r + 1;
@@ -2185,7 +2182,7 @@ always @(posedge CLK) begin
         end
         ST_PPU_PIX_OB1 : begin
           ppu_vram_address_r <= {1'b0,ppu_pix_oam_tile_num_r[7:1],(REG_LCDC_r[`LCDC_SP_SIZE] ? ppu_pix_obj_row[3] : ppu_pix_oam_tile_num_r[0]),ppu_pix_obj_row[2:0],1'b0};
-          
+
           // read second half of tile
           ppu_pix_obj_data_r <= vram_rddata;
 
@@ -2197,14 +2194,14 @@ always @(posedge CLK) begin
         end
         ST_PPU_PIX_OB2 : begin
           ppu_vram_address_r <= {ppu_vram_address_r[12:1],1'b1};
-                    
+
           // clear match for second phase
           if (~ppu_pix_phase_r) ppu_oam_lut_xpos_r[ppu_pix_oam_lut_match_r] <= 0-16;
-          
+
           if (ppu_pix_phase_r) begin
             // get address of next match
             ppu_oam_address_r <= {ppu_oam_lut_index_r[ppu_pix_oam_lut_match_r],2'b10};
-            
+
             ppu_obj_fifo_wr_req_r <= 1;
             ppu_obj_fifo_wr_req_clear_r <= 0;
             ppu_obj_fifo_wr_req_index_r <= ppu_oam_obj_xpos_r[4:0];
@@ -2212,17 +2209,17 @@ always @(posedge CLK) begin
             for (i = 0; i < 8; i = i + 1) ppu_obj_fifo_wr_req_data_r[i][1] <= ppu_pix_oam_flag_r[5] ? vram_rddata[i]        : vram_rddata[7-i];
             for (i = 0; i < 8; i = i + 1) ppu_obj_fifo_wr_req_data_r[i][2] <= ppu_pix_oam_flag_r[4];
             for (i = 0; i < 8; i = i + 1) ppu_obj_fifo_wr_req_data_r[i][3] <= ppu_pix_oam_flag_r[7];
-          
+
             ppu_state_r <= ST_PPU_PIX_OB0;
           end
 
-          ppu_pix_phase_r <= ~ppu_pix_phase_r;  
+          ppu_pix_phase_r <= ~ppu_pix_phase_r;
         end
         ST_PPU_HBL     : begin
           if (~ppu_fifo_data) begin
             ppu_tile_ctr_r <= 0;
             ppu_pix_ctr_r  <= 0;
-            
+
             // TODO: late timer interrupt causes us to miss MODE_D during stat interrupt in PBF.  Check if dot clock count is larger than some amount
             // Need to look at potential problems:
             // PBD wanted it pushed another bus clock (260->264).
@@ -2231,26 +2228,26 @@ always @(posedge CLK) begin
             // 3) interrupts are supposed to be faster.  e.g. is taking interrupt actually 4 bus clocks like RST (should solve the problem)
             if (ppu_dot_ctr_r >= 264) REG_STAT_r[`STAT_MODE] <= `MODE_H; // H-Blank mode starts when the fifos have been consumed
           end
-          
+
           ppu_vblank_seen_r <= 0;
-          
+
           if (ppu_dot_end) begin
-            ppu_state_r <= ppu_vis_end ? ST_PPU_VBL : ST_PPU_OAM_NEW; 
+            ppu_state_r <= ppu_vis_end ? ST_PPU_VBL : ST_PPU_OAM_NEW;
           end
         end
         ST_PPU_VBL     : begin
           REG_STAT_r[`STAT_MODE] <= `MODE_V;
-          
+
           if (~ppu_vblank_seen_r & ppu_dot_ctr_r[0]) begin
             // assert on dot clock 2
             ppu_vblank_pulse_r <= 1;
-            
-            ppu_vblank_seen_r <= 1;            
+
+            ppu_vblank_seen_r <= 1;
           end
-          
+
           ppu_first_frame_r <= 0;
-        
-          if (ppu_dot_end) begin          
+
+          if (ppu_dot_end) begin
             if (ppu_disp_end) ppu_state_r <= ST_PPU_FRM_NEW;
           end
         end
@@ -2266,7 +2263,7 @@ always @(posedge CLK) begin
         // 3 - IF/earliest interrupt point
         // 3+?    - Wait for current instruction to finish. 4 * (0-6)
         // 3+?+20 - +20 = 5 * 4 dot clocks to take interrupt
-        
+
         // P-M breaks if the transition to 0 on line 153 happens too early.
         // BMF expects REG_LY_r to transition from 153->0 early in the line.
         if (ppu_dot_end) ppu_scanline_r <= ppu_disp_end ? 0 : ppu_scanline_r + 1;
@@ -2283,8 +2280,8 @@ always @(posedge CLK) begin
         ppu_stat_match_r[`STAT_INT_O_EN] <= (REG_STAT_r[`STAT_INT_O_EN] | ppu_stat_write_r) & ((|ppu_scanline_r ? |(ppu_state_r & ST_PPU_OAM_NEW) : |(ppu_state_r & ST_PPU_FRM_NEW)) | (|(ppu_state_r & ST_PPU_VBL) & ~ppu_vblank_seen_r & ppu_dot_ctr_r[0]));  // pulse
         ppu_stat_match_r[`STAT_INT_M_EN] <= (REG_STAT_r[`STAT_INT_M_EN] | ppu_stat_write_r) & REG_STAT_r[`STAT_LYC_MATCH];
       end
-      
-      // 1->0 display disable happens imediately.  it's only possible to go from 0->1 during vblank 
+
+      // 1->0 display disable happens imediately.  it's only possible to go from 0->1 during vblank
       if (~REG_LCDC_r[`LCDC_DS_EN]) ppu_state_r <= ST_PPU_OFF;
       ppu_dot_ctr_r <= (ppu_dot_end | |(ppu_state_r & ST_PPU_OFF)) ? 0 : ppu_dot_ctr_r + 1;
     end
@@ -2388,10 +2385,10 @@ always @(posedge CLK) begin
 
   apu_data_volume_r[0][9:0] <= $signed(apu_data_r[0][6:0]) * ({7'h00,REG_NR50_r[`NR50_MASTER_LEFT_VOLUME]}  + 1);
   apu_data_volume_r[1][9:0] <= $signed(apu_data_r[1][6:0]) * ({7'h00,REG_NR50_r[`NR50_MASTER_RIGHT_VOLUME]} + 1);
-  
+
   // sign conversion with arithmetic shift right
   apu_wave_data_shifted_r[4:0] <= $signed({~apu_wave_sample_r[3],apu_wave_sample_r[2:0],1'b0}) >>> (REG_NR32_r[`NR32_LEVEL] - 1);
-  
+
   case (REG_NR11_r[`NR11_DUTY])
     0: apu_square1_duty_r <= 8'b00000001;
     1: apu_square1_duty_r <= 8'b10000001;
@@ -2408,7 +2405,7 @@ always @(posedge CLK) begin
 
   apu_wave_sample_update_r <= 0;
   if (apu_wave_sample_update_r) apu_wave_sample_r <= apu_wave_pos_r[0] ? REG_WAV_r[apu_wave_pos_r[4:1]][3:0] : REG_WAV_r[apu_wave_pos_r[4:1]][7:4];
-  
+
   if (cpu_ireset_r | ~REG_NR52_r[`NR52_CONTROL_ENABLE]) begin
     REG_NR10_r    <= 8'h00; // FF10
     if (cpu_ireset_r) REG_NR11_r[`NR11_LENGTH] <= 0; // FF11
@@ -2422,7 +2419,7 @@ always @(posedge CLK) begin
     REG_NR22_r    <= 8'h00; // FF17
     REG_NR23_r    <= 8'h00; // FF18
     REG_NR24_r    <= 8'h00; // FF19
-    
+
     REG_NR30_r    <= 8'h00; // FF1A
     REG_NR31_r    <= 8'h00; // FF1B
     REG_NR32_r    <= 8'h00; // FF1C
@@ -2433,7 +2430,7 @@ always @(posedge CLK) begin
     REG_NR42_r    <= 8'h00; // FF21
     REG_NR43_r    <= 8'h00; // FF22
     REG_NR44_r    <= 8'h00; // FF23
-    
+
     REG_NR50_r    <= 8'h00; // FF24
     REG_NR51_r    <= 8'h00; // FF25
     REG_NR52_r    <= 8'h00; // FF26
@@ -2459,7 +2456,7 @@ always @(posedge CLK) begin
     end
 
     apu_frame_step_r <= 0;
-    
+
     apu_square1_enable_r       <= 0;
     apu_square1_timer_r        <= 0;
     apu_square1_env_enable_r   <= 0;
@@ -2476,7 +2473,7 @@ always @(posedge CLK) begin
     apu_square2_env_timer_r  <= 0;
     apu_square2_volume_r     <= 0;
     apu_square2_pos_r        <= 0;
-    
+
     apu_wave_enable_r <= 0;
     apu_wave_timer_r  <= 0;
     apu_wave_pos_r    <= 0;
@@ -2486,7 +2483,7 @@ always @(posedge CLK) begin
     apu_noise_env_timer_r  <= 0;
     apu_noise_volume_r     <= 0;
     apu_noise_lfsr_r       <= 0;
-  
+
     apu_cpu_edge_d1_r <= 0;
     apu_reg_update_r  <= 0;
 
@@ -2502,7 +2499,7 @@ always @(posedge CLK) begin
   end
   else begin
     apu_cpu_edge_d1_r <= CLK_CPU_EDGE;
-  
+
     if (apu_reg_update_r & apu_cpu_edge_d1_r) begin
       case (apu_reg_update_address_r)
         // square1
@@ -2510,9 +2507,9 @@ always @(posedge CLK) begin
         8'h12: begin // NR12
           // volume side effect (inversion).  see register writes for additional side effects.
           if (apu_reg_update_nr12_dir_r ^ REG_NR12_r[`NR12_ENV_DIR]) apu_square1_volume_r <= ~apu_square1_volume_r + 1;
-          
+
           if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
-          
+
           if (apu_square1_enable_r) apu_square1_enable_r <= |REG_NR12_r[7:3];
         end
         8'h14: begin // NR14
@@ -2523,7 +2520,7 @@ always @(posedge CLK) begin
             apu_square1_env_enable_r <= 1;
             apu_square1_env_timer_r  <= REG_NR12_r[`NR12_ENV_PERIOD];
             apu_square1_volume_r     <= REG_NR12_r[`NR12_ENV_VOLUME];
-            
+
             apu_square1_sweep_enable_r <= |REG_NR10_r[`NR10_SWEEP_TIME] | |REG_NR10_r[`NR10_SWEEP_SHIFT];
             apu_square1_sweep_timer_r  <= {~|REG_NR10_r[`NR10_SWEEP_TIME],REG_NR10_r[`NR10_SWEEP_TIME]};
             apu_square1_sweep_freq_r   <= {REG_NR14_r[`NR14_FREQ_MSB],REG_NR13_r[`NR13_FREQ_LSB]};
@@ -2531,7 +2528,7 @@ always @(posedge CLK) begin
             if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
           end
         end
-  
+
         // square2
         8'h16:  apu_square2_length_r <= REG_NR21_r[`NR21_LENGTH];    // NR21
         8'h17: begin // NR22
@@ -2554,7 +2551,7 @@ always @(posedge CLK) begin
             if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
           end
         end
-    
+
         // wave
         8'h1A:  if (apu_wave_enable_r) apu_wave_enable_r <= REG_NR30_r[`NR30_WAVE_ENABLE]; // NR30
         8'h1B:  apu_wave_length_r <= REG_NR31_r[`NR31_LENGTH];    // NR31
@@ -2566,7 +2563,7 @@ always @(posedge CLK) begin
             apu_wave_pos_r        <= 0;
           end
         end
-      
+
         // noise
         8'h20:  apu_noise_length_r <= REG_NR41_r[`NR41_LENGTH];    // NR41
         8'h21:  if (apu_noise_enable_r) apu_noise_enable_r <= (REG_NR42_r[`NR42_ENV_DIR] | |REG_NR42_r[`NR42_ENV_VOLUME]);// NR42
@@ -2579,13 +2576,13 @@ always @(posedge CLK) begin
             apu_noise_env_timer_r  <= REG_NR42_r[`NR42_ENV_PERIOD];
             apu_noise_volume_r     <= REG_NR42_r[`NR42_ENV_VOLUME];
           end
-          
+
         end
       endcase
     end
     else if (CLK_CPU_EDGE) begin
       if (tmr_apu_step_r) apu_frame_step_r <= apu_frame_step_r + 1;
-    
+
       ////////////
       // square1
       ////////////
@@ -2596,17 +2593,17 @@ always @(posedge CLK) begin
             if (&apu_square1_length_r) apu_square1_enable_r <= 0; else apu_square1_length_r <= apu_square1_length_r + 1;
           end
         end
-      
+
         // envelope
-        if (&apu_frame_step_r) begin          
+        if (&apu_frame_step_r) begin
           if (apu_square1_env_enable_r & |apu_square1_env_timer_r) begin
             apu_square1_env_timer_r <= apu_square1_env_timer_r - 1;
-            
+
             if (apu_square1_env_timer_r == 1) begin
               if      ( REG_NR12_r[`NR12_ENV_DIR] & ~&apu_square1_volume_r) apu_square1_volume_r <= apu_square1_volume_r + 1;
               else if (~REG_NR12_r[`NR12_ENV_DIR] &  |apu_square1_volume_r) apu_square1_volume_r <= apu_square1_volume_r - 1;
               else                                                          apu_square1_env_enable_r <= 0;
-        
+
               apu_square1_env_timer_r <= REG_NR12_r[`NR12_ENV_PERIOD];
             end
           end
@@ -2618,12 +2615,12 @@ always @(posedge CLK) begin
             if (|REG_NR10_r[`NR10_SWEEP_TIME]) begin
               if (|apu_square1_sweep_timer_r) begin
                 apu_square1_sweep_timer_r <= apu_square1_sweep_timer_r - 1;
-                
+
                 if (apu_square1_sweep_timer_r == 1) begin
                   if (~|REG_NR10_r[`NR10_SWEEP_SHIFT]) apu_square1_enable_r <= 0;
                   if (~|REG_NR10_r[`NR10_SWEEP_SHIFT]) apu_square1_sweep_enable_r <= 0;
                   apu_square1_sweep_timer_r  <= {~|REG_NR10_r[`NR10_SWEEP_TIME],REG_NR10_r[`NR10_SWEEP_TIME]};
-  
+
                   // need to update both reg and shadow here because period uses reg.  period needs to use reg because the program may update that manually.
                   // the shadow is used to compute the next frequency for shutting down the output for sweep
                   // TODO: determine if looking one frequency shift in the future is enough.
@@ -2635,20 +2632,20 @@ always @(posedge CLK) begin
           end
         end
       end
-      
+
       // duty cycle
       apu_square1_timer_r <= apu_square1_timer_r + 1;
       if (&apu_square1_timer_r) begin
         apu_square1_pos_r <= apu_square1_pos_r + 1;
         apu_square1_timer_r <= apu_square1_period;
       end
-      
+
       // check sweep overflow
       if (apu_square1_sweep_enable_r & |REG_NR10_r[`NR10_SWEEP_SHIFT] & |apu_square1_sweep_freq_next[15:11]) begin
         apu_square1_enable_r <= 0;
         apu_square1_sweep_enable_r <= 0;
       end
-    
+
       ////////////
       // square2
       ////////////
@@ -2659,7 +2656,7 @@ always @(posedge CLK) begin
             if (&apu_square2_length_r) apu_square2_enable_r <= 0; else apu_square2_length_r <= apu_square2_length_r + 1;
           end
         end
-      
+
         // envelope
         if (&apu_frame_step_r) begin
           if (apu_square2_env_enable_r & |apu_square2_env_timer_r) begin
@@ -2674,14 +2671,14 @@ always @(posedge CLK) begin
           end
         end
       end
-      
+
       // duty cycle
       apu_square2_timer_r <= apu_square2_timer_r + 1;
       if (&apu_square2_timer_r) begin
         apu_square2_pos_r <= apu_square2_pos_r + 1;
         apu_square2_timer_r <= apu_square2_period;
       end
-      
+
       ////////////
       // wave
       ////////////
@@ -2693,15 +2690,15 @@ always @(posedge CLK) begin
           end
         end
       end
-    
+
       apu_wave_timer_r <= apu_wave_timer_r + 1;
       if (&apu_wave_timer_r) begin
         apu_wave_pos_r   <= apu_wave_pos_r + 1;
         apu_wave_timer_r <= apu_wave_period;
-        
+
         apu_wave_sample_update_r <= 1;
       end
-          
+
       ////////////
       // noise
       ////////////
@@ -2712,7 +2709,7 @@ always @(posedge CLK) begin
             if (&apu_noise_length_r) apu_noise_enable_r <= 0; else apu_noise_length_r <= apu_noise_length_r + 1;
           end
         end
-      
+
         // envelope
         if (&apu_frame_step_r) begin
           if (|apu_noise_env_timer_r) begin
@@ -2726,13 +2723,13 @@ always @(posedge CLK) begin
           end
         end
       end
-      
+
       // lfsr
       if (REG_NR43_r[`NR43_LFSR_SHIFT] < 4'hE) begin
         apu_noise_timer_r <= apu_noise_timer_r - 1;
         if (~|apu_noise_timer_r) begin
           apu_noise_timer_r <= apu_noise_period;
-          
+
           apu_noise_lfsr_r <= {^apu_noise_lfsr_r[1:0],apu_noise_lfsr_r[14:8],(REG_NR43_r[`NR43_LFSR_WIDTH] ? ^apu_noise_lfsr_r[1:0] : apu_noise_lfsr_r[7]),apu_noise_lfsr_r[6:1]};
         end
       end
@@ -2741,10 +2738,10 @@ always @(posedge CLK) begin
     //--------------
     // APU REGISTERS
     //--------------
-  
+
     // sync to one after CPU clock edge
     if (apu_cpu_edge_d1_r) apu_reg_update_r <= 0;
-  
+
     if (REG_req_val) begin
       apu_reg_update_r <= 1;
       apu_reg_update_address_r <= REG_address;
@@ -2752,7 +2749,7 @@ always @(posedge CLK) begin
       apu_reg_update_nr22_dir_r <= REG_NR22_r[`NR22_ENV_DIR];
       apu_reg_update_nr14_enable_r <= REG_NR14_r[`NR14_FREQ_ENABLE];
       apu_reg_update_nr24_enable_r <= REG_NR24_r[`NR24_FREQ_ENABLE];
-    
+
       case (REG_address)
         8'h10: REG_NR10_r[7:0] <= REG_req_data[7:0];
         8'h11: REG_NR11_r[7:0] <= REG_req_data[7:0];
@@ -2766,7 +2763,7 @@ always @(posedge CLK) begin
         end
         8'h13: REG_NR13_r[7:0] <= REG_req_data[7:0];
         8'h14: REG_NR14_r[7:0] <= REG_req_data[7:0];
-  
+
         8'h16: REG_NR21_r[7:0] <= REG_req_data[7:0];
         8'h17: begin
           REG_NR22_r[7:0] <= REG_req_data[7:0];
@@ -2778,27 +2775,27 @@ always @(posedge CLK) begin
         end
         8'h18: REG_NR23_r[7:0] <= REG_req_data[7:0];
         8'h19: REG_NR24_r[7:0] <= REG_req_data[7:0];
-  
+
         8'h1A: REG_NR30_r[7:0] <= REG_req_data[7:0];
         8'h1B: REG_NR31_r[7:0] <= REG_req_data[7:0];
         8'h1C: REG_NR32_r[7:0] <= REG_req_data[7:0];
         8'h1D: REG_NR33_r[7:0] <= REG_req_data[7:0];
         8'h1E: REG_NR34_r[7:0] <= REG_req_data[7:0];
-  
+
         8'h20: REG_NR41_r[7:0] <= REG_req_data[7:0];
         8'h21: REG_NR42_r[7:0] <= REG_req_data[7:0];
         8'h22: REG_NR43_r[7:0] <= REG_req_data[7:0];
         8'h23: REG_NR44_r[7:0] <= REG_req_data[7:0];
-  
+
         8'h24: REG_NR50_r[7:0] <= REG_req_data[7:0];
         8'h25: REG_NR51_r[7:0] <= REG_req_data[7:0];
         8'h26: {REG_NR52_r[7:7],REG_NR52_r[3:0]} <= {REG_req_data[7:7],REG_req_data[3:0]};
 
         8'h30, 8'h31, 8'h32, 8'h33, 8'h34, 8'h35, 8'h36, 8'h37,
         8'h38, 8'h39, 8'h3A, 8'h3B, 8'h3C, 8'h3D, 8'h3E, 8'h3F: if (~apu_wave_enable_r | REG_req_dbg) REG_WAV_r[REG_address[3:0]] <= REG_req_data;
-        
+
       endcase
-    end  
+    end
   end
 end
 `endif
@@ -2927,23 +2924,23 @@ always @(posedge CLK) begin
   if (cpu_ireset_r) begin
     mct_state_r <= ST_MCT_IDLE;
     mct_req_r   <= 0;
-    
+
     mct_oam_error_r <= 0;
     mct_vram_error_r <= 0;
   end
-  else begin  
+  else begin
     case (mct_state_r)
       ST_MCT_IDLE: begin
         if      (EXE_MCT_req_val) begin
           mct_src_r   <= 1;
           mct_wr_r    <= EXE_MCT_req_wr;
-          
+
           mct_state_r <= ST_MCT_DEC;
         end
         else if (IFD_MCT_req_val) begin
           mct_src_r   <= 0;
           mct_wr_r    <= 0;
-          
+
           mct_state_r <= ST_MCT_DEC;
         end
       end
@@ -2964,7 +2961,7 @@ always @(posedge CLK) begin
       end
       ST_MCT_VRAM: begin
         if (~mct_wr_r) mct_mdr_r <= PPU_MCT_vram_active ? 0 : VRAM_data;
-        
+
         // avoid false errors by only looking at EXE src
         if (~|mct_req_r & PPU_MCT_vram_active & mct_src_r) mct_vram_error_r <= mct_vram_error_r + 1;
         if (~|mct_req_r) mct_state_r <= ST_MCT_END;
@@ -2978,12 +2975,12 @@ always @(posedge CLK) begin
       end
       ST_MCT_REG: begin
         if (~mct_wr_r) mct_mdr_r <= REG_data;
-        
+
         if (~|mct_req_r & REG_MCT_rsp_val) mct_state_r <= ST_MCT_END;
       end
       ST_MCT_HRAM: begin
         if (~mct_wr_r) mct_mdr_r <= HRAM_data;
-        
+
         if (~|mct_req_r) mct_state_r <= ST_MCT_END;
       end
       ST_MCT_EXT: begin
@@ -2996,7 +2993,7 @@ always @(posedge CLK) begin
         mct_state_r <= ST_MCT_IDLE;
       end
     endcase
-    
+
     mct_req_r <= {mct_req_r[0],|(mct_state_r & ST_MCT_DEC)};
   end
 end
@@ -3005,7 +3002,7 @@ end
 // SERIAL
 //-------------------------------------------------------------------
 
-// Basic functionality to allow multiplayer games to pass.  missing external clock/data.  
+// Basic functionality to allow multiplayer games to pass.  missing external clock/data.
 
 `ifdef SGB_SERIAL
 reg         ser_active_d1_r;
@@ -3022,7 +3019,7 @@ always @(posedge CLK) begin
   if (cpu_ireset_r) begin
     REG_SB_r <= 0;
     REG_SC_r <= 8'h7F;
-    
+
     ser_active_d1_r <= 0;
     ser_done_r      <= 0;
   end
@@ -3030,7 +3027,7 @@ always @(posedge CLK) begin
     if (CLK_CPU_EDGE) begin
       ser_active_d1_r <= REG_SC_r[7];
       ser_done_r      <= 0;
-      
+
       if (REG_SC_r[7]) begin
         if (~ser_active_d1_r) begin
           ser_ctr_r <= 0;
@@ -3040,20 +3037,20 @@ always @(posedge CLK) begin
         else begin
           ser_ctr_r <= REG_SC_r[0] ? ser_ctr_r + 1 : ser_ctr_r;
           ser_clk_d1_r <= ser_ctr_r[9];
-          
+
           if (ser_clk_d1_r ^ ser_ctr_r[9]) begin
             REG_SB_r[~ser_pos_r] <= 1'b1;
             ser_pos_r <= ser_pos_r + 1;
-            
+
             if (&ser_pos_r) begin
               REG_SC_r[7] <= 0;
               ser_done_r <= 1;
             end
           end
-        end        
+        end
       end
     end
-  
+
     if (REG_req_val) begin
       case (REG_address)
         8'h01: REG_SB_r[7:0] <= REG_req_data[7:0];
@@ -3139,7 +3136,7 @@ always @(posedge CLK) begin
           dbg_addr_r  <= MCU_ADDR;
           dbg_wr_r    <= MCU_WRQ;
           if (MCU_WRQ) dbg_mdr_r <= MCU_DATA_IN;
-          
+
           dbg_state_r <= ST_DBG_DEC;
         end
       end
@@ -3156,7 +3153,7 @@ always @(posedge CLK) begin
       end
       ST_DBG_VRAM: begin
         if (~dbg_wr_r) dbg_mdr_r <= dbg_vram_rddata;
-        
+
         dbg_state_r <= ST_DBG_END;
       end
       ST_DBG_OAM: begin
@@ -3166,12 +3163,12 @@ always @(posedge CLK) begin
       end
       ST_DBG_REG: begin
         if (~dbg_wr_r) dbg_mdr_r <= REG_data;
-        
+
         if (~dbg_req_r[0] & REG_DBG_rsp_val) dbg_state_r <= ST_DBG_END;
       end
       ST_DBG_HRAM: begin
         if (~dbg_wr_r) dbg_mdr_r <= dbg_hram_rddata;
-        
+
         dbg_state_r <= ST_DBG_END;
       end
       ST_DBG_MISC: begin
@@ -3187,7 +3184,7 @@ always @(posedge CLK) begin
         dbg_state_r <= ST_DBG_IDLE;
       end
     endcase
-    
+
     dbg_req_r <= {dbg_req_r[0],|(dbg_state_r & ST_DBG_DEC)};
   end
 
@@ -3207,7 +3204,7 @@ always @(posedge CLK) begin
             8'h09:    dbg_misc_data_r <= H_r;
             8'h0A:    dbg_misc_data_r <= SP_r[7:0];
             8'h0B:    dbg_misc_data_r <= SP_r[15:8];
-            
+
             default:  dbg_misc_data_r <= 0;
           endcase
     // ARCH/MMIO
@@ -3215,42 +3212,42 @@ always @(posedge CLK) begin
             8'h00:    dbg_misc_data_r <= REG_P1_r;
             8'h01:    dbg_misc_data_r <= REG_SB_r;
             8'h02:    dbg_misc_data_r <= REG_SC_r;
-                  
+
             8'h04:    dbg_misc_data_r <= REG_DIV_r;
             8'h05:    dbg_misc_data_r <= REG_TIMA_r;
             8'h06:    dbg_misc_data_r <= REG_TMA_r;
             8'h07:    dbg_misc_data_r <= REG_TAC_r;
-                  
+
             8'h0F:    dbg_misc_data_r <= REG_IF_r;
-                  
+
             8'h10:    dbg_misc_data_r <= REG_NR10_r;
             8'h11:    dbg_misc_data_r <= REG_NR11_r;
             8'h12:    dbg_misc_data_r <= REG_NR12_r;
             8'h13:    dbg_misc_data_r <= REG_NR13_r;
             8'h14:    dbg_misc_data_r <= REG_NR14_r;
-                  
+
             8'h16:    dbg_misc_data_r <= REG_NR21_r;
             8'h17:    dbg_misc_data_r <= REG_NR22_r;
             8'h18:    dbg_misc_data_r <= REG_NR23_r;
             8'h19:    dbg_misc_data_r <= REG_NR24_r;
-            
+
             8'h1A:    dbg_misc_data_r <= REG_NR30_r;
             8'h1B:    dbg_misc_data_r <= REG_NR31_r;
             8'h1C:    dbg_misc_data_r <= REG_NR32_r;
             8'h1D:    dbg_misc_data_r <= REG_NR33_r;
             8'h1E:    dbg_misc_data_r <= REG_NR34_r;
-                  
+
             8'h20:    dbg_misc_data_r <= REG_NR41_r;
             8'h21:    dbg_misc_data_r <= REG_NR42_r;
             8'h22:    dbg_misc_data_r <= REG_NR43_r;
             8'h23:    dbg_misc_data_r <= REG_NR44_r;
-            
+
             8'h24:    dbg_misc_data_r <= REG_NR50_r;
             8'h25:    dbg_misc_data_r <= REG_NR51_r;
             8'h26:    dbg_misc_data_r <= REG_NR52_r;
-                  
+
             8'h3?:    dbg_misc_data_r <= REG_WAV_r[dbg_addr_r[3:0]];
-                  
+
             8'h40:    dbg_misc_data_r <= REG_LCDC_r;
             8'h41:    dbg_misc_data_r <= REG_STAT_r;
             8'h42:    dbg_misc_data_r <= REG_SCY_r;
@@ -3263,13 +3260,13 @@ always @(posedge CLK) begin
             8'h49:    dbg_misc_data_r <= REG_OBP1_r;
             8'h4A:    dbg_misc_data_r <= REG_WY_r;
             8'h4B:    dbg_misc_data_r <= REG_WX_r;
-                                  
+
             8'h50:    dbg_misc_data_r <= REG_BOOT_r;
-                  
+
             8'hFF:    dbg_misc_data_r <= REG_IE_r;
 
             default:  dbg_misc_data_r <= 0;
-          endcase    
+          endcase
     // IFD
     4'h2: case(dbg_addr_r[7:0])
             8'h00:    dbg_misc_data_r <= ifd_op_r;
@@ -3295,7 +3292,7 @@ always @(posedge CLK) begin
             8'h02:    dbg_misc_data_r <= IFD_EXE_op[15:8];
             8'h03:    dbg_misc_data_r <= IFD_EXE_op[23:16];
             8'h04:    dbg_misc_data_r <= exe_ime_r;
-            
+
             8'h10:    dbg_misc_data_r <= IFD_EXE_decode[`DEC_GRP];
             8'h11:    dbg_misc_data_r <= IFD_EXE_decode[`DEC_LAT];
             8'h12:    dbg_misc_data_r <= IFD_EXE_decode[`DEC_DST];
@@ -3311,7 +3308,7 @@ always @(posedge CLK) begin
             8'h25:    dbg_misc_data_r <= exe_complete_r;
             8'h26:    dbg_misc_data_r <= exe_lat_add_r;
             8'h27:    dbg_misc_data_r <= exe_lat;
-            
+
             8'h30:    dbg_misc_data_r <= IFD_EXE_pc_start[7:0];
             8'h31:    dbg_misc_data_r <= IFD_EXE_pc_start[15:8];
             8'h32:    dbg_misc_data_r <= IFD_EXE_pc_end[7:0];
@@ -3333,7 +3330,7 @@ always @(posedge CLK) begin
             8'h4B:    dbg_misc_data_r <= exe_mem_data_r[15:8];
             8'h4C:    dbg_misc_data_r <= exe_res_los_r;
             8'h4D:    dbg_misc_data_r <= exe_src_alu_r;
-            
+
             8'h50:    dbg_misc_data_r <= EXE_IFD_redirect;
             8'h51:    dbg_misc_data_r <= EXE_IFD_target[7:0];
             8'h52:    dbg_misc_data_r <= EXE_IFD_target[15:8];
@@ -3343,12 +3340,12 @@ always @(posedge CLK) begin
             8'h56:    dbg_misc_data_r <= exe_pc_prev_redirect_r[15:8];
             8'h57:    dbg_misc_data_r <= exe_target_prev_redirect_r[7:0];
             8'h58:    dbg_misc_data_r <= exe_target_prev_redirect_r[15:8];
-            
+
             //8'h60:    dbg_misc_data_r <= tmp_div_r[3:0];
             //8'h61:    dbg_misc_data_r <= tmp_latency_r;
             //8'h62:    dbg_misc_data_r <= tmp_latency2_r;
             //8'h63:    dbg_misc_data_r <= tmp_latency3_r;
-            
+
             8'h70:    dbg_misc_data_r <= IFD_EXE_int;
 
             default:  dbg_misc_data_r <= 0;
@@ -3371,7 +3368,7 @@ always @(posedge CLK) begin
             8'h14:    dbg_misc_data_r <= reg_src_r;
             8'h15:    dbg_misc_data_r <= reg_wr_r;
             8'h16:    dbg_misc_data_r <= reg_mdr_r;
-            
+
             8'h20:    dbg_misc_data_r <= mct_vram_error_r[7:0];
             8'h21:    dbg_misc_data_r <= mct_vram_error_r[15:8];
             8'h22:    dbg_misc_data_r <= mct_oam_error_r[7:0];
@@ -3391,7 +3388,7 @@ always @(posedge CLK) begin
             8'hD?:    dbg_misc_data_r <= DBG_MAIN_DATA_IN;
             8'hE?:    dbg_misc_data_r <= DBG_CHEAT_DATA_IN;
             8'hF?:    dbg_misc_data_r <= DBG_MBC_DATA_IN;
-            
+
             default:  dbg_misc_data_r <= 0;
           endcase
     // PPU
@@ -3401,7 +3398,7 @@ always @(posedge CLK) begin
             8'h02:    dbg_misc_data_r <= PPU_PIXEL_VALID;
             8'h03:    dbg_misc_data_r <= PPU_PIXEL;
             8'h04:    dbg_misc_data_r <= PPU_DOT_EDGE;
-            
+
             8'h10:    dbg_misc_data_r <= ppu_state_r[7:0];
             8'h11:    dbg_misc_data_r <= ppu_state_r[12:8];
             8'h12:    dbg_misc_data_r <= ppu_dot_ctr_r[7:0];
@@ -3429,7 +3426,7 @@ always @(posedge CLK) begin
             //8'h45:    dbg_misc_data_r <= dbg_timer_ly_r;
             //8'h46:    dbg_misc_data_r <= dbg_timer_dot_ctr_r[7:0];
             //8'h47:    dbg_misc_data_r <= dbg_timer_dot_ctr_r[8:8];
-            
+
             8'hA0:    dbg_misc_data_r <= apu_square1_enable_r;
             8'hA1:    dbg_misc_data_r <= apu_square1_timer_r[7:0];
             8'hA2:    dbg_misc_data_r <= apu_square1_timer_r[12:8];
@@ -3487,7 +3484,7 @@ always @(posedge CLK) begin
             8'hDC:    dbg_misc_data_r <= apu_noise_lfsr_r[7:0];
             8'hDD:    dbg_misc_data_r <= apu_noise_lfsr_r[14:8];
             8'hDF:    dbg_misc_data_r <= apu_noise_output[4:0];
-            
+
             8'hE0:    dbg_misc_data_r <= APU_DAT[7:0];
             8'hE1:    dbg_misc_data_r <= APU_DAT[9:8];
             8'hE2:    dbg_misc_data_r <= APU_DAT[17:10];
@@ -3513,11 +3510,11 @@ always @(posedge CLK) begin
 
             default:  dbg_misc_data_r <= 0;
           endcase
-                    
+
     default: dbg_misc_data_r <= 0;
   endcase
 `endif
-  
+
 end
 
 reg         step_r;
@@ -3580,25 +3577,17 @@ always @(posedge CLK) begin
     dbg_brk_data_rd_addr <= (exe_advance_r && exe_complete_r) ? 0 : (IFD_EXE_valid && dbg_mem_req_val_d1_r && ~dbg_mem_req_wr_d1_r && EXE_MCT_req_addr_d1 == dbg_brk_addr_r); //&& (!config_r[2][0] ||     mmc_data_r[7:0] == dbg_brk_data_r);
     dbg_brk_data_wr_addr <= (exe_advance_r && exe_complete_r) ? 0 : (IFD_EXE_valid && dbg_mem_req_val_d1_r &&  dbg_mem_req_wr_d1_r && EXE_MCT_req_addr_d1 == dbg_brk_addr_r && (!config_r[2][0] || EXE_MCT_req_data_d1 == dbg_brk_data_r));
     dbg_brk_stop         <= IFD_EXE_valid & IFD_EXE_int;
-    dbg_brk_error        <= (
-                               0
-                            || (IFD_EXE_valid && SP_r[15:0] < 16'hFF7F) // SP overflow with HRAM stack
+    dbg_brk_error        <= (  0
                             || (mct_vram_error_r != dbg_mct_vram_error_r)
                             || (mct_oam_error_r != dbg_mct_oam_error_r)
-                            //|| (IFD_EXE_valid && SP_r[15:0] < 16'hDF7F && IFD_EXE_pc_start == 16'h0048) // SP overflow with WRAM stack
-                            //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h0048 && ppu_dot_ctr_r > 200)
-                            //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h0048 && REG_IF_r[`IE_LCD_STAT]) // still set
-                            //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h12E8 && ppu_dot_ctr_r > 200 && REG_IF_r[`IE_LCD_STAT])
-                            //|| (IFD_EXE_valid && REG_LY_r < 144 && IFD_EXE_pc_start == 16'h0050 && ppu_dot_ctr_r > 150 && REG_IF_r[`IE_LCD_STAT])
-                            //|| (REG_IF_r[`IE_LCD_STAT] && ppu_dot_ctr_r > 150 && REG_LY_r < 144) // PBF
                             );
 
     dbg_brk_addr_r <= dbg_brk_addr_watch;
     dbg_brk_data_r <= dbg_brk_data_watch;
-    
+
     dbg_mem_req_val_d1_r <= EXE_MCT_req_val;
     dbg_mem_req_wr_d1_r <= EXE_MCT_req_wr;
-    
+
     dbg_mct_vram_error_r <= mct_vram_error_r;
     dbg_mct_oam_error_r <= mct_oam_error_r;
   end

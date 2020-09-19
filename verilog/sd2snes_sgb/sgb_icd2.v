@@ -35,14 +35,14 @@ module sgb_icd2(
   output [7:0]  DATA_OUT,
 
   input         BOOTROM_ACTIVE,
-  
+
   // Pixel interface
   input         PPU_DOT_EDGE,
   input         PPU_PIXEL_VALID,
   input  [1:0]  PPU_PIXEL,
   input         PPU_VSYNC_EDGE,
-  input         PPU_HSYNC_EDGE,  
-  
+  input         PPU_HSYNC_EDGE,
+
   // Button/Serial interface
   input  [1:0]  P1I,
   output [3:0]  P1O,
@@ -52,7 +52,7 @@ module sgb_icd2(
 
   // Features
   input  [15:0] FEAT,
-  
+
   // Debug state
   input  [11:0] DBG_ADDR,
   output [7:0]  DBG_DATA_OUT
@@ -85,7 +85,7 @@ integer i;
 // GB CPU Frequency - 4.194304 MHz
 // GB Bus Frequency - 1.048576 MHz
 
-// To approximate the SGB2 frequency the SD2SNES implements a 84 MHz 
+// To approximate the SGB2 frequency the SD2SNES implements a 84 MHz
 // base clock which may be further divided down.  With a skip
 // clock every 737 base clocks the effective base frequency is:
 //   84 MHz * 736 / 737 = 83.886024 MHz
@@ -132,7 +132,7 @@ assign clk_cpu_snes_ast = ( clk_sysclk_edge
                             | ( clk_mult_r[1] &  clk_mult_r[0] & &clk_cpu_snes_ctr_r[3:3]) // 9-1
                             )
                           );
-                     
+
 assign CLK_CPU_EDGE = clk_cpu_edge_r;
 
 always @(posedge CLK) begin
@@ -142,15 +142,15 @@ always @(posedge CLK) begin
     clk_sys_r          <= 0;
     clk_cpu_snes_ctr_r <= 0;
   end
-  else begin  
+  else begin
     clk_skp_ctr_r <= clk_skp_ast ? 0 : clk_skp_ctr_r + 1;
-    
+
     // The CPU clock absorbs the skip clock since it's the primary that feeds all GB logic
     clk_cpu_ctr_r <= clk_skp_ast ? clk_cpu_ctr_r : (clk_cpu_ast ? 0 : (clk_cpu_ctr_r + 1));
-    
+
     clk_sys_r <= {clk_sys_r[1:0], CLK_SYSCLK};
     clk_cpu_snes_ctr_r <= ~clk_sysclk_edge ? clk_cpu_snes_ctr_r : (clk_cpu_snes_ast ? 0 : clk_cpu_snes_ctr_r + 1);
-    
+
     // arbitrary point assigned to define edge for cpu clock
     clk_cpu_edge_r <= FEAT[`SGB_FEAT_SGB1_TIMING] ? clk_cpu_snes_ast : clk_cpu_ast;
   end
@@ -325,18 +325,18 @@ always @(posedge CLK) begin
     REG_CHDAT_r  <= 0;      // 7800-780F R
 
     reg_row_index_read_r <= 0;
-    
+
     reg_pktrdy_clear_r <= 0;
   end
   else begin
     // It's important to flop the data early in the SNES read cycle so that concurrent
     // writes don't cause late changes on the bus which will lead to errors in the SNES.
-    
+
     case (REG_CTL_r[5:4]) // 1(0),2(1),4(3) players enabled.  0 out if not enabled to avoid spurious presses
       0: begin REG_PAD_r[1] <= 8'hFF; REG_PAD_r[2] <= 8'hFF; REG_PAD_r[3] <= 8'hFF; end
       1: begin                        REG_PAD_r[2] <= 8'hFF; REG_PAD_r[3] <= 8'hFF; end
     endcase
-    
+
     reg_pktrdy_clear_r <= 0;
     casez ({SNES_ADDR[22],SNES_ADDR[15:11],7'h00,SNES_ADDR[3:0]})
       {1'b0,16'h6000}: if (SNES_RD_start) reg_mdr_r         <= REG_LCDCHW_r; // R
@@ -359,7 +359,7 @@ always @(posedge CLK) begin
           // pulse PKTRDY clear
           if (SNES_ADDR[3:0] == 0) reg_pktrdy_clear_r <= 1;
         end
-      end  
+      end
       {1'b0,16'h7800}: begin
         if (SNES_RD_start) begin
           reg_mdr_r            <= REG_CHDAT_r;  // R
@@ -367,7 +367,7 @@ always @(posedge CLK) begin
         end
       end
     endcase
-    
+
     REG_CHDAT_r <= icd_row_rddata[REG_LCDCHR_r[`LCDC_ROW_INDEX]];
   end
 
@@ -409,29 +409,19 @@ assign icd_row_address[1] = reg_row_index_read_r;
 assign icd_row_address[2] = reg_row_index_read_r;
 assign icd_row_address[3] = reg_row_index_read_r;
 
-//assign icd_row_wrdata[0] = 0;
-//assign icd_row_wrdata[1] = 0;
-//assign icd_row_wrdata[2] = 0;
-//assign icd_row_wrdata[3] = 0;
-
-//assign icd_row_wren[0] = 0;
-//assign icd_row_wren[1] = 0;
-//assign icd_row_wren[2] = 0;
-//assign icd_row_wren[3] = 0;
-
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
     REG_LCDCHW_r <= 0;
-    
+
     pix_row_index_r  <= 0;
     pix_index_r <= 0;
-    
+
     pix_row_write_r <= 0;
   end
   else begin
     pix_row_write_r <= {pix_row_write_r[0],1'b0};
-    
-    if (PPU_DOT_EDGE) begin      
+
+    if (PPU_DOT_EDGE) begin
       if (PPU_PIXEL_VALID) begin
         pix_index_r <= pix_index_r + 1;
 
@@ -440,15 +430,15 @@ always @(posedge CLK) begin
 
         if (&pix_index_r) begin
           pix_row_index_r[8:4] <= pix_row_index_r[8:4] + 1;
-          
+
           pix_row_write_r[0]    <= 1;
           pix_row_index_write_r <= pix_row_index_r;
-        end        
+        end
       end
       else if (PPU_VSYNC_EDGE) begin
         pix_row_index_r[8:4] <= 0;
         pix_index_r          <= 0;
-        
+
         REG_LCDCHW_r[`LCDC_CHAR_ROW] <= 0;
       end
       // early advance of line and row buffer write pointer on dot after 2b pixel 159
@@ -457,7 +447,7 @@ always @(posedge CLK) begin
         if (~REG_LCDCHW_r[7] | ~REG_LCDCHW_r[4]) begin
           pix_row_index_r[3:1] <= pix_row_index_r[3:1] + 1;
           pix_row_index_r[8:4] <= 0;
-        
+
           if (pix_row_index_r[3:1] == 3'h7) begin
             REG_LCDCHW_r[`LCDC_ROW_INDEX] <= REG_LCDCHW_r[`LCDC_ROW_INDEX] + 1;
             REG_LCDCHW_r[`LCDC_CHAR_ROW]  <= REG_LCDCHW_r[`LCDC_CHAR_ROW] + 1;
@@ -489,7 +479,7 @@ reg         btn_pktrdy_set_r;
 // IDLE P1I = 11 -> ~CurId (0=F,1=E,2=D,3=C)
 // IDLE P1I = 01 -> ~Btn[7:4][CurID] // buttons
 // IDLE P1I = 10 -> ~Btn[3:0][CurID] // d-pad
-// 
+//
 // IDLE P1I = 01 -> 10 or 11 -> Increment ID mod NumPad
 assign P1O = &P1I ? ~{2'h0,btn_curr_id_r} : (({4{P1I[1]}} | REG_PAD_r[btn_curr_id_r][7:4]) & ({4{P1I[0]}} | REG_PAD_r[btn_curr_id_r][3:0]));
 
@@ -499,11 +489,11 @@ always @(posedge CLK) begin
   if (cpu_ireset_r) begin
     REG_PKTRDY_r <= 0;
     for (i = 0; i < `PKT_CNT; i = i + 1) REG_PKT_r[i] <= 0;
-    
+
     btn_state_r   <= ST_BTN_IDLE;
     btn_prev_r    <= 2'b00;
     btn_curr_id_r <= 0;
-    
+
     btn_pktrdy_set_r <= 0;
   end
   else begin
@@ -518,12 +508,12 @@ always @(posedge CLK) begin
           // Is this true if we are already in serial transfer mode?  Convenient to assume so.
           btn_bit_pos_r <= 0;
           btn_state_next_r <= ST_BTN_RECV;
-          
+
           btn_state_r <= ST_BTN_WAIT;
         end
         else begin
           case (btn_state_r)
-            ST_BTN_IDLE: begin            
+            ST_BTN_IDLE: begin
               if (~btn_prev_r[1] & P1I[1]) begin
                 // 01->(10|11) transition increments id
                 btn_curr_id_r <= (btn_curr_id_r + 1) & REG_CTL_r[5:4];
@@ -531,7 +521,7 @@ always @(posedge CLK) begin
             end
             ST_BTN_RECV: begin
               // 11 is considered a NOP
-              
+
               if (^P1I) begin
                 // Xilinx compiler silently fails to create logic if we use the following code:
                 // REG_PKT_r[btn_bit_pos_r[6:3]][btn_bit_pos_r[2:0]] <= P1I[0];
@@ -553,11 +543,11 @@ always @(posedge CLK) begin
                   14: REG_PKT_r[14][btn_bit_pos_r[2:0]] <= P1I[0];
                   15: REG_PKT_r[15][btn_bit_pos_r[2:0]] <= P1I[0];
                 endcase
-              
+
                 btn_bit_pos_r <= btn_bit_pos_r + 1;
-  
+
                 btn_state_next_r <= &btn_bit_pos_r ? ST_BTN_WAIT : ST_BTN_RECV;
-                
+
                 btn_state_r <= ST_BTN_WAIT;
               end
             end
@@ -567,7 +557,7 @@ always @(posedge CLK) begin
                 // set packet ready if we are successfully transitioning to idle
                 btn_pktrdy_set_r <= |(btn_state_next_r & ST_BTN_IDLE);
                 btn_state_next_r <= ST_BTN_IDLE;
-                
+
                 btn_state_r <= btn_state_next_r;
               end
               else if (^P1I) begin
@@ -580,11 +570,11 @@ always @(posedge CLK) begin
         end
       end
     end
-    
+
     REG_PKTRDY_r[0] <= (REG_PKTRDY_r[0] & ~reg_pktrdy_clear_r) | btn_pktrdy_set_r;
   end
 end
-  
+
 //-------------------------------------------------------------------
 // DBG
 //-------------------------------------------------------------------
@@ -619,12 +609,12 @@ always @(posedge CLK) begin
       8'h33:    dbg_data_r <= pix_row_index_write_r[8];
       8'h34:    dbg_data_r <= reg_row_index_read_r[7:0];
       8'h35:    dbg_data_r <= reg_row_index_read_r[8];
-      
+
       default:  dbg_data_r <= 0;
     endcase
   end
 
 end
 `endif
-  
+
 endmodule
