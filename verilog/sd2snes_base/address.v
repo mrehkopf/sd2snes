@@ -119,8 +119,8 @@ assign IS_SAVERAM = (~map_unlock & SAVERAM_MASK[0])
                       ? (&SNES_ADDR[23:20])
                       : 1'b0));
 
-// give the patch free reign over $F0-$FF banks
-assign IS_PATCH = map_unlock & (&SNES_ADDR[23:20]);
+// give the patch free reign over $C0-$FF banks
+assign IS_PATCH = map_unlock & (&SNES_ADDR[23:22]);
 
 /* BS-X has 4 MBits of extra RAM that can be mapped to various places */
 // LoROM: A23 = r03/r04  A22 = r06  A21 = r05  A20 = 0    A19 = d/c
