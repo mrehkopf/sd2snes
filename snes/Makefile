@@ -9,9 +9,7 @@ smc: menu.bin
 	cat menu.bin sd2snes.rom > menu.smc
 
 map: menu.bin
-	cp menu.bin D:/GDrive/Speedruns/Tools/USB2SNESv8/sd2snes/menu.bin
-	cp menu.bin F:/sd2snes/menu.bin
-	#utils/mkmap.sh $(OBJS)
+	utils/mkmap.sh $(OBJS)
 
 $(OUT): $(OBJS)
 	sneslink -fsmc -o $@ $^ 2>&1 | tee link.log
