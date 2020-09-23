@@ -55,7 +55,7 @@ module address(
 );
 
 /* feature bits. see src/fpga_spi.c for mapping */
-parameter [2:0]
+parameter [3:0]
   FEAT_DSPX = 0,
   FEAT_ST0010 = 1,
   FEAT_SRTC = 2,
@@ -63,7 +63,7 @@ parameter [2:0]
   FEAT_213F = 4,
   FEAT_SNESUNLOCK = 5,
   FEAT_2100 = 6,
-  FEAT_DMA1 = 7
+  FEAT_DMA1 = 11
 ;
 reg [7:0] MAPPER_DEC;
 integer i;

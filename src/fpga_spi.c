@@ -128,7 +128,7 @@
         bit        function
    ==========================================================================
         12         enable Satellaview base unit emulation
-        11         unused
+        11         enable DMA1 registers
       10-7         $2100 brightness limit (4 bits)
          6         enable $2100 DAC fix for 1CHIP
          5         enable permanent snescmd unlock (during load handshake)
