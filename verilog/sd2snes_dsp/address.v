@@ -34,10 +34,9 @@ module address(
   input  map_unlock,
   output msu_enable,
   output dma_enable,
-  output srtc_enable,
-  output use_bsx,
-  output bsx_tristate,
-  input [14:0] bsx_regs,
+  output dspx_enable,
+  output dspx_dp_enable,
+  output dspx_a0,
   output r213f_enable,
   output r2100_hit,
   output snescmd_enable,
@@ -53,7 +52,8 @@ module address(
 
 /* feature bits. see src/fpga_spi.c for mapping */
 parameter [3:0]
-  FEAT_SRTC = 2,
+  FEAT_DSPX = 0,
+  FEAT_ST0010 = 1,
   FEAT_MSU1 = 3,
   FEAT_213F = 4,
   FEAT_SNESUNLOCK = 5,
@@ -85,7 +85,11 @@ assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
                  |(SNES_ADDR[22]));
 
 assign IS_SAVERAM = (~map_unlock & SAVERAM_MASK[0])
-                    &((MAPPER_DEC[3'b000]
+                    &(featurebits[FEAT_ST0010]
+                      ?((SNES_ADDR[22:19] == 4'b1101)
+                        & &(~SNES_ADDR[15:12])
+                        & SNES_ADDR[11])
+                      :((MAPPER_DEC[3'b000]
                         || MAPPER_DEC[3'b010]
                         || MAPPER_DEC[3'b110])
                       ? (!SNES_ADDR[22]
@@ -100,64 +104,16 @@ assign IS_SAVERAM = (~map_unlock & SAVERAM_MASK[0])
                          & (~SNES_ROMSEL)
                          & (~SNES_ADDR[15] | ~ROM_MASK[21])
                         )
-/*  BS-X: SRAM @ Bank 0x10-0x17 Offset 5000-5fff */
-                      :(MAPPER_DEC[3'b011])
-                      ? ((SNES_ADDR[23:19] == 5'b00010)
-                         & (SNES_ADDR[15:12] == 4'b0101)
-                        )
 /*  Menu mapper: 8Mbit "SRAM" @ Bank 0xf0-0xff (entire banks!) */
                       :(MAPPER_DEC[3'b111])
                       ? (&SNES_ADDR[23:20])
-                      : 1'b0);
+                      : 1'b0));
 
-// give the patch free reign over $C0-$FF banks
-assign IS_PATCH = map_unlock & (&SNES_ADDR[23:22]);
-
-/* BS-X has 4 MBits of extra RAM that can be mapped to various places */
-// LoROM: A23 = r03/r04  A22 = r06  A21 = r05  A20 = 0    A19 = d/c
-// HiROM: A23 = r03/r04  A22 = d/c  A21 = r06  A20 = r05  A19 = 0
-
-wire [2:0] BSX_PSRAM_BANK = {bsx_regs[6], bsx_regs[5], 1'b0};
-wire [2:0] SNES_PSRAM_BANK = bsx_regs[2] ? SNES_ADDR[21:19] : SNES_ADDR[22:20];
-wire BSX_PSRAM_LOHI = (bsx_regs[3] & ~SNES_ADDR[23]) | (bsx_regs[4] & SNES_ADDR[23]);
-wire BSX_IS_PSRAM = BSX_PSRAM_LOHI
-                     & (( IS_ROM & (SNES_PSRAM_BANK == BSX_PSRAM_BANK)
-                         &(SNES_ADDR[15] | bsx_regs[2])
-                         &(~(SNES_ADDR[19] & bsx_regs[2])))
-                       | (bsx_regs[2]
-                          ? (SNES_ADDR[22:21] == 2'b01 & SNES_ADDR[15:13] == 3'b011)
-                          : (~SNES_ROMSEL & &SNES_ADDR[22:20] & ~SNES_ADDR[15]))
-                       );
-
-wire BSX_IS_CARTROM = ((bsx_regs[7] & (SNES_ADDR[23:22] == 2'b00))
-                      |(bsx_regs[8] & (SNES_ADDR[23:22] == 2'b10)))
-                      & SNES_ADDR[15];
-
-wire BSX_HOLE_LOHI = (bsx_regs[9] & ~SNES_ADDR[23]) | (bsx_regs[10] & SNES_ADDR[23]);
-
-wire BSX_IS_HOLE = BSX_HOLE_LOHI
-                   & (bsx_regs[2] ? (SNES_ADDR[21:20] == {bsx_regs[11], 1'b0})
-                                  : (SNES_ADDR[22:21] == {bsx_regs[11], 1'b0}));
-
-assign bsx_tristate = (MAPPER_DEC[3'b011]) & ~BSX_IS_CARTROM & ~BSX_IS_PSRAM & BSX_IS_HOLE;
+// give the patch free reign over $F0-$FF banks
+assign IS_PATCH = map_unlock & (&SNES_ADDR[23:20]);
 
 assign IS_WRITABLE = IS_SAVERAM
-                     |IS_PATCH // allow writing of the patch region
-                     |((MAPPER_DEC[3'b011]) & BSX_IS_PSRAM);
-
-wire [23:0] BSX_ADDR = bsx_regs[2] ? {1'b0, SNES_ADDR[22:0]}
-                                   : {2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]};
-
-/* BSX regs:
- Index  Function
-    1   0=map flash to ROM area; 1=map PRAM to ROM area
-    2   1=HiROM; 0=LoROM
-    3   1=Mirror PRAM @60-6f:0000-ffff
-    5   1=DO NOT mirror PRAM @40-4f:0000-ffff
-    6   1=DO NOT mirror PRAM @50-5f:0000-ffff
-    7   1=map BSX cartridge ROM @00-1f:8000-ffff
-    8   1=map BSX cartridge ROM @80-9f:8000-ffff
-*/
+                     |IS_PATCH; // allow writing of the patch region
 
 assign SRAM_SNES_ADDR = IS_PATCH
                         ? SNES_ADDR
@@ -180,17 +136,6 @@ assign SRAM_SNES_ADDR = IS_PATCH
                                             & SAVERAM_MASK)
                             : ({1'b0, !SNES_ADDR[23], SNES_ADDR[21:0]}
                                & ROM_MASK))
-                          :(MAPPER_DEC[3'b011])
-                          ?(  IS_SAVERAM
-                              ? 24'hE00000 + {SNES_ADDR[18:16], SNES_ADDR[11:0]}
-                              : BSX_IS_CARTROM
-                              ? (24'h800000 + ({SNES_ADDR[22:16], SNES_ADDR[14:0]} & 24'h0fffff))
-                              : BSX_IS_PSRAM
-                              ? (24'h400000 + (BSX_ADDR & 24'h07FFFF))
-                              : bs_page_enable
-                              ? (24'h900000 + {bs_page,bs_page_offset})
-                              : (BSX_ADDR & 24'h0fffff)
-                           )
                            :(MAPPER_DEC[3'b110])
                            ?(IS_SAVERAM
                              ? 24'hE00000 + ((SNES_ADDR[14:0] - 15'h6000)
@@ -218,9 +163,37 @@ assign ROM_HIT = IS_ROM | IS_WRITABLE | bs_page_enable;
 
 assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
 assign dma_enable = (featurebits[FEAT_DMA1] | map_unlock) & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff0) == 16'h2020));
-assign use_bsx = (MAPPER_DEC[3'b011]);
-assign srtc_enable = featurebits[FEAT_SRTC] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h2800));
 assign exe_enable =                           (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hffff) == 16'h2C00));
+
+// DSP1 LoROM: DR=30-3f:8000-bfff; SR=30-3f:c000-ffff
+//          or DR=60-6f:0000-3fff; SR=60-6f:4000-7fff
+// DSP1 HiROM: DR=00-0f:6000-6fff; SR=00-0f:7000-7fff
+assign dspx_enable =
+  featurebits[FEAT_DSPX]
+  ?((MAPPER_DEC[3'b001])
+    ?(ROM_MASK[20]
+      ?(SNES_ADDR[22] & SNES_ADDR[21] & ~SNES_ADDR[20] & ~SNES_ADDR[15])
+      :(~SNES_ADDR[22] & SNES_ADDR[21] & SNES_ADDR[20] & SNES_ADDR[15])
+     )
+    :(MAPPER_DEC[3'b000])
+      ?(~SNES_ADDR[22] & ~SNES_ADDR[21] & ~SNES_ADDR[20] & ~SNES_ADDR[15]
+        & &SNES_ADDR[14:13])
+    :1'b0)
+  :featurebits[FEAT_ST0010]
+  ?(SNES_ADDR[22] & SNES_ADDR[21] & ~SNES_ADDR[20] & &(~SNES_ADDR[19:16]) & ~SNES_ADDR[15])
+  :1'b0;
+
+assign dspx_dp_enable = featurebits[FEAT_ST0010]
+                      &(SNES_ADDR[22:19] == 4'b1101
+                     && SNES_ADDR[15:11] == 5'b00000);
+
+assign dspx_a0 = featurebits[FEAT_DSPX]
+                 ?((MAPPER_DEC[3'b001]) ? SNES_ADDR[14]
+                   :(MAPPER_DEC[3'b000]) ? SNES_ADDR[12]
+                   :1'b1)
+                 : featurebits[FEAT_ST0010]
+                 ? SNES_ADDR[0]
+                 : 1'b1;
 
 assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 assign r2100_hit = (SNES_PA == 8'h00);

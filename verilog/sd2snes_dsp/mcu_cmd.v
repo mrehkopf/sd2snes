@@ -79,17 +79,16 @@ module mcu_cmd(
   output       reg_we_out,
   output [7:0] reg_read_out,
 
-  // BS-X
-  output [7:0] bsx_regs_reset_out,
-  output [7:0] bsx_regs_set_out,
-  output bsx_regs_reset_we,
+  // uPD77C25
+  output reg [23:0] dspx_pgm_data_out,
+  output reg [10:0] dspx_pgm_addr_out,
+  output reg dspx_pgm_we_out,
 
-  // generic RTC
-  output [55:0] rtc_data_out,
-  output rtc_pgm_we,
+  output reg [15:0] dspx_dat_data_out,
+  output reg [10:0] dspx_dat_addr_out,
+  output reg dspx_dat_we_out,
 
-  // S-RTC
-  output srtc_reset,
+  output reg dspx_reset_out,
 
   // feature enable
   output reg [15:0] featurebits_out,
@@ -107,10 +106,16 @@ module mcu_cmd(
   // cheat configuration
   output reg [7:0] cheat_pgm_idx_out,
   output reg [31:0] cheat_pgm_data_out,
-  output reg cheat_pgm_we_out
+  output reg cheat_pgm_we_out,
+
+  // DSP core features
+  output reg [15:0] dsp_feat_out = 16'h0000
 );
 
 initial begin
+  dspx_pgm_addr_out = 11'b00000000000;
+  dspx_dat_addr_out = 10'b0000000000;
+  dspx_reset_out = 1'b1;
   region_out = 0;
   SD_DMA_START_MID_BLOCK = 0;
   SD_DMA_END_MID_BLOCK = 0;
@@ -144,16 +149,6 @@ reg [7:0] index_read_buf; initial index_read_buf = 8'hFF;
 reg [7:0] temp_read_buf; initial temp_read_buf = 8'hFF;
 
 reg reg_we_buf; initial reg_we_buf = 0;
-
-reg [7:0] bsx_regs_set_out_buf;
-reg [7:0] bsx_regs_reset_out_buf;
-reg bsx_regs_reset_we_buf;
-
-reg [55:0] rtc_data_out_buf;
-reg rtc_pgm_we_buf;
-
-reg srtc_reset_buf;
-initial srtc_reset_buf = 0;
 
 reg [31:0] SNES_SYSCLK_FREQ_BUF;
 
@@ -333,48 +328,37 @@ always @(posedge clk) begin
             MSU_RESET_OUT_BUF <= 1'b1;
           end
         endcase
-      8'he5:
-        case (spi_byte_cnt)
-          32'h2:
-            rtc_data_out_buf[55:48] <= param_data;
-          32'h3:
-            rtc_data_out_buf[47:40] <= param_data;
-          32'h4:
-            rtc_data_out_buf[39:32] <= param_data;
-          32'h5:
-            rtc_data_out_buf[31:24] <= param_data;
-          32'h6:
-            rtc_data_out_buf[23:16] <= param_data;
-          32'h7:
-            rtc_data_out_buf[15:8] <= param_data;
-          32'h8: begin
-            rtc_data_out_buf[7:0] <= param_data;
-            rtc_pgm_we_buf <= 1'b1;
-          end
-          32'h9:
-            rtc_pgm_we_buf <= 1'b0;
-        endcase
-      8'he6:
+      8'he8: begin// reset DSPx PGM+DAT address
         case (spi_byte_cnt)
           32'h2: begin
-            bsx_regs_set_out_buf <= param_data[7:0];
+            dspx_pgm_addr_out <= 11'b00000000000;
+            dspx_dat_addr_out <= 10'b0000000000;
           end
-          32'h3: begin
-            bsx_regs_reset_out_buf <= param_data[7:0];
-            bsx_regs_reset_we_buf <= 1'b1;
-          end
-          32'h4:
-            bsx_regs_reset_we_buf <= 1'b0;
         endcase
-      8'he7:
+      end
+      8'he9:// write DSPx PGM w/ increment
         case (spi_byte_cnt)
-          32'h2: begin
-            srtc_reset_buf <= 1'b1;
-          end
-          32'h3: begin
-            srtc_reset_buf <= 1'b0;
+          32'h2: dspx_pgm_data_out[23:16] <= param_data[7:0];
+          32'h3: dspx_pgm_data_out[15:8] <= param_data[7:0];
+          32'h4: dspx_pgm_data_out[7:0] <= param_data[7:0];
+          32'h5: dspx_pgm_we_out <= 1'b1;
+          32'h6: begin
+            dspx_pgm_we_out <= 1'b0;
+            dspx_pgm_addr_out <= dspx_pgm_addr_out + 1;
           end
         endcase
+      8'hea:// write DSPx DAT w/ increment
+        case (spi_byte_cnt)
+          32'h2: dspx_dat_data_out[15:8] <= param_data[7:0];
+          32'h3: dspx_dat_data_out[7:0] <= param_data[7:0];
+          32'h4: dspx_dat_we_out <= 1'b1;
+          32'h5: begin
+            dspx_dat_we_out <= 1'b0;
+            dspx_dat_addr_out <= dspx_dat_addr_out + 1;
+          end
+        endcase
+      8'heb: // control DSPx reset
+        dspx_reset_out <= param_data[0];
       8'hec:
         begin // set DAC properties
           dac_vol_select_out <= param_data[2:0];
@@ -387,6 +371,13 @@ always @(posedge clk) begin
         endcase
       8'hee:
         region_out <= param_data[0];
+      8'hef:
+        case (spi_byte_cnt)
+          32'h2: dsp_feat_tmp <= param_data[7:0];
+          32'h3: begin
+            dsp_feat_out <= {dsp_feat_tmp, param_data[7:0]};
+          end
+        endcase
       8'hfa: // handles all group, index, value, invmask writes.  unit is responsible for decoding group for match
         case (spi_byte_cnt)
           32'h2: begin
@@ -524,10 +515,10 @@ always @(posedge clk) begin
         end
         32'h4: begin
           //if (group_read_buf == 8'h01) MCU_DATA_IN_BUF <= trc_config_data_in;
-          //else                         
+          //else
             MCU_DATA_IN_BUF <= 0;
         end
-      endcase      
+      endcase
     else if (cmd_data[7:0] == 8'hF0)
       MCU_DATA_IN_BUF <= 8'hA5;
   end
@@ -570,15 +561,6 @@ assign msu_status_reset_out = msu_status_reset_out_buf;
 assign msu_status_set_out = msu_status_set_out_buf;
 assign msu_reset_out = MSU_RESET_OUT_BUF;
 assign msu_ptr_out = MSU_PTR_OUT_BUF;
-
-assign bsx_regs_reset_we = bsx_regs_reset_we_buf;
-assign bsx_regs_reset_out = bsx_regs_reset_out_buf;
-assign bsx_regs_set_out = bsx_regs_set_out_buf;
-
-assign rtc_data_out = rtc_data_out_buf;
-assign rtc_pgm_we = rtc_pgm_we_buf;
-
-assign srtc_reset = srtc_reset_buf;
 
 assign mcu_data_out = SD_DMA_STATUS ? SD_DMA_SRAM_DATA : MCU_DATA_OUT_BUF;
 assign mcu_mapper = MAPPER_BUF;

@@ -138,6 +138,7 @@ void smc_id(snes_romprops_t* props) {
       else if ((header->map == 0x20 && header->carttype == 0x03) ||
           (header->map == 0x30 && header->carttype == 0x05 && header->licensee != 0xb2)) {
         props->has_dspx = 1;
+        props->fpga_conf = FPGA_DSP;
         props->fpga_features |= FEAT_DSPX;
         /* Pilotwings uses DSP1 instead of DSP1B */
         if(!memcmp(header->name, "PILOTWINGS", 10)) {
@@ -150,18 +151,21 @@ void smc_id(snes_romprops_t* props) {
       else if (header->map == 0x20 && header->carttype == 0x05) {
         props->has_dspx = 1;
         props->dsp_fw = DSPFW_2;
+        props->fpga_conf = FPGA_DSP;
         props->fpga_features |= FEAT_DSPX;
       }
       /* DSP3 LoROM */
       else if (header->map == 0x30 && header->carttype == 0x05 && header->licensee == 0xb2) {
         props->has_dspx = 1;
         props->dsp_fw = DSPFW_3;
+        props->fpga_conf = FPGA_DSP;
         props->fpga_features |= FEAT_DSPX;
       }
       /* DSP4 LoROM */
       else if (header->map == 0x30 && header->carttype == 0x03) {
         props->has_dspx = 1;
         props->dsp_fw = DSPFW_4;
+        props->fpga_conf = FPGA_DSP;
         props->fpga_features |= FEAT_DSPX;
       }
       /* ST0010 LoROM */
@@ -169,6 +173,7 @@ void smc_id(snes_romprops_t* props) {
         props->has_dspx = 1;
         props->has_st0010 = 1;
         props->dsp_fw = DSPFW_ST0010;
+        props->fpga_conf = FPGA_DSP;
         props->fpga_features |= FEAT_ST0010;
         header->ramsize = 2;
       }
@@ -205,6 +210,7 @@ void smc_id(snes_romprops_t* props) {
       if((header->map & 0xef) == 0x21 && (header->carttype == 0x03 || header->carttype == 0x05)) {
         props->has_dspx = 1;
         props->dsp_fw = DSPFW_1B;
+        props->fpga_conf = FPGA_DSP;
         props->fpga_features |= FEAT_DSPX;
       }
       break;

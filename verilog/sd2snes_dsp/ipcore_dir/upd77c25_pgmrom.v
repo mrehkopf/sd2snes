@@ -22,11 +22,11 @@
 *     devices, or systems.  Use in such applications are expressly             *
 *     prohibited.                                                              *
 *                                                                              *
-*     (c) Copyright 1995-2018 Xilinx, Inc.                                     *
+*     (c) Copyright 1995-2019 Xilinx, Inc.                                     *
 *     All rights reserved.                                                     *
 *******************************************************************************/
-// You must compile the wrapper file upd77c25_datram.v when simulating
-// the core, upd77c25_datram. When compiling the wrapper file, be sure to
+// You must compile the wrapper file upd77c25_pgmrom.v when simulating
+// the core, upd77c25_pgmrom. When compiling the wrapper file, be sure to
 // reference the XilinxCoreLib Verilog simulation library. For detailed
 // instructions, please refer to the "CORE Generator Help".
 
@@ -36,34 +36,28 @@
 
 `timescale 1ns/1ps
 
-module upd77c25_datram(
+module upd77c25_pgmrom(
   clka,
   wea,
   addra,
   dina,
-  douta,
   clkb,
-  web,
   addrb,
-  dinb,
   doutb
 );
 
 input clka;
 input [0 : 0] wea;
-input [9 : 0] addra;
-input [15 : 0] dina;
-output [15 : 0] douta;
+input [10 : 0] addra;
+input [23 : 0] dina;
 input clkb;
-input [0 : 0] web;
 input [10 : 0] addrb;
-input [7 : 0] dinb;
-output [7 : 0] doutb;
+output [23 : 0] doutb;
 
 // synthesis translate_off
 
   BLK_MEM_GEN_V7_3 #(
-    .C_ADDRA_WIDTH(10),
+    .C_ADDRA_WIDTH(11),
     .C_ADDRB_WIDTH(11),
     .C_ALGORITHM(1),
     .C_AXI_ID_WIDTH(4),
@@ -96,13 +90,13 @@ output [7 : 0] doutb;
     .C_INITB_VAL("0"),
     .C_INTERFACE_TYPE(0),
     .C_LOAD_INIT_FILE(0),
-    .C_MEM_TYPE(2),
+    .C_MEM_TYPE(1),
     .C_MUX_PIPELINE_STAGES(0),
     .C_PRIM_TYPE(1),
-    .C_READ_DEPTH_A(1024),
+    .C_READ_DEPTH_A(2048),
     .C_READ_DEPTH_B(2048),
-    .C_READ_WIDTH_A(16),
-    .C_READ_WIDTH_B(8),
+    .C_READ_WIDTH_A(24),
+    .C_READ_WIDTH_B(24),
     .C_RST_PRIORITY_A("CE"),
     .C_RST_PRIORITY_B("CE"),
     .C_RST_TYPE("SYNC"),
@@ -117,12 +111,12 @@ output [7 : 0] doutb;
     .C_USE_SOFTECC(0),
     .C_WEA_WIDTH(1),
     .C_WEB_WIDTH(1),
-    .C_WRITE_DEPTH_A(1024),
+    .C_WRITE_DEPTH_A(2048),
     .C_WRITE_DEPTH_B(2048),
     .C_WRITE_MODE_A("WRITE_FIRST"),
     .C_WRITE_MODE_B("WRITE_FIRST"),
-    .C_WRITE_WIDTH_A(16),
-    .C_WRITE_WIDTH_B(8),
+    .C_WRITE_WIDTH_A(24),
+    .C_WRITE_WIDTH_B(24),
     .C_XDEVICEFAMILY("spartan3")
   )
   inst (
@@ -130,18 +124,18 @@ output [7 : 0] doutb;
     .WEA(wea),
     .ADDRA(addra),
     .DINA(dina),
-    .DOUTA(douta),
     .CLKB(clkb),
-    .WEB(web),
     .ADDRB(addrb),
-    .DINB(dinb),
     .DOUTB(doutb),
     .RSTA(),
     .ENA(),
     .REGCEA(),
+    .DOUTA(),
     .RSTB(),
     .ENB(),
     .REGCEB(),
+    .WEB(),
+    .DINB(),
     .INJECTSBITERR(),
     .INJECTDBITERR(),
     .SBITERR(),
