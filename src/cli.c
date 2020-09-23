@@ -436,12 +436,12 @@ void cmd_cheat(void) {
 
 void cmd_test(void) {
   int i;
-  uint8_t databuf[512];
+  uint8_t databuf[1024];
   fpga_set_snescmd_addr(SNESCMD_MCU_CMD);
-  for(i=0; i<512; i++) {
+  for(i=0; i<1024; i++) {
     databuf[i]=fpga_read_snescmd();
   }
-  uart_trace(databuf, 0, 512);
+  uart_trace(databuf, 0, 1024);
 }
 
 void cmd_fpgaconf(void) {
