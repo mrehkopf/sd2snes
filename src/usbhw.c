@@ -150,21 +150,18 @@ uint32_t RdCmdDat (uint32_t cmd) {
 
 void USB_Init (void) {
 
+  LPC_SC->PCONP |= (1UL<<31);                /* USB PCLK -> enable USB Per.       */
+
+ /* disable pull-up on fake USB_CONNECT pin, set P1.30 function to VBUS */
+  USB_CONN_MODEREG |= BV(USB_CONN_MODEBIT);
+  USB_VBUS_PINSEL |= BV(USB_VBUS_PINSELBIT);
+  USB_VBUS_MODEREG |= BV(USB_VBUS_MODEBIT);
+
   LPC_PINCON->PINSEL1 &= ~((3<<26)|(3<<28));   /* P0.29 D+, P0.30 D- */
   LPC_PINCON->PINSEL1 |=  ((1<<26)|(1<<28));   /* PINSEL1 26.27, 28.29  = 01 */
 
-  LPC_PINCON->PINSEL3 &= ~((3<< 4)|(3<<28));   /* P1.18 GoodLink, P1.30 VBUS */
-  LPC_PINCON->PINSEL3 |=  ((1<< 4)|(2<<28));   /* PINSEL3 4.5 = 01, 28.29 = 10 */
-
-//  LPC_PINCON->PINSEL4 &= ~((3<<18)        );   /* P2.9 SoftConnect */
-//  LPC_PINCON->PINSEL4 |=  ((1<<18)        );   /* PINSEL4 18.19 = 01 */
-
-  LPC_PINCON->PINSEL4 &= ~((3<<18)        );   /* P4.28 Soft-SoftConnect ;) */
-
-  LPC_SC->PCONP |= (1UL<<31);                /* USB PCLK -> enable USB Per.       */
-
-  LPC_USB->USBClkCtrl = 0x1A;                /* Dev, PortSel, AHB clock enable */
-  while ((LPC_USB->USBClkSt & 0x1A) != 0x1A);
+  LPC_USB->USBClkCtrl = 0x12;                /* Dev, PortSel, AHB clock enable */
+  while ((LPC_USB->USBClkSt & 0x12) != 0x12);
   NVIC_EnableIRQ(USB_IRQn);               /* enable USB interrupt */
   USB_Reset();
   USB_SetAddress(0);
@@ -212,12 +209,8 @@ void USB_Reset (void) {
   
   //saturnu
 //	LPC_USB->USBEpIntEn |= (1 << 4); //EP2RX
-//	LPC_USB->USBEpIntEn |= (1 << 5); //EP2TX	
-
-  
+//	LPC_USB->USBEpIntEn |= (1 << 5); //EP2TX
   LPC_USB->USBDevIntClr = 0xFFFFFFFF;
-  
-  
   LPC_USB->USBDevIntEn  = DEV_STAT_INT    | EP_SLOW_INT     | //(1 << 6) | (1 << 7) |
                (USB_SOF_EVENT   ? FRAME_INT : 0) |
                (USB_ERROR_EVENT ? ERR_INT   : 0);

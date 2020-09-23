@@ -40,20 +40,16 @@ void clock_init() {
    connect PLL0
    done
  */
+  disconnectPLL1();
+  disablePLL1();
+
   enableMainOsc();
   setClkSrc(CLKSRC_MAINOSC);
   setPLL0MultPrediv(CONFIG_CLK_MULT, CONFIG_CLK_PREDIV);
   enablePLL0();
   setCCLKDiv(CONFIG_CLK_CCLKDIV);
+  setUSBCLKDiv(CONFIG_USB_DIV);
   connectPLL0();
-
-
-/* configure PLL1 for USB operation */
-  disconnectPLL1();
-  disablePLL1();
-  setPLL1MultPrediv(36, 1);
-  enablePLL1();
-  connectPLL1();
 
 }
 
@@ -115,6 +111,10 @@ void disconnectPLL1() {
 
 void setCCLKDiv(uint8_t div) {
   LPC_SC->CCLKCFG=CCLK_DIV(div);
+}
+
+void setUSBCLKDiv(uint8_t div) {
+  LPC_SC->USBCLKCFG=USB_DIV(div);
 }
 
 void enableMainOsc() {

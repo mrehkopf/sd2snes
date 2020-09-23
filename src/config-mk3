@@ -41,10 +41,14 @@ DEVICE_NAME = "sd2snes Mk.III"
 # Multiplier:   24
 # Pre-Divisor:   1
 # Divisor:       4
+# => FCCO = 384MHz
+# => CCLK = 96MHz
+# => USBCLK = 48MHz
 
 CONFIG_CLK_MULT         = 24
 CONFIG_CLK_PREDIV       =  1
 CONFIG_CLK_CCLKDIV      =  4
+CONFIG_USB_DIV          =  8
 
 SSP_CLK_DIVISOR         = 2
 

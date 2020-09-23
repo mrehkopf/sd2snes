@@ -76,11 +76,6 @@ int main(void) {
   BITBAND(DAC_DEMREG->FIODIR, DAC_DEMBIT) = 1;
   BITBAND(DAC_DEMREG->FIOSET, DAC_DEMBIT) = 1;
 
- /* disable pull-up on fake USB_CONNECT pin, set P1.30 function to VBUS */
-  USB_CONN_MODEREG |= BV(USB_CONN_MODEBIT);
-  USB_VBUS_PINSEL |= BV(USB_VBUS_PINSELBIT);
-  USB_VBUS_MODEREG |= BV(USB_VBUS_MODEBIT);
-
  /* connect UART3 on P0[25:26] + SSP0 on P0[15:18] */
   LPC_PINCON->PINSEL1 = BV(18) | BV(19) | BV(20) | BV(21) /* UART3 */
                       | BV(3) | BV(5);                    /* SSP0 (FPGA) except SS */
@@ -93,6 +88,9 @@ int main(void) {
   BITBAND(SNES_CIC_D1_MODEREG, SNES_CIC_D1_MODEBIT) = 1;
   BITBAND(SNES_CIC_D1_MODEREG, SNES_CIC_D1_MODEBIT - 1) = 1;
 
+ /* PCLKSEL settings applied by above peripheral inits may be ineffective after
+    PLL0 has been connected, so first disconnect PLL0, then do peripheral setup
+    Erratum ES_LPC175x - PCLKSELx.1 */
   clock_disconnect();
   snes_init();
   snes_reset(1);
@@ -102,15 +100,15 @@ int main(void) {
   fpga_spi_init();
   spi_preinit();
   led_init();
-  // USB initialization
-  USB_Init ();
-  CDC_Init (0x00);
- /* do this last because the peripheral init()s change PCLK dividers */
+ /* and setup & connect PLL0 again */
   clock_init();
   FPGA_CLK_PINSEL |= BV(FPGA_CLK_PINSELBIT) | BV(FPGA_CLK_PINSELBIT - 1); /* MAT3.x (FPGA clock) */
   led_std();
   sdn_init();
-  //usb
+
+ /* USB initialization. Not affected by PCLKSELx.1 erratum */
+  USB_Init ();
+  CDC_Init (0x00);
   USB_Connect (0x01);
 
   printf("\n\n" DEVICE_NAME "\n===============\nfw ver.: " CONFIG_VERSION "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);

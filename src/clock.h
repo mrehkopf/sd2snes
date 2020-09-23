@@ -4,6 +4,7 @@
 #define PLL_MULT(x)     ((x-1)&0x7fff)
 #define PLL_PREDIV(x)   (((x-1)<<16)&0xff0000)
 #define CCLK_DIV(x)     ((x-1)&0xff)
+#define USB_DIV(x)      ((x-1)&0x0f)
 #define CLKSRC_MAINOSC  (1)
 #define PLLE0           (1<<0)
 #define PLLC0           (1<<1)
@@ -73,6 +74,7 @@ void disconnectPLL1(void);
 void PLL1feed(void);
 
 void setCCLKDiv(uint8_t div);
+void setUSBCLKDiv(uint8_t div);
 
 void enableMainOsc(void);
 
