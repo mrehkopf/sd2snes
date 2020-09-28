@@ -617,10 +617,9 @@ mfunc_isenabled_hooks:
 
 mfunc_isenabled_savestate:
   lda @CFG_ENABLE_INGAME_SAVESTATE
-  bne +
-  sec
-  rtl
-+ clc
+  and @CFG_ENABLE_INGAME_HOOK
+  eor #$ff
+  ror
   rtl
 
 mfunc_isenabled_scic:
