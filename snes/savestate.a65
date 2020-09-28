@@ -1,0 +1,639 @@
+#include "savestate.i65"
+
+savestate_handler:
+; * = $FE1000
+
+; print "Savestate Bank Starting at: ", pc
+	php : rep #$30 : .al : .xl : pha
+	; nmihook already handled button input
+  sep #$20 : .as
+	lda @CS_CTRL
+	cmp #$02
+	rep #$30 : .al : .xl
+	beq read_p2
+read_p1:
+	lda @$004218
+	bra skip_p2
+read_p2:
+  lda @$00421A
+skip_p2:
+	sta @CS_INPUT_NEXT
+	sta @$002BF0
+start:
+	brl ss_init
+
+save_write_table:
+	; Disable DMA
+	.word $1000|$420B, $0000
+	.word $1000|$420C, $0000
+	; Turn PPU off
+	.word $1000|$2100, $0080
+	; temp
+	.word $0000|$2116, $0000  ; VRAM address >> 1.
+	.word $8000|$2139, $0000  ; VRAM dummy read.
+	; Done
+	.word $0000, save_return
+
+load_write_table
+	; Disable DMA
+	.word $1000|$420B, $00
+	.word $1000|$420C, $00
+	; Turn PPU off
+	.word $1000|$2100, $80
+	; Single address, A bus -> B bus.  B address = reflector to WRAM ($2180).
+	.word $0000|$4310, $8000  ; direction = A->B, B addr = $2180
+	; Copy F00000-F0FFFF to WRAM 7E0000-7EFFFF.
+	.word $0000|$4312, $0000  ; A addr = $xx0000
+	.word $0000|$4314, $00F0  ; A addr = $F0xxxx, size = $xx00
+	.word $0000|$4316, $0000  ; size = $00xx ($0000), unused bank reg = $00.
+	.word $0000|$2181, $0000  ; WRAM addr = $xx0000
+	.word $1000|$2183, $00    ; WRAM addr = $7Exxxx  (bank is relative to $7E)
+	.word $1000|$420B, $02    ; Trigger DMA on channel 1
+	; Copy F10000-F1FFFF to WRAM 7F0000-7FFFFF.
+	.word $0000|$4312, $0000  ; A addr = $xx0000
+	.word $0000|$4314, $00F1  ; A addr = $F1xxxx, size = $xx00
+	.word $0000|$4316, $0000  ; size = $00xx ($0000), unused bank reg = $00.
+	.word $0000|$2181, $0000  ; WRAM addr = $xx0000
+	.word $1000|$2183, $01    ; WRAM addr = $7Fxxxx  (bank is relative to $7E)
+	.word $1000|$420B, $02    ; Trigger DMA on channel 1
+	; Address pair, A bus -> B bus.  B address = VRAM write ($2118).
+	.word $0000|$4310, $1801  ; direction = A->B, B addr = $2118
+	.word $1000|$2115, $80    ; VRAM address increment mode.
+	; Copy F20000-F2FFFF to VRAM 0000-FFFF.
+	.word $0000|$2116, $0000  ; VRAM address >> 1.
+	.word $0000|$4312, $0000  ; A addr = $xx0000
+	.word $0000|$4314, $00F2  ; A addr = $F2xxxx, size = $xx00
+	.word $0000|$4316, $0000  ; size = $00xx ($0000), unused bank reg = $00.
+	.word $1000|$420B, $02    ; Trigger DMA on channel 1
+	; TODO: add audio
+	; Copy F40000-F401FF to CGRAM 000-1FF.
+	.word $1000|$2121, $00    ; CGRAM address
+	.word $0000|$4310, $2200  ; direction = A->B, byte reg, B addr = $2122
+	.word $0000|$4312, $0000  ; A addr = $xx0000
+	.word $0000|$4314, $00F4  ; A addr = $F4xxxx, size = $xx00
+	.word $0000|$4316, $0002  ; size = $02xx ($0200), unused bank reg = $00.
+	.word $1000|$420B, $02    ; Trigger DMA on channel 1
+	; Copy F40200-F4041F to OAM 000-21F.
+	.word $0000|$2102, $0000  ; OAM address
+	.word $0000|$4310, $0400  ; direction = A->B, byte reg, B addr = $2104
+	.word $0000|$4312, $0200  ; A addr = $xx0200
+	.word $0000|$4314, $20F4  ; A addr = $F4xxxx, size = $xx20
+	.word $0000|$4316, $0002  ; size = $02xx ($0220), unused bank reg = $00.
+	.word $1000|$420B, $02    ; Trigger DMA on channel 1
+	; Done
+	.word $0000, load_return
+
+; general register restore
+.register_restore_return
+	sep #$20 : .as
+	rep #$10 : .xl
+
+; restore $21XX
+	ldx #$0002
+	ldy #$0001
+
+-	cpy #$0002 : beq +
+	cpy #$0003 : beq +
+	cpy #$0004 : beq +
+	cpy #$0018 : beq +
+	cpy #$0019 : beq +
+	cpy #$0022 : beq +
+
+	lda @SRAM_PPU_BANK, x : sta $2100, y : inx
+	lda @SRAM_PPU_BANK, x : sta $2100, y : dex
+
++	inx : inx
+	iny
+	cpy #$0034
+	beq +
+	bra -
+
+; restore $420X
++	ldx #$0001
+
+-	cpx #$0001 : beq +
+	cpx #$000B : beq +
+	cpx #$000C : beq +
+	lda @SRAM_OTH_BANK, x
+	sta $4200, x
+
++	inx
+	cpx #$000E
+	bne -
+	
+	rep #$30 : .al : .xl
+	ply
+	plx
+	pla
+	pld
+	plb
+
+	sep #$20 : .as
+	; consume current NMI
+	lda. @$004210
+	
+	; align back with the NMI
+	lda @SRAM_OTH_BANK
+	and #$01
+	ora #$80
+	;lda #$80
+	sta @$4200
+	
+-	lda @CS_STATE
+	cmp #$2
+	bne -
+
+	; reset picture
+	lda @SRAM_PPU_BANK
+	sta @$2100
+
+	; re-enable all interrupts
+	lda @SRAM_OTH_BANK
+	sta @$4200
+	;lda !SRAM_OTH_BANK|$C
+	;stz $420C
+	
+; Code to run before returning back to the game
+.ss_exit
+	rep #$30 : .al : .xl : pla : plp
+	jml @SS_RETURN
+	;rtl
+	
+; SMC (Self Modifying Code) to init on first pass
+.ss_init
+	rep #$30 : .al : .xl
+	pha
+	phx
+	phy
+
+	lda #.ss_start
+	sta @start+1
+
+	sep #$20 : .as
+	; save/load state machine
+	lda #$00
+	sta @CS_STATE
+	
+	rep #$20 : .al
+
+	;; change some games to use the hardware button capture
++	lda @$00FFDE
+	cmp #$783A : beq .controller_reg_patch ; claymates (US)
+	cmp #$06D5 : beq .controller_reg_patch ; claymates (EU)
+	cmp #$8FF5 : beq .controller_reg_patch ; FFMQ 1.1 (US)
+	cmp #$4CDE : beq .controller_reg_patch ; FFMQ 1.0 (US)
+	cmp #$0492 : beq .controller_reg_patch ; FFMQ 1.0 (JP)
+	bra .button_reg_done
+.controller_reg_patch
+	lda #$0718
+	sta @.controller_reg+1
+	sep #$20 : .as
+	lda #$F9
+	sta @.controller_reg+3
+	rep #$20 : .al
+	
+.button_reg_done
+	lda #$0000
+	sta @CS_SAVE_REQ
+	ply
+	plx
+	pla
+	
+.ss_start
+
+	sep #$20 : .as  
+
+	lda @CS_STATE
+	beq +
+	cmp #$01
+	bne skip
+
+	;signal flag
+	lda @CS_STATE
+	inc
+	sta @CS_STATE
+	
+	; remove aligned NMI state from the stack.  this is pushed in hook.asm
+	; the fpga needs to be careful and not treat the nested NMI as an exit.
+	; a
+	rep #$20 : .al : pla
+	; p
+	sep #$20 : .as : pla
+
+	lda $4210
+	
+	rti
+	
+skip
+	inc
+	; skip 16 additional frames after last save to avoid blowing out the stack on nested handlers
+	; FIXME: get controls working where we don't repeat when holding buttons
+	and #$0F
+	sta @CS_STATE
+	
+; input handling
++	rep #$30 : .al : .xl
+	;%cgram()
+	
+	lda @CS_INPUT_CUR
+	sta @CS_INPUT_PREV
+.controller_reg
+	lda @CS_INPUT_NEXT
+	sta @CS_INPUT_CUR
+
+	sep #$20 : .as
+	lda @CS_SLOT
+	cmp #$00
+	rep #$30 : .al : .xl
+	beq ++
+
+; loadstate input check
+	lda @CS_INPUT_CUR
+	and @CS_SLOT_INPUT
+	cmp @CS_SLOT_INPUT
+	bne ++
+	sep #$20 : .as
+	lda @CS_INPUT_CUR+1
+	bit #$08 : beq + : lda #$01 : bra .loadslot
++	bit #$04 : beq + : lda #$03 : bra .loadslot
++	bit #$02 : beq + : lda #$04 : bra .loadslot
++	bit #$01 : beq ++ : lda #$02 : .loadslot
+	; load last savestate slot
+	sta @MCU_PARAM
+	sta @CS_SLOT
+	lda CMD_LOADSTATE
+	sta @MCU_CMD
+++
+	rep #$30 : .al : .xl
+
+; savestate input check
+	lda @CS_INPUT_CUR
+	and @CS_SAVE_INPUT
+	cmp @CS_SAVE_INPUT
+	beq .save_state
+
+; loadstate input check
+	lda @CS_INPUT_CUR
+	and @CS_LOAD_INPUT
+	cmp @CS_LOAD_INPUT
+	bne +
+	jmp .load_state
+	
+	; check programmable trigger
++	lda @CS_SAVE_REQ ; loads both
+	beq .save_state_jump_exit
+	phx
+	tax
+	lda #$0000
+	sta @CS_SAVE_REQ
+	txa
+	plx
+	and #$00FF
+	bne .save_state
+	jmp .load_state
+
+.save_state_jump_exit
+	jmp .ss_exit
+	
+.save_state
+	; check if this is SM
+	rep #$20 : .al
+	lda @$00FFDE
+	cmp #$F8DF
+	bne +
+	; if SM, check return address and make sure it's not in the sound loading code $808159-$808110
+	lda 7,s
+	cmp #$8059
+	bcc +
+	cmp #$8111
+	bcs +
+	sep #$20 : .as
+	bra .save_state_jump_exit
+	
++	sep #$20 : .as
+	
+	lda @CS_STATE
+	bne .save_state_jump_exit
+	inc
+	sta @CS_STATE
+
+	; disable interrupts
+	lda @$F90700|$0000
+	sta SRAM_OTH_BANK
+	and #$01
+	sta @$004200
+	
+	phb
+	phd
+	rep #$30 : .al : .xl
+	pha
+	phx
+	phy
+	
+	sep #$20 : .as
+	; wait until release save input
+	;--
+	;- bit $4212 : bpl -
+	;- bit $4212 : bmi -
+	;lda @$4219
+	;and @CS_INPUT_CUR
+	;cmp @CS_INPUT_CUR
+	;beq --
+	
+	; disable DMA
+	lda @$F90700|$000C
+	sta @SRAM_OTH_BANK|$C
+	lda #$00
+	sta @$00420B
+	sta @$00420C
+	
+	; save $21XX
++	sep #$20 : .as
+	ldy #$0000
+	tyx
+
+-	lda @$F90500|$0000, x : sta @SRAM_PPU_BANK, x : inx
+	lda @$F90500|$0000, x : sta @SRAM_PPU_BANK, x : inx
+	iny
+	cpy #$0040
+	bne -
+	 
+	; save $420X
+	sep #$20 : .as
+	ldx #$0001  
+
+-	lda @$F90700|$0000, x
+	sta @SRAM_OTH_BANK, x
+--	inx
+	cpx #$000C
+	beq --
+	cpx #$0010
+	bne -
+	
+	; save DMA registers
+	sep #$20 : .as
+	ldy #$0000
+	tyx
+	
+-	lda @$004300, x
+	sta SRAM_DMA_BANK, x
+	inx
+	iny
+	cpy #$000B
+	bne -
+	cpx #$007B
+	beq +
+	inx : inx : inx : inx : inx
+	ldy #$0000
+	bra -
+	
++	rep #$30 : .al : .xl
+	ldy #.save_write_table
+
+	; run the unified VM. This covers save/load and all ROM mode types
+.run_vm
+	pea SS_BANK
+	plb
+	plb
+	jmp .vm
+	
+.save_return
+	rep #$30 : .al : .xl
+
+	; copy region
+	lda #$F5F0    ; srcBank:dstBank
+	sta @$002020
+	lda #$0000    ; srcOffset
+	sta @$002022
+	lda #$0000    ; dstOffset
+	sta @$002024
+	lda #$0500    ; length[15:0]
+	sta @$002026
+	sep #$20 : .as
+	lda #$04  ; length[23:16]
+	sta @$002028
+	; opcode[4:0], loop, dir, enable
+	lda #$05
+	sta @$002029
+	
+	rep #$20 : .al
+	tsc
+	sta @SRAM_SAVED_SP
+	
+	;%cgram()
+	
+	sep #$20 : .as
+	pea $0000
+	plb
+	plb
+
+	; wait until release save input
+saveinputloop
+	- bit $4212 : bpl -
+	- bit $4212 : bmi -
+	lda @$4218
+	and @CS_SAVE_INPUT
+	cmp @CS_SAVE_INPUT
+	beq saveinputloop
+ 
+	; send cmd to write the state inside the sd
+	lda CS_SLOT
+	cmp #$00
+	bne +
+	lda #$01
++	sta MCU_PARAM
+	lda CMD_SAVESTATE
+	sta MCU_CMD
+
+	rep #$20 : .al
+	
+	;lda $2B00|$004E
+	;sta @SRAM_SAVED_40
+
+	jmp .audio_fix
+
+.load_state_jump_exit
+	jmp .ss_exit
+
+.load_state
+	; check if this is SM
+	rep #$20 : .al
+	lda @$00FFDE
+	cmp #$F8DF
+	bne +
+	; if SM, check return address and make sure it's not in the sound loading code $808159-$808110
+	lda 7,s
+	cmp #$8059
+	bcc +
+	cmp #$8111
+	bcs +
+	sep #$20 : .as
+	bra .load_state_jump_exit
+
++ sep #$20 : .as
+
+	lda @CS_STATE
+	bne .load_state_jump_exit
+	inc
+	sta @CS_STATE
+	
+	; disable interrupts
+	lda @$F90700|$0000
+	and #$01
+	sta @$4200
+	
+	phb
+	phd
+	rep #$30 : .al : .xl
+	pha
+	phx
+	phy
+
+	pea $0000
+	plb
+	plb
+
++	ldy #.load_write_table
+	jmp .run_vm
+
+.load_return
+	rep #$30 : .al : .xl
+	lda @SRAM_SAVED_SP
+	tcs
+	
+	pea $0000
+	plb
+	plb
+	
+	; wait delay frames
+	sep #$20 : .as
+	lda CS_DELAY
+frameloop
+	- bit $4212 : bpl -
+	- bit $4212 : bmi -
+	dec
+	bpl frameloop
+
+	; moved this up so we can reuse load_dma_regs for store
+	rep #$30 : .al : .xl
+
+.audio_fix
+	ldy #$0000
+	phy
+
+	rep #$20 : .al
+	; compare checksum
+	lda @CS_FIXES
+	cmp @$00FFDE
+	bne .end_audio_fix
+	; set flag that we found patch
+	ply
+	iny
+	phy
+	; set offset
+	lda @CS_FIXES+2
+	tay
+ 
+	; set bank
+	lda @CS_FIXES+4
+	sep #$20 : .as
+	pha
+	plb
+	rep #$20 : .al
+
+	; get source
+	lda @CS_FIXES+6
+	phx
+	; test for constant outside of audio port range
+	cmp #$2140
+	bcc ++
+	cmp #$2144
+	bcs ++
+	tax
+
+	; load source register
+	sep #$20 : .as
+	lda @$000000, x
+
+++	sep #$20 : .as
+	sta $0000, y
+	plx
+	pea $0000
+	plb
+	plb
+
+	; test for audio table matches
+.end_audio_fix
+	sep #$20 : .as
+	ply
+	jmp .load_dma_regs_start
+
+	
+.load_dma_regs_start
+	sep #$20 : .as
+	ldx #$0000
+	txy
+	
+-	lda SRAM_DMA_BANK, x
+	sta $4300, x
+	inx
+	iny
+	cpy #$000B
+	bne -
+	cpx #$007B
+	beq +
+	inx : inx : inx : inx : inx
+	ldy #$0000
+	bra -
+	
+	; Restore registers and return.
++	jmp .register_restore_return
+	
+.vm
+	; Data format: xx xx yy yy
+	; xxxx = little-endian address to write to .vm's bank
+	; yyyy = little-endian value to write
+	; If xxxx has high bit set, read and discard instead of write.
+	; If xxxx has bit 12 set ($1000), byte instead of word.
+	; If yyyy has $DD in the low half, it means that this operation is a byte
+	; write instead of a word write.  If xxxx is $0000, end the VM.
+	
+	rep #$20 : .al;
+	; Read address to write to
+	lda $0000, y
+	beq .vm_done
+	iny
+	iny
+	; Check for read mode (high bit of address)
+	; Save off in carry flag for use later
+	cmp #$8000
+	and #$7FFF
+	tax
+	; Check for byte mode
+	bit #$1000
+	beq .vm_word_mode
+	and #$EFFF
+	tax
+	sep #$20 : .as;
+.vm_word_mode
+	; Read value
+	lda $0000, y
+	iny
+	iny
+.vm_write
+	bcs .vm_read
+	sta $000000, x
+	bra .vm
+.vm_read
+	; "Subtract" $8000 from y by taking advantage of bank wrapping.
+	lda $000000, x
+	bra .vm
+
+.vm_done
+	; A, X and Y are 16-bit at exit.
+	; Return to caller.  The word in the table after the terminator is the
+	; code address to return to.
+	tyx
+	jmp ($0002,x)
+
+; print "Savestate Bank Ending at: ", pc

@@ -1,0 +1,55 @@
+//  Savestate code variables defaults
+// #define SS_INPUT_SAVE #$2010	; select + r
+// #define SS_INPUT_LOAD #$2020 ; select + l
+// #define SS_INPUT_COMPARE #$2000 ; select
+
+//  temporary state machine variable
+#define CS_SAVE_REQ   $FC2000
+#define CS_LOAD_REQ   $FC2001
+#define CS_SAVE_INPUT $FC2002
+#define CS_LOAD_INPUT $FC2004
+#define CS_INPUT_NEXT $FC2006
+#define CS_INPUT_CUR  $FC2008
+#define CS_INPUT_PREV $FC2010
+#define CS_STATE      $FC2012
+#define CS_DELAY      $FC2014
+#define CS_SLOT       $FC2015
+#define CS_SLOT_INPUT $FC2016
+#define CS_CTRL       $FC2018
+#define CS_FIXES      $FC2020
+
+#define SS_CODE       $FC0000
+#define SS_DATA       $FC2000
+#define SS_RETURN     $002C04
+
+#define MCU_CMD       $002A00
+#define SNES_CMD      $002A02
+#define MCU_PARAM     $002A04
+
+#define CMD_SAVESTATE #$40
+#define CMD_LOADSTATE #$41
+
+// =======
+//  LOROM
+// =======
+// lorom
+
+//  Savestate code variables
+#define SS_BANK $FC00 // $8200
+#define SS_FULL $FC0000
+
+// #define SRAM_WRAM_7E0000 $710000
+// #define SRAM_WRAM_7E8000 $720000
+// #define SRAM_WRAM_7F0000 $730000
+// #define SRAM_WRAM_7F8000 $740000
+// #define SRAM_VRAM_0000 $750000
+// #define SRAM_VRAM_8000 $760000
+#define SRAM_DMA_BANK $F41000
+#define SRAM_PPU_BANK $F45000
+#define SRAM_OTH_BANK $F45080
+// #define SRAM_CGRAM $772000
+// #define SRAM_OAM $772200
+// #define SRAM_VALIDITY $774000
+#define SRAM_SAVED_SP $F46000
+// #define SRAM_VM_RETURN $774006
+#define SRAM_SAVED_40 $F46002

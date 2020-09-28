@@ -67,6 +67,7 @@ nmi_echocmd: ; echo cmd to MCU for misc handling
 nmi_patches:
   jsr NMI_WRAM_CHEATS
 nmi_exit:
+  jsl @savestate_handler
 ; clean up
   sta @NMI_VECT_DISABLE
   rep #$20 : .al

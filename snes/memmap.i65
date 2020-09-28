@@ -48,6 +48,9 @@
 #define SPC_HEADER                  $FE0000
 #define SPC_DSP_REGS                $FE0100
 
+/* probably not needed since we plan to call the handler in menu ROM space */
+#define SAVESTATE_HANDLER           $FE1000
+
 #define FILESEL_CWD                 $FF0000
 #define CFG_ADDR                    $FF0100
 #define ST_MCU_ADDR                 $FF1100
