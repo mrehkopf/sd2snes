@@ -229,19 +229,6 @@ uint16_t sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
   return size;
 }
 
-uint32_t sram_writeset(uint8_t val, uint32_t addr, uint32_t size) {
-  uint32_t count = size;
-  set_mcu_addr(addr);
-  FPGA_SELECT();
-  FPGA_TX_BYTE(0x98);   /* WRITE */
-  while(count--) {
-    FPGA_TX_BYTE(val);
-    FPGA_WAIT_RDY();
-  }
-  FPGA_DESELECT();
-  return size;
-}
-
 char current_filename[258];
 uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   UINT bytes_read;
@@ -472,7 +459,7 @@ void init(uint8_t *filename) {
   fpga_set_features(romprops.fpga_features);
   snes_set_mcu_cmd(0);
   // init save state region - VRAM, APURAM, CGRAM, OAM only
-  sram_writeset(0x0, 0xF70000, 0x30000);
+  sram_memset(0xF70000, 0x30000, 0);
 }
 
 void deassert_reset() {
