@@ -1042,7 +1042,7 @@ int usbint_handler_exe(void) {
         fpga_write_snescmd(0xFF);
 
         fpga_set_snescmd_addr(SNESCMD_EXE);
-        fpga_write_snescmd(sram_readbyte(SRAM_CHEAT_ADDR));        
+        fpga_write_snescmd(sram_readbyte(server_info.offset));        
     }
 
     // TODO: do we need this if we get a EXE opcode?
