@@ -922,7 +922,10 @@ DSTATUS sdn_initialize(BYTE drv) {
     return STA_NOINIT|STA_NODISK;
   }
   /* if the card is sending data from before a reset we try to deselect it
-     prior to initialization */
+     prior to initialization
+     In all likelihood this is always the case if the card was present on
+     power-up because it has already been initialized by the bootloader as well
+  */
   for(rsplen=0; rsplen<2042; rsplen++) {
     if(!(BITBAND(SD_DAT3REG->FIOPIN, SD_DAT3PIN))) {
       printf("card seems to be sending data, attempting deselect\n");

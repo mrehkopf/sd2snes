@@ -41,6 +41,10 @@
 #define SNES_CMD_SAVE_CHT           (0x0d)
 #define SNES_CMD_SAVE_CFG           (0x0e)
 #define SNES_CMD_LED_BRIGHTNESS     (0x12)
+
+#define SNES_CMD_SAVESTATE          (0x40)
+#define SNES_CMD_LOADSTATE          (0x41)
+
 #define SNES_CMD_RESET              (0x80)
 #define SNES_CMD_RESET_TO_MENU      (0x81)
 #define SNES_CMD_ENABLE_CHEATS      (0x82)
@@ -50,8 +54,6 @@
 #define SNES_CMD_RESET_LOOP_FAIL    (0x90)
 #define SNES_CMD_RESET_LOOP_PASS    (0x91)
 #define SNES_CMD_RESET_LOOP_TIMEOUT (0x92)
-#define SNES_CMD_SAVESTATE          (0x40)
-#define SNES_CMD_LOADSTATE          (0x41)
 #define SNES_CMD_GAMELOOP           (0xff)
 
 #define MCU_CMD_RDY                 (0x55)

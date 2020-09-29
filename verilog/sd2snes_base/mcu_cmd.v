@@ -524,10 +524,10 @@ always @(posedge clk) begin
         end
         32'h4: begin
           //if (group_read_buf == 8'h01) MCU_DATA_IN_BUF <= trc_config_data_in;
-          //else                         
+          //else
             MCU_DATA_IN_BUF <= 0;
         end
-      endcase      
+      endcase
     else if (cmd_data[7:0] == 8'hF0)
       MCU_DATA_IN_BUF <= 8'hA5;
   end

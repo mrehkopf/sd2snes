@@ -32,33 +32,35 @@
 
 extern char current_filename[];
 
-#define MENU_ADDR_BRAM_SRC      (0xFF00)
+#define MENU_ADDR_BRAM_SRC           (0xFF00)
 
-#define SRAM_ROM_ADDR           (0x000000L)
-#define SRAM_SAVE_ADDR          (0xE00000L)
+#define SRAM_ROM_ADDR                (0x000000L)
+#define SRAM_SAVE_ADDR               (0xE00000L)
 
-#define SRAM_MENU_ADDR          (0xC00000L)
-#define SRAM_DIR_ADDR           (0xC10000L)
-#define SRAM_DB_ADDR            (0xC80000L)
+#define SRAM_MENU_ADDR               (0xC00000L)
+#define SRAM_DIR_ADDR                (0xC10000L)
+#define SRAM_DB_ADDR                 (0xC80000L)
 
-#define SRAM_NUM_CHEATS         (0xCFFFFEL)
-#define SRAM_CHEAT_ADDR         (0xD00000L) /* banks D0-DF for 2048 cheats per YML file */
+#define SRAM_NUM_CHEATS              (0xCFFFFEL)
+#define SRAM_CHEAT_ADDR              (0xD00000L) /* banks D0-DF for 2048 cheats per YML file */
 
-#define SRAM_SPC_DATA_ADDR      (0xFD0000L)
-#define SRAM_SPC_HEADER_ADDR    (0xFE0000L)
+#define SRAM_SKIN_ADDR               (0xF00000L)
 
-#define SRAM_SKIN_ADDR          (0xF00000L)
-#define SRAM_MENU_FILEPATH_ADDR (0xFF0000L)
-#define SRAM_MENU_CFG_ADDR      (0xFF0100L)
-#define SRAM_CMD_ADDR           (0xFF1000L)
-#define SRAM_PARAM_ADDR         (0xFF1004L)
-#define SRAM_MCU_STATUS_ADDR    (0xFF1100L)
-#define SRAM_SNES_STATUS_ADDR   (0xFF1110L)
-#define SRAM_SYSINFO_ADDR       (0xFF1200L)
-#define SRAM_LASTGAME_ADDR      (0xFF1420L)
-#define SRAM_SCRATCHPAD         (0xFFFF00L)
-#define SRAM_DIRID              (0xFFFFF0L)
-#define SRAM_RELIABILITY_SCORE  (0x100)
+#define SRAM_SPC_DATA_ADDR           (0xFD0000L)
+#define SRAM_SPC_HEADER_ADDR         (0xFE0000L)
+#define SRAM_SAVESTATE_HANDLER_ADDR  (0xFE1000L)
+
+#define SRAM_MENU_FILEPATH_ADDR      (0xFF0000L)
+#define SRAM_MENU_CFG_ADDR           (0xFF0100L)
+#define SRAM_CMD_ADDR                (0xFF1000L)
+#define SRAM_PARAM_ADDR              (0xFF1004L)
+#define SRAM_MCU_STATUS_ADDR         (0xFF1100L)
+#define SRAM_SNES_STATUS_ADDR        (0xFF1110L)
+#define SRAM_SYSINFO_ADDR            (0xFF1200L)
+#define SRAM_LASTGAME_ADDR           (0xFF1420L)
+#define SRAM_SCRATCHPAD              (0xFFFF00L)
+#define SRAM_DIRID                   (0xFFFFF0L)
+#define SRAM_RELIABILITY_SCORE       (0x100)
 
 #define LOADROM_WITH_SRAM   (1)
 #define LOADROM_WITH_RESET  (2)

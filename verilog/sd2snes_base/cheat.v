@@ -207,7 +207,7 @@ always @(posedge clk) begin
   if(SNES_reset_strobe) begin
     snescmd_unlock_r <= 0;
     snescmd_unlock_disable <= 0;
-	  map_unlock_r <= 0;
+    map_unlock_r <= 0;
   end else begin
     if(SNES_rd_strobe) begin
       if(hook_enable_sync
@@ -219,7 +219,7 @@ always @(posedge clk) begin
         // remember where we came from (IRQ/NMI) for hook exit
         return_vector <= SNES_ADDR[7:0];
         // unlock the address map
-		    map_unlock_r <= 1;
+        map_unlock_r <= 1;
         // unlock exe code
         exe_unlock_r <= 1;
       end

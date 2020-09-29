@@ -240,7 +240,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
 
   // copy the full name and path
   strncpy(current_filename, (char *)filename, sizeof(current_filename)-1);
-  
+
   printf("%s\n", filename);
   file_open(filename, FA_READ);
   if(file_res) {
