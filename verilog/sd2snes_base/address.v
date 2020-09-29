@@ -148,16 +148,6 @@ assign IS_WRITABLE = IS_SAVERAM
 wire [23:0] BSX_ADDR = bsx_regs[2] ? {1'b0, SNES_ADDR[22:0]}
                                    : {2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]};
 
-/* BSX regs:
- Index  Function
-    1   0=map flash to ROM area; 1=map PRAM to ROM area
-    2   1=HiROM; 0=LoROM
-    3   1=Mirror PRAM @60-6f:0000-ffff
-    5   1=DO NOT mirror PRAM @40-4f:0000-ffff
-    6   1=DO NOT mirror PRAM @50-5f:0000-ffff
-    7   1=map BSX cartridge ROM @00-1f:8000-ffff
-    8   1=map BSX cartridge ROM @80-9f:8000-ffff
-*/
 
 assign SRAM_SNES_ADDR = IS_PATCH
                         ? SNES_ADDR
