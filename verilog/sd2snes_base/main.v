@@ -859,12 +859,12 @@ assign p113_out = 1'b0;
 snescmd_buf snescmd (
   .clka(CLK2), // input clka
   .wea(SNES_WR_end & ((snescmd_unlock | feat_cmd_unlock) & snescmd_enable)), // input [0 : 0] wea
-  .addra(SNES_ADDR[8:0]), // input [8 : 0] addra
+  .addra(SNES_ADDR[9:0]), // input [8 : 0] addra
   .dina(SNES_DATA), // input [7 : 0] dina
   .douta(snescmd_dout), // output [7 : 0] douta
   .clkb(CLK2), // input clkb
   .web(snescmd_we_mcu), // input [0 : 0] web
-  .addrb(snescmd_addr_mcu), // input [8 : 0] addrb
+  .addrb(snescmd_addr_mcu), // input [9 : 0] addrb
   .dinb(snescmd_data_out_mcu), // input [7 : 0] dinb
   .doutb(snescmd_data_in_mcu) // output [7 : 0] doutb
 );
@@ -892,11 +892,11 @@ assign ROM_2CE = ~ROM_ADDR22;
 snescmd_buf snescmd (
   .clock(CLK2), // input clka
   .wren_a(SNES_WR_end & ((snescmd_unlock | feat_cmd_unlock) & snescmd_enable)), // input [0 : 0] wea
-  .address_a(SNES_ADDR[8:0]), // input [8 : 0] addra
+  .address_a(SNES_ADDR[9:0]), // input [8 : 0] addra
   .data_a(SNES_DATA), // input [7 : 0] dina
   .q_a(snescmd_dout), // output [7 : 0] douta
   .wren_b(snescmd_we_mcu), // input [0 : 0] web
-  .address_b(snescmd_addr_mcu), // input [8 : 0] addrb
+  .address_b(snescmd_addr_mcu), // input [9 : 0] addrb
   .data_b(snescmd_data_out_mcu), // input [7 : 0] dinb
   .q_b(snescmd_data_in_mcu) // output [7 : 0] doutb
 );
