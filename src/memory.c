@@ -382,6 +382,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   }
   printf("done\n");
 
+  printf("r213fen=%d is_u16=%d filename=%s\n", cfg_is_r213f_override_enabled(), STS.is_u16, filename);
   if(cfg_is_r213f_override_enabled() && !is_menu && !STS.is_u16) {
     romprops.fpga_features |= FEAT_213F; /* e.g. for general consoles */
   }
