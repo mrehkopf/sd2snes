@@ -234,7 +234,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   UINT bytes_read;
   DWORD filesize;
   UINT count=0;
-  UINT is_menu = filename == (uint8_t*)"/sd2snes/menu.bin";
+  uint8_t is_menu = (filename == (uint8_t*)MENU_FILENAME);
   tick_t ticksstart, ticks_total=0;
   ticksstart=getticks();
 
