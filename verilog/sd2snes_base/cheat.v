@@ -128,7 +128,7 @@ assign data_out = cheat_match_bits[0] ? cheat_data[0]
                 : (exe_present & nmi_match_bits[1] & exe_unlock) ? 8'h00
                 : nmi_match_bits[1] ? 8'h04
                 : irq_match_bits[1] ? 8'h04
-                : rst_match_bits[1] ? 8'h6b
+                : rst_match_bits[1] ? 8'h6f
                 : nmicmd_enable ? nmicmd
                 : return_vector_enable ? return_vector
                 : branch1_enable ? branch1_offset
@@ -423,7 +423,7 @@ end
 
 always @* begin
   if(nmicmd == 8'h81) begin
-    branch2_offset = 8'h0e;       // nmi_stop
+    branch2_offset = 8'h12;       // nmi_stop
   end else if(branch_wram) begin
     branch2_offset = 8'h00;       // nmi_patches
   end else begin
