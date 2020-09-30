@@ -159,13 +159,17 @@ function integer clog2;
   end
 endfunction
 
-`define BCD_CARRY(c,s) (c | (s[3] & (s[2] | s[1])))
-function [2:0] bcd_adder;
+`define BCD_A_CARRY(m,c,s) (~m & (c | (s[3] & (s[2] | s[1])))) // add 6
+`define BCD_S_CARRY(m,c,s) (m & ~c)										// sub 6
+function [4:0] bcd_adder;
+  input       mode;
   input       carry;
   input [3:0] sum;
 
   begin
-    bcd_adder = {`BCD_CARRY(carry,sum),`BCD_CARRY(carry,sum),1'b0};
+    // mode=0 (add) +6 (5'b00110) if > 0x09
+    // mode=1 (sub) -6 (5'b11010) if < 0x10
+    bcd_adder = {`BCD_S_CARRY(mode,carry,sum),`BCD_S_CARRY(mode,carry,sum),`BCD_A_CARRY(mode,carry,sum),(`BCD_A_CARRY(mode,carry,sum) | `BCD_S_CARRY(mode,carry,sum)),1'b0};
   end
 endfunction
 
@@ -2372,12 +2376,14 @@ reg [3:0]  bcd_c_r;
 reg [1:0]  bcd_cnt_r; initial bcd_cnt_r = 3;
 reg        bcd_state_r; initial bcd_state_r = 0;
 reg        bcd_done_r; initial bcd_done_r = 0;
+reg        bcd_m_r; initial bcd_m_r = 0;
 
 // exe inputs
 reg        exe_bcd_val_r; initial exe_bcd_val_r = 0;
 reg [15:0] exe_bcd_a_r; initial exe_bcd_a_r = 0;
 reg [15:0] exe_bcd_b_r; initial exe_bcd_b_r = 0;
 reg        exe_bcd_c_r; initial exe_bcd_c_r = 0;
+reg        exe_bcd_m_r; initial exe_bcd_m_r = 0;
 
 wire [4:0] bcd_result;
 
@@ -2395,6 +2401,7 @@ always @(posedge CLK) begin
         bcd_a_r    <= exe_bcd_a_r;
         bcd_b_r    <= exe_bcd_b_r;
         bcd_c_r[3] <= exe_bcd_c_r;
+        bcd_m_r    <= exe_bcd_m_r;
 
         bcd_state_r <= 1;
       end
@@ -2406,7 +2413,7 @@ always @(posedge CLK) begin
       bcd_o_r[11:0] <= bcd_o_r[15:4];
       bcd_c_r[2:0]  <= bcd_c_r[3:1];
 
-      {bcd_c_r[3],bcd_o_r[15:12]} <= bcd_result[4:0] + bcd_adder(bcd_result[4],bcd_result[3:0]);
+      {bcd_c_r[3],bcd_o_r[15:12]} <= bcd_result[4:0] + bcd_adder(bcd_m_r, bcd_result[4], bcd_result[3:0]);
 
       bcd_cnt_r   <= bcd_cnt_r - 1;
       bcd_done_r  <= ~|bcd_cnt_r;
@@ -2481,6 +2488,7 @@ always @(posedge CLK) begin
   // invert for SBC
   exe_bcd_b_r <= exe_opcode_r[7] ? ~exe_data_r[15:0] : exe_data_r[15:0];
   exe_bcd_c_r <= P_r[`P_C];
+  exe_bcd_m_r <= exe_opcode_r[7];
 `endif
 
   if (RST) begin
@@ -2826,7 +2834,26 @@ always @(posedge CLK) begin
               5: exe_result[15:0] = exe_data_r; // LDA
               //6: // CMP
               //7: exe_result[16:0] = exe_data_word_r ? {1'b0,exe_src_r[15:0]} + ~{1'b0,exe_data_r[15:0]} + P_r[`P_C] : {9'h000,exe_src_r[7:0]} + ~{9'h000,exe_data_r[7:0]} + P_r[`P_C];// SBC
-              7: exe_result[16:0] = exe_data_word_r ? {1'b0,exe_src_r[15:0]} + {1'b0,~exe_data_r[15:0]} + P_r[`P_C] : {9'h000,exe_src_r[7:0]} + {9'h000,~exe_data_r[7:0]} + P_r[`P_C];// SBC
+              7: begin
+`ifdef BCD_ENABLE
+                if (P_r[`P_D]) begin
+                  if (~exe_load_r) begin
+                    exe_bcd_val_r <= |bcd_cnt_r & ~bcd_done_r;
+
+                    if (~bcd_done_r) begin
+                      // wait on bcd state machine if not done
+                      exe_mmc_wr_r <= 0;
+                      EXE_STATE <= ST_EXE_EXECUTE;
+                    end
+                  end
+
+                  // NOTE: this won't set the overflow flag properly
+                  exe_result[16:0] = exe_data_word_r ? {bcd_c_r[3],bcd_o_r[15:0]} : {8'h00,bcd_c_r[1],bcd_o_r[7:0]};
+                end
+                else
+`endif
+                  exe_result[16:0] = exe_data_word_r ? {1'b0,exe_src_r[15:0]} + {1'b0,~exe_data_r[15:0]} + P_r[`P_C] : {9'h000,exe_src_r[7:0]} + {9'h000,~exe_data_r[7:0]} + P_r[`P_C];// SBC
+              end
               //default: exe_result[15:0] = 0;
             endcase
 

@@ -42,10 +42,14 @@
 #include "rtc.h"
 #include "cfg.h"
 #include "usbinterface.h"
+#include "sgb.h"
 
 uint32_t saveram_crc, saveram_crc_old;
 uint8_t sram_crc_valid;
+uint8_t sram_crc_init;
 uint32_t sram_crc_romsize;
+uint8_t crc_valid;
+
 extern snes_romprops_t romprops;
 extern int snes_boot_configured;
 
@@ -97,7 +101,6 @@ const SramOffset SramOffsetTable[] = {
   { 0xb803d023, 0x0100, 0x0C00 }, // marvelous 1.06 (us)
   { 0x7a76f989, 0x0100, 0x0C00 }, // marvelous 1.07 (us Tashi-DackR)
   { 0x186dddd3, 0x0100, 0x0C00 }  // marvelous 1.07 (us DackR)
-
 };
 
 void prepare_reset() {
@@ -108,6 +111,7 @@ void prepare_reset() {
     save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
     writeled(0);
   }
+  // don't save SGB RTC since we are in reset and it may be undefined
   rdyled(1);
   readled(1);
   writeled(1);
@@ -145,12 +149,9 @@ void snes_reset(int state) {
  *
  * returns: upon loop exit returns the current non-reset related command
  */
+uint8_t resetButtonState = 0;
 uint8_t snes_reset_loop(void) {
   uint8_t cmd = 0;
-
-  // FIXME: don't enable reset loop in usb firmware
-  // return cmd;
-
   tick_t starttime = getticks();
   while(fpga_test() == FPGA_TEST_TOKEN) {
     cmd = snes_get_mcu_cmd();
@@ -178,6 +179,18 @@ uint8_t snes_reset_loop(void) {
   }
 
 snes_reset_loop_out:
+  if (romprops.has_combo) {
+    printf("combo reset: resetButtonState: %hhx\n", resetButtonState);
+
+    if (resetButtonState) {
+      // if we are not in ROM slot 0 then reload
+      uint8_t romslot = sram_readbyte((romprops.mapper_id == 0 || romprops.mapper_id == 2) ? 0xFFD9 : 0x7FD9);
+      if (romslot) load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_RESET);
+    }
+  }
+
+  resetButtonState = 0;
+
   return cmd;
 }
 
@@ -265,50 +278,71 @@ uint8_t get_snes_reset_state(void) {
  * SD2SNES game loop.
  * monitors SRAM changes and other things
  */
-uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_save_failed = 0;
+uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_save_failed = 0, saveram_offset = 0;
 uint8_t sram_valid = 0;
 uint8_t snes_main_loop() {
   recalculate_sram_range();
+
+  /* save the GB RTC if enabled */
+  sgb_gtc_save(file_lfn);
+
   if(romprops.sramsize_bytes) {
-    saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes);
+    uint32_t crc_bytes = min(romprops.sramsize_bytes - saveram_offset, SRAM_REGION_SIZE);
+    saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase + saveram_offset, romprops.sramsize_bytes, saveram_crc);
+    saveram_offset += crc_bytes;
     sram_valid = sram_reliable();
     if(crc_valid && sram_valid) {
-      if(save_failed) didnotsave++;
-      if(saveram_crc != saveram_crc_old) {
-        if(samecount) {
-          diffcount=1;
-        } else {
-          diffcount++;
-          didnotsave++;
+      if (saveram_offset >= romprops.sramsize_bytes) {
+        if(save_failed) didnotsave++;
+        if(saveram_crc != saveram_crc_old) {
+          if(samecount) {
+            diffcount=1;
+          } else {
+            diffcount++;
+            didnotsave++;
+          }
+          samecount=0;
         }
-        samecount=0;
+        if(saveram_crc == saveram_crc_old) {
+          samecount++;
+        }
+        if(diffcount>=1 && samecount==5) {
+          printf("SaveRAM CRC: 0x%04lx; saving %s\n", saveram_crc, file_lfn);
+          writeled(1);
+          save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+          last_save_failed = save_failed;
+          save_failed = file_res ? 1 : 0;
+          didnotsave = save_failed ? 25 : 0;
+          writeled(0);
+        }
+        if(didnotsave>50) {
+          printf("periodic save (sram contents keep changing or previous save failed)\n");
+          diffcount=0;
+          writeled(1);
+          save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+          last_save_failed = save_failed;
+          save_failed = file_res ? 1 : 0;
+          didnotsave = save_failed ? 25 : 0;
+          writeled(!last_save_failed);
+        }
+        saveram_offset = 0;
+        saveram_crc_old = saveram_crc;
+        
+        printf("crc=%lx crc_valid=%d sram_valid=%d diffcount=%ld samecount=%ld, didnotsave=%ld\n", saveram_crc, crc_valid, sram_valid, diffcount, samecount, didnotsave);
+
+        saveram_crc = 0;
       }
-      if(saveram_crc == saveram_crc_old) {
-        samecount++;
-      }
-      if(diffcount>=1 && samecount==5) {
-        printf("SaveRAM CRC: 0x%04lx; saving %s\n", saveram_crc, file_lfn);
-        writeled(1);
-        save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
-        last_save_failed = save_failed;
-        save_failed = file_res ? 1 : 0;
-        didnotsave = save_failed ? 25 : 0;
-        writeled(0);
-      }
-      if(didnotsave>50) {
-        printf("periodic save (sram contents keep changing or previous save failed)\n");
-        diffcount=0;
-        writeled(1);
-        save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
-        last_save_failed = save_failed;
-        save_failed = file_res ? 1 : 0;
-        didnotsave = save_failed ? 25 : 0;
-        writeled(!last_save_failed);
-      }
-      saveram_crc_old = saveram_crc;
     }
-    printf("crc=%lx crc_valid=%d sram_valid=%d diffcount=%ld samecount=%ld, didnotsave=%ld\n", saveram_crc, crc_valid, sram_valid, diffcount, samecount, didnotsave);
   }
+  else {
+    diffcount = 0;
+    samecount = 0;
+    didnotsave = 0;
+    saveram_offset = 0;
+    saveram_crc_old = 0;
+    saveram_crc = 0;
+  }
+
   return snes_get_mcu_cmd();
 }
 
@@ -524,28 +558,55 @@ void status_save_from_menu() {
 */
 // FIXME do the CRC in FPGA while loading
 void recalculate_sram_range() {
+  static uint32_t crc = 0;
+  static uint32_t cur_addr = 0;
+  static uint32_t end_addr = 0;
+
   if (!sram_crc_valid && sram_valid) {
-    printf("calculating rom hash (base=%06lx, size=%ld): ", SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
     /*
       there is a very small chance of collision.  there are several ways to avoid this:
       - incorporate (concatenate) checksum16 or other information
       - use a better hash function like sha-256
      */
-    uint32_t crc = calc_sram_crc(SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
-    printf("%08lx\n", crc);
 
-    if (crc_valid) {
-      sram_crc_valid = 1;
+    if (sram_crc_init) {
+      printf("\nCalculating rom hash for: base=%06lx, size=%ld\n", SRAM_ROM_ADDR + romprops.load_address, sram_crc_romsize);
+      crc = 0;
+      cur_addr = SRAM_ROM_ADDR + romprops.load_address;
+      end_addr = cur_addr + sram_crc_romsize;
+      sram_crc_init = 0;
+    }
+
+    /*
+      Pick a small enough transfer size where USB transfers don't lose connection during ROM load.
+      It's possible that we switch to periodic save before this is complete.  This is ok because
+      it will switch back if the rom bounds change and the new SaveRAM CRC stops changing.
+    */
+    uint32_t crc_bytes = min(end_addr - cur_addr, SRAM_REGION_SIZE);
+    crc = calc_sram_crc(cur_addr, crc_bytes, crc);
+    cur_addr += crc_bytes;
+
+    if (crc_valid && end_addr && cur_addr >= end_addr) {
+      printf("\nFinished rom hash: %08lx\n", crc);
 
       for (uint32_t i = 0; i < (sizeof(SramOffsetTable)/sizeof(SramOffset)); i++) {
         if (crc == SramOffsetTable[i].crc) {
-          romprops.srambase       = SramOffsetTable[i].base;
+          romprops.srambase = SramOffsetTable[i].base;
           romprops.sramsize_bytes = SramOffsetTable[i].size;
-          printf("rom hash match: base=%lx size=%lx\n", romprops.srambase, romprops.sramsize_bytes);
+          printf("Rom hash match: base=%lx size=%lx\n", romprops.srambase, romprops.sramsize_bytes);
+
+          // reset some current crc state
+          saveram_crc = 0;
+          //saveram_crc_old = 0; // leave as-is incase we currently match
+          saveram_offset = 0;
           break;
         }
       }
+
+      cur_addr = 0;
+      end_addr = 0;
+      sram_crc_init  = 1;
+      sram_crc_valid = 1;
     }
   }
 }
-

@@ -83,8 +83,8 @@ void disconnectPLL0() {
   PLL0feed();
 }
 
-void setPLL1MultPrediv(uint16_t mult, uint8_t prediv) {
-  LPC_SC->PLL1CFG=PLL_MULT(mult) | PLL_PREDIV(prediv);
+void setPLL1MultDiv(uint8_t mult, uint8_t div) {
+  LPC_SC->PLL1CFG=PLL1_MULT(mult) | PLL1_DIV(div);
   PLL1feed();
 }
 

@@ -16,6 +16,9 @@
 #define OSCSTAT         (1<<6)
 #define FLASHTIM(x)     (((x-1)<<12)|0x3A)
 
+#define PLL1_MULT(x)    ((x-1)&0x1f)
+#define PLL1_DIV(x)     (((x-1)<<6)&0x60)
+
 #define PCLK_CCLK(x)    (1<<(x))
 #define PCLK_CCLK4(x)   (0)
 #define PCLK_CCLK8(x)   (3<<(x))
@@ -66,7 +69,7 @@ void connectPLL0(void);
 void disconnectPLL0(void);
 void PLL0feed(void);
 
-void setPLL1MultPrediv(uint16_t mult, uint8_t prediv);
+void setPLL1MultDiv(uint8_t mult, uint8_t prediv);
 void enablePLL1(void);
 void disablePLL1(void);
 void connectPLL1(void);

@@ -23,7 +23,7 @@ module bsx(
   input reg_oe_falling,
   input reg_oe_rising,
   input reg_we_rising,
-  input [23:0] snes_addr_in,
+  input [23:0] snes_addr,
   input [7:0] reg_data_in,
   output [7:0] reg_data_out,
   input [7:0] reg_reset_bits,
@@ -33,25 +33,11 @@ module bsx(
   input use_bsx,
   output data_ovr,
   output flash_writable,
-  input [59:0] rtc_data_in,
+  input [59:0] rtc_data,
   output [9:0] bs_page_out, // support only page 0000-03ff
   output bs_page_enable,
   output [8:0] bs_page_offset
 );
-
-//`define BSX_ENABLE
-
-`ifndef BSX_ENABLE
-assign reg_data_out = 0;
-assign regs_out = 0;
-assign data_ovr = 0;
-assign flash_writeable = 0;
-assign bs_page_out = 0;
-assign bs_page_enable = 0;
-assign bs_page_offset = 0;
-`else
-reg [59:0] rtc_data; always @(posedge clkin) rtc_data <= rtc_data_in;
-reg [23:0] snes_addr; always @(posedge clkin) snes_addr <= snes_addr_in;
 
 wire [3:0] reg_addr = snes_addr[19:16]; // 00-0f:5000-5fff
 wire [4:0] base_addr = snes_addr[4:0];  // 88-9f -> 08-1f
@@ -121,35 +107,15 @@ reg [7:0] flash_vendor_data[7:0];
 assign regs_out = regs_outr;
 assign reg_data_out = reg_data_outr;
 
-reg [7:0] rtc_sec;
-reg [7:0] rtc_min;
-reg [7:0] rtc_hour;
-reg [7:0] rtc_day;
-reg [7:0] rtc_month;
-reg [7:0] rtc_dow;
-reg [7:0] rtc_year1;
-reg [7:0] rtc_year100;
-reg [15:0] rtc_year;
-
-wire [7:0] rtc_sec_pre = rtc_data[3:0] + (rtc_data[7:4] << 3) + (rtc_data[7:4] << 1);
-wire [7:0] rtc_min_pre = rtc_data[11:8] + (rtc_data[15:12] << 3) + (rtc_data[15:12] << 1);
-wire [7:0] rtc_hour_pre = rtc_data[19:16] + (rtc_data[23:20] << 3) + (rtc_data[23:20] << 1);
-wire [7:0] rtc_day_pre = rtc_data[27:24] + (rtc_data[31:28] << 3) + (rtc_data[31:28] << 1);
-wire [7:0] rtc_month_pre = rtc_data[35:32] + (rtc_data[39:36] << 3) + (rtc_data[39:36] << 1);
-wire [7:0] rtc_dow_pre = {4'b0,rtc_data[59:56]};
-wire [7:0] rtc_year1_pre = rtc_data[43:40] + (rtc_data[47:44] << 3) + (rtc_data[47:44] << 1);
-wire [7:0] rtc_year100_pre = rtc_data[51:48] + (rtc_data[55:52] << 3) + (rtc_data[55:52] << 1);
-wire [15:0] rtc_year_pre = (rtc_year100 << 6) + (rtc_year100 << 5) + (rtc_year100 << 2) + rtc_year1;
-
-always @(posedge clkin) rtc_sec <= rtc_sec_pre;
-always @(posedge clkin) rtc_min <= rtc_min_pre;
-always @(posedge clkin) rtc_hour <= rtc_hour_pre;
-always @(posedge clkin) rtc_day <= rtc_day_pre;
-always @(posedge clkin) rtc_month <= rtc_month_pre;
-always @(posedge clkin) rtc_dow <= rtc_dow_pre;
-always @(posedge clkin) rtc_year1 <= rtc_year1_pre;
-always @(posedge clkin) rtc_year100 <= rtc_year100_pre;
-always @(posedge clkin) rtc_year <= rtc_year_pre;
+wire [7:0] rtc_sec = rtc_data[3:0] + (rtc_data[7:4] << 3) + (rtc_data[7:4] << 1);
+wire [7:0] rtc_min = rtc_data[11:8] + (rtc_data[15:12] << 3) + (rtc_data[15:12] << 1);
+wire [7:0] rtc_hour = rtc_data[19:16] + (rtc_data[23:20] << 3) + (rtc_data[23:20] << 1);
+wire [7:0] rtc_day = rtc_data[27:24] + (rtc_data[31:28] << 3) + (rtc_data[31:28] << 1);
+wire [7:0] rtc_month = rtc_data[35:32] + (rtc_data[39:36] << 3) + (rtc_data[39:36] << 1);
+wire [7:0] rtc_dow = {4'b0,rtc_data[59:56]};
+wire [7:0] rtc_year1 = rtc_data[43:40] + (rtc_data[47:44] << 3) + (rtc_data[47:44] << 1);
+wire [7:0] rtc_year100 = rtc_data[51:48] + (rtc_data[55:52] << 3) + (rtc_data[55:52] << 1);
+wire [15:0] rtc_year = (rtc_year100 << 6) + (rtc_year100 << 5) + (rtc_year100 << 2) + rtc_year1;
 
 initial begin
   regs_tmpr <= 15'b000101111101100;
@@ -311,6 +277,5 @@ always @(posedge clkin) begin
     endcase
   end
 end
-`endif
 
 endmodule

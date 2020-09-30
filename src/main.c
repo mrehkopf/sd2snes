@@ -35,7 +35,6 @@
 #include "cdcuser.h"
 #include "usbinterface.h"
 
-
 int i;
 
 int sd_offload = 0, ff_sd_offload = 0, sd_offload_tgt = 0;
@@ -102,6 +101,7 @@ int main(void) {
   led_init();
  /* and setup & connect PLL0 again */
   clock_init();
+
   FPGA_CLK_PINSEL |= BV(FPGA_CLK_PINSELBIT) | BV(FPGA_CLK_PINSELBIT - 1); /* MAT3.x (FPGA clock) */
   led_std();
   sdn_init();
@@ -385,10 +385,13 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 // TODO have FPGA automatically reset SRTC on detected reset
         fpga_reset_srtc_state();
       }
-      if(get_snes_reset_state() == SNES_RESET_LONG) {
+      uint8_t resetState = get_snes_reset_state();
+      if(resetState == SNES_RESET_LONG) {
         prepare_reset();
         break;
       } else {
+        if (resetState == SNES_RESET_SHORT) resetButtonState = 1;
+        
         if(getticks() > loop_ticks + 25) {
           loop_ticks = getticks();
  //         sram_reliable();
@@ -396,14 +399,17 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           cmd=snes_main_loop();
           if (usb_cmd && !cmd) cmd = usb_cmd;
           if(cmd) {
-            printf("snes loop cmd=%d\n", cmd);
+            printf("snes loop cmd=%02x\n", cmd);
             switch(cmd) {
+              case SNES_CMD_RESET_LOOP_PASS:
               case SNES_CMD_RESET_LOOP_FAIL:
                 usb_cmd = 0;
                 snes_reset_loop();
                 break;
               case SNES_CMD_RESET:
                 usb_cmd = 0;
+                // also force full ROM reset if we used button combination
+                resetButtonState = 1;
                 snes_reset_pulse();
                 break;
               case SNES_CMD_RESET_TO_MENU:
@@ -412,11 +418,15 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
                 goto snes_loop_out;
               case SNES_CMD_SAVESTATE:
                 usb_cmd = 0;
-                save_backup_state(snes_get_mcu_param());
+                save_backup_state();
                 break;
               case SNES_CMD_LOADSTATE:
                 usb_cmd = 0;
-                load_backup_state(snes_get_mcu_param());
+                load_backup_state();
+                break;
+              case SNES_CMD_COMBO_TRANSITION:
+                usb_cmd = 0;
+                load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_COMBO | LOADROM_WITH_RESET);
                 break;
               default:
                 printf("unknown cmd: %02x\n", cmd);
