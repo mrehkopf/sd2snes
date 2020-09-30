@@ -167,9 +167,11 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       cfg_load();
       cfg_save();
       cfg_validity_check_recent_games();
+      cfg_validity_check_favorite_games();
     }
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
     cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
+    cfg_dump_favorite_games_for_snes(SRAM_FAVORITEGAMES_ADDR);
     led_set_brightness(CFG.led_brightness);
 
     /* load menu */
@@ -298,6 +300,12 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           cfg_add_last_game(file_lfn);
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;
+        case SNES_CMD_LOADFAVORITE:
+          cfg_get_favorite_game(file_lfn, snes_get_mcu_param() & 0xff);
+          printf("Selected name: %s\n", file_lfn);
+          cfg_add_last_game(file_lfn);
+          filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
+          break;
 /*        case SNES_CMD_SET_ALLOW_PAIR:
           cfg_set_pair_mode_allowed(snes_get_mcu_param() & 0xff);
           break;
@@ -335,6 +343,20 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           cfg_get_from_menu();
           led_set_brightness(CFG.led_brightness);
           cmd=0;
+          break;
+        case SNES_CMD_ADD_FAVORITE_ROM:
+          get_selected_name(file_lfn);
+          printf("Selected name: %s\n", file_lfn);
+          cfg_add_favorite_game(file_lfn);
+          cfg_dump_favorite_games_for_snes(SRAM_FAVORITEGAMES_ADDR);
+          status_load_to_menu();
+          cmd=0; /* stay in menu loop */
+          break;
+        case SNES_CMD_REMOVE_FAVORITE_ROM:
+          cfg_remove_favorite_game(snes_get_mcu_param() & 0xff);
+          cfg_dump_favorite_games_for_snes(SRAM_FAVORITEGAMES_ADDR);
+          status_load_to_menu();
+          cmd=0; /* stay in menu loop */
           break;
         case SNES_CMD_LOAD_CHT:
           /* load cheats */

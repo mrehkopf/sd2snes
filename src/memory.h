@@ -58,6 +58,7 @@ extern char current_filename[];
 #define SRAM_SNES_STATUS_ADDR        (0xFF1110L)
 #define SRAM_SYSINFO_ADDR            (0xFF1200L)
 #define SRAM_LASTGAME_ADDR           (0xFF1420L)
+#define SRAM_FAVORITEGAMES_ADDR      (0xFF4000L)
 #define SRAM_SCRATCHPAD              (0xFFFF00L)
 #define SRAM_DIRID                   (0xFFFFF0L)
 #define SRAM_RELIABILITY_SCORE       (0x100)

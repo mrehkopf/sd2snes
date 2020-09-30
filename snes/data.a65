@@ -87,6 +87,7 @@ mm_sel          .byt 0
 ;--
 num_recent_games .byt 0
 recent_sel      .byt 0
+num_favorite_games .byt 0
 ;----------menu layout/system constants
 listdisp        .word 0 ; number of displayable list entries
 
@@ -96,6 +97,7 @@ testvar         .word 0,0,0,0
 listsel_sel     .byt 0
 listsel_step    .byt 0
 listsel_max     .byt 0
+listsel_pickbutton .byt 0
 ;----------hdma tables in WRAM (must be stable when cartridge is cut off)
 hdma_pal
   .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

@@ -61,7 +61,8 @@ volatile int reset_pressed;
 mcu_status_t STM = {
   .rtc_valid = 0xff,
   .num_recent_games = 0,
-  .pairmode = 0
+  .pairmode = 0,
+  .num_favorite_games = 0
 };
 
 snes_status_t STS = {
