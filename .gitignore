@@ -15,6 +15,7 @@
 *.old
 *.elf
 *.img
+*.im3
 autoconf.h
 utils/rle
 utils/derle
@@ -114,14 +115,15 @@ verilog/*/xst/
 verilog/*/xlnx_auto_0_xdb/
 .project
 .cproject
-src/obj/sd2snes.hex
+src/obj-mk2/*
+src/obj-mk3/*
 snes/.settings/org.eclipse.cdt.core.prefs
 snes/.settings/org.eclipse.linuxtools.tools.launch.core.prefs
 cic/supercic/supercic-key.hex
 cic/supercic/supercic-lock.hex
 contrib/*
 docs/*
-
+release/*
 utils/bin2asm
 utils/bin2c
 utils/chili2chr

@@ -56,6 +56,7 @@ smartxplorer: main.ngd currentProps.stratfile hostlistfile.txt
 		echo Winner: "$$SX_RUN"; \
 		cp -af smartxplorer_results/run$$SX_RUN/* ./; \
 		sed -i'' -e 's/\(Starting Placer Cost Table.*value="\)[0-9]*/\1'$$SX_RUN'/' sd2snes_$(CORE).xise; \
+		echo Results and settings have been copied.; \
 		break; \
 	done) \
 	&& ../../utils/rle main.bit fpga_$(CORE).bit
@@ -72,7 +73,7 @@ main.ngd: main.ngc $(XIL_IP)
 main.ncd: main.ngc $(XIL_IP)
 	$(XILINX_BIN)/xtclsh ../xrun.tcl sd2snes_$(CORE).xise $(XILINX_IMPL)
 
-currentProps.stratfile:
+currentProps.stratfile: sd2snes_$(CORE).xise
 	$(XILINX_BIN)/xtclsh ../xgenstratfile.tcl sd2snes_$(CORE).xise
 
 hostlistfile.txt:
@@ -104,4 +105,4 @@ output_files/main.rbf: $(VSRC) $(VHSRC)
 	$(INTEL_BIN)/quartus_sta sd2snes_$(CORE) -c main
 #	$(INTEL_BIN)/quartus_eda --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
 
-.PHONY: clean mk2 mk2s mk3 mk2_clean mk3_clean
+.PHONY: clean mk2 mk2s mk3 mk2_clean mk3_clean ALWAYS

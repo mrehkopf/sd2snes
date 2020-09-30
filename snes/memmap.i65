@@ -28,6 +28,7 @@
 #define NMI_VECT_DISABLE            $002BFD
 #define NMI_WRAM_PATCH_DISABLE      $002BFE
 #define NMI_WRAM_PATCH_COUNT        $002BFF
+#define NMI_EXEC                    $002C00
 #define WINDOW_STACK_BASE           $7E2000
 
 #define BG2_TILE_BUF                $7EA000
@@ -47,6 +48,9 @@
 #define SPC_DATA                    $FD0000
 #define SPC_HEADER                  $FE0000
 #define SPC_DSP_REGS                $FE0100
+
+/* probably not needed since we plan to call the handler in menu ROM space */
+#define SAVESTATE_HANDLER           $FE1000
 
 #define FILESEL_CWD                 $FF0000
 #define CFG_ADDR                    $FF0100
@@ -72,11 +76,13 @@
 #define CMD_SAVE_CHT                $0D
 #define CMD_SAVE_CFG                $0E
 #define CMD_SET_CFG                 $0F
-#define CMD_SELECTROM               $10
-#define CMD_RUNROM                  $11 /* ROM must first be selected by SELECTROM */
+#define CMD_SELECTROM               $10 /* TODO WIP */
+#define CMD_RUNROM                  $11 /* TODO WIP - ROM must first be selected by SELECTROM */
 #define CMD_LED_BRIGHTNESS          $12
 #define CMD_ADD_FAVORITE_ROM        $13
 #define CMD_REMOVE_FAVORITE_ROM     $14
+#define CMD_SAVESTATE               $40
+#define CMD_LOADSTATE               $41
 #define CMD_MCU_RDY                 $55
 #define CMD_RESET                   $80
 #define CMD_RESET_TO_MENU           $81
@@ -84,31 +90,47 @@
 #define CMD_DISABLE_CHEATS          $83
 #define CMD_KILL_NMIHOOK            $84
 #define CMD_TEMP_KILL_NMIHOOK       $85
+#define CMD_RESET_LOOP_FAIL         $90
+#define CMD_RESET_LOOP_PASS         $91
+#define CMD_RESET_LOOP_TIMEOUT      $92
 
-#define CFG_VIDMODE_MENU            CFG_ADDR+$0000
-#define CFG_VIDMODE_GAME            CFG_ADDR+$0001
-#define CFG_PAIR_MODE_ALLOWED       CFG_ADDR+$0002
-#define CFG_BSX_USE_USERTIME        CFG_ADDR+$0003
-#define CFG_BSX_TIME                CFG_ADDR+$0004
-#define CFG_R213F_OVERRIDE          CFG_ADDR+$0010
-#define CFG_ENABLE_INGAME_HOOK      CFG_ADDR+$0011
-#define CFG_ENABLE_INGAME_BUTTONS   CFG_ADDR+$0012
-#define CFG_ENABLE_HOOK_HOLDOFF     CFG_ADDR+$0013
-#define CFG_ENABLE_SCREENSAVER      CFG_ADDR+$0014
-#define CFG_SCREENSAVER_TIMEOUT     CFG_ADDR+$0015
-#define CFG_SORT_DIRECTORIES        CFG_ADDR+$0017
-#define CFG_HIDE_EXTENSIONS         CFG_ADDR+$0018
-#define CFG_CX4_SPEED               CFG_ADDR+$0019
-#define CFG_SKIN_NAME               CFG_ADDR+$001A
-#define CFG_CONTROL_TYPE            CFG_ADDR+$009A
-#define CFG_MSU_VOLUME_BOOST        CFG_ADDR+$009B
-#define CFG_1CHIP_TRANSIENT_FIXES   CFG_ADDR+$009C
-#define CFG_BRIGHTNESS_LIMIT        CFG_ADDR+$009D
-#define CFG_GSU_SPEED               CFG_ADDR+$009E
-#define CFG_ENABLE_RST_TO_MENU      CFG_ADDR+$009F
-#define CFG_LED_BRIGHTNESS          CFG_ADDR+$00A0
-#define CFG_ENABLE_CHEATS           CFG_ADDR+$00A1
-#define CFG_RESET_PATCH             CFG_ADDR+$00A2
+#define CFG_VIDMODE_MENU               CFG_ADDR+$0000
+#define CFG_VIDMODE_GAME               CFG_ADDR+$0001
+#define CFG_PAIR_MODE_ALLOWED          CFG_ADDR+$0002
+#define CFG_BSX_USE_USERTIME           CFG_ADDR+$0003
+#define CFG_BSX_TIME                   CFG_ADDR+$0004
+#define CFG_R213F_OVERRIDE             CFG_ADDR+$0010
+#define CFG_ENABLE_INGAME_HOOK         CFG_ADDR+$0011
+#define CFG_ENABLE_INGAME_BUTTONS      CFG_ADDR+$0012
+#define CFG_ENABLE_HOOK_HOLDOFF        CFG_ADDR+$0013
+#define CFG_ENABLE_SCREENSAVER         CFG_ADDR+$0014
+#define CFG_SCREENSAVER_TIMEOUT        CFG_ADDR+$0015
+#define CFG_SORT_DIRECTORIES           CFG_ADDR+$0017
+#define CFG_HIDE_EXTENSIONS            CFG_ADDR+$0018
+#define CFG_CX4_SPEED                  CFG_ADDR+$0019
+#define CFG_SKIN_NAME                  CFG_ADDR+$001A
+#define CFG_CONTROL_TYPE               CFG_ADDR+$009A
+#define CFG_MSU_VOLUME_BOOST           CFG_ADDR+$009B
+#define CFG_1CHIP_TRANSIENT_FIXES      CFG_ADDR+$009C
+#define CFG_BRIGHTNESS_LIMIT           CFG_ADDR+$009D
+#define CFG_GSU_SPEED                  CFG_ADDR+$009E
+#define CFG_ENABLE_RST_TO_MENU         CFG_ADDR+$009F
+#define CFG_LED_BRIGHTNESS             CFG_ADDR+$00A0
+#define CFG_ENABLE_CHEATS              CFG_ADDR+$00A1
+#define CFG_RESET_PATCH                CFG_ADDR+$00A2
+#define CFG_ENABLE_INGAME_SAVESTATE    CFG_ADDR+$00A3
+#define CFG_LOADSTATE_DELAY            CFG_ADDR+$00A4
+#define CFG_ENABLE_SAVESTATE_SLOTS     CFG_ADDR+$00A5
+#define CFG_INGAME_SAVESTATE_BUTTONS   CFG_ADDR+$00A6
+#define CFG_INGAME_LOADSTATE_BUTTONS   CFG_ADDR+$00B6
+#define CFG_INGAME_CHANGESTATE_BUTTONS CFG_ADDR+$00C6
+#define CFG_SGB_ENABLE_INGAMEHOOK      CFG_ADDR+$00D6
+#define CFG_SGB_ENABLE_STATE           CFG_ADDR+$00D7
+#define CFG_SGB_VOLUME_BOOST           CFG_ADDR+$00D8
+#define CFG_SGB_ENH_OVERRIDE           CFG_ADDR+$00D9
+#define CFG_SGB_SPR_INCREASE           CFG_ADDR+$00DA
+#define CFG_SGB_CLOCK_FIX              CFG_ADDR+$00DB
+#define CFG_SGB_BIOS_VERSION           CFG_ADDR+$00DC
 
 #define MENU_ENTRY_SIZE             23
 
