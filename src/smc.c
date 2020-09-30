@@ -60,7 +60,7 @@ uint8_t checkChksum(uint16_t cchk, uint16_t chk) {
   return res;
 }
 
-void smc_id(snes_romprops_t* props) {
+void smc_id(snes_romprops_t* props, uint32_t file_offset) {
   uint8_t score, maxscore=1, score_idx=2; /* assume LoROM */
   uint8_t ext_coprocessor=0;
   snes_header_t* header = &(props->header);
@@ -68,18 +68,23 @@ void smc_id(snes_romprops_t* props) {
   props->load_address = 0;
   props->has_dspx = 0;
   props->has_st0010 = 0;
+  props->has_st0011 = 0;
+  props->has_st0018 = 0;
+  props->has_msu1 = 0;
+  props->has_spc7110 = 0;
   props->has_cx4 = 0;
   props->has_obc1 = 0;
   props->has_gsu = 0;
   props->has_sa1 = 0;
   props->has_sdd1 = 0;
+  props->has_combo = 0;
   props->srambase = 0;
   props->sramsize_bytes = 0;
   props->fpga_features = 0;
   props->fpga_dspfeat = 0;
   props->fpga_conf = NULL;
   for(uint8_t num = 0; num < 6; num++) {
-    score = smc_headerscore(hdr_addr[num], header);
+    score = smc_headerscore(hdr_addr[num], header, file_offset);
     printf("%d: offset = %lX; score = %d\n", num, hdr_addr[num], score); // */
     if(score>=maxscore) {
       score_idx=num;
@@ -93,7 +98,7 @@ void smc_id(snes_romprops_t* props) {
   }
 
   /* restore the chosen one */
-  file_readblock(header, hdr_addr[score_idx], sizeof(snes_header_t));
+  file_readblock(header, hdr_addr[score_idx] + file_offset, sizeof(snes_header_t));
 
   if(header->name[0x13] == 0x00 || header->name[0x13] == 0xff) {
     if(header->name[0x14] == 0x00) {
@@ -213,6 +218,11 @@ void smc_id(snes_romprops_t* props) {
         props->fpga_conf = FPGA_DSP;
         props->fpga_features |= FEAT_DSPX;
       }
+      else if (header->carttype == 0xcb) {
+        // custom combo type
+        props->has_combo = 1;
+        props->fpga_features |= FEAT_COMBO;
+      }
       break;
 
     case 0x22: /* ExLoROM */
@@ -273,6 +283,13 @@ void smc_id(snes_romprops_t* props) {
           props->mapper_id = 1; // whatever
       }
   }
+  
+  if (header->carttype == 0xcb) {
+    // custom combo type.  supports all base mappers.  consider moving this to another field to support remaining mappers.
+    props->has_combo = 1;
+    props->fpga_features |= FEAT_COMBO;
+  }
+  
   if(header->romsize == 0 || header->romsize > 13) {
     props->romsize_bytes = 1024;
     header->romsize = 0;
@@ -302,6 +319,7 @@ void smc_id(snes_romprops_t* props) {
   else {
     props->sramsize_bytes = props->ramsize_bytes;
   }
+
   if(header->carttype == 0x55) {
     props->fpga_features |= FEAT_SRTC;
   }
@@ -318,7 +336,7 @@ void smc_id(snes_romprops_t* props) {
   props->header_address = hdr_addr[score_idx] - props->offset;
 }
 
-uint8_t smc_headerscore(uint32_t addr, snes_header_t* header) {
+uint8_t smc_headerscore(uint32_t addr, snes_header_t* header, uint32_t file_offset) {
   int score=0;
   uint8_t reset_inst;
   uint16_t header_offset;
@@ -327,7 +345,7 @@ uint8_t smc_headerscore(uint32_t addr, snes_header_t* header) {
   } else {
     header_offset = 0;
   }
-  if((file_readblock(header, addr, sizeof(snes_header_t)) < sizeof(snes_header_t))
+  if((file_readblock(header, addr + file_offset, sizeof(snes_header_t)) < sizeof(snes_header_t))
      || file_res) {
     return 0;
   }
@@ -360,7 +378,7 @@ uint8_t smc_headerscore(uint32_t addr, snes_header_t* header) {
   if((addr-header_offset) == 0x007fb0 && mapper == 0x22) score += 2;
   if((addr-header_offset) == 0x40ffb0 && mapper == 0x25) score += 2;
 
-  file_readblock(&reset_inst, file_addr, 1);
+  file_readblock(&reset_inst, file_addr + file_offset, 1);
   switch(reset_inst) {
     case 0x78: /* sei */
     case 0x18: /* clc */

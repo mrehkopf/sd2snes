@@ -15,8 +15,11 @@
 #include "sdnative.h"
 #include "sysinfo.h"
 #include "usbinterface.h"
+#include "cfg.h"
+#include "sgb.h"
 
 extern snes_status_t STS;
+extern cfg_t CFG;
 
 static uint32_t sd_tacc_max, sd_tacc_avg;
 
@@ -57,7 +60,7 @@ int write_sysinfo(int sd_measured) {
   fssize = ((uint64_t)fatfs.n_fatent - 2LL) * (uint64_t)fatfs.csize * 512LL / 1048576LL;
   fsfree = ((uint64_t)fsfree) * (uint64_t)fatfs.csize * 512LL / 1048576LL;
 
-  len = snprintf(linebuf, sizeof(linebuf), "Firmware version: %s", CONFIG_VERSION);
+  len = snprintf(linebuf, sizeof(linebuf), "    Firmware version: %s", CONFIG_VERSION);
   memset(linebuf+len, 0x20, 40-len);
   sram_writeblock(linebuf, sram_addr, 40);
   sram_addr += 40;
@@ -131,6 +134,18 @@ int write_sysinfo(int sd_measured) {
   }
   sram_addr += 40;
   sram_memset(sram_addr, 40, 0x20);
+
+  static uint8_t sgb_state = SGB_BIOS_CHECK;
+  if (!sd_measured) sgb_state = SGB_BIOS_CHECK; else if (sgb_state == SGB_BIOS_CHECK) sgb_state = sgb_bios_state();
+  len = snprintf(linebuf, sizeof(linebuf), "sgb%d_boot.bin/sgb%d_snes.bin: %s", CFG.sgb_bios_version, CFG.sgb_bios_version, (
+    sgb_state == SGB_BIOS_MISSING ? "missing"
+    : sgb_state == SGB_BIOS_MISMATCH ? "mismatch"
+    : sgb_state == SGB_BIOS_OK ? "ok"
+    : "checking"
+  ));
+  memset(linebuf+len, 0x20, 40-len);
+  sram_writeblock(linebuf, sram_addr, 40);
+
   sram_hexdump(SRAM_SYSINFO_ADDR, 13*40);
   if(sysclk != -1 && sd_ok && !sd_measured){
     sdn_gettacc(&sd_tacc_max, &sd_tacc_avg);

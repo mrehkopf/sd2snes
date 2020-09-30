@@ -70,7 +70,6 @@ reg [4:0] irq_usage = 5'h00;
 reg [20:0] usage_count = 21'h1fffff;
 
 reg [29:0] hook_enable_count = 0;
-reg hook_disable = 0;
 
 reg [1:0] vector_unlock_r = 0;
 wire vector_unlock = |vector_unlock_r;
@@ -84,6 +83,7 @@ reg [5:0] cheat_enable_mask;
 
 reg exe_unlock_r; initial exe_unlock_r = 0;
 assign exe_unlock = exe_unlock_r;
+reg exe_to_hook_transition_r; initial exe_to_hook_transition_r = 0;
 
 reg snescmd_unlock_r = 0;
 assign snescmd_unlock = snescmd_unlock_r | exe_unlock_r;
@@ -139,7 +139,7 @@ assign cheat_hit = (snescmd_unlock & hook_enable_sync & (nmicmd_enable | return_
                    | (reset_unlock & rst_addr_match)
                    | (cheat_enable & cheat_addr_match)
                    | (hook_enable_sync & (((auto_nmi_enable_sync & (nmi_enable|(exe_present & ~feat_cmd_unlock))) & nmi_addr_match & vector_unlock) // exe or NMI can get us started
-                                           |(auto_nmi_enable_sync & nmi_enable & nmi_addr_match & map_unlock)              // exe exit can also trigger hook
+                                           |(auto_nmi_enable_sync & nmi_enable & nmi_addr_match & exe_to_hook_transition_r)              // exe exit can also trigger hook
                                            |((auto_irq_enable_sync & irq_enable) & irq_addr_match & vector_unlock)));
 
 // irq/nmi detect based on CPU access pattern
@@ -208,7 +208,11 @@ always @(posedge clk) begin
     snescmd_unlock_r <= 0;
     snescmd_unlock_disable <= 0;
     map_unlock_r <= 0;
+    exe_to_hook_transition_r <= 0;
   end else begin
+    if (~nmi_addr_match)   exe_to_hook_transition_r <= 0;
+    else if (map_unlock_r) exe_to_hook_transition_r <= 1;
+  
     if(SNES_rd_strobe) begin
       if(hook_enable_sync
         & ((auto_nmi_enable_sync & exe_present & ~feat_cmd_unlock & ~exe_unlock & nmi_match_bits[1]))
@@ -234,7 +238,7 @@ always @(posedge clk) begin
         // lock the address map
         map_unlock_r <= 0;
         // no longer in exe region
-        exe_unlock_r <= 0;
+        exe_unlock_r <= 0;        
       end
       else if (exe_unlock & nmi_match_bits[1]
        & (cpu_push_cnt != 4)
@@ -259,6 +263,7 @@ always @(posedge clk) begin
         snescmd_unlock_r <= 1;
       end
     end
+    
     // give some time to exit snescmd memory and jump to original vector
     if(SNES_cycle_start) begin
       if(snescmd_unlock_disable) begin
