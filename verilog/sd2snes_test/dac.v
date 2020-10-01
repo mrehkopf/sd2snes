@@ -50,6 +50,7 @@ always @(posedge clkin) begin
   sysclk_sreg <= {sysclk_sreg[1:0], sysclk};
 end
 
+`ifdef MK2
 dac_buf snes_dac_buf (
   .clka(clkin),
   .wea(~we), // Bus [0 : 0]
@@ -58,6 +59,17 @@ dac_buf snes_dac_buf (
   .clkb(clkin),
   .addrb(dac_address), // Bus [8 : 0]
   .doutb(dac_data)); // Bus [31 : 0]
+`endif
+
+`ifdef MK3
+dac_buf snes_dac_buf (
+  .clock(clkin),
+  .wren(~we), // Bus [0 : 0]
+  .wraddress(pgm_address), // Bus [10 : 0]
+  .data(pgm_data), // Bus [7 : 0]
+  .rdaddress(dac_address), // Bus [8 : 0]
+  .q(dac_data)); // Bus [31 : 0]
+`endif
 
 reg [8:0] cnt;
 reg [15:0] smpcnt;

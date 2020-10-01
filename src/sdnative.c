@@ -15,6 +15,7 @@
 #include "memory.h"
 #include "snes.h"
 #include "fileops.h"
+#include "usbinterface.h"
 
 #define MAX_CARDS 1
 
@@ -921,7 +922,10 @@ DSTATUS sdn_initialize(BYTE drv) {
     return STA_NOINIT|STA_NODISK;
   }
   /* if the card is sending data from before a reset we try to deselect it
-     prior to initialization */
+     prior to initialization
+     In all likelihood this is always the case if the card was present on
+     power-up because it has already been initialized by the bootloader as well
+  */
   for(rsplen=0; rsplen<2042; rsplen++) {
     if(!(BITBAND(SD_DAT3REG->FIOPIN, SD_DAT3PIN))) {
       printf("card seems to be sending data, attempting deselect\n");
@@ -1104,7 +1108,7 @@ void sdn_gettacc(uint32_t *tacc_max, uint32_t *tacc_avg) {
   uint32_t numread = 16384;
   int i;
   int sec_step = di.sectorcount / numread - 1;
-  if(disk_state == DISK_REMOVED) return;
+  if(disk_state == DISK_REMOVED || usbint_server_busy()) return;
   sdn_checkinit(0);
   for (i=0; i < 128; i++) {
     sd_offload_tgt=2;
@@ -1114,7 +1118,7 @@ void sdn_gettacc(uint32_t *tacc_max, uint32_t *tacc_avg) {
     sd_offload=1;
     sdn_read(0, NULL, i*sec_step, 1);
   }
-  for (i=0; i < numread && (snes_get_mcu_cmd() == SNES_CMD_SYSINFO) && disk_state != DISK_REMOVED; i++) {
+  for (i=0; i < numread && (snes_get_mcu_cmd() == SNES_CMD_SYSINFO) && disk_state != DISK_REMOVED && !usbint_server_busy(); i++) {
   /* reset timer */
     LPC_RIT->RICTRL = 0;
     sd_offload_tgt=2;
@@ -1141,7 +1145,7 @@ void sdn_gettacc(uint32_t *tacc_max, uint32_t *tacc_avg) {
   time_avg = time_avg / (i+1) * 16;
   sd_offload=0;
   LPC_RIT->RICTRL = 0;
-  if(disk_state != DISK_REMOVED) {
+  if(disk_state != DISK_REMOVED && !usbint_server_busy()) {
     *tacc_max = time_max/(CONFIG_CPU_FREQUENCY / 1000000)-114;
     *tacc_avg = time_avg/(CONFIG_CPU_FREQUENCY / 1000000)-114;
   }

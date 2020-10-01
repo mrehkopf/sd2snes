@@ -1,3 +1,4 @@
+.link page $c0
 #include "memmap.i65"
 
 ; APU RAM init routine

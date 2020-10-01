@@ -27,6 +27,13 @@
 #include "rtc.h"
 #include "sysinfo.h"
 #include "cfg.h"
+#include "savestate.h"
+
+//usb
+#include "usb.h"
+#include "usbhw.h"
+#include "cdcuser.h"
+#include "usbinterface.h"
 
 int i;
 
@@ -68,11 +75,6 @@ int main(void) {
   BITBAND(DAC_DEMREG->FIODIR, DAC_DEMBIT) = 1;
   BITBAND(DAC_DEMREG->FIOSET, DAC_DEMBIT) = 1;
 
- /* disable pull-up on fake USB_CONNECT pin, set P1.30 function to VBUS */
-  USB_CONN_MODEREG |= BV(USB_CONN_MODEBIT);
-  USB_VBUS_PINSEL |= BV(USB_VBUS_PINSELBIT);
-  USB_VBUS_MODEREG |= BV(USB_VBUS_MODEBIT);
-
  /* connect UART3 on P0[25:26] + SSP0 on P0[15:18] */
   LPC_PINCON->PINSEL1 = BV(18) | BV(19) | BV(20) | BV(21) /* UART3 */
                       | BV(3) | BV(5);                    /* SSP0 (FPGA) except SS */
@@ -85,6 +87,9 @@ int main(void) {
   BITBAND(SNES_CIC_D1_MODEREG, SNES_CIC_D1_MODEBIT) = 1;
   BITBAND(SNES_CIC_D1_MODEREG, SNES_CIC_D1_MODEBIT - 1) = 1;
 
+ /* PCLKSEL settings applied by above peripheral inits may be ineffective after
+    PLL0 has been connected, so first disconnect PLL0, then do peripheral setup
+    Erratum ES_LPC175x - PCLKSELx.1 */
   clock_disconnect();
   snes_init();
   snes_reset(1);
@@ -94,11 +99,18 @@ int main(void) {
   fpga_spi_init();
   spi_preinit();
   led_init();
- /* do this last because the peripheral init()s change PCLK dividers */
+ /* and setup & connect PLL0 again */
   clock_init();
+
   FPGA_CLK_PINSEL |= BV(FPGA_CLK_PINSELBIT) | BV(FPGA_CLK_PINSELBIT - 1); /* MAT3.x (FPGA clock) */
   led_std();
   sdn_init();
+
+ /* USB initialization. Not affected by PCLKSELx.1 erratum */
+  USB_Init ();
+  CDC_Init (0x00);
+  USB_Connect (0x01);
+
   printf("\n\n" DEVICE_NAME "\n===============\nfw ver.: " CONFIG_VERSION "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
 printf("PCONP=%lx\n", LPC_SC->PCONP);
 
@@ -155,9 +167,11 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
       cfg_load();
       cfg_save();
       cfg_validity_check_recent_games();
+      cfg_validity_check_favorite_games();
     }
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
     cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
+    cfg_dump_favorite_games_for_snes(SRAM_FAVORITEGAMES_ADDR);
     led_set_brightness(CFG.led_brightness);
 
     /* load menu */
@@ -286,6 +300,12 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           cfg_add_last_game(file_lfn);
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;
+        case SNES_CMD_LOADFAVORITE:
+          cfg_get_favorite_game(file_lfn, snes_get_mcu_param() & 0xff);
+          printf("Selected name: %s\n", file_lfn);
+          cfg_add_last_game(file_lfn);
+          filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
+          break;
 /*        case SNES_CMD_SET_ALLOW_PAIR:
           cfg_set_pair_mode_allowed(snes_get_mcu_param() & 0xff);
           break;
@@ -324,6 +344,20 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
           led_set_brightness(CFG.led_brightness);
           cmd=0;
           break;
+        case SNES_CMD_ADD_FAVORITE_ROM:
+          get_selected_name(file_lfn);
+          printf("Selected name: %s\n", file_lfn);
+          cfg_add_favorite_game(file_lfn);
+          cfg_dump_favorite_games_for_snes(SRAM_FAVORITEGAMES_ADDR);
+          status_load_to_menu();
+          cmd=0; /* stay in menu loop */
+          break;
+        case SNES_CMD_REMOVE_FAVORITE_ROM:
+          cfg_remove_favorite_game(snes_get_mcu_param() & 0xff);
+          cfg_dump_favorite_games_for_snes(SRAM_FAVORITEGAMES_ADDR);
+          status_load_to_menu();
+          cmd=0; /* stay in menu loop */
+          break;
         case SNES_CMD_LOAD_CHT:
           /* load cheats */
           cmd=0; /* stay in menu loop */
@@ -353,37 +387,69 @@ printf("PCONP=%lx\n", LPC_SC->PCONP);
 
     cmd=0;
     int loop_ticks = getticks();
+    uint8_t usb_cmd = 0;
 // uint8_t snes_res;
     while(fpga_test() == FPGA_TEST_TOKEN) {
       cli_entrycheck();
+      //usb upload/boot/lock  
+      usb_cmd |= usbint_handler();
+      if (usb_cmd == SNES_CMD_GAMELOOP) usb_cmd = 0;
+
 //        sleep_ms(250);
       sram_reliable();
+      
+      // loop if we are in the middle of a reset
+      if (usbint_server_reset()) continue;
+      
       if(reset_changed) {
         printf("reset\n");
         reset_changed = 0;
 // TODO have FPGA automatically reset SRTC on detected reset
         fpga_reset_srtc_state();
       }
-      if(get_snes_reset_state() == SNES_RESET_LONG) {
+      uint8_t resetState = get_snes_reset_state();
+      if(resetState == SNES_RESET_LONG) {
         prepare_reset();
         break;
       } else {
+        if (resetState == SNES_RESET_SHORT) resetButtonState = 1;
+        
         if(getticks() > loop_ticks + 25) {
           loop_ticks = getticks();
  //         sram_reliable();
           printf("%s ", get_cic_statename(get_cic_state()));
           cmd=snes_main_loop();
+          if (usb_cmd && !cmd) cmd = usb_cmd;
           if(cmd) {
+            printf("snes loop cmd=%02x\n", cmd);
             switch(cmd) {
+              case SNES_CMD_RESET_LOOP_PASS:
               case SNES_CMD_RESET_LOOP_FAIL:
+                usb_cmd = 0;
                 snes_reset_loop();
                 break;
               case SNES_CMD_RESET:
+                usb_cmd = 0;
+                // also force full ROM reset if we used button combination
+                resetButtonState = 1;
                 snes_reset_pulse();
                 break;
               case SNES_CMD_RESET_TO_MENU:
+                usb_cmd = 0;
                 prepare_reset();
                 goto snes_loop_out;
+              case SNES_CMD_SAVESTATE:
+                usb_cmd = 0;
+                save_backup_state();
+                break;
+              case SNES_CMD_LOADSTATE:
+                usb_cmd = 0;
+                load_backup_state();
+                break;
+              case SNES_CMD_COMBO_TRANSITION:
+                usb_cmd = 0;
+                load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_COMBO | LOADROM_WITH_RESET);
+                break;
               default:
                 printf("unknown cmd: %02x\n", cmd);
                 break;

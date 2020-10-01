@@ -93,6 +93,7 @@
         ED        -             set feature enable bits (see below)
         EE        -             set $213f override value (0=NTSC, 1=PAL)
         EF        aaaa          set DSP core features (see below)
+        EF        aa            set SGB core features (see below)
         F0        -             receive test token (to see if FPGA is alive)
         F1        -             receive status (16bit, MSB first), see below
 
@@ -128,7 +129,7 @@
         bit        function
    ==========================================================================
         12         enable Satellaview base unit emulation
-        11         unused
+        11         enable DMA1 registers
       10-7         $2100 brightness limit (4 bits)
          6         enable $2100 DAC fix for 1CHIP
          5         enable permanent snescmd unlock (during load handshake)
@@ -194,6 +195,13 @@ void set_mcu_addr(uint32_t address) {
   FPGA_TX_BYTE((address >> 16) & 0xff);
   FPGA_TX_BYTE((address >> 8) & 0xff);
   FPGA_TX_BYTE((address) & 0xff);
+  FPGA_DESELECT();
+}
+
+void set_saveram_base(uint8_t mask) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_SETRAMBASE);
+  FPGA_TX_BYTE((mask) & 0xff);
   FPGA_DESELECT();
 }
 
@@ -314,6 +322,17 @@ uint16_t get_msu_track() {
   return result;
 }
 
+uint32_t get_msu_pointer() {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_MSUGETSCADDR);
+  uint32_t result = (FPGA_RX_BYTE()) << 24;
+  result |= (FPGA_RX_BYTE()) << 16;
+  result |= (FPGA_RX_BYTE()) <<  8;
+  result |= (FPGA_RX_BYTE()) <<  0;
+  FPGA_DESELECT();
+  return result;
+}
+
 uint32_t get_msu_offset() {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_MSUGETADDR);
@@ -344,6 +363,20 @@ void set_bsx_regs(uint8_t set, uint8_t reset) {
   FPGA_TX_BYTE(reset);
   FPGA_TX_BYTE(0x00); /* latch reset */
   FPGA_DESELECT();
+}
+
+uint64_t get_fpga_time() {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_RTCGET);
+  uint64_t result = ((uint64_t)FPGA_RX_BYTE()) << 48;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 40;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 32;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 24;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 16;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 8;
+  result |= ((uint64_t)FPGA_RX_BYTE());
+  FPGA_DESELECT();
+  return result;
 }
 
 void set_fpga_time(uint64_t time) {
@@ -411,6 +444,7 @@ void fpga_set_dac_boost(uint8_t boost) {
   FPGA_DESELECT();
 }
 
+uint16_t current_features;
 void fpga_set_features(uint16_t feat) {
   printf("set features: %04x\n", feat);
   FPGA_SELECT();
@@ -418,6 +452,7 @@ void fpga_set_features(uint16_t feat) {
   FPGA_TX_BYTE((feat >> 8) & 0xff);
   FPGA_TX_BYTE((feat) & 0xff);
   FPGA_DESELECT();
+  current_features = feat;
 }
 
 void fpga_set_213f(uint8_t data) {
@@ -464,11 +499,34 @@ void fpga_write_cheat(uint8_t index, uint32_t code) {
   FPGA_DESELECT();
 }
 
-void fpga_set_dspfeat(uint16_t feat) {
-  printf("dspfeat <= %d\n", feat);
+void fpga_set_chipfeat(uint16_t feat) {
+  printf("chipfeat <= %d\n", feat);
   FPGA_SELECT();
-  FPGA_TX_BYTE(FPGA_CMD_DSPFEAT);
+  FPGA_TX_BYTE(FPGA_CMD_CHIPFEAT);
   FPGA_TX_BYTE(feat >> 8);
   FPGA_TX_BYTE(feat & 0xff);
+  FPGA_DESELECT();
+}
+
+uint8_t fpga_read_config(uint8_t group, uint8_t index) {
+  uint8_t data;
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_CONFIG_READ);
+  FPGA_TX_BYTE(group);
+  FPGA_TX_BYTE(index);
+  FPGA_RX_BYTE(); // null read to create delay
+  data = FPGA_RX_BYTE();
+  FPGA_DESELECT();
+  return data;
+}
+
+void fpga_write_config(uint8_t group, uint8_t index, uint8_t value, uint8_t invmask) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_CONFIG_WRITE);
+  FPGA_TX_BYTE(group);
+  FPGA_TX_BYTE(index);
+  FPGA_TX_BYTE(value);
+  FPGA_TX_BYTE(invmask);
+  FPGA_TX_BYTE(0x00); // flop reset
   FPGA_DESELECT();
 }

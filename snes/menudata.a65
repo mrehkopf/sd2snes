@@ -22,6 +22,7 @@
 ; 01  function call
 ; 02  submenu
 ; 03  value setting
+; 04  function call where the menu should be closed upon return
 
 ; data types:
 ; 00  no parameter
@@ -63,6 +64,19 @@ menu_enttab_mm:
  .byt  0,0,0
  .word !mdesc_mm_last
  .byt  ^mdesc_mm_last
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_FUNC
+ .word !text_mm_favorites
+ .byt  ^text_mm_favorites
+ .word !select_favorite_file-1
+ .byt  ^select_favorite_file-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_mm_favorites
+ .byt  ^mdesc_mm_favorites
  .byt  0,0,0
  .byt  0,0,0
  .byt  0,0,0
@@ -162,6 +176,19 @@ menu_enttab_cfg:
  .byt  0,0,0
 
  .byt  MTYPE_SUBMENU
+ .word !mtext_cfg_sgb
+ .byt  ^mtext_cfg_sgb
+ .word !menu_enttab_sgb
+ .byt  ^menu_enttab_sgb
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_cfg_sgb
+ .byt  ^mdesc_cfg_sgb
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_SUBMENU
  .word !mtext_cfg_ingame
  .byt  ^mtext_cfg_ingame
  .word !menu_enttab_ingame
@@ -170,6 +197,19 @@ menu_enttab_cfg:
  .byt  0,0,0
  .word !mdesc_cfg_ingame
  .byt  ^mdesc_cfg_ingame
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_SUBMENU
+ .word !mtext_cfg_savestates
+ .byt  ^mtext_cfg_savestates
+ .word !menu_enttab_savestates
+ .byt  ^menu_enttab_savestates
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_cfg_savestates
+ .byt  ^mdesc_cfg_savestates
  .byt  0,0,0
  .byt  0,0,0
  .byt  0,0,0
@@ -354,6 +394,113 @@ menu_enttab_chip:
 
  .byt 0
 
+menu_enttab_sgb:
+; HEADER
+ .byt 1
+ .word !mtext_cfg_sgb
+ .byt  ^mtext_cfg_sgb
+; ENTRIES
+
+ .byt  MTYPE_VALUE
+ .word !mtext_sgb_enable_hooks
+ .byt  ^mtext_sgb_enable_hooks
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_SGB_ENABLE_INGAMEHOOK
+ .byt  ^CFG_SGB_ENABLE_INGAMEHOOK
+ .word !mdesc_sgb_enable_hooks
+ .byt  ^mdesc_sgb_enable_hooks
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_VALUE
+ .word !mtext_sgb_enable_state
+ .byt  ^mtext_sgb_enable_state
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_SGB_ENABLE_STATE
+ .byt  ^CFG_SGB_ENABLE_STATE
+ .word !mdesc_sgb_enable_state
+ .byt  ^mdesc_sgb_enable_state
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_VALUE
+ .word !mtext_sgb_enh_override
+ .byt  ^mtext_sgb_enh_override
+ .word !kv_enabledisable
+ .byt  ^kv_enabledisable
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_SGB_ENH_OVERRIDE
+ .byt  ^CFG_SGB_ENH_OVERRIDE
+ .word !mdesc_sgb_enh_override
+ .byt  ^mdesc_sgb_enh_override
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_VALUE
+ .word !mtext_sgb_spr_increase
+ .byt  ^mtext_sgb_spr_increase
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_SGB_SPR_INCREASE
+ .byt  ^CFG_SGB_SPR_INCREASE
+ .word !mdesc_sgb_spr_increase
+ .byt  ^mdesc_sgb_spr_increase
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_VALUE
+ .word !mtext_sgb_clock
+ .byt  ^mtext_sgb_clock
+ .word !kv_sgb_clock
+ .byt  ^kv_sgb_clock
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_SGB_CLOCK_FIX
+ .byt  ^CFG_SGB_CLOCK_FIX
+ .word !mdesc_sgb_clock
+ .byt  ^mdesc_sgb_clock
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_VALUE
+ .word !mtext_sgb_volume_boost
+ .byt  ^mtext_sgb_volume_boost
+ .word !kv_volume_boost
+ .byt  ^kv_volume_boost
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_SGB_VOLUME_BOOST
+ .byt  ^CFG_SGB_VOLUME_BOOST
+ .word !mdesc_sgb_volume_boost
+ .byt  ^mdesc_sgb_volume_boost
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_VALUE
+ .word !mtext_sgb_bios
+ .byt  ^mtext_sgb_bios
+ .word !opt_1_to_2
+ .byt  ^opt_1_to_2
+ .byt  OPTTYPE_BYTE
+ .word !CFG_SGB_BIOS_VERSION
+ .byt  ^CFG_SGB_BIOS_VERSION
+ .word !mdesc_sgb_bios
+ .byt  ^mdesc_sgb_bios
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt 0
+
 menu_enttab_ingame:
 ; HEADER
  .byt 1
@@ -475,7 +622,7 @@ menu_enttab_ingame:
  .byt  ^(mfunc_chg_brightness-1)
  .byt  0,0,0
  .byt  0,0,0
- 
+
  .byt  MTYPE_VALUE
  .word !mtext_ingame_resetpatch
  .byt  ^mtext_ingame_resetpatch
@@ -489,6 +636,58 @@ menu_enttab_ingame:
  .byt  0,0,0
  .byt  0,0,0
  .byt  0,0,0
+
+ .byt 0
+
+menu_enttab_savestates:
+; HEADER
+ .byt 1
+ .word !mtext_cfg_savestates
+ .byt  ^mtext_cfg_savestates
+; ENTRIES
+ .byt  MTYPE_VALUE
+ .word !mtext_ingame_savestate
+ .byt  ^mtext_ingame_savestate
+ .word !kv_savestates
+ .byt  ^kv_savestates
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_ENABLE_INGAME_SAVESTATE
+ .byt  ^CFG_ENABLE_INGAME_SAVESTATE
+ .word !mdesc_ingame_savestate
+ .byt  ^mdesc_ingame_savestate
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_VALUE
+ .word !mtext_savestate_slots
+ .byt  ^mtext_savestate_slots
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_ENABLE_SAVESTATE_SLOTS
+ .byt  ^CFG_ENABLE_SAVESTATE_SLOTS
+ .word !mdesc_savestate_slots
+ .byt  ^mdesc_savestate_slots
+ .byt  0,0,0
+ .byt  0,0,0
+ .word !(mfunc_isenabled_savestate-1)
+ .byt  ^(mfunc_isenabled_savestate-1)
+
+ .byt  MTYPE_VALUE
+ .word !mtext_loadstate_delay
+ .byt  ^mtext_loadstate_delay
+ .word !opt_0_to_30
+ .byt  ^opt_0_to_30
+ .byt  OPTTYPE_BYTE
+ .word !CFG_LOADSTATE_DELAY
+ .byt  ^CFG_LOADSTATE_DELAY
+ .word !mdesc_loadstate_delay
+ .byt  ^mdesc_loadstate_delay
+ .byt  0,0,0
+ .byt  0,0,0
+ .word !(mfunc_isenabled_savestate-1)
+ .byt  ^(mfunc_isenabled_savestate-1)
 
  .byt 0
 
@@ -543,6 +742,49 @@ menu_enttab_scic:
  .byt  ^(mfunc_isenabled_scic-1)
 
  .byt 0
+
+menu_enttab_filesel_context_file:
+; HEADER
+ .byt  1              ; listsel_step=1
+ .word !text_filesel_selected_file ; window title
+ .byt  ^text_filesel_selected_file ; for this menu
+; ENTRIES
+ .byt  MTYPE_FUNC_CLOSE
+ .word !text_filesel_context_add_to_favorites
+ .byt  ^text_filesel_context_add_to_favorites
+ .word !add_selected_file_to_favorites-1
+ .byt  ^add_selected_file_to_favorites-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_filesel_context_add_to_favorites
+ .byt  ^mdesc_filesel_context_add_to_favorites
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  0
+
+menu_enttab_filesel_favorites_context:
+; HEADER
+ .byt  1              ; listsel_step=1
+ .word !text_filesel_selected_file ; window title
+ .byt  ^text_filesel_selected_file ; for this menu
+; ENTRIES
+ .byt  MTYPE_FUNC_CLOSE
+ .word !text_filesel_favorites_context_remove_from_favorites
+ .byt  ^text_filesel_favorites_context_remove_from_favorites
+ .word !remove_selected_favorite_file-1
+ .byt  ^remove_selected_favorite_file-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_filesel_favorites_context_remove_from_favorites
+ .byt  ^mdesc_filesel_favorites_context_remove_from_favorites
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  0
+
 mfunc_set_bsx_time:
   php
   sep #$20 : .as
@@ -566,6 +808,19 @@ mfunc_isenabled_never:
 
 mfunc_isenabled_hooks:
   lda @CFG_ENABLE_INGAME_HOOK
+  eor #$ff
+  ror
+  rtl
+
+mfunc_isdisabled_hooks:
+  lda @CFG_ENABLE_INGAME_HOOK
+  eor #$00
+  ror
+  rtl
+
+mfunc_isenabled_savestate:
+  lda @CFG_ENABLE_INGAME_SAVESTATE
+  and @CFG_ENABLE_INGAME_HOOK
   eor #$ff
   ror
   rtl
@@ -600,6 +855,11 @@ kv_onoff:
 .word $0001, !text_on : .byt ^text_on
 .word $ffff
 
+kv_enabledisable:
+.word $0000, !text_enabled : .byt ^text_enabled
+.word $0001, !text_disabled : .byt ^text_disabled
+.word $ffff
+
 kv_yesno:
 .word $0000, !text_no : .byt ^text_no
 .word $0001, !text_yes : .byt ^text_yes
@@ -625,6 +885,11 @@ kv_cx4_speed:
 kv_gsu_speed:
 .word $0000, !text_normal : .byt ^text_normal
 .word $0001, !text_fast : .byt ^text_fast
+.word $ffff
+
+kv_sgb_clock:
+.word $0000, !text_sgb_clock1 : .byt ^text_sgb_clock1
+.word $0001, !text_sgb_clock2 : .byt ^text_sgb_clock2
 .word $ffff
 
 kv_region:
@@ -666,6 +931,19 @@ kv_bright_limit:
 .word $000e, !text_minus1 : .byt ^text_minus1
 .word $000f, !text_off : .byt ^text_off
 .word $ffff
+
+kv_savestates:
+.word $0000, !text_off : .byt ^text_off
+.word $0001, !text_on : .byt ^text_on
+;.word $0001, !text_on_p1 : .byt ^text_on_p1
+;.word $0002, !text_on_p2 : .byt ^text_on_p2
+.word $ffff
+
+opt_0_to_30:
+.word $0000, $001E
+
+opt_1_to_2:
+.word $0001, $0002
 
 kv_led_bright:
 .word $0000, !text_off : .byt ^text_off
