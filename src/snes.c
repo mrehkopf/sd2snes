@@ -289,7 +289,7 @@ uint8_t snes_main_loop() {
 
   if(romprops.sramsize_bytes) {
     uint32_t crc_bytes = min(romprops.sramsize_bytes - saveram_offset, SRAM_REGION_SIZE);
-    saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase + saveram_offset, romprops.sramsize_bytes, saveram_crc);
+    saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase + saveram_offset, crc_bytes, saveram_crc);
     saveram_offset += crc_bytes;
     sram_valid = sram_reliable();
     if(crc_valid && sram_valid) {
