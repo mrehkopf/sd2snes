@@ -65,9 +65,9 @@ SRC  = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c
 SRC += printf.c spi.c fileops.c rtc.c fpga.c fpga_spi.c snes.c smc.c
 SRC += memory.c filetypes.c faulthandler.c sort.c crc32.c cic.c
 SRC += cli.c xmodem.c irq.c rle.c sdnative.c msu1.c crc16.c sysinfo.c
-SRC += cfg.c cheat.c yaml.c
+SRC += cfg.c cheat.c yaml.c savestate.c sgb.c
 
-#SRC += usbdesc.c usbcore.c usbuser.c usbhw.c cdcuser.c
+SRC += usbdesc.c usbcore.c usbuser.c usbhw.c cdcuser.c usbinterface.c
 
 # usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
 
@@ -311,8 +311,10 @@ clean_list :
 	$(Q)$(REMOVE) $(TARGET).lss
 	$(Q)$(REMOVE) $(OBJ)
 	$(Q)$(REMOVE) $(OBJDIR)/autoconf.h
+	$(Q)$(REMOVE) $(OBJDIR)/cfgware.h
 	$(Q)$(REMOVE) $(OBJDIR)/*.bin
-	$(Q)$(REMOVE) $(OBJDIR)/firmware.img
+	$(Q)$(REMOVE) $(OBJDIR)/cfgware.h
+	$(Q)$(REMOVE) $(OBJDIR)/${CONFIG_FW_FILE}
 	$(Q)$(REMOVE) $(OBJDIR)/.DS_Store
 	$(Q)$(REMOVE) $(LST)
 	$(Q)$(REMOVE) $(CSRC:.c=.s)

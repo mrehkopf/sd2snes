@@ -1,3 +1,4 @@
+.link page $c0
 read_pad:
   php
   phb

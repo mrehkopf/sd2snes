@@ -71,9 +71,7 @@ You should obtain a firmware file called obj/firmware.img. Copy this file to
 <sdcard>/sd2snes/firmware.img.
 
 4) Building the SNES menu
-snescom is required.
-cd to snes/ and make.
-Copy the resulting file menu.bin to <sdcard>/sd2snes/menu.bin.
+A seperate README file for this exists in the snes/ directory
 
 5) Building the FPGA configuration
 Compile the RLE compressor in utils/rle.c:

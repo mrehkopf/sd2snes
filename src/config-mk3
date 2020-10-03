@@ -1,5 +1,5 @@
-CONFIG_VERSION = "1.10.3"
-CONFIG_FWVER = 0x010A0300
+CONFIG_VERSION = "1.11.0"
+CONFIG_FWVER = 0x010B0000
 CONFIG_MCU_FOSC = 8000000
 
 CONFIG_MK2 = n
@@ -41,10 +41,14 @@ DEVICE_NAME = "sd2snes Mk.III"
 # Multiplier:   24
 # Pre-Divisor:   1
 # Divisor:       4
+# => FCCO = 384MHz
+# => CCLK = 96MHz
+# => USBCLK = 48MHz
 
 CONFIG_CLK_MULT         = 24
 CONFIG_CLK_PREDIV       =  1
 CONFIG_CLK_CCLKDIV      =  4
+CONFIG_USB_DIV          =  8
 
 SSP_CLK_DIVISOR         = 2
 

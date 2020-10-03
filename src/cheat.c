@@ -7,11 +7,13 @@
 #include "cheat.h"
 #include "yaml.h"
 #include "cfg.h"
+#include "sgb.h"
 
 #include <string.h>
 #include <stdlib.h>
 
 extern cfg_t CFG;
+extern sgb_romprops_t sgb_romprops;
 extern snes_romprops_t romprops;
 
 uint8_t rom_index;
@@ -63,6 +65,8 @@ void cheat_program() {
   cheat_holdoff_enable(CFG.enable_hook_holdoff);
   cheat_buttons_enable(CFG.enable_ingame_buttons);
   cheat_wram_present(wram_index);
+  
+  sgb_cheat_program();
 }
 
 void cheat_program_single(cheat_patch_record_t *cheat) {

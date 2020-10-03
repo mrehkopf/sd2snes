@@ -1,3 +1,4 @@
+.link page $c0
 #include "memmap.i65"
 
 ; *=$2A04
@@ -67,6 +68,7 @@ nmi_echocmd: ; echo cmd to MCU for misc handling
 nmi_patches:
   jsr NMI_WRAM_CHEATS
 nmi_exit:
+  jsl @savestate_handler
 ; clean up
   sta @NMI_VECT_DISABLE
   rep #$20 : .al
@@ -125,14 +127,14 @@ resethook: ; EMULATION MODE
   dey
   bmi +
   ; perform reset
-  lda #$85
+  lda #CMD_RESET_LOOP_FAIL
   sta @MCU_CMD
 - bra -
   ; clean up state
 + inx
   iny
 resethook_skip:
-  lda #$86
+  lda #CMD_RESET_LOOP_PASS
   sta @MCU_CMD
 
 resethook_loop:

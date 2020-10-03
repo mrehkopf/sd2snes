@@ -6,31 +6,46 @@
 #define CFG_FILE ("/sd2snes/config.yml")
 #define LAST_FILE ((const uint8_t*)"/sd2snes/lastgame.cfg")
 #define LAST_FILE_BAK ((const uint8_t*)"/sd2snes/~lastgame.cfg")
+#define FAVORITES_FILE ((const uint8_t*)"/sd2snes/favorites.cfg")
+#define FAVORITES_FILE_BAK ((const uint8_t*)"/sd2snes/~favorites.cfg")
 
-#define CFG_VIDMODE_MENU          ("VideoModeMenu")
-#define CFG_VIDMODE_GAME          ("VideoModeGame")
-#define CFG_PAIR_MODE_ALLOWED     ("PairModeAllowed")
-#define CFG_BSX_USE_USERTIME      ("BSXUseUsertime")
-#define CFG_BSX_TIME              ("BSXTime")
-#define CFG_R213F_OVERRIDE        ("R213fOverride")
-#define CFG_ENABLE_INGAME_HOOK    ("EnableIngameHook")
-#define CFG_ENABLE_INGAME_BUTTONS ("EnableIngameButtons")
-#define CFG_ENABLE_HOOK_HOLDOFF   ("EnableHookHoldoff")
-#define CFG_ENABLE_SCREENSAVER    ("EnableScreensaver")
-#define CFG_SCREENSAVER_TIMEOUT   ("ScreensaverTimeout")
-#define CFG_SORT_DIRECTORIES      ("SortDirectories")
-#define CFG_HIDE_EXTENSIONS       ("HideExtensions")
-#define CFG_CX4_SPEED             ("Cx4Speed")
-#define CFG_GSU_SPEED             ("GSUSpeed")
-#define CFG_SKIN_NAME             ("SkinName")
-#define CFG_CONTROL_TYPE          ("ControlType")
-#define CFG_MSU_VOLUME_BOOST      ("MSUVolumeBoost")
-#define CFG_1CHIP_TRANSIENT_FIXES ("1CHIPTransientFixes")
-#define CFG_BRIGHTNESS_LIMIT      ("BrightnessLimit")
-#define CFG_ENABLE_RST_TO_MENU    ("ShortReset2Menu")
-#define CFG_LED_BRIGHTNESS        ("LEDBrightness")
-#define CFG_ENABLE_CHEATS         ("EnableCheats")
-#define CFG_RESET_PATCH           ("ResetPatch")
+#define CFG_VIDMODE_MENU              ("VideoModeMenu")
+#define CFG_VIDMODE_GAME              ("VideoModeGame")
+#define CFG_PAIR_MODE_ALLOWED         ("PairModeAllowed")
+#define CFG_BSX_USE_USERTIME          ("BSXUseUsertime")
+#define CFG_BSX_TIME                  ("BSXTime")
+#define CFG_R213F_OVERRIDE            ("R213fOverride")
+#define CFG_ENABLE_INGAME_HOOK        ("EnableIngameHook")
+#define CFG_ENABLE_INGAME_BUTTONS     ("EnableIngameButtons")
+#define CFG_ENABLE_HOOK_HOLDOFF       ("EnableHookHoldoff")
+#define CFG_ENABLE_SCREENSAVER        ("EnableScreensaver")
+#define CFG_SCREENSAVER_TIMEOUT       ("ScreensaverTimeout")
+#define CFG_SORT_DIRECTORIES          ("SortDirectories")
+#define CFG_HIDE_EXTENSIONS           ("HideExtensions")
+#define CFG_CX4_SPEED                 ("Cx4Speed")
+#define CFG_GSU_SPEED                 ("GSUSpeed")
+#define CFG_SKIN_NAME                 ("SkinName")
+#define CFG_CONTROL_TYPE              ("ControlType")
+#define CFG_MSU_VOLUME_BOOST          ("MSUVolumeBoost")
+#define CFG_1CHIP_TRANSIENT_FIXES     ("1CHIPTransientFixes")
+#define CFG_BRIGHTNESS_LIMIT          ("BrightnessLimit")
+#define CFG_ENABLE_RST_TO_MENU        ("ShortReset2Menu")
+#define CFG_LED_BRIGHTNESS            ("LEDBrightness")
+#define CFG_ENABLE_CHEATS             ("EnableCheats")
+#define CFG_RESET_PATCH               ("ResetPatch")
+#define CFG_ENABLE_INGAME_SAVESTATE   ("EnableIngameSavestate")
+#define CFG_LOADSTATE_DELAY           ("LoadstateDelay")
+#define CFG_ENABLE_SAVESTATE_SLOTS    ("EnableSavestateSlots")
+#define CFG_INGAME_SAVESTATE_BUTTONS  ("IngameSavestateButtons")
+#define CFG_INGAME_LOADSTATE_BUTTONS  ("IngameLoadstateButtons")
+#define CFG_INGAME_CHANGESTATE_BUTTONS  ("IngameChangestateButtons")
+#define CFG_SGB_ENABLE_INGAME_HOOK    ("SGBEnableIngameHook")
+#define CFG_SGB_ENABLE_STATE          ("SGBEnableState")
+#define CFG_SGB_VOLUME_BOOST          ("SGBVolumeBoost")
+#define CFG_SGB_ENH_OVERRIDE          ("SGBEnhOverride")
+#define CFG_SGB_SPR_INCREASE          ("SGBSprIncrease")
+#define CFG_SGB_CLOCK_FIX             ("SGBClockFix")
+#define CFG_SGB_BIOS_VERSION          ("SGBBiosVersion")
 
 typedef enum {
   VIDMODE_60 = 0,
@@ -63,6 +78,19 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t  led_brightness;          /* LED brightness (0..15) */
   uint8_t  enable_cheats;           /* initial cheat enable state */
   uint8_t  reset_patch;             /* enable reset patch */
+  uint8_t  enable_ingame_savestate; /* enable in-game savestates */
+  uint8_t  loadstate_delay;         /* load state delay (frames) */
+  uint8_t  enable_savestate_slots;  /* enable savestate slots (select+dpad to change) */
+  char     ingame_savestate_buttons[16]; /* save state buttons */
+  char     ingame_loadstate_buttons[16]; /* load state buttons */
+  char     ingame_changestate_buttons[16]; /* change slot state buttons + dpad */
+  uint8_t  sgb_enable_ingame_hook;  /* SGB enable hook routines */
+  uint8_t  sgb_enable_state;        /* SGB enable save states if present */
+  uint8_t  sgb_volume_boost;        /* SGB volume boost (0: none; 1=+3.5dB; 2=+6dB; 3=+9dB; 4=+12dB) */
+  uint8_t  sgb_enh_override;        /* SGB override (disable) the SGB enhancements */
+  uint8_t  sgb_spr_increase;        /* SGB increase number of supported visible sprites */
+  uint8_t  sgb_clock_fix;           /* SGB timing/clock (true: original/sgb2, false: snes/sgb1) */
+  uint8_t  sgb_bios_version;        /* SGB bios firmware version (defined number loads: sgbX_boot.bin and sgbX_snes.bin) */
 } cfg_t;
 
 int cfg_save(void);
@@ -72,6 +100,12 @@ int cfg_validity_check_recent_games(void);
 int cfg_add_last_game(uint8_t *fn);
 int cfg_get_last_game(uint8_t *fn, uint8_t index);
 void cfg_dump_recent_games_for_snes(uint32_t address);
+
+int cfg_validity_check_favorite_games(void);
+int cfg_add_favorite_game(uint8_t *fn);
+int cfg_remove_favorite_game(uint8_t index_to_remove);
+int cfg_get_favorite_game(uint8_t *fn, uint8_t index);
+void cfg_dump_favorite_games_for_snes(uint32_t address);
 
 void cfg_load_to_menu(void);
 void cfg_get_from_menu(void);

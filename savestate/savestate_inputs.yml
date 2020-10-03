@@ -1,0 +1,23 @@
+---
+# Savestate Custom Inputs
+# B Y A X = Buttons
+# u d l r = Dpad
+# s = Select (lowercase)
+# S = Start (uppercase)
+# L R = Shoulder buttons
+
+# CKSUM: SAVE,LOAD
+EF80: XR,XL     #dkc1 v1.1 (US)
+2BCC: XR,XL     #dkc1 v1.1 (US)
+0C17: XR,XL     #dkc1 v1.0 (JP)
+1202: XR,XL     #dkc2 (US)
+9860: XR,XL     #dkc2 (US)
+35CE: XR,XL     #dkc2 (JP)
+B28C: XR,XL     #dkc3 (US)
+E545: XR,XL     #dkc3 (JP)
+F8DF: sYR,sYL   #super metroid (*)
+#A0DA: XR,XL    #smw (US)
+#8C80: XR,XL    #smw (JP)
+33C2: SR,SL     #soe (US)
+0C17: AR,AL     #super valis (US)
+5B4C: AR,AL     #super valis (JP)
