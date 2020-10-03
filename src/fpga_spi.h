@@ -86,6 +86,7 @@
 #define FPGA_CMD_DACSETPTR       (0xe3)
 #define FPGA_CMD_MSUSETPTR       (0xe4)
 #define FPGA_CMD_RTCSET          (0xe5)
+#define FPGA_CMD_RTCGET          (0xe6)
 #define FPGA_CMD_BSXSETBITS      (0xe6)
 #define FPGA_CMD_SRTCRESET       (0xe7)
 #define FPGA_CMD_DSPRESETPTR     (0xe8)
@@ -95,7 +96,7 @@
 #define FPGA_CMD_DACBOOST        (0xec)
 #define FPGA_CMD_SETFEATURE      (0xed)
 #define FPGA_CMD_SET213F         (0xee)
-#define FPGA_CMD_DSPFEAT         (0xef)
+#define FPGA_CMD_CHIPFEAT        (0xef)
 #define FPGA_CMD_TEST            (0xf0)
 #define FPGA_CMD_GETSTATUS       (0xf1)
 #define FPGA_CMD_MSUGETADDR      (0xf2)
@@ -122,8 +123,9 @@ void fpga_set_sddma_range(uint16_t start, uint16_t end);
 uint16_t get_msu_track(void);
 uint32_t get_msu_offset(void);
 uint32_t get_snes_sysclk(void);
-void set_bsx_regs(uint8_t set, uint8_t reset);
 void set_fpga_time(uint64_t time);
+uint64_t get_fpga_time(void);
+void set_bsx_regs(uint8_t set, uint8_t reset);
 void fpga_reset_srtc_state(void);
 void fpga_reset_dspx_addr(void);
 void fpga_write_dspx_pgm(uint32_t data);
@@ -136,5 +138,5 @@ void fpga_set_snescmd_addr(uint16_t addr);
 void fpga_write_snescmd(uint8_t data);
 uint8_t fpga_read_snescmd(void);
 void fpga_write_cheat(uint8_t index, uint32_t code);
-void fpga_set_dspfeat(uint16_t feat);
+void fpga_set_chipfeat(uint16_t feat);
 #endif

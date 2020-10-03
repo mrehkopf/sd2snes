@@ -41,6 +41,7 @@
 #include "fpga_spi.h"
 #include "rtc.h"
 #include "cfg.h"
+#include "sgb.h"
 
 uint32_t saveram_crc, saveram_crc_old;
 uint8_t sram_crc_valid;
@@ -108,6 +109,7 @@ void prepare_reset() {
     save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
     writeled(0);
   }
+  // don't save SGB RTC since we are in reset and it may be undefined
   rdyled(1);
   readled(1);
   writeled(1);
@@ -265,6 +267,10 @@ uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_sav
 uint8_t sram_valid = 0;
 uint8_t snes_main_loop() {
   recalculate_sram_range();
+  
+  /* save the GB RTC if enabled */
+  sgb_gtc_save(file_lfn);
+  
   if(romprops.sramsize_bytes) {
     saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes);
     sram_valid = sram_reliable();

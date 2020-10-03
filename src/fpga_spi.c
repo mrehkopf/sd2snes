@@ -93,6 +93,7 @@
         ED        -             set feature enable bits (see below)
         EE        -             set $213f override value (0=NTSC, 1=PAL)
         EF        aaaa          set DSP core features (see below)
+        EF        aa            set SGB core features (see below)
         F0        -             receive test token (to see if FPGA is alive)
         F1        -             receive status (16bit, MSB first), see below
 
@@ -346,6 +347,20 @@ void set_bsx_regs(uint8_t set, uint8_t reset) {
   FPGA_DESELECT();
 }
 
+uint64_t get_fpga_time() {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_RTCGET);
+  uint64_t result = ((uint64_t)FPGA_RX_BYTE()) << 48;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 40;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 32;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 24;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 16;
+  result |= ((uint64_t)FPGA_RX_BYTE()) << 8;
+  result |= ((uint64_t)FPGA_RX_BYTE());
+  FPGA_DESELECT();
+  return result;
+}
+
 void set_fpga_time(uint64_t time) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_RTCSET);
@@ -464,10 +479,10 @@ void fpga_write_cheat(uint8_t index, uint32_t code) {
   FPGA_DESELECT();
 }
 
-void fpga_set_dspfeat(uint16_t feat) {
-  printf("dspfeat <= %d\n", feat);
+void fpga_set_chipfeat(uint16_t feat) {
+  printf("chipfeat <= %d\n", feat);
   FPGA_SELECT();
-  FPGA_TX_BYTE(FPGA_CMD_DSPFEAT);
+  FPGA_TX_BYTE(FPGA_CMD_CHIPFEAT);
   FPGA_TX_BYTE(feat >> 8);
   FPGA_TX_BYTE(feat & 0xff);
   FPGA_DESELECT();

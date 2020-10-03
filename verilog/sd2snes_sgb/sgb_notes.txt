@@ -1,0 +1,99 @@
+Most of the GB state is memory mapped to the PSRAM address space for debug reads/writes from the ARM CPU and to support save states.  See verilog comments for the mapping.
+
+Merging Considerations
+----------------------
+- Remove (or enhance) System Information check for correct files.
+- Rename sgb_snes.bin to sgb_bios.bin?  '_snes' was originally used to identify it as a snes rom and distinguish it from the ROM file which also starts with a 'b'.
+- Decide what to do with MK2 MSU bit file and associated firmware code.
+- Decided if save state enable should be a separate config bit.  It currently uses the cheat bits.
+- Menu options for SGB configuration.
+- How to handle save states if they are kept.  They are saved in an a SRM expanded to 128KB.  This makes firmware file management easier, but it (1) creates larger SRM files even when no save states are made and they are enabled and (2) is adding on additional data to a well-defined SaveRAM region in the cart.
+- Add support for cheats on MK3?  MK2 is 99-100% full with current features.
+- Add support for more (and more complete) mappers on MK3?
+
+Problem Games (See Bug list for why)
+-------------
+- Pinball Fantasies (interrupts)
+- Donkey Kong (SGB Enhanced) (interrupts)
+- BattleToads Double Dragon (interrupts)
+- Megaman V (interrupts)
+- Road Rage (interrupts)
+- Prehistorik Man (audio)
+- Super Mario Land (audio)
+- Pokemon Gold (RTC)
+
+Fixed Bugs
+----------
+Many of these games are useful for testing changes.
+
+- Evel Knievel bad BG tile map for characters on Level Select screen.
+  - OAM interrupt needed to happen on first scanline to keep VRAM tile map updates from getting dropped during PPU rendering.  This is one of those games that spams the CPU with interrupts.
+- Bomberman scanline 120? flickering in SGB mode.
+  - Leaves all 4 controllers enabled.  Seems to cause problems with late DMA from SNES and overflowing row buffers.  Signaled buffer ready earlier to mask (fix?) problem.
+- Double Dragon III controls don't work.
+  - Rare game that uses the (not very useful) joypad interrupt.
+- Atered Space bad sprites.
+  - Unsure what exactly fixed this as it was in a group of changes.
+- Robopon Sun crash at title screen.
+  - Needed HUC mapper support.  Some very basic (and likely broken) support was added to get it past the title screen.
+  - Also added limited MBC5 camera support so game doesn't crash.
+- Urusei Yatsura: Miss Tomobiki o Chigase! crash when trying to start game.
+  - DMA from VRAM support missing.  Also needed to leave System Bus available while DMA was happening.
+- Batman Forever occasionally had corrupt BG tiles.
+  - LY needed updating to 0 early in scanine 153.
+- BattleToadsDD crashes on restart/continue of level 3-1 continue.  Also, whips don't hurt.
+  - Not a bug.  Happens on original SGB2.
+- Donkey Kong (SGB Enhanced) flickering HUD.
+  - Extra interrupt should not have happened on scanline 0.
+- Pinball Fanasies.  Pinball Mania (EU).  Pinball Deluxe (EU).   Graphics corruption + freeze.
+  - Timer interrupt could occur and push out OAM interrupt which is expected to complete on same line it is triggered in.  Fix was to extend draw cycle by up to 1 Bus cycle.  PBD required an addition bus cycle.
+- Road Rage flashing screen and crash on game start.
+  - STAT interrupt problem.  Expected double interrupt on both 153 and 0 when LYC==0.  LY changes early on 153 to 0 to trigger first interrupt.
+- P-Man sound registers not getting disabled.
+  - Uses register write glitch that causes volume to wrap to 0 from max.
+- LADX, P-Man, etc pixel corruption in scanines.
+  - DMA occurring on active lines caused bad OAM LUT matches on sprites that didn't exist.  Caused bad sprite tile data to be rendered where it shouldn't be.  Some games (eg LADX) put valid sprites on these lines which causes glitches.
+- Super RC ProAM graphic glitches.
+  - Not a bug.  Happens on original SGB2.
+- Pokemon Gold RTC broken.  Got corrupted at seemingly random points.
+  - Underflow bug with unsigned numbers in firmware.
+  - RTC corruption if saved off during reset.  Temp fix was to not save RTC when reset is asserted.  May still be a race?
+- Various MBC1M (multi-ROM) games don't work.
+  - Added MBC1M support.  Bomberman trilogy, Super CH land, MK1+MK2, others?
+- Super Mario Land timer countdown at level end, Castlevania II missing ringing sound.
+  - Duty position needed to be advanced on x3 and x4 (frequency) register writes.
+- Megaman V default boss stage selection transition crash, Mortal Kombat I crash
+  - Interrupts have long latency and allowed one instruction after RETI which resulted in stack overflow.
+  - RETI now enables interrupt on next instruction but this exposed bug in Pinball games (see above).
+- Bomberman Quest hang when battle mode picked.
+  - Needed serial interrupt so battle mode selection failed and returned to menu handler.
+- FFA noise when supposed to be quiet (arena on game start).
+  - Needed audio filter to remove very high frequencies.  Square channels were set to highest possible setting rather than disabling the channels.
+- Space Invaders Arcade hanges with original (SNES) in-game hooks.
+  - Hack to patch bios to make NMI hook work was causing problem with SGB transfers.  Rewrote in-game hooks to use FPGA-only snoops of controller WRAM addresses.  Removes overhead, makes hooks more responsive, and saves space on the FPGA.  But can be broken if bios is hacked to use different addresses.  Hooks don't work with Arcade version, but at least it doesn't crash.
+- Several SGB enhanced games crash or don't display BG correctly (Bonk's Adventure, Pokemon Gold).
+  - Rewrote ICD2 serial transfer code and added support to exit state machine on bad transitions.
+- BattleToadsDD bad player sprite.
+  - Correct VRAM transfer requires precise instruction and interrupt timing to avoid writing during VRAM use.
+- Final Fantasy Legend I window displays old text for a frame.
+  - Not a bug.  Happens on original SGB2.
+- Spy vs Spy - locks after start pressed.
+  - More serial transfer register support needed.
+- Super RC ProAM hangs when starting the game.
+  - Serial transfer support required in order to fail on serial connection and start game.
+- Misc MBC* bugs early in testing.
+  - BattleToadsDD
+  - Pokemon Red crashed on title screen
+  - Battle Arena Toshinden crashes in game
+- Castlevania 3 joypad freezes
+  - Buttons are readable during serial transfers
+- Battletoads messed up sprites and BG.
+  - HALT waking up from non-enabled interrupt.
+- Rolan's Curse I/II doesn't detect button press for starting
+  - 5:4 P1 needed to read the same value as written.  Game writes 7:0 and expects 5:4 to be 2'b10 (sames as written).
+- Broken PPU window bugs
+  - Castlevania II title screen
+  - Castlevania II crushing spike walls overlapping with other BG
+  - Contra Alien Wars stage 1 end boss entering screen
+  - Links Awakening HUD
+  - Super Mario Land "Pause" text in pause screen
