@@ -152,10 +152,18 @@ void prepare_data(uint32_t msu_offset) {
     msu_reset(msu_sect_offset);
     msu_page1_start = msu_sect;
     msu_page2_start = msu_sect + MSU_DATA_BUFSIZE / 2;
+    /* clear bank bit to mask bank reset artifact */
+    fpga_status_now &= ~MSU_FPGA_STATUS_MSU_READ_MSB;
+    fpga_status_prev &= ~MSU_FPGA_STATUS_MSU_READ_MSB;
+
   } else {
+    uint16_t msu_read_offset;
     if (msu_offset >= msu_page1_start && msu_offset <= msu_page1_start + MSU_DATA_BUFSIZE / 2) {
-      msu_reset(0x0000 + msu_offset - msu_page1_start);
-      DBG_MSU1 printf("inside page1, new offset: %08lx\n", 0x0000 + msu_offset-msu_page1_start);
+      msu_read_offset = 0x0000 + msu_offset - msu_page1_start;
+      msu_reset(msu_read_offset);
+      fpga_status_now = (fpga_status_now & ~MSU_FPGA_STATUS_MSU_READ_MSB)
+                      | (((msu_read_offset & (MSU_DATA_BUFSIZE / 2)) ? MSU_FPGA_STATUS_MSU_READ_MSB : 0x0000));
+      DBG_MSU1 printf("inside page1, new offset: %04x\n", msu_read_offset);
       if(!(msu_page2_start == msu_page1_start + MSU_DATA_BUFSIZE / 2)) {
         set_msu_addr(MSU_DATA_BUFSIZE / 2);
         sd_offload_tgt=2;
@@ -166,8 +174,11 @@ void prepare_data(uint32_t msu_offset) {
         DBG_MSU1 printf("%08lx)\n", msu_page2_start);
       }
     } else if (msu_offset >= msu_page2_start && msu_offset <= msu_page2_start + MSU_DATA_BUFSIZE / 2) {
-      DBG_MSU1 printf("inside page2, new offset: %08lx\n", 0x2000 + msu_offset-msu_page2_start);
-      msu_reset(0x2000 + msu_offset - msu_page2_start);
+      msu_read_offset = 0x2000 + msu_offset - msu_page2_start;
+      msu_reset(msu_read_offset);
+      fpga_status_now = (fpga_status_now & ~MSU_FPGA_STATUS_MSU_READ_MSB)
+                      | (((msu_read_offset & (MSU_DATA_BUFSIZE / 2)) ? MSU_FPGA_STATUS_MSU_READ_MSB : 0x0000));
+      DBG_MSU1 printf("inside page2, new offset: %04x\n", msu_read_offset);
       if(!(msu_page1_start == msu_page2_start + MSU_DATA_BUFSIZE / 2)) {
         set_msu_addr(0x0);
         sd_offload_tgt=2;
@@ -193,9 +204,6 @@ void prepare_data(uint32_t msu_offset) {
     msu_data_usage = MSU_BUSY;
   }
 
-  /* clear bank bit to mask bank reset artifact */
-  fpga_status_now &= ~MSU_FPGA_STATUS_MSU_READ_MSB;
-  fpga_status_prev &= ~MSU_FPGA_STATUS_MSU_READ_MSB;
   /* clear busy bit */
   set_msu_status(MSU_SNES_STATUS_CLEAR_DATA_BUSY);
 }
@@ -291,7 +299,7 @@ int msu1_loop() {
 
     /* Data buffer refill */
     if((fpga_status_now & MSU_FPGA_STATUS_MSU_READ_MSB) != (fpga_status_prev & MSU_FPGA_STATUS_MSU_READ_MSB)) {
-      DBG_MSU1 printf("data\n");
+      DBG_MSU1 printf("old MSB=%04x new MSB=%04x data\n", fpga_status_prev & MSU_FPGA_STATUS_MSU_READ_MSB, fpga_status_now & MSU_FPGA_STATUS_MSU_READ_MSB);
       if(fpga_status_now & MSU_FPGA_STATUS_MSU_READ_MSB) {
         msu_addr = 0x0;
         msu_page1_start = msu_page2_start + MSU_DATA_BUFSIZE / 2;
@@ -306,7 +314,7 @@ int msu1_loop() {
       if(f_eof(&msudata)) {
         msu_data_usage = MSU_IDLE;
       }
-      DBG_MSU1 printf("data buffer refilled. res=%d page1=%08lx page2=%08lx\n", msu_res, msu_page1_start, msu_page2_start);
+      DBG_MSU1 printf("data page %d refilled. res=%d page1=%08lx page2=%08lx\n", msu_addr ? 2 : 1, msu_res, msu_page1_start, msu_page2_start);
     }
 
     /* Audio buffer refill */
