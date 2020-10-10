@@ -69,7 +69,7 @@ int is_msu_free_to_save() {
 void msu_savecheck(int immediate) {
   uint32_t currentcrc;
   if(immediate || (getticks() > msu_last_sram_check + 100)) {
-    currentcrc = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes, 0);
+    currentcrc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes, 0);
     if(msu_last_crc != currentcrc) {
       writeled(1);
       save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
@@ -239,7 +239,7 @@ int msu1_loop() {
   uint8_t cmd;
 
   msu_last_sram_check = getticks();
-  msu_last_crc = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes, 0);
+  msu_last_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes, 0);
 
   msu_page1_start = 0x0000;
   msu_page2_start = MSU_DATA_BUFSIZE / 2;
