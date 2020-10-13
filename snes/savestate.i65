@@ -4,30 +4,27 @@
 // #define SS_INPUT_COMPARE #$2000 ; select
 
 //  temporary state machine variable
-#define CS_SAVE_REQ   $FC2000
-#define CS_LOAD_REQ   $FC2001
-#define CS_SAVE_INPUT $FC2002
-#define CS_LOAD_INPUT $FC2004
-#define CS_INPUT_NEXT $FC2006
-#define CS_INPUT_CUR  $FC2008
-#define CS_INPUT_PREV $FC2010
-#define CS_STATE      $FC2012
-#define CS_DELAY      $FC2014
-#define CS_SLOT       $FC2015
-#define CS_SLOT_INPUT $FC2016
-#define CS_CTRL       $FC2018
-#define CS_FIXES      $FC2020
+#define CS_SAVE_REQ   $FE1000
+#define CS_LOAD_REQ   $FE1001
+#define CS_SAVE_INPUT $FE1002
+#define CS_LOAD_INPUT $FE1004
+#define CS_INPUT_NEXT $FE1006
+#define CS_INPUT_CUR  $FE1008
+#define CS_INPUT_PREV $FE100A
+#define CS_STATE      $FE100C
+#define CS_DELAY      $FE100E
+#define CS_SLOT       $FE100F
+#define CS_SLOT_INPUT $FE1010
+#define CS_CTRL       $FE1012
+#define CS_FIXES      $FE1014
 
-#define SS_CODE       $FC0000
-#define SS_DATA       $FC2000
+#define SS_CODE       $FC0000 ; should be unused
+#define SS_DATA       $FC2000 ; should be unused
 #define SS_RETURN     $002C04
 
 #define MCU_CMD       $002A00
 #define SNES_CMD      $002A02
 #define MCU_PARAM     $002A04
-
-#define CMD_SAVESTATE #$40
-#define CMD_LOADSTATE #$41
 
 // =======
 //  LOROM
@@ -35,8 +32,7 @@
 // lorom
 
 //  Savestate code variables
-#define SS_BANK $FC00 // $8200
-#define SS_FULL $FC0000
+#define SS_BANK $C0C0 // (LSB is irrelevant, padding for PEA)
 
 // #define SRAM_WRAM_7E0000 $710000
 // #define SRAM_WRAM_7E8000 $720000
