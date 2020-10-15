@@ -21,22 +21,12 @@ void savestate_program() {
   if(romprops.fpga_conf != NULL) // currently only works with fpga_base
     return;
 
-  sram_memset(SS_CODE_ADDR, 0x10000, 0x0);
-
-  char *savestate_code = "/sd2snes/savestate.bin";
-  file_open((uint8_t*) savestate_code, FA_READ);
-
-  fpga_set_snescmd_addr(SNESCMD_EXE);
+/*
+ * savestate code is run from bank C0 directly
+ * 2C00 hook is now left alone
+ */
 
   if(CFG.enable_ingame_savestate && file_status == FILE_OK) {
-    cheat_nmi_enable(0); // disable ingame hooks because it doesn't work with savestates currently
-    file_close();
-
-    load_sram((uint8_t*) savestate_code, SS_CODE_ADDR);    
-    uint8_t size = sram_readbyte(SS_CODE_ADDR);
-    for(uint8_t x = 1; x < size; x++)
-      fpga_write_snescmd(sram_readbyte(SS_CODE_ADDR + x));
-
     sram_writeshort(0x0101, SS_REQ_ADDR);
     sram_writebyte(CFG.loadstate_delay, SS_DELAY_ADDR);
     sram_writebyte(CFG.enable_savestate_slots, SS_SLOTS_ADDR);
@@ -46,7 +36,8 @@ void savestate_program() {
     savestate_set_fixes();
     load_backup_state();
   } else {
-    fpga_write_snescmd(0x00);
+    /* TODO find a way to disable savestate handler (which are called from in-game hook) */
+//    fpga_write_snescmd(0x00);
     file_close();
   }
 }
