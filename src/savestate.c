@@ -13,7 +13,6 @@
 #include <stdlib.h>
 
 extern cfg_t CFG;
-extern cfg_t CFG_DEFAULT;
 extern snes_romprops_t romprops;
 
 char * inputs = "BYsSudlrAXLR";
@@ -60,15 +59,12 @@ void savestate_set_inputs() {
   snprintf(buf, 5, "%04X", romprops.header.chk);
 
   input = savestate_parse_input(CFG.ingame_savestate_buttons);
-  if(input == 0) input = savestate_parse_input(CFG_DEFAULT.ingame_savestate_buttons);
   sram_writeshort(input, SS_SAVE_INPUT_ADDR);
 
   input = savestate_parse_input(CFG.ingame_loadstate_buttons);
-  if(input == 0) input = savestate_parse_input(CFG_DEFAULT.ingame_loadstate_buttons);
   sram_writeshort(input, SS_LOAD_INPUT_ADDR);
 
   input = savestate_parse_input(CFG.ingame_changestate_buttons);
-  if(input == 0) input = savestate_parse_input(CFG_DEFAULT.ingame_changestate_buttons);
   sram_writeshort(input, SS_SLOTS_INPUT_ADDR);
   
   yaml_file_open(SS_INPUTFILE, FA_READ);
