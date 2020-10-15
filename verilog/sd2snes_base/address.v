@@ -132,7 +132,10 @@ assign IS_PATCH = ((map_unlock | (map_Fx_rd_unlock & SNES_WRITE_early) | (map_Fx
 wire [2:0] BSX_PSRAM_BANK = {bsx_regs[6], bsx_regs[5], 1'b0};
 wire [2:0] SNES_PSRAM_BANK = bsx_regs[2] ? SNES_ADDR[21:19] : SNES_ADDR[22:20];
 wire BSX_PSRAM_LOHI = (bsx_regs[3] & ~SNES_ADDR[23]) | (bsx_regs[4] & SNES_ADDR[23]);
-wire BSX_IS_PSRAM = BSX_PSRAM_LOHI
+reg BSX_IS_PSRAMr;
+wire BSX_IS_PSRAM = BSX_IS_PSRAMr;
+always @(posedge CLK) begin
+  BSX_IS_PSRAMr <= BSX_PSRAM_LOHI
                      & (( IS_ROM & (SNES_PSRAM_BANK == BSX_PSRAM_BANK)
                          &(SNES_ADDR[15] | bsx_regs[2])
                          &(~(SNES_ADDR[19] & bsx_regs[2])))
@@ -140,6 +143,7 @@ wire BSX_IS_PSRAM = BSX_PSRAM_LOHI
                           ? (SNES_ADDR[22:21] == 2'b01 & SNES_ADDR[15:13] == 3'b011)
                           : (~SNES_ROMSEL & &SNES_ADDR[22:20] & ~SNES_ADDR[15]))
                        );
+end
 
 wire BSX_IS_CARTROM = ((bsx_regs[7] & (SNES_ADDR[23:22] == 2'b00))
                       |(bsx_regs[8] & (SNES_ADDR[23:22] == 2'b10)))
