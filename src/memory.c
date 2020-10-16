@@ -505,8 +505,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       // restore proper bounds
       romprops.srambase = combo_srambase;
       romprops.sramsize_bytes = combo_sramsize_bytes;
-    }
-    else {
+    } else {
       // base ROM.
       // set base unlock features.
       snescmd_writebyte(0x1, SNESCMD_MAP);

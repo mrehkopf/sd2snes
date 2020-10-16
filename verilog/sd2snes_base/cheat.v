@@ -374,9 +374,9 @@ end
 // L+R+Start+X      : $1070
 always @(posedge clk) begin
   if(snescmd_wr_strobe) begin
-    if(SNES_ADDR[10:0] == 11'h3f0) begin
+    if(SNES_ADDR[10:0] == 11'h3f0) begin          // $2BF0
       pad_data[7:0] <= SNES_DATA;
-    end else if(SNES_ADDR[10:0] == 11'h3f1) begin
+    end else if(SNES_ADDR[10:0] == 11'h3f1) begin // $2BF1
       pad_data[15:8] <= SNES_DATA;
     end
   end
