@@ -31,14 +31,22 @@ VSRC := $(sort $(VSRC))
 VHSRC := $(sort $(VHSRC))
 
 XIL_IP := $(sort $(XIL_IP))
+XIL_IP += $(sort $(COMMON_IP))
 XIL_IP := $(patsubst %,$(XIL_IPCORE_DIR)/%.ngc,$(XIL_IP))
 
+INT_IP := $(sort $(INT_IP))
+INT_IP += $(sort $(COMMON_IP))
+INT_IP := $(patsubst %,%.v,$(INT_IP))
+
+mk2 := fpga_$(CORE).bit
+mk3 := fpga_$(CORE).bi3
+
 # build all targets
-all: mk2 mk3
+all: $(mk2) $(mk3)
 
 # build mk2 (Xilinx) or mk3 (Intel) only
-mk2: fpga_$(CORE).bit
-mk3: fpga_$(CORE).bi3
+mk2: $(mk2)
+mk3: $(mk3)
 
 # build mk2 using SmartXPlorer (useful for cx4, gsu, sa1, sdd1)
 mk2s: smartxplorer
@@ -82,7 +90,7 @@ hostlistfile.txt:
 $(XIL_IPCORE_DIR)/%.ngc: $(XIL_IPCORE_DIR)/%.xco | $(XIL_IPCORE_DIR)/coregen.cgc
 	$(XILINX_BIN)/coregen -p $(XIL_IPCORE_DIR) -b $< -r
 
-main.ngc: sd2snes_$(CORE).xise $(XIL_IP)
+main.ngc: sd2snes_$(CORE).xise $(XIL_IP) $(VSRC) $(VHSRC)
 	rm -f $@
 	$(XILINX_BIN)/xtclsh ../xrun.tcl sd2snes_$(CORE).xise $(XILINX_SYNTH)
 
@@ -98,7 +106,7 @@ fpga_$(CORE).bi3: output_files/main.rbf
 	../../utils/rle $^ $@
 
 # Intel pulls a lot more stuff from project context...
-output_files/main.rbf: $(VSRC) $(VHSRC)
+output_files/main.rbf: $(VSRC) $(VHSRC) $(INT_IP)
 	$(INTEL_BIN)/quartus_map --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
 	$(INTEL_BIN)/quartus_fit --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
 	$(INTEL_BIN)/quartus_asm --read_settings_files=off --write_settings_files=off sd2snes_$(CORE) -c main

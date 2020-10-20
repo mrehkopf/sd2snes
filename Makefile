@@ -21,6 +21,9 @@ MK3CORES := base cx4 gsu obc1 sdd1 sa1 dsp sgb
 MK2FPGA := $(foreach C,$(MK2CORES),$(FPGAPATH)/sd2snes_$C/fpga_$C.$(MK2EXT))
 MK3FPGA := $(foreach C,$(MK3CORES),$(FPGAPATH)/sd2snes_$C/fpga_$C.$(MK3EXT))
 
+MK2MINI := $(FPGAPATH)/sd2snes_mini/fpga_mini.bit
+MK3MINI := $(FPGAPATH)/sd2snes_mini/fpga_mini.bi3
+
 UTILS := utils
 
 VERSION ?= SNAPSHOT
@@ -30,7 +33,16 @@ TARGET := $(TARGETPARENT)/sd2snes
 
 all: version build release
 
-build:
+fpga: $(MK2FPGA) $(MK3FPGA)
+
+$(MK2FPGA) $(MK2MINI):
+	$(MAKE) -C $(dir $@) mk2
+
+$(MK3FPGA) $(MK3MINI):
+	$(MAKE) -C $(dir $@) mk3
+
+
+build: $(MK2MINI) $(MK3MINI)
 	@cd snes && make
 	@cd src && make CONFIG=config-mk2
 	@cd src && make CONFIG=config-mk3
@@ -48,7 +60,7 @@ release: version bsxpage
 	cp $(MENUPATH)/$(MK2MENU) $(TARGET)
 	cp $(MENUPATH)/$(MK3MENU) $(TARGET)
 	cp $(SAVESTATEPATH)/$(SAVESTATEFILES) $(TARGET)
-	cd $(TARGETPARENT) && zip -r sd2snes_v$(VERSION).zip sd2snes
+	cd $(TARGETPARENT) && zip -r sd2snes_firmware_v$(VERSION).zip sd2snes
 
 bsxpage:
 	cd bin && ../$(UTILS)/genbsxpage
@@ -59,4 +71,4 @@ ifeq ($(VERSION),SNAPSHOT)
 	$(warning For release packaging please specify VERSION (e.g. 1.2.3))
 endif
 
-.PHONY: version release bsxpage
+.PHONY: version release bsxpage $(MK2FPGA) $(MK3FPGA) $(MK2MINI) $(MK3MINI)
