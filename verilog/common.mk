@@ -3,6 +3,9 @@
 # any IP cores used, has taken place using the vendor's corresponding FPGA
 # development environment.
 
+# set window title to indicate FPGA build status
+T = @echo -e "\e]0;$(1)\a"
+
 # set paths to Xilinx/Intel tools, adjust these for your environment
 mkpath = $(subst $(eval) ,:,$(wildcard $1))
 XILINX := $(XILINX_HOME)/ISE
@@ -73,12 +76,15 @@ fpga_$(CORE).bit: main.bit
 	../../utils/rle $^ $@
 
 main.bit: main.ncd
+	$(call T,[mk2] fpga_$(CORE) - $(XILINX_BITGEN))
 	$(XILINX_BIN)/xtclsh ../xrun.tcl sd2snes_$(CORE).xise $(XILINX_BITGEN)
+	$(call T)
 
 main.ngd: main.ngc $(XIL_IP)
 	$(XILINX_BIN)/ngdbuild -dd _ngo -sd ipcore_dir -nt timestamp -uc main.ucf -p $(XILINX_PART) $< $@
 
 main.ncd: main.ngc $(XIL_IP)
+	$(call T,[mk2] fpga_$(CORE) - $(XILINX_IMPL))
 	$(XILINX_BIN)/xtclsh ../xrun.tcl sd2snes_$(CORE).xise $(XILINX_IMPL)
 
 currentProps.stratfile: sd2snes_$(CORE).xise
@@ -91,6 +97,7 @@ $(XIL_IPCORE_DIR)/%.ngc: $(XIL_IPCORE_DIR)/%.xco | $(XIL_IPCORE_DIR)/coregen.cgc
 	$(XILINX_BIN)/coregen -p $(XIL_IPCORE_DIR) -b $< -r
 
 main.ngc: sd2snes_$(CORE).xise $(XIL_IP) $(VSRC) $(VHSRC)
+	$(call T,[mk2] fpga_$(CORE) - $(XILINX_SYNTH))
 	rm -f $@
 	$(XILINX_BIN)/xtclsh ../xrun.tcl sd2snes_$(CORE).xise $(XILINX_SYNTH)
 
@@ -107,10 +114,15 @@ fpga_$(CORE).bi3: output_files/main.rbf
 
 # Intel pulls a lot more stuff from project context...
 output_files/main.rbf: $(VSRC) $(VHSRC) $(INT_IP)
+	$(call T,[mk3] fpga_$(CORE) - Map)
 	$(INTEL_BIN)/quartus_map --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
+	$(call T,[mk3] fpga_$(CORE) - Fit)
 	$(INTEL_BIN)/quartus_fit --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
+	$(call T,[mk3] fpga_$(CORE) - Assemble)
 	$(INTEL_BIN)/quartus_asm --read_settings_files=off --write_settings_files=off sd2snes_$(CORE) -c main
+	$(call T,[mk3] fpga_$(CORE) - Timing Analysis)
 	$(INTEL_BIN)/quartus_sta sd2snes_$(CORE) -c main
 #	$(INTEL_BIN)/quartus_eda --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
+	$(call T)
 
 .PHONY: clean mk2 mk2s mk3 mk2_clean mk3_clean ALWAYS
