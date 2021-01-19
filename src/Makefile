@@ -313,7 +313,6 @@ clean_list :
 	$(Q)$(REMOVE) $(OBJDIR)/autoconf.h
 	$(Q)$(REMOVE) $(OBJDIR)/cfgware.h
 	$(Q)$(REMOVE) $(OBJDIR)/*.bin
-	$(Q)$(REMOVE) $(OBJDIR)/cfgware.h
 	$(Q)$(REMOVE) $(OBJDIR)/${CONFIG_FW_FILE}
 	$(Q)$(REMOVE) $(OBJDIR)/.DS_Store
 	$(Q)$(REMOVE) $(LST)
