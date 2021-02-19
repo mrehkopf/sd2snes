@@ -6,20 +6,17 @@
 # set window title to indicate FPGA build status
 T = @echo -e "\e]0;$(1)\a"
 
-# set paths to Xilinx/Intel tools, adjust these for your environment
+# these are relative to the core subdir, not the path of common.mk
+XILINX_XST_TMPDIR := "xst/projnav.tmp"
+XILINX_SCRIPTS := "../xilinx_scripts"
+
 mkpath = $(subst $(eval) ,:,$(wildcard $1))
 XILINX := $(XILINX_HOME)/ISE
 XILINX_EDK := $(XILINX_HOME)/EDK
 XILINX_PLANAHEAD := $(XILINX_HOME)/PlanAhead
 XILINX_DSP := $(XILINX_HOME)/ISE
-XILINX_PATH = $(patsubst %,$(XILINX_HOME)/%,$(XILINX_PATHS))
-XILINX_PATH := $(call mkpath,$(XILINX_PATH))
-
-XILINX_PART = $(shell $(XILINX_BIN)/xtclsh ../xgetpartname.tcl sd2snes_$(CORE).xise)
-
-XILINX_SYNTH  := "Synthesize - XST"
-XILINX_IMPL   := "Implement Design"
-XILINX_BITGEN := "Generate Programming File"
+XILINX_PATH := $(patsubst %,$(XILINX_HOME)/%,$(XILINX_PATHS))
+XILINX_PART = $(shell $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgetpartname.tcl sd2snes_$(CORE).xise)
 
 # make pretty Windows style paths for SmartXplorer...
 ifeq ($(HOST),CYGWIN)
@@ -27,7 +24,10 @@ ifeq ($(HOST),CYGWIN)
 	XILINX_DSP := $(shell cygpath -w $(XILINX_DSP))
 	XILINX_PLANAHEAD := $(shell cygpath -w $(XILINX_PLANAHEAD))
 	XILINX := $(shell cygpath -w $(XILINX))
+	XILINX_PATH := $(shell cygpath $(XILINX_PATH))
 endif
+
+XILINX_PATH := $(call mkpath,$(XILINX_PATH))
 
 # prepare source lists
 VSRC := $(sort $(VSRC))
@@ -51,6 +51,7 @@ all: $(mk2) $(mk3)
 mk2: $(mk2)
 mk3: $(mk3)
 
+# ######## XILINX ########
 # build mk2 using SmartXPlorer (useful for cx4, gsu, sa1, sdd1)
 mk2s: smartxplorer
 
@@ -75,45 +76,67 @@ smartxplorer: main.ngd currentProps.stratfile hostlistfile.txt
 fpga_$(CORE).bit: main.bit
 	../../utils/rle $^ $@
 
-main.bit: main.ncd
-	$(call T,[mk2] fpga_$(CORE) - $(XILINX_BITGEN))
-	$(XILINX_BIN)/xtclsh ../xrun.tcl sd2snes_$(CORE).xise $(XILINX_BITGEN)
-	$(call T)
+main.ngc: main.xst main.prj
+	$(call T,[mk2] fpga_$(CORE) - Synthesize)
+	rm -f $@
+	mkdir -p $(XILINX_XST_TMPDIR)
+	$(XILINX_BIN)/xst -ifn main.xst -ofn main.syr
 
 main.ngd: main.ngc $(XIL_IP)
+	$(call T,[mk2] fpga_$(CORE) - Translate)
 	$(XILINX_BIN)/ngdbuild -dd _ngo -sd ipcore_dir -nt timestamp -uc main.ucf -p $(XILINX_PART) $< $@
 
-main.ncd: main.ngc $(XIL_IP)
-	$(call T,[mk2] fpga_$(CORE) - $(XILINX_IMPL))
-	$(XILINX_BIN)/xtclsh ../xrun.tcl sd2snes_$(CORE).xise $(XILINX_IMPL)
+main_map.ncd: main.ngd
+	$(call T,[mk2] fpga_$(CORE) - Map)
+	$(eval XILINX_MAP_OPTS := $(shell $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenmapcmd.tcl sd2snes_$(CORE).xise))
+	$(XILINX_BIN)/map -p $(XILINX_PART) $(XILINX_MAP_OPTS) -o $@ $^ main.pcf
 
+main.ncd: main_map.ncd
+	$(call T,[mk2] fpga_$(CORE) - Place and Route)
+	$(eval XILINX_PAR_OPTS := $(shell $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenparcmd.tcl sd2snes_$(CORE).xise))
+	$(XILINX_BIN)/par -w $(XILINX_PAR_OPTS) $^ $@ main.pcf
+
+main.bit: main.ncd main.ut
+	$(call T,[mk2] fpga_$(CORE) - Generate Programming File)
+	$(XILINX_BIN)/bitgen -f main.ut $<
+	$(call T)
+
+# IP Core regeneration
+$(XIL_IPCORE_DIR)/%.ngc: $(XIL_IPCORE_DIR)/%.xco | $(XIL_IPCORE_DIR)/coregen.cgc
+	$(call T,[mk2] fpga_$(CORE) - Regenerate IP Cores)
+	$(XILINX_BIN)/coregen -p $(XIL_IPCORE_DIR) -b $< -r
+
+# ## Supplementary files required for Xilinx processes ##
+# PRJ file - basically a list of files that comprise the project
+main.prj: $(XIL_IP) $(VSRC) $(VHSRC)
+	rm -f main.prj
+	for src in $(VSRC) $(XIL_IP:.ngc=.v); do echo "verilog work \"$$src\"" >> main.prj; done
+	for src in $(VHSRC); do echo vhdl work "$$src" >> main.prj; done
+
+# XST file - list of command line options for the synthesis tool (xst)
+main.xst: sd2snes_$(CORE).xise main.prj
+	$(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenxstfile.tcl $< $@ main.prj $(XIL_IPCORE_DIR) $(XILINX_XST_TMPDIR)
+
+# UT file - list of command line options for the bit file generator (bitgen)
+main.ut: sd2snes_$(CORE).xise
+	$(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenbitgenfile.tcl $^ $@
+
+# Generate Strategy file for SmartXPlorer
 currentProps.stratfile: sd2snes_$(CORE).xise
 	$(XILINX_BIN)/xtclsh ../xgenstratfile.tcl sd2snes_$(CORE).xise
 
+# Generate host list file for SmartXPlorer (enable parallel operation)
 hostlistfile.txt:
 	n=0; while [ $$n -lt $(XPLORER_CPUS) ]; do echo localhost; n=$$(( n + 1 )); done > $@
 
-$(XIL_IPCORE_DIR)/%.ngc: $(XIL_IPCORE_DIR)/%.xco | $(XIL_IPCORE_DIR)/coregen.cgc
-	$(XILINX_BIN)/coregen -p $(XIL_IPCORE_DIR) -b $< -r
 
-main.ngc: sd2snes_$(CORE).xise $(XIL_IP) $(VSRC) $(VHSRC)
-	$(call T,[mk2] fpga_$(CORE) - $(XILINX_SYNTH))
-	rm -f $@
-	$(XILINX_BIN)/xtclsh ../xrun.tcl sd2snes_$(CORE).xise $(XILINX_SYNTH)
-
-clean: mk2_clean mk3_clean
-
-mk2_clean:
-	rm -f main.ncd main.bit fpga_$(CORE).bit main.pcf main.ngd main.ngc main.prj
-
-mk3_clean:
-	rm -f output_files/main.rbf fpga_$(CORE).bi3
-
+# ######## ALTERA / INTEL ########
 fpga_$(CORE).bi3: output_files/main.rbf
 	../../utils/rle $^ $@
 
 # Intel pulls a lot more stuff from project context...
 output_files/main.rbf: $(VSRC) $(VHSRC) $(INT_IP)
+	rm -rf db incremental_db
 	$(call T,[mk3] fpga_$(CORE) - Map)
 	$(INTEL_BIN)/quartus_map --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
 	$(call T,[mk3] fpga_$(CORE) - Fit)
@@ -124,5 +147,14 @@ output_files/main.rbf: $(VSRC) $(VHSRC) $(INT_IP)
 	$(INTEL_BIN)/quartus_sta sd2snes_$(CORE) -c main
 #	$(INTEL_BIN)/quartus_eda --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
 	$(call T)
+
+
+clean: mk2_clean mk3_clean
+
+mk2_clean:
+	rm -f main.ncd main.bit fpga_$(CORE).bit main.pcf main.ngd main.ngc main.prj
+
+mk3_clean:
+	rm -f output_files/main.rbf fpga_$(CORE).bi3
 
 .PHONY: clean mk2 mk2s mk3 mk2_clean mk3_clean ALWAYS

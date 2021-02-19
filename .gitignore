@@ -64,7 +64,6 @@ utils/derle
 *.gise
 *.exe
 *.wdb
-*.tcl
 *.asy
 *.ncf
 *.sym

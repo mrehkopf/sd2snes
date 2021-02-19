@@ -14,8 +14,8 @@ project open $projfile
 set family [string tolower [project get "Family"]]
 
 # Force starting cost table to 1 for SmartXPlorer runs
-set mapopts [getmapopts 1]
-set paropts [getparopts 1]
+set mapopts [join [getmapopts 1]]
+set paropts [join [getparopts 1]]
 
 set of [open "currentProps.stratfile" "w"]
 puts $of "# custom generated SmartXplorer strategy file with current project settings."
