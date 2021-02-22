@@ -21,11 +21,21 @@
 # To rebuild project do "make clean" then "make all".
 #----------------------------------------------------------------------------
 
+# select programming interface (default: ae-ft2232)
+# setting is expanded to filename interface/$INTERFACE.cfg
+# available: ae-ft2232 usb-blaster oocdlink usbjtag
+export INTERFACE ?= ae-ft2232
+
 # Read configuration file
 ifndef CONFIG
 $(info ERROR: Please use $(MAKE) CONFIG=... to specify at least one config file.)
 $(info Available configs:)
-$(info $(wildcard config-*))
+$(foreach cfg,$(wildcard config-*),$(info $(patsubst %,  %,$(cfg))))
+$(info )
+$(info You may specify a programming interface using INTERFACE=...)
+$(info Available INTERFACEs (default/current: $(INTERFACE)):)
+$(foreach intf,$(wildcard interface/*),$(info $(patsubst interface/%.cfg,  %,$(intf))))
+$(info )
 $(error missing CONFIG parameter)
 else
  CONFIGSUFFIX = $(CONFIG:config%=%)
@@ -70,7 +80,6 @@ SRC += cfg.c cheat.c yaml.c savestate.c sgb.c
 SRC += usbdesc.c usbcore.c usbuser.c usbhw.c cdcuser.c usbinterface.c
 
 # usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
-
 
 # List Assembler source files here.
 #     Make them always end in a capital .S.  Files ending in a lowercase .s
@@ -221,13 +230,13 @@ sym: $(TARGET).sym
 
 program: build
 	utils/lpcchksum $(TARGET).bin
-	openocd -f openocd-usb.cfg -f lpc175x.cfg -f flash.cfg
+	openocd -f openocd.cfg -f flash.cfg
 
 debug: build
-	openocd -f openocd-usb.cfg -f lpc175x.cfg
+	openocd -f openocd.cfg
 
 reset:
-	openocd -f openocd-usb.cfg -f lpc175x.cfg -f reset.cfg
+	openocd -f openocd.cfg -f reset.cfg
 
 # Display size of file.
 HEXSIZE = $(SIZE) --target=$(FORMAT) $(TARGET).hex
