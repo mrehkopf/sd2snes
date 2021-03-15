@@ -20,11 +20,11 @@ $(MAP) &: menu.bin $(LOG) link.log
 	utils/mkmap.sh $(OBJS)
 
 # generate menu.bin / m3nu.bin / link.log
-$(OUT): $(IPS) $(OBJS)
+$(OUT): $(OBJS)
 	sneslink -fsmc -o $@ $^ 2>&1 | tee link.log
 
 # in case link.log has been deleted
-link.log: $(IPS) $(OBJS)
+link.log: $(OBJS)
 	sneslink -fsmc -o /dev/null $^ 2>&1 | tee link.log
 
 # Generic rule to create .o65[.log] out from .a65
@@ -33,7 +33,7 @@ link.log: $(IPS) $(OBJS)
 
 # Generic rule to create .ips out from .a65
 %.ips %.ips.log: %.a65
-	snescom -I -J -Wall -o $(@:log=) $< 2>&1 | tee $(@.log=).log
+	snescom -I -J -Wall -o $(@:.log=) $< 2>&1 | tee $(@:.log=).log
 
 clean:
 	rm -f -- *~ *.ips *.o65 $(OUT) *.o65.log *.ips.log
