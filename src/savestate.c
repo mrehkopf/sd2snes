@@ -93,38 +93,42 @@ void savestate_set_fixes() {
   snprintf(buf, 5, "%04X", romprops.header.chk);
 
   sram_writeshort(0x0000, SS_FIXES_ADDR);
-  
+
   yaml_file_open(SS_FIXESFILE, FA_READ);
   if(file_res) {
     err = file_res;
   }
   if(!err) {
     yaml_token_t tok;
-    if(yaml_get_itemvalue(buf, &tok)) { 
+    if(yaml_get_itemvalue(buf, &tok)) {
       uint16_t src;
       uint32_t dst;
 
-      //checksum
-      sram_writeshort(romprops.header.chk, SS_FIXES_ADDR);
+      // the tokens representing strings in the YAML are not YAML_STRING type so only check for the YAML_LIST_* type to test for start/stop of list.
+      // list types also require an extra key at the end of the file so YAML_LIST_END appears.  the YAML parser may need fixes to remove these workarounds.
+      for (uint8_t list = tok.type == YAML_LIST_START && yaml_get_next(&tok), ok = !list || tok.type != YAML_LIST_END; ok; ok = list && yaml_get_next(&tok) && tok.type != YAML_LIST_END) {
+        //checksum
+        sram_writeshort(romprops.header.chk, SS_FIXES_ADDR);
 
-      //dst address
-      strncpy(buf, tok.stringvalue, 6); buf[6] = '\0';
-      dst = strtol(buf, NULL, 16);
-      sram_writelong(dst, SS_FIXES_ADDR+2);
-
-      //src offset
-      strncpy(buf, strchr(tok.stringvalue, ',')+1, 4); buf[4] = '\0';
-      src = strtol(buf, NULL, 16);
-      sram_writeshort(src, SS_FIXES_ADDR+6);
-
-      //rompatch
-      if(strchr(tok.stringvalue, ';') != NULL){
-        strncpy(buf, strchr(tok.stringvalue, ';')+1, 6); buf[6] = '\0';
+        //dst address
+        strncpy(buf, tok.stringvalue, 6); buf[6] = '\0';
         dst = strtol(buf, NULL, 16);
-        strncpy(buf, strrchr(tok.stringvalue, ',')+1, 2); buf[2] = '\0';
-        uint8_t byte = strtol(buf, NULL, 16);
-        if(dst > 0){
-          sram_writebyte(byte, dst);        
+        sram_writelong(dst, SS_FIXES_ADDR+2);
+
+        //src offset
+        strncpy(buf, strchr(tok.stringvalue, ',')+1, 4); buf[4] = '\0';
+        src = strtol(buf, NULL, 16);
+        sram_writeshort(src, SS_FIXES_ADDR+6);
+
+        //rompatch
+        if(strchr(tok.stringvalue, ';') != NULL){
+          strncpy(buf, strchr(tok.stringvalue, ';')+1, 6); buf[6] = '\0';
+          dst = strtol(buf, NULL, 16);
+          strncpy(buf, strrchr(tok.stringvalue, ',')+1, 2); buf[2] = '\0';
+          uint8_t byte = strtol(buf, NULL, 16);
+          if(dst > 0){
+            sram_writebyte(byte, dst);
+          }
         }
       }
     }

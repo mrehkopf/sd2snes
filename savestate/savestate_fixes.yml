@@ -3,7 +3,18 @@
 # Games sometimes store a flag in WRAM that is the current index of the APU state at $214x.  That gets out of sync when you reload the game (because $214x doesn't get updated). 
 # This forces the WRAM copy to be updated.
 
+# <string format>
 # CKSUM: ADDR,APU;PCADDR,PATCH	# game name/comments
+#
+# -or-
+#
+# <list format>
+# # Comments can only be placed here in list format or the YAML parser will fail.
+# # Do not place comments at the end of the CKSUM key or list lines.
+# CKSUM:
+#   - <string0>
+#   - <string1>
+#   - ...
 648D: 0002F5,2140 # super ghouls and ghosts (US)
 FE0F: 0002F5,2140 # super ghouls and ghosts (US)
 B6D4: 7EFFFB,2140 # final fight (US)
@@ -60,3 +71,45 @@ CAE6: 000625,2141 # might and magic 3 (US)
 45C0: 7E17DC,2140 # killer instinct (US)
 5327: 7E0462,2140 # top gear 3000 (US)
 9CFC: 7E004C,2140 # batman returns (JP)
+# The following require ASM support to allow modifying a well defined address used to load controller input.
+# Changing the controller input address is a workaround for a race in the hook where it is not able to read correct controller state.
+# Uncomment the lines, update the FC**** addresses to the correct 24b address, delete the controller address patch in the ASM, and delete this comment once support is added.
+# # claymates (US)
+# 783A:
+#   - 000000,0000;0D613E,B1
+#   - 000000,0000;FC0277,96
+#   - 000000,0000;FC0278,00
+#   - 000000,0000;FC0280,00
+# # claymates (EU)
+# 06D5:
+#   - 000000,0000;0D613E,B1
+#   - 000000,0000;FC0277,96
+#   - 000000,0000;FC0278,00
+#   - 000000,0000;FC0280,00
+# # ffmq 1.1 (US)
+# 8FF5:
+#   - 000000,0000;007FEA,A9
+#   - 000000,0000;007FEB,82
+#   - 000000,0000;01A6EA,A1
+#   - 000000,0000;FC0277,92
+#   - 000000,0000;FC0278,00
+#   - 000000,0000;FC0280,00
+# # ffmq 1.0 (US)
+# 4CDE:
+#   - 000000,0000;007FEA,A9
+#   - 000000,0000;007FEB,82
+#   - 000000,0000;01A6EA,A1
+#   - 000000,0000;FC0277,92
+#   - 000000,0000;FC0278,00
+#   - 000000,0000;FC0280,00
+# # ffmq 1.0 (JP)
+# 0492:
+#   - 000000,0000;007FEA,A9
+#   - 000000,0000;007FEB,82
+#   - 000000,0000;006FE4,A1
+#   - 000000,0000;FC0277,92
+#   - 000000,0000;FC0278,00
+#   - 000000,0000;FC0280,00
+#
+# <DO NOT PLACE FIXES BELOW THIS LINE>
+END: # required to terminate a list before EOF
