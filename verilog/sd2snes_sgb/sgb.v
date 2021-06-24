@@ -53,7 +53,7 @@ module sgb(
   input  [55:0] RTC_DAT_IN,
   input         RTC_DAT_WE,
   input         RTC_DAT_RD,
-  
+
   // MBC interface
   input  [3:0]  MAPPER,
   input  [23:0] SAVERAM_MASK,
@@ -62,7 +62,7 @@ module sgb(
   // Halt inferface
   input         HLT_REQ,
   output        HLT_RSP,
-  
+
   // Debug state
   input         MCU_RRQ,
   input         MCU_WRQ,
@@ -73,7 +73,7 @@ module sgb(
 
   // Features
   input  [15:0]  FEAT,
-  
+
   // Configuration
   input  [7:0]  reg_group_in,
   input  [7:0]  reg_index_in,
@@ -112,7 +112,7 @@ integer i;
 // SYS-SGB2 - SNES boot and execution ROM
 // CIC      - protection/lockout chip
 //
-// Like the original GB, the SGB2 has a 8-bit Z80/8080 ISA compatible CPU, 
+// Like the original GB, the SGB2 has a 8-bit Z80/8080 ISA compatible CPU,
 // a APU supporting 4 channel audio, and a PPU capable of generating
 // pixel data for a 160x144 2b gray-scale screen.
 //
@@ -120,7 +120,7 @@ integer i;
 // SYS-SGB2 and ICD2 chips.  These provide the code and interface by
 // which the SNES CPU boots and communicates with the GB hardware in
 // order to copy and render the GB video output via the SNES PPU.
-// 
+//
 // The ICD2 provides an interface to the GB domain via the GB system bus
 // (ICD2, WRAM, GB cart bus) as well as an interface to the SNES domain
 // via the SNES cart bus.  Row buffers within the ICD2 store digital pixel
@@ -137,14 +137,12 @@ integer i;
 // 9198 KHz Horizontal Freq
 // 59.73 Hz Vertical Freq
 //
-// Instructions and bus activity takes 1 or more bus clocks.
+// Instructions and bus activity take 1 or more bus clocks.
 //
 // CARTS
 // -----
 // The SD2SNES must implement not only the SGB2 but also any logic
-// supported by the GB cart.  The mappers reside in this file.  Supported
-// types are: MBC0, MBC1, MBC2, MBC3, and MBC5.  It's not clear if any
-// GB-enabled GBC carts used MBC5, though.
+// supported by the GB cart.  The mappers reside in this file.
 //
 // SD2SNES
 // -------
@@ -160,22 +158,22 @@ integer i;
 // Address Maps
 // ------------
 // GAMEBOY
-//   0000-3FFF   16KB ROM Bank 00     (in cartridge, fixed at bank 00)           // PSRAM 000000-7FFFFF
-//   4000-7FFF   16KB ROM Bank 01..NN (in cartridge, switchable bank number)     // PSRAM 000000-7FFFFF
-//   8000-9FFF   8KB Video RAM (VRAM) (switchable bank 0-1 in CGB Mode)          // BRAM 8KB
-//   A000-BFFF   8KB External RAM     (in cartridge, switchable bank, if any)    // PSRAM E00000-EFFFFF 512KB
+//   0000-3FFF   16KB ROM Bank                                                   // PSRAM 000000-7FFFFF
+//   4000-7FFF   16KB ROM Bank                                                   // PSRAM 000000-7FFFFF
+//   8000-9FFF   8KB Video RAM (VRAM)                                            // BRAM 8KB
+//   A000-BFFF   8KB External RAM (SaveRAM)                                      // PSRAM E00000-EFFFFF 512KB
 //   C000-CFFF   4KB Work RAM Bank 0 (WRAM)                                      // PSRAM 80C000-80CFFF 4KB
 //   D000-DFFF   4KB Work RAM Bank 1 (WRAM)                                      // PSRAM 80D000-80DFFF 4KB
 //   E000-FDFF   Same as C000-DDFF (ECHO)    (typically not used)                // Mirror
 //   FE00-FE9F   Sprite Attribute Table (OAM)                                    // BRAM
-//   FEA0-FEFF   Not Usable
+//   FEA0-FEFF   Unused
 //   FF00-FF7F   I/O Ports                                                       // Reg
 //   FF80-FFFE   High RAM (HRAM)                                                 // BRAM
 //   FFFF        Interrupt Enable Register                                       // Reg
-// 
+//
 // SNES
 //   000000-07FFFF   SGB SNES ROM (512KB)                                        // 512KB RAM
-// 
+//
 // MCU
 //   000000-7FFFFF   PSRAM
 //   800000-87FFFF   SGB
@@ -185,7 +183,7 @@ integer i;
 //     80A000-80BFFF   <unmapped> see E00000-EFFFFF
 //     80C000-80DFFF   WRAM
 //     80FE00-80FFFF   OAM, IO, etc
-//     810000-810FFF   Debug (read only)
+//     810000-         Debug (read only)
 //   880000-8FFFFF   RAM
 //   900000-FFFFFF   PSRAM
 
@@ -244,15 +242,15 @@ sgb_cpu cpu(
 
   .BOOTROM_ACTIVE(CPU_BOOTROM_ACTIVE),
   .FREE_SLOT(CPU_FREE_SLOT),
-  
+
   .PPU_DOT_EDGE(CPU_PPU_DOT_EDGE),
   .PPU_PIXEL_VALID(CPU_PPU_PIXEL_VALID),
   .PPU_PIXEL(CPU_PPU_PIXEL),
   .PPU_VSYNC_EDGE(CPU_PPU_VSYNC_EDGE),
   .PPU_HSYNC_EDGE(CPU_PPU_HSYNC_EDGE),
-  
+
   .APU_DAT(APU_DAT),
-  
+
   .P1O(CPU_P1O),
   .P1I(CPU_P1I),
 
@@ -261,25 +259,25 @@ sgb_cpu cpu(
   .IDL_ICD(IDL_ICD),
 
   .FEAT(FEAT),
-  
+
   .REG_REQ(REG_REQ),
   .REG_ADDR(REG_ADDR),
   .REG_REQ_DATA(REG_REQ_DATA),
   .MBC_REG_DATA(MBC_REG_DATA),
-  
+
   .MCU_RRQ(MCU_RRQ),
   .MCU_WRQ(MCU_WRQ),
   .MCU_ADDR(MCU_ADDR),
   .MCU_DATA_IN(MCU_DATA_IN),
   .MCU_RSP(MCU_RSP),
   .MCU_DATA_OUT(MCU_DATA_OUT),
-  
+
   .DBG_ADDR(DBG_ADDR),
   .DBG_ICD2_DATA_IN(DBG_ICD2_DATA_OUT),
   .DBG_MBC_DATA_IN(DBG_MBC_DATA_OUT),
   .DBG_CHEAT_DATA_IN(DBG_CHEAT_DATA_IN),
   .DBG_MAIN_DATA_IN(DBG_MAIN_DATA_IN),
-  
+
   .DBG_CONFIG({config_r[7],config_r[6],config_r[5],config_r[4],config_r[3],config_r[2],config_r[1],config_r[0]}),
   .DBG_BRK(CPU_DBG_BRK)
 );
@@ -302,20 +300,20 @@ sgb_icd2 icd2(
   .DATA_OUT(DATA_OUT),
 
   .BOOTROM_ACTIVE(CPU_BOOTROM_ACTIVE),
-  
+
   .PPU_DOT_EDGE(CPU_PPU_DOT_EDGE),
   .PPU_PIXEL_VALID(CPU_PPU_PIXEL_VALID),
   .PPU_PIXEL(CPU_PPU_PIXEL),
   .PPU_VSYNC_EDGE(CPU_PPU_VSYNC_EDGE),
   .PPU_HSYNC_EDGE(CPU_PPU_HSYNC_EDGE),
-  
+
   .P1I(CPU_P1O),
   .P1O(CPU_P1I),
 
   .IDL(IDL_ICD),
-  
+
   .FEAT(FEAT),
-  
+
   .DBG_ADDR(DBG_ADDR),
   .DBG_DATA_OUT(DBG_ICD2_DATA_OUT)
 );
@@ -362,8 +360,8 @@ always @(posedge CLK) begin
   if (rtc_tick_ast & rtc_sec_ast)                                           rtc_min_r <= rtc_min_ast ? 6'd0 : rtc_min_r + 6'd1;
   if (rtc_tick_ast & rtc_sec_ast & rtc_min_ast)                             rtc_hrs_r <= rtc_hrs_ast ? 5'd0 : rtc_hrs_r + 5'd1;
   if (rtc_tick_ast & rtc_sec_ast & rtc_min_ast & rtc_hrs_ast)               {rtc_ctl_r[`RTC_CTL_DAY],rtc_day_r} <= rtc_day_ast ? 9'd0 : {rtc_ctl_r[`RTC_CTL_DAY],rtc_day_r} + 9'd1;
-  if (rtc_tick_ast & rtc_sec_ast & rtc_min_ast & rtc_hrs_ast & rtc_day_ast) rtc_ctl_r[`RTC_CTL_CARRY] <= 1;  
-  
+  if (rtc_tick_ast & rtc_sec_ast & rtc_min_ast & rtc_hrs_ast & rtc_day_ast) rtc_ctl_r[`RTC_CTL_CARRY] <= 1;
+
   if (ICD2_CPU_RST) begin
     rtc_write_r <= 0;
   end
@@ -380,7 +378,7 @@ always @(posedge CLK) begin
       if (RTC_DAT_RD & ~rtc_ctl_r[`RTC_CTL_HALT]) rtc_written_r <= 0;
     end
   end
-  
+
   if (rtc_write_r) begin
     case (rtc_write_address_r)
       8'h08: rtc_sec_r[5:0] <= rtc_write_data_r[5:0];
@@ -391,10 +389,6 @@ always @(posedge CLK) begin
     endcase
   end
 
-  // TODO: decide if we should save RTC state.  There are races with transitions during save so we would need to flop a consistent value
-  // or halt the counter on save/load.  Probably better to halt the counter when HLT_RSP is asserted to make life easy.  But we will lose
-  // a small amount of time that way even on a save.
-  
   if (RTC_DAT_WE) begin
     dbg_rtc_write_r <= 1;
     {rtc_tick_r[31:24],rtc_tick_r[23:16],rtc_ctl_r,rtc_day_r,/*3'h0,*/rtc_hrs_r,/*2'h0,*/rtc_min_r,/*2'h0,*/rtc_sec_r} <= {RTC_DAT_IN[55:24],RTC_DAT_IN[20:16],RTC_DAT_IN[13:8],RTC_DAT_IN[5:0]};
@@ -475,18 +469,18 @@ wire        mbc_bus_hc3 = CPU_SYS_REQ &               CPU_SYS_ADDR[15] & ~CPU_SY
 wire        mbc_bus_cam = CPU_SYS_REQ &               CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14] & mbc_reg_bank_r[4] & mbc_map_cam;
 
 wire        mbc_bus_req = mbc_bus_mbc | mbc_bus_rtc | mbc_bus_hc3 | mbc_bus_cam | mbc_bus_dis;
-                     
+
 assign      ROM_BUS_RRQ = CPU_SYS_REQ & ~CPU_SYS_WR & ~mbc_bus_req;
 assign      ROM_BUS_WRQ = CPU_SYS_REQ &  CPU_SYS_WR & ~mbc_bus_req;
 assign      ROM_BUS_WORD = 0; // SGB has 8b data bus
 
 wire        BOOTROM = CPU_BOOTROM_ACTIVE & ~|CPU_SYS_ADDR[13:8];
 
-assign      ROM_BUS_ADDR = ( (~|CPU_SYS_ADDR[15:14]) ? ({BOOTROM,(mbc_rom0_bank_r[8:0] & ROM_MASK[22:14]),(CPU_SYS_ADDR[13:0] & ROM_MASK[13:0])})   // ROM     0000-3FFF -> 000000-003FFF,800000-8000FF (cart+boot) - 16KB programmable MBC1 else fixed
-                           : (~CPU_SYS_ADDR[15])     ? ({1'h0,   (mbc_rom_bank_r[8:0]  & ROM_MASK[22:14]),(CPU_SYS_ADDR[13:0] & ROM_MASK[13:0])})   // ROM     4000-7FFF -> 004000-7FFFFF (cart) - 16KB programmable
+assign      ROM_BUS_ADDR = ( (~|CPU_SYS_ADDR[15:14]) ? ({BOOTROM,(mbc_rom0_bank_r[8:0] & ROM_MASK[22:14]),(CPU_SYS_ADDR[13:0] & ROM_MASK[13:0])})   // ROM     0000-3FFF -> 000000-003FFF,800000-8000FF (cart+boot)
+                           : (~CPU_SYS_ADDR[15])     ? ({1'h0,   (mbc_rom_bank_r[8:0]  & ROM_MASK[22:14]),(CPU_SYS_ADDR[13:0] & ROM_MASK[13:0])})   // ROM     4000-7FFF -> 004000-7FFFFF (cart)
                                                                                                                                                     // VRAM    8000-9FFF -> NA - 8 KB (BRAM)
-                           : (~CPU_SYS_ADDR[14])     ? {4'hE,(mbc_ram_bank_r[6:0] & SAVERAM_MASK[19:13]),(CPU_SYS_ADDR[12:0] & SAVERAM_MASK[12:0])} // SaveRAM A000-BFFF -> E00000-EFFFFF - 8KB programmable
-                           :                           {8'h80,3'b110,              CPU_SYS_ADDR[12:0]}                                              // WRAM    C000-DFFF -> 80C000-80DFFF 4+4=8 KB fixed
+                           : (~CPU_SYS_ADDR[14])     ? {4'hE,(mbc_ram_bank_r[6:0] & SAVERAM_MASK[19:13]),(CPU_SYS_ADDR[12:0] & SAVERAM_MASK[12:0])} // SaveRAM A000-BFFF -> E00000-EFFFFF - 8KB
+                           :                           {8'h80,3'b110,              CPU_SYS_ADDR[12:0]}                                              // WRAM    C000-DFFF -> 80C000-80DFFF 4+4=8KB
                            );                                                                                                                       //         E000-FDFF -> 80C000-80DDFF (mirror of C000-DDFF)
                                                                                                                                                     // OAM     FE00-FE9F -> NA - 160B (BRAM)
                                                                                                                                                     // -       FEA0-FEFF -> NA
@@ -513,7 +507,7 @@ always @(posedge CLK) begin
     mbc_reg_rom_bank_r        <= 8'h01;
     mbc_reg_bank_r            <= 8'h00;
     mbc_reg_mode_r            <= 0;
-    
+
     mbc_hc3_data_r <= 1;
   end
   else begin
@@ -541,7 +535,7 @@ always @(posedge CLK) begin
           2: mbc_reg_bank_r[7:0]     <= ROM_BUS_WRDATA[7:0];
           3: begin
             mbc_reg_mode_r <= ROM_BUS_WRDATA[0];
-            
+
             if (~mbc_reg_mode_r & ROM_BUS_WRDATA[0]) begin
               // Save RTC for MBC3
               mbc_rtc_sec_r <= {2'h0,rtc_sec_r};
@@ -569,7 +563,7 @@ always @(posedge CLK) begin
     if (CPU_SYS_REQ) mbc_req_hc3_r      <= mbc_bus_hc3;
     if (CPU_SYS_REQ) mbc_req_cam_r      <= mbc_bus_cam;
     if (CPU_SYS_REQ) mbc_req_srm_mbc2_r <= MAPPER[`MAPPER_ID] == 2 && (CPU_SYS_ADDR[15] & ~CPU_SYS_ADDR[14]);
-    
+
     if (mbc_req_r[0]) begin
       if (mbc_req_rtc_r) begin
         case (mbc_reg_bank_r)
@@ -578,14 +572,14 @@ always @(posedge CLK) begin
           8'h0A:   mbc_data_r <= mbc_rtc_hrs_r;
           8'h0B:   mbc_data_r <= mbc_rtc_day_r;
           8'h0C:   mbc_data_r <= {mbc_rtc_ctl_r[7:6],5'h1F,mbc_rtc_ctl_r[0]};
-          
+
           default: mbc_data_r <= 8'hFF;
         endcase
       end
       else if (mbc_req_hc3_r) begin
         case (mbc_reg_ram_r)
           8'h0D:   mbc_data_r <= 1;
-          
+
           default: mbc_data_r <= mbc_hc3_data_r;
         endcase
       end
@@ -596,7 +590,7 @@ always @(posedge CLK) begin
         mbc_data_r <= 8'hFF;
       end
     end
-  
+
     if (mbc_bus_rtc & CPU_SYS_WR) begin
       mbc_rtc_write_r <= 1;
     end
@@ -604,7 +598,7 @@ always @(posedge CLK) begin
       mbc_rtc_write_r <= 0;
     end
   end
-  
+
   mbc_ram_bank_r[6:0] <= ( MAPPER[`MAPPER_ID] == 1 ? {5'h00,((mbc_reg_mode_r & ~mbc_map_mlt) ? mbc_reg_bank_r[1:0] : 2'h0)}
                          : MAPPER[`MAPPER_ID] == 2 ? 7'h00
                          : MAPPER[`MAPPER_ID] == 3 ? {3'h0,mbc_reg_bank_r[3:0]}
@@ -614,7 +608,7 @@ always @(posedge CLK) begin
                          : MAPPER[`MAPPER_ID] == 5 ? {3'h0,mbc_reg_bank_r[3:0]}
                          :                           7'h00
                          );
-    
+
   mbc_rom_bank_r[8:0] <= ( MAPPER[`MAPPER_ID] == 1 ? (mbc_map_mlt ? {3'h0,mbc_reg_bank_r[1],({mbc_reg_bank_r[0],mbc_reg_rom_bank_r[3:0]} | ~|{mbc_reg_bank_r[0],mbc_reg_rom_bank_r[3:0]})}
                                                                   : {2'h0,mbc_reg_bank_r[1:0],(mbc_reg_rom_bank_r[4:0] | ~|mbc_reg_rom_bank_r[4:0])})
                          : MAPPER[`MAPPER_ID] == 2 ? {5'h00,mbc_reg_rom_bank_r[3:0] | ~|mbc_reg_rom_bank_r[3:0]}
@@ -625,12 +619,12 @@ always @(posedge CLK) begin
                          : MAPPER[`MAPPER_ID] == 5 ? {mbc_reg_rom_bank_upper_r,mbc_reg_rom_bank_r[7:0]}
                          :                           9'h001
                          );
-                         
+
   mbc_rom0_bank_r[8:0] <= ( MAPPER[`MAPPER_ID] == 1 ? {2'h0,(mbc_reg_mode_r ? (mbc_map_mlt ? {1'b0,mbc_reg_bank_r[1:0]} : {mbc_reg_bank_r[1:0],1'b0}) : 3'h0),4'h0}
                           :                           9'h000
                           );
 
-`ifdef SGB_SAVE_STATES                        
+`ifdef SGB_SAVE_STATES
   // write in state for loads
   if (REG_REQ) begin
     case (REG_ADDR)
@@ -643,7 +637,7 @@ always @(posedge CLK) begin
   end
 `endif
 
-`ifdef SGB_DEBUG                         
+`ifdef SGB_DEBUG
   casez(DBG_ADDR[3:0])
     4'h0:    dbg_data_r <= mbc_reg_ram_enabled_r;
     4'h1:    dbg_data_r <= mbc_reg_mode_r;
@@ -674,31 +668,6 @@ end
 //-------------------------------------------------------------------
 // CONFIG
 //-------------------------------------------------------------------
-
-// C0 Control
-// 0 - Go (1)
-// 1 - MatchFullInst
-
-// C1 StepControl
-// [7:0] StepCount
-
-// C2 BreakpointControl
-// 0 - BreakOnInstRdByteWatch
-// 1 - BreakOnDataRdByteWatch
-// 2 - BreakOnDataWrByteWatch
-// 3 - BreakOnInstRdAddrWatch
-// 4 - BreakOnDataRdAddrWatch
-// 5 - BreakOnDataWrAddrWatch
-// 6 - BreakOnStop
-// 7 - BreakOnError
-
-// C3 ???
-
-// C4 DataWatch
-// [7:0] DataWatch
-
-// C5-C7 AddrWatch (little endian)
-// [23:0] AddrWatch
 always @(posedge CLK) begin
   if (reg_we_in && (reg_group_in == 8'h03)) begin
     if (reg_index_in < CONFIG_REGISTERS) config_r[reg_index_in] <= (config_r[reg_index_in] & reg_invmask_in) | (reg_value_in & ~reg_invmask_in);
