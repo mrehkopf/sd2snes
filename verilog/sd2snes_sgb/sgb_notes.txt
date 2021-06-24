@@ -21,11 +21,14 @@ Problem Games (See Bug list for why)
 - Prehistorik Man (audio)
 - Super Mario Land (audio)
 - Pokemon Gold (RTC)
+- Super Hunchback (undefined value)
 
 Fixed Bugs
 ----------
 Many of these games are useful for testing changes.
 
+- Super Hunchback corrupted game-over/level transition screen
+  - Was expecting nonzero value when reading VRAM/OAM during phase when they are not available.  Switched value from 8'h00 to 8'hFF to fix.
 - Evel Knievel bad BG tile map for characters on Level Select screen.
   - OAM interrupt needed to happen on first scanline to keep VRAM tile map updates from getting dropped during PPU rendering.  This is one of those games that spams the CPU with interrupts.
 - Bomberman scanline 120? flickering in SGB mode.
