@@ -58,7 +58,7 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0cheat\0fpgaconf\0chip`feat\0bsregs\0gameloop\0dacboost\0";
+  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0cheat\0fpgaconf\0chipfeat\0bsregs\0gameloop\0dacboost\0";
 enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_EXIT, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16, CMD_MEMSET, CMD_CHEAT, CMD_FPGACONF, CMD_CHIPFEAT, CMD_BSREGS, CMD_GAMELOOP, CMD_DACBOOST };
 
 /* ------------------------------------------------------------------------- */
@@ -436,12 +436,12 @@ void cmd_cheat(void) {
 
 void cmd_test(void) {
   int i;
-  uint8_t databuf[512];
+  uint8_t databuf[1024];
   fpga_set_snescmd_addr(SNESCMD_MCU_CMD);
-  for(i=0; i<512; i++) {
+  for(i=0; i<1024; i++) {
     databuf[i]=fpga_read_snescmd();
   }
-  uart_trace(databuf, 0, 512);
+  uart_trace(databuf, 0, 1024);
 }
 
 void cmd_fpgaconf(void) {

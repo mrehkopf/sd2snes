@@ -1,5 +1,6 @@
 *=$7E0000
 .data
+.link page $7e
 dirptr_addr     .word 0
 dirptr_bank     .word 0
 dirstart_addr   .word 0

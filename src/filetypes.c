@@ -89,7 +89,7 @@ printf("start\n");
               /* omit dot directories except '..' */
               if(fn[0]=='.' && fn[1]!='.') continue;
               /* omit sd2snes directory specifically */
-              if(!strcasecmp(fn, "sd2snes")) continue;
+              if(strstr(fn, "sd2snes")) continue;
               snprintf(buf, sizeof(buf), " <dir>");
             } else {
               if(fn[0]=='.') continue; /* omit dot files */

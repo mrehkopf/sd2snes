@@ -68,7 +68,7 @@ typedef struct __attribute__ ((__packed__)) _snes_header {
 } snes_header_t;
 
 typedef struct __attribute__ ((__packed__)) _snes_romprops {
-  uint16_t offset;            /* start of actual ROM image */
+  uint32_t offset;            /* start of actual ROM image */
   uint8_t mapper_id;          /* FPGA mapper */
   uint8_t pad1;               /* for alignment */
   uint32_t expramsize_bytes;  /* ExpRAM size in bytes */
@@ -87,6 +87,7 @@ typedef struct __attribute__ ((__packed__)) _snes_romprops {
   uint8_t has_sa1;            /* SA-1 presence flag */
   uint8_t has_sdd1;           /* S-DD1 presence flag */
   uint8_t has_spc7110;        /* SPC7110 presence flag */
+  uint8_t has_combo;          /* Multi game presence flag */
   uint32_t srambase;          /* saveram base address */
   uint32_t sramsize_bytes;    /* saveram size in bytes */
   uint16_t fpga_features;     /* feature/peripheral enable bits */
@@ -99,7 +100,7 @@ typedef struct __attribute__ ((__packed__)) _snes_romprops {
   snes_header_t header;       /* original header from ROM image */
 } snes_romprops_t;
 
-void smc_id(snes_romprops_t*);
-uint8_t smc_headerscore(uint32_t addr, snes_header_t* header);
+void smc_id(snes_romprops_t*, uint32_t file_offset);
+uint8_t smc_headerscore(uint32_t addr, snes_header_t* header, uint32_t file_offset);
 
 #endif

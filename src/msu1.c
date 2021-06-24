@@ -14,6 +14,7 @@
 #include "fpga.h"
 #include "memory.h"
 #include "led.h"
+#include "usbinterface.h"
 
 FIL msudata;
 FIL msuaudio;
@@ -68,7 +69,7 @@ int is_msu_free_to_save() {
 void msu_savecheck(int immediate) {
   uint32_t currentcrc;
   if(immediate || (getticks() > msu_last_sram_check + 100)) {
-    currentcrc = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
+    currentcrc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes, 0);
     if(msu_last_crc != currentcrc) {
       writeled(1);
       save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
@@ -151,10 +152,18 @@ void prepare_data(uint32_t msu_offset) {
     msu_reset(msu_sect_offset);
     msu_page1_start = msu_sect;
     msu_page2_start = msu_sect + MSU_DATA_BUFSIZE / 2;
+    /* clear bank bit to mask bank reset artifact */
+    fpga_status_now &= ~MSU_FPGA_STATUS_MSU_READ_MSB;
+    fpga_status_prev &= ~MSU_FPGA_STATUS_MSU_READ_MSB;
+
   } else {
+    uint16_t msu_read_offset;
     if (msu_offset >= msu_page1_start && msu_offset <= msu_page1_start + MSU_DATA_BUFSIZE / 2) {
-      msu_reset(0x0000 + msu_offset - msu_page1_start);
-      DBG_MSU1 printf("inside page1, new offset: %08lx\n", 0x0000 + msu_offset-msu_page1_start);
+      msu_read_offset = 0x0000 + msu_offset - msu_page1_start;
+      msu_reset(msu_read_offset);
+      fpga_status_now = (fpga_status_now & ~MSU_FPGA_STATUS_MSU_READ_MSB)
+                      | (((msu_read_offset & (MSU_DATA_BUFSIZE / 2)) ? MSU_FPGA_STATUS_MSU_READ_MSB : 0x0000));
+      DBG_MSU1 printf("inside page1, new offset: %04x\n", msu_read_offset);
       if(!(msu_page2_start == msu_page1_start + MSU_DATA_BUFSIZE / 2)) {
         set_msu_addr(MSU_DATA_BUFSIZE / 2);
         sd_offload_tgt=2;
@@ -165,8 +174,11 @@ void prepare_data(uint32_t msu_offset) {
         DBG_MSU1 printf("%08lx)\n", msu_page2_start);
       }
     } else if (msu_offset >= msu_page2_start && msu_offset <= msu_page2_start + MSU_DATA_BUFSIZE / 2) {
-      DBG_MSU1 printf("inside page2, new offset: %08lx\n", 0x2000 + msu_offset-msu_page2_start);
-      msu_reset(0x2000 + msu_offset - msu_page2_start);
+      msu_read_offset = 0x2000 + msu_offset - msu_page2_start;
+      msu_reset(msu_read_offset);
+      fpga_status_now = (fpga_status_now & ~MSU_FPGA_STATUS_MSU_READ_MSB)
+                      | (((msu_read_offset & (MSU_DATA_BUFSIZE / 2)) ? MSU_FPGA_STATUS_MSU_READ_MSB : 0x0000));
+      DBG_MSU1 printf("inside page2, new offset: %04x\n", msu_read_offset);
       if(!(msu_page1_start == msu_page2_start + MSU_DATA_BUFSIZE / 2)) {
         set_msu_addr(0x0);
         sd_offload_tgt=2;
@@ -192,9 +204,6 @@ void prepare_data(uint32_t msu_offset) {
     msu_data_usage = MSU_BUSY;
   }
 
-  /* clear bank bit to mask bank reset artifact */
-  fpga_status_now &= ~MSU_FPGA_STATUS_MSU_READ_MSB;
-  fpga_status_prev &= ~MSU_FPGA_STATUS_MSU_READ_MSB;
   /* clear busy bit */
   set_msu_status(MSU_SNES_STATUS_CLEAR_DATA_BUSY);
 }
@@ -230,7 +239,7 @@ int msu1_loop() {
   uint8_t cmd;
 
   msu_last_sram_check = getticks();
-  msu_last_crc = calc_sram_crc(SRAM_SAVE_ADDR, romprops.ramsize_bytes);
+  msu_last_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes, 0);
 
   msu_page1_start = 0x0000;
   msu_page2_start = MSU_DATA_BUFSIZE / 2;
@@ -279,6 +288,8 @@ int msu1_loop() {
       snes_set_mcu_cmd(0);
     }
     cli_entrycheck();
+    if (!cmd) { cmd = usbint_handler(); }
+
     fpga_status_now = fpga_status();
 
     /* ACK as fast as possible */
@@ -288,7 +299,7 @@ int msu1_loop() {
 
     /* Data buffer refill */
     if((fpga_status_now & MSU_FPGA_STATUS_MSU_READ_MSB) != (fpga_status_prev & MSU_FPGA_STATUS_MSU_READ_MSB)) {
-      DBG_MSU1 printf("data\n");
+      DBG_MSU1 printf("old MSB=%04x new MSB=%04x data\n", fpga_status_prev & MSU_FPGA_STATUS_MSU_READ_MSB, fpga_status_now & MSU_FPGA_STATUS_MSU_READ_MSB);
       if(fpga_status_now & MSU_FPGA_STATUS_MSU_READ_MSB) {
         msu_addr = 0x0;
         msu_page1_start = msu_page2_start + MSU_DATA_BUFSIZE / 2;
@@ -303,7 +314,7 @@ int msu1_loop() {
       if(f_eof(&msudata)) {
         msu_data_usage = MSU_IDLE;
       }
-      DBG_MSU1 printf("data buffer refilled. res=%d page1=%08lx page2=%08lx\n", msu_res, msu_page1_start, msu_page2_start);
+      DBG_MSU1 printf("data page %d refilled. res=%d page1=%08lx page2=%08lx\n", msu_addr ? 2 : 1, msu_res, msu_page1_start, msu_page2_start);
     }
 
     /* Audio buffer refill */
@@ -409,4 +420,93 @@ int msu1_loop() {
   save_during_msu_shortreset();
   DBG_MSU1 printf("game\n");
   return 0;
+}
+
+uint8_t msu_readbyte(uint16_t addr) {
+  set_msu_addr(addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF5); /* READ */
+  //FPGA_WAIT_RDY();
+  uint8_t val = FPGA_RX_BYTE();
+  FPGA_DESELECT();
+  return val;
+}
+
+uint16_t msu_readshort(uint16_t addr) {
+  set_msu_addr(addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF5);
+  //FPGA_WAIT_RDY();
+  uint32_t val = FPGA_RX_BYTE();
+  //FPGA_WAIT_RDY();
+  val |= ((uint32_t)FPGA_RX_BYTE()<<8);
+  FPGA_DESELECT();
+  return val;
+}
+
+uint32_t msu_readlong(uint16_t addr) {
+  set_msu_addr(addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF5);
+  //FPGA_WAIT_RDY();
+  uint32_t val = FPGA_RX_BYTE();
+  //FPGA_WAIT_RDY();
+  val |= ((uint32_t)FPGA_RX_BYTE()<<8);
+  //FPGA_WAIT_RDY();
+  val |= ((uint32_t)FPGA_RX_BYTE()<<16);
+  //FPGA_WAIT_RDY();
+  val |= ((uint32_t)FPGA_RX_BYTE()<<24);
+  FPGA_DESELECT();
+  return val;
+}
+
+void msu_readlongblock(uint32_t* buf, uint16_t addr, uint16_t count) {
+  set_msu_addr(addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF5);
+  uint16_t i=0;
+  while(i<count) {
+    //FPGA_WAIT_RDY();
+    uint32_t val = (uint32_t)FPGA_RX_BYTE()<<24;
+    //FPGA_WAIT_RDY();
+    val |= ((uint32_t)FPGA_RX_BYTE()<<16);
+    //FPGA_WAIT_RDY();
+    val |= ((uint32_t)FPGA_RX_BYTE()<<8);
+    //FPGA_WAIT_RDY();
+    val |= FPGA_RX_BYTE();
+    buf[i++] = val;
+  }
+  FPGA_DESELECT();
+}
+
+uint16_t msu_readblock(void* buf, uint16_t addr, uint16_t size) {
+  uint16_t count=size;
+  uint8_t* tgt = buf;
+  set_msu_addr(addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF5);   /* READ */
+  while(count--) {
+    //FPGA_WAIT_RDY();
+    *(tgt++) = FPGA_RX_BYTE();
+  }
+  FPGA_DESELECT();
+  return size;
+}
+
+uint16_t msu_readstrn(void* buf, uint16_t addr, uint16_t size) {
+  uint16_t elemcount = 0;
+  uint16_t count = size;
+  uint8_t* tgt = buf;
+  set_msu_addr(addr);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF5);   /* READ */
+  while(count--) {
+    //FPGA_WAIT_RDY();
+    if(!(*(tgt++) = FPGA_RX_BYTE())) break;
+    elemcount++;
+  }
+  tgt--;
+  if(*tgt) *tgt = 0;
+  FPGA_DESELECT();
+  return elemcount;
 }

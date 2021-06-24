@@ -1,0 +1,34 @@
+SNES Menu Compilation
+
+This directory contains all code for the SD2SNES menu navigation.
+
+snescom (Version 1.8.1.1) is required to build the menu. The source can be downloaded 
+here: https://bisqwit.iki.fi/source/snescom.html
+
+To compile snescom/sneslink install libboot-dev-all, then make & make install in the
+snescom directory.
+
+After installing snescom, call make in this directory to build the SD2SNES menu.
+
+Copy the resulting file "menu.bin" to <sdcard>/sd2snes/menu.bin.
+
+It's also possible to use (limited) emulation to test the menu. Configurations for
+ bsnes-plus are included (menu.xml and menu.cht).
+
+To build bsnes-plus check out https://github.com/devinacker/bsnes-plus.
+
+To compile bsnes the following packages need to be installed:
+libqt4-dev libqt4-dev-bin libxv-dev libsdl1.2-dev libao-dev libopenal-dev g++ are required.
+
+After installing the dependencies, run the following commands in the bsnes directory to use Qt4 to build bsnes.
+
+export QT_SELECT=4 
+make
+make install
+
+The menu can then be tested with
+
+bnes menu.bin
+
+To work with the emulator, two memory addresses must be set via cheat code and an RTC must be configured. RTC is set in the
+manifest XML file, while the memory addresses are overwritten in the .cht file.

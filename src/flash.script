@@ -1,5 +1,3 @@
-reset init
-flash write_image erase unlock $_FW_FILE $_FW_START
-reset run
+program $_FW_FILE reset exit $_FW_START
 shutdown
 

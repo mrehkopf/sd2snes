@@ -47,7 +47,7 @@ end
 
 assign rtc_data = rtc_data_out_r;
 
-reg [21:0] rtc_state;
+reg [31:0] rtc_state;
 reg carry;
 
 reg [3:0] dom1[11:0];
@@ -61,30 +61,41 @@ reg [13:0] dow_year;
 reg [6:0] dow_year1;
 reg [6:0] dow_year100;
 reg [15:0] dow_tmp;
+reg [15:0] dow_year_tmp;
 
-parameter [21:0]
-  STATE_SEC1     = 22'b0000000000000000000001,
-  STATE_SEC10    = 22'b0000000000000000000010,
-  STATE_MIN1     = 22'b0000000000000000000100,
-  STATE_MIN10    = 22'b0000000000000000001000,
-  STATE_HOUR1    = 22'b0000000000000000010000,
-  STATE_HOUR10   = 22'b0000000000000000100000,
-  STATE_DAY1     = 22'b0000000000000001000000,
-  STATE_DAY10    = 22'b0000000000000010000000,
-  STATE_MON1     = 22'b0000000000000100000000,
-  STATE_MON10    = 22'b0000000000001000000000,
-  STATE_YEAR1    = 22'b0000000000010000000000,
-  STATE_YEAR10   = 22'b0000000000100000000000,
-  STATE_YEAR100  = 22'b0000000001000000000000,
-  STATE_YEAR1000 = 22'b0000000010000000000000,
-  STATE_DOW0     = 22'b0000000100000000000000,
-  STATE_DOW1     = 22'b0000001000000000000000,
-  STATE_DOW2     = 22'b0000010000000000000000,
-  STATE_DOW3     = 22'b0000100000000000000000,
-  STATE_DOW4     = 22'b0001000000000000000000,
-  STATE_DOW5     = 22'b0010000000000000000000,
-  STATE_LATCH    = 22'b0100000000000000000000,
-  STATE_IDLE     = 22'b1000000000000000000000;
+parameter [31:0]
+  STATE_SEC1     = 32'b00000000000000000000000000000001,
+  STATE_SEC10    = 32'b00000000000000000000000000000010,
+  STATE_MIN1     = 32'b00000000000000000000000000000100,
+  STATE_MIN10    = 32'b00000000000000000000000000001000,
+  STATE_HOUR1    = 32'b00000000000000000000000000010000,
+  STATE_HOUR10   = 32'b00000000000000000000000000100000,
+  STATE_DAY1     = 32'b00000000000000000000000001000000,
+  STATE_DAY10    = 32'b00000000000000000000000010000000,
+  STATE_MON1     = 32'b00000000000000000000000100000000,
+  STATE_MON10    = 32'b00000000000000000000001000000000,
+  STATE_YEAR1    = 32'b00000000000000000000010000000000,
+  STATE_YEAR10   = 32'b00000000000000000000100000000000,
+  STATE_YEAR100  = 32'b00000000000000000001000000000000,
+  STATE_YEAR1000 = 32'b00000000000000000010000000000000,
+  STATE_DOW0_0   = 32'b00000000000000000100000000000000,
+  STATE_DOW0_1   = 32'b00000000000000001000000000000000,
+  STATE_DOW0_2   = 32'b00000000000000010000000000000000,
+  STATE_DOW1_0_0 = 32'b00000000000000100000000000000000,
+  STATE_DOW1_0_1 = 32'b00000000000001000000000000000000,
+  STATE_DOW1_0_2 = 32'b00000000000010000000000000000000,
+  STATE_DOW1_0_3 = 32'b00000000000100000000000000000000,
+  STATE_DOW1_0_4 = 32'b00000000001000000000000000000000,
+  STATE_DOW1_1_0 = 32'b00000000010000000000000000000000,
+  STATE_DOW1_1_1 = 32'b00000000100000000000000000000000,
+  STATE_DOW1_1_2 = 32'b00000001000000000000000000000000,
+  STATE_DOW1_1_3 = 32'b00000010000000000000000000000000,
+  STATE_DOW2     = 32'b00000100000000000000000000000000,
+  STATE_DOW3     = 32'b00001000000000000000000000000000,
+  STATE_DOW4     = 32'b00010000000000000000000000000000,
+  STATE_DOW5     = 32'b00100000000000000000000000000000,
+  STATE_LATCH    = 32'b01000000000000000000000000000000,
+  STATE_IDLE     = 32'b10000000000000000000000000000000;
 
 initial begin
   rtc_state = STATE_IDLE;
@@ -103,6 +114,7 @@ initial begin
   month = 0;
   rtc_data_r = 60'h220110301000000;
   tick_cnt = 0;
+  dow_year_tmp = 0;
 end
 
 wire is_leapyear_feb = (month == 1) && (year[1:0] == 2'b00);
@@ -139,10 +151,32 @@ always @(posedge clkin) begin
       STATE_YEAR100:
         rtc_state <= STATE_YEAR1000;
       STATE_YEAR1000:
-        rtc_state <= STATE_DOW0;
-      STATE_DOW0:
-        rtc_state <= STATE_DOW1;
-      STATE_DOW1:
+        rtc_state <= STATE_DOW0_0;
+      STATE_DOW0_0:
+        rtc_state <= STATE_DOW0_1;
+      STATE_DOW0_1:
+        rtc_state <= STATE_DOW0_2;
+      STATE_DOW0_2:
+        if(dow_month <= 2)
+          rtc_state <= STATE_DOW1_0_0;
+        else
+          rtc_state <= STATE_DOW1_1_0;
+      STATE_DOW1_0_0:
+          rtc_state <= STATE_DOW1_0_1;
+      STATE_DOW1_0_1:
+          rtc_state <= STATE_DOW1_0_2;
+      STATE_DOW1_0_2:
+          rtc_state <= STATE_DOW1_0_3;
+      STATE_DOW1_0_3:
+          rtc_state <= STATE_DOW1_0_4;
+      STATE_DOW1_1_0:
+          rtc_state <= STATE_DOW1_1_1;
+      STATE_DOW1_1_1:
+          rtc_state <= STATE_DOW1_1_2;
+      STATE_DOW1_1_2:
+          rtc_state <= STATE_DOW1_1_3;
+      STATE_DOW1_0_4,
+      STATE_DOW1_1_3:
         rtc_state <= STATE_DOW2;
       STATE_DOW2:
         rtc_state <= STATE_DOW3;
@@ -334,47 +368,74 @@ always @(posedge clkin) begin
           end
         end
       end
-      STATE_DOW0: begin
-        dow_year1 <= rtc_data_r[43:40]
-                     +(rtc_data_r[47:44] << 1) + (rtc_data_r[47:44] << 3);
-
-        dow_year100 <= rtc_data_r[51:48]
-                       +(rtc_data_r[55:52] << 1) + (rtc_data_r[55:52] << 3);
-
+      STATE_DOW0_0: begin
+        dow_year1 <= rtc_data_r[43:40];
+        dow_year100 <= rtc_data_r[51:48];
         dow_month <= month + 1;
-        dow_day <= rtc_data_r[27:24]
-                   + (rtc_data_r[31:28] << 1)
-                   + (rtc_data_r[31:28] << 3);
+        dow_day <= rtc_data_r[27:24];
       end
-      STATE_DOW1: begin
+      STATE_DOW0_1: begin
+        dow_year1 <= dow_year1 + (rtc_data_r[47:44] << 1);
+        dow_year100 <= dow_year100 + (rtc_data_r[55:52] << 1);
+        dow_day <= dow_day + rtc_data_r[31:28] << 1;
+      end
+      STATE_DOW0_2: begin
+        dow_year1 <= dow_year1 + (rtc_data_r[47:44] << 3);
+        dow_year100 <= dow_year100 + (rtc_data_r[55:52] << 3);
+        dow_day <= dow_day + (rtc_data_r[31:28] << 3);
+      end
+      STATE_DOW1_0_0: begin
         year <= dow_year1[1:0];
-        if(dow_month <= 2) begin
-          dow_month <= dow_month + 10;
-          dow_year <= dow_year1
-                      + (dow_year100 << 2)
-                      + (dow_year100 << 5)
-                      + (dow_year100 << 6) - 1;
-          if(dow_year1)
-            dow_year1 <= dow_year1 - 1;
-          else begin
-            dow_year1 <= 99;
-            dow_year100 <= dow_year100 - 1;
-          end
-        end else begin
-          dow_month <= dow_month - 2;
-          dow_year <= dow_year1 + (dow_year100 << 2) + (dow_year100 << 5) + (dow_year100 << 6);
+        dow_month <= dow_month + 10;
+        dow_year <= dow_year1;
+      end
+      STATE_DOW1_0_1: begin
+        dow_year <= dow_year + (dow_year100 << 2);
+      end
+      STATE_DOW1_0_2: begin
+        dow_year <= dow_year + (dow_year100 << 5);
+      end
+      STATE_DOW1_0_3: begin
+        dow_year <= dow_year + (dow_year100 << 6) - 1;
+      end
+      STATE_DOW1_0_4: begin
+        if(dow_year1)
+          dow_year1 <= dow_year1 - 1;
+        else begin
+          dow_year1 <= 99;
+          dow_year100 <= dow_year100 - 1;
         end
       end
+      STATE_DOW1_1_0: begin
+        year <= dow_year1[1:0];
+        dow_month <= dow_month - 2;
+        dow_year <= dow_year1;
+      end
+      STATE_DOW1_1_1: begin
+        dow_year <= dow_year + (dow_year100 << 2);
+      end
+      STATE_DOW1_1_2: begin
+        dow_year <= dow_year + (dow_year100 << 5);
+      end
+      STATE_DOW1_1_3: begin
+        dow_year <= dow_year + (dow_year100 << 6);
+      end
+
       STATE_DOW2: begin
         dow_tmp <= (83 * dow_month);
+        dow_year_tmp <= dow_year
+                        + (dow_year >> 2)
+                        - (dow_year100)
+                        + (dow_year100 >> 2);
       end
       STATE_DOW3: begin
         dow_tmp <= (dow_tmp >> 5)
                    + dow_day
-                   + dow_year
-                   + (dow_year >> 2)
-                   - (dow_year100)
-                   + (dow_year100 >> 2);
+                   + dow_year_tmp;
+                   //+ dow_year
+                   //+ (dow_year >> 2)
+                   //- (dow_year100)
+                   //+ (dow_year100 >> 2);
       end
       STATE_DOW4: begin
         dow_tmp <= dow_tmp - 7;

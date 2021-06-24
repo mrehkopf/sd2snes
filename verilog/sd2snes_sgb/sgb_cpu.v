@@ -2312,7 +2312,7 @@ reg  [10:0] apu_square1_sweep_freq_r;
 wire [15:0] apu_square1_sweep_freq_next = REG_NR10_r[`NR10_SWEEP_NEG] ? ({5'h00,apu_square1_sweep_freq_r} - ({5'h00,apu_square1_sweep_freq_r} >> REG_NR10_r[`NR10_SWEEP_SHIFT])) : ({5'h00,apu_square1_sweep_freq_r} + ({5'h00,apu_square1_sweep_freq_r} >> REG_NR10_r[`NR10_SWEEP_SHIFT]));
 
 wire [12:0] apu_square1_period = {REG_NR14_r[`NR14_FREQ_MSB],REG_NR13_r[`NR13_FREQ_LSB],2'b00};
-wire signed [4:0] apu_square1_output = apu_square1_enable_r ? (~apu_square1_duty_r[apu_square1_pos_r] ? ({1'b1,~apu_square1_volume_r} + 1) : {1'b0,apu_square1_volume_r}) : 5'h00;
+wire signed [4:0] apu_square1_output = (apu_square1_enable_r & apu_square1_duty_r[apu_square1_pos_r]) ? {apu_square1_volume_r,1'b0} : 5'h00;
 
 // square2
 reg         apu_square2_enable_r;
@@ -2326,7 +2326,7 @@ reg  [2:0]  apu_square2_pos_r;
 reg  [7:0]  apu_square2_duty_r;
 
 wire [12:0] apu_square2_period = {REG_NR24_r[`NR24_FREQ_MSB],REG_NR23_r[`NR23_FREQ_LSB],2'b00};
-wire signed [4:0] apu_square2_output = apu_square2_enable_r ? (~apu_square2_duty_r[apu_square2_pos_r] ? ({1'b1,~apu_square2_volume_r} + 1) : {1'b0,apu_square2_volume_r}) : 5'h00;
+wire [4:0] apu_square2_output = (apu_square2_enable_r & apu_square2_duty_r[apu_square2_pos_r]) ? {apu_square2_volume_r,1'b0} : 5'h00;
 
 // wave
 reg         apu_wave_enable_r;
@@ -2337,9 +2337,10 @@ reg         apu_wave_sample_update_r;
 reg  [3:0]  apu_wave_sample_r;
 
 reg  [3:0]  apu_wave_data_r;
-reg  [4:0]  apu_wave_data_shifted_r;
+//reg  [4:0]  apu_wave_data_shifted_r;
+reg  [3:0]  apu_wave_data_shifted_r;
 wire [11:0] apu_wave_period = {REG_NR34_r[`NR34_FREQ_MSB],REG_NR33_r[`NR33_FREQ_LSB],1'b0};
-wire signed [4:0] apu_wave_output = (apu_wave_enable_r & |REG_NR32_r[`NR32_LEVEL]) ? apu_wave_data_shifted_r : 5'h00;
+wire [4:0] apu_wave_output = (apu_wave_enable_r & |REG_NR32_r[`NR32_LEVEL]) ? {apu_wave_data_shifted_r,1'b0} : 5'h00;
 
 // noise
 reg         apu_noise_enable_r;
@@ -2350,21 +2351,21 @@ reg  [3:0]  apu_noise_volume_r;
 reg  [14:0] apu_noise_lfsr_r;
 
 wire [21:0] apu_noise_period = {15'h0000,REG_NR43_r[`NR43_LFSR_DIV],~|REG_NR43_r[`NR43_LFSR_DIV],3'h0} << REG_NR43_r[`NR43_LFSR_SHIFT];
-wire signed [4:0] apu_noise_output = apu_noise_enable_r ? (apu_noise_lfsr_r[0] ? ({1'b1,~apu_noise_volume_r} + 1) : {1'b0,apu_noise_volume_r}) : 5'h00;
+wire [4:0] apu_noise_output = (apu_noise_enable_r & apu_noise_lfsr_r[0]) ? {apu_noise_volume_r,1'b0} : 5'h00;
 
-wire signed [6:0]  apu_data[1:0];
-reg  signed [6:0]  apu_data_r[1:0];
-reg  signed [9:0] apu_data_volume_r[1:0];
+wire [6:0]  apu_data[1:0];
+reg  [6:0] apu_data_r[1:0];
+reg  [9:0] apu_data_volume_r[1:0];
 
-assign apu_data[0][6:0] = ( $signed(apu_square1_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH0]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
-                          + $signed(apu_square2_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH1]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
-                          + $signed(apu_wave_output[4:0]    & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH2]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
-                          + $signed(apu_noise_output[4:0]   & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH3]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
+assign apu_data[0][6:0] = ( ((apu_square1_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH0]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}}))
+                          + ((apu_square2_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH1]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}}))
+                          + ((apu_wave_output[4:0]    & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH2]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}}))
+                          + ((apu_noise_output[4:0]   & {5{REG_NR51_r[`NR51_SELECT_LEFT_CH3]  & REG_NR52_r[`NR52_CONTROL_ENABLE]}}))
                           );
-assign apu_data[1][6:0] = ( $signed(apu_square1_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_RIGHT_CH0] & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
-                          + $signed(apu_square2_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_RIGHT_CH1] & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
-                          + $signed(apu_wave_output[4:0]    & {5{REG_NR51_r[`NR51_SELECT_RIGHT_CH2] & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
-                          + $signed(apu_noise_output[4:0]   & {5{REG_NR51_r[`NR51_SELECT_RIGHT_CH3] & REG_NR52_r[`NR52_CONTROL_ENABLE]}})
+assign apu_data[1][6:0] = ( ((apu_square1_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_RIGHT_CH0] & REG_NR52_r[`NR52_CONTROL_ENABLE]}}))
+                          + ((apu_square2_output[4:0] & {5{REG_NR51_r[`NR51_SELECT_RIGHT_CH1] & REG_NR52_r[`NR52_CONTROL_ENABLE]}}))
+                          + ((apu_wave_output[4:0]    & {5{REG_NR51_r[`NR51_SELECT_RIGHT_CH2] & REG_NR52_r[`NR52_CONTROL_ENABLE]}}))
+                          + ((apu_noise_output[4:0]   & {5{REG_NR51_r[`NR51_SELECT_RIGHT_CH3] & REG_NR52_r[`NR52_CONTROL_ENABLE]}}))
                           );
 
 assign APU_REG_enable = {apu_noise_enable_r, apu_wave_enable_r, apu_square2_enable_r, apu_square1_enable_r};
@@ -2377,17 +2378,17 @@ reg         apu_reg_update_nr22_dir_r;
 reg         apu_reg_update_nr14_enable_r;
 reg         apu_reg_update_nr24_enable_r;
 
-assign APU_DAT = {apu_data_volume_r[1],apu_data_volume_r[0]};
+// convert to signed
+assign APU_DAT = {~apu_data_volume_r[1][9],apu_data_volume_r[1][8:0],~apu_data_volume_r[0][9],apu_data_volume_r[0][8:0]};
 
 always @(posedge CLK) begin
   // Flop audio state since it is a critical path on MK2
   for (i = 0; i < 2; i = i + 1) apu_data_r[i] <= apu_data[i];
 
-  apu_data_volume_r[0][9:0] <= $signed(apu_data_r[0][6:0]) * ({7'h00,REG_NR50_r[`NR50_MASTER_LEFT_VOLUME]}  + 1);
-  apu_data_volume_r[1][9:0] <= $signed(apu_data_r[1][6:0]) * ({7'h00,REG_NR50_r[`NR50_MASTER_RIGHT_VOLUME]} + 1);
+  apu_data_volume_r[0][9:0] <= apu_data_r[0][6:0] * ({7'h00,REG_NR50_r[`NR50_MASTER_LEFT_VOLUME]}  + 1);
+  apu_data_volume_r[1][9:0] <= apu_data_r[1][6:0] * ({7'h00,REG_NR50_r[`NR50_MASTER_RIGHT_VOLUME]} + 1);
 
-  // sign conversion with arithmetic shift right
-  apu_wave_data_shifted_r[4:0] <= $signed({~apu_wave_sample_r[3],apu_wave_sample_r[2:0],1'b0}) >>> (REG_NR32_r[`NR32_LEVEL] - 1);
+  apu_wave_data_shifted_r[3:0] <= apu_wave_sample_r[3:0] >> (REG_NR32_r[`NR32_LEVEL] - 1);
 
   case (REG_NR11_r[`NR11_DUTY])
     0: apu_square1_duty_r <= 8'b00000001;
@@ -2512,7 +2513,12 @@ always @(posedge CLK) begin
 
           if (apu_square1_enable_r) apu_square1_enable_r <= |REG_NR12_r[7:3];
         end
+        8'h13: begin // NR13
+          if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
+        end
         8'h14: begin // NR14
+          if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
+
           if (REG_NR14_r[`NR14_FREQ_ENABLE]) begin
             apu_square1_enable_r     <= (|REG_NR12_r[`NR12_ENV_VOLUME] | REG_NR12_r[`NR12_ENV_DIR]) & ~HLT_RSP;
             apu_square1_timer_r      <= apu_square1_period;
@@ -2524,8 +2530,6 @@ always @(posedge CLK) begin
             apu_square1_sweep_enable_r <= |REG_NR10_r[`NR10_SWEEP_TIME] | |REG_NR10_r[`NR10_SWEEP_SHIFT];
             apu_square1_sweep_timer_r  <= {~|REG_NR10_r[`NR10_SWEEP_TIME],REG_NR10_r[`NR10_SWEEP_TIME]};
             apu_square1_sweep_freq_r   <= {REG_NR14_r[`NR14_FREQ_MSB],REG_NR13_r[`NR13_FREQ_LSB]};
-
-            if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
           end
         end
 
@@ -2539,7 +2543,12 @@ always @(posedge CLK) begin
 
           if (apu_square2_enable_r) apu_square2_enable_r <= |REG_NR22_r[7:3];
         end
+        8'h18: begin // NR23
+          if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
+        end
         8'h19: begin // NR24
+          if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
+
           if (REG_NR24_r[`NR24_FREQ_ENABLE]) begin
             apu_square2_enable_r     <= (|REG_NR22_r[`NR22_ENV_VOLUME] | REG_NR22_r[`NR22_ENV_DIR]) & ~HLT_RSP;
             apu_square2_timer_r      <= apu_square2_period;
@@ -2547,8 +2556,6 @@ always @(posedge CLK) begin
             apu_square2_env_enable_r <= 1;
             apu_square2_env_timer_r  <= REG_NR22_r[`NR22_ENV_PERIOD];
             apu_square2_volume_r     <= REG_NR22_r[`NR22_ENV_VOLUME];
-
-            if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
           end
         end
 
@@ -2596,7 +2603,7 @@ always @(posedge CLK) begin
 
         // envelope
         if (&apu_frame_step_r) begin
-          if (apu_square1_env_enable_r & |apu_square1_env_timer_r) begin
+          if (apu_square1_env_enable_r & |REG_NR12_r[`NR12_ENV_PERIOD]) begin
             apu_square1_env_timer_r <= apu_square1_env_timer_r - 1;
 
             if (apu_square1_env_timer_r == 1) begin
@@ -2659,7 +2666,7 @@ always @(posedge CLK) begin
 
         // envelope
         if (&apu_frame_step_r) begin
-          if (apu_square2_env_enable_r & |apu_square2_env_timer_r) begin
+          if (apu_square2_env_enable_r & |REG_NR22_r[`NR22_ENV_PERIOD]) begin
             apu_square2_env_timer_r <= apu_square2_env_timer_r - 1;
             if (apu_square2_env_timer_r == 1) begin
               if      ( REG_NR22_r[`NR22_ENV_DIR] & ~&apu_square2_volume_r) apu_square2_volume_r <= apu_square2_volume_r + 1;
@@ -2758,8 +2765,9 @@ always @(posedge CLK) begin
 
           // volume side effects
           // P-M uses the first one to wrap the volume from F->0
-          if      (apu_square1_env_enable_r & ~|REG_NR12_r[`NR12_ENV_PERIOD]) apu_square1_volume_r <= apu_square1_volume_r + 1;
-          else if (~REG_NR12_r[`NR12_ENV_DIR])                                apu_square1_volume_r <= apu_square1_volume_r + 2;
+          // CVL and probably many others use the second as predecrement of volume
+          if      (REG_req_data[`NR12_ENV_DIR] & ~|REG_NR12_r[`NR12_ENV_PERIOD])                                                            apu_square1_volume_r <= apu_square1_volume_r + 1;
+          else if (~REG_req_data[`NR12_ENV_DIR] & |REG_req_data[`NR12_ENV_PERIOD] & ~|REG_NR12_r[`NR12_ENV_PERIOD] & |apu_square1_volume_r) apu_square1_volume_r <= apu_square1_volume_r - 1;
         end
         8'h13: REG_NR13_r[7:0] <= REG_req_data[7:0];
         8'h14: REG_NR14_r[7:0] <= REG_req_data[7:0];
@@ -2770,8 +2778,9 @@ always @(posedge CLK) begin
 
           // volume side effects
           // P-M uses the first one to wrap the volume from F->0
-          if      (apu_square2_env_enable_r & ~|REG_NR22_r[`NR22_ENV_PERIOD]) apu_square2_volume_r <= apu_square2_volume_r + 1;
-          else if (~REG_NR22_r[`NR22_ENV_DIR])                                apu_square2_volume_r <= apu_square2_volume_r + 2;
+          // CVL and probably many others use the second as predecrement of volume
+          if      (REG_req_data[`NR22_ENV_DIR] & ~|REG_NR22_r[`NR22_ENV_PERIOD])                                                            apu_square2_volume_r <= apu_square2_volume_r + 1;
+          else if (~REG_req_data[`NR22_ENV_DIR] & |REG_req_data[`NR22_ENV_PERIOD] & ~|REG_NR22_r[`NR22_ENV_PERIOD] & |apu_square2_volume_r) apu_square2_volume_r <= apu_square2_volume_r - 1;
         end
         8'h18: REG_NR23_r[7:0] <= REG_req_data[7:0];
         8'h19: REG_NR24_r[7:0] <= REG_req_data[7:0];
@@ -2960,14 +2969,15 @@ always @(posedge CLK) begin
         end
       end
       ST_MCT_VRAM: begin
-        if (~mct_wr_r) mct_mdr_r <= PPU_MCT_vram_active ? 0 : VRAM_data;
+        // SH writes 0 and checks for nonzero to see if the write failed.  Returning FF here allows correct detection of the fail
+        if (~mct_wr_r) mct_mdr_r <= PPU_MCT_vram_active ? 8'hFF : VRAM_data;
 
         // avoid false errors by only looking at EXE src
         if (~|mct_req_r & PPU_MCT_vram_active & mct_src_r) mct_vram_error_r <= mct_vram_error_r + 1;
         if (~|mct_req_r) mct_state_r <= ST_MCT_END;
       end
       ST_MCT_OAM: begin
-        if (~mct_wr_r) mct_mdr_r <= PPU_MCT_oam_active ? 0 : OAM_data;
+        if (~mct_wr_r) mct_mdr_r <= PPU_MCT_oam_active ? 8'hFF : OAM_data;
 
         // avoid false errors by only looking at EXE src
         if (~|mct_req_r & PPU_MCT_oam_active & mct_src_r) mct_oam_error_r <= mct_oam_error_r + 1;

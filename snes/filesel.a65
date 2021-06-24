@@ -1,3 +1,5 @@
+.link page $c0
+
 #include "memmap.i65"
 #include "dma.i65"
 

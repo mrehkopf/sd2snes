@@ -129,7 +129,7 @@
         bit        function
    ==========================================================================
         12         enable Satellaview base unit emulation
-        11         unused
+        11         enable DMA1 registers
       10-7         $2100 brightness limit (4 bits)
          6         enable $2100 DAC fix for 1CHIP
          5         enable permanent snescmd unlock (during load handshake)
@@ -195,6 +195,13 @@ void set_mcu_addr(uint32_t address) {
   FPGA_TX_BYTE((address >> 16) & 0xff);
   FPGA_TX_BYTE((address >> 8) & 0xff);
   FPGA_TX_BYTE((address) & 0xff);
+  FPGA_DESELECT();
+}
+
+void set_saveram_base(uint8_t mask) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_SETRAMBASE);
+  FPGA_TX_BYTE((mask) & 0xff);
   FPGA_DESELECT();
 }
 
@@ -315,6 +322,17 @@ uint16_t get_msu_track() {
   return result;
 }
 
+uint32_t get_msu_pointer() {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_MSUGETSCADDR);
+  uint32_t result = (FPGA_RX_BYTE()) << 24;
+  result |= (FPGA_RX_BYTE()) << 16;
+  result |= (FPGA_RX_BYTE()) <<  8;
+  result |= (FPGA_RX_BYTE()) <<  0;
+  FPGA_DESELECT();
+  return result;
+}
+
 uint32_t get_msu_offset() {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_MSUGETADDR);
@@ -426,6 +444,7 @@ void fpga_set_dac_boost(uint8_t boost) {
   FPGA_DESELECT();
 }
 
+uint16_t current_features;
 void fpga_set_features(uint16_t feat) {
   printf("set features: %04x\n", feat);
   FPGA_SELECT();
@@ -433,6 +452,7 @@ void fpga_set_features(uint16_t feat) {
   FPGA_TX_BYTE((feat >> 8) & 0xff);
   FPGA_TX_BYTE((feat) & 0xff);
   FPGA_DESELECT();
+  current_features = feat;
 }
 
 void fpga_set_213f(uint8_t data) {
@@ -485,5 +505,28 @@ void fpga_set_chipfeat(uint16_t feat) {
   FPGA_TX_BYTE(FPGA_CMD_CHIPFEAT);
   FPGA_TX_BYTE(feat >> 8);
   FPGA_TX_BYTE(feat & 0xff);
+  FPGA_DESELECT();
+}
+
+uint8_t fpga_read_config(uint8_t group, uint8_t index) {
+  uint8_t data;
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_CONFIG_READ);
+  FPGA_TX_BYTE(group);
+  FPGA_TX_BYTE(index);
+  FPGA_RX_BYTE(); // null read to create delay
+  data = FPGA_RX_BYTE();
+  FPGA_DESELECT();
+  return data;
+}
+
+void fpga_write_config(uint8_t group, uint8_t index, uint8_t value, uint8_t invmask) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_CONFIG_WRITE);
+  FPGA_TX_BYTE(group);
+  FPGA_TX_BYTE(index);
+  FPGA_TX_BYTE(value);
+  FPGA_TX_BYTE(invmask);
+  FPGA_TX_BYTE(0x00); // flop reset
   FPGA_DESELECT();
 }

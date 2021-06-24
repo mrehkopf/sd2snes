@@ -1,4 +1,4 @@
-
+.link page $c0
 killdma:
   php
   stz $420b
