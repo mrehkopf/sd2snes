@@ -165,7 +165,7 @@ end
 always @(posedge clkin) begin
   if(reg_oe_falling & enable)
     case(reg_addr)
-      3'h0: data_out_r <= {data_busy_r, audio_busy_r, audio_status_r, audio_error_r, 3'b001};
+      3'h0: data_out_r <= {data_busy_r, audio_busy_r, audio_status_r, audio_error_r, 3'b010};
       3'h1: data_out_r <= msu_data;
       3'h2: data_out_r <= 8'h53;
       3'h3: data_out_r <= 8'h2d;
