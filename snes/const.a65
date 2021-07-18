@@ -221,7 +221,7 @@ mtext_savestate_slots             .byt " ",129,"Savestate slots", 0
 mtext_loadstate_delay             .byt " ",129,"Load delay (frames)", 0
 mtext_sgb_enable_hooks            .byt "In-game hooks", 0
 mtext_sgb_enable_state            .byt "Savestates (XR, XL)", 0
-mtext_sgb_enh_override            .byt "Enhancements", 0
+mtext_sgb_enh_override            .byt "SGB features", 0
 mtext_sgb_spr_increase            .byt "Maximum sprites limit (40)", 0
 mtext_sgb_volume_boost            .byt "Volume boost", 0
 mtext_sgb_clock                   .byt "Clock (Timing)", 0
