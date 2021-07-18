@@ -243,6 +243,7 @@ loop0
 	movwf	FSR	; store in index reg
 loop1
 	nop
+	nop
 	movf	INDF, w ; load seed value
 	movwf	0x20
 	bcf	0x20, 1	; clear bit 1 
@@ -251,7 +252,6 @@ loop1
 	bsf	0x20, 4 ; LED on
 	movf	0x20, w
 	movwf	GPIO
-	nop
 	nop
 	nop
 	nop
