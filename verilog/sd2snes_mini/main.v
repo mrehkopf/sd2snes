@@ -134,6 +134,8 @@ wire SNES_cycle_start = (SNES_CPU_CLKr[6:1] == 6'b000001);
 wire SNES_cycle_end = (SNES_CPU_CLKr[6:1] == 6'b111110);
 wire SNES_WRITE = SNES_WRITEr[2] & SNES_WRITEr[1];
 wire SNES_READ = SNES_READr[2] & SNES_READr[1];
+wire SNES_READ_late = SNES_READr[5] & SNES_READr[4];
+wire SNES_READ_narrow = SNES_READ | SNES_READ_late;
 wire SNES_CPU_CLK = SNES_CPU_CLKr[2] & SNES_CPU_CLKr[1];
 wire SNES_PARD = SNES_PARDr[2] & SNES_PARDr[1];
 
@@ -363,7 +365,7 @@ assign ROM_BHE = ROM_ADDR0;
 assign ROM_BLE = ~ROM_ADDR0;
 
 assign SNES_DATABUS_OE = (SNES_ROMSEL & ~IS_SAVERAM)
-                          |(SNES_READ & SNES_WRITE);
+                          |(SNES_READ_narrow & SNES_WRITE);
 
 assign SNES_DATABUS_DIR = ~SNES_READ;
 
