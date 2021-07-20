@@ -171,6 +171,7 @@ reg [7:0] SNES_READr = 8'b11111111;
 reg [7:0] SNES_WRITEr = 8'b11111111;
 reg [7:0] SNES_CPU_CLKr = 8'b00000000;
 reg [7:0] SNES_ROMSELr = 8'b11111111;
+reg [7:0] SNES_PULSEr = 8'b11111111;
 reg [23:0] SNES_ADDRr [6:0];
 reg [7:0] SNES_PAr [6:0];
 reg [7:0] SNES_DATAr [4:0];
@@ -185,7 +186,11 @@ wire [23:0] SNES_ADDR = (SNES_ADDRr[5] & SNES_ADDRr[4]);
 wire [7:0] SNES_PA = (SNES_PAr[5] & SNES_PAr[4]);
 wire [7:0] SNES_DATA_IN = (SNES_DATAr[3] & SNES_DATAr[2]);
 
+wire SNES_PULSE_IN = SNES_READ_IN & SNES_WRITE_IN & ~SNES_CPU_CLK_IN;
+
+wire SNES_PULSE_end = (SNES_PULSEr[6:1] == 6'b000011);
 wire SNES_PARD_start = (SNES_PARDr[6:1] == 6'b111110);
+wire SNES_PARD_end = (SNES_PARDr[6:1] == 6'b000001);
 // Sample PAWR data earlier on CPU accesses, later on DMA accesses...
 wire SNES_PAWR_start = (SNES_PAWRr[6:1] == (({SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h02100) ? 6'b111000 : 6'b100000));
 wire SNES_PAWR_end = (SNES_PAWRr[6:1] == 6'b000001);
@@ -209,7 +214,8 @@ always @(posedge CLK2) begin
   else if(~SNES_WRITE) BUS_DATA <= SNES_DATA_IN;
 end
 
-wire free_slot = SNES_cycle_end | free_strobe;
+wire SD_DMA_TO_ROM;
+wire free_slot = (SNES_PULSE_end | free_strobe) & ~SD_DMA_TO_ROM;
 
 wire ROM_HIT;
 
@@ -227,7 +233,7 @@ reg GSU_RANr;    initial GSU_RANr = 0;
 always @(posedge CLK2) begin
   // synchronize to the SNES cycle to avoid reading partial interrupt vector
   //if (SNES_WR_end | SNES_RD_end) begin
-  if (SNES_cycle_end) begin
+  if (SNES_PULSE_end) begin
     GSU_RONr    <= GSU_RON & GSU_GO;
     GSU_RANr    <= GSU_RAN & GSU_GO;
   end
@@ -241,6 +247,7 @@ always @(posedge CLK2) begin
 end
 
 always @(posedge CLK2) begin
+  SNES_PULSEr <= {SNES_PULSEr[6:0], SNES_PULSE_IN};
   SNES_PARDr <= {SNES_PARDr[6:0], SNES_PARD_IN};
   SNES_PAWRr <= {SNES_PAWRr[6:0], SNES_PAWR_IN};
   SNES_READr <= {SNES_READr[6:0], SNES_READ_IN};
@@ -314,7 +321,7 @@ sd_dma snes_sd_dma(
   .DBG_clkcnt(SD_DMA_DBG_clkcnt)
 );
 
-wire SD_DMA_TO_ROM = (SD_DMA_STATUS && (SD_DMA_TGT == 2'b00));
+assign SD_DMA_TO_ROM = (SD_DMA_STATUS && (SD_DMA_TGT == 2'b00));
 
 dac snes_dac(
   .clkin(CLK2),

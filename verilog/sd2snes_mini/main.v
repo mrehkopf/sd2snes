@@ -114,6 +114,7 @@ reg [7:0] SNES_READr = 8'b11111111;
 reg [7:0] SNES_WRITEr = 8'b11111111;
 reg [7:0] SNES_CPU_CLKr = 8'b00000000;
 reg [7:0] SNES_ROMSELr = 8'b11111111;
+reg [7:0] SNES_PULSEr = 8'b11111111;
 reg [23:0] SNES_ADDRr [6:0];
 
 reg SNES_DEADr = 1;
@@ -121,7 +122,11 @@ reg SNES_reset_strobe = 0;
 
 reg free_strobe = 0;
 
+wire SNES_PULSE_IN = SNES_READ_IN & SNES_WRITE_IN & ~SNES_CPU_CLK_IN;
+
+wire SNES_PULSE_end = (SNES_PULSEr[6:1] == 6'b000011);
 wire SNES_PARD_start = (SNES_PARDr[6:1] == 6'b111110);
+wire SNES_PARD_end = (SNES_PARDr[6:1] == 6'b000001);
 wire SNES_RD_start = (SNES_READr[6:1] == 6'b111110);
 wire SNES_RD_end = (SNES_READr[6:1] == 6'b000001);
 wire SNES_WR_end = (SNES_WRITEr[6:1] == 6'b000001);
@@ -135,7 +140,7 @@ wire SNES_PARD = SNES_PARDr[2] & SNES_PARDr[1];
 wire SNES_ROMSEL = (SNES_ROMSELr[5] & SNES_ROMSELr[4]);
 wire [23:0] SNES_ADDR = (SNES_ADDRr[6] & SNES_ADDRr[5]);
 
-wire free_slot = SNES_cycle_end | free_strobe;
+wire free_slot = SNES_PULSE_end | free_strobe;
 
 wire ROM_HIT;
 
@@ -147,6 +152,7 @@ always @(posedge CLK2) begin
 end
 
 always @(posedge CLK2) begin
+  SNES_PULSEr <= {SNES_PULSEr[6:0], SNES_PULSE_IN};
   SNES_PARDr <= {SNES_PARDr[6:0], SNES_PARD_IN};
   SNES_READr <= {SNES_READr[6:0], SNES_READ_IN};
   SNES_WRITEr <= {SNES_WRITEr[6:0], SNES_WRITE_IN};

@@ -141,6 +141,7 @@ reg [7:0] SNES_READr = 8'b11111111;
 reg [7:0] SNES_WRITEr = 8'b11111111;
 reg [7:0] SNES_CPU_CLKr = 8'b00000000;
 reg [7:0] SNES_ROMSELr = 8'b11111111;
+reg [7:0] SNES_PULSEr = 8'b11111111;
 reg [23:0] SNES_ADDRr [6:0];
 reg [7:0] SNES_PAr [6:0];
 reg [7:0] SNES_DATAr [4:0];
@@ -156,7 +157,11 @@ wire [23:0] SNES_ADDR = (SNES_ADDRr[5] & SNES_ADDRr[4]);
 wire [7:0] SNES_PA = (SNES_PAr[5] & SNES_PAr[4]);
 wire [7:0] SNES_DATA_IN = (SNES_DATAr[3] & SNES_DATAr[2]);
 
+wire SNES_PULSE_IN = SNES_READ_IN & SNES_WRITE_IN & ~SNES_CPU_CLK_IN;
+
+wire SNES_PULSE_end = (SNES_PULSEr[6:1] == 6'b000011);
 wire SNES_PARD_start = (SNES_PARDr[6:1] == 6'b111110);
+wire SNES_PARD_end = (SNES_PARDr[6:1] == 6'b000001);
 // Sample PAWR data earlier on CPU accesses, later on DMA accesses...
 wire SNES_PAWR_start = (SNES_PAWRr[7:1] == (({SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h02100) ? 7'b1110000 : 7'b1000000));
 wire SNES_PAWR_end = (SNES_PAWRr[6:1] == 6'b000001);
@@ -180,7 +185,8 @@ always @(posedge CLK2) begin
   else if(~SNES_WRITE) BUS_DATA <= SNES_DATA_IN;
 end
 
-wire free_slot = SNES_cycle_end | free_strobe;
+wire SD_DMA_TO_ROM;
+wire free_slot = (SNES_PULSE_end | free_strobe) & ~SD_DMA_TO_ROM;
 
 wire ROM_HIT;
 
@@ -192,6 +198,7 @@ always @(posedge CLK2) begin
 end
 
 always @(posedge CLK2) begin
+  SNES_PULSEr <= {SNES_PULSEr[6:0], SNES_PULSE_IN};
   SNES_PARDr <= {SNES_PARDr[6:0], SNES_PARD_IN};
   SNES_PAWRr <= {SNES_PAWRr[6:0], SNES_PAWR_IN};
   SNES_READr <= {SNES_READr[6:0], SNES_READ_IN};
@@ -253,7 +260,7 @@ sd_dma snes_sd_dma(
   .SD_DMA_END_MID_BLOCK(SD_DMA_END_MID_BLOCK)
 );
 
-wire SD_DMA_TO_ROM = (SD_DMA_STATUS && (SD_DMA_TGT == 2'b00));
+assign SD_DMA_TO_ROM = (SD_DMA_STATUS && (SD_DMA_TGT == 2'b00));
 
 dac snes_dac(
   .clkin(CLK2),
@@ -721,7 +728,7 @@ reg [3:0] r2100_bright = 0;
 reg [3:0] r2100_bright_orig = 0;
 
 always @(posedge CLK2) begin
-  if(SNES_cycle_end) r2100_forcewrite_pre <= 1'b0;
+  if(SNES_PULSE_end) r2100_forcewrite_pre <= 1'b0;
   else if(SNES_PAWR_start & r2100_hit) begin
     if(r2100_patch & SNES_DATA[7]) begin
     // keep previous brightness during forced blanking so there is no DAC step
