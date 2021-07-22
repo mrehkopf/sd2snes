@@ -8,6 +8,7 @@
 #include "yaml.h"
 #include "cfg.h"
 #include "cheat.h"
+#include "fpga.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -18,27 +19,27 @@ extern snes_romprops_t romprops;
 char * inputs = "BYsSudlrAXLR";
 
 void savestate_program() {
-  if(romprops.fpga_conf != NULL) // currently only works with fpga_base
+  if(romprops.fpga_conf != NULL
+     && romprops.fpga_conf != FPGA_BASE
+     /* && romprops.fpga_conf != FPGA_DSP */) {
+    savestate_enable_handler(0);
     return;
+  }
 
 /*
  * savestate code is run from bank C0 directly
- * 2C00 hook is now left alone
+ * 2C00 "EXE" hook is now left alone so it doesn't clash with USB hook features
  */
 
-  if(CFG.enable_ingame_savestate && file_status == FILE_OK) {
+  savestate_enable_handler(CFG.enable_ingame_savestate);
+  if(CFG.enable_ingame_savestate) {
     sram_writeshort(0x0101, SS_REQ_ADDR);
     sram_writebyte(CFG.loadstate_delay, SS_DELAY_ADDR);
     sram_writebyte(CFG.enable_savestate_slots, SS_SLOTS_ADDR);
     sram_writebyte(CFG.enable_ingame_savestate, SS_CTRL_ADDR);
-
     savestate_set_inputs();
     savestate_set_fixes();
     load_backup_state();
-  } else {
-    /* TODO find a way to disable savestate handler (which are called from in-game hook) */
-//    fpga_write_snescmd(0x00);
-    file_close();
   }
 }
 
@@ -231,6 +232,13 @@ void savestate_set_fixes() {
   }
   sram_writebyte(ASM_RTL, addr);
   yaml_file_close();
+}
+
+void savestate_enable_handler(int enable) {
+  uint16_t flags;
+  printf("savestate_enable_handler->%d\n", enable);
+  flags = (enable ? 0x0040 : 0x4000);
+  fpga_write_cheat(7, flags);
 }
 
 void load_backup_state() {
