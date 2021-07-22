@@ -244,10 +244,11 @@ void savestate_enable_handler(int enable) {
 void load_backup_state() {
   uint8_t slot = CFG.enable_savestate_slots ? sram_readbyte(SS_SLOTS_ADDR) : 1;
   char line[256] = SS_BASEDIR;
+  char extend[10];
   check_or_create_folder(SS_BASEDIR);
   cfg_get_last_game(file_lfn, 0);
-  append_file_basename(line, (char*)file_lfn, "%02d.state", sizeof(line));
-  snprintf(line, 256, line, slot);
+  snprintf(extend, sizeof(extend), "%02d.state", slot);
+  append_file_basename(line, (char*)file_lfn, extend, sizeof(line));
 
   load_sram((uint8_t*) line, 0xF00000L);
   file_res = FR_OK;
@@ -256,10 +257,11 @@ void load_backup_state() {
 void save_backup_state() {
   uint8_t slot = CFG.enable_savestate_slots ? sram_readbyte(SS_SLOTS_ADDR) : 1;
   char line[256] = SS_BASEDIR;
+  char extend[10];
   check_or_create_folder(SS_BASEDIR);
   cfg_get_last_game(file_lfn, 0);
-  append_file_basename(line, (char*)file_lfn, "%02d.state", sizeof(line));
-  snprintf(line, 256, line, slot);
+  snprintf(extend, sizeof(extend), "%02d.state", slot);
+  append_file_basename(line, (char*)file_lfn, extend, sizeof(line));
 
   save_sram((uint8_t*) line, 0x50000L, 0xF00000L);
 }
