@@ -191,10 +191,11 @@ reg [7:0] loop_data = 8'h80; // BRA
 reg exe_present; initial exe_present = 0;
 wire map_unlock;
 
-reg SNES_SNOOPRD_DATA_OE;
-reg SNES_SNOOPWR_DATA_OE;
-reg SNES_SNOOPPAWR_DATA_OE;
-reg SNES_SNOOPPARD_DATA_OE;
+
+reg SNES_SNOOPRD_DATA_OE = 0;
+reg SNES_SNOOPWR_DATA_OE = 0;
+reg SNES_SNOOPPAWR_DATA_OE = 0;
+reg SNES_SNOOPPARD_DATA_OE = 0;
 
 reg [3:0] SNES_SNOOPRD_count;
 reg [3:0] SNES_SNOOPWR_count;
@@ -202,6 +203,10 @@ reg [3:0] SNES_SNOOPPAWR_count;
 reg [3:0] SNES_SNOOPPARD_count;
 reg [7:0] CTX_DINr;
 reg       CTX_DIRr;
+
+// early signals for snooping bus
+wire SNES_PAWR_start_early = ((SNES_PAWRr[4:1] | SNES_PAWRr[5:2]) == 4'b1110);
+wire SNES_RD_start_early = ((SNES_READr[6:1] | SNES_READr[7:2]) == 6'b111100);
 
 wire [23:0] SNES_ADDR = (SNES_ADDRr[5] & SNES_ADDRr[4]);
 wire [7:0] SNES_PA = (SNES_PAr[5] & SNES_PAr[4]);
@@ -307,7 +312,7 @@ always @(posedge CLK2) begin
     SNES_SNOOPPAWR_count <= 0;
     SNES_SNOOPPAWR_DATA_OE <= 0;
   end
-  else if (SNES_PAWR_start) begin 
+  else if (SNES_PAWR_start_early) begin
     SNES_SNOOPPAWR_count <= 1;
     SNES_SNOOPPAWR_DATA_OE <= 1;
   end
@@ -346,7 +351,7 @@ always @(posedge CLK2) begin
     SNES_SNOOPRD_count <= 0;
     SNES_SNOOPRD_DATA_OE <= 0;
   end
-  else if (SNES_RD_start) begin 
+  else if (SNES_RD_start_early) begin 
     SNES_SNOOPRD_count <= 1;
     SNES_SNOOPRD_DATA_OE <= 1;
   end
