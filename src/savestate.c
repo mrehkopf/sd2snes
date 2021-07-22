@@ -165,7 +165,25 @@ int savestate_write_fix_code(ssfix_record_t *fix, uint32_t addr) {
   return count;
 }
 
-  return input;
+/*
+  convert literal savestate code string str into binary and deploy at addr
+  Returns: number of bytes written
+*/
+int savestate_write_fix_literal(char *str, uint32_t addr) {
+  int count = 0;
+  uint8_t fixcode[64];
+  char c, d;
+  while((c = *str++) && (count < sizeof(fixcode))) {
+    /* skip prefix */
+    if(c == '@') continue;
+    /* stop on incomplete hex tuple */
+    if (!(d = *str++)) break;
+    c = (c & 0x40) ? (c & 0x7) + 9 : c & 0xf;
+    d = (d & 0x40) ? (d & 0x7) + 9 : d & 0xf;
+    fixcode[count++] = (c << 4) | d;
+  }
+  sram_writeblock(fixcode, addr, count);
+  return count;
 }
 
 void savestate_set_fixes() {
@@ -185,16 +203,28 @@ void savestate_set_fixes() {
       if(tok.type == YAML_LIST_START) {
         while(yaml_get_next(&tok)) {
           if(tok.type == YAML_LIST_END) break;
+          if(tok.stringvalue[0] == '@') {
+            /* code literal */
+            // printf("Fix record (list/literal): %s\n", tok.stringvalue);
+            addr += savestate_write_fix_literal(tok.stringvalue, addr);
+          } else {
             if(savestate_parse_yaml_fix(&fix, &tok)) {
               // printf("Fix record (list/std): tgt=%06lx src=%04x operator=%02x operand=%02x\n", fix.dst, fix.src, fix.operator, fix.operand);
               addr += savestate_write_fix_code(&fix, addr);
             }
           }
+        }
       } else {
+        if(tok.stringvalue[0] == '@') {
+          /* code literal */
+          // printf("Fix record (single/literal): %s\n", tok.stringvalue);
+          addr += savestate_write_fix_literal(tok.stringvalue, addr);
+        } else {
           if(savestate_parse_yaml_fix(&fix, &tok)) {
             // printf("Fix record (single/std): tgt=%06lx src=%04x operator=%02x operand=%02x\n", fix.dst, fix.src, fix.operator, fix.operand);
             addr += savestate_write_fix_code(&fix, addr);
           }
+        }
       }
 
     }
