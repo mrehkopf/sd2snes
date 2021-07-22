@@ -146,6 +146,8 @@ wire dspx_dat_we;
 wire [15:0] featurebits;
 wire feat_cmd_unlock = featurebits[5];
 
+wire r213f_enable;
+
 wire [23:0] MAPPED_SNES_ADDR;
 wire        ROM_ADDR0;
 //reg [22:0] ROM_ADDR_PRE;
@@ -325,7 +327,9 @@ always @(posedge CLK2) begin
     SNES_SNOOPPARD_count <= 0;
     SNES_SNOOPPARD_DATA_OE <= 0;
   end
-  else if (SNES_PARD_start) begin 
+  // avoid triggering OE signals on 213f to avoid problem with region override
+  // do not sniff external B-bus (>=$2184, e.g. Satellaview)
+  else if (SNES_PARD_start & ~r213f_enable & (SNES_PA < 8'h84)) begin
     SNES_SNOOPPARD_count <= 1;
     SNES_SNOOPPARD_DATA_OE <= 1;
   end

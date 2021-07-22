@@ -338,7 +338,8 @@ always @(posedge CLK2) begin
     SNES_SNOOPPARD_DATA_OE <= 0;
   end
   // avoid triggering OE signals on 213f to avoid problem with region override
-  else if (SNES_PARD_start & ~r213f_enable) begin 
+  // do not sniff external B-bus (>=$2184, e.g. Satellaview)
+  else if (SNES_PARD_start & ~r213f_enable & (SNES_PA < 8'h84)) begin
     SNES_SNOOPPARD_count <= 1;
     SNES_SNOOPPARD_DATA_OE <= 1;
   end
