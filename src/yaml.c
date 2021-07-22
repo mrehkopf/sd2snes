@@ -145,7 +145,9 @@ int yaml_get_next(yaml_token_t *tok) {
       }
     }
   } while (repeat);
-  if(line == NULL) return EOF;
+  if(line == NULL) {
+    return 0;
+  }
 
   ystate.flags &= ~(YAML_FLAG_REWIND_LINE | YAML_FLAG_REWIND_TOKEN);
 
@@ -254,7 +256,7 @@ int yaml_get_next(yaml_token_t *tok) {
 int yaml_search_next(yaml_token_t *tok, yaml_scope scope) {
   yaml_token_t cmp;
   int found = 0;
-  while(!found && (yaml_get_next(&cmp) != EOF)) {
+  while(!found && yaml_get_next(&cmp)) {
     if(scope == YAML_SCOPE_ITEM && cmp.type == YAML_ITEM_START) {
       break;
     }
