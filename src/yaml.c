@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <ctype.h>
 
 #include "config.h"
 #include "yaml.h"
@@ -98,9 +99,15 @@ int yaml_get_next(yaml_token_t *tok) {
         int quote = 0;
         while(*ptr) {
           if(*ptr == '#' && !dblquote && !quote) {
-            /* check for escaped # */
-            DBG_YAML printf("truncating comment %s from line %s\n", ptr, line);
-            *ptr = 0;
+            /* TODO check for escaping (\#) */
+            DBG_YAML printf("truncating comment '%s' from line '%s'\n", ptr, line);
+            *ptr-- = 0;
+            /* also truncate leading whitespaces up to the # sign so we don't
+               strtokenize dummy whitespaces between last strtok token and # sign */
+            while(isspace((unsigned char)*ptr) && ptr >= line) {
+              *ptr-- = 0;
+            }
+            DBG_YAML printf("truncation result: '%s'\n", line);
             break;
           }
           if(*ptr == '\'') {
