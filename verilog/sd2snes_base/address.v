@@ -88,8 +88,7 @@ wire [23:0] SAVERAM_ADDR = {4'hE,1'b0,SAVERAM_BASE,11'h0};
 /* HiROM:   SRAM @ Bank 0x30-0x3f, 0xb0-0xbf
             Offset 6000-7fff */
 
-assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
-                 |(SNES_ADDR[22]));
+assign IS_ROM = ~SNES_ROMSEL;
 
 // Calculate pre IS_SAVERAM to relax timing.  Uses
 // early SNES_ADDR from main.

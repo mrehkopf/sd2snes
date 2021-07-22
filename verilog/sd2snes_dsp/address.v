@@ -81,8 +81,7 @@ wire [23:0] SRAM_SNES_ADDR;
 /* HiROM:   SRAM @ Bank 0x30-0x3f, 0xb0-0xbf
             Offset 6000-7fff */
 
-assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
-                 |(SNES_ADDR[22]));
+assign IS_ROM = ~SNES_ROMSEL;
 
 assign IS_SAVERAM = (~map_unlock & SAVERAM_MASK[0])
                     &(featurebits[FEAT_ST0010]
