@@ -76,60 +76,103 @@ void savestate_set_inputs() {
   yaml_file_close();
 }
 
+/* convert a YAML record into binary fix data for the savestate handler.
+   XXX Also patches the ROM directly when ROM patch directive found
+*/
+int savestate_parse_yaml_fix(ssfix_record_t *fix, yaml_token_t *tok) {
+  uint32_t dst;
+  char *pos;
 
-uint16_t savestate_parse_input(char * str) {
-  uint16_t input = 0;
+  //dst address
+  pos = tok->stringvalue;
+  fix->dst = strtol(pos, &pos, 16);
 
-  for(uint8_t x=0; x < strlen(str); x++){
-    input |= 1 << (0xF - (strchr(inputs, str[x]) - inputs));
+  //src offset
+  if(*pos != ',') {
+    /* invalid record */
+    return 0;
   }
+  pos++; /* skip comma */
+  fix->src = strtol(pos, &pos, 16);
+
+  //rompatch
+  if(*pos) {
+    pos++;
+    if(*pos == ';') {
+      dst = strtol(pos, &pos, 16);
+      if(*pos == ',') {
+        pos++;
+        uint8_t byte = strtol(pos, &pos, 16);
+        if(dst > 0){
+          sram_writebyte(byte, dst);
+        }
+      }
+    }
+  }
+  return 1;
+}
+
+/*
+  convert savestate fix record into executable code and deploy at addr.
+  Returns: number of bytes written
+*/
+int savestate_write_fix_code(ssfix_record_t *fix, uint32_t addr) {
+  int count = 0;
+  uint8_t fixcode[10];
+  memset(fixcode, 0, sizeof(fixcode));
+  if(fix->src >= 0x2140 && fix->src <= 0x2143){
+    fixcode[count++] = ASM_LDA_ABSLONG;
+    fixcode[count++] = (fix->src >> 0) & 0xff;
+    fixcode[count++] = (fix->src >> 8) & 0xff;
+    fixcode[count++] = 0;
+  } else {
+    fixcode[count++] = ASM_LDA_IMM;
+    fixcode[count++] = fix->src & 0xff;
+  }
+  fixcode[count++] = ASM_STA_ABSLONG;
+  fixcode[count++] = (fix->dst >>  0) & 0xff;
+  fixcode[count++] = (fix->dst >>  8) & 0xff;
+  fixcode[count++] = (fix->dst >> 16) & 0xff;
+
+  sram_writeblock(fixcode, addr, count);
+  return count;
+}
 
   return input;
 }
 
 void savestate_set_fixes() {
   int err = 0;
-  char buf[8];
-  snprintf(buf, 5, "%04X", romprops.header.chk);
-
-  sram_writeshort(0x0000, SS_FIXES_ADDR);
-  
+  char chksum[5];
+  uint32_t addr = SS_FIXES_ADDR;
+  yaml_token_t tok;
+  tok.type = YAML_KEY;
+  snprintf(chksum, 5, "%04X", romprops.header.chk);
   yaml_file_open(SS_FIXESFILE, FA_READ);
   if(file_res) {
     err = file_res;
   }
   if(!err) {
-    yaml_token_t tok;
-    if(yaml_get_itemvalue(buf, &tok)) { 
-      uint16_t src;
-      uint32_t dst;
-
-      //checksum
-      sram_writeshort(romprops.header.chk, SS_FIXES_ADDR);
-
-      //dst address
-      strncpy(buf, tok.stringvalue, 6); buf[6] = '\0';
-      dst = strtol(buf, NULL, 16);
-      sram_writelong(dst, SS_FIXES_ADDR+2);
-
-      //src offset
-      strncpy(buf, strchr(tok.stringvalue, ',')+1, 4); buf[4] = '\0';
-      src = strtol(buf, NULL, 16);
-      sram_writeshort(src, SS_FIXES_ADDR+6);
-
-      //rompatch
-      if(strchr(tok.stringvalue, ';') != NULL){
-        strncpy(buf, strchr(tok.stringvalue, ';')+1, 6); buf[6] = '\0';
-        dst = strtol(buf, NULL, 16);
-        strncpy(buf, strrchr(tok.stringvalue, ',')+1, 2); buf[2] = '\0';
-        uint8_t byte = strtol(buf, NULL, 16);
-        if(dst > 0){
-          sram_writebyte(byte, dst);        
-        }
+    while(yaml_get_value(chksum, &tok, YAML_SCOPE_GLOBAL)) {
+      ssfix_record_t fix;
+      if(tok.type == YAML_LIST_START) {
+        while(yaml_get_next(&tok)) {
+          if(tok.type == YAML_LIST_END) break;
+            if(savestate_parse_yaml_fix(&fix, &tok)) {
+              // printf("Fix record (list/std): tgt=%06lx src=%04x operator=%02x operand=%02x\n", fix.dst, fix.src, fix.operator, fix.operand);
+              addr += savestate_write_fix_code(&fix, addr);
+            }
+          }
+      } else {
+          if(savestate_parse_yaml_fix(&fix, &tok)) {
+            // printf("Fix record (single/std): tgt=%06lx src=%04x operator=%02x operand=%02x\n", fix.dst, fix.src, fix.operator, fix.operand);
+            addr += savestate_write_fix_code(&fix, addr);
+          }
       }
+
     }
   }
-  sram_writeshort(0x0000, SS_FIXES_ADDR+8);
+  sram_writebyte(ASM_RTL, addr);
   yaml_file_close();
 }
 

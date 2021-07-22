@@ -17,6 +17,15 @@
 #define SS_CTRL_ADDR        0xFE1012L
 #define SS_FIXES_ADDR       0xFE1014L
 
+typedef struct __attribute__ ((__packed__)) _ssfix_record {
+  uint32_t dst;
+  uint16_t src;
+/* ROM patches are applied immediately
+  uint16_t rom_patch_addr;
+  uint8_t  rom_patch_bank;
+  uint8_t  rom_patch_value;*/
+} ssfix_record_t;
+
 void savestate_program(void);
 void savestate_set_inputs(void);
 uint16_t savestate_parse_input(char * str);

@@ -97,8 +97,10 @@
 #define SNESCMD_EXE                  (0x2c00)
 
 #define ASM_LDA_IMM      (0xa9)
+#define ASM_LDA_ABSLONG  (0xaf)
 #define ASM_STA_ABSLONG  (0x8f)
 #define ASM_RTS          (0x60)
+#define ASM_RTL          (0x6b)
 
 #define SNES_BUTTON_LRET (0x3030)
 #define SNES_BUTTON_LREX (0x2070)
