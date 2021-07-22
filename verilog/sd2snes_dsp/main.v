@@ -813,12 +813,15 @@ wire MCU_RD_HIT = |(STATE & (ST_MCU_RD_ADDR | ST_MCU_RD_END));
 wire MCU_HIT = MCU_WR_HIT | MCU_RD_HIT;
 
 // CTX
-wire CTX_WR_HIT = |(STATE & ST_CTX_WR_ADDR);
+wire CTX_WE_HIT = |(STATE & ST_CTX_WR_ADDR);
+wire CTX_WR_HIT = |(STATE & (ST_CTX_WR_ADDR | ST_CTX_WR_END));
 wire CTX_HIT = CTX_WR_HIT;
 // DMA
-wire DMA_WR_HIT = |(STATE & ST_DMA_WR_ADDR);
-wire DMA_RD_HIT = |(STATE & ST_DMA_RD_ADDR);
+wire DMA_WE_HIT = |(STATE & ST_DMA_WR_ADDR);
+wire DMA_WR_HIT = |(STATE & (ST_DMA_WR_ADDR | ST_DMA_WR_END));
+wire DMA_RD_HIT = |(STATE & (ST_DMA_RD_ADDR | ST_DMA_RD_END));
 wire DMA_HIT = DMA_WR_HIT | DMA_RD_HIT;
+
 
 `ifdef MK2
 my_dcm snes_dcm(
@@ -1116,10 +1119,10 @@ assign ROM_DATA[15:8] = ROM_ADDR0 ? 8'bZ
 
 assign ROM_WE = SD_DMA_TO_ROM
                 ? MCU_WRITE
-                : CTX_WR_HIT ? 1'b0
-                : DMA_WR_HIT ? 1'b0
+                : CTX_WE_HIT ? 1'b0
+                : DMA_WE_HIT ? 1'b0
                 : (ROM_HIT & ~loop_enable & IS_WRITABLE & SNES_CPU_CLK) ? SNES_WRITE
-                : MCU_WR_HIT ? 1'b0
+                : MCU_WE_HIT ? 1'b0
                 : 1'b1;
 
 assign ROM_BHE = ROM_ADDR0;
