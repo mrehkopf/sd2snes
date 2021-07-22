@@ -3,6 +3,7 @@
 
 
 #include <arm/NXP/LPC17xx/LPC17xx.h>
+#include "snes.h"
 
 #define SS_BASEDIR          ("/sd2snes/states/")
 #define SS_INPUTFILE        ("/sd2snes/savestate_inputs.yml")
@@ -17,9 +18,18 @@
 #define SS_CTRL_ADDR        0xFE1012L
 #define SS_FIXES_ADDR       0xFE1014L
 
+typedef enum {
+  SS_OP_NONE = 0,
+  SS_OP_OR   = ASM_ORA_IMM,
+  SS_OP_AND  = ASM_AND_IMM,
+  SS_OP_EOR  = ASM_EOR_IMM
+} ss_op;
+
 typedef struct __attribute__ ((__packed__)) _ssfix_record {
   uint32_t dst;
   uint16_t src;
+  ss_op    operator;
+  uint8_t  operand;
 /* ROM patches are applied immediately
   uint16_t rom_patch_addr;
   uint8_t  rom_patch_bank;

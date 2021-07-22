@@ -80,6 +80,8 @@ void savestate_set_inputs() {
    XXX Also patches the ROM directly when ROM patch directive found
 */
 int savestate_parse_yaml_fix(ssfix_record_t *fix, yaml_token_t *tok) {
+  fix->operator = SS_OP_NONE;
+  fix->operand = 0;
   uint32_t dst;
   char *pos;
 
@@ -94,6 +96,27 @@ int savestate_parse_yaml_fix(ssfix_record_t *fix, yaml_token_t *tok) {
   }
   pos++; /* skip comma */
   fix->src = strtol(pos, &pos, 16);
+
+  //operation
+  if(*pos && *pos != ';' && *pos != ' ') {
+    switch(*pos) {
+      case '^': // EOR
+        fix->operator = SS_OP_EOR;
+        break;
+      case '&': // AND
+        fix->operator = SS_OP_AND;
+        break;
+      case '|': // OR
+        fix->operator = SS_OP_OR;
+        break;
+      default:
+        /* invalid record */
+        return 0;
+    }
+    //operand
+    pos++;
+    fix->operand = strtol(pos, &pos, 16);
+  }
 
   //rompatch
   if(*pos) {
@@ -128,6 +151,10 @@ int savestate_write_fix_code(ssfix_record_t *fix, uint32_t addr) {
   } else {
     fixcode[count++] = ASM_LDA_IMM;
     fixcode[count++] = fix->src & 0xff;
+  }
+  if(fix->operator) {
+    fixcode[count++] = fix->operator;
+    fixcode[count++] = fix->operand;
   }
   fixcode[count++] = ASM_STA_ABSLONG;
   fixcode[count++] = (fix->dst >>  0) & 0xff;

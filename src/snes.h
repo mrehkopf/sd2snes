@@ -99,6 +99,9 @@
 #define ASM_LDA_IMM      (0xa9)
 #define ASM_LDA_ABSLONG  (0xaf)
 #define ASM_STA_ABSLONG  (0x8f)
+#define ASM_ORA_IMM      (0x09)
+#define ASM_AND_IMM      (0x29)
+#define ASM_EOR_IMM      (0x49)
 #define ASM_RTS          (0x60)
 #define ASM_RTL          (0x6b)
 
