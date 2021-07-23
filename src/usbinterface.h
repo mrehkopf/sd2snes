@@ -27,6 +27,31 @@
 #ifndef USBINTERFACE_H
 #define USBINTERFACE_H
 
+#ifdef DEBUG_USB
+#define PRINT_FUNCTION() printf("%-20s ", __FUNCTION__);
+#define PRINT_CMD(buf) printf("header=%c%c%c%c op=%s space=%s flags=%d cmd_size=%d block_size=%d offset=%6x size=%d"\
+                                                                        , buf[0], buf[1], buf[2], buf[3]          \
+                                                                        , usbint_server_opcode_s[buf[4]]          \
+                                                                        , usbint_server_space_s[buf[5]]           \
+                                                                        , (int)buf[6]                             \
+                                                                        , (int)server_info.cmd_size               \
+                                                                        , (int)server_info.block_size             \
+                                                                        , (int)server_info.offset                 \
+                                                                        , (int)server_info.size                   \
+                                                               );
+#define PRINT_DAT(num, total) printf("%d/%d ", num, total);
+#define PRINT_MSG(msg) printf("%-5s ", msg);
+#define PRINT_END() uart_putc('\n');
+#define PRINT_STATE(state) printf("state=%-32s ", usbint_server_state_s[state]);
+#else
+#define PRINT_FUNCTION() {}
+#define PRINT_CMD(buf) {}
+#define PRINT_DAT(num, total) {}
+#define PRINT_MSG(msg) {}
+#define PRINT_END() {}
+#define PRINT_STATE(state) {}
+#endif
+
 /* defines */
 #define USB_BLOCK_SIZE 512
 

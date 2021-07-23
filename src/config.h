@@ -3,6 +3,8 @@
 
 #include "autoconf.h"
 
+#define CONFIG_FWVER (*((uint32_t*)CONFIG_FW_START+4))
+
 #define IN_AHBRAM   __attribute__ ((section(".ahbram")))
 
 #define SD_DT_INT_SETUP()   do {\

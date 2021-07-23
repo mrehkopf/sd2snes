@@ -70,6 +70,9 @@ export FW_START=$(CONFIG_FW_START)
 export FW_FILE=$(OBJDIR)/$(CONFIG_FW_FILE)
 export FLASH_SIZE=$(CONFIG_FLASH_SIZE)
 
+# Version
+include VERSION
+
 # List C source files here. (C dependencies are automatically generated.)
 SRC  = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c
 SRC += printf.c spi.c fileops.c rtc.c fpga.c fpga_spi.c snes.c smc.c
@@ -219,7 +222,7 @@ build: elf bin hex
 	$(E) "  SIZE   $(TARGET).elf"
 	$(Q)$(ELFSIZE)|grep -v debug
 	cp $(TARGET).bin $(OBJDIR)/$(CONFIG_FW_FILE)
-	utils/genhdr $(OBJDIR)/$(CONFIG_FW_FILE) $(CONFIG_FW_MAGIC) $(CONFIG_FWVER)
+	utils/genhdr $(OBJDIR)/$(CONFIG_FW_FILE) $(CONFIG_FW_MAGIC) $(CONFIG_VERSION)
 
 elf: $(TARGET).elf
 bin: $(TARGET).bin
@@ -244,9 +247,9 @@ ELFSIZE = $(SIZE) -A $(TARGET).elf
 
 # Generate autoconf.h from config
 .PRECIOUS : $(OBJDIR)/autoconf.h
-$(OBJDIR)/autoconf.h: $(CONFIG) | $(OBJDIR)
+$(OBJDIR)/autoconf.h: $(CONFIG) VERSION | $(OBJDIR)
 	$(E) "  CONF2H $(CONFIG)"
-	$(Q)$(AWK) -f conf2h.awk $(CONFIG) > $(OBJDIR)/autoconf.h
+	$(Q)$(AWK) -f conf2h.awk $(CONFIG) VERSION > $(OBJDIR)/autoconf.h
 
 # Generate embedded FPGA config from finished bitfile
 .PRECIOUS : $(OBJDIR)/cfgware.h
