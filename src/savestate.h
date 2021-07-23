@@ -38,7 +38,6 @@ typedef struct __attribute__ ((__packed__)) _ssfix_record {
 
 void savestate_program(void);
 void savestate_set_inputs(void);
-uint16_t savestate_parse_input(char * str);
 void savestate_set_fixes(void);
 void savestate_enable_handler(int enable);
 void load_backup_state(void);

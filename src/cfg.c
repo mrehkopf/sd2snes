@@ -38,9 +38,9 @@ cfg_t CFG_DEFAULT = {
   .enable_ingame_savestate = 0,
   .loadstate_delay = 10,
   .enable_savestate_slots = 1,
-  .ingame_savestate_buttons = "SL",
-  .ingame_loadstate_buttons = "SR",
-  .ingame_changestate_buttons = "s",
+  .ingame_buttons_savestate = SNES_BUTTON_START | SNES_BUTTON_R,
+  .ingame_buttons_loadstate = SNES_BUTTON_START | SNES_BUTTON_L,
+  .ingame_buttons_changestate = SNES_BUTTON_SELECT,
   .sgb_enable_ingame_hook = 0,
   .sgb_enable_state = 0,
   .sgb_volume_boost = 0,
@@ -51,6 +51,8 @@ cfg_t CFG_DEFAULT = {
 
 cfg_t CFG;
 extern mcu_status_t STM;
+
+char *button_names = "BYsSudlrAXLR";
 
 int cfg_save() {
   int err = 0;
@@ -94,12 +96,16 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %d\n", CFG_LOADSTATE_DELAY, CFG.loadstate_delay);
   f_printf(&file_handle, "#  %s: Enable in-game savestate (0: disabled, 1: enabled)\n", CFG_ENABLE_INGAME_SAVESTATE);
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_SAVESTATE_SLOTS, CFG.enable_savestate_slots ? "true" : "false");
-  f_printf(&file_handle, "#  %s: In-game save state buttons (buttons: BYsSudlrAXLR, default: start+l),\n", CFG_INGAME_SAVESTATE_BUTTONS);
-  f_printf(&file_handle, "%s: %s\n", CFG_INGAME_SAVESTATE_BUTTONS, CFG.ingame_savestate_buttons);
-  f_printf(&file_handle, "#  %s: In-game load state buttons (buttons: BYsSudlrAXLR, default: start+r),\n", CFG_INGAME_LOADSTATE_BUTTONS);
-  f_printf(&file_handle, "%s: %s\n", CFG_INGAME_LOADSTATE_BUTTONS, CFG.ingame_loadstate_buttons);
-  f_printf(&file_handle, "#  %s: In-game change state slot buttons (buttons: BYsSudlrAXLR, don't use dpad buttons, default: select),\n", CFG_INGAME_CHANGESTATE_BUTTONS);
-  f_printf(&file_handle, "%s: %s\n", CFG_INGAME_CHANGESTATE_BUTTONS, CFG.ingame_changestate_buttons);
+  char buttons[13];
+  cfg_buttons_bits2string(CFG.ingame_buttons_savestate, buttons);
+  f_printf(&file_handle, "#  %s: In-game save state buttons (buttons: BYsSudlrAXLR, default: start+r (SR)),\n", CFG_INGAME_BUTTONS_SAVE_STATE);
+  f_printf(&file_handle, "%s: %s\n", CFG_INGAME_BUTTONS_SAVE_STATE, buttons);
+  cfg_buttons_bits2string(CFG.ingame_buttons_loadstate, buttons);
+  f_printf(&file_handle, "#  %s: In-game load state buttons (buttons: BYsSudlrAXLR, default: start+l (SL)),\n", CFG_INGAME_BUTTONS_LOAD_STATE);
+  f_printf(&file_handle, "%s: %s\n", CFG_INGAME_BUTTONS_LOAD_STATE, buttons);
+  cfg_buttons_bits2string(CFG.ingame_buttons_changestate, buttons);
+  f_printf(&file_handle, "#  %s: In-game change state slot buttons (buttons: BYsSudlrAXLR, don't use dpad buttons, default: select (s)),\n", CFG_INGAME_BUTTONS_CHANGE_STATE);
+  f_printf(&file_handle, "%s: %s\n", CFG_INGAME_BUTTONS_CHANGE_STATE, buttons);
   f_puts("\n", &file_handle);
   f_printf(&file_handle, "#  %s: SGB enable hooks (%s or %s enables SGB hooks.  zero overhead.)\n", CFG_SGB_ENABLE_INGAME_HOOK, CFG_SGB_ENABLE_INGAME_HOOK, CFG_ENABLE_INGAME_HOOK);
   f_printf(&file_handle, "%s: %s\n", CFG_SGB_ENABLE_INGAME_HOOK, CFG.sgb_enable_ingame_hook ? "true" : "false");
@@ -228,11 +234,14 @@ int cfg_load() {
     if(yaml_get_itemvalue(CFG_ENABLE_SAVESTATE_SLOTS, &tok)) {
       CFG.enable_savestate_slots = tok.boolvalue ? 1 : 0;
     }
-    if(yaml_get_itemvalue(CFG_INGAME_SAVESTATE_BUTTONS, &tok)) {
-      strcpy(CFG.ingame_savestate_buttons, tok.stringvalue);
+    if(yaml_get_itemvalue(CFG_INGAME_BUTTONS_SAVE_STATE, &tok)) {
+      CFG.ingame_buttons_savestate = cfg_buttons_string2bits(tok.stringvalue);
     }
-    if(yaml_get_itemvalue(CFG_INGAME_LOADSTATE_BUTTONS, &tok)) {
-      strcpy(CFG.ingame_loadstate_buttons, tok.stringvalue);
+    if(yaml_get_itemvalue(CFG_INGAME_BUTTONS_LOAD_STATE, &tok)) {
+      CFG.ingame_buttons_loadstate = cfg_buttons_string2bits(tok.stringvalue);
+    }
+    if(yaml_get_itemvalue(CFG_INGAME_BUTTONS_CHANGE_STATE, &tok)) {
+      CFG.ingame_buttons_changestate = cfg_buttons_string2bits(tok.stringvalue);
     }
     if(yaml_get_itemvalue(CFG_SGB_ENABLE_INGAME_HOOK, &tok)) {
       CFG.sgb_enable_ingame_hook = tok.boolvalue ? 1 : 0;
@@ -556,4 +565,29 @@ void cfg_set_vidmode_menu(cfg_vidmode_t vidmode) {
 
 cfg_vidmode_t cfg_get_vidmode_menu() {
   return CFG.vidmode_menu;
+}
+
+/* convert a controller input bit field (16 bits) to config string
+   target string *out must have enough space for 12 characters */
+void cfg_buttons_bits2string(uint16_t bits, char *out) {
+  int j = 0;
+//  printf("converted button bits %04X ", bits);
+  for(uint8_t i=0; i < 12; i++) {
+    if(bits & 0x8000) {
+      out[j++] = button_names[i];
+    }
+    bits <<= 1;
+  }
+  out[j] = 0;
+//  printf(" to string: %s\n", out);
+}
+
+/* convert a config buttons string to controller input bit field (16 bits) */
+uint16_t cfg_buttons_string2bits(char *str) {
+  uint16_t input = 0;
+  for(uint8_t x=0; x < SNES_NUM_BUTTONS && str[x]; x++){
+    input |= 1 << (0xF - (strchr(button_names, str[x]) - button_names));
+  }
+//  printf("converted button string %s to bits: %04X\n", str, input);
+  return input;
 }

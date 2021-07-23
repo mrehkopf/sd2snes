@@ -16,8 +16,6 @@
 extern cfg_t CFG;
 extern snes_romprops_t romprops;
 
-char * inputs = "BYsSudlrAXLR";
-
 void savestate_program() {
   if(romprops.fpga_conf != NULL
      && romprops.fpga_conf != FPGA_BASE
@@ -50,15 +48,15 @@ void savestate_set_inputs() {
   uint16_t input;
   snprintf(buf, 5, "%04X", romprops.header.chk);
 
-  input = savestate_parse_input(CFG.ingame_savestate_buttons);
+  input = CFG.ingame_buttons_savestate;
   sram_writeshort(input, SS_SAVE_INPUT_ADDR);
 
-  input = savestate_parse_input(CFG.ingame_loadstate_buttons);
+  input = CFG.ingame_buttons_loadstate;
   sram_writeshort(input, SS_LOAD_INPUT_ADDR);
 
-  input = savestate_parse_input(CFG.ingame_changestate_buttons);
+  input = CFG.ingame_buttons_changestate;
   sram_writeshort(input, SS_SLOTS_INPUT_ADDR);
-  
+
   yaml_file_open(SS_INPUTFILE, FA_READ);
   if(file_res) {
     err = file_res;
@@ -67,10 +65,10 @@ void savestate_set_inputs() {
     yaml_token_t tok;
     if(yaml_get_itemvalue(buf, &tok)) { 
       str = strtok(tok.stringvalue, ";, \t");
-      input = savestate_parse_input(str);
+      input = cfg_buttons_string2bits(str);
       if(input > 0) sram_writeshort(input, SS_SAVE_INPUT_ADDR);
       str = strtok(NULL, ";, \t");
-      input = savestate_parse_input(str);
+      input = cfg_buttons_string2bits(str);
       if(input > 0) sram_writeshort(input, SS_LOAD_INPUT_ADDR);
     }
   }
