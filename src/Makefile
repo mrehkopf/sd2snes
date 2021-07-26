@@ -55,6 +55,7 @@ include $(CONFIG)
 
 # Directory for all generated files
 OBJDIR := obj$(CONFIGSUFFIX)
+DEPDIR := .dep$(CONFIGSUFFIX)
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = binary
@@ -206,7 +207,7 @@ LST := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.lst) $(ASRC:.S=.lst))
 
 
 # Compiler flags to generate dependency files.
-GENDEPFLAGS = -MMD -MP -MF .dep/$(@F).d
+GENDEPFLAGS = -MMD -MP -MF $(DEPDIR)/$(@F).d
 
 
 # Combine all necessary flags and optional flags.
@@ -330,11 +331,11 @@ clean_list :
 	$(Q)$(REMOVE) $(LST)
 	$(Q)$(REMOVE) $(CSRC:.c=.s)
 	$(Q)$(REMOVE) $(CSRC:.c=.d)
-	$(Q)$(REMOVE) .dep/*
+	$(Q)$(REMOVE) $(DEPDIR)/*
 	-$(Q)rmdir $(OBJDIR)
 
 # Include the dependency files.
--include $(shell mkdir .dep 2>/dev/null) $(wildcard .dep/*)
+-include $(info $(DEPDIR)) $(shell mkdir $(DEPDIR) 2>/dev/null) $(wildcard $(DEPDIR)/*)
 
 # Listing of phony targets.
 .PHONY : all begin finish end sizebefore sizeafter \
