@@ -43,6 +43,8 @@
 
 extern cfg_t CFG;
 sgb_romprops_t sgb_romprops;
+char SGBFW[30];
+char SGBSR[30];
 
 void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
   sgb_header_t* header = &(props->header);
