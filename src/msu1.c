@@ -15,6 +15,7 @@
 #include "memory.h"
 #include "led.h"
 #include "usbinterface.h"
+#include "savestate.h"
 
 FIL msudata;
 FIL msuaudio;
@@ -280,6 +281,16 @@ int msu1_loop() {
           break;
         case SNES_CMD_RESET_TO_MENU:
           msu_res = SNES_RESET_LONG;
+          break;
+        case SNES_CMD_SAVESTATE:
+          if(msu_audio_usage == MSU_BUSY) dac_pause();
+          save_backup_state();
+          if(msu_audio_usage == MSU_BUSY) dac_play();
+          break;
+        case SNES_CMD_LOADSTATE:
+          if(msu_audio_usage == MSU_BUSY) dac_pause();
+          load_backup_state();
+          if(msu_audio_usage == MSU_BUSY) dac_play();
           break;
         default:
           printf("unknown cmd: %02x\n", cmd);
