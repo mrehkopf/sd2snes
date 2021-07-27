@@ -814,7 +814,7 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD) ? (r213f_forceread ? 8'bZ : r213f
                                 ? (srtc_enable ? SRTC_SNES_DATA_OUT
                                   :msu_enable ? MSU_SNES_DATA_OUT
                                   :dma_enable ? DMA_SNES_DATA_OUT
-                                  :bsx_data_ovr ? BSX_SNES_DATA_OUT
+                                  :(bsx_data_ovr & ~IS_PATCH) ? BSX_SNES_DATA_OUT
                                   :(cheat_hit & ~feat_cmd_unlock) ? cheat_data_out
                                   // put spinloop below cheat so we don't overwrite jmp target after NMI
                                   :loop_enable ? loop_data
@@ -1186,6 +1186,7 @@ reg ReadOrWrite_r; always @(posedge CLK2) ReadOrWrite_r <= ~(SNES_READr[1] & SNE
 assign SNES_DATABUS_OE = (msu_enable & ReadOrWrite_r) ? 1'b0 :
                          (dma_enable & ReadOrWrite_r) ? 1'b0 :
                          (loop_enable & ~SNES_READ_narrow) ? 1'b0 :
+                         (bsx_data_ovr & ~IS_PATCH & ReadOrWrite_r) ? 1'b0 :
                          (srtc_enable & ReadOrWrite_r) ? 1'b0 :
                          (snescmd_enable & ReadOrWrite_r) ? (~(snescmd_unlock | feat_cmd_unlock | (map_snescmd_wr_unlock_r & ~SNES_WRITE) | (map_snescmd_rd_unlock_r & ~SNES_READ_narrow))) :
                          (bs_page_enable & ~SNES_READ_narrow) ? 1'b0 :
