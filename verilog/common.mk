@@ -95,6 +95,7 @@ main.ncd: main_map.ncd
 	$(call T,[mk2] fpga_$(CORE) - Place and Route)
 	$(eval XILINX_PAR_OPTS := $(shell $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenparcmd.tcl sd2snes_$(CORE).xise))
 	$(XILINX_BIN)/par -w $(XILINX_PAR_OPTS) $^ $@ main.pcf
+	@! grep -q 'Timing Score: [1-9][0-9]*' main.par || (echo "[mk2] sd2snes_$(CORE): Timing not met! Aborting."; exit 55)
 
 main.bit: main.ncd main.ut
 	$(call T,[mk2] fpga_$(CORE) - Generate Programming File)
@@ -135,16 +136,17 @@ fpga_$(CORE).bi3: output_files/main.rbf
 	../../utils/rle $^ $@
 
 # Intel pulls a lot more stuff from project context...
-output_files/main.rbf: $(VSRC) $(VHSRC) $(HEADER) $(INT_IP)
+output_files/main.rbf: $(VSRC) $(VHSRC) $(HEADER) $(INT_IP) main.sdc
 	rm -rf db incremental_db
 	$(call T,[mk3] fpga_$(CORE) - Map)
 	$(INTEL_BIN)/quartus_map --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
 	$(call T,[mk3] fpga_$(CORE) - Fit)
 	$(INTEL_BIN)/quartus_fit --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
-	$(call T,[mk3] fpga_$(CORE) - Assemble)
-	$(INTEL_BIN)/quartus_asm --read_settings_files=off --write_settings_files=off sd2snes_$(CORE) -c main
 	$(call T,[mk3] fpga_$(CORE) - Timing Analysis)
 	$(INTEL_BIN)/quartus_sta sd2snes_$(CORE) -c main
+	@! grep -q 'TNS.*-' output_files/main.sta.summary || (echo "[mk3] sd2snes_$(CORE): Timing not met! Aborting."; exit 55)
+	$(call T,[mk3] fpga_$(CORE) - Assemble)
+	$(INTEL_BIN)/quartus_asm --read_settings_files=off --write_settings_files=off sd2snes_$(CORE) -c main
 #	$(INTEL_BIN)/quartus_eda --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
 	$(call T)
 
