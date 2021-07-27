@@ -52,7 +52,9 @@ int write_sysinfo(int sd_measured) {
   FATFS *ffs = &fatfs;
   status_save_from_menu();
 
-  if(!sd_measured)sram_writeblock("Calculating disk space\x7f\x80                ", sram_addr, 40);
+  if (!sd_measured) {
+    sram_writeblock("Calculating disk space\x7f\x80                ", sram_addr, 40);
+  }
   /* remount before sdn_getcid so fatfs registers the disk state change first */
   f_getfree("0:", &fsfree, &ffs);
   sd_cid = sdn_getcid();
@@ -106,6 +108,20 @@ int write_sysinfo(int sd_measured) {
     memset(linebuf+len, 0x20, 40-len);
     sram_writeblock(linebuf, sram_addr, 40);
     sram_addr += 40;
+
+    static uint8_t sgb_state = SGB_BIOS_CHECK;
+    if(sgb_state == SGB_BIOS_CHECK) {
+      sgb_state = sgb_bios_state();
+    }
+    len = snprintf(linebuf, sizeof(linebuf), "sgb%d_boot.bin/sgb%d_snes.bin: %s", CFG.sgb_bios_version, CFG.sgb_bios_version, (
+      sgb_state == SGB_BIOS_MISSING ? "missing"
+      : sgb_state == SGB_BIOS_MISMATCH ? "mismatch"
+      : sgb_state == SGB_BIOS_OK ? "ok"
+      : "checking"
+    ));
+    memset(linebuf+len, 0x20, 40-len);
+    sram_writeblock(linebuf, sram_addr, 40);
+    sram_addr += 40;
     sd_ok = 1;
   }
   sram_memset(sram_addr, 40, 0x20);
@@ -132,19 +148,6 @@ int write_sysinfo(int sd_measured) {
   } else {
     sram_memset(sram_addr, 40, 0x20);
   }
-  sram_addr += 40;
-  sram_memset(sram_addr, 40, 0x20);
-
-  static uint8_t sgb_state = SGB_BIOS_CHECK;
-  if (!sd_measured) sgb_state = SGB_BIOS_CHECK; else if (sgb_state == SGB_BIOS_CHECK) sgb_state = sgb_bios_state();
-  len = snprintf(linebuf, sizeof(linebuf), "sgb%d_boot.bin/sgb%d_snes.bin: %s", CFG.sgb_bios_version, CFG.sgb_bios_version, (
-    sgb_state == SGB_BIOS_MISSING ? "missing"
-    : sgb_state == SGB_BIOS_MISMATCH ? "mismatch"
-    : sgb_state == SGB_BIOS_OK ? "ok"
-    : "checking"
-  ));
-  memset(linebuf+len, 0x20, 40-len);
-  sram_writeblock(linebuf, sram_addr, 40);
 
   sram_hexdump(SRAM_SYSINFO_ADDR, 13*40);
   if(sysclk != -1 && sd_ok && !sd_measured){
