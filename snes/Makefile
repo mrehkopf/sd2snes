@@ -9,6 +9,9 @@ OUT = menu.bin m3nu.bin
 LOG = $(OBJS:=.log)
 MAP = $(IPS:.ips=.map) $(O65:.o65=.map)
 
+DEPDIR := .dep
+GENDEPFLAGS = -MM -MP -MF $(DEPDIR)/$(@F).d -MT $(@F)
+
 all: $(OUT) $(MAP)
 
 smc: menu.bin
@@ -29,13 +32,17 @@ link.log: $(OBJS)
 
 # Generic rule to create .o65[.log] out from .a65
 %.o65 %.o65.log: %.a65
+	cpp $(GENDEPFLAGS) $<
 	snescom -J -Wall -o $(@:.log=) $< 2>&1 | tee $(@:.log=).log
 
 # Generic rule to create .ips out from .a65
 %.ips %.ips.log: %.a65
+	cpp $(GENDEPFLAGS) $<
 	snescom -I -J -Wall -o $(@:.log=) $< 2>&1 | tee $(@:.log=).log
 
 clean:
 	rm -f -- *~ *.ips *.o65 $(OUT) *.o65.log *.ips.log
+
+-include $(info $(DEPDIR)) $(shell mkdir $(DEPDIR) 2>/dev/null) $(wildcard $(DEPDIR)/*)
 
 .PHONY: all smc map clean
