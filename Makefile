@@ -1,12 +1,14 @@
 MCUSRC := src
 
+README := README*
+
 MK2MCUPATH := $(MCUSRC)/obj-mk2
 MK3MCUPATH := $(MCUSRC)/obj-mk3
 MK2MCU := firmware.img
 MK3MCU := firmware.im3
 
 SAVESTATEPATH := savestate
-SAVESTATEFILES := savestate*
+SAVESTATEFILES := savestate*.yml
 
 MENUPATH := snes
 MK2MENU := menu.bin
@@ -60,7 +62,7 @@ release: version bsxpage
 	rm -rf $(TARGETPARENT)
 	mkdir -p $(TARGET)
 	cp bin/*.bin $(TARGET)
-	cp README.md $(TARGET)/readme.txt
+	cp $(README) $(TARGET)
 	cp $(MK2FPGA) $(TARGET)
 	cp $(MK3FPGA) $(TARGET)
 	cp $(MK2MCUPATH)/$(MK2MCU) $(TARGET)
