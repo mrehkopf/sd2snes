@@ -24,6 +24,9 @@ MK3FPGA := $(foreach C,$(MK3CORES),$(FPGAPATH)/sd2snes_$C/fpga_$C.$(MK3EXT))
 MK2MINI := $(FPGAPATH)/sd2snes_mini/fpga_mini.bit
 MK3MINI := $(FPGAPATH)/sd2snes_mini/fpga_mini.bi3
 
+MK2CLEAN := $(foreach C,$(MK2CORES) mini,$(FPGAPATH)/sd2snes_$C/.clean.$(MK2EXT))
+MK3CLEAN := $(foreach C,$(MK3CORES) mini,$(FPGAPATH)/sd2snes_$C/.clean.$(MK3EXT))
+
 UTILS := utils
 
 VERSION ?= SNAPSHOT
@@ -41,6 +44,11 @@ $(MK2FPGA) $(MK2MINI):
 $(MK3FPGA) $(MK3MINI):
 	$(MAKE) -C $(dir $@) mk3
 
+$(MK2CLEAN):
+	$(MAKE) -C $(dir $@) mk2_clean
+
+$(MK3CLEAN):
+	$(MAKE) -C $(dir $@) mk3_clean
 
 build: $(MK2MINI) $(MK3MINI)
 	@cd snes && make
@@ -71,4 +79,4 @@ ifeq ($(VERSION),SNAPSHOT)
 	$(warning For release packaging please specify VERSION (e.g. 1.2.3))
 endif
 
-.PHONY: version release bsxpage $(MK2FPGA) $(MK3FPGA) $(MK2MINI) $(MK3MINI)
+.PHONY: version release bsxpage $(MK2FPGA) $(MK3FPGA) $(MK2MINI) $(MK3MINI) $(MK2CLEAN) $(MK3CLEAN)
