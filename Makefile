@@ -29,9 +29,9 @@ MK3CLEAN := $(foreach C,$(MK3CORES) mini,$(FPGAPATH)/sd2snes_$C/.clean.$(MK3EXT)
 
 UTILS := utils
 
-VERSION ?= SNAPSHOT
+include src/VERSION
 
-TARGETPARENT := release/v$(VERSION)
+TARGETPARENT := release/v$(CONFIG_VERSION)
 TARGET := $(TARGETPARENT)/sd2snes
 
 all: version build release
@@ -68,15 +68,12 @@ release: version bsxpage
 	cp $(MENUPATH)/$(MK2MENU) $(TARGET)
 	cp $(MENUPATH)/$(MK3MENU) $(TARGET)
 	cp $(SAVESTATEPATH)/$(SAVESTATEFILES) $(TARGET)
-	cd $(TARGETPARENT) && zip -r sd2snes_firmware_v$(VERSION).zip sd2snes
+	cd $(TARGETPARENT) && zip -r sd2snes_firmware_v$(CONFIG_VERSION).zip sd2snes
 
 bsxpage:
 	cd bin && ../$(UTILS)/genbsxpage
 
 version:
-	@echo Version: $(VERSION)
-ifeq ($(VERSION),SNAPSHOT)
-	$(warning For release packaging please specify VERSION (e.g. 1.2.3))
-endif
+	@echo Version: $(CONFIG_VERSION)
 
 .PHONY: version release bsxpage $(MK2FPGA) $(MK3FPGA) $(MK2MINI) $(MK3MINI) $(MK2CLEAN) $(MK3CLEAN)
