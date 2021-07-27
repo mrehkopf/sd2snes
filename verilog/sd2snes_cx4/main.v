@@ -426,7 +426,8 @@ address snes_addr(
   .nmicmd_enable(nmicmd_enable),
   .return_vector_enable(return_vector_enable),
   .branch1_enable(branch1_enable),
-  .branch2_enable(branch2_enable)
+  .branch2_enable(branch2_enable),
+  .branch3_enable(branch3_enable)
 );
 
 //always @(posedge CLK2) begin
@@ -474,6 +475,7 @@ cheat snes_cheat(
   .return_vector_enable(return_vector_enable),
   .branch1_enable(branch1_enable),
   .branch2_enable(branch2_enable),
+  .branch3_enable(branch3_enable),
   .pad_latch(pad_latch),
   .snes_ajr(snes_ajr),
   .pgm_idx(cheat_pgm_idx),

@@ -717,6 +717,7 @@ address snes_addr(
   .return_vector_enable(return_vector_enable),
   .branch1_enable(branch1_enable),
   .branch2_enable(branch2_enable),
+  .branch3_enable(branch3_enable),
   .exe_enable(exe_enable),
   .map_enable(map_enable)
 );
@@ -739,6 +740,7 @@ cheat snes_cheat(
   .return_vector_enable(return_vector_enable),
   .branch1_enable(branch1_enable),
   .branch2_enable(branch2_enable),
+  .branch3_enable(branch3_enable),
   .exe_present(exe_present),
   .pad_latch(pad_latch),
   .snes_ajr(snes_ajr),

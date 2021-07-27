@@ -17,9 +17,10 @@
 #define WARM_COMPLEMENT             $002AF9
 #define SAVED_SP                    $002AFB
 
-#define BRAM_PAYLOAD                $002A04
-#define BRAM_RESET_HOOK             $002A74
-#define NMI_WRAM_CHEATS             $002AC8
+#define BRAM_PAYLOAD                $002A10
+#define BRAM_RETURN_VECTOR          $002A6C
+#define BRAM_RESET_HOOK             $002A7D
+#define NMI_WRAM_CHEATS             $002AD8
 #define NMI_PAD                     $002BF0
 #define NMI_CMD                     $002BF2
 #define BRAM_UNLOCK                 $002BF4
@@ -49,9 +50,6 @@
 #define SPC_DATA                    $FD0000
 #define SPC_HEADER                  $FE0000
 #define SPC_DSP_REGS                $FE0100
-
-/* probably not needed since we plan to call the handler in menu ROM space */
-#define SAVESTATE_HANDLER           $FE1000
 
 #define FILESEL_CWD                 $FF0000
 #define CFG_ADDR                    $FF0100

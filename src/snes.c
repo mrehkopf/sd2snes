@@ -529,13 +529,13 @@ uint16_t snescmd_readstrn(void *buf, uint16_t addr, uint16_t size) {
   return elemcount;
 }
 
-#define BRAM_SIZE (256 - (SNESCMD_MCU_PARAM - SNESCMD_MCU_CMD))
+#define BRAM_SIZE (256 - (SNESCMD_INGAME_HOOK - SNESCMD_MCU_CMD))
 void snescmd_prepare_nmihook() {
   uint16_t bram_src = sram_readshort(SRAM_MENU_ADDR + MENU_ADDR_BRAM_SRC);
   uint8_t bram[BRAM_SIZE];
   sram_readblock(bram, SRAM_MENU_ADDR + bram_src, BRAM_SIZE);
 //  snescmd_writeblock(bram, SNESCMD_HOOKS, 40);
-  snescmd_writeblock(bram, SNESCMD_MCU_PARAM, BRAM_SIZE);
+  snescmd_writeblock(bram, SNESCMD_INGAME_HOOK, BRAM_SIZE);
 }
 
 void status_load_to_menu() {

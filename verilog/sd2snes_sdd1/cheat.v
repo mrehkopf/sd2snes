@@ -29,9 +29,9 @@ module cheat(
   input snescmd_enable,
   input nmicmd_enable,
   input return_vector_enable,
-  input reset_vector_enable,
   input branch1_enable,
   input branch2_enable,
+  input branch3_enable,
   input pad_latch,
   input snes_ajr,
   input SNES_cycle_start,
@@ -86,6 +86,7 @@ reg [7:0] return_vector = 8'hea;
 
 reg [7:0] branch1_offset = 8'h00;
 reg [7:0] branch2_offset = 8'h00;
+reg [7:0] branch3_offset = 8'h04;
 
 reg [15:0] pad_data = 0;
 
@@ -112,16 +113,17 @@ assign data_out = cheat_match_bits[0] ? cheat_data[0]
                 : cheat_match_bits[2] ? cheat_data[2]
                 : cheat_match_bits[3] ? cheat_data[3]
                 : cheat_match_bits[4] ? cheat_data[4]
-                : cheat_match_bits[5] ? cheat_data[5]
-                : nmi_match_bits[1] ? 8'h04
-                : irq_match_bits[1] ? 8'h04
+                : nmi_match_bits[1] ? 8'h10
+                : irq_match_bits[1] ? 8'h10
+                : rst_match_bits[1] ? 8'h7D
                 : rst_match_bits[1] ? 8'h6b
                 : nmicmd_enable ? nmicmd
                 : return_vector_enable ? return_vector
                 : branch1_enable ? branch1_offset
+                : branch3_enable ? branch3_offset
                 : branch2_enable ? branch2_offset
                 : 8'h2a;
-
+assign cheat_hit = (snescmd_unlock & hook_enable_sync & (nmicmd_enable | return_vector_enable | branch1_enable | branch2_enable | branch3_enable))
 assign cheat_hit = (snescmd_unlock & hook_enable_sync & (nmicmd_enable | return_vector_enable | branch1_enable | branch2_enable))
                    | (reset_unlock & rst_addr_match)
                    | (cheat_enable & cheat_addr_match)
@@ -346,7 +348,7 @@ always @* begin
         if(branch_wram) begin
           branch1_offset = 8'h3a; // nmi_patches
         end else begin
-          branch1_offset = 8'h3d; // nmi_exit
+          branch1_offset = 8'h43; // nmi_exit
         end
       end
     end else begin
@@ -354,7 +356,7 @@ always @* begin
         if(branch_wram) begin
           branch1_offset = 8'h3a; // nmi_patches
         end else begin
-          branch1_offset = 8'h3d; // nmi_exit
+          branch1_offset = 8'h43; // nmi_exit
         end
       end else begin
         branch1_offset = 8'h00;   // continue with MJR
@@ -364,18 +366,18 @@ always @* begin
     if(branch_wram) begin
       branch1_offset = 8'h3a;     // nmi_patches
     end else begin
-      branch1_offset = 8'h3d;     // nmi_exit
+      branch1_offset = 8'h43;     // nmi_exit
     end
   end
 end
 
 always @* begin
   if(nmicmd == 8'h81) begin
-    branch2_offset = 8'h0e;       // nmi_stop
+    branch2_offset = 8'h14;       // nmi_stop
   end else if(branch_wram) begin
     branch2_offset = 8'h00;       // nmi_patches
   end else begin
-    branch2_offset = 8'h03;       // nmi_exit
+    branch2_offset = 8'h09;       // nmi_exit
   end
 end
 

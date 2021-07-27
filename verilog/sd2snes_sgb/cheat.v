@@ -87,7 +87,7 @@ wire        rst_addr_match = |rst_match_bits;
 wire        hook_enable = ~|hook_enable_count;
 reg         snescmd_unlock_r = 0;
 
-assign      data_out = rst_match_bits[1] ? 8'h6b : 8'h2a;
+assign      data_out = rst_match_bits[1] ? 8'h7d : 8'h2a;
 assign      cheat_hit = (reset_unlock & rst_addr_match);
 assign      snescmd_unlock = snescmd_unlock_r;
 

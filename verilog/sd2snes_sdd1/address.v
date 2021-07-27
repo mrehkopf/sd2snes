@@ -46,9 +46,7 @@ module address(
   output return_vector_enable,
   output branch1_enable,
   output branch2_enable,
-  input [8:0] bs_page_offset,
-  input [9:0] bs_page,
-  input bs_page_enable
+  output branch3_enable
 );
 
 /* feature bits. see src/fpga_spi.c for mapping */
@@ -201,7 +199,8 @@ assign r2100_hit = (SNES_PA == 8'h00);
 
 assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);
 assign nmicmd_enable = (SNES_ADDR == 24'h002BF2);
-assign return_vector_enable = (SNES_ADDR == 24'h002A5A);
-assign branch1_enable = (SNES_ADDR == 24'h002A13);
-assign branch2_enable = (SNES_ADDR == 24'h002A4D);
+assign return_vector_enable = (SNES_ADDR == 24'h002A6C);
+assign branch1_enable = (SNES_ADDR == 24'h002A1F);
+assign branch2_enable = (SNES_ADDR == 24'h002A59);
+assign branch3_enable = (SNES_ADDR == 24'h002A5E);
 endmodule
