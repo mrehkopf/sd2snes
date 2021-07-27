@@ -84,7 +84,7 @@ main.ngc: main.xst main.prj
 
 main.ngd: main.ngc $(XIL_IP)
 	$(call T,[mk2] fpga_$(CORE) - Translate)
-	$(XILINX_BIN)/ngdbuild -dd _ngo -sd ipcore_dir -nt timestamp -uc main.ucf -p $(XILINX_PART) $< $@
+	$(XILINX_BIN)/ngdbuild -dd _ngo -sd $(XIL_IPCORE_DIR) -nt timestamp -uc main.ucf -p $(XILINX_PART) $< $@
 
 main_map.ncd: main.ngd
 	$(call T,[mk2] fpga_$(CORE) - Map)
@@ -124,7 +124,7 @@ main.ut: sd2snes_$(CORE).xise
 
 # Generate Strategy file for SmartXPlorer
 currentProps.stratfile: sd2snes_$(CORE).xise
-	$(XILINX_BIN)/xtclsh ../xgenstratfile.tcl sd2snes_$(CORE).xise
+	$(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenstratfile.tcl sd2snes_$(CORE).xise
 
 # Generate host list file for SmartXPlorer (enable parallel operation)
 hostlistfile.txt:
