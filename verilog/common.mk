@@ -32,6 +32,14 @@ XILINX_PATH := $(call mkpath,$(XILINX_PATH))
 # prepare source lists
 VSRC := $(sort $(VSRC))
 VHSRC := $(sort $(VHSRC))
+UCF := main.ucf
+
+# apply differing source path
+ifdef VSRC_DIR
+	VSRC := $(patsubst %,$(VSRC_DIR)/%,$(VSRC))
+	VHSRC := $(patsubst %,$(VSRC_DIR)/%,$(VHSRC))
+	UCF := $(patsubst %,$(VSRC_DIR)/%,$(UCF))
+endif
 
 XIL_IP := $(sort $(XIL_IP))
 XIL_IP += $(sort $(COMMON_IP))
@@ -60,7 +68,7 @@ smartxplorer: main.ngd currentProps.stratfile hostlistfile.txt
 	PATH="$(XILINX_PATH)":"$(PATH)"; \
 	export XILINX="$(XILINX)" XILINX_DSP="$(XILINX_DSP)" XILINX_EDK="$(XILINX_EDK)" XILINX_PLANAHEAD="$(XILINX_PLANAHEAD)"; \
 	echo "Running SmartXPlorer. Check smartxplorer_results/smartxplorer.html for progress."; \
-	$(XILINX_BIN)/smartxplorer -p $(XILINX_PART) -b -wd smartxplorer_results main.ngd -to "-v 3 -s 4 -n 3 -fastpaths -xml main.twx -ucf main.ucf" $(XPLORER_PARAMS) \
+	$(XILINX_BIN)/smartxplorer -p $(XILINX_PART) -b -wd smartxplorer_results main.ngd -to "-v 3 -s 4 -n 3 -fastpaths -xml main.twx -ucf $(UCF)" $(XPLORER_PARAMS) \
 	&& (while true; do \
 		touch $@; \
 		export SX_RUN=`grep "Run index" smartxplorer_results/smartxplorer.log | sed -e 's/^.*\:.*run\([0-9]\+\).*$$/\1/g'`; \
@@ -84,7 +92,7 @@ main.ngc: main.xst main.prj
 
 main.ngd: main.ngc $(XIL_IP)
 	$(call T,[mk2] fpga_$(CORE) - Translate)
-	$(XILINX_BIN)/ngdbuild -dd _ngo -sd $(XIL_IPCORE_DIR) -nt timestamp -uc main.ucf -p $(XILINX_PART) $< $@
+	$(XILINX_BIN)/ngdbuild -dd _ngo -sd $(XIL_IPCORE_DIR) -nt timestamp -uc $(UCF) -p $(XILINX_PART) $< $@
 
 main_map.ncd: main.ngd
 	$(call T,[mk2] fpga_$(CORE) - Map)
