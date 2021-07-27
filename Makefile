@@ -36,7 +36,7 @@ include src/VERSION
 TARGETPARENT := release/v$(CONFIG_VERSION)
 TARGET := $(TARGETPARENT)/sd2snes
 
-all: version build release
+all: version fpga build release
 
 fpga: $(MK2FPGA) $(MK3FPGA)
 
