@@ -117,6 +117,23 @@
 
 #define COMBO_VERSION    (0x1)
 
+#define SNES_NUM_BUTTONS (12)
+
+enum snes_button_bits {
+  SNES_BUTTON_B       = 0x8000,
+  SNES_BUTTON_Y       = 0x4000,
+  SNES_BUTTON_SELECT  = 0x2000,
+  SNES_BUTTON_START   = 0x1000,
+  SNES_BUTTON_UP      = 0x0800,
+  SNES_BUTTON_DOWN    = 0x0400,
+  SNES_BUTTON_LEFT    = 0x0200,
+  SNES_BUTTON_RIGHT   = 0x0100,
+  SNES_BUTTON_A       = 0x0080,
+  SNES_BUTTON_X       = 0x0040,
+  SNES_BUTTON_L       = 0x0020,
+  SNES_BUTTON_R       = 0x0010
+};
+
 enum snes_reset_state { SNES_RESET_NONE = 0, SNES_RESET_SHORT, SNES_RESET_LONG };
 
 typedef struct __attribute__ ((__packed__)) _mcu_status {
