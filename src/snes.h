@@ -72,7 +72,7 @@
 
 #define SNES_RELEASE_RESET_DELAY_US (2)
 #define SNES_RESET_PULSELEN_MS (5)
-#define SNES_RESET_LOOP_TIMEOUT (10) // 10ms steps x10 = 100ms
+#define SNES_RESET_LOOP_TIMEOUT (20) // 10ms steps x20 = 200ms
 
 #define SNES_BOOL_TRUE  (0x01)
 #define SNES_BOOL_FALSE (0x00)
