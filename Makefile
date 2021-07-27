@@ -53,10 +53,14 @@ $(MK3CLEAN):
 	$(MAKE) -C $(dir $@) mk3_clean
 
 build: $(MK2MINI) $(MK3MINI)
-	@cd snes && make
-	@cd src && make CONFIG=config-mk2
-	@cd src && make CONFIG=config-mk3
-	@cd savestate && make
+	$(MAKE) -C snes
+	$(MAKE) -C src CONFIG=config-mk2
+	$(MAKE) -C src CONFIG=config-mk3
+
+clean: $(MK2CLEAN) $(MK3CLEAN)
+	$(MAKE) -C snes clean
+	$(MAKE) -C src clean CONFIG=config-mk2
+	$(MAKE) -C src clean CONFIG=config-mk3
 
 release: version bsxpage
 	rm -rf $(TARGETPARENT)
