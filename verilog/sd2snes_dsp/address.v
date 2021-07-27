@@ -39,6 +39,7 @@ module address(
   input  map_Ex_wr_unlock,
   input  map_Fx_rd_unlock,
   input  map_Fx_wr_unlock,
+  input  snescmd_unlock,
   output msu_enable,
   output dma_enable,
   output dspx_enable,
@@ -130,7 +131,8 @@ assign IS_PATCH = ( (map_unlock
                 | ( ((map_Ex_rd_unlock & SNES_WRITE_early)
                     |(map_Ex_wr_unlock & ~SNES_WRITE_early)
                     ) & ({SNES_ADDR[23:20]} == 4'hE)
-                  );
+                  )
+                | (snescmd_unlock & &SNES_ADDR[23:22]); // full access to C0-FF
 
 assign IS_WRITABLE = IS_SAVERAM
                      |IS_PATCH; // allow writing of the patch region
@@ -182,7 +184,7 @@ assign ROM_ADDR = SRAM_SNES_ADDR;
 assign ROM_HIT = IS_ROM | IS_WRITABLE;
 
 assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
-assign dma_enable = (featurebits[FEAT_DMA1] | map_unlock) & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff0) == 16'h2020));
+assign dma_enable = (featurebits[FEAT_DMA1] | map_unlock | snescmd_unlock) & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff0) == 16'h2020));
 assign exe_enable =                           (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hffff) == 16'h2C00));
 assign map_enable =                           (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hffff) == 16'h2BB2));
 

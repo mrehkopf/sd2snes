@@ -669,6 +669,7 @@ address snes_addr(
   .map_Ex_wr_unlock(map_Ex_wr_unlock_r),
   .map_Fx_rd_unlock(map_Fx_rd_unlock_r),
   .map_Fx_wr_unlock(map_Fx_wr_unlock_r),
+  .snescmd_unlock(snescmd_unlock),
   //MSU-1
   .msu_enable(msu_enable),
   //DMA-1

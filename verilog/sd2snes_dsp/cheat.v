@@ -138,9 +138,14 @@ assign data_out = cheat_match_bits[0] ? cheat_data[0]
                 : branch3_enable ? branch3_offset
                 : 8'h2a;
 
+/// TODO separate cheat and nmi branch patch signals
+/// "cheat" must patch branch targets in NMI hook
+/// BUT MUST NOT apply actual ROM cheat patches during snescmd menu bank
+/// execution to prevent ROM cheats from patching nonsense into the savestate
+/// handler.
 assign cheat_hit = (snescmd_unlock & hook_enable_sync & (nmicmd_enable | return_vector_enable | branch1_enable | branch2_enable | branch3_enable))
                    | (reset_unlock & rst_addr_match)
-                   | (cheat_enable & cheat_addr_match)
+                   | (cheat_enable & cheat_addr_match & ~snescmd_unlock)
                    | (hook_enable_sync & (((auto_nmi_enable_sync & (nmi_enable|(exe_present & ~feat_cmd_unlock))) & nmi_addr_match & vector_unlock) // exe or NMI can get us started
                                            |(auto_nmi_enable_sync & nmi_enable & nmi_addr_match & exe_to_hook_transition_r)              // exe exit can also trigger hook
                                            |((auto_irq_enable_sync & irq_enable) & irq_addr_match & vector_unlock)));
@@ -263,7 +268,10 @@ always @(posedge clk) begin
         snescmd_unlock_r <= 1;
       end
     end
+
     // give some time to exit snescmd memory and jump to original vector
+    // sta @NMI_VECT_DISABLE    1-2 (after effective write)
+    // jmp ($ffxx)              3 (excluding address fetch)
     if(SNES_cycle_start) begin
       if(snescmd_unlock_disable) begin
         if(|snescmd_unlock_disable_countdown) begin
@@ -275,14 +283,22 @@ always @(posedge clk) begin
       end
     end
     if(snescmd_unlock_disable_strobe) begin
-      snescmd_unlock_disable_countdown <= 7'd72;
+      snescmd_unlock_disable_countdown <= 7'd6;
       snescmd_unlock_disable <= 1;
     end
   end
 end
 
-
-always @(posedge clk) usage_count <= usage_count - 1;
+// Only clock the usage timeout when outside of in-game hook
+// to prevent nested IRQs from jumping to game
+// (otherwise FPGA might disable hook patching while still inside hook
+//  which hurts the current save state handler implementation since it
+//  uses IRQ inside IRQ / NMI inside NMI to synchronize with the time of entry)
+always @(posedge clk) begin
+  if (~snescmd_unlock) begin
+    usage_count <= usage_count - 1;
+  end
+end
 
 // Try and autoselect NMI or IRQ hook
 always @(posedge clk) begin

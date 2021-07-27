@@ -220,6 +220,11 @@ always @(posedge clk) begin
       end
     end    
     // give some time to exit snescmd memory and jump to original vector
+    // sta @NMI_VECT_DISABLE    1-2 (after effective write)
+    // jmp ($ffxx)              3 (excluding address fetch)
+/// the "HDMA interrupts hook" issue bites here; therefore leave the
+/// unlock_disable_countdown at 72 for the time being...
+/// (GSU generates a lot of IRQs)
     else if(SNES_cycle_start) begin
       if(snescmd_unlock_disable) begin
         if(|snescmd_unlock_disable_countdown) begin

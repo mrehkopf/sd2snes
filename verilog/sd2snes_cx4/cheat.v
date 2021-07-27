@@ -210,6 +210,8 @@ always @(posedge clk) begin
       end
     end
     // give some time to exit snescmd memory and jump to original vector
+    // sta @NMI_VECT_DISABLE    1-2 (after effective write)
+    // jmp ($ffxx)              3 (excluding address fetch)
     if(SNES_cycle_start) begin
       if(snescmd_unlock_disable) begin
         if(|snescmd_unlock_disable_countdown) begin
@@ -221,7 +223,7 @@ always @(posedge clk) begin
       end
     end
     if(snescmd_unlock_disable_strobe) begin
-      snescmd_unlock_disable_countdown <= 7'd72;
+      snescmd_unlock_disable_countdown <= 7'd6;
       snescmd_unlock_disable <= 1;
     end
   end

@@ -130,7 +130,7 @@ always @(posedge clk) begin
       end
     end
     if(snescmd_unlock_disable_strobe) begin
-      snescmd_unlock_disable_countdown <= 7'd72;
+      snescmd_unlock_disable_countdown <= 7'd6;
       snescmd_unlock_disable <= 1;
     end
   end

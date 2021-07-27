@@ -689,6 +689,7 @@ address snes_addr(
   .IS_SAVERAM(IS_SAVERAM),
   .IS_ROM(IS_ROM),
   .IS_WRITABLE(IS_WRITABLE),
+  .IS_PATCH(IS_PATCH),
   .SAVERAM_BASE(SAVERAM_BASE),
   .SAVERAM_MASK(SAVERAM_MASK),
   .ROM_MASK(ROM_MASK),
@@ -697,6 +698,7 @@ address snes_addr(
   .map_Ex_wr_unlock(map_Ex_wr_unlock_r),
   .map_Fx_rd_unlock(map_Fx_rd_unlock_r),
   .map_Fx_wr_unlock(map_Fx_wr_unlock_r),
+  .snescmd_unlock(snescmd_unlock),
   //MSU-1
   .msu_enable(msu_enable),
   //DMA-1
