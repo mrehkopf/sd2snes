@@ -108,7 +108,7 @@ $(XIL_IPCORE_DIR)/%.ngc: $(XIL_IPCORE_DIR)/%.xco | $(XIL_IPCORE_DIR)/coregen.cgc
 
 # ## Supplementary files required for Xilinx processes ##
 # PRJ file - basically a list of files that comprise the project
-main.prj: $(XIL_IP) $(VSRC) $(VHSRC)
+main.prj: $(XIL_IP) $(VSRC) $(VHSRC) $(HEADER)
 	rm -f main.prj
 	for src in $(VSRC) $(XIL_IP:.ngc=.v); do echo "verilog work \"$$src\"" >> main.prj; done
 	for src in $(VHSRC); do echo vhdl work "$$src" >> main.prj; done
@@ -135,7 +135,7 @@ fpga_$(CORE).bi3: output_files/main.rbf
 	../../utils/rle $^ $@
 
 # Intel pulls a lot more stuff from project context...
-output_files/main.rbf: $(VSRC) $(VHSRC) $(INT_IP)
+output_files/main.rbf: $(VSRC) $(VHSRC) $(HEADER) $(INT_IP)
 	rm -rf db incremental_db
 	$(call T,[mk3] fpga_$(CORE) - Map)
 	$(INTEL_BIN)/quartus_map --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
