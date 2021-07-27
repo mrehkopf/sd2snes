@@ -194,6 +194,12 @@ reg [7:0] loop_data = 8'h80; // BRA
 reg exe_present; initial exe_present = 0;
 wire map_unlock;
 
+reg map_Fx_rd_unlock_r; initial map_Fx_rd_unlock_r = 0;
+reg map_Fx_wr_unlock_r; initial map_Fx_wr_unlock_r = 0;
+reg map_Ex_rd_unlock_r; initial map_Ex_rd_unlock_r = 0;
+reg map_Ex_wr_unlock_r; initial map_Ex_wr_unlock_r = 0;
+reg map_snescmd_rd_unlock_r; initial map_snescmd_rd_unlock_r = 0;
+reg map_snescmd_wr_unlock_r; initial map_snescmd_wr_unlock_r = 0;
 
 reg SNES_SNOOPRD_DATA_OE = 0;
 reg SNES_SNOOPWR_DATA_OE = 0;
@@ -214,11 +220,9 @@ wire SNES_RD_start_early = ((SNES_READr[6:1] | SNES_READr[7:2]) == 6'b111100);
 wire [23:0] SNES_ADDR = (SNES_ADDRr[5] & SNES_ADDRr[4]);
 wire [7:0] SNES_PA = (SNES_PAr[5] & SNES_PAr[4]);
 
-wire [23:0] SNES_ADDR_EARLY = (SNES_ADDRr[5] & SNES_ADDRr[4]);
-wire [7:0] SNES_PA_EARLY = (SNES_PAr[5] & SNES_PAr[4]);
-
 wire [7:0] SNES_DATA_IN = (SNES_DATAr[3] & SNES_DATAr[2]);
 
+reg  [23:0] SNES_ADDR_early; always @(posedge CLK2) SNES_ADDR_early <= (SNES_ADDRr[3] & SNES_ADDRr[2]);
 
 wire SNES_PULSE_IN = SNES_READ_IN & SNES_WRITE_IN & ~SNES_CPU_CLK_IN;
 
@@ -242,6 +246,7 @@ wire SNES_CPU_CLK = SNES_CPU_CLKr[2] & SNES_CPU_CLKr[1];
 wire SNES_PARD = SNES_PARDr[2] & SNES_PARDr[1];
 wire SNES_PAWR = SNES_PAWRr[2] & SNES_PAWRr[1];
 wire SNES_ROMSEL_EARLY = (SNES_ROMSELr[2] & SNES_ROMSELr[1]);
+wire SNES_WRITE_early = SNES_WRITEr[1] & SNES_WRITEr[0];
 
 reg SNES_SNOOPPARD_end;
 reg SNES_SNOOPPAWR_end;
@@ -582,6 +587,7 @@ mcu_cmd snes_mcu_cmd(
   .spi_bit_cnt(spi_bit_cnt),
   .spi_data_out(spi_input_data),
   .addr_out(MCU_ADDR),
+  .saveram_base_out(SAVERAM_BASE),
   .saveram_mask_out(SAVERAM_MASK),
   .rom_mask_out(ROM_MASK),
   .SD_DMA_EN(SD_DMA_EN),
@@ -645,7 +651,8 @@ address snes_addr(
   .CLK(CLK2),
   .MAPPER(MAPPER),
   .featurebits(featurebits),
-  .SNES_ADDR(SNES_ADDR), // requested address from SNES
+  .SNES_ADDR_early(SNES_ADDR_early), // requested address from SNES
+  .SNES_WRITE_early(SNES_WRITE_early),
   .SNES_PA(SNES_PA),
   .SNES_ROMSEL(SNES_ROMSEL),
   .ROM_ADDR(MAPPED_SNES_ADDR),   // Address to request from SRAM (active low)
@@ -653,9 +660,15 @@ address snes_addr(
   .IS_SAVERAM(IS_SAVERAM),
   .IS_ROM(IS_ROM),
   .IS_WRITABLE(IS_WRITABLE),
+  .IS_PATCH(IS_PATCH),
+  .SAVERAM_BASE(SAVERAM_BASE),
   .SAVERAM_MASK(SAVERAM_MASK),
   .ROM_MASK(ROM_MASK),
   .map_unlock(map_unlock),
+  .map_Ex_rd_unlock(map_Ex_rd_unlock_r),
+  .map_Ex_wr_unlock(map_Ex_wr_unlock_r),
+  .map_Fx_rd_unlock(map_Fx_rd_unlock_r),
+  .map_Fx_wr_unlock(map_Fx_wr_unlock_r),
   //MSU-1
   .msu_enable(msu_enable),
   //DMA-1
@@ -672,7 +685,8 @@ address snes_addr(
   .branch1_enable(branch1_enable),
   .branch2_enable(branch2_enable),
   .branch3_enable(branch3_enable),
-  .exe_enable(exe_enable)
+  .exe_enable(exe_enable),
+  .map_enable(map_enable)
 );
 
 // flop all snes_addr outputs
@@ -771,7 +785,7 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD) ? (r213f_forceread ? 8'bZ : r213f
                                   :(cheat_hit & ~feat_cmd_unlock) ? cheat_data_out
                                   // put spinloop below cheat so we don't overwrite jmp target after NMI
                                   :loop_enable ? loop_data
-                                  :((snescmd_unlock | feat_cmd_unlock) & snescmd_enable) ? snescmd_dout
+                                  :((snescmd_unlock | feat_cmd_unlock | map_snescmd_rd_unlock_r) & snescmd_enable) ? snescmd_dout
                                   :(ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8])
                                   ) : 8'bZ;
 
@@ -849,8 +863,8 @@ assign p113_out = 1'b0;
 
 snescmd_buf snescmd (
   .clka(CLK2), // input clka
-  .wea(SNES_WR_end & ((snescmd_unlock | feat_cmd_unlock) & snescmd_enable)), // input [0 : 0] wea
-  .addra(SNES_ADDR[9:0]), // input [8 : 0] addra
+  .wea(SNES_WR_end & ((snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & snescmd_enable)), // input [0 : 0] wea
+  .addra(SNES_ADDR[9:0]), // input [9 : 0] addra
   .dina(SNES_DATA), // input [7 : 0] dina
   .douta(snescmd_dout), // output [7 : 0] douta
   .clkb(CLK2), // input clkb
@@ -882,7 +896,7 @@ assign ROM_2CE = ~ROM_ADDR22;
 
 snescmd_buf snescmd (
   .clock(CLK2), // input clka
-  .wren_a(SNES_WR_end & ((snescmd_unlock | feat_cmd_unlock) & snescmd_enable)), // input [0 : 0] wea
+  .wren_a(SNES_WR_end & ((snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & snescmd_enable)), // input [0 : 0] wea
   .address_a(SNES_ADDR[9:0]), // input [8 : 0] addra
   .data_a(SNES_DATA), // input [7 : 0] dina
   .q_a(snescmd_dout), // output [7 : 0] douta
@@ -1165,19 +1179,27 @@ assign SNES_DATABUS_DIR = ((~SNES_READ & ((~SNES_SNOOPPAWR_DATA_OE & ~SNES_SNOOP
 
 assign SNES_IRQ = 1'b0;
 
-always @(posedge CLK2) begin
-  if      (SNES_WR_end & (snescmd_unlock | feat_cmd_unlock) & exe_enable) exe_present <= (SNES_DATA != 0) ? 1 : 0;
-  else if (snescmd_we_mcu & (snescmd_addr_mcu == 0))                      exe_present <= (snescmd_data_out_mcu != 0) ? 1 : 0;
+// Detect writes and handle dynamic NMI hook and address map unlock registers.
+reg snescmd_addr_exe_r; always @(posedge CLK2) snescmd_addr_exe_r <= {2'b11,snescmd_addr_mcu} == 12'hC00;
+reg snescmd_addr_map_r; always @(posedge CLK2) snescmd_addr_map_r <= {2'b10,snescmd_addr_mcu} == 12'hBB2;
+
+always @(posedge CLK2) begin 
+  // dynamic NMI hook enable/disable detected on writes to $2C00 from either SNES or MCU
+  if      (SNES_WR_end & (snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & exe_enable) exe_present <= (SNES_DATA != 0) ? 1 : 0;
+  // snescmd_addr_mcu is 10 bits.  $2C00 is inteleaved with $2A00 such that $2C00 comes first at 0
+  else if (snescmd_we_mcu & snescmd_addr_exe_r)                                                     exe_present <= (snescmd_data_out_mcu != 0) ? 1 : 0;
+  
+  // address map unlock detected on writes from either SNES or MCU
+  if      (SNES_WR_end & (snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & map_enable) {map_Fx_rd_unlock_r,map_Fx_wr_unlock_r,map_Ex_rd_unlock_r,map_Ex_wr_unlock_r,map_snescmd_rd_unlock_r,map_snescmd_wr_unlock_r} <= SNES_DATA;
+  else if (snescmd_we_mcu & snescmd_addr_map_r)                                                     {map_Fx_rd_unlock_r,map_Fx_wr_unlock_r,map_Ex_rd_unlock_r,map_Ex_wr_unlock_r,map_snescmd_rd_unlock_r,map_snescmd_wr_unlock_r} <= snescmd_data_out_mcu;
 end
 
 // spin loop state machine
 // This is used to put the SNES into a spin loop.  It replaces the current instruction fetch with a branch
 // to itself.  Upon release it lets the SNES fetch.
-// TODO: add this to a more general-purpose debug module
 reg loop_state;
 initial loop_state = 0;
-parameter [`upper(2):0] loop_code = { 8'h80, 8'hFE // BRA $FE
-                                   };
+parameter [`upper(2):0] loop_code = { 8'h80, 8'hFE }; // BRA $FE
 
 always @(posedge CLK2) begin
 
