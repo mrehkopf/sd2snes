@@ -604,6 +604,7 @@ assign ROM_OE = 1'b0;
 reg[17:0] SNES_DEAD_CNTr;
 initial SNES_DEAD_CNTr = 0;
 
+// MCU r/w request
 always @(posedge CLK2) begin
   if(MCU_RRQ) begin
     MCU_RD_PENDr <= 1'b1;

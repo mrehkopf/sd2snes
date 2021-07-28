@@ -74,6 +74,7 @@ assign IS_SAVERAM = SAVERAM_MASK[0]
 assign IS_WRITABLE = IS_SAVERAM;
 
 // GSU has a weird hybrid of Lo and Hi ROM formats.
+// TODO: add programmable address map
 assign SRAM_SNES_ADDR = (IS_SAVERAM
                          // 60-7D/E0-FF:0000-FFFF or 00-3F/80-BF:6000-7FFF (first 8K mirror)
                          ? (24'hE00000 + ((SNES_ADDR[22] ? SNES_ADDR[16:0] : SNES_ADDR[12:0]) & SAVERAM_MASK))

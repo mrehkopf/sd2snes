@@ -908,6 +908,7 @@ assign ROM_OE = 1'b0;
 reg[17:0] SNES_DEAD_CNTr;
 initial SNES_DEAD_CNTr = 0;
 
+// MCU r/w request
 always @(posedge CLK2) begin
   if(MCU_RRQ & MCU_ROM) begin
     MCU_RD_PENDr <= 1'b1;
@@ -924,6 +925,7 @@ always @(posedge CLK2) begin
   end
 end
 
+// SGB ROM r/w request
 always @(posedge CLK2) begin
   if(SGB_ROM_RRQ) begin
     SGB_ROM_RD_PENDr <= 1'b1;
@@ -1144,6 +1146,7 @@ wire MCU_RAM_WR_HIT = |(RAM_STATE & (ST_RAM_MCU_WR_ADDR | ST_RAM_MCU_WR_END));
 wire MCU_RAM_RD_HIT = |(RAM_STATE & (ST_RAM_MCU_RD_ADDR | ST_RAM_MCU_RD_END));
 wire MCU_RAM_HIT = MCU_RAM_WR_HIT | MCU_RAM_RD_HIT;
 
+// MCU RAM1 r/w request
 always @(posedge CLK2) begin
   if(MCU_RRQ & MCU_RAM) begin
     MCU_RAM_RD_PENDr <= 1'b1;

@@ -219,6 +219,7 @@ always @(posedge clk) begin
     exe_to_hook_transition_r <= 0;
   end else begin
     if(SNES_rd_strobe) begin
+      // *** GAME -> USB HOOK ***
       if(hook_enable_sync
         & ((auto_nmi_enable_sync & exe_present & ~feat_cmd_unlock & ~exe_unlock & nmi_match_bits[1]))
         & (cpu_push_cnt == 4)) begin
@@ -232,6 +233,7 @@ always @(posedge clk) begin
         // unlock exe code
         exe_unlock_r <= 1;
       end
+      // *** USB HOOK -> INGAME HOOK ***
       else if (hook_enable_sync & exe_unlock
         & (auto_nmi_enable_sync & nmi_enable & nmi_match_bits[1])
         & (cpu_push_cnt != 4)
@@ -245,6 +247,7 @@ always @(posedge clk) begin
         // no longer in exe region
         exe_unlock_r <= 0;
       end
+      // *** USB HOOK -> GAME ***
       else if (exe_unlock & nmi_match_bits[1]
        & (cpu_push_cnt != 4)
        ) begin
@@ -253,6 +256,7 @@ always @(posedge clk) begin
         exe_unlock_r <= 0;
         map_unlock_r <= 0;
       end
+      // *** GAME -> INGAME HOOK ***
       else if(hook_enable_sync
         & ((auto_nmi_enable_sync & nmi_enable & nmi_match_bits[1])
           |(auto_irq_enable_sync & irq_enable & irq_match_bits[1]))
@@ -264,6 +268,7 @@ always @(posedge clk) begin
         // unlock the snescmd region
         snescmd_unlock_r <= 1;
       end
+      // *** RESET -> RESET HOOK ***
       if(rst_match_bits[1] & |reset_unlock_r) begin
         snescmd_unlock_r <= 1;
       end
@@ -272,6 +277,7 @@ always @(posedge clk) begin
     // give some time to exit snescmd memory and jump to original vector
     // sta @NMI_VECT_DISABLE    1-2 (after effective write)
     // jmp ($ffxx)              3 (excluding address fetch)
+    // *** (INGAME HOOK -> GAME) ***
     if(SNES_cycle_start) begin
       if(snescmd_unlock_disable) begin
         if(|snescmd_unlock_disable_countdown) begin
@@ -389,9 +395,9 @@ end
 // L+R+Start+X      : $1070
 always @(posedge clk) begin
   if(snescmd_wr_strobe) begin
-    if(SNES_ADDR[10:0] == 11'h3f0) begin
+    if(SNES_ADDR[10:0] == 11'h3f0) begin          // $2BF0
       pad_data[7:0] <= SNES_DATA;
-    end else if(SNES_ADDR[10:0] == 11'h3f1) begin
+    end else if(SNES_ADDR[10:0] == 11'h3f1) begin // $2BF1
       pad_data[15:8] <= SNES_DATA;
     end
   end

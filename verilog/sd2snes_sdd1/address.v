@@ -95,39 +95,8 @@ assign IS_SAVERAM = SAVERAM_MASK[0]&(featurebits[FEAT_ST0010]?((SNES_ADDR[22:19]
               :(MAPPER == 3'b111) ? (&SNES_ADDR[23:20])
               : 1'b0));
 
-
-/* BS-X has 4 MBits of extra RAM that can be mapped to various places */
-// LoROM: A23 = r03/r04  A22 = r06  A21 = r05  A20 = 0    A19 = d/c
-// HiROM: A23 = r03/r04  A22 = d/c  A21 = r06  A20 = r05  A19 = 0
-wire [2:0] BSX_PSRAM_BANK = {bsx_regs[6], bsx_regs[5], 1'b0};
-wire [2:0] SNES_PSRAM_BANK = bsx_regs[2] ? SNES_ADDR[21:19] : SNES_ADDR[22:20];
-wire BSX_PSRAM_LOHI = (bsx_regs[3] & ~SNES_ADDR[23]) | (bsx_regs[4] & SNES_ADDR[23]);
-wire BSX_IS_PSRAM = BSX_PSRAM_LOHI
-                     & (( IS_ROM & (SNES_PSRAM_BANK == BSX_PSRAM_BANK)
-                         &(SNES_ADDR[15] | bsx_regs[2])
-                         &(~(SNES_ADDR[19] & bsx_regs[2])))
-                       | (bsx_regs[2]
-                          ? (SNES_ADDR[22:21] == 2'b01 & SNES_ADDR[15:13] == 3'b011)
-                          : (~SNES_ROMSEL & &SNES_ADDR[22:20] & ~SNES_ADDR[15]))
-                       );
-
-wire BSX_IS_CARTROM = ((bsx_regs[7] & (SNES_ADDR[23:22] == 2'b00))
-                      |(bsx_regs[8] & (SNES_ADDR[23:22] == 2'b10)))
-                      & SNES_ADDR[15];
-
-wire BSX_HOLE_LOHI = (bsx_regs[9] & ~SNES_ADDR[23]) | (bsx_regs[10] & SNES_ADDR[23]);
-
-wire BSX_IS_HOLE = BSX_HOLE_LOHI
-                   & (bsx_regs[2] ? (SNES_ADDR[21:20] == {bsx_regs[11], 1'b0})
-                                  : (SNES_ADDR[22:21] == {bsx_regs[11], 1'b0}));
-
-assign bsx_tristate = (MAPPER == 3'b011) & ~BSX_IS_CARTROM & ~BSX_IS_PSRAM & BSX_IS_HOLE;
-
-wire [23:0] BSX_ADDR = bsx_regs[2] ? {1'b0, SNES_ADDR[22:0]}
-                                   : {2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]};
-
 // '1' to signal access to cartrigde writable range (Backup RAM or BS-X RAM)
-assign IS_WRITABLE = IS_SAVERAM | ((MAPPER == 3'b011) & BSX_IS_PSRAM);
+assign IS_WRITABLE = IS_SAVERAM;
 
 /* BSX regs:
  Index  Function
@@ -151,12 +120,6 @@ assign SRAM_SNES_ADDR = ((MAPPER == 3'b000) ? (IS_SAVERAM	? 24'hE00000 + ({SNES_
                 // ExtLoROM
                 :(MAPPER == 3'b100) ? (IS_SAVERAM 	? 24'hE00000 + ({7'b0000000, SNES_ADDR[19:16], SNES_ADDR[12:0]} & SAVERAM_MASK)
                                         : ({1'b0, !SNES_ADDR[23], SNES_ADDR[21:0]} & ROM_MASK))
-                // BS-X
-                :(MAPPER == 3'b011) ? (IS_SAVERAM	? 24'hE00000 + {SNES_ADDR[18:16], SNES_ADDR[11:0]}
-                                        : BSX_IS_CARTROM ? (24'h800000 + ({SNES_ADDR[22:16], SNES_ADDR[14:0]} & 24'h0fffff))
-                                        : BSX_IS_PSRAM ? (24'h400000 + (BSX_ADDR & 24'h07FFFF))
-                                        : bs_page_enable ? (24'h900000 + {bs_page,bs_page_offset})
-                                        : (BSX_ADDR & 24'h0fffff))
                 // interleaved StarOcean
                 :(MAPPER == 3'b110) ? (IS_SAVERAM	? 24'hE00000 + ((SNES_ADDR[14:0] - 15'h6000) & SAVERAM_MASK)
                                         :(SNES_ADDR[15] ? ({1'b0, SNES_ADDR[23:16], SNES_ADDR[14:0]})
@@ -169,7 +132,7 @@ assign SRAM_SNES_ADDR = ((MAPPER == 3'b000) ? (IS_SAVERAM	? 24'hE00000 + ({SNES_
 assign ROM_ADDR = SRAM_SNES_ADDR;
 
 // '1' when accesing PSRAM for ROM, Backup RAM, BS-X RAM
-assign ROM_HIT = IS_ROM | IS_WRITABLE | bs_page_enable;
+assign ROM_HIT = IS_ROM | IS_WRITABLE;
 
 // '1' when accessing to MSU register map $2000:$2007
 assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
@@ -181,18 +144,6 @@ assign use_bsx = 1'b0;
 // MAGNO -> disabled for S-DD1 core
 //assign srtc_enable = featurebits[FEAT_SRTC] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h2800));
 assign srtc_enable = 1'b0;
-
-assign dspx_enable = 1'b0;
-
-assign dspx_dp_enable = 1'b0;
-
-assign dspx_a0 = featurebits[FEAT_DSPX]
-                 ?((MAPPER == 3'b001) ? SNES_ADDR[14]
-                   :(MAPPER == 3'b000) ? SNES_ADDR[12]
-                   :1'b1)
-                 : featurebits[FEAT_ST0010]
-                 ? SNES_ADDR[0]
-                 : 1'b1;
 
 assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 assign r2100_hit = (SNES_PA == 8'h00);

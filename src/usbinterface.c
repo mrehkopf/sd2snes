@@ -66,7 +66,7 @@ static inline void __DMB2(void) { asm volatile ("dmb" ::: "memory"); }
 //
 // NOTE: it may be beneficial to support command interleaving to reduce
 // latency for push-style update operations from sd2snes
- 
+
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
 
@@ -80,7 +80,7 @@ static inline void __DMB2(void) { asm volatile ("dmb" ::: "memory"); }
   OP(USBINT_SERVER_STATE_HANDLE_REQDAT)     \
   OP(USBINT_SERVER_STATE_HANDLE_STREAM)     \
                                             \
-  OP(USBINT_SERVER_STATE_HANDLE_LOCK)       
+  OP(USBINT_SERVER_STATE_HANDLE_LOCK)
 enum usbint_server_state_e { FOREACH_SERVER_STATE(GENERATE_ENUM) };
 #ifdef DEBUG_USB
 static const char *usbint_server_state_s[] = { FOREACH_SERVER_STATE(GENERATE_STRING) };
@@ -122,7 +122,7 @@ enum usbint_server_stream_state_e { FOREACH_SERVER_STREAM_STATE(GENERATE_ENUM) }
   OP(USBINT_SERVER_OPCODE_STREAM)               \
   OP(USBINT_SERVER_OPCODE_TIME)                 \
                                                 \
-  OP(USBINT_SERVER_OPCODE_RESPONSE)                  
+  OP(USBINT_SERVER_OPCODE_RESPONSE)
 enum usbint_server_opcode_e { FOREACH_SERVER_OPCODE(GENERATE_ENUM) };
 #ifdef DEBUG_USB
 static const char *usbint_server_opcode_s[] = { FOREACH_SERVER_OPCODE(GENERATE_STRING) };
@@ -130,7 +130,7 @@ static const char *usbint_server_opcode_s[] = { FOREACH_SERVER_OPCODE(GENERATE_S
 
 #define FOREACH_SERVER_SPACE(OP)                \
   OP(USBINT_SERVER_SPACE_FILE)                  \
-  OP(USBINT_SERVER_SPACE_SNES)					\
+  OP(USBINT_SERVER_SPACE_SNES)                  \
   OP(USBINT_SERVER_SPACE_MSU)                   \
   OP(USBINT_SERVER_SPACE_CMD)                   \
   OP(USBINT_SERVER_SPACE_CONFIG)
@@ -147,7 +147,7 @@ static const char *usbint_server_space_s[] = { FOREACH_SERVER_SPACE(GENERATE_STR
   OP(USBINT_SERVER_FLAGS_SETX=8)               \
   OP(USBINT_SERVER_FLAGS_STREAMBURST=16)       \
   OP(USBINT_SERVER_FLAGS_NORESP=64)            \
-  OP(USBINT_SERVER_FLAGS_64BDATA=128)               
+  OP(USBINT_SERVER_FLAGS_64BDATA=128)
 enum usbint_server_flags_e { FOREACH_SERVER_FLAGS(GENERATE_ENUM) };
 //static const char *usbint_server_flags_s[] = { FOREACH_SERVER_FLAGS(GENERATE_STRING) };
 

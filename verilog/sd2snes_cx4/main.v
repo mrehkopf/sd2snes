@@ -625,6 +625,7 @@ snescmd_buf snescmd (
 );
 `endif
 
+// CX4 r/w request
 always @(posedge CLK2) begin
   if(cx4_active) begin
     if(CX4_RRQ) begin
@@ -638,6 +639,7 @@ always @(posedge CLK2) begin
   end
 end
 
+// MCU r/w request
 always @(posedge CLK2) begin
   if(MCU_RRQ) begin
     MCU_RD_PENDr <= 1'b1;

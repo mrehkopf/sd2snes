@@ -248,10 +248,7 @@ parameter ROM_CYCLE_LEN = 4'd7;
 reg [4:0] STATE;
 initial STATE = ST_IDLE;
 
-assign DSPX_SNES_DATA_IN = BUS_DATA;
-assign SRTC_SNES_DATA_IN = BUS_DATA[3:0];
 assign MSU_SNES_DATA_IN = BUS_DATA;
-assign BSX_SNES_DATA_IN = BUS_DATA;
 
 sd_dma snes_sd_dma(
   .CLK(CLK2),
@@ -711,6 +708,7 @@ assign ROM_ADDR0 = (SD_DMA_TO_ROM) ? MCU_ADDR[0]
 reg[17:0] SNES_DEAD_CNTr;
 initial SNES_DEAD_CNTr = 0;
 
+// MCU r/w request
 always @(posedge CLK2) begin
   if(MCU_RRQ) begin
     MCU_RD_PENDr <= 1'b1;

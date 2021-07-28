@@ -215,6 +215,7 @@ always @(posedge clk) begin
     snescmd_unlock_disable <= 0;
   end else begin
     if(SNES_rd_strobe) begin
+      // *** GAME -> INGAME HOOK ***
       if(hook_enable_sync
         & ((auto_nmi_enable_sync & nmi_enable & nmi_match_bits[1])
 `ifdef IRQ_HOOK_ENABLE
@@ -233,6 +234,7 @@ always @(posedge clk) begin
     // give some time to exit snescmd memory and jump to original vector
     // sta @NMI_VECT_DISABLE    1-2 (after effective write)
     // jmp ($ffxx)              3 (excluding address fetch)
+    // *** (INGAME HOOK -> GAME) ***
     if(SNES_cycle_start) begin
       if(snescmd_unlock_disable) begin
         if(|snescmd_unlock_disable_countdown) begin
@@ -336,8 +338,8 @@ always @(posedge clk) begin
       end else if(pgm_idx == 6) begin // set rom patch enable
         cheat_enable_mask <= pgm_in[5:0];
       end else if(pgm_idx == 7) begin // set/reset global enable / hooks
-      // pgm_in[7:4] are reset bit flags
-      // pgm_in[3:0] are set bit flags
+      // pgm_in[13:8] are reset bit flags
+      // pgm_in[5:0] are set bit flags
         {wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
          <= ({wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
           & ~pgm_in[13:8])

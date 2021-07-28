@@ -205,10 +205,10 @@ reg map_Ex_wr_unlock_r; initial map_Ex_wr_unlock_r = 0;
 reg map_snescmd_rd_unlock_r; initial map_snescmd_rd_unlock_r = 0;
 reg map_snescmd_wr_unlock_r; initial map_snescmd_wr_unlock_r = 0;
 
-reg SNES_SNOOPRD_DATA_OE;
-reg SNES_SNOOPWR_DATA_OE;
-reg SNES_SNOOPPAWR_DATA_OE;
-reg SNES_SNOOPPARD_DATA_OE;
+reg SNES_SNOOPRD_DATA_OE = 0;
+reg SNES_SNOOPWR_DATA_OE = 0;
+reg SNES_SNOOPPAWR_DATA_OE = 0;
+reg SNES_SNOOPPARD_DATA_OE = 0;
 
 reg [3:0] SNES_SNOOPRD_count;
 reg [3:0] SNES_SNOOPWR_count;
@@ -318,13 +318,13 @@ always @(posedge CLK2) begin
   SNES_DATAr[2] <= SNES_DATAr[1];
   SNES_DATAr[1] <= SNES_DATAr[0];
   SNES_DATAr[0] <= SNES_DATA;
-  
+
   // count of write low
   if (SNES_reset_strobe | SNES_SNOOPPAWR_end) begin
     SNES_SNOOPPAWR_count <= 0;
     SNES_SNOOPPAWR_DATA_OE <= 0;
   end
-  else if (SNES_PAWR_start_early) begin 
+  else if (SNES_PAWR_start_early) begin
     SNES_SNOOPPAWR_count <= 1;
     SNES_SNOOPPAWR_DATA_OE <= 1;
   end
@@ -372,7 +372,6 @@ always @(posedge CLK2) begin
   else if (|SNES_SNOOPRD_count) begin
     SNES_SNOOPRD_count <= SNES_SNOOPRD_count + 1;
   end
-
 
 end
 
@@ -896,7 +895,7 @@ assign p113_out = 1'b0;
 snescmd_buf snescmd (
   .clka(CLK2), // input clka
   .wea(SNES_WR_end & ((snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & snescmd_enable)), // input [0 : 0] wea
-  .addra(SNES_ADDR[9:0]), // input [8 : 0] addra
+  .addra(SNES_ADDR[9:0]), // input [9 : 0] addra
   .dina(SNES_DATA), // input [7 : 0] dina
   .douta(snescmd_dout), // output [7 : 0] douta
   .clkb(CLK2), // input clkb
@@ -960,6 +959,7 @@ always @(posedge CLK2) begin
   end
 end
 
+// MCU r/w request
 always @(posedge CLK2) begin
   if(MCU_RRQ) begin
     MCU_RD_PENDr <= 1'b1;
@@ -1000,7 +1000,7 @@ end
 
 always @(posedge CLK2) begin
   if(~SNES_CPU_CLKr[1]) SNES_DEAD_CNTr <= SNES_DEAD_CNTr + 1;
-  else SNES_DEAD_CNTr <= 17'h0;
+  else SNES_DEAD_CNTr <= 18'h0;
 end
 
 always @(posedge CLK2) begin
@@ -1222,7 +1222,7 @@ reg snescmd_addr_map_r; always @(posedge CLK2) snescmd_addr_map_r <= {2'b10,snes
 always @(posedge CLK2) begin 
   // dynamic NMI hook enable/disable detected on writes to $2C00 from either SNES or MCU
   if      (SNES_WR_end & (snescmd_unlock | feat_cmd_unlock | map_snescmd_wr_unlock_r) & exe_enable) exe_present <= (SNES_DATA != 0) ? 1 : 0;
-  // snescmd_addr_mcu is 10b.  $2C00 is inteleaved with $2A00 such that $2C00 comes first at 0
+  // snescmd_addr_mcu is 10 bits.  $2C00 is inteleaved with $2A00 such that $2C00 comes first at 0
   else if (snescmd_we_mcu & snescmd_addr_exe_r)                                                     exe_present <= (snescmd_data_out_mcu != 0) ? 1 : 0;
   
   // address map unlock detected on writes from either SNES or MCU
@@ -1328,7 +1328,6 @@ chipscope_ila snes_ila (
     .TRIG3(TRIG3), // IN BUS [3:0]
     .TRIG4(TRIG4) // IN BUS [25:0]
 );
-*/
 `endif
 
 endmodule

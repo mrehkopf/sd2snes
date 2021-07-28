@@ -770,6 +770,7 @@ initial SNES_DEAD_CNTr = 0;
 reg ROM_ADDR0_r;
 always @(posedge CLK2) ROM_ADDR0_r <= ROM_ADDR0;
 
+// MCU r/w request
 always @(posedge CLK2) begin
   if(MCU_RRQ && MCU_ADDR[23:19] != 5'b11100) begin
     MCU_RD_PENDr <= 1'b1;
@@ -786,6 +787,7 @@ always @(posedge CLK2) begin
   end
 end
 
+// SA1 r/w request
 always @(posedge CLK2) begin
   if(SA1_ROM_RRQ) begin
     SA1_ROM_RD_PENDr <= 1'b1;
@@ -1010,6 +1012,7 @@ wire MCU_RAM_WR_HIT = |(RAM_STATE & (ST_RAM_MCU_WR_ADDR | ST_RAM_MCU_WR_END));
 wire MCU_RAM_RD_HIT = |(RAM_STATE & (ST_RAM_MCU_RD_ADDR | ST_RAM_MCU_RD_END));
 wire MCU_RAM_HIT = MCU_RAM_WR_HIT | MCU_RAM_RD_HIT;
 
+// MCU RAM1 r/w request
 always @(posedge CLK2) begin
   if(MCU_RRQ && MCU_ADDR[23:19] == 5'b11100) begin
     MCU_RAM_RD_PENDr <= 1'b1;
@@ -1042,6 +1045,7 @@ wire SA1_RAM_WR_HIT = |(RAM_STATE & (ST_RAM_SA1_WR_ADDR | ST_RAM_SA1_WR_END));
 wire SA1_RAM_RD_HIT = |(RAM_STATE & (ST_RAM_SA1_RD_ADDR | ST_RAM_SA1_RD_END));
 wire SA1_RAM_HIT    = SA1_RAM_WR_HIT | SA1_RAM_RD_HIT;
 
+// SA1 RAM1 r/w request
 always @(posedge CLK2) begin
   if(SA1_RAM_RRQ) begin
     SA1_RAM_RD_PENDr <= 1'b1;

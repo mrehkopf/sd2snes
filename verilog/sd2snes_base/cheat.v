@@ -223,6 +223,7 @@ always @(posedge clk) begin
     else if (map_unlock_r) exe_to_hook_transition_r <= 1;
   
     if(SNES_rd_strobe) begin
+      // *** GAME -> USB HOOK ***
       if(hook_enable_sync
         & ((auto_nmi_enable_sync & exe_present & ~feat_cmd_unlock & ~exe_unlock & nmi_match_bits[1]))
         & (cpu_push_cnt == 4)) begin
@@ -236,6 +237,7 @@ always @(posedge clk) begin
         // unlock exe code
         exe_unlock_r <= 1;
       end
+      // *** USB HOOK -> INGAME HOOK ***
       else if (hook_enable_sync & exe_unlock
         & (auto_nmi_enable_sync & nmi_enable & nmi_match_bits[1])
         & (cpu_push_cnt != 4)
@@ -249,6 +251,7 @@ always @(posedge clk) begin
         // no longer in exe region
         exe_unlock_r <= 0;        
       end
+      // *** USB HOOK -> GAME ***
       else if (exe_unlock & nmi_match_bits[1]
        & (cpu_push_cnt != 4)
        ) begin
@@ -257,6 +260,7 @@ always @(posedge clk) begin
         exe_unlock_r <= 0;
         map_unlock_r <= 0;
       end
+      // *** GAME -> INGAME HOOK ***
       else if(hook_enable_sync
         & ((auto_nmi_enable_sync & nmi_enable & nmi_match_bits[1])
           |(auto_irq_enable_sync & irq_enable & irq_match_bits[1]))
@@ -268,6 +272,7 @@ always @(posedge clk) begin
         // unlock the snescmd region
         snescmd_unlock_r <= 1;
       end
+      // *** RESET -> RESET HOOK ***
       if(rst_match_bits[1] & |reset_unlock_r) begin
         snescmd_unlock_r <= 1;
       end

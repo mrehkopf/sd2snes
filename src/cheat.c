@@ -65,7 +65,7 @@ void cheat_program() {
   cheat_holdoff_enable(CFG.enable_hook_holdoff);
   cheat_buttons_enable(CFG.enable_ingame_buttons);
   cheat_wram_present(wram_index);
-  
+
   sgb_cheat_program();
 }
 

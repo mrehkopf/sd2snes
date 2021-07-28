@@ -150,11 +150,7 @@ wire feat_cmd_unlock = featurebits[5];
 wire r213f_enable;
 
 wire [23:0] MAPPED_SNES_ADDR;
-wire        ROM_ADDR0;
-//reg [22:0] ROM_ADDR_PRE;
-//reg        ROM_ADDR0_PRE;
-//assign ROM_ADDR = ROM_ADDR_PRE;
-//wire ROM_ADDR0 = ROM_ADDR0_PRE;
+wire ROM_ADDR0;
 
 wire [13:0] DBG_msu_address;
 wire DBG_msu_reg_oe_rising;
@@ -314,7 +310,7 @@ always @(posedge CLK2) begin
   SNES_DATAr[2] <= SNES_DATAr[1];
   SNES_DATAr[1] <= SNES_DATAr[0];
   SNES_DATAr[0] <= SNES_DATA;
-  
+
   // count of write low
   if (SNES_reset_strobe | SNES_SNOOPPAWR_end) begin
     SNES_SNOOPPAWR_count <= 0;
@@ -794,6 +790,7 @@ reg [3:0] ST_MEM_DELAYr;
 reg MCU_RD_PENDr = 0;
 reg MCU_WR_PENDr = 0;
 reg [23:0] ROM_ADDRr;
+
 // CTX
 reg CTX_WR_PENDr;
 initial CTX_WR_PENDr = 0;
@@ -929,6 +926,7 @@ always @(posedge CLK2) begin
   end
 end
 
+// MCU r/w request
 always @(posedge CLK2) begin
   if(MCU_RRQ) begin
     MCU_RD_PENDr <= 1'b1;
@@ -969,7 +967,7 @@ end
 
 always @(posedge CLK2) begin
   if(~SNES_CPU_CLKr[1]) SNES_DEAD_CNTr <= SNES_DEAD_CNTr + 1;
-  else SNES_DEAD_CNTr <= 17'h0;
+  else SNES_DEAD_CNTr <= 18'h0;
 end
 
 always @(posedge CLK2) begin
@@ -1148,6 +1146,7 @@ assign ROM_WE = SD_DMA_TO_ROM
                 : 1'b1;
 
 assign ROM_BHE = ROM_ADDR0;
+assign ROM_BLE = ~ROM_ADDR0 & ~(~SD_DMA_TO_ROM & CTX_HIT & CTX_ROM_WORDr) & ~(~SD_DMA_TO_ROM & DMA_HIT & DMA_ROM_WORDr);
 
 reg ReadOrWrite_r; always @(posedge CLK2) ReadOrWrite_r <= ~(SNES_READr[1] & SNES_READr[0] & SNES_WRITEr[1] & SNES_WRITEr[0]);
 
@@ -1224,6 +1223,7 @@ always @(posedge CLK2) begin
       end
     endcase
   end
+
 end
 
 `ifdef MK2_DEBUG
