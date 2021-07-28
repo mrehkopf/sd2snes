@@ -2,8 +2,33 @@
 # Savestate Game Fixes
 # Games sometimes store a flag in WRAM that is the current index of the APU state at $214x.  That gets out of sync when you reload the game (because $214x doesn't get updated). 
 # This forces the WRAM copy to be updated.
+# Alternatively small code snippets may be specified to perform the necessary fixing.
+#
+# Fixes are applied both after saving and loading a save state.
+#
+# Format:
+# CKSUM: DST,SRC[OPERATION][;PCADDR,PATCH] # game name/comments
+# OR
+# CKSUM: @OPCODES
+#
+# YAML multi-line lists are supported, e.g.:
+# 1234: # My game (US)
+#   - 7E0000,2140^FF;C0FF00,EA
+#   - 7E0001,2141
+#
+# DST: target WRAM address to update
+# SRC: APU address contents (2140-2143) or immediate value (0000-00FF) to write to TGT
+# OPERATION: consists of operator and operand, e.g. ^80 = XOR $80
+#            performs an optional operation on the value read from SRC
+#            before writing it to the DST address.
+#            Currently supported operations:
+#              ^: XOR   |: OR   &: AND
+# PCADDR: ROM address to patch
+# PATCH:  byte value to write to ROM address (PCADDR)
+# OPCODES: code to be executed verbatim. A=8 bits, X=16 bits.
+#          e.g. "@AFFFFF7E8F0100E7" - lda @$7effff : sta @$7e0001
+#          up to 64 bytes are supported
 
-# CKSUM: ADDR,APU;PCADDR,PATCH	# game name/comments
 648D: 0002F5,2140 # super ghouls and ghosts (US)
 FE0F: 0002F5,2140 # super ghouls and ghosts (US)
 B6D4: 7EFFFB,2140 # final fight (US)
