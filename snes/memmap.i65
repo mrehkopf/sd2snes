@@ -131,6 +131,7 @@
 #define CFG_SGB_SPR_INCREASE            CFG_ADDR+$00B0
 #define CFG_SGB_CLOCK_FIX               CFG_ADDR+$00B1
 #define CFG_SGB_BIOS_VERSION            CFG_ADDR+$00B2
+#define CFG_SHOW_TRIBUTE                CFG_ADDR+$00B3
 
 #define MENU_ENTRY_SIZE             23
 
