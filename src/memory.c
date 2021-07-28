@@ -427,7 +427,11 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   printf("ramsize=%x rammask=%lx\nromsize=%x rommask=%lx\n", romprops.header.ramsize, rammask, romprops.header.romsize, rommask);
   set_saveram_mask(rammask);
   // don't set these for special chips as it may break from not supporting the feature
-  if (!romprops.fpga_conf || romprops.fpga_conf == FPGA_BASE) set_saveram_base(ramslot);
+  if (  !romprops.fpga_conf
+      || romprops.fpga_conf == FPGA_BASE
+      || romprops.fpga_conf == FPGA_DSP) {
+      set_saveram_base(ramslot);
+  }
   set_rom_mask(rommask);
   readled(0);
 
