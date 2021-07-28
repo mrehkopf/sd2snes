@@ -61,8 +61,7 @@ wire [23:0] SRAM_SNES_ADDR;
    -         LoROM
 */
 
-assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
-                 |(SNES_ADDR[22]));
+assign IS_ROM = ~SNES_ROMSEL;
 
 // Original SGB SNES code does not enable SaveRAM.  If a SD2SNES feature is added to support this
 // the firmware will need a way to back it up.  Also SNES access to PSRAM will create bus

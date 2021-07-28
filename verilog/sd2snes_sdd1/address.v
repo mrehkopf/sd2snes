@@ -72,12 +72,9 @@ wire [23:0] SRAM_SNES_ADDR;
       111      menu (ROM in upper SRAM)
 */
 
-
-// active high to select ROM when
-            // bank is in range ($00-$3F) or ($80-$BF) and accessing upper half of bank ($8000-$FFFF) (LoROM)
-assign IS_ROM = 	((!SNES_ADDR[22] & SNES_ADDR[15])
-            // bank is in range ($C0-$FF) or ($40-$7D).  Avoid WRAM $7E-$7F with /ROMSEL signal
-            |(SNES_ADDR[22] & ~SNES_ROMSEL));
+// active high to select ROM in banks 00-3f,80-bf:8000-ffff and 40-7d,c0-ff:0000-ffff
+// (decoded by SNES)
+assign IS_ROM = ~SNES_ROMSEL;
 
 // select backup RAM when
               // ST0010 chip is present, SRAM is mapped to

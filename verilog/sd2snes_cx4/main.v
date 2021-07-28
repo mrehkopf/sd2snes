@@ -404,6 +404,7 @@ address snes_addr(
   .MAPPER(MAPPER),
   .SNES_ADDR(SNES_ADDR), // requested address from SNES
   .SNES_PA(SNES_PA),
+  .SNES_ROMSEL(SNES_ROMSEL),
   .ROM_ADDR(MAPPED_SNES_ADDR),   // Address to request from SRAM (active low)
   .ROM_HIT(ROM_HIT),
   .IS_SAVERAM(IS_SAVERAM),

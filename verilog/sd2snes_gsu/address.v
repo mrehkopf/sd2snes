@@ -54,10 +54,7 @@ parameter [2:0]
 
 wire [23:0] SRAM_SNES_ADDR;
 
-
-assign IS_ROM = ( (~SNES_ADDR[22] & SNES_ADDR[15])
-                | (SNES_ADDR[22]  & ~SNES_ROMSEL))
-                ;
+assign IS_ROM = ~SNES_ROMSEL;
 
 assign IS_SAVERAM = SAVERAM_MASK[0]
                     & ( // 60-7D/E0-FF:0000-FFFF

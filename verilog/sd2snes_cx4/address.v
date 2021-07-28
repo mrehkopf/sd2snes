@@ -23,6 +23,7 @@ module address(
   input [2:0] MAPPER,       // MCU detected mapper
   input [23:0] SNES_ADDR,   // requested address from SNES
   input [7:0] SNES_PA,      // peripheral address from SNES
+  input SNES_ROMSEL,        // ROMSEL from SNES
   output [23:0] ROM_ADDR,   // Address to request from SRAM0
   output ROM_HIT,           // want to access RAM0
   output IS_SAVERAM,        // address/CS mapped as SRAM?
@@ -57,8 +58,7 @@ wire [23:0] SRAM_SNES_ADDR;
    - SRAM @ 70-77:0000-7fff
  */
 
-assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
-                 |(SNES_ADDR[22]));
+assign IS_ROM = ~SNES_ROMSEL;
 
 assign IS_SAVERAM = |SAVERAM_MASK & (~SNES_ADDR[23] & &SNES_ADDR[22:20] & ~SNES_ADDR[19] & ~SNES_ADDR[15]);
 

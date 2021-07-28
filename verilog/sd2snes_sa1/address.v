@@ -74,9 +74,7 @@ wire [2:0] xxb[3:0];
 assign {xxb[3], xxb[2], xxb[1], xxb[0]} = sa1_xxb;
 wire [3:0] xxb_en = sa1_xxb_en;
 
-assign IS_ROM = ( (~SNES_ADDR[22] & SNES_ADDR[15])
-                | (&SNES_ADDR[23:22]))
-                ;
+assign IS_ROM = ~SNES_ROMSEL;
 
 assign IS_SAVERAM = SAVERAM_MASK_r[0]
                     & ( // 40-4F:0000-FFFF

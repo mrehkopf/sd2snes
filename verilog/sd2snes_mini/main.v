@@ -211,6 +211,7 @@ address snes_addr(
   .CLK(CLK2),
   .SNES_ADDR(SNES_ADDR), // requested address from SNES
   .ROM_ADDR(MAPPED_SNES_ADDR),   // Address to request from SRAM (active low)
+  .SNES_ROMSEL(SNES_ROMSEL),
   .ROM_HIT(ROM_HIT),
   .IS_SAVERAM(IS_SAVERAM),
   .IS_ROM(IS_ROM),
@@ -286,6 +287,7 @@ assign ROM_OE = 1'b0;
 reg[17:0] SNES_DEAD_CNTr;
 initial SNES_DEAD_CNTr = 0;
 
+// MCU r/w request
 always @(posedge CLK2) begin
   if(MCU_RRQ) begin
     MCU_RD_PENDr <= 1'b1;
