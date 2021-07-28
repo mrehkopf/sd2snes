@@ -468,6 +468,11 @@ cheat snes_cheat(
 
 wire [7:0] snescmd_dout;
 
+parameter ST_R213F_ARMED     = 4'b0001;
+parameter ST_R213F_WAITBUS   = 4'b0010;
+parameter ST_R213F_OVERRIDE  = 4'b0100;
+parameter ST_R213F_HOLD      = 4'b1000;
+
 reg [7:0] r213fr;
 reg r213f_forceread;
 reg [2:0] r213f_delay;
@@ -662,19 +667,38 @@ always @(posedge CLK2) begin
   endcase
 end
 
+/***********************
+ * R213F read patching *
+ ***********************/
 always @(posedge CLK2) begin
-  if(SNES_cycle_end) r213f_forceread <= 1'b1;
-  else if(SNES_PARD_start & r213f_enable) begin
-    r213f_delay <= 3'b001;
-    r213f_state <= 2'b10;
-  end else if(r213f_state == 2'b10) begin
-    r213f_delay <= r213f_delay - 1;
-    if(r213f_delay == 3'b000) begin
-      r213f_forceread <= 1'b0;
-      r213f_state <= 2'b01;
-      r213fr <= {SNES_DATA[7:5], mcu_region, SNES_DATA[3:0]};
+  case(r213f_state)
+    ST_R213F_HOLD: begin
+      r213f_state <= ST_R213F_HOLD;
+      if(SNES_PULSE_end) begin
+        r213f_forceread <= 1'b1;
+        r213f_state <= ST_R213F_ARMED;
+      end
     end
-  end
+    ST_R213F_ARMED: begin
+      r213f_state <= ST_R213F_ARMED;
+      if(SNES_PARD_start & r213f_enable) begin
+        r213f_delay <= 3'b001;
+        r213f_state <= ST_R213F_WAITBUS;
+      end
+    end
+    ST_R213F_WAITBUS: begin
+      r213f_state <= ST_R213F_WAITBUS;
+      r213f_delay <= r213f_delay - 1;
+      if(r213f_delay == 3'b000) begin
+        r213f_state <= ST_R213F_OVERRIDE;
+        r213fr <= {SNES_DATA[7:5], mcu_region, SNES_DATA[3:0]};
+      end
+    end
+    ST_R213F_OVERRIDE: begin
+      r213f_state <= ST_R213F_HOLD;
+      r213f_forceread <= 1'b0;
+    end
+  endcase
 end
 
 /*********************************
