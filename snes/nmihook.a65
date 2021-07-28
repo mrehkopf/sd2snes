@@ -72,10 +72,10 @@ nmi_savestate:
   jsl @savestate_handler
 nmi_exit:
 ; clean up
-  sta @NMI_VECT_DISABLE
   rep #$20 : .al
   pla
   plp
+  sta @NMI_VECT_DISABLE
   jmp ($ff77) ; '77' is replaced by FPGA depending on hook entry
 
 nmi_stop:
