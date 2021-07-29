@@ -172,8 +172,8 @@ always @(posedge clk) begin
       & ((auto_nmi_enable_sync & nmi_enable & nmi_match_bits[1])
         |(auto_irq_enable_sync & irq_enable & irq_match_bits[1]))
       & cpu_push_cnt == 4) begin
-      vector_unlock_r <= 2'b11;
-    end else if(|vector_unlock_r) begin
+      vector_unlock_r <= 2'b10;
+    end else if(|vector_unlock_r & (|nmi_match_bits | |irq_match_bits)) begin
       vector_unlock_r <= vector_unlock_r - 1;
     end
   end
