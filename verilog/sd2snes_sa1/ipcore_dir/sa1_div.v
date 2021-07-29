@@ -7,7 +7,7 @@
 // \   \   \/     Version: P.20131013
 //  \   \         Application: netgen
 //  /   /         Filename: sa1_div.v
-// /___/   /\     Timestamp: Fri Oct 26 01:11:20 2018
+// /___/   /\     Timestamp: Fri Oct 02 09:05:14 2020
 // \   \  /  \ 
 //  \___\/\___\
 //             
@@ -17,7 +17,7 @@
 // Output file	: ./tmp/_cg/sa1_div.v
 // # of Modules	: 1
 // Design Name	: sa1_div
-// Xilinx        : E:\Xilinx\14.7\ISE_DS\ISE\
+// Xilinx        : D:\Xilinx\14.7\ISE_DS\ISE\
 //             
 // Purpose:    
 //     This verilog netlist is a verification model and uses simulation 

@@ -7,7 +7,7 @@
 // \   \   \/     Version: P.20131013
 //  \   \         Application: netgen
 //  /   /         Filename: gsu_mult.v
-// /___/   /\     Timestamp: Thu Jun 07 01:14:16 2018
+// /___/   /\     Timestamp: Fri Oct 02 08:35:16 2020
 // \   \  /  \ 
 //  \___\/\___\
 //             
@@ -17,7 +17,7 @@
 // Output file	: D:/prj/sd2snes/verilog/sd2snes_gsu/ipcore_dir/tmp/_cg/gsu_mult.v
 // # of Modules	: 1
 // Design Name	: gsu_mult
-// Xilinx        : E:\Xilinx\14.7\ISE_DS\ISE\
+// Xilinx        : D:\Xilinx\14.7\ISE_DS\ISE\
 //             
 // Purpose:    
 //     This verilog netlist is a verification model and uses simulation 

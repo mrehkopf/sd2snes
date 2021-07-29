@@ -7,11 +7,11 @@
 // \   \   \/     Version : 14.7
 //  \   \         Application : xaw2verilog
 //  /   /         Filename : DCM_Scope.v
-// /___/   /\     Timestamp : 12/02/2018 21:05:41
+// /___/   /\     Timestamp : 10/02/2020 08:51:22
 // \   \  /  \ 
 //  \___\/\___\ 
 //
-//Command: xaw2verilog -intstyle D:/sd2snes/verilog/sd2snes_sdd1/ipcore_dir/DCM_Scope.xaw -st DCM_Scope.v
+//Command: xaw2verilog -intstyle D:/prj/sd2snes/verilog/sd2snes_sdd1/ipcore_dir/DCM_Scope.xaw -st DCM_Scope.v
 //Design Name: DCM_Scope
 //Device: xc3s400-4pq208
 //
