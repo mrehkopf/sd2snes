@@ -227,17 +227,18 @@ mcu_cmd snes_mcu_cmd(
   .mcu_bram_we(mcu_bram_we)
 );
 
-reg [7:0] SNES_PARDr;
-reg [7:0] SNES_PAWRr;
-reg [7:0] SNES_READr;
-reg [7:0] SNES_WRITEr;
-reg [7:0] SNES_CPU_CLKr;
-reg [7:0] SNES_ROMSELr;
+reg [7:0] SNES_PARDr = 8'b11111111;
+reg [7:0] SNES_PAWRr = 8'b11111111;
+reg [7:0] SNES_READr = 8'b11111111;
+reg [7:0] SNES_WRITEr = 8'b11111111;
+reg [7:0] SNES_CPU_CLKr = 8'b00000000;
+reg [7:0] SNES_ROMSELr = 8'b11111111;
 reg [23:0] SNES_ADDRr [6:0];
 reg [7:0] SNES_PAr [6:0];
 reg [7:0] SNES_DATAr [4:0];
 
-wire SNES_PARD_start = ((SNES_PARDr[6:1] | SNES_PARDr[7:2]) == 6'b111110);
+wire SNES_PARD_start = (SNES_PARDr[6:1] == 6'b111110);
+wire SNES_PARD_end = (SNES_PARDr[6:1] == 6'b000001);
 wire SNES_PAWR_start = ((SNES_PAWRr[6:1] | SNES_PAWRr[7:2]) == 6'b111000); /* 000 necessary for SNES_DATA capture */
 wire SNES_PAWR_end = ((SNES_PAWRr[6:1] & SNES_PAWRr[7:2]) == 6'b000001);
 wire SNES_RD_start = ((SNES_READr[6:1] | SNES_READr[7:2]) == 6'b111100);
