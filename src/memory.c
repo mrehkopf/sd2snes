@@ -279,7 +279,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   DWORD sgb_filesize = file_handle.fsize;
   sgb_id(&sgb_romprops, sgb_filename);
   if (!sgb_update_file(&filename)) return 0;
-  
+
   filesize = file_handle.fsize;
   smc_id(&romprops, file_offset);
   file_close();

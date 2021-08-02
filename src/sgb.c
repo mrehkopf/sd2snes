@@ -61,9 +61,9 @@ void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
   props->error = 0;
   props->error_param = NULL;
 
-  /* check for GB ROM */
+  /* check for GB ROM.  match case-insensitive <name>.gb* */
   char *ext = strrchr((char*)filename, (int)'.');
-  if(!ext || strncmp(ext, ".gb", 3)) return;
+  if(!ext || ext[0] != '.' || tolower(ext[1]) != 'g' || tolower(ext[2]) != 'b') return;
 
   printf("Loading SGB\n");
   props->has_sgb = 1;
