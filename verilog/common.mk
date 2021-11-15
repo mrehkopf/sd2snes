@@ -32,6 +32,14 @@ XILINX_PATH := $(call mkpath,$(XILINX_PATH))
 # prepare source lists
 VSRC := $(sort $(VSRC))
 VHSRC := $(sort $(VHSRC))
+UCF := main.ucf
+
+# apply differing source path
+ifdef VSRC_DIR
+	VSRC := $(patsubst %,$(VSRC_DIR)/%,$(VSRC))
+	VHSRC := $(patsubst %,$(VSRC_DIR)/%,$(VHSRC))
+	UCF := $(patsubst %,$(VSRC_DIR)/%,$(UCF))
+endif
 
 XIL_IP := $(sort $(XIL_IP))
 XIL_IP += $(sort $(COMMON_IP))
@@ -60,7 +68,7 @@ smartxplorer: main.ngd currentProps.stratfile hostlistfile.txt
 	PATH="$(XILINX_PATH)":"$(PATH)"; \
 	export XILINX="$(XILINX)" XILINX_DSP="$(XILINX_DSP)" XILINX_EDK="$(XILINX_EDK)" XILINX_PLANAHEAD="$(XILINX_PLANAHEAD)"; \
 	echo "Running SmartXPlorer. Check smartxplorer_results/smartxplorer.html for progress."; \
-	$(XILINX_BIN)/smartxplorer -p $(XILINX_PART) -b -wd smartxplorer_results main.ngd -to "-v 3 -s 4 -n 3 -fastpaths -xml main.twx -ucf main.ucf" $(XPLORER_PARAMS) \
+	$(XILINX_BIN)/smartxplorer -p $(XILINX_PART) -b -wd smartxplorer_results main.ngd -to "-v 3 -s 4 -n 3 -fastpaths -xml main.twx -ucf $(UCF)" $(XPLORER_PARAMS) \
 	&& (while true; do \
 		touch $@; \
 		export SX_RUN=`grep "Run index" smartxplorer_results/smartxplorer.log | sed -e 's/^.*\:.*run\([0-9]\+\).*$$/\1/g'`; \
@@ -84,7 +92,7 @@ main.ngc: main.xst main.prj
 
 main.ngd: main.ngc $(XIL_IP)
 	$(call T,[mk2] fpga_$(CORE) - Translate)
-	$(XILINX_BIN)/ngdbuild -dd _ngo -sd ipcore_dir -nt timestamp -uc main.ucf -p $(XILINX_PART) $< $@
+	$(XILINX_BIN)/ngdbuild -dd _ngo -sd $(XIL_IPCORE_DIR) -nt timestamp -uc $(UCF) -p $(XILINX_PART) $< $@
 
 main_map.ncd: main.ngd
 	$(call T,[mk2] fpga_$(CORE) - Map)
@@ -95,6 +103,7 @@ main.ncd: main_map.ncd
 	$(call T,[mk2] fpga_$(CORE) - Place and Route)
 	$(eval XILINX_PAR_OPTS := $(shell $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenparcmd.tcl sd2snes_$(CORE).xise))
 	$(XILINX_BIN)/par -w $(XILINX_PAR_OPTS) $^ $@ main.pcf
+	@! grep -q 'Timing Score: [1-9][0-9]*' main.par || (echo "[mk2] sd2snes_$(CORE): Timing not met! Aborting."; exit 55)
 
 main.bit: main.ncd main.ut
 	$(call T,[mk2] fpga_$(CORE) - Generate Programming File)
@@ -108,7 +117,7 @@ $(XIL_IPCORE_DIR)/%.ngc: $(XIL_IPCORE_DIR)/%.xco | $(XIL_IPCORE_DIR)/coregen.cgc
 
 # ## Supplementary files required for Xilinx processes ##
 # PRJ file - basically a list of files that comprise the project
-main.prj: $(XIL_IP) $(VSRC) $(VHSRC)
+main.prj: $(XIL_IP) $(VSRC) $(VHSRC) $(HEADER)
 	rm -f main.prj
 	for src in $(VSRC) $(XIL_IP:.ngc=.v); do echo "verilog work \"$$src\"" >> main.prj; done
 	for src in $(VHSRC); do echo vhdl work "$$src" >> main.prj; done
@@ -123,7 +132,7 @@ main.ut: sd2snes_$(CORE).xise
 
 # Generate Strategy file for SmartXPlorer
 currentProps.stratfile: sd2snes_$(CORE).xise
-	$(XILINX_BIN)/xtclsh ../xgenstratfile.tcl sd2snes_$(CORE).xise
+	$(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenstratfile.tcl sd2snes_$(CORE).xise
 
 # Generate host list file for SmartXPlorer (enable parallel operation)
 hostlistfile.txt:
@@ -135,16 +144,17 @@ fpga_$(CORE).bi3: output_files/main.rbf
 	../../utils/rle $^ $@
 
 # Intel pulls a lot more stuff from project context...
-output_files/main.rbf: $(VSRC) $(VHSRC) $(INT_IP)
+output_files/main.rbf: $(VSRC) $(VHSRC) $(HEADER) $(INT_IP) main.sdc
 	rm -rf db incremental_db
 	$(call T,[mk3] fpga_$(CORE) - Map)
 	$(INTEL_BIN)/quartus_map --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
 	$(call T,[mk3] fpga_$(CORE) - Fit)
 	$(INTEL_BIN)/quartus_fit --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
-	$(call T,[mk3] fpga_$(CORE) - Assemble)
-	$(INTEL_BIN)/quartus_asm --read_settings_files=off --write_settings_files=off sd2snes_$(CORE) -c main
 	$(call T,[mk3] fpga_$(CORE) - Timing Analysis)
 	$(INTEL_BIN)/quartus_sta sd2snes_$(CORE) -c main
+	@! grep -q 'TNS.*-' output_files/main.sta.summary || (echo "[mk3] sd2snes_$(CORE): Timing not met! Aborting."; exit 55)
+	$(call T,[mk3] fpga_$(CORE) - Assemble)
+	$(INTEL_BIN)/quartus_asm --read_settings_files=off --write_settings_files=off sd2snes_$(CORE) -c main
 #	$(INTEL_BIN)/quartus_eda --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
 	$(call T)
 

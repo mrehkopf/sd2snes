@@ -55,6 +55,7 @@ include $(CONFIG)
 
 # Directory for all generated files
 OBJDIR := obj$(CONFIGSUFFIX)
+DEPDIR := .dep$(CONFIGSUFFIX)
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = binary
@@ -69,6 +70,9 @@ TARGET = $(OBJDIR)/sd2snes
 export FW_START=$(CONFIG_FW_START)
 export FW_FILE=$(OBJDIR)/$(CONFIG_FW_FILE)
 export FLASH_SIZE=$(CONFIG_FLASH_SIZE)
+
+# Version
+include VERSION
 
 # List C source files here. (C dependencies are automatically generated.)
 SRC  = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c
@@ -203,7 +207,7 @@ LST := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.lst) $(ASRC:.S=.lst))
 
 
 # Compiler flags to generate dependency files.
-GENDEPFLAGS = -MMD -MP -MF .dep/$(@F).d
+GENDEPFLAGS = -MMD -MP -MF $(DEPDIR)/$(@F).d
 
 
 # Combine all necessary flags and optional flags.
@@ -219,7 +223,7 @@ build: elf bin hex
 	$(E) "  SIZE   $(TARGET).elf"
 	$(Q)$(ELFSIZE)|grep -v debug
 	cp $(TARGET).bin $(OBJDIR)/$(CONFIG_FW_FILE)
-	utils/genhdr $(OBJDIR)/$(CONFIG_FW_FILE) $(CONFIG_FW_MAGIC) $(CONFIG_FWVER)
+	utils/genhdr $(OBJDIR)/$(CONFIG_FW_FILE) $(CONFIG_FW_MAGIC) $(CONFIG_VERSION)
 
 elf: $(TARGET).elf
 bin: $(TARGET).bin
@@ -244,9 +248,9 @@ ELFSIZE = $(SIZE) -A $(TARGET).elf
 
 # Generate autoconf.h from config
 .PRECIOUS : $(OBJDIR)/autoconf.h
-$(OBJDIR)/autoconf.h: $(CONFIG) | $(OBJDIR)
+$(OBJDIR)/autoconf.h: $(CONFIG) VERSION | $(OBJDIR)
 	$(E) "  CONF2H $(CONFIG)"
-	$(Q)$(AWK) -f conf2h.awk $(CONFIG) > $(OBJDIR)/autoconf.h
+	$(Q)$(AWK) -f conf2h.awk $(CONFIG) VERSION > $(OBJDIR)/autoconf.h
 
 # Generate embedded FPGA config from finished bitfile
 .PRECIOUS : $(OBJDIR)/cfgware.h
@@ -327,11 +331,11 @@ clean_list :
 	$(Q)$(REMOVE) $(LST)
 	$(Q)$(REMOVE) $(CSRC:.c=.s)
 	$(Q)$(REMOVE) $(CSRC:.c=.d)
-	$(Q)$(REMOVE) .dep/*
+	$(Q)$(REMOVE) $(DEPDIR)/*
 	-$(Q)rmdir $(OBJDIR)
 
 # Include the dependency files.
--include $(shell mkdir .dep 2>/dev/null) $(wildcard .dep/*)
+-include $(info $(DEPDIR)) $(shell mkdir $(DEPDIR) 2>/dev/null) $(wildcard $(DEPDIR)/*)
 
 # Listing of phony targets.
 .PHONY : all begin finish end sizebefore sizeafter \

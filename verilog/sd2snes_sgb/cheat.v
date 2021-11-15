@@ -87,7 +87,7 @@ wire        rst_addr_match = |rst_match_bits;
 wire        hook_enable = ~|hook_enable_count;
 reg         snescmd_unlock_r = 0;
 
-assign      data_out = rst_match_bits[1] ? 8'h6b : 8'h2a;
+assign      data_out = rst_match_bits[1] ? 8'h7d : 8'h2a;
 assign      cheat_hit = (reset_unlock & rst_addr_match);
 assign      snescmd_unlock = snescmd_unlock_r;
 
@@ -130,7 +130,7 @@ always @(posedge clk) begin
       end
     end
     if(snescmd_unlock_disable_strobe) begin
-      snescmd_unlock_disable_countdown <= 7'd72;
+      snescmd_unlock_disable_countdown <= 7'd6;
       snescmd_unlock_disable <= 1;
     end
   end
@@ -155,7 +155,7 @@ always @(posedge clk) begin
     snescmd_unlock_disable_strobe <= 1'b0;
   end else begin
     snescmd_unlock_disable_strobe <= 1'b0;
-    
+
     if(snescmd_unlock & snescmd_wr_strobe) begin
       if(~|SNES_ADDR[8:0]) begin
         case(SNES_DATA)
@@ -168,8 +168,8 @@ always @(posedge clk) begin
       end
     end else if(pgm_we) begin
       if(pgm_idx == 7) begin // set/reset global enable / hooks
-      // pgm_in[7:4] are reset bit flags
-      // pgm_in[3:0] are set bit flags
+      // pgm_in[13:8] are reset bit flags
+      // pgm_in[5:0] are set bit flags
         {wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
          <= ({wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
           & ~pgm_in[13:8])

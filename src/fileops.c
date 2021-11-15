@@ -32,6 +32,15 @@
 
 #include <string.h>
 
+BYTE file_buf[512] __attribute__((aligned(4)));
+FATFS fatfs;
+FIL file_handle;
+FRESULT file_res;
+uint8_t file_lfn[258];
+uint8_t file_path[256];
+uint16_t file_block_off, file_block_max;
+enum filestates file_status;
+
 int newcard;
 
 void file_init() {

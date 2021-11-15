@@ -43,6 +43,8 @@
 
 extern cfg_t CFG;
 sgb_romprops_t sgb_romprops;
+char SGBFW[30];
+char SGBSR[30];
 
 void sgb_id(sgb_romprops_t* props, uint8_t *filename) {
   sgb_header_t* header = &(props->header);
@@ -295,7 +297,7 @@ uint8_t sgb_bios_state(void) {
     state = SGB_BIOS_MISSING;
   }
   else {
-    uint32_t crc = 0;
+    uint32_t crc = crc32_init();
     UINT bytes_read = 0;
     
     while ((bytes_read = file_read())) {
@@ -303,11 +305,12 @@ uint8_t sgb_bios_state(void) {
 
       for (UINT i = 0; i < bytes_read; i++) crc = crc32_update(crc, file_buf[i]);
     }
+    crc = crc32_finalize(crc);
     if (state <= SGB_BIOS_MISMATCH
-       && (  (crc != 0x5e46583b) // sgb2_boot.bin
-          && (crc != 0xec8a83b9) // sgb_boot.bin
-          && (crc != 0x7e2b1384) // sgb2_boot.bin (SB)
-          && (crc != 0xe03aed56) // sgb_boot.bin (SB)
+       && (  (crc != 0x53d0dd63) // sgb2_boot.bin
+          && (crc != 0xec8a83b9) // sgb1_boot.bin
+          && (crc != 0x73bd96dc) // sgb2_boot.bin (SameBoy)
+          && (crc != 0xedac680e) // sgb1_boot.bin (SameBoy)
           )
        ) {
       printf("SGB sgb%d_boot.bin CRC mismatch: 0x%08x\n", CFG.sgb_bios_version, (unsigned int)crc);
@@ -321,7 +324,7 @@ uint8_t sgb_bios_state(void) {
     state = SGB_BIOS_MISSING;
   }
   else {
-    uint32_t crc = 0;
+    uint32_t crc = crc32_init();
     UINT bytes_read = 0;
     
     while ((bytes_read = file_read())) {
@@ -329,10 +332,12 @@ uint8_t sgb_bios_state(void) {
 
       for (UINT i = 0; i < bytes_read; i++) crc = crc32_update(crc, file_buf[i]);
     }
+    crc = crc32_finalize(crc);
     if (state <= SGB_BIOS_MISMATCH
-       && (  (crc != 0xbe7164e9) // sgb2 bios (JP)
-          && (crc != 0xcc3b0799) // sgb bios (JP)
-          && (crc != 0x6844fd6d) // sgb bios v1.2 (UE)
+       && (  (crc != 0xcb176e45) // sgb2 bios (JP)
+          && (crc != 0x2e353dbb) // sgb bios v1.0 (JU)
+          && (crc != 0x27a03c98) // sgb bios v1.1 (JU)
+          && (crc != 0x8a4a174f) // sgb bios v1.2 (UE)
           )
        ) {
       printf("SGB sgb%d_snes.bin CRC mismatch: 0x%08x\n", CFG.sgb_bios_version, (unsigned int)crc);

@@ -1,3 +1,14 @@
+
+; Savestate handler based on practice ROM save state code by acmlm, total, Myria
+; adapted for usb2snes / sd2snes hardware support by RedGuy
+; modified for standalone operation from USB EXE (2C00) + dedicated PSRAM
+; space by FURiOUS
+; Ported to snescom and further modified for standalone operation from in-game
+; hook and default menu ROM space and IRQ support by ikari_01
+
+; Currently this code is heavily optimized for size and not necessarily CPU
+; cycle count.
+
 .link page $c0
 #include "memmap.i65"
 #include "savestate.i65"
@@ -120,16 +131,27 @@ register_restore_return
 	plb
 
 	sep #$20 : .as
-	; consume current NMI
-	lda @$004210
-	
-	; align back with the NMI
-	lda @SRAM_OTH_BANK
-	and #$01
-	ora #$80
-	;lda #$80
+
+return_align
+	; align back with the NMI/IRQ
+; TODO persist entry flag ("entered hook via NMI or IRQ when saving the state?")
+;      when saving state, then restore when loading and align with correct
+;      type of interrupt when resuming game.
+	lda @BRAM_RETURN_VECTOR ; HACK read back FPGA injected return vector low byte
+	cmp #$EA  ; entered via NMI?
+	beq return_enable_nmi
+return_enable_irq
+	cli
+	lda @$004211 ; ack IRQ
+	lda #$31     ; mask off NMI enable
+	bra +
+return_enable_nmi
+	lda @$004210 ; ack NMI
+	lda #$81     ; mask off IRQ enables
++
+	and @SRAM_OTH_BANK ; stored $4200 flags
 	sta @$4200
-	
+return_wait_irq:
 -	lda @CS_STATE
 	cmp #$2
 	bne -
@@ -147,8 +169,7 @@ register_restore_return
 ; Code to run before returning back to the game
 ss_exit
   rep #$30 : .al : .xl : pla : plp
-;	jmp @SS_RETURN
-	rtl ; go back to NMI hook
+	rtl ; go back to in-game hook
 
 ; SMC (Self Modifying Code) to init on first pass
 ss_init
@@ -167,25 +188,10 @@ ss_init
 	
 	rep #$20 : .al
 
-	;; change some games to use the hardware button capture
-+	lda @$00FFDE
-	cmp #$783A : beq controller_reg_patch ; claymates (US)
-	cmp #$06D5 : beq controller_reg_patch ; claymates (EU)
-	cmp #$8FF5 : beq controller_reg_patch ; FFMQ 1.1 (US)
-	cmp #$4CDE : beq controller_reg_patch ; FFMQ 1.0 (US)
-	cmp #$0492 : beq controller_reg_patch ; FFMQ 1.0 (JP)
-	bra button_reg_done
-controller_reg_patch
- ; $F90718 is FPGA mirror of $4218,
- ; attempted to capture by tracing CPU activity
-	lda #$0718
-	sta @controller_reg+1
-	sep #$20 : .as
-	lda #$F9
-	sta @controller_reg+3
-	rep #$20 : .al
-	
-button_reg_done
+; removed game specific controller RAM location injection here:
+; 1. with IRQ support it now works OOTB without specific workarounds
+; 2. should a workaround be required it will be prepared by firmware before runtime
+
 	lda #$0000
 	sta @CS_SAVE_REQ
 	ply
@@ -193,7 +199,6 @@ button_reg_done
 	pla
 	
 ss_start:
-
 	sep #$20 : .as  
 
 	lda @CS_STATE
@@ -201,20 +206,33 @@ ss_start:
 	cmp #$01
 	bne ss_start_skip
 
+ss_irq_inc:
 	;signal flag
 	lda @CS_STATE
 	inc
 	sta @CS_STATE
 	
-	; remove aligned NMI state from the stack.  this is pushed in hook.asm
+	; remove 9 bytes from stack to return from this nested NMI/IRQ
+	; and rti to wait loop in function register_restore_return
+	; 3 from 'pha : php'             in savestate_handler
+	; 3 from 'jsl savestate_handler' in nmihook
+	; 3 from 'pha : php'             in nmihook
+	; this puts us back in the wait loop for CS_STATE to become #$02
+	; after load/save.
 	; the fpga needs to be careful and not treat the nested NMI as an exit.
-	; a
-	rep #$20 : .al : pla
-	; p
-	sep #$20 : .as : pla
-
-	lda $4210
-	
+	rep #$21 : .al ; and clear carry
+	tsc
+	adc #$0009
+	tcs
+	sep #$20 : .as
+	lda @$4210 ; load $4210 and $4211 to ack NMI+IRQ
+	lda @$4211
+	; TODO this isn't optimal because the nested IRQ architecture makes it
+	;      impossible to align with IRQ without altering the IRQ pending flag
+	;      in $4211. ISRs that depend on the $4211 result will have altered
+	;      behaviour. Ideally get rid of the nested interrupts entirely
+	;      and wait for IRQ+NMI by WAI+polling the VBlank flag respectively.
+ss_rti
 	rti
 	
 ss_start_skip
@@ -236,7 +254,6 @@ controller_reg
 
 	sep #$20 : .as
 	lda @CS_SLOT
-	cmp #$00
 	rep #$30 : .al : .xl
 	beq skipslot
 
@@ -296,7 +313,7 @@ save_state
 	cmp #$F8DF
 	bne +
 	; if SM, check return address and make sure it's not in the sound loading code $808159-$808110
-	lda 7,s
+	lda 10,s
 	cmp #$8059
 	bcc +
 	cmp #$8111
@@ -313,7 +330,7 @@ save_state
 
 	; disable interrupts
 	lda @$F90700|$0000
-	sta SRAM_OTH_BANK
+	sta @SRAM_OTH_BANK
 	and #$01
 	sta @$004200
 	
@@ -342,7 +359,7 @@ save_state
 	sta @$00420C
 	
 	; save $21XX
-+	sep #$20 : .as
+	sep #$20 : .as
 	ldy #$0000
 	tyx
 
@@ -358,10 +375,10 @@ save_state
 
 -	lda @$F90700|$0000, x
 	sta @SRAM_OTH_BANK, x
-ss_reg420x_innerloop
-		inx
-		cpx #$000C
-	beq ss_reg420x_innerloop
+ss_skip420c
+	inx
+	cpx #$000C
+	beq ss_skip420c
 	cpx #$0010
 	bne -
 	
@@ -432,15 +449,14 @@ saveinputloop
 	beq saveinputloop
  
 	; send cmd to write the state inside the sd
-	lda CS_SLOT
-	cmp #$00
+	lda @CS_SLOT
 	bne +
 	lda #$01
 +	sta @MCU_PARAM
 	lda #CMD_SAVESTATE
 	sta @MCU_CMD
 
-	rep #$20 : .al
+	;rep #$20 : .al
 	
 	;lda $2B00|$004E
 	;sta @SRAM_SAVED_40
@@ -457,7 +473,7 @@ load_state
 	cmp #$F8DF
 	bne +
 	; if SM, check return address and make sure it's not in the sound loading code $808159-$808110
-	lda 7,s
+	lda 10,s
 	cmp #$8059
 	bcc +
 	cmp #$8111
@@ -509,60 +525,9 @@ ss_frameloop
 	dec
 	bpl ss_frameloop
 
-	; moved this up so we can reuse load_dma_regs for store
-	rep #$30 : .al : .xl
-
 audio_fix
-	ldy #$0000
-	phy
-
-	rep #$20 : .al
-	; compare checksum
-	lda @CS_FIXES
-	cmp @$00FFDE
-	bne end_audio_fix
-	; set flag that we found patch
-	ply
-	iny
-	phy
-	; set offset
-	lda @CS_FIXES+2
-	tay
- 
-	; set bank
-	lda @CS_FIXES+4
-	sep #$20 : .as
-	pha
-	plb
-	rep #$20 : .al
-
-	; get source
-	lda @CS_FIXES+6
-	phx
-	; test for constant outside of audio port range
-	cmp #$2140
-	bcc +
-	cmp #$2144
-	bcs +
-	tax
-
-	; load source register
-	sep #$20 : .as
-	lda @$000000, x
-
-+	sep #$20 : .as
-	sta $0000, y
-	plx
-	pea $0000
-	plb
-	plb
-
-	; test for audio table matches
-end_audio_fix
-	sep #$20 : .as
-	ply
+	jsl @CS_FIXES
 	jmp load_dma_regs_start
-
 	
 load_dma_regs_start
 	sep #$20 : .as

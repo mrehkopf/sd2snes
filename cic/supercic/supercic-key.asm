@@ -1,6 +1,3 @@
-    #include <p12f629.inc>
-processor p12f629
-
 ; ---------------------------------------------------------------------
 ;   feature enhanced SNES CIC clone for PIC Microcontroller (key mode only)
 ;
@@ -74,8 +71,27 @@ processor p12f629
 ;   0x5e                SuperCIC pair mode detect (phase 1)
 ;   0x5f                SuperCIC pair mode detect (phase 2)
 ; ---------------------------------------------------------------------
-
-
+; -----------------------------------------------------------------------
+; processor support. gputils's ELIFDEF is broken so using nested IFDEFs.
+	IFDEF __12F629
+		INCLUDE p12f629.inc
+		#define _CMCON_REG CMCON
+		#define _CLRF_ANSEL
+	ELSE
+		#define _CLRF_ANSEL clrf ANSEL
+		IFDEF __12F675
+			INCLUDE p12f675.inc
+			#define _CMCON_REG CMCON
+		ELSE
+			IFDEF __12F683
+				INCLUDE p12f683.inc
+				#define _CMCON_REG CMCON0
+			ELSE
+				ERROR "No supported processor selected (p12f629, p12f675, p12f683)!"
+			ENDIF
+		ENDIF
+	ENDIF
+; -----------------------------------------------------------------------
 ; -----------------------------------------------------------------------
     __CONFIG _EC_OSC & _WDT_OFF & _PWRTE_OFF & _MCLRE_OFF & _CP_OFF & _CPD_OFF
 
@@ -105,10 +121,9 @@ init
 	bcf	STATUS, RP0
 	clrf	GPIO
 	movlw	0x07	; GPIO2..0 are digital I/O (not connected to comparator)
-	movwf	CMCON
-	movlw	0x90	; global enable interrupts + enable external interrupt
-	movwf	INTCON
+	movwf	_CMCON_REG
 	bsf	STATUS, RP0
+	_CLRF_ANSEL
 	movlw	0x2d	; in out in in out in
 	movwf	TRISIO
 	movlw	0x24	; pullups for reset+clk to avoid errors when no CIC in host 
@@ -118,6 +133,8 @@ init
 	
 	bcf	STATUS, RP0
 	bsf 	GPIO, 4	; LED on
+	movlw	0x90	; global enable interrupts + enable external interrupt
+	movwf	INTCON
 idle
 	goto	idle	; wait for interrupt from lock
 
@@ -243,6 +260,7 @@ loop0
 	movwf	FSR	; store in index reg
 loop1
 	nop
+	nop
 	movf	INDF, w ; load seed value
 	movwf	0x20
 	bcf	0x20, 1	; clear bit 1 
@@ -251,7 +269,6 @@ loop1
 	bsf	0x20, 4 ; LED on
 	movf	0x20, w
 	movwf	GPIO
-	nop
 	nop
 	nop
 	nop

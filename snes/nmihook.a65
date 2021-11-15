@@ -1,7 +1,7 @@
 .link page $c0
 #include "memmap.i65"
 
-; *=$2A04
+; *=$2A10
 nmihook:
   php
   rep #$20 : .al
@@ -9,7 +9,7 @@ nmihook:
   lda @$004218 ; initial backup as early as possible
   sta @NMI_PAD
   sep #$20 : .as
-- bra -        ; branch1 filled in by FPGA
+- bra -        ; branch1: filled in by FPGA
 ; rules for branch tgt:
 ;        if (buttons disabled OR manual read in progress) AND wram patching enabled: nmi_patches
 ;        if (buttons disabled OR manual read in progress) AND wram patching disabled: nmi_exit
@@ -64,16 +64,18 @@ nmi_echocmd: ; echo cmd to MCU for misc handling
   sta @MCU_CMD
 ; 2nd branch point to determine whether to jump to WRAM cheats,
 ; halt system (for reset), or continue
-- bra - ; nmi_patches, nmi_stop, or nmi_exit
+- bra - ; branch2: nmi_patches, nmi_savestate, nmi_stop, or nmi_exit
 nmi_patches:
   jsr NMI_WRAM_CHEATS
-nmi_exit:
+- bra - ; branch3: nmi_savestate or nmi_exit
+nmi_savestate:
   jsl @savestate_handler
+nmi_exit:
 ; clean up
-  sta @NMI_VECT_DISABLE
   rep #$20 : .al
   pla
   plp
+  sta @NMI_VECT_DISABLE
   jmp ($ff77) ; '77' is replaced by FPGA depending on hook entry
 
 nmi_stop:

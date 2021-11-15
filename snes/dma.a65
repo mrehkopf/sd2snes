@@ -1,11 +1,9 @@
 .link page $c0
 killdma:
   php
-  stz $420b
-  stz $420c
-
   rep #$20 : .al
   sep #$10 : .xs
+  stz $420b
   lda #$ffff
   ldy #$7c
 - dey

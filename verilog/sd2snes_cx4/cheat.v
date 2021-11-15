@@ -29,9 +29,9 @@ module cheat(
   input snescmd_enable,
   input nmicmd_enable,
   input return_vector_enable,
-  input reset_vector_enable,
   input branch1_enable,
   input branch2_enable,
+  input branch3_enable,
   input pad_latch,
   input snes_ajr,
   input SNES_cycle_start,
@@ -86,6 +86,7 @@ reg [7:0] return_vector = 8'hea;
 
 reg [7:0] branch1_offset = 8'h00;
 reg [7:0] branch2_offset = 8'h00;
+reg [7:0] branch3_offset = 8'h04;
 
 reg [15:0] pad_data = 0;
 
@@ -113,16 +114,17 @@ assign data_out = cheat_match_bits[0] ? cheat_data[0]
                 : cheat_match_bits[3] ? cheat_data[3]
                 : cheat_match_bits[4] ? cheat_data[4]
                 : cheat_match_bits[5] ? cheat_data[5]
-                : nmi_match_bits[1] ? 8'h04
-                : irq_match_bits[1] ? 8'h04
-                : rst_match_bits[1] ? 8'h6b
+                : nmi_match_bits[1] ? 8'h10
+                : irq_match_bits[1] ? 8'h10
+                : rst_match_bits[1] ? 8'h7D
                 : nmicmd_enable ? nmicmd
                 : return_vector_enable ? return_vector
                 : branch1_enable ? branch1_offset
                 : branch2_enable ? branch2_offset
+                : branch3_enable ? branch3_offset
                 : 8'h2a;
 
-assign cheat_hit = (snescmd_unlock & hook_enable_sync & (nmicmd_enable | return_vector_enable | branch1_enable | branch2_enable))
+assign cheat_hit = (snescmd_unlock & hook_enable_sync & (nmicmd_enable | return_vector_enable | branch1_enable | branch2_enable | branch3_enable))
                    | (reset_unlock & rst_addr_match)
                    | (cheat_enable & cheat_addr_match)
                    | (hook_enable_sync & (((auto_nmi_enable_sync & nmi_enable) & nmi_addr_match & vector_unlock)
@@ -195,6 +197,7 @@ always @(posedge clk) begin
     snescmd_unlock_disable <= 0;
   end else begin
     if(SNES_rd_strobe) begin
+      // *** GAME -> INGAME HOOK ***
       if(hook_enable_sync
         & ((auto_nmi_enable_sync & nmi_enable & nmi_match_bits[1])
           |(auto_irq_enable_sync & irq_enable & irq_match_bits[1]))
@@ -208,6 +211,9 @@ always @(posedge clk) begin
       end
     end
     // give some time to exit snescmd memory and jump to original vector
+    // sta @NMI_VECT_DISABLE    1-2 (after effective write)
+    // jmp ($ffxx)              3 (excluding address fetch)
+    // *** (INGAME HOOK -> GAME) ***
     if(SNES_cycle_start) begin
       if(snescmd_unlock_disable) begin
         if(|snescmd_unlock_disable_countdown) begin
@@ -219,7 +225,7 @@ always @(posedge clk) begin
       end
     end
     if(snescmd_unlock_disable_strobe) begin
-      snescmd_unlock_disable_countdown <= 7'd72;
+      snescmd_unlock_disable_countdown <= 7'd6;
       snescmd_unlock_disable <= 1;
     end
   end
@@ -296,8 +302,8 @@ always @(posedge clk) begin
       end else if(pgm_idx == 6) begin // set rom patch enable
         cheat_enable_mask <= pgm_in[5:0];
       end else if(pgm_idx == 7) begin // set/reset global enable / hooks
-      // pgm_in[7:4] are reset bit flags
-      // pgm_in[3:0] are set bit flags
+      // pgm_in[13:8] are reset bit flags
+      // pgm_in[5:0] are set bit flags
         {wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
          <= ({wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
           & ~pgm_in[13:8])
@@ -346,7 +352,7 @@ always @* begin
         if(branch_wram) begin
           branch1_offset = 8'h3a; // nmi_patches
         end else begin
-          branch1_offset = 8'h3d; // nmi_exit
+          branch1_offset = 8'h43; // nmi_exit
         end
       end
     end else begin
@@ -354,7 +360,7 @@ always @* begin
         if(branch_wram) begin
           branch1_offset = 8'h3a; // nmi_patches
         end else begin
-          branch1_offset = 8'h3d; // nmi_exit
+          branch1_offset = 8'h43; // nmi_exit
         end
       end else begin
         branch1_offset = 8'h00;   // continue with MJR
@@ -364,18 +370,18 @@ always @* begin
     if(branch_wram) begin
       branch1_offset = 8'h3a;     // nmi_patches
     end else begin
-      branch1_offset = 8'h3d;     // nmi_exit
+      branch1_offset = 8'h43;     // nmi_exit
     end
   end
 end
 
 always @* begin
   if(nmicmd == 8'h81) begin
-    branch2_offset = 8'h0e;       // nmi_stop
+    branch2_offset = 8'h14;       // nmi_stop
   end else if(branch_wram) begin
     branch2_offset = 8'h00;       // nmi_patches
   end else begin
-    branch2_offset = 8'h03;       // nmi_exit
+    branch2_offset = 8'h09;       // nmi_exit
   end
 end
 

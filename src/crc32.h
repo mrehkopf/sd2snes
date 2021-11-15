@@ -34,7 +34,7 @@ extern "C" {
  *
  * \return     The initial crc value.
  *****************************************************************************/
-static inline uint32_t crc_init(void)
+static inline uint32_t crc32_init(void)
 {
   return 0xffffffff;
 }

@@ -39,6 +39,7 @@ module address(
   output return_vector_enable,
   output branch1_enable,
   output branch2_enable,
+  output branch3_enable,
   output gsu_enable
 );
 
@@ -53,10 +54,7 @@ parameter [2:0]
 
 wire [23:0] SRAM_SNES_ADDR;
 
-
-assign IS_ROM = ( (~SNES_ADDR[22] & SNES_ADDR[15])
-                | (SNES_ADDR[22]  & ~SNES_ROMSEL))
-                ;
+assign IS_ROM = ~SNES_ROMSEL;
 
 assign IS_SAVERAM = SAVERAM_MASK[0]
                     & ( // 60-7D/E0-FF:0000-FFFF
@@ -73,6 +71,7 @@ assign IS_SAVERAM = SAVERAM_MASK[0]
 assign IS_WRITABLE = IS_SAVERAM;
 
 // GSU has a weird hybrid of Lo and Hi ROM formats.
+// TODO: add programmable address map
 assign SRAM_SNES_ADDR = (IS_SAVERAM
                          // 60-7D/E0-FF:0000-FFFF or 00-3F/80-BF:6000-7FFF (first 8K mirror)
                          ? (24'hE00000 + ((SNES_ADDR[22] ? SNES_ADDR[16:0] : SNES_ADDR[12:0]) & SAVERAM_MASK))
@@ -89,9 +88,10 @@ assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 assign r2100_hit = (SNES_PA == 8'h00);
 assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);
 assign nmicmd_enable = (SNES_ADDR == 24'h002BF2);
-assign return_vector_enable = (SNES_ADDR == 24'h002A5A);
-assign branch1_enable = (SNES_ADDR == 24'h002A13);
-assign branch2_enable = (SNES_ADDR == 24'h002A4D);
+assign return_vector_enable = (SNES_ADDR == 24'h002A6C);
+assign branch1_enable = (SNES_ADDR == 24'h002A1F);
+assign branch2_enable = (SNES_ADDR == 24'h002A59);
+assign branch3_enable = (SNES_ADDR == 24'h002A5E);
 // 00-3F/80-BF:3000-32FF gsu registers.  TODO: some emulators go to $34FF???
 assign gsu_enable = (!SNES_ADDR[22] && ({SNES_ADDR[15:10],2'h0} == 8'h30)) && (SNES_ADDR[9:8] != 2'h3);
 

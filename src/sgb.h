@@ -27,8 +27,8 @@
 #ifndef SGB_H
 #define SGB_H
 
-char SGBFW[30];
-char SGBSR[30];
+extern char SGBFW[30];
+extern char SGBSR[30];
 
 typedef struct __attribute__ ((__packed__)) _sgb_header {
   uint8_t entry[4];      /* 0x100 */

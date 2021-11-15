@@ -72,7 +72,7 @@
 
 #define SNES_RELEASE_RESET_DELAY_US (2)
 #define SNES_RESET_PULSELEN_MS (5)
-#define SNES_RESET_LOOP_TIMEOUT (10) // 10ms steps x10 = 100ms
+#define SNES_RESET_LOOP_TIMEOUT (20) // 10ms steps x20 = 200ms
 
 #define SNES_BOOL_TRUE  (0x01)
 #define SNES_BOOL_FALSE (0x00)
@@ -81,8 +81,9 @@
 #define SNESCMD_MCU_CMD              (0x2a00)
 #define SNESCMD_SNES_CMD             (0x2a02)
 #define SNESCMD_MCU_PARAM            (0x2a04)
-#define SNESCMD_RESET_HOOK           (0x2a6b)
-#define SNESCMD_WRAM_CHEATS          (0x2ac8)
+#define SNESCMD_INGAME_HOOK          (0x2a10)
+#define SNESCMD_RESET_HOOK           (0x2a7d)
+#define SNESCMD_WRAM_CHEATS          (0x2ad8)
 #define SNESCMD_NMI_RESET            (0x2ba0)
 #define SNESCMD_NMI_RESET_TO_MENU    (0x2ba2)
 #define SNESCMD_NMI_ENABLE_CHEATS    (0x2ba4)
@@ -97,8 +98,13 @@
 #define SNESCMD_EXE                  (0x2c00)
 
 #define ASM_LDA_IMM      (0xa9)
+#define ASM_LDA_ABSLONG  (0xaf)
 #define ASM_STA_ABSLONG  (0x8f)
+#define ASM_ORA_IMM      (0x09)
+#define ASM_AND_IMM      (0x29)
+#define ASM_EOR_IMM      (0x49)
 #define ASM_RTS          (0x60)
+#define ASM_RTL          (0x6b)
 
 #define SNES_BUTTON_LRET (0x3030)
 #define SNES_BUTTON_LREX (0x2070)
@@ -110,6 +116,23 @@
 #define SRAM_REGION_SIZE (0x10000)
 
 #define COMBO_VERSION    (0x1)
+
+#define SNES_NUM_BUTTONS (12)
+
+enum snes_button_bits {
+  SNES_BUTTON_B       = 0x8000,
+  SNES_BUTTON_Y       = 0x4000,
+  SNES_BUTTON_SELECT  = 0x2000,
+  SNES_BUTTON_START   = 0x1000,
+  SNES_BUTTON_UP      = 0x0800,
+  SNES_BUTTON_DOWN    = 0x0400,
+  SNES_BUTTON_LEFT    = 0x0200,
+  SNES_BUTTON_RIGHT   = 0x0100,
+  SNES_BUTTON_A       = 0x0080,
+  SNES_BUTTON_X       = 0x0040,
+  SNES_BUTTON_L       = 0x0020,
+  SNES_BUTTON_R       = 0x0010
+};
 
 enum snes_reset_state { SNES_RESET_NONE = 0, SNES_RESET_SHORT, SNES_RESET_LONG };
 

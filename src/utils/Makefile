@@ -13,3 +13,7 @@ lpcchksum: lpcchksum.o
 %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
+clean:
+	rm -f genhdr.o genhdr
+	rm -f lpcchksum.o lpcchksum
+

@@ -44,6 +44,7 @@ module address(
   output return_vector_enable,
   output branch1_enable,
   output branch2_enable,
+  output branch3_enable,
   output sa1_enable
 );
 
@@ -73,9 +74,7 @@ wire [2:0] xxb[3:0];
 assign {xxb[3], xxb[2], xxb[1], xxb[0]} = sa1_xxb;
 wire [3:0] xxb_en = sa1_xxb_en;
 
-assign IS_ROM = ( (~SNES_ADDR[22] & SNES_ADDR[15])
-                | (&SNES_ADDR[23:22]))
-                ;
+assign IS_ROM = ~SNES_ROMSEL;
 
 assign IS_SAVERAM = SAVERAM_MASK_r[0]
                     & ( // 40-4F:0000-FFFF
@@ -119,8 +118,8 @@ assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 assign r2100_hit = (SNES_PA == 8'h00);
 assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);
 assign nmicmd_enable = (SNES_ADDR == 24'h002BF2);
-assign return_vector_enable = (SNES_ADDR == 24'h002A5A);
-assign branch1_enable = (SNES_ADDR == 24'h002A13);
-assign branch2_enable = (SNES_ADDR == 24'h002A4D);
-
+assign return_vector_enable = (SNES_ADDR == 24'h002A6C);
+assign branch1_enable = (SNES_ADDR == 24'h002A1F);
+assign branch2_enable = (SNES_ADDR == 24'h002A59);
+assign branch3_enable = (SNES_ADDR == 24'h002A5E);
 endmodule

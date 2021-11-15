@@ -35,6 +35,7 @@ module mcu_cmd(
   input [31:0] spi_byte_cnt,
   input [2:0] spi_bit_cnt,
   output [23:0] addr_out,
+  output [7:0]  saveram_base_out,
   output [23:0] saveram_mask_out,
   output [23:0] rom_mask_out,
 
@@ -184,6 +185,7 @@ reg [10:0] SD_DMA_PARTIAL_ENDr;
 assign SD_DMA_PARTIAL_START = SD_DMA_PARTIAL_STARTr;
 assign SD_DMA_PARTIAL_END = SD_DMA_PARTIAL_ENDr;
 
+reg [7:0]  SAVERAM_BASE; initial SAVERAM_BASE = 0;
 reg [23:0] SAVERAM_MASK;
 reg [23:0] ROM_MASK;
 
@@ -233,7 +235,8 @@ always @(posedge clk) begin
       8'h2x:
         case (spi_byte_cnt)
           32'h2:
-            SAVERAM_MASK[23:16] <= param_data;
+            if   (cmd_data[0]) SAVERAM_BASE[7:0] <= param_data;
+            else               SAVERAM_MASK[23:16] <= param_data;
           32'h3:
             SAVERAM_MASK[15:8] <= param_data;
           32'h4:
@@ -566,6 +569,7 @@ assign mcu_data_out = SD_DMA_STATUS ? SD_DMA_SRAM_DATA : MCU_DATA_OUT_BUF;
 assign mcu_mapper = MAPPER_BUF;
 assign rom_mask_out = ROM_MASK;
 assign saveram_mask_out = SAVERAM_MASK;
+assign saveram_base_out = SAVERAM_BASE;
 
 assign reg_group_out = group_out_buf;
 assign reg_index_out = index_out_buf;

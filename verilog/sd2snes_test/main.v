@@ -227,17 +227,18 @@ mcu_cmd snes_mcu_cmd(
   .mcu_bram_we(mcu_bram_we)
 );
 
-reg [7:0] SNES_PARDr;
-reg [7:0] SNES_PAWRr;
-reg [7:0] SNES_READr;
-reg [7:0] SNES_WRITEr;
-reg [7:0] SNES_CPU_CLKr;
-reg [7:0] SNES_ROMSELr;
+reg [7:0] SNES_PARDr = 8'b11111111;
+reg [7:0] SNES_PAWRr = 8'b11111111;
+reg [7:0] SNES_READr = 8'b11111111;
+reg [7:0] SNES_WRITEr = 8'b11111111;
+reg [7:0] SNES_CPU_CLKr = 8'b00000000;
+reg [7:0] SNES_ROMSELr = 8'b11111111;
 reg [23:0] SNES_ADDRr [6:0];
 reg [7:0] SNES_PAr [6:0];
 reg [7:0] SNES_DATAr [4:0];
 
-wire SNES_PARD_start = ((SNES_PARDr[6:1] | SNES_PARDr[7:2]) == 6'b111110);
+wire SNES_PARD_start = (SNES_PARDr[6:1] == 6'b111110);
+wire SNES_PARD_end = (SNES_PARDr[6:1] == 6'b000001);
 wire SNES_PAWR_start = ((SNES_PAWRr[6:1] | SNES_PAWRr[7:2]) == 6'b111000); /* 000 necessary for SNES_DATA capture */
 wire SNES_PAWR_end = ((SNES_PAWRr[6:1] & SNES_PAWRr[7:2]) == 6'b000001);
 wire SNES_RD_start = ((SNES_READr[6:1] | SNES_READr[7:2]) == 6'b111100);
@@ -249,6 +250,8 @@ wire SNES_cycle_start = (SNES_CPU_CLKr[7:1] == 7'b0000001);
 wire SNES_cycle_end = ((SNES_CPU_CLKr[7:2] | SNES_CPU_CLKr[6:1]) == 6'b111000);
 wire SNES_WRITE = SNES_WRITEr[2] & SNES_WRITEr[1];
 wire SNES_READ = SNES_READr[2] & SNES_READr[1];
+wire SNES_READ_late = SNES_READr[5] & SNES_READr[4];
+wire SNES_READ_narrow = SNES_READ | SNES_READ_late;
 wire SNES_CPU_CLK = SNES_CPU_CLKr[2] & SNES_CPU_CLKr[1];
 wire SNES_PARD = SNES_PARDr[2] & SNES_PARDr[1];
 wire SNES_PAWR = SNES_PAWRr[2] & SNES_PAWRr[1];
@@ -679,7 +682,7 @@ assign SNES_DATABUS_OE = PA_enable ? 1'b0
                          : SNES_ROMSEL ? SNES_WRITE
                          :((SNES_ROMSEL)
                           |(!ram0_enable)
-                          |(SNES_READ & SNES_WRITE)
+                          |(SNES_READ_narrow & SNES_WRITE)
                          );
 
 assign SNES_DATABUS_DIR = ~SNES_READ ? 1'b1 : 1'b0;

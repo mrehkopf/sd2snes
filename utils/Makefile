@@ -2,12 +2,17 @@ CC := gcc
 
 CFLAGS = -Wall -Wstrict-prototypes -Werror
 
-all: bin2asm bin2c chili2chr derle gentilemap mem2lorom palremap palreorder rle genbsxpage
+BIN = bin2asm bin2c bin2coe chili2chr derle gentilemap mem2lorom palremap palreorder rle genbsxpage
+
+all: $(BIN)
 
 bin2asm: bin2asm.o
 	$(CC) $(CFLAGS) $^ --output $@
 
 bin2c: bin2c.o
+	$(CC) $(CFLAGS) $^ --output $@
+
+bin2coe: bin2coe.o
 	$(CC) $(CFLAGS) $^ --output $@
 
 chili2chr: chili2chr.o
@@ -37,3 +42,7 @@ genbsxpage: genbsxpage.o
 %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
+clean:
+	rm -f $(BIN) $(BIN:=.o)
+
+.phony: clean all

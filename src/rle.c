@@ -2,6 +2,10 @@
 #include "rle.h"
 #include "fileops.h"
 
+const uint8_t *rle_mem_ptr;
+const uint8_t *rle_mem_endptr;
+uint8_t rle_state;
+
 uint8_t rle_file_getc() {
   static uint16_t rle_filled = 0;
   static uint8_t data;

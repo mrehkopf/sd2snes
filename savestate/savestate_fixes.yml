@@ -2,10 +2,37 @@
 # Savestate Game Fixes
 # Games sometimes store a flag in WRAM that is the current index of the APU state at $214x.  That gets out of sync when you reload the game (because $214x doesn't get updated). 
 # This forces the WRAM copy to be updated.
+# Alternatively small code snippets may be specified to perform the necessary fixing.
+#
+# Fixes are applied both after saving and loading a save state.
+#
+# Format:
+# CKSUM: DST,SRC[OPERATION][;PCADDR,PATCH] # game name/comments
+# OR
+# CKSUM: @OPCODES
+#
+# YAML multi-line lists are supported, e.g.:
+# 1234: # My game (US)
+#   - 7E0000,2140^FF;C0FF00,EA
+#   - 7E0001,2141
+#
+# DST: target WRAM address to update
+# SRC: APU address contents (2140-2143) or immediate value (0000-00FF) to write to TGT
+# OPERATION: consists of operator and operand, e.g. ^80 = XOR $80
+#            performs an optional operation on the value read from SRC
+#            before writing it to the DST address.
+#            Currently supported operations:
+#              ^: XOR   |: OR   &: AND
+# PCADDR: ROM address to patch
+# PATCH:  byte value to write to ROM address (PCADDR)
+# OPCODES: code to be executed verbatim. A=8 bits, X=16 bits.
+#          e.g. "@AFFFFF7E8F0100E7" - lda @$7effff : sta @$7e0001
+#          up to 64 bytes are supported
 
-# CKSUM: ADDR,APU;PCADDR,PATCH	# game name/comments
 648D: 0002F5,2140 # super ghouls and ghosts (US)
-FE0F: 0002F5,2140 # super ghouls and ghosts (US)
+FE0F: 0002F5,2140 # super ghouls and ghosts (JP)
+4044: 0002F5,2140 # super ghouls and ghosts (EU)
+C8FB: 0002F5,2140 # super ghouls and ghosts (US MSU-1)
 B6D4: 7EFFFB,2140 # final fight (US)
 3288: 7EFFFB,2140 # final fight guy (US)
 959E: 7EFFFB,2140 # final fight guy (JP)
@@ -18,6 +45,7 @@ F199: 7EFFFE,2142 # mm7 (US)
 44D1: 7EFFFE,2142 # mm7 (JP)
 4CC2: 7EFFFE,2142 # mmx1 v1.1 (US)
 6569: 7EFFFE,2142 # mmx1 v1.0 (JP)
+4BD7: 7EFFFE,2142 # mmx1 v1.1 (JP)
 09B7: 7EFFFE,2142 # mmx2 (US)
 8560: 7EFFFE,2142 # mmx2 (JP)
 4055: 7EFFFE,2142 # mmx3 (US)
@@ -29,11 +57,19 @@ F199: 7EFFFE,2142 # mm7 (US)
 EF80: 000000,2140 # dkc1 v1.0 (US)
 2BCC: 000000,2140 # dkc1 v1.1 (US)
 0C17: 000000,2140 # dkc1 v1.0 (JP)
-1202: 000000,2140 # dkc2 (US)
-9860: 000000,2140 # dkc2 (US)
-35CE: 000000,2140 # dkc2 (JP)
-B28C: 000006,2140 # dkc3 (US)
-E545: 000006,2140 # dkc3 (JP)
+83EC: 000000,2140 # dkc1 v1.0 timer (US)
+1202: 000000,2140 # dkc2 v1.0 (US)
+9860: 000000,2140 # dkc2 v1.1 (US)
+FC78: 000000,2140 # dkc2 v1.0 (JP)
+35CE: 000000,2140 # dkc2 v1.1 (JP)
+7129: 000000,2140 # dkc2 v1.0 timer (JP)
+AA88: 000000,2140 # dkc2 v1.1 timer (JP)
+B28C: 000006,2140 # dkc3 v1.0 (US)
+E545: 000006,2140 # dkc3 v1.0 (JP)
+B8F9: 000006,2140 # dkc3 v1.1 (JP)
+C4A8: 000006,2140 # dkc3 v1.0 timer (US)
+0ADF: 000006,2140 # dkc3 v1.0 timer (JP)
+BF6D: 000006,2140 # dkc3 v1.1 timer (JP)
 AD7F: 000000,2143 # aliens 3 (US)
 119A: 001CAD,2142 # sf2 turbo - hyper fighting (US)
 610A: 001D6B,2142 # sf2 turbo - the new challenger (US)
@@ -43,20 +79,26 @@ AD7F: 000000,2143 # aliens 3 (US)
 F50C: 00001E,2143 # zombies ate my neighbors (US)
 5CBE: 001BFF,2140 # super smash tv (US)
 1B25: 000B0C,2143 # super turrican 2 (US)
-142F: 00031B,0000 # lost vikings 2 (US)
-142F: 00031C,0000 # lost vikings 2 (US)
-CAE6: 000624,2140 # might and magic 3 (US)
-CAE6: 000625,2141 # might and magic 3 (US)
+142F: # lost vikings 2 (US)
+  - 00031B,0000
+  - 00031C,0000
+CAE6: # might and magic 3 (US)
+  - 000624,2140
+  - 000625,2141
 5AD0: 7FFF09,2142 # goof troop (US)
 614A: 00000A,2142 # mickey's magical quest (US)
 24DD: 7E0176,2140 # nosferatu (US) ; Something w/ interrupts going on in this game.
 4D73: 7E0871,2140 # clock tower (JP)
 986E: 7E004C,2140 # animaniacs (US)
 311B: 7E004C,2140 # animaniacs (JP)
-64E9: 7E174B,2142;05C10D,A1 # ultimate mortal kombat 3 (US)
-8016: 000000,0000;00BA6D,B1 # hagane (US)
-9232: 000000,0000;00BA87,B1 # hagane (JP)
+64E9: 7E174B,2142 # ultimate mortal kombat 3 (US)
 9A43: 7E04F4,2141;02816A,81 # puzzle bubble (US)
 45C0: 7E17DC,2140 # killer instinct (US)
 5327: 7E0462,2140 # top gear 3000 (US)
 9CFC: 7E004C,2140 # batman returns (JP)
+13B8: @AF402100CF402100D0F6498029808F4A0000 # Star Ocean (uncompressed+DeJap)
+B856: 7E1D15,2141 # Bahamut Lagoon (J)
+695F: 7E1D15,2141 # Bahamut Lagoon (T+Eng1.3_DeJap)
+0E46: 7E1D15,2141 # Bahamut Lagoon (T+Eng1.0_Near)
+ACCC: 7E1D15,2141 # Bahamut Lagoon (T+Eng1.1_Near)
+414C: 7E1D15,2141 # Bahamut Lagoon (T+Eng1.2_Near)

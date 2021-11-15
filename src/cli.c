@@ -58,8 +58,8 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0cheat\0fpgaconf\0chipfeat\0bsregs\0gameloop\0dacboost\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_EXIT, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16, CMD_MEMSET, CMD_CHEAT, CMD_FPGACONF, CMD_CHIPFEAT, CMD_BSREGS, CMD_GAMELOOP, CMD_DACBOOST };
+  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0cheat\0fpgaconf\0chipfeat\0bsregs\0gameloop\0dacboost\0cat\0";
+enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_EXIT, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16, CMD_MEMSET, CMD_CHEAT, CMD_FPGACONF, CMD_CHIPFEAT, CMD_BSREGS, CMD_GAMELOOP, CMD_DACBOOST, CMD_CAT };
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
@@ -473,6 +473,24 @@ static void cmd_dacboost(void) {
   if(boost != -1) fpga_set_dac_boost(boost);
 }
 
+static void cmd_cat(void) {
+  FRESULT res;
+  FIL catfile;
+  TCHAR buf[256];
+  if(strlen(curchar) == 0) {
+    printf("Usage: cat <filename>\n");
+  } else {
+    res = f_open(&catfile, (const TCHAR*)curchar, FA_READ);
+    if(res == FR_OK) {
+      while(f_gets(buf, sizeof(buf), &catfile)) {
+        uart_puts(buf);
+      }
+    } else {
+      printf("f_open %s failed with result %d\n", curchar, res);
+    }
+  }
+}
+
 static void cmd_cd(void) {
 #if _FS_RPATH
   FRESULT res;
@@ -638,6 +656,10 @@ void cli_loop(void) {
 
       case CMD_DACBOOST:
         cmd_dacboost();
+        break;
+
+      case CMD_CAT:
+        cmd_cat();
         break;
     }
   }

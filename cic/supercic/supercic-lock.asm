@@ -1,12 +1,3 @@
-use_16f676  set 0 ; 0 = 16F630, 1 = 16F676
-
-if use_16f676
-  #include <p16f676.inc>
-  processor p16f676
-else
-  #include <p16f630.inc>
-  processor p16f630
-endif
 ; ---------------------------------------------------------------------
 ;   feature enhanced auto region switching SNES CIC clone 
 ;   for PIC Microcontrollers (lock mode)
@@ -168,6 +159,28 @@ endif
 ;
 ; ---------------------------------------------------------------------
 
+; -----------------------------------------------------------------------
+; processor support. gputils's ELIFDEF is broken so using nested IFDEFs.
+	IFDEF __16F630
+		INCLUDE p16f630.inc
+		#define _CMCON_REG CMCON
+		#define _CLRF_ANSEL
+	ELSE
+		#define _CLRF_ANSEL clrf ANSEL
+		IFDEF __16F676
+			INCLUDE p16f676.inc
+			#define _CMCON_REG CMCON
+		ELSE
+			IFDEF __16F684
+				INCLUDE p16f684.inc
+				#define _CMCON_REG CMCON0
+			ELSE
+				ERROR "No supported processor selected (p16f630, p16f676, p16f684)!"
+			ENDIF
+		ENDIF
+	ENDIF
+
+; -----------------------------------------------------------------------
 
 ; -----------------------------------------------------------------------
     __CONFIG _EC_OSC & _WDT_OFF & _PWRTE_OFF & _MCLRE_OFF & _CP_OFF & _CPD_OFF
@@ -234,18 +247,14 @@ init
 ;	PORTA:  in out  in out out  in
 ;	PORTC: out out  in out out  in
 	bcf	STATUS, RP0
-	nop
 	clrf	PORTA
+	clrf	PORTC		; set all PORTC outputs low to avoid premature IRQ to key.
 	movlw	0x07		; GPIO2..0 are digital I/O (not connected to comparator)
-	movwf	CMCON
+	movwf	_CMCON_REG
 	movlw	0x00		; disable all interrupts
 	movwf	INTCON
 	bsf	STATUS, RP0
-  if use_16f676
-	clrf	ANSEL
-  else
-	nop
-  endif
+	_CLRF_ANSEL
 	movlw	0x29		; in out in out out in
 	movwf	TRISA
 	movlw	0x09		; out out in out out in

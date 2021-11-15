@@ -30,6 +30,7 @@ module address(
   output IS_SAVERAM,        // address/CS mapped as SRAM?
   output IS_ROM,            // address mapped as ROM?
   output IS_WRITABLE,       // address somehow mapped as writable area?
+  output IS_PATCH,          // linear address map (C0-FF, Ex/Fx)
   input [7:0] SAVERAM_BASE,
   input [23:0] SAVERAM_MASK,
   input [23:0] ROM_MASK,
@@ -38,6 +39,7 @@ module address(
   input  map_Ex_wr_unlock,
   input  map_Fx_rd_unlock,
   input  map_Fx_wr_unlock,
+  input  snescmd_unlock,
   output msu_enable,
   output dma_enable,
   output srtc_enable,
@@ -51,6 +53,7 @@ module address(
   output return_vector_enable,
   output branch1_enable,
   output branch2_enable,
+  output branch3_enable,
   output exe_enable,
   output map_enable,
   input [8:0] bs_page_offset,
@@ -88,8 +91,7 @@ wire [23:0] SAVERAM_ADDR = {4'hE,1'b0,SAVERAM_BASE,11'h0};
 /* HiROM:   SRAM @ Bank 0x30-0x3f, 0xb0-0xbf
             Offset 6000-7fff */
 
-assign IS_ROM = ((!SNES_ADDR[22] & SNES_ADDR[15])
-                 |(SNES_ADDR[22]));
+assign IS_ROM = ~SNES_ROMSEL;
 
 // Calculate pre IS_SAVERAM to relax timing.  Uses
 // early SNES_ADDR from main.
@@ -123,7 +125,20 @@ reg IS_SAVERAM_r; always @(posedge CLK) IS_SAVERAM_r <= IS_SAVERAM_pre;
 assign IS_SAVERAM = IS_SAVERAM_r;
 
 // give the patch free reign over $F0-$FF banks
-assign IS_PATCH = ((map_unlock | (map_Fx_rd_unlock & SNES_WRITE_early) | (map_Fx_wr_unlock & ~SNES_WRITE_early)) & (&SNES_ADDR[23:20])) | (((map_Ex_rd_unlock & SNES_WRITE_early) | (map_Ex_wr_unlock & ~SNES_WRITE_early)) & ({SNES_ADDR[23:20]} == 4'hE));
+// map_unlock: F0-FF
+// map_Ex: E0-EF
+// map_Fx: F0-FF
+// snescmd_unlock: C0-FF
+assign IS_PATCH = ( (map_unlock 
+                     | (map_Fx_rd_unlock & SNES_WRITE_early)
+                     | (map_Fx_wr_unlock & ~SNES_WRITE_early)
+                    ) & (&SNES_ADDR[23:20])
+                  )
+                | ( ((map_Ex_rd_unlock & SNES_WRITE_early)
+                    |(map_Ex_wr_unlock & ~SNES_WRITE_early)
+                    ) & ({SNES_ADDR[23:20]} == 4'hE)
+                  )
+                | (snescmd_unlock & &SNES_ADDR[23:22]); // full access to C0-FF
 
 /* BS-X has 4 MBits of extra RAM that can be mapped to various places */
 // LoROM: A23 = r03/r04  A22 = r06  A21 = r05  A20 = 0    A19 = d/c
@@ -223,7 +238,7 @@ assign ROM_ADDR = SRAM_SNES_ADDR;
 assign ROM_HIT = IS_ROM | IS_WRITABLE | bs_page_enable;
 
 assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
-assign dma_enable = (featurebits[FEAT_DMA1] | map_unlock) & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff0) == 16'h2020));
+assign dma_enable = (featurebits[FEAT_DMA1] | map_unlock | snescmd_unlock) & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff0) == 16'h2020));
 assign use_bsx = (MAPPER_DEC[3'b011]);
 assign srtc_enable = featurebits[FEAT_SRTC] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h2800));
 assign exe_enable =                           (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hffff) == 16'h2C00));
@@ -235,7 +250,8 @@ assign r2100_hit = (SNES_PA == 8'h00);
 // snescmd covers $2A00-$2FFF.  This overlaps with at least one hardware cheat device address range.
 assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:11]} == 6'b0_00101) && (SNES_ADDR[10:9] != 2'b00);
 assign nmicmd_enable = (SNES_ADDR == 24'h002BF2);
-assign return_vector_enable = (SNES_ADDR == 24'h002A5A);
-assign branch1_enable = (SNES_ADDR == 24'h002A13);
-assign branch2_enable = (SNES_ADDR == 24'h002A4D);
+assign return_vector_enable = (SNES_ADDR == 24'h002A6C);
+assign branch1_enable = (SNES_ADDR == 24'h002A1F);
+assign branch2_enable = (SNES_ADDR == 24'h002A59);
+assign branch3_enable = (SNES_ADDR == 24'h002A5E);
 endmodule

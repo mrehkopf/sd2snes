@@ -65,7 +65,12 @@ set_bank:
 
 coldboot:       ; Regular, cold-start init
   sep #$20 : .as
-  jsr killdma
+  lda @CFG_SHOW_TRIBUTE
+  beq +
+    jsr near_screen
+    lda #$00
+    sta @CFG_SHOW_TRIBUTE
++ jsr killdma
   jsr clear_wram
   jsr apu_ram_init
   jsr waitblank

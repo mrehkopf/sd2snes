@@ -241,8 +241,7 @@ always @(posedge clkin) begin
       end
       5'h12: bs_page1_offset <= bs_page1_offset + 1;
     endcase
-  end else
-  if(reg_oe_falling) begin
+  end else if(reg_oe_falling) begin
     if(cart_enable)
       reg_data_outr <= {regs_outr[reg_addr], 7'b0};
     else if(base_enable) begin

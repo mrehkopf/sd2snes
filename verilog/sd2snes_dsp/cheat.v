@@ -29,9 +29,9 @@ module cheat(
   input snescmd_enable,
   input nmicmd_enable,
   input return_vector_enable,
-  input reset_vector_enable,
   input branch1_enable,
   input branch2_enable,
+  input branch3_enable,
   input exe_present,
   input pad_latch,
   input snes_ajr,
@@ -55,6 +55,7 @@ reg irq_enable = 0;
 reg holdoff_enable = 0; // temp disable hooks after reset
 reg buttons_enable = 0;
 reg wram_present = 0;
+reg savestate_enable = 0;
 wire branch_wram = cheat_enable & wram_present;
 
 reg auto_nmi_enable = 1;
@@ -70,7 +71,6 @@ reg [4:0] irq_usage = 5'h00;
 reg [20:0] usage_count = 21'h1fffff;
 
 reg [29:0] hook_enable_count = 0;
-reg hook_disable = 0;
 
 reg [1:0] vector_unlock_r = 0;
 wire vector_unlock = |vector_unlock_r;
@@ -84,6 +84,7 @@ reg [5:0] cheat_enable_mask;
 
 reg exe_unlock_r; initial exe_unlock_r = 0;
 assign exe_unlock = exe_unlock_r;
+reg exe_to_hook_transition_r; initial exe_to_hook_transition_r = 0;
 
 reg snescmd_unlock_r = 0;
 assign snescmd_unlock = snescmd_unlock_r | exe_unlock_r;
@@ -96,6 +97,7 @@ reg [7:0] return_vector = 8'hea;
 
 reg [7:0] branch1_offset = 8'h00;
 reg [7:0] branch2_offset = 8'h00;
+reg [7:0] branch3_offset = 8'h00;
 
 reg [15:0] pad_data = 0;
 
@@ -126,20 +128,26 @@ assign data_out = cheat_match_bits[0] ? cheat_data[0]
                 // exe code
                 : (exe_present & nmi_match_bits[0] & exe_unlock) ? 8'h2C
                 : (exe_present & nmi_match_bits[1] & exe_unlock) ? 8'h00
-                : nmi_match_bits[1] ? 8'h04
-                : irq_match_bits[1] ? 8'h04
-                : rst_match_bits[1] ? 8'h6b
+                : nmi_match_bits[1] ? 8'h10
+                : irq_match_bits[1] ? 8'h10
+                : rst_match_bits[1] ? 8'h7D
                 : nmicmd_enable ? nmicmd
                 : return_vector_enable ? return_vector
                 : branch1_enable ? branch1_offset
                 : branch2_enable ? branch2_offset
+                : branch3_enable ? branch3_offset
                 : 8'h2a;
 
-assign cheat_hit = (snescmd_unlock & hook_enable_sync & (nmicmd_enable | return_vector_enable | branch1_enable | branch2_enable))
+/// TODO separate cheat and nmi branch patch signals
+/// "cheat" must patch branch targets in NMI hook
+/// BUT MUST NOT apply actual ROM cheat patches during snescmd menu bank
+/// execution to prevent ROM cheats from patching nonsense into the savestate
+/// handler.
+assign cheat_hit = (snescmd_unlock & hook_enable_sync & (nmicmd_enable | return_vector_enable | branch1_enable | branch2_enable | branch3_enable))
                    | (reset_unlock & rst_addr_match)
-                   | (cheat_enable & cheat_addr_match)
+                   | (cheat_enable & cheat_addr_match & ~snescmd_unlock)
                    | (hook_enable_sync & (((auto_nmi_enable_sync & (nmi_enable|(exe_present & ~feat_cmd_unlock))) & nmi_addr_match & vector_unlock) // exe or NMI can get us started
-                                           |(auto_nmi_enable_sync & nmi_enable & nmi_addr_match & map_unlock)              // exe exit can also trigger hook
+                                           |(auto_nmi_enable_sync & nmi_enable & nmi_addr_match & exe_to_hook_transition_r)              // exe exit can also trigger hook
                                            |((auto_irq_enable_sync & irq_enable) & irq_addr_match & vector_unlock)));
 
 // irq/nmi detect based on CPU access pattern
@@ -207,9 +215,11 @@ always @(posedge clk) begin
   if(SNES_reset_strobe) begin
     snescmd_unlock_r <= 0;
     snescmd_unlock_disable <= 0;
-	  map_unlock_r <= 0;
+    map_unlock_r <= 0;
+    exe_to_hook_transition_r <= 0;
   end else begin
     if(SNES_rd_strobe) begin
+      // *** GAME -> USB HOOK ***
       if(hook_enable_sync
         & ((auto_nmi_enable_sync & exe_present & ~feat_cmd_unlock & ~exe_unlock & nmi_match_bits[1]))
         & (cpu_push_cnt == 4)) begin
@@ -223,6 +233,7 @@ always @(posedge clk) begin
         // unlock exe code
         exe_unlock_r <= 1;
       end
+      // *** USB HOOK -> INGAME HOOK ***
       else if (hook_enable_sync & exe_unlock
         & (auto_nmi_enable_sync & nmi_enable & nmi_match_bits[1])
         & (cpu_push_cnt != 4)
@@ -236,6 +247,7 @@ always @(posedge clk) begin
         // no longer in exe region
         exe_unlock_r <= 0;
       end
+      // *** USB HOOK -> GAME ***
       else if (exe_unlock & nmi_match_bits[1]
        & (cpu_push_cnt != 4)
        ) begin
@@ -244,6 +256,7 @@ always @(posedge clk) begin
         exe_unlock_r <= 0;
         map_unlock_r <= 0;
       end
+      // *** GAME -> INGAME HOOK ***
       else if(hook_enable_sync
         & ((auto_nmi_enable_sync & nmi_enable & nmi_match_bits[1])
           |(auto_irq_enable_sync & irq_enable & irq_match_bits[1]))
@@ -255,11 +268,16 @@ always @(posedge clk) begin
         // unlock the snescmd region
         snescmd_unlock_r <= 1;
       end
+      // *** RESET -> RESET HOOK ***
       if(rst_match_bits[1] & |reset_unlock_r) begin
         snescmd_unlock_r <= 1;
       end
     end
+
     // give some time to exit snescmd memory and jump to original vector
+    // sta @NMI_VECT_DISABLE    1-2 (after effective write)
+    // jmp ($ffxx)              3 (excluding address fetch)
+    // *** (INGAME HOOK -> GAME) ***
     if(SNES_cycle_start) begin
       if(snescmd_unlock_disable) begin
         if(|snescmd_unlock_disable_countdown) begin
@@ -271,14 +289,22 @@ always @(posedge clk) begin
       end
     end
     if(snescmd_unlock_disable_strobe) begin
-      snescmd_unlock_disable_countdown <= 7'd72;
+      snescmd_unlock_disable_countdown <= 7'd6;
       snescmd_unlock_disable <= 1;
     end
   end
 end
 
-
-always @(posedge clk) usage_count <= usage_count - 1;
+// Only clock the usage timeout when outside of in-game hook
+// to prevent nested IRQs from jumping to game
+// (otherwise FPGA might disable hook patching while still inside hook
+//  which hurts the current save state handler implementation since it
+//  uses IRQ inside IRQ / NMI inside NMI to synchronize with the time of entry)
+always @(posedge clk) begin
+  if (~snescmd_unlock) begin
+    usage_count <= usage_count - 1;
+  end
+end
 
 // Try and autoselect NMI or IRQ hook
 always @(posedge clk) begin
@@ -348,12 +374,12 @@ always @(posedge clk) begin
       end else if(pgm_idx == 6) begin // set rom patch enable
         cheat_enable_mask <= pgm_in[5:0];
       end else if(pgm_idx == 7) begin // set/reset global enable / hooks
-      // pgm_in[7:4] are reset bit flags
-      // pgm_in[3:0] are set bit flags
-        {wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
-         <= ({wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
-          & ~pgm_in[13:8])
-          | pgm_in[5:0];
+      // pgm_in[15:8] are reset bit flags
+      // pgm_in[7:0] are set bit flags
+        {savestate_enable, wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
+         <= ({savestate_enable, wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
+          & ~pgm_in[14:8])
+          | pgm_in[6:0];
       end
     end
   end
@@ -369,9 +395,9 @@ end
 // L+R+Start+X      : $1070
 always @(posedge clk) begin
   if(snescmd_wr_strobe) begin
-    if(SNES_ADDR[10:0] == 11'h3f0) begin
+    if(SNES_ADDR[10:0] == 11'h3f0) begin          // $2BF0
       pad_data[7:0] <= SNES_DATA;
-    end else if(SNES_ADDR[10:0] == 11'h3f1) begin
+    end else if(SNES_ADDR[10:0] == 11'h3f1) begin // $2BF1
       pad_data[15:8] <= SNES_DATA;
     end
   end
@@ -398,15 +424,22 @@ always @* begin
         if(branch_wram) begin
           branch1_offset = 8'h3a; // nmi_patches
         end else begin
-          branch1_offset = 8'h3d; // nmi_exit
+          if(savestate_enable) begin
+            branch1_offset = 8'h3f; // nmi_savestate
+          end else begin
+            branch1_offset = 8'h43; // nmi_exit
+          end
         end
       end
-    end else begin
+    end else begin // no AJR -> read the pad manually
       if(pad_latch) begin
+      // game is in progress of manual controller polling (4016)
+      // -> do nothing to avoid disturbing the bit shift count
+      // no known buttons -> no point in calling savestate handler
         if(branch_wram) begin
           branch1_offset = 8'h3a; // nmi_patches
         end else begin
-          branch1_offset = 8'h3d; // nmi_exit
+          branch1_offset = 8'h43; // nmi_exit
         end
       end else begin
         branch1_offset = 8'h00;   // continue with MJR
@@ -416,18 +449,34 @@ always @* begin
     if(branch_wram) begin
       branch1_offset = 8'h3a;     // nmi_patches
     end else begin
-      branch1_offset = 8'h3d;     // nmi_exit
+      if(savestate_enable) begin
+        branch1_offset = 8'h3f;   // nmi_savestate
+      end else begin
+        branch1_offset = 8'h43;   // nmi_exit
+      end
     end
   end
 end
 
 always @* begin
   if(nmicmd == 8'h81) begin
-    branch2_offset = 8'h0e;       // nmi_stop
+    branch2_offset = 8'h14;       // nmi_stop
   end else if(branch_wram) begin
     branch2_offset = 8'h00;       // nmi_patches
   end else begin
-    branch2_offset = 8'h03;       // nmi_exit
+    if(savestate_enable) begin
+      branch2_offset = 8'h05;     // nmi_savestate
+    end else begin
+      branch2_offset = 8'h09;     // nmi_exit
+    end
+  end
+end
+
+always @* begin
+  if(savestate_enable) begin
+    branch3_offset = 8'h00;       // nmi_savestate
+  end else begin
+    branch3_offset = 8'h04;       // nmi_exit
   end
 end
 

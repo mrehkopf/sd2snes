@@ -52,14 +52,14 @@ wire [7:0] DATRAM_DO;
 reg  [7:0] MMIO_DOr;
 wire [7:0] MMIO_DO;
 wire [7:0] STATUS_DO;
-wire [7:0] VECTOR_DO;
-wire [7:0] GPR_DO;
+reg  [7:0] VECTOR_DOr;
+reg  [7:0] GPR_DOr;
 
 assign DO = datram_enable ? DATRAM_DO
             : mmio_enable ? MMIO_DO
             : status_enable ? STATUS_DO
-            : vector_enable ? VECTOR_DO
-            : gpr_enable ? GPR_DO
+            : vector_enable ? VECTOR_DOr
+            : gpr_enable ? GPR_DOr
             : 8'h00;
 
 /* 0x1f40 - 0x1f52: MMIO
@@ -86,7 +86,7 @@ wire [47:0] cpu_mul_result;
 
 reg [14:0] cx4_mmio_pagemem[1:0];
 
-reg [23:0] const [15:0];
+reg [23:0] constrom [15:0];
 
 reg [14:0] cachetag [1:0];
 reg  [1:0] cachevalid;
@@ -105,8 +105,8 @@ initial begin
   cache_cachepage = 1'b0;
   cpu_cache_cachepage = 1'b0;
   cpu_cache_done = 1'b0;
-  cachetag[0] = 14'h0000;
-  cachetag[1] = 14'h0000;
+  cachetag[0] = 15'h0000;
+  cachetag[1] = 15'h0000;
   cachevalid = 2'b00;
   cx4_busy = 3'b000;
   cx4_mmio_pgmoff = 24'h000000;
@@ -115,22 +115,22 @@ initial begin
   cx4_mmio_dmalen = 16'h0000;
   cx4_mmio_dmatgt = 24'h000000;
   cx4_mmio_savepage = 2'b00;
-  const[0] = 24'h000000;
-  const[1] = 24'hffffff;
-  const[2] = 24'h00ff00;
-  const[3] = 24'hff0000;
-  const[4] = 24'h00ffff;
-  const[5] = 24'hffff00;
-  const[6] = 24'h800000;
-  const[7] = 24'h7fffff;
-  const[8] = 24'h008000;
-  const[9] = 24'h007fff;
-  const[10] = 24'hff7fff;
-  const[11] = 24'hffff7f;
-  const[12] = 24'h010000;
-  const[13] = 24'hfeffff;
-  const[14] = 24'h000100;
-  const[15] = 24'h00feff;
+  constrom[0] = 24'h000000;
+  constrom[1] = 24'hffffff;
+  constrom[2] = 24'h00ff00;
+  constrom[3] = 24'hff0000;
+  constrom[4] = 24'h00ffff;
+  constrom[5] = 24'hffff00;
+  constrom[6] = 24'h800000;
+  constrom[7] = 24'h7fffff;
+  constrom[8] = 24'h008000;
+  constrom[9] = 24'h007fff;
+  constrom[10] = 24'hff7fff;
+  constrom[11] = 24'hffff7f;
+  constrom[12] = 24'h010000;
+  constrom[13] = 24'hfeffff;
+  constrom[14] = 24'h000100;
+  constrom[15] = 24'h00feff;
   cpu_pc_stack[0] = 8'b0;
   cpu_pc_stack[1] = 8'b0;
   cpu_pc_stack[2] = 8'b0;
@@ -143,9 +143,9 @@ initial begin
 end
 
 assign MMIO_DO = MMIO_DOr;
-assign VECTOR_DO = vector [ADDR[4:0]];
-assign GPR_DO = gpr [ADDR[5:0]];
 assign STATUS_DO = {1'b0, cx4_active, 4'b0000, ~cx4_active, 1'b0};
+always @(posedge CLK) VECTOR_DOr <= vector[ADDR[4:0]];
+always @(posedge CLK) GPR_DOr <= gpr[ADDR[5:0]];
 
 wire DATRAM_WR_EN = datram_enable & reg_we_rising;
 wire MMIO_WR_EN = mmio_enable & reg_we_rising;
@@ -311,8 +311,8 @@ assign BUS_ADDR =  cx4_busy[BUSY_CACHE] ? MAPPED_CACHE_SRC_ADDR
 reg cx4_pgmrom_we;
 initial cx4_pgmrom_we = 1'b0;
 reg [9:0] cx4_pgmrom_addr;
-reg [19:0] cache_count;
-initial cache_count = 20'b0;
+reg [8:0] cache_count;
+initial cache_count = 9'b0;
 
 always @(posedge CLK) begin
   case(CACHE_ST)
@@ -339,7 +339,7 @@ always @(posedge CLK) begin
       CACHE_SRC_ADDRr <= cx4_mmio_pgmoff + {cache_pgmpage, 9'b0};
       cx4_pgmrom_addr <= {cache_cachepage, 9'b0};
       CACHE_ST <= ST_CACHE_WAIT;
-      cache_count <= 10'b0;
+      cache_count <= 9'b0;
       CACHE_BUS_RRQr <= 1'b1;
     end
     ST_CACHE_WAIT: begin
@@ -376,7 +376,7 @@ reg [11:0] cx4_dma_datram_addr;
 reg [11:0] cx4_cpu_datram_addr;
 wire [11:0] cx4_datram_addr = cx4_busy[BUSY_DMA] ? cx4_dma_datram_addr : cx4_cpu_datram_addr;
 reg [23:0] cx4_cpu_datram_di;
-wire [7:0] cx4_datram_di = cx4_busy[BUSY_DMA] ? BUS_DI : cx4_cpu_datram_di;
+wire [7:0] cx4_datram_di = cx4_busy[BUSY_DMA] ? BUS_DI : cx4_cpu_datram_di[7:0];
 reg [15:0] dma_count;
 initial dma_count = 16'b0;
 
@@ -390,7 +390,7 @@ always @(posedge CLK) begin
     ST_DMA_START: begin
       cx4_busy[BUSY_DMA] <= 1'b1;
       DMA_SRC_ADDRr <= cx4_mmio_dmasrc;
-      cx4_dma_datram_addr <= (cx4_mmio_dmatgt & 24'h000fff);
+      cx4_dma_datram_addr <= cx4_mmio_dmatgt[11:0];
       DMA_ST <= ST_DMA_WAIT;
       dma_count <= cx4_mmio_dmalen;
       DMA_BUS_RRQr <= 1'b1;
@@ -478,7 +478,6 @@ parameter OP_HLT   = 5'b10000;
 
 parameter MUL_DELAY = 3'h2;
 
-wire [6:0] op_id = cpu_op_w[15:10];
 reg [7:0] op_param;
 reg [4:0] op;
 reg [1:0] op_sa;
@@ -561,7 +560,7 @@ always @(posedge CLK) begin
               8'h0c: cpu_idb <= cpu_ramdata;
               8'h13: cpu_idb <= cpu_busaddr;
               8'h1c: cpu_idb <= cpu_ramaddr;
-              8'h5x: cpu_idb <= const[op_param[3:0]];
+              8'h5x: cpu_idb <= constrom[op_param[3:0]];
               8'h6x: cpu_idb <= {gpr[op_param[3:0]*3+2],
                                  gpr[op_param[3:0]*3+1],
                                  gpr[op_param[3:0]*3]};
@@ -583,7 +582,7 @@ always @(posedge CLK) begin
             8'h0c: cpu_tmp <= cpu_ramdata;
             8'h13: cpu_tmp <= cpu_busaddr;
             8'h1c: cpu_tmp <= cpu_ramaddr;
-            8'h5x: cpu_tmp <= const[op_param[3:0]];
+            8'h5x: cpu_tmp <= constrom[op_param[3:0]];
             8'h6x: cpu_tmp <= {gpr[op_param[3:0]*3+2],
                                gpr[op_param[3:0]*3+1],
                                gpr[op_param[3:0]*3]};
@@ -601,7 +600,7 @@ always @(posedge CLK) begin
             8'h0c: cx4_cpu_datram_addr <= cpu_ramdata;
             8'h13: cx4_cpu_datram_addr <= cpu_busaddr;
             8'h1c: cx4_cpu_datram_addr <= cpu_ramaddr;
-            8'h5x: cx4_cpu_datram_addr <= const[op_param[3:0]];
+            8'h5x: cx4_cpu_datram_addr <= constrom[op_param[3:0]];
             8'h6x: cx4_cpu_datram_addr <= {gpr[op_param[3:0]*3+2],
                                            gpr[op_param[3:0]*3+1],
                                            gpr[op_param[3:0]*3]};

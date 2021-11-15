@@ -40,9 +40,9 @@ void fpga_postinit(void);
 void fpga_pgm(uint8_t* filename);
 void fpga_rompgm(void);
 
-uint8_t SPI_OFFLOAD;
+extern uint8_t SPI_OFFLOAD;
 
-const uint8_t *fpga_config;
+extern const uint8_t *fpga_config;
 
 #define FPGA_CX4 ((const uint8_t*)"/sd2snes/fpga_cx4." FPGA_CONF_EXT)
 #define FPGA_OBC1 ((const uint8_t*)"/sd2snes/fpga_obc1." FPGA_CONF_EXT)

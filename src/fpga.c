@@ -42,6 +42,10 @@
 #include "rle.h"
 #include "cfgware.h"
 
+uint8_t SPI_OFFLOAD;
+
+const uint8_t *fpga_config;
+
 void fpga_set_prog_b(uint8_t val) {
   if(val)
     BITBAND(FPGA_PROGBREG->FIOSET, FPGA_PROGBBIT) = 1;

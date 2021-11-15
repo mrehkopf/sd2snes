@@ -178,6 +178,7 @@ reg [7:0] SNES_READr = 8'b11111111;
 reg [7:0] SNES_WRITEr = 8'b11111111;
 reg [7:0] SNES_CPU_CLKr = 8'b00000000;
 reg [7:0] SNES_ROMSELr = 8'b11111111;
+reg [7:0] SNES_PULSEr = 8'b11111111;
 reg [23:0] SNES_ADDRr [6:0];
 reg [7:0] SNES_PAr [6:0];
 reg [7:0] SNES_DATAr [4:0];
@@ -192,7 +193,11 @@ wire [23:0] SNES_ADDR = (SNES_ADDRr[6] & SNES_ADDRr[5]);
 wire [7:0] SNES_PA = (SNES_PAr[6] & SNES_PAr[5]);
 wire [7:0] SNES_DATA_IN = (SNES_DATAr[3] & SNES_DATAr[2]);
 
+wire SNES_PULSE_IN = SNES_READ_IN & SNES_WRITE_IN & ~SNES_CPU_CLK_IN;
+
+wire SNES_PULSE_end = (SNES_PULSEr[6:1] == 6'b000011);
 wire SNES_PARD_start = (SNES_PARDr[6:1] == 6'b111110);
+wire SNES_PARD_end = (SNES_PARDr[6:1] == 6'b000001);
 // Sample PAWR data earlier on CPU accesses, later on DMA accesses...
 wire SNES_PAWR_start = (SNES_PAWRr[7:1] == (({SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h02100) ? 7'b1110000 : 7'b1000000));
 wire SNES_PAWR_end = (SNES_PAWRr[6:1] == 6'b000001);
@@ -203,6 +208,8 @@ wire SNES_cycle_start = (SNES_CPU_CLKr[6:1] == 6'b000001);
 wire SNES_cycle_end = (SNES_CPU_CLKr[6:1] == 6'b111110);
 wire SNES_WRITE = SNES_WRITEr[2] & SNES_WRITEr[1];
 wire SNES_READ = SNES_READr[2] & SNES_READr[1];
+wire SNES_READ_late = SNES_READr[5] & SNES_READr[4];
+wire SNES_READ_narrow = SNES_READ | SNES_READ_late;
 wire SNES_CPU_CLK = SNES_CPU_CLKr[2] & SNES_CPU_CLKr[1];
 wire SNES_PARD = SNES_PARDr[2] & SNES_PARDr[1];
 wire SNES_PAWR = SNES_PAWRr[2] & SNES_PAWRr[1];
@@ -226,6 +233,7 @@ assign DCM_RST=0;
 wire IS_SAVERAM;
 
 always @(posedge CLK2) begin
+  SNES_PULSEr <= {SNES_PULSEr[6:0], SNES_PULSE_IN};
   SNES_PARDr  <= {SNES_PARDr[6:0], SNES_PARD_IN};
   SNES_PAWRr  <= {SNES_PAWRr[6:0], SNES_PAWR_IN};
   SNES_READr  <= {SNES_READr[6:0], SNES_READ_IN};
@@ -732,6 +740,11 @@ cheat snes_cheat(
 
 wire [7:0] snescmd_dout;
 
+parameter ST_R213F_ARMED     = 4'b0001;
+parameter ST_R213F_WAITBUS   = 4'b0010;
+parameter ST_R213F_OVERRIDE  = 4'b0100;
+parameter ST_R213F_HOLD      = 4'b1000;
+
 reg [7:0] r213fr;
 reg r213f_forceread;
 reg [2:0] r213f_delay;
@@ -895,6 +908,7 @@ assign ROM_OE = 1'b0;
 reg[17:0] SNES_DEAD_CNTr;
 initial SNES_DEAD_CNTr = 0;
 
+// MCU r/w request
 always @(posedge CLK2) begin
   if(MCU_RRQ & MCU_ROM) begin
     MCU_RD_PENDr <= 1'b1;
@@ -911,6 +925,7 @@ always @(posedge CLK2) begin
   end
 end
 
+// SGB ROM r/w request
 always @(posedge CLK2) begin
   if(SGB_ROM_RRQ) begin
     SGB_ROM_RD_PENDr <= 1'b1;
@@ -1000,19 +1015,38 @@ always @(posedge CLK2) begin
   endcase
 end
 
+/***********************
+ * R213F read patching *
+ ***********************/
 always @(posedge CLK2) begin
-  if(SNES_cycle_end) r213f_forceread <= 1'b1;
-  else if(SNES_PARD_start & r213f_enable) begin
-    r213f_delay <= 3'b001;
-    r213f_state <= 2'b10;
-  end else if(r213f_state == 2'b10) begin
-    r213f_delay <= r213f_delay - 1;
-    if(r213f_delay == 3'b000) begin
-      r213f_forceread <= 1'b0;
-      r213f_state <= 2'b01;
-      r213fr <= {SNES_DATA[7:5], mcu_region, SNES_DATA[3:0]};
+  case(r213f_state)
+    ST_R213F_HOLD: begin
+      r213f_state <= ST_R213F_HOLD;
+      if(SNES_PULSE_end) begin
+        r213f_forceread <= 1'b1;
+        r213f_state <= ST_R213F_ARMED;
+      end
     end
-  end
+    ST_R213F_ARMED: begin
+      r213f_state <= ST_R213F_ARMED;
+      if(SNES_PARD_start & r213f_enable) begin
+        r213f_delay <= 3'b001;
+        r213f_state <= ST_R213F_WAITBUS;
+      end
+    end
+    ST_R213F_WAITBUS: begin
+      r213f_state <= ST_R213F_WAITBUS;
+      r213f_delay <= r213f_delay - 1;
+      if(r213f_delay == 3'b000) begin
+        r213f_state <= ST_R213F_OVERRIDE;
+        r213fr <= {SNES_DATA[7:5], mcu_region, SNES_DATA[3:0]};
+      end
+    end
+    ST_R213F_OVERRIDE: begin
+      r213f_state <= ST_R213F_HOLD;
+      r213f_forceread <= 1'b0;
+    end
+  endcase
 end
 
 /*********************************
@@ -1022,7 +1056,7 @@ reg [3:0] r2100_bright = 0;
 reg [3:0] r2100_bright_orig = 0;
 
 always @(posedge CLK2) begin
-  if(SNES_cycle_end) r2100_forcewrite_pre <= 1'b0;
+  if(SNES_PULSE_end) r2100_forcewrite_pre <= 1'b0;
   else if(SNES_PAWR_start & r2100_hit) begin
     if(r2100_patch & SNES_DATA[7]) begin
     // keep previous brightness during forced blanking so there is no DAC step
@@ -1091,7 +1125,7 @@ parameter RAM_CYCLE_LEN = 4'd5;
 reg [4:0] RAM_STATE; initial RAM_STATE = ST_RAM_IDLE;
 reg [3:0] ST_RAM_DELAYr;
 
-assign ram_free_slot = SNES_cycle_end | ram_free_strobe;
+assign ram_free_slot = SNES_PULSE_end | ram_free_strobe;
 
 // Provide full bandwidth if snes is not accessing the bus.
 always @(posedge CLK2) begin
@@ -1112,6 +1146,7 @@ wire MCU_RAM_WR_HIT = |(RAM_STATE & (ST_RAM_MCU_WR_ADDR | ST_RAM_MCU_WR_END));
 wire MCU_RAM_RD_HIT = |(RAM_STATE & (ST_RAM_MCU_RD_ADDR | ST_RAM_MCU_RD_END));
 wire MCU_RAM_HIT = MCU_RAM_WR_HIT | MCU_RAM_RD_HIT;
 
+// MCU RAM1 r/w request
 always @(posedge CLK2) begin
   if(MCU_RRQ & MCU_RAM) begin
     MCU_RAM_RD_PENDr <= 1'b1;
@@ -1194,17 +1229,17 @@ assign mcu_rdy_int = RQ_MCU_RDYr & RQ_RAM_MCU_RDYr & RQ_SGB_MCU_RDYr;
 
 //--------------
 
-assign SNES_DATABUS_OE = msu_enable & ~(SNES_READ & SNES_WRITE) ? 1'b0 :
+assign SNES_DATABUS_OE = msu_enable & ~(SNES_READ_narrow & SNES_WRITE) ? 1'b0 :
                          // cover open bus to write-only registers (6000/6002 and 7XXX are the exceptions)
                          sgb_enable & (~SNES_WRITE | (SNES_ADDR[12] | ~|{SNES_ADDR[3:2],SNES_ADDR[0]})) ? 1'b0 :
-                         snescmd_enable & ~(SNES_READ & SNES_WRITE) ? ~(snescmd_unlock | feat_cmd_unlock) :
+                         snescmd_enable & ~(SNES_READ_narrow & SNES_WRITE) ? ~(snescmd_unlock | feat_cmd_unlock) :
                          (r213f_enable & ~SNES_PARD) ? 1'b0 :
                          (r2100_enable & ~SNES_PAWR) ? 1'b0 :
                          snoop_4200_enable & ~SNES_WRITE ? 1'b0 :
                          button_enable & ~SNES_WRITE ? 1'b0 :
                          ( (IS_ROM & SNES_ROMSEL)
                          | (!IS_ROM & !IS_SAVERAM & !IS_WRITABLE)
-                         | (SNES_READ & SNES_WRITE)
+                         | (SNES_READ_narrow & SNES_WRITE)
                          );
 
 /* data bus direction: 0 = SNES -> FPGA; 1 = FPGA -> SNES

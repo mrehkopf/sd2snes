@@ -65,7 +65,7 @@ void cheat_program() {
   cheat_holdoff_enable(CFG.enable_hook_holdoff);
   cheat_buttons_enable(CFG.enable_ingame_buttons);
   cheat_wram_present(wram_index);
-  
+
   sgb_cheat_program();
 }
 
@@ -186,7 +186,7 @@ void cheat_yaml_load(uint8_t* romfilename) {
     yaml_get_itemvalue("Code", &token);
     if(token.type == YAML_LIST_START) {
       for(i=0; i < CHEAT_NUM_CODES_PER_CHEAT; i++) {
-        if(yaml_get_next(&token) == EOF) break;
+        if(!yaml_get_next(&token)) break;
         if(token.type == YAML_LIST_END) break;
         cheat.patches[i].code = cheat_str2bin(token.stringvalue);
       }
