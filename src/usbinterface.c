@@ -151,6 +151,13 @@ static const char *usbint_server_space_s[] = { FOREACH_SERVER_SPACE(GENERATE_STR
 enum usbint_server_flags_e { FOREACH_SERVER_FLAGS(GENERATE_ENUM) };
 //static const char *usbint_server_flags_s[] = { FOREACH_SERVER_FLAGS(GENERATE_STRING) };
 
+enum e_ls_flags
+{
+    LS_FLAG_MODIFIED = 1,
+    LS_FLAG_SIZE = 2,
+    LS_FLAGS_SUPPORTED = LS_FLAG_MODIFIED | LS_FLAG_SIZE,
+};
+
 volatile enum usbint_server_state_e server_state = USBINT_SERVER_STATE_IDLE;
 volatile enum usbint_server_stream_state_e stream_state;
 static int reset_state = 0;
@@ -194,9 +201,21 @@ static FILINFO fi;
 static int     fiCont = 0;
 static FIL     fh;
 static char    fbuf[MAX_STRING_LENGTH + 2];
+static char ls_flags = 0;
 
 extern cfg_t CFG;
 
+volatile void *memcpy_volatile(volatile void *restrict dest,
+            const volatile void *restrict src, size_t n) {
+    const volatile unsigned char *src_c = src;
+    volatile unsigned char *dest_c      = dest;
+
+    while (n > 0) {
+        n--;
+        dest_c[n] = src_c[n];
+    }
+    return  dest;
+}
 // reset
 void usbint_set_state(unsigned open) {
     connected = open;
@@ -539,6 +558,12 @@ int usbint_handler_cmd(void) {
         break;
     }
     case USBINT_SERVER_OPCODE_LS: {
+        ls_flags = 0;
+        const int filename_size = strlen((TCHAR*)fileName) + 1;
+        if(filename_size < server_info.size)
+        {
+            ls_flags = *(fileName + filename_size) & LS_FLAGS_SUPPORTED;
+        }
         fiCont = 0;
         fi.lfname = fbuf;
         fi.lfsize = MAX_STRING_LENGTH;
@@ -704,6 +729,7 @@ int usbint_handler_cmd(void) {
         if (strlen(tempFileName) > (MAX_STRING_LENGTH - 16)) tempFileName += strlen(tempFileName) - (MAX_STRING_LENGTH - 16);
         strncpy((char *)(send_buffer[send_buffer_index]) + 16, current_filename, MAX_STRING_LENGTH - 16);
     }
+
     
     // send response.  also triggers data interrupt.
     server_info.data_ready = (server_state == USBINT_SERVER_STATE_HANDLE_DAT) || (server_state == USBINT_SERVER_STATE_HANDLE_STREAM);
@@ -830,6 +856,24 @@ int usbint_handler_dat(void) {
     }
     case USBINT_SERVER_OPCODE_LS: {
         uint8_t *name = NULL;
+        if(ls_flags)
+        {
+            // Signal that we support extended data
+            // filenames should never be empty, so this should allow signaling back to clients 
+            // that sent flags that the request was accepted
+            send_buffer[send_buffer_index][bytesSent++] = 0;
+            // Signal what the data we sent back is
+            send_buffer[send_buffer_index][bytesSent++] = ls_flags;
+        }
+        int extra_data_size = 0;
+        if(ls_flags & LS_FLAG_SIZE)
+        {
+            extra_data_size += sizeof(fi.fsize);
+        }
+        if(ls_flags & LS_FLAG_MODIFIED)
+        {
+            extra_data_size += sizeof(fi.fdate) + sizeof(fi.ftime);
+        }
         do {
             int fiContPrev = fiCont;
             fiCont = 0;
@@ -864,8 +908,21 @@ int usbint_handler_dat(void) {
             }
 
             // check for id(1) string(strlen + 1) is does not go past index
-            if (bytesSent + 1 + strlen((TCHAR*)name) + 1 <= server_info.block_size) {
+            if (bytesSent + 1 + strlen((TCHAR*)name) + 1 + extra_data_size <= server_info.block_size) {
                 send_buffer[send_buffer_index][bytesSent++] = (fi.fattrib & AM_DIR) ? 0 : 1;
+                if(ls_flags & LS_FLAG_SIZE)
+                {
+                    memcpy_volatile(send_buffer[send_buffer_index] + bytesSent, &fi.fsize, sizeof(fi.fsize));
+                    bytesSent += sizeof(fi.fsize);
+                }
+                if(ls_flags & LS_FLAG_MODIFIED)
+                {
+                    memcpy_volatile(send_buffer[send_buffer_index] + bytesSent, &fi.fdate, sizeof(fi.fdate));
+                    bytesSent += sizeof(fi.fdate);
+                    memcpy_volatile(send_buffer[send_buffer_index] + bytesSent, &fi.ftime, sizeof(fi.ftime));
+                    bytesSent += sizeof(fi.ftime);
+                }
+                
                 strcpy((TCHAR*)send_buffer[send_buffer_index] + bytesSent, (TCHAR*)name);
                 bytesSent += strlen((TCHAR*)name) + 1;
                 // send string
