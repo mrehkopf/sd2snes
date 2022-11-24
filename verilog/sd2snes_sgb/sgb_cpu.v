@@ -51,6 +51,11 @@ module sgb_cpu(
   output [1:0]  P1O,
   input  [3:0]  P1I,
 
+  // SER
+  inout         SER_CLK,
+  input         SER_IN,
+  output        SER_OUT,
+
   // Halt
   input         HLT_REQ,
   output        HLT_RSP,
@@ -679,7 +684,7 @@ always @(posedge CLK) begin
           8'h20: reg_mdr_r[7:0] <= 8'hFF;
           8'h21: reg_mdr_r[7:0] <= REG_NR42_r;
           8'h22: reg_mdr_r[7:0] <= REG_NR43_r;
-          8'h23: reg_mdr_r[7:0] <= {1'h1,REG_NR44_r[6],6'hFF};
+          8'h23: reg_mdr_r[7:0] <= {1'h1,REG_NR44_r[6],6'h3F};
 
           8'h24: reg_mdr_r[7:0] <= REG_NR50_r;
           8'h25: reg_mdr_r[7:0] <= REG_NR51_r;
@@ -3016,14 +3021,24 @@ end
 
 `ifdef SGB_SERIAL
 reg         ser_active_d1_r;
-reg         ser_clk_d1_r;
+reg  [7:0]  ser_clk_r;
+reg         ser_clk_d_r;
 reg  [9:0]  ser_ctr_r;
+reg         ser_out_r;
 reg  [2:0]  ser_pos_r;
+reg         ser_in_r;
 reg         ser_done_r;
 
-assign      SER_REG_done = ser_done_r;
+assign SER_CLK = ~REG_SC_r[0] ? 1'bZ : ser_ctr_r[9];
+assign SER_OUT = ser_out_r;
+
+assign SER_REG_done = ser_done_r;
 
 assign HLT_SER_rsp = HLT_REQ_sync & (~REG_SC_r[7] | ~REG_SC_r[0]);
+
+assign ser_clk_d0 = ~REG_SC_r[7] ? 1'b1 : SER_CLK;
+assign ser_clk_hi = ser_clk_r == 8'hFF;
+assign ser_clk_lo = ser_clk_r == 8'h00;
 
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
@@ -3032,31 +3047,41 @@ always @(posedge CLK) begin
 
     ser_active_d1_r <= 0;
     ser_done_r      <= 0;
+    ser_ctr_r       <= 10'h200;
+    ser_clk_r       <= 8'hFF;
+    ser_out_r       <= 1;
   end
   else begin
     if (CLK_CPU_EDGE) begin
       ser_active_d1_r <= REG_SC_r[7];
       ser_done_r      <= 0;
+      ser_clk_r       <= {ser_clk_r[6:0],ser_clk_d0};
 
-      if (REG_SC_r[7]) begin
-        if (~ser_active_d1_r) begin
-          ser_ctr_r <= 0;
-          ser_clk_d1_r <= 0;
-          ser_pos_r <= 0;
+      if (ser_clk_hi)
+        ser_clk_d_r <= 1;
+      else if (ser_clk_lo)
+        ser_clk_d_r <= 0;
+
+      if (~REG_SC_r[7]) begin
+        ser_ctr_r <= 10'h200;
+        ser_pos_r <= 0;
+      end
+      else begin
+        ser_ctr_r <= REG_SC_r[0] ? ser_ctr_r + 1 : ser_ctr_r;
+
+        // 1->0 transition
+        if (ser_clk_d_r & ser_clk_lo) begin
+          ser_out_r <= REG_SB_r[7];
         end
-        else begin
-          ser_ctr_r <= REG_SC_r[0] ? ser_ctr_r + 1 : ser_ctr_r;
-          ser_clk_d1_r <= ser_ctr_r[9];
-
-          if (ser_clk_d1_r ^ ser_ctr_r[9]) begin
-            REG_SB_r[~ser_pos_r] <= 1'b1;
-            ser_pos_r <= ser_pos_r + 1;
-
-            if (&ser_pos_r) begin
-              REG_SC_r[7] <= 0;
-              ser_done_r <= 1;
-            end
+        // 0-1 transition
+        else if(~ser_clk_d_r & ser_clk_hi) begin
+          if (&ser_pos_r) begin
+            REG_SC_r[7] <= 0;
+            ser_done_r <= 1;
           end
+
+          REG_SB_r <= {REG_SB_r[6:0],SER_IN};
+          ser_pos_r <= ser_pos_r + 1;
         end
       end
     end

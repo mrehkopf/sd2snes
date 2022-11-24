@@ -55,6 +55,7 @@
   `define SGB_MCU_ACCESS
   `define SGB_SAVE_STATES
   `define SGB_SERIAL
+  //`define SGB_SERIAL_OVER_DBG
   `define SGB_DEBUG
   `define SGB_SPR_INCREASE
   `define SGB_EXTRA_MAPPERS
