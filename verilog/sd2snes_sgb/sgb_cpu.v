@@ -3017,7 +3017,7 @@ end
 // SERIAL
 //-------------------------------------------------------------------
 
-// Basic functionality to allow multiplayer games to pass.  missing external clock/data.
+// Functional on MK3 using 3-wire P* debug bus.  See config.vh to enable.
 
 `ifdef SGB_SERIAL
 reg         ser_active_d1_r;
@@ -3031,6 +3031,8 @@ reg         ser_done_r;
 
 assign SER_CLK = ~REG_SC_r[0] ? 1'bZ : ser_ctr_r[9];
 assign SER_OUT = ser_out_r;
+//assign SER_OE = REG_SC_r[7]; // output (and input) enable when clock is valid
+//assign SER_DIR = REG_SC_r[0]; // 0=clock driven by external source, 1=output when clock driven by this device
 
 assign SER_REG_done = ser_done_r;
 
