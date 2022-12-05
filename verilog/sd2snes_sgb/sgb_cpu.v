@@ -586,12 +586,12 @@ always @(posedge CLK) begin
 
     // timers
     if (CLK_CPU_EDGE & DBG_advance) begin
-      {tmr_ovf_16_r,  REG_DIV_r[3:0]  } <= REG_DIV_r[3:0]   + 1;
-      {tmr_ovf_64_r,  REG_DIV_r[5:4]  } <= REG_DIV_r[5:4]   + tmr_ovf_16_r;
-      {tmr_ovf_256_r, REG_DIV_r[7:6]  } <= REG_DIV_r[7:6]   + tmr_ovf_64_r;
-      {tmr_ovf_1024_r,REG_DIV_r[9:8]  } <= REG_DIV_r[9:8]   + tmr_ovf_256_r;
-      {tmr_apu_step_r,REG_DIV_r[12:10]} <= REG_DIV_r[12:10] + tmr_ovf_1024_r;
-      {               REG_DIV_r[15:13]} <= REG_DIV_r[15:13] + tmr_apu_step_r;
+      REG_DIV_r      <= REG_DIV_r + 1;
+      tmr_ovf_16_r   <= &REG_DIV_r[3:0];
+      tmr_ovf_64_r   <= &REG_DIV_r[5:0];
+      tmr_ovf_256_r  <= &REG_DIV_r[7:0];
+      tmr_ovf_1024_r <= &REG_DIV_r[9:0];
+      tmr_apu_step_r <= &REG_DIV_r[12:0];
     end
 
     tmr_cpu_edge_d1_r <= CLK_CPU_EDGE;
@@ -2514,14 +2514,12 @@ always @(posedge CLK) begin
           // volume side effect (inversion).  see register writes for additional side effects.
           if (apu_reg_update_nr12_dir_r ^ REG_NR12_r[`NR12_ENV_DIR]) apu_square1_volume_r <= ~apu_square1_volume_r + 1;
 
-          if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
-
           if (apu_square1_enable_r) apu_square1_enable_r <= |REG_NR12_r[7:3];
         end
         8'h13: begin // NR13
-          //if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
         end
         8'h14: begin // NR14
+          // SML end of stage time counting requires this for ringing effect
           if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
 
           if (REG_NR14_r[`NR14_FREQ_ENABLE]) begin
@@ -2544,14 +2542,12 @@ always @(posedge CLK) begin
           // volume side effect (inversion).  see register writes for additional side effects.
           if (apu_reg_update_nr22_dir_r ^ REG_NR22_r[`NR22_ENV_DIR]) apu_square2_volume_r <= ~apu_square2_volume_r + 1;
 
-          if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
-
           if (apu_square2_enable_r) apu_square2_enable_r <= |REG_NR22_r[7:3];
         end
         8'h18: begin // NR23
-          //if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
         end
         8'h19: begin // NR24
+          // SML end of stage time counting requires this for ringing effect
           if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
 
           if (REG_NR24_r[`NR24_FREQ_ENABLE]) begin
