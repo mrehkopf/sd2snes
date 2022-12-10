@@ -3016,13 +3016,10 @@ end
 // Functional on MK3 using 3-wire P* debug bus.  See config.vh to enable.
 
 `ifdef SGB_SERIAL
-reg         ser_active_d1_r;
-reg  [7:0]  ser_clk_r;
-reg         ser_clk_d_r;
+reg  [7:0]  ser_clk_d_r;
 reg  [9:0]  ser_ctr_r;
 reg         ser_out_r;
-reg  [2:0]  ser_pos_r;
-reg         ser_in_r;
+reg  [3:0]  ser_pos_r;
 reg         ser_done_r;
 
 assign SER_CLK = ~REG_SC_r[0] ? 1'bZ : ser_ctr_r[9];
@@ -3035,30 +3032,34 @@ assign SER_REG_done = ser_done_r;
 assign HLT_SER_rsp = HLT_REQ_sync & (~REG_SC_r[7] | ~REG_SC_r[0]);
 
 assign ser_clk_d0 = ~REG_SC_r[7] ? 1'b1 : SER_CLK;
-assign ser_clk_hi = ser_clk_r == 8'hFF;
-assign ser_clk_lo = ser_clk_r == 8'h00;
 
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
     REG_SB_r <= 0;
     REG_SC_r <= 8'h7F;
 
-    ser_active_d1_r <= 0;
     ser_done_r      <= 0;
     ser_ctr_r       <= 10'h200;
-    ser_clk_r       <= 8'hFF;
     ser_out_r       <= 1;
+    ser_clk_d_r     <= 8'hFF;
   end
   else begin
-    if (CLK_CPU_EDGE) begin
-      ser_active_d1_r <= REG_SC_r[7];
-      ser_done_r      <= 0;
-      ser_clk_r       <= {ser_clk_r[6:0],ser_clk_d0};
+    ser_clk_d_r <= {ser_clk_d_r[6:0],ser_clk_d0};
 
-      if (ser_clk_hi)
-        ser_clk_d_r <= 1;
-      else if (ser_clk_lo)
-        ser_clk_d_r <= 0;
+    if (REG_SC_r[7] & ~ser_pos_r[3]) begin
+      // 1->0 transition
+      if (ser_clk_d_r[5:0] == 6'b111000) begin
+        ser_out_r <= REG_SB_r[7];
+      end
+      // 0->1 transition
+      else if(ser_clk_d_r[5:0] == 6'b000111) begin
+        REG_SB_r <= {REG_SB_r[6:0],SER_IN};
+        ser_pos_r <= ser_pos_r + 1;
+      end
+    end
+
+    if (CLK_CPU_EDGE) begin
+      ser_done_r      <= 0;
 
       if (~REG_SC_r[7]) begin
         ser_ctr_r <= 10'h200;
@@ -3067,19 +3068,9 @@ always @(posedge CLK) begin
       else begin
         ser_ctr_r <= REG_SC_r[0] ? ser_ctr_r + 1 : ser_ctr_r;
 
-        // 1->0 transition
-        if (ser_clk_d_r & ser_clk_lo) begin
-          ser_out_r <= REG_SB_r[7];
-        end
-        // 0-1 transition
-        else if(~ser_clk_d_r & ser_clk_hi) begin
-          if (&ser_pos_r) begin
-            REG_SC_r[7] <= 0;
-            ser_done_r <= 1;
-          end
-
-          REG_SB_r <= {REG_SB_r[6:0],SER_IN};
-          ser_pos_r <= ser_pos_r + 1;
+        if (ser_pos_r[3]) begin
+          REG_SC_r[7] <= 0;
+          ser_done_r <= 1;
         end
       end
     end
@@ -3459,6 +3450,12 @@ always @(posedge CLK) begin
             //8'h45:    dbg_misc_data_r <= dbg_timer_ly_r;
             //8'h46:    dbg_misc_data_r <= dbg_timer_dot_ctr_r[7:0];
             //8'h47:    dbg_misc_data_r <= dbg_timer_dot_ctr_r[8:8];
+
+            8'h50:    dbg_misc_data_r <= ser_clk_d_r;
+            8'h51:    dbg_misc_data_r <= ser_done_r;
+            8'h52:    dbg_misc_data_r <= ser_pos_r;
+            8'h55:    dbg_misc_data_r <= ser_ctr_r[7:0];
+            8'h56:    dbg_misc_data_r <= ser_ctr_r[9:8];
 
             8'hA0:    dbg_misc_data_r <= apu_square1_enable_r;
             8'hA1:    dbg_misc_data_r <= apu_square1_timer_r[7:0];
