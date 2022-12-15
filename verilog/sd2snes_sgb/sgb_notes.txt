@@ -27,6 +27,10 @@ Fixed Bugs
 ----------
 Many of these games are useful for testing changes.
 
+- Rolan's Curse music in town and outside cut-out in square channels.
+  - Removed duty cycle advance side effect in x2 and x3 (see SML below).
+- Kirby's Dream Land 2 hangs on save state save and load.
+  - V-Blank interrupt was happening twice on save or load which would cause problem with hard coded location on stack for SP value being overwritten.
 - Super Hunchback corrupted game-over/level transition screen
   - Was expecting nonzero value when reading VRAM/OAM during phase when they are not available.  Switched value from 8'h00 to 8'hFF to fix.
 - Evel Knievel bad BG tile map for characters on Level Select screen.
@@ -64,7 +68,7 @@ Many of these games are useful for testing changes.
 - Various MBC1M (multi-ROM) games don't work.
   - Added MBC1M support.  Bomberman trilogy, Super CH land, MK1+MK2, others?
 - Super Mario Land timer countdown at level end, Castlevania II missing ringing sound.
-  - Duty position needed to be advanced on x3 and x4 (frequency) register writes.
+  - Duty position needed to be advanced x4 (frequency) register writes.  Not on x2 or x3.  May need more conditions for x4.
 - Megaman V default boss stage selection transition crash, Mortal Kombat I crash
   - Interrupts have long latency and allowed one instruction after RETI which resulted in stack overflow.
   - RETI now enables interrupt on next instruction but this exposed bug in Pinball games (see above).

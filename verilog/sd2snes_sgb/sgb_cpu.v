@@ -624,6 +624,10 @@ always @(posedge CLK) begin
         REG_IF_r[`IE_SERIAL]   <= (REG_IF_r[`IE_SERIAL]   | SER_REG_done                 | (reg_int_write_r & reg_int_write_data_r[`IE_SERIAL])  ) & ~(IFD_REG_ic[`IE_SERIAL]   | (reg_int_write_r & ~reg_int_write_data_r[`IE_SERIAL])  );
         REG_IF_r[`IE_JOYPAD]   <= (REG_IF_r[`IE_JOYPAD]   | |(REG_P1_r[3:0] & ~P1I[3:0]) | (reg_int_write_r & reg_int_write_data_r[`IE_JOYPAD])  ) & ~(IFD_REG_ic[`IE_JOYPAD]   | (reg_int_write_r & ~reg_int_write_data_r[`IE_JOYPAD])  );
       end
+      else if (~HLT_REQ) begin
+        // clear any outstanding VBLANK so we don't take 2 of them in KDL2
+        REG_IF_r[`IE_VBLANK] <= 0;
+      end
     end
 
     if (CLK_CPU_EDGE) REG_P1_r[3:0] <= P1I[3:0];
