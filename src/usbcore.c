@@ -73,9 +73,15 @@ uint16_t  USB_DeviceStatus;
 uint8_t  USB_DeviceAddress;
 //uint8_t  USB_Configuration;
 volatile uint8_t  USB_Configuration;
-uint32_t USB_EndPointMask;
-uint32_t USB_EndPointHalt;
-uint32_t USB_EndPointStall;                         /* EP must stay stalled */
+
+/* Endpoint status bitmaps:
+  [31:15]: IN Endpoints 15..0
+  [15: 0]: OUT Endpoints 15..0 */
+uint32_t USB_EndPointMask;  /* IRQ Mask mirror */
+uint32_t USB_EndPointHalt;  /* EP momentarily stalled, e.g. via bRequest=Set_Feature */
+uint32_t USB_EndPointStall; /* EP must not be un-stalled */
+
+
 uint8_t  USB_NumInterfaces;
 uint8_t  USB_AltSetting[USB_IF_NUM];
 
