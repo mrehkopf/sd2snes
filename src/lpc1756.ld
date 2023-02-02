@@ -11,13 +11,19 @@ ENTRY(_start)
 
 MEMORY
 {
+  fwhdr  (r)   : ORIGIN = 0x0000c000, LENGTH = 0x00100 /* space for firmware header */
   flash  (rx)  : ORIGIN = 0x0000c100, LENGTH = 0x33f00 /* leave room for bootldr + metadata */
-  ram    (rwx) : ORIGIN = 0x10000000, LENGTH = 0x04000
+  ram    (rwx) : ORIGIN = 0x10000070, LENGTH = 0x03f90 /* leave room for serial number etc */
   ahbram (rwx) : ORIGIN = 0x2007C000, LENGTH = 0x04000
 }
 
 SECTIONS
 {
+  .fwhdr :
+  {
+    KEEP(*(.fwhdr))
+  } > fwhdr
+
   .text :
   {
     KEEP(*(.vectors))

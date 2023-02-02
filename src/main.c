@@ -56,6 +56,8 @@ extern volatile cfg_t CFG;
 extern volatile mcu_status_t STM;
 extern volatile snes_status_t STS;
 
+const char fwhdr[CONFIG_FW_HEADERSIZE] __attribute__ ((section(".fwhdr")));
+
 void menu_cmd_readdir(void) {
   uint8_t path[256];
   SNES_FTYPE filetypes[16];
