@@ -254,7 +254,9 @@ int msu1_loop() {
   int msu_res;
   uint8_t cmd;
 
-  msu_last_sram_check = getticks();
+  /* set initial last SRAM check to 1s in the past to trigger a single
+     immediate SRAM check after booting the game */
+  msu_last_sram_check = getticks() - MS_TO_TICKS(1000);
   msu_last_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes, 0);
 
   msu_page1_start = 0x0000;
