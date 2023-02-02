@@ -73,15 +73,13 @@ export FLASH_SIZE=$(CONFIG_FLASH_SIZE)
 include version.mk
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC  = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c
-SRC += printf.c spi.c fileops.c rtc.c fpga.c fpga_spi.c snes.c smc.c
+SRC  = main.c ff.c ccsbcs.c
+SRC += printf.c fileops.c fpga.c fpga_spi.c snes.c smc.c
 SRC += memory.c filetypes.c faulthandler.c sort.c crc32.c cic.c
-SRC += cli.c xmodem.c irq.c rle.c sdnative.c msu1.c crc16.c sysinfo.c
+SRC += cli.c xmodem.c rle.c msu1.c crc16.c sysinfo.c
 SRC += cfg.c cheat.c yaml.c savestate.c sgb.c
 
-SRC += usbdesc.c usbcore.c usbuser.c usbhw.c cdcuser.c usbinterface.c
-
-# usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
+SRC += usbdesc.c usbcore.c usbuser.c cdcuser.c usbinterface.c
 
 # List Assembler source files here.
 #     Make them always end in a capital .S.  Files ending in a lowercase .s
@@ -90,8 +88,12 @@ SRC += usbdesc.c usbcore.c usbuser.c usbhw.c cdcuser.c usbinterface.c
 #     Even though the DOS/Win* filesystem matches both .s and .S the same,
 #     it will preserve the spelling of the filenames, and gcc itself does
 #     care about how the name is spelled on its command-line.
-ASRC = startup.S crc.S
+ASRC = crc.S
 
+# add in platform specific configuration
+include $(CONFIG_ARCH)/variables.mk
+
+# usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
 
 # Optimization level, can be [0, 1, 2, 3, s].
 #     0 = turn off optimization. s = optimize for size.
@@ -163,7 +165,7 @@ CFLAGS += $(CPUFLAGS) -nostartfiles
 #CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -Wall -Wstrict-prototypes -Werror -Wno-strict-aliasing
 CFLAGS += -Wa,-adhlns=$(OBJDIR)/$(<:.c=.lst)
-CFLAGS += -I$(OBJDIR)
+CFLAGS += -I$(OBJDIR) -I$(CONFIG_ARCH)
 CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
 CFLAGS += $(CSTANDARD)
 CFLAGS += -ffunction-sections -fdata-sections
@@ -203,6 +205,8 @@ OBJ := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.o) $(ASRC:.S=.o))
 # Define all listing files.
 LST := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.lst) $(ASRC:.S=.lst))
 
+# Generate list of obj dirs
+OBJDIRS := $(sort $(dir $(OBJ)))
 
 # Compiler flags to generate dependency files.
 GENDEPFLAGS = -MMD -MP -MF $(DEPDIR)/$(@F).d
@@ -323,7 +327,7 @@ $(OBJDIR)/%.s : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h $(OBJDIR)/cfgware.h $(OBJDI
 
 
 # Assemble: create object files from assembler source files.
-$(OBJDIR)/%.o : %.S | $(OBJDIR) $(OBJDIR)/autoconf.h
+$(OBJDIR)/%.o : %.S | $(OBJDIRS) $(OBJDIR)/autoconf.h
 	$(E) "  AS     $<"
 	$(Q)$(CC) -c $(ALL_ASFLAGS) $< -o $@
 
@@ -332,9 +336,9 @@ $(OBJDIR)/%.i : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h $(OBJDIR)/cfgware.h $(OBJDI
 	$(CC) -E -mmcu=$(MCU) -I. $(CFLAGS) $< -o $@
 
 # Create the output directory
-$(OBJDIR) :
-	$(E) "  MKDIR  $(OBJDIR)"
-	$(Q)mkdir $(OBJDIR)
+$(OBJDIRS) :
+	$(E) "  MKDIR  $(OBJDIRS)"
+	$(Q)mkdir -p $(OBJDIRS)
 
 # Target: clean project.
 clean: begin clean_list end
@@ -360,7 +364,7 @@ clean_list :
 	$(Q)$(REMOVE) $(CSRC:.c=.s)
 	$(Q)$(REMOVE) $(CSRC:.c=.d)
 	$(Q)$(REMOVE) $(DEPDIR)/*
-	-$(Q)rmdir $(OBJDIR)
+	-$(Q)rmdir --ignore-fail-on-non-empty -p $(OBJDIRS)
 
 # Include the dependency files.
 -include $(info $(DEPDIR)) $(shell mkdir $(DEPDIR) 2>/dev/null) $(wildcard $(DEPDIR)/*)

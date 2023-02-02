@@ -27,7 +27,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
+#include CONFIG_MCU_H
 #include "smc.h"
 
 extern char current_filename[];

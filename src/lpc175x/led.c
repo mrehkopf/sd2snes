@@ -1,6 +1,5 @@
 /* ___DISCLAIMER___ */
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
 #include "timer.h"
 #include "led.h"
@@ -25,7 +24,7 @@ void rdyled(unsigned int state) {
   if(led_pwmstate) {
     rdybright(state ? CFG.led_brightness : 0);
   } else {
-    BITBAND(LED_READY_REG->FIODIR, LED_READY_BIT) = state;
+    GPIO_DIR(LED_READY_REG, LED_READY_BIT, state);
   }
   led_rdyledstate = state;
 }
@@ -34,7 +33,7 @@ void readled(unsigned int state) {
   if(led_pwmstate) {
     readbright(state ? CFG.led_brightness : 0);
   } else {
-    BITBAND(LED_READ_REG->FIODIR, LED_READ_BIT) = state;
+    GPIO_DIR(LED_READ_REG, LED_READ_BIT, state);
   }
   led_readledstate = state;
 }
@@ -43,7 +42,7 @@ void writeled(unsigned int state) {
   if(led_pwmstate) {
     writebright(state ? CFG.led_brightness : 0);
   } else {
-    BITBAND(LED_WRITE_REG->FIODIR, LED_WRITE_BIT) = state;
+    GPIO_DIR(LED_WRITE_REG, LED_WRITE_BIT, state);
   }
   led_writeledstate = state;
 }
@@ -102,29 +101,21 @@ void led_panic(uint8_t led_states) {
 }
 
 void led_pwm() {
-  LED_READY_PINSEL = (LED_READY_PINSEL & ~(0b11 << LED_READY_PINSELSHIFT))
-                      | (LED_READY_PINSELVAL << LED_READY_PINSELSHIFT);
-  LED_READ_PINSEL = (LED_READ_PINSEL & ~(0b11 << LED_READ_PINSELSHIFT))
-                      | (LED_READ_PINSELVAL << LED_READ_PINSELSHIFT);
-  LED_WRITE_PINSEL = (LED_WRITE_PINSEL & ~(0b11 << LED_WRITE_PINSELSHIFT))
-                      | (LED_WRITE_PINSELVAL << LED_WRITE_PINSELSHIFT);
+  GPIO_MODE_AF(LED_READY_REG, LED_READY_BIT, 2);
+  GPIO_MODE_AF(LED_READ_REG, LED_READ_BIT, 2);
+  GPIO_MODE_AF(LED_WRITE_REG, LED_WRITE_BIT, 2);
 
   BITBAND(LPC_PWM1->PCR, LED_READY_PCRBIT) = 1;
   BITBAND(LPC_PWM1->PCR, LED_READ_PCRBIT) = 1;
   BITBAND(LPC_PWM1->PCR, LED_WRITE_PCRBIT) = 1;
 
-  BITBAND(LED_READY_REG->FIODIR, LED_READY_BIT) = 1;
-  BITBAND(LED_READ_REG->FIODIR, LED_READ_BIT) = 1;
-  BITBAND(LED_WRITE_REG->FIODIR, LED_WRITE_BIT) = 1;
-
-
   led_pwmstate = 1;
 }
 
 void led_std() {
-  LED_READY_PINSEL = (LED_READY_PINSEL & ~(0b11 << LED_READY_PINSELSHIFT));
-  LED_READ_PINSEL  = (LED_READ_PINSEL  & ~(0b11 << LED_READ_PINSELSHIFT));
-  LED_WRITE_PINSEL = (LED_WRITE_PINSEL & ~(0b11 << LED_WRITE_PINSELSHIFT));
+  GPIO_MODE_AF(LED_READY_REG, LED_READY_BIT, 0);
+  GPIO_MODE_AF(LED_READ_REG, LED_READ_BIT, 0);
+  GPIO_MODE_AF(LED_WRITE_REG, LED_WRITE_BIT, 0);
 
   BITBAND(LPC_PWM1->PCR, LED_READY_PCRBIT) = 0;
   BITBAND(LPC_PWM1->PCR, LED_READ_PCRBIT) = 0;
@@ -144,6 +135,10 @@ void led_init() {
   BITBAND(LPC_PWM1->TCR, 0) = 1;
   BITBAND(LPC_PWM1->TCR, 3) = 1;
   BITBAND(LPC_PWM1->MCR, 1) = 1;
+
+  CLEAR_BIT(LED_READY_REG, LED_READY_BIT);
+  CLEAR_BIT(LED_READ_REG, LED_READ_BIT);
+  CLEAR_BIT(LED_WRITE_REG, LED_WRITE_BIT);
 }
 
 /* LED error display; gets called by systick handler every 10ms */

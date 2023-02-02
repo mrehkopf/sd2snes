@@ -2,7 +2,6 @@
 
 /* clock.c: PLL, CCLK, PCLK controls */
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "config.h"
 #include "clock.h"
 #include "bits.h"
@@ -50,7 +49,16 @@ void clock_init() {
   setCCLKDiv(CONFIG_CLK_CCLKDIV);
   setUSBCLKDiv(CONFIG_USB_DIV);
   connectPLL0();
-
+/* setup timer (fpga clk) */
+  LPC_TIM3->TCR=2;                         // counter reset
+  LPC_TIM3->CTCR=0;                        // increment TC on PCLK
+  LPC_TIM3->PR=0;                          // prescale = 1:1 (increment TC every PCLK)
+  LPC_TIM3->EMR=EMR_FPGACLK_EMCxTOGGLE;    // toggle MAT3 output every time TC == MR
+  LPC_TIM3->MCR=MCR_FPGACLK_MRxR;          // reset TC when == MR
+  TMR_FPGACLK_MR=TMR_FPGACLK_DIV;          // MR = x -> toggle MAT3 output every x+1 PCLK -> FPGA_CLK = PCLK / 2(x+1)
+  LPC_TIM3->TCR=1;                         // start the counter
+/* enable FPGA clock output */
+  GPIO_MODE_AF(FPGA_CLKREG, FPGA_CLKBIT, 3); /* MAT3.x (FPGA clock) */
 }
 
 void setFlashAccessTime(uint8_t clocks) {

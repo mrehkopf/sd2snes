@@ -1,6 +1,6 @@
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include <string.h>
 #include "config.h"
+#include "version.h"
 #include "clock.h"
 #include "uart.h"
 #include "bits.h"
@@ -69,23 +69,18 @@ uart_putc('\n');
 }
 
 int main(void) {
-  SNES_CIC_PAIR_REG->FIODIR = BV(SNES_CIC_PAIR_BIT);
-  BITBAND(SNES_CIC_PAIR_REG->FIOSET, SNES_CIC_PAIR_BIT) = 1;
+  power_init();
+  GPIO_MODE_OUT(SNES_CIC_PAIR_REG, SNES_CIC_PAIR_BIT);
+  SET_BIT(SNES_CIC_PAIR_REG, SNES_CIC_PAIR_BIT);
+  GPIO_MODE_OUT(FPGA_SSREG, FPGA_SSBIT);
 
+#ifdef DAC_DEMREG
   BITBAND(DAC_DEMREG->FIODIR, DAC_DEMBIT) = 1;
   BITBAND(DAC_DEMREG->FIOSET, DAC_DEMBIT) = 1;
-
- /* connect UART3 on P0[25:26] + SSP0 on P0[15:18] */
-  LPC_PINCON->PINSEL1 = BV(18) | BV(19) | BV(20) | BV(21) /* UART3 */
-                      | BV(3) | BV(5);                    /* SSP0 (FPGA) except SS */
-  LPC_PINCON->PINSEL0 = BV(31);                           /* SSP0 */
-  LPC_GPIO0->FIODIR = BV(16);                             /* SSP0 SS */
-
- /* pull-down CIC data lines */
-  BITBAND(SNES_CIC_D0_MODEREG, SNES_CIC_D0_MODEBIT) = 1;
-  BITBAND(SNES_CIC_D0_MODEREG, SNES_CIC_D0_MODEBIT - 1) = 1;
-  BITBAND(SNES_CIC_D1_MODEREG, SNES_CIC_D1_MODEBIT) = 1;
-  BITBAND(SNES_CIC_D1_MODEREG, SNES_CIC_D1_MODEBIT - 1) = 1;
+#endif
+  /* pull-down CIC data lines */
+  GPIO_PULLDOWN(SNES_CIC_D0_REG, SNES_CIC_D0_BIT);
+  GPIO_PULLDOWN(SNES_CIC_D1_REG, SNES_CIC_D1_BIT);
 
  /* PCLKSEL settings applied by above peripheral inits may be ineffective after
     PLL0 has been connected, so first disconnect PLL0, then do peripheral setup
@@ -93,37 +88,35 @@ int main(void) {
   clock_disconnect();
   snes_init();
   snes_reset(1);
-  power_init();
   timer_init();
   uart_init();
   fpga_spi_init();
   spi_preinit();
   led_init();
+  led_std();
  /* and setup & connect PLL0 again */
   clock_init();
 
-  FPGA_CLK_PINSEL |= BV(FPGA_CLK_PINSELBIT) | BV(FPGA_CLK_PINSELBIT - 1); /* MAT3.x (FPGA clock) */
   led_std();
   sdn_init();
 
  /* USB initialization. Not affected by PCLKSELx.1 erratum */
   USB_Init ();
   CDC_Init (0x00);
-  USB_Connect (0x01);
+  USB_Connect (1);
 
   printf("\n\n" DEVICE_NAME "\n===============\nfw ver.: " CONFIG_VERSION "\ncpu clock: %d Hz\n", CONFIG_CPU_FREQUENCY);
-printf("PCONP=%lx\n", LPC_SC->PCONP);
-
+#ifdef CONFIG_MK3_STM32
+  printf("AHB1ENR=%lx\n", RCC->AHB1ENR);
+  printf("AHB2ENR=%lx\n", RCC->AHB2ENR);
+  printf("APB1ENR=%lx\n", RCC->APB1ENR);
+  printf("APB2ENR=%lx\n", RCC->APB2ENR);
+#else
+  printf("PCONP=%lx\n", LPC_SC->PCONP);
+#endif
   file_init();
   cic_init(0);
-/* setup timer (fpga clk) */
-  LPC_TIM3->TCR=2;                         // counter reset
-  LPC_TIM3->CTCR=0;                        // increment TC on PCLK
-  LPC_TIM3->PR=0;                          // prescale = 1:1 (increment TC every PCLK)
-  LPC_TIM3->EMR=EMR_FPGACLK_EMCxTOGGLE;    // toggle MAT3 output every time TC == MR
-  LPC_TIM3->MCR=MCR_FPGACLK_MRxR;          // reset TC when == MR
-  TMR_FPGACLK_MR=1;                        // MR = 1 -> toggle MAT3 output every 2 PCLK -> FPGA_CLK = PCLK / 4
-  LPC_TIM3->TCR=1;                         // start the counter
+
   fpga_init();
   firstboot = 1;
   while(1) {

@@ -24,7 +24,6 @@
 
 */
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include <arm/bits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -220,12 +219,7 @@ static char *getline(char *prompt) {
 
 /* Reset */
 static void cmd_reset(void) {
-  /* force watchdog reset */
-  LPC_WDT->WDTC = 256; // minimal timeout
-  LPC_WDT->WDCLKSEL = BV(31); // internal RC, lock register
-  LPC_WDT->WDMOD = BV(0) | BV(1); // enable watchdog and reset-by-watchdog
-  LPC_WDT->WDFEED = 0xaa;
-  LPC_WDT->WDFEED = 0x55; // initial feed to really enable WDT
+  NVIC_SystemReset();
 }
 
 /* Show the contents of the current directory */

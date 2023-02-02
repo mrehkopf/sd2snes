@@ -24,7 +24,6 @@
 
 */
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
 #include "config.h"
 #include "spi.h"
@@ -33,19 +32,23 @@
 void spi_preinit() {
 
   /* Set clock prescaler to 1:1 */
-  BITBAND(LPC_SC->SSP_PCLKREG, SSP_PCLKBIT) = 1;
+  BITBAND(LPC_SC->SPI_PCLKREG, SPI_PCLKBIT) = 1;
 }
 
 void spi_init() {
 
+  GPIO_MODE_AF(SPI_SCLKREG, SPI_SCLKBIT, 2);
+  GPIO_MODE_AF(SPI_MISOREG, SPI_MISOBIT, 2);
+  GPIO_MODE_AF(SPI_MOSIREG, SPI_MOSIBIT, 2);
+
   /* configure data format - 8 bits, SPI, CPOL=0, CPHA=0, 1 clock per bit */
-  SSP_REGS->CR0 = (8-1);
+  SPI_REGS->CR0 = (8-1);
 
   /* set clock prescaler */
-  SSP_REGS->CPSR = SSP_CLK_DIVISOR;
+  SPI_REGS->CPSR = SSP_CLK_DIVISOR;
 
   /* Enable SSP */
-  SSP_REGS->CR1 = BV(1);
+  SPI_REGS->CR1 = BV(1);
 
   /* Enable DMA controller, little-endian mode */
   BITBAND(LPC_SC->PCONP, 29) = 1;
@@ -54,49 +57,49 @@ void spi_init() {
 
 void spi_tx_sync() {
   /* Wait until TX fifo is flushed */
-  while (BITBAND(SSP_REGS->SR, SSP_BSY)) ;
+  while (BITBAND(SPI_REGS->SR, SPI_BSY)) ;
 }
 
 void spi_tx_byte(uint8_t data) {
   /* Wait until TX fifo can accept data */
-  while (!BITBAND(SSP_REGS->SR, SSP_TNF)) ;
+  while (!BITBAND(SPI_REGS->SR, SPI_TNF)) ;
 
   /* Send byte */
-  SSP_REGS->DR = data;
+  SPI_REGS->DR = data;
 }
 
 uint8_t spi_txrx_byte(uint8_t data) {
   /* Wait until SSP is not busy */
-  while (BITBAND(SSP_REGS->SR, SSP_BSY)) ;
+  while (BITBAND(SPI_REGS->SR, SPI_BSY)) ;
 
   /* Clear RX fifo */
-  while (BITBAND(SSP_REGS->SR, SSP_RNE))
-    (void) SSP_REGS->DR;
+  while (BITBAND(SPI_REGS->SR, SPI_RNE))
+    (void) SPI_REGS->DR;
 
   /* Transmit a single byte */
-  SSP_REGS->DR = data;
+  SPI_REGS->DR = data;
 
   /* Wait until answer has been received */
-  while (!BITBAND(SSP_REGS->SR, SSP_RNE)) ;
+  while (!BITBAND(SPI_REGS->SR, SPI_RNE)) ;
 
-  return SSP_REGS->DR;
+  return SPI_REGS->DR;
 }
 
 uint8_t spi_rx_byte() {
   /* Wait until SSP is not busy */
-  while (BITBAND(SSP_REGS->SR, SSP_BSY)) ;
+  while (BITBAND(SPI_REGS->SR, SPI_BSY)) ;
 
   /* Clear RX fifo */
-  while (BITBAND(SSP_REGS->SR, SSP_RNE))
-    (void) SSP_REGS->DR;
+  while (BITBAND(SPI_REGS->SR, SPI_RNE))
+    (void) SPI_REGS->DR;
 
   /* Transmit a single dummy byte */
-  SSP_REGS->DR = 0xff;
+  SPI_REGS->DR = 0xff;
 
   /* Wait until answer has been received */
-  while (!BITBAND(SSP_REGS->SR, SSP_RNE)) ;
+  while (!BITBAND(SPI_REGS->SR, SPI_RNE)) ;
 
-  return SSP_REGS->DR;
+  return SPI_REGS->DR;
 }
 
 void spi_tx_block(const void *ptr, unsigned int length) {
@@ -104,9 +107,9 @@ void spi_tx_block(const void *ptr, unsigned int length) {
 
   while (length--) {
   /* Wait until TX fifo can accept data */
-    while (!BITBAND(SSP_REGS->SR, SSP_TNF)) ;
+    while (!BITBAND(SPI_REGS->SR, SPI_TNF)) ;
 
-    SSP_REGS->DR = *data++;
+    SPI_REGS->DR = *data++;
   }
 }
 
@@ -115,29 +118,29 @@ void spi_rx_block(void *ptr, unsigned int length) {
   unsigned int txlen = length;
 
   /* Wait until SSP is not busy */
-  while (BITBAND(SSP_REGS->SR, SSP_BSY)) ;
+  while (BITBAND(SPI_REGS->SR, SPI_BSY)) ;
 
   /* Clear RX fifo */
-  while (BITBAND(SSP_REGS->SR, SSP_RNE))
-    (void) SSP_REGS->DR;
+  while (BITBAND(SPI_REGS->SR, SPI_RNE))
+    (void) SPI_REGS->DR;
 
   if ((length & 3) != 0 || ((uint32_t)ptr & 3) != 0) {
     /* Odd length or unaligned buffer */
     while (length > 0) {
       /* Wait until TX or RX FIFO are ready */
-      while (txlen > 0 && !BITBAND(SSP_REGS->SR, SSP_TNF) &&
-             !BITBAND(SSP_REGS->SR, SSP_RNE)) ;
+      while (txlen > 0 && !BITBAND(SPI_REGS->SR, SPI_TNF) &&
+             !BITBAND(SPI_REGS->SR, SPI_RNE)) ;
 
       /* Try to receive data */
-      while (length > 0 && BITBAND(SSP_REGS->SR, SSP_RNE)) {
-        *data++ = SSP_REGS->DR;
+      while (length > 0 && BITBAND(SPI_REGS->SR, SPI_RNE)) {
+        *data++ = SPI_REGS->DR;
         length--;
       }
 
       /* Send dummy data until TX full or RX ready */
-      while (txlen > 0 && BITBAND(SSP_REGS->SR, SSP_TNF) && !BITBAND(SSP_REGS->SR, SSP_RNE)) {
+      while (txlen > 0 && BITBAND(SPI_REGS->SR, SPI_TNF) && !BITBAND(SPI_REGS->SR, SPI_RNE)) {
         txlen--;
-        SSP_REGS->DR = 0xff;
+        SPI_REGS->DR = 0xff;
       }
     }
   } else {
@@ -146,10 +149,10 @@ void spi_rx_block(void *ptr, unsigned int length) {
     LPC_GPDMA->DMACIntErrClr  = BV(0);
 
     /* Set up RX DMA channel */
-    SSP_DMACH->DMACCSrcAddr  = (uint32_t)&SSP_REGS->DR;
-    SSP_DMACH->DMACCDestAddr = (uint32_t)ptr;
-    SSP_DMACH->DMACCLLI      = 0; // no linked list
-    SSP_DMACH->DMACCControl  = length
+    SPI_DMACH->DMACCSrcAddr  = (uint32_t)&SPI_REGS->DR;
+    SPI_DMACH->DMACCDestAddr = (uint32_t)ptr;
+    SPI_DMACH->DMACCLLI      = 0; // no linked list
+    SPI_DMACH->DMACCControl  = length
       | (0 << 12) // source burst size 1 (FIXME: Check if larger possible/useful)
       | (0 << 15) // destination burst size 1
       | (0 << 18) // source transfer width 1 byte
@@ -157,27 +160,27 @@ void spi_rx_block(void *ptr, unsigned int length) {
       | (0 << 26) // source address not incremented
       | (1 << 27) // destination address incremented
       ;
-    SSP_DMACH->DMACCConfig = 1 // enable channel
-      | (SSP_DMAID_RX << 1) // data source SSP RX
+    SPI_DMACH->DMACCConfig = 1 // enable channel
+      | (SPI_DMAID_RX << 1) // data source SSP RX
       | (2 << 11) // transfer from peripheral to memory
       ;
 
     /* Enable RX FIFO DMA */
-    SSP_REGS->DMACR = 1;
+    SPI_REGS->DMACR = 1;
 
     /* Write <length> bytes into TX FIFO */
     // FIXME: Any value in doing this using DMA too?
     while (txlen > 0) {
-      while (txlen > 0 && BITBAND(SSP_REGS->SR, SSP_TNF)) {
+      while (txlen > 0 && BITBAND(SPI_REGS->SR, SPI_TNF)) {
         txlen--;
-        SSP_REGS->DR = 0xff;
+        SPI_REGS->DR = 0xff;
       }
     }
 
     /* Wait until DMA channel disables itself */
-    while (SSP_DMACH->DMACCConfig & 1) ;
+    while (SPI_DMACH->DMACCConfig & 1) ;
 
     /* Disable RX FIFO DMA */
-    SSP_REGS->DMACR = 0;
+    SPI_REGS->DMACR = 0;
   }
 }

@@ -26,8 +26,8 @@
 
 #ifndef FILEOPS_H
 #define FILEOPS_H
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include <stdio.h>
+#include <stdint.h>
 #include "ff.h"
 
 enum filestates { FILE_OK=0, FILE_ERR, FILE_EOF };

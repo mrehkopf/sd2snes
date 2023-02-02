@@ -1,7 +1,7 @@
 #ifndef RLE_H
 #define RLE_H
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
+#include <stdint.h>
 
 #define RLE_ESC     (0x9b)
 #define RLE_RUN     (0x5b)

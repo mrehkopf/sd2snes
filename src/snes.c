@@ -24,7 +24,6 @@
    snes.c: SNES hardware control and monitoring
 */
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include <string.h>
 #include "bits.h"
 #include "config.h"
@@ -125,7 +124,7 @@ void prepare_reset() {
 
 void snes_init() {
   /* put reset level on reset pin */
-  BITBAND(SNES_RESET_REG->FIOCLR, SNES_RESET_BIT) = 1;
+  CLEAR_BIT(SNES_RESET_REG, SNES_RESET_BIT);
   /* reset the SNES */
   snes_reset(1);
 }
@@ -142,7 +141,7 @@ void snes_reset_pulse() {
  *  state: put SNES in reset state when 1, release when 0
  */
 void snes_reset(int state) {
-  BITBAND(SNES_RESET_REG->FIODIR, SNES_RESET_BIT) = state;
+  GPIO_DIR(SNES_RESET_REG, SNES_RESET_BIT, state);
 }
 
 /*
@@ -201,7 +200,7 @@ snes_reset_loop_out:
  * returns: 1 when reset, 0 when not reset
  */
 uint8_t get_snes_reset() {
-  return !BITBAND(SNES_RESET_REG->FIOPIN, SNES_RESET_BIT);
+  return !BITBAND(SNES_RESET_REG->GPIO_I, SNES_RESET_BIT);
 }
 
 uint8_t get_snes_reset_state(void) {

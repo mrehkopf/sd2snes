@@ -24,12 +24,12 @@
    usbinterface.c: usb packet interface handler
 */
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include <string.h>
 #include <libgen.h>
 #include <stdlib.h>
 #include "bits.h"
 #include "config.h"
+#include "version.h"
 #include "uart.h"
 #include "snes.h"
 #include "memory.h"
@@ -43,6 +43,7 @@
 #include "fpga.h"
 #include "fpga_spi.h"
 #include "usbinterface.h"
+#include "usbhw.h"
 #include "rtc.h"
 #include "cfg.h"
 #include "cdcuser.h"
@@ -251,7 +252,7 @@ void usbint_recv_flit(const unsigned char *in, int length) {
         // There's a race with NORESP where the data can show up before we have setup the handler.  If it does this then
         // the old code would skip receiving the flit and it would hang because the interrupt handler wouldn't be called again
         // To avoid that we disable the handler here and let the menu loop re-enable it when we have it locked.
-        if (!cmdDat_old && cmdDat) NVIC_DisableIRQ(USB_IRQn);
+        if (!cmdDat_old && cmdDat) USB_DisableIRQ();
         
         // FIXME: implement proper circular queue.
         
@@ -371,7 +372,7 @@ void usbint_recv_block(void) {
             //PRINT_STATE(server_state);
             if (server_state == USBINT_SERVER_STATE_HANDLE_LOCK) {
                 // disable interrupts again to let the command loop finish
-                NVIC_DisableIRQ(USB_IRQn);
+                USB_DisableIRQ();
                 server_state = USBINT_SERVER_STATE_IDLE;
             }            
             //PRINT_STATE(server_state);
@@ -724,7 +725,7 @@ int usbint_handler_cmd(void) {
     if (server_info.opcode == USBINT_SERVER_OPCODE_PUT || server_info.opcode == USBINT_SERVER_OPCODE_VPUT) {
         // allow the data to come in
         dataWait = 1;
-        NVIC_EnableIRQ(USB_IRQn); 
+        USB_EnableIRQ();
     }
     
     // lock process.  this avoids a conflict with the rest of the menu accessing the file system or sram
@@ -737,17 +738,12 @@ int usbint_handler_cmd(void) {
 	}
     
     // allow next command to come after prior data
-    if (dataWait) NVIC_EnableIRQ(USB_IRQn);
-    
+    if (dataWait) USB_EnableIRQ();
+
     if (server_info.opcode == USBINT_SERVER_OPCODE_POWER_CYCLE) {
-        /* force watchdog reset */
-        LPC_WDT->WDTC = 256; // minimal timeout
-        LPC_WDT->WDCLKSEL = BV(31); // internal RC, lock register
-        LPC_WDT->WDMOD = BV(0) | BV(1); // enable watchdog and reset-by-watchdog
-        LPC_WDT->WDFEED = 0xaa;
-        LPC_WDT->WDFEED = 0x55; // initial feed to really enable WDT
+        NVIC_SystemReset();
     }
-    
+
     return ret;
 
 }

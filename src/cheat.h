@@ -21,7 +21,7 @@
  *     1 byte : patch value
  */
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
+#include CONFIG_MCU_H
 
 #define CHEAT_BASEDIR   ("/sd2snes/cheats/")
 

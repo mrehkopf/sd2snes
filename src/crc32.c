@@ -16,8 +16,7 @@
  *****************************************************************************/
 #include "crc32.h"
 #include "config.h"
-#include <arm/NXP/LPC17xx/LPC17xx.h>
-#include <stdlib.h>
+#include <stdint.h>
 
 /**
  * Static table used for the table_driven implementation.

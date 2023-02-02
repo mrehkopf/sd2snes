@@ -65,7 +65,7 @@
         except  QEI_IRQHandler
         except  PLL1_IRQHandler
 
-        .section .text
+        .section .init
 
         .global _start
         .thumb_func
