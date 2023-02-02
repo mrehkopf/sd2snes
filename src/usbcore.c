@@ -174,8 +174,10 @@ void USB_DataOutStage (void) {
   uint32_t cnt;
 
   cnt = USB_ReadEP(0x00, EP0Data.pData);
+  DBG_USBHW printf("USB_DataOutStage EP0.pData=%p count=%d, new: ", EP0Data.pData, EP0Data.Count);
   EP0Data.pData += cnt;
   EP0Data.Count -= cnt;
+  DBG_USBHW printf("pData=%p count=%d\n", EP0Data.pData, EP0Data.Count);
 }
 
 
@@ -186,6 +188,7 @@ void USB_DataOutStage (void) {
  */
 
 void USB_StatusInStage (void) {
+  DBG_USBHW printf("Sending ZLP as Status Data (after Setup with OUT/none Data Stage)\n");
   USB_WriteEP(0x80, (void*)0, 0);
 }
 
@@ -342,10 +345,12 @@ static inline uint32_t USB_ReqGetDescriptor (void) {
     case REQUEST_TO_DEVICE:
       switch (SetupPacket.wValue.WB.H) {
         case USB_DEVICE_DESCRIPTOR_TYPE:
+          DBG_USBHW printf("Get Device Descriptor\n");
           EP0Data.pData = (uint8_t *)USB_DeviceDescriptor;
           len = USB_DEVICE_DESC_SIZE;
           break;
         case USB_CONFIGURATION_DESCRIPTOR_TYPE:
+          DBG_USBHW printf("Get Config Descriptor\n");
           pD = (uint8_t *)USB_ConfigDescriptor;
           for (n = 0; n != SetupPacket.wValue.WB.L; n++) {
             if (((USB_CONFIGURATION_DESCRIPTOR *)pD)->bLength != 0) {
@@ -359,6 +364,7 @@ static inline uint32_t USB_ReqGetDescriptor (void) {
           len = ((USB_CONFIGURATION_DESCRIPTOR *)pD)->wTotalLength;
           break;
         case USB_STRING_DESCRIPTOR_TYPE:
+          DBG_USBHW printf("Get String Descriptor Index=%d\n", SetupPacket.wValue.WB.L);
           pD = (uint8_t *)USB_StringDescriptor;
           for (n = 0; n != SetupPacket.wValue.WB.L; n++) {
             if (((USB_STRING_DESCRIPTOR *)pD)->bLength != 0) {
@@ -372,6 +378,7 @@ static inline uint32_t USB_ReqGetDescriptor (void) {
           len = ((USB_STRING_DESCRIPTOR *)EP0Data.pData)->bLength;
           break;
         default:
+          DBG_USBHW printf("Unknown Descriptor Request %02x\n", SetupPacket.wValue.WB.H);
           return (0);
       }
       break;
@@ -640,6 +647,7 @@ void USB_EndPoint0 (uint32_t event) {
       USB_SetupStage();
       USB_DirCtrlEP(SetupPacket.bmRequestType.BM.Dir);
       EP0Data.Count = SetupPacket.wLength;     /* Number of bytes to transfer */
+      DBG_USBHW printf("wLength=%d\n", SetupPacket.wLength);
       switch (SetupPacket.bmRequestType.BM.Type) {
 
         case REQUEST_STANDARD:
@@ -698,6 +706,7 @@ void USB_EndPoint0 (uint32_t event) {
               break;
 
             case USB_REQUEST_SET_CONFIGURATION:
+              DBG_USBHW printf("SetConfiguration\n");
               if (!USB_ReqSetConfiguration()) {
                 goto stall_i;
               }
@@ -715,6 +724,7 @@ void USB_EndPoint0 (uint32_t event) {
               break;
 
             case USB_REQUEST_SET_INTERFACE:
+              DBG_USBHW printf("SetInterface\n");
               if (!USB_ReqSetInterface()) {
                 goto stall_i;
               }
@@ -1096,6 +1106,7 @@ out_class_ok:                                                            /* requ
           }
         }
       } else {
+        DBG_USBHW printf("USB_StatusOutStage\n");
         USB_StatusOutStage();                                            /* receive Acknowledge */
       }
       break;  /* end case USB_EVT_OUT */
