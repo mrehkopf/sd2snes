@@ -223,7 +223,7 @@ build: elf bin hex
 	$(E) "  SIZE   $(TARGET).elf"
 	$(Q)$(ELFSIZE)|grep -v debug
 	cp $(TARGET).bin $(OBJDIR)/$(CONFIG_FW_FILE)
-	utils/genhdr $(OBJDIR)/$(CONFIG_FW_FILE) $(CONFIG_FW_MAGIC) $(CONFIG_VERSION)
+	utils/genhdr -s $(CONFIG_FW_MAGIC) -v $(CONFIG_VERSION) -h $(CONFIG_FW_HEADERSIZE) $(OBJDIR)/$(CONFIG_FW_FILE)
 
 elf: $(TARGET).elf
 bin: $(TARGET).bin

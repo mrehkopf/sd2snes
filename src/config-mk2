@@ -10,6 +10,7 @@ CONFIG_FW_START = 8192
 CONFIG_FLASH_SIZE = 131072
 CONFIG_FW_MAGIC = SNSD
 CONFIG_CFGWARE = ../verilog/sd2snes_mini/fpga_mini.bit
+FW_HEADERSIZE = 0x100
 
 DEBUG_FS         = n
 DEBUG_SD         = n
