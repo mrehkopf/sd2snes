@@ -126,6 +126,9 @@ void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
 void prepare_data(uint32_t msu_offset) {
   uint32_t msu_sect = msu_offset & ~0x1ff;
   uint32_t msu_sect_offset = msu_offset & 0x1ff;
+  static int seekcount = 0;
+  static tick_t lasttime = 0;
+  tick_t now;
 
   msu_data_usage = MSU_IDLE;
   if(is_msu_free_to_save()) {
@@ -137,6 +140,18 @@ void prepare_data(uint32_t msu_offset) {
      || (msu_offset >= msu_page1_start + MSU_DATA_BUFSIZE / 2))
      && ((msu_offset < msu_page2_start)
      || (msu_offset >= msu_page2_start + MSU_DATA_BUFSIZE / 2))) {
+    seekcount++;
+    if(!lasttime) {
+      lasttime = getticks();
+    } else {
+      if((now = getticks()) >= lasttime + MS_TO_TICKS(1000)) {
+        tick_t deltatime = now - lasttime;
+        int seekrate = 100 * seekcount / deltatime;
+        DBG_MSU1 printf("seek rate: %d per second\n", seekrate);
+        seekcount = 0;
+        lasttime = now;
+      }
+    }
     DBG_MSU1 printf("offset %08lx out of range (%08lx-%08lx, %08lx-%08lx), reload\n", msu_offset, msu_page1_start,
            msu_page1_start + MSU_DATA_BUFSIZE / 2 - 1, msu_page2_start, msu_page2_start + MSU_DATA_BUFSIZE / 2 - 1);
     /* "cache miss" - fill buffer */
