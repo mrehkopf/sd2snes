@@ -24,6 +24,7 @@
 typedef struct _USB_EP_DATA {
   uint8_t  *pData;
   uint16_t Count;
+  uint8_t FinalZLP;
 } USB_EP_DATA;
 
 /* USB Core Global Variables */
