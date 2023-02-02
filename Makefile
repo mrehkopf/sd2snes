@@ -31,7 +31,8 @@ MK3CLEAN := $(foreach C,$(MK3CORES) mini,$(FPGAPATH)/sd2snes_$C/.clean.$(MK3EXT)
 
 UTILS := utils
 
-include src/VERSION
+-include src/VERSION
+include src/version.mk
 
 TARGETPARENT := release/v$(CONFIG_VERSION)
 TARGET := $(TARGETPARENT)/sd2snes

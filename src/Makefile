@@ -69,7 +69,8 @@ export FW_FILE=$(OBJDIR)/$(CONFIG_FW_FILE)
 export FLASH_SIZE=$(CONFIG_FLASH_SIZE)
 
 # Version
-include VERSION
+-include VERSION
+include version.mk
 
 # List C source files here. (C dependencies are automatically generated.)
 SRC  = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c
@@ -241,11 +242,20 @@ reset:
 # Display size of file.
 ELFSIZE = $(SIZE) -A $(TARGET).elf
 
+# Generate version.h
+.PRECIOUS : $(OBJDIR)/version.h
+$(OBJDIR)/version.h: .ARG_VERSION | $(OBJDIR)
+	$(E) "  VERSION $(CONFIG_VERSION)"
+	$(Q)printf "#ifndef __VERSION_H\n"\
+"#define __VERSION_H\n"\
+"#define CONFIG_VERSION \"$(CONFIG_VERSION)\"\n"\
+"#endif" > $(OBJDIR)/version.h
+
 # Generate autoconf.h from config
 .PRECIOUS : $(OBJDIR)/autoconf.h
-$(OBJDIR)/autoconf.h: $(CONFIG) VERSION | $(OBJDIR)
+$(OBJDIR)/autoconf.h: $(CONFIG) | $(OBJDIR)
 	$(E) "  CONF2H $(CONFIG)"
-	$(Q)$(AWK) -f conf2h.awk $(CONFIG) VERSION > $(OBJDIR)/autoconf.h
+	$(Q)$(AWK) -f conf2h.awk $(CONFIG) > $(OBJDIR)/autoconf.h
 
 # Generate embedded FPGA config from finished bitfile
 .PRECIOUS : $(OBJDIR)/cfgware.h
@@ -308,7 +318,7 @@ $(OBJDIR)/%.o : %.c | $(OBJDIRS) $(OBJDIR)/autoconf.h $(OBJDIR)/cfgware.h $(OBJD
 
 
 # Compile: create assembler files from C source files.
-$(OBJDIR)/%.s : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h $(OBJDIR)/cfgware.h
+$(OBJDIR)/%.s : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h $(OBJDIR)/cfgware.h $(OBJDIR)/version.h
 	$(CC) -S $(ALL_CFLAGS) $< -o $@
 
 
@@ -318,7 +328,7 @@ $(OBJDIR)/%.o : %.S | $(OBJDIR) $(OBJDIR)/autoconf.h
 	$(Q)$(CC) -c $(ALL_ASFLAGS) $< -o $@
 
 # Create preprocessed source for use in sending a bug report.
-$(OBJDIR)/%.i : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h $(OBJDIR)/cfgware.h
+$(OBJDIR)/%.i : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h $(OBJDIR)/cfgware.h $(OBJDIR)/version.h
 	$(CC) -E -mmcu=$(MCU) -I. $(CFLAGS) $< -o $@
 
 # Create the output directory
@@ -342,7 +352,7 @@ clean_list :
 	$(Q)$(REMOVE) $(OBJ)
 	$(Q)$(REMOVE) $(OBJDIR)/autoconf.h
 	$(Q)$(REMOVE) $(OBJDIR)/cfgware.h
-	$(Q)$(REMOVE) $(OBJDIR)/*.bin
+	$(Q)$(REMOVE) $(OBJDIR)/version.h
 	$(Q)$(REMOVE) $(OBJDIR)/${CONFIG_FW_FILE}
 	$(Q)$(REMOVE) $(OBJDIR)/fw.hdr
 	$(Q)$(REMOVE) $(OBJDIR)/.DS_Store
