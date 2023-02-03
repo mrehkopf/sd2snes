@@ -7,8 +7,11 @@
 # L R = Shoulder buttons
 
 # CKSUM: SAVE,LOAD
-EF80: XR,XL     #dkc1 v1.1 (US)
-2BCC: XR,XL     #dkc1 v1.1 (US)
+A109: XR,XL     #dkc1 v1.0 (EU)
+53B7: XR,XL     #dkc1 v1.1 (EU)
+EF80: XR,XL     #dkc1 v1.0 (US)
+D17C: XR,XL     #dkc1 v1.1 (US)
+2BCC: XR,XL     #dkc1 v1.2 (US)
 0C17: XR,XL     #dkc1 v1.0 (JP)
 1202: XR,XL     #dkc2 (US)
 9860: XR,XL     #dkc2 (US)
