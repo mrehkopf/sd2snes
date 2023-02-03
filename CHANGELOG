@@ -1,3 +1,31 @@
+v1.11.0
+=======
+ * [Pro] Add hardware support for FXPAK Pro Rev.D
+ * [All] USB (usb2snes) support by RedGuy
+ * [All] SGB support by Redacted173
+ * [All] save state support (via USB/savestate2snes) by RedGuy, based on code
+         by acmlm, total, Myria
+ * [All] stand-alone save state features by FURiOUS, with compatibility
+         improvements by ikari_01
+ * [All] favorite games list by freelancer42
+ * **NOTE**: save states are currently only available on games without
+         expansion chips.
+ * fixes:
+   - [All] Fixed data caching bug in MSU1 data extension which could cause wrong
+           data to be streamed
+   - [All] Savestates: do not try to capture data that is already in cartridge
+           space anyway (e.g. SRAM). Fixes text distortion in Near’s Bahamut
+           Lagoon translation when loading a state.
+   - [All] Fixed YAML config parser to support comment signs after list start
+           items
+   - [All] Fixed SNES open-bus contamination (fixes sprite flickering in Near’s
+           Bahamut Lagoon translation, certain speed runs that rely on open bus
+           behaviour)
+   - [All] (hopefully) fixed rapid data line toggling sometimes resulting in
+           address line glitches, causing random crashes in extreme cases, and
+           occasional garbled graphics on SMRPG among others
+   - [All] Fixed data integrity problems when loading BSX games
+
 v1.10.3
 =======
  * fixes:
