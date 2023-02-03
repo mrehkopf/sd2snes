@@ -69,7 +69,7 @@ int is_msu_free_to_save() {
  */
 void msu_savecheck(int immediate) {
   uint32_t currentcrc;
-  if(immediate || (getticks() > msu_last_sram_check + 100)) {
+  if(immediate || (getticks() > msu_last_sram_check + MS_TO_TICKS(1000))) {
     currentcrc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes, 0);
     if(msu_last_crc != currentcrc) {
       writeled(1);
