@@ -9,14 +9,18 @@ T = @echo -e "\e]0;$(1)\a"
 # these are relative to the core subdir, not the path of common.mk
 XILINX_XST_TMPDIR := "xst/projnav.tmp"
 XILINX_SCRIPTS := "../xilinx_scripts"
-
 mkpath = $(subst $(eval) ,:,$(wildcard $1))
-XILINX := $(XILINX_HOME)/ISE
-XILINX_EDK := $(XILINX_HOME)/EDK
-XILINX_PLANAHEAD := $(XILINX_HOME)/PlanAhead
-XILINX_DSP := $(XILINX_HOME)/ISE
+
 XILINX_PATH := $(patsubst %,$(XILINX_HOME)/%,$(XILINX_PATHS))
-XILINX_PART = $(shell $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgetpartname.tcl sd2snes_$(CORE).xise)
+
+ifeq ($(HOST),LINUX)
+	XILINX_SETTINGS := $(shell . $(XILINX_HOME)/settings64.sh)
+else
+	XILINX := $(XILINX_HOME)/ISE
+	XILINX_EDK := $(XILINX_HOME)/EDK
+	XILINX_PLANAHEAD := $(XILINX_HOME)/PlanAhead
+	XILINX_DSP := $(XILINX_HOME)/ISE
+endif
 
 # make pretty Windows style paths for SmartXplorer...
 ifeq ($(HOST),CYGWIN)
@@ -27,7 +31,12 @@ ifeq ($(HOST),CYGWIN)
 	XILINX_PATH := $(shell cygpath $(XILINX_PATH))
 endif
 
+ifeq ($(HOST),WSL)
+	WSL := MSYS2_ARG_CONV_EXCL='*' wsl . $(XILINX_HOME)/settings64.sh \> /dev/null \;
+endif
+
 XILINX_PATH := $(call mkpath,$(XILINX_PATH))
+XILINX_PART = $(shell $(WSL) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgetpartname.tcl sd2snes_$(CORE).xise)
 
 # prepare source lists
 VSRC := $(sort $(VSRC))
@@ -66,9 +75,9 @@ mk2s: smartxplorer
 smartxplorer: main.ngd currentProps.stratfile hostlistfile.txt
 	rm -rf smartxplorer_results
 	PATH="$(XILINX_PATH)":"$(PATH)"; \
-	export XILINX="$(XILINX)" XILINX_DSP="$(XILINX_DSP)" XILINX_EDK="$(XILINX_EDK)" XILINX_PLANAHEAD="$(XILINX_PLANAHEAD)"; \
+	export XILINX="$(XILINX)" XILINX_DSP="$(XILINX_DSP)" XILINX_EDK="$(XILINX_EDK)" XILINX_PLANAHEAD="$(XILINX_PLANAHEAD)" XILINX_PATH="$(XILINX_PATH)"; \
 	echo "Running SmartXPlorer. Check smartxplorer_results/smartxplorer.html for progress."; \
-	$(XILINX_BIN)/smartxplorer -p $(XILINX_PART) -b -wd smartxplorer_results main.ngd -to "-v 3 -s 4 -n 3 -fastpaths -xml main.twx -ucf $(UCF)" $(XPLORER_PARAMS) \
+	$(WSL) $(XILINX_BIN)/smartxplorer -p $(XILINX_PART) -b -wd smartxplorer_results main.ngd -to "-v 3 -s 4 -n 3 -fastpaths -xml main.twx -ucf $(UCF)" $(XPLORER_PARAMS) \
 	&& (while true; do \
 		touch $@; \
 		export SX_RUN=`grep "Run index" smartxplorer_results/smartxplorer.log | sed -e 's/^.*\:.*run\([0-9]\+\).*$$/\1/g'`; \
@@ -88,32 +97,32 @@ main.ngc: main.xst main.prj
 	$(call T,[mk2] fpga_$(CORE) - Synthesize)
 	rm -f $@
 	mkdir -p $(XILINX_XST_TMPDIR)
-	$(XILINX_BIN)/xst -ifn main.xst -ofn main.syr
+	$(WSL) $(XILINX_BIN)/xst -ifn main.xst -ofn main.syr
 
 main.ngd: main.ngc $(XIL_IP)
 	$(call T,[mk2] fpga_$(CORE) - Translate)
-	$(XILINX_BIN)/ngdbuild -dd _ngo -sd $(XIL_IPCORE_DIR) -nt timestamp -uc $(UCF) -p $(XILINX_PART) $< $@
+	$(WSL) $(XILINX_BIN)/ngdbuild -dd _ngo -sd $(XIL_IPCORE_DIR) -nt timestamp -uc $(UCF) -p $(XILINX_PART) $< $@
 
 main_map.ncd: main.ngd
 	$(call T,[mk2] fpga_$(CORE) - Map)
-	$(eval XILINX_MAP_OPTS := $(shell $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenmapcmd.tcl sd2snes_$(CORE).xise))
-	$(XILINX_BIN)/map -p $(XILINX_PART) $(XILINX_MAP_OPTS) -o $@ $^ main.pcf
+	$(eval XILINX_MAP_OPTS := $(shell $(WSL) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenmapcmd.tcl sd2snes_$(CORE).xise))
+	$(WSL) $(XILINX_BIN)/map -p $(XILINX_PART) $(XILINX_MAP_OPTS) -o $@ $^ main.pcf
 
 main.ncd: main_map.ncd
 	$(call T,[mk2] fpga_$(CORE) - Place and Route)
-	$(eval XILINX_PAR_OPTS := $(shell $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenparcmd.tcl sd2snes_$(CORE).xise))
-	$(XILINX_BIN)/par -w $(XILINX_PAR_OPTS) $^ $@ main.pcf
+	$(eval XILINX_PAR_OPTS := $(shell $(WSL) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenparcmd.tcl sd2snes_$(CORE).xise))
+	$(WSL) $(XILINX_BIN)/par -w $(XILINX_PAR_OPTS) $^ $@ main.pcf
 	@! grep -q 'Timing Score: [1-9][0-9]*' main.par || (echo "[mk2] sd2snes_$(CORE): Timing not met! Aborting."; exit 55)
 
 main.bit: main.ncd main.ut
 	$(call T,[mk2] fpga_$(CORE) - Generate Programming File)
-	$(XILINX_BIN)/bitgen -f main.ut $<
+	$(WSL) $(XILINX_BIN)/bitgen -f main.ut $<
 	$(call T)
 
 # IP Core regeneration
 $(XIL_IPCORE_DIR)/%.ngc: $(XIL_IPCORE_DIR)/%.xco | $(XIL_IPCORE_DIR)/coregen.cgc
 	$(call T,[mk2] fpga_$(CORE) - Regenerate IP Cores)
-	$(XILINX_BIN)/coregen -p $(XIL_IPCORE_DIR) -b $< -r
+	$(WSL) $(XILINX_BIN)/coregen -p $(XIL_IPCORE_DIR) -b $< -r
 
 # ## Supplementary files required for Xilinx processes ##
 # PRJ file - basically a list of files that comprise the project
@@ -124,15 +133,15 @@ main.prj: $(XIL_IP) $(VSRC) $(VHSRC) $(HEADER)
 
 # XST file - list of command line options for the synthesis tool (xst)
 main.xst: sd2snes_$(CORE).xise main.prj
-	$(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenxstfile.tcl $< $@ main.prj $(XIL_IPCORE_DIR) $(XILINX_XST_TMPDIR)
+	$(WSL) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenxstfile.tcl $< $@ main.prj $(XIL_IPCORE_DIR) $(XILINX_XST_TMPDIR)
 
 # UT file - list of command line options for the bit file generator (bitgen)
 main.ut: sd2snes_$(CORE).xise
-	$(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenbitgenfile.tcl $^ $@
+	$(WSL) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenbitgenfile.tcl $^ $@
 
 # Generate Strategy file for SmartXPlorer
 currentProps.stratfile: sd2snes_$(CORE).xise
-	$(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenstratfile.tcl sd2snes_$(CORE).xise
+	$(WSL) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenstratfile.tcl sd2snes_$(CORE).xise
 
 # Generate host list file for SmartXPlorer (enable parallel operation)
 hostlistfile.txt:
