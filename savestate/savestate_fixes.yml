@@ -107,3 +107,17 @@ B856: 7E1D15,2141 # Bahamut Lagoon (J)
 ACCC: 7E1D15,2141 # Bahamut Lagoon (T+Eng1.1_Near)
 414C: 7E1D15,2141 # Bahamut Lagoon (T+Eng1.2_Near)
 F5E1: 0000B1,2140 # Super Morph (E)
+C971: 0000FE,2143 # Captain America and the Avengers (US)
+3703: 0000F6,2140 # The Terminator (US)
+F834: 001D00,2140 # Shadowrun (US)
+7473: 7E96A2,2140 # Dragon Quest III (JP, T+Eng1.1_DQT)
+E3DA: # Dragon Quest V (T+Eng 2.01F)
+  - 002140,00
+  - 0008D8,00
+  - 0008DA,00
+  - 0008DC,00
+BAF9: # Dragon Quest V (JP)
+  - 002140,00
+  - 0008D8,00
+  - 0008DA,00
+  - 0008DC,00
