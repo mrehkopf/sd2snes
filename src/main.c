@@ -84,6 +84,9 @@ int main(void) {
   GPIO_PULLDOWN(SNES_CIC_D0_REG, SNES_CIC_D0_BIT);
   GPIO_PULLDOWN(SNES_CIC_D1_REG, SNES_CIC_D1_BIT);
 
+  /* pull-up SuperCIC status line so missing CIC clock doesn't result in lockup */
+  GPIO_PULLUP(SNES_CIC_STATUS_REG, SNES_CIC_STATUS_BIT);
+
  /* PCLKSEL settings applied by above peripheral inits may be ineffective after
     PLL0 has been connected, so first disconnect PLL0, then do peripheral setup
     Erratum ES_LPC175x - PCLKSELx.1 */
