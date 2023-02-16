@@ -57,8 +57,8 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0cheat\0fpgaconf\0chipfeat\0bsregs\0gameloop\0dacboost\0cat\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_EXIT, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16, CMD_MEMSET, CMD_CHEAT, CMD_FPGACONF, CMD_CHIPFEAT, CMD_BSREGS, CMD_GAMELOOP, CMD_DACBOOST, CMD_CAT };
+  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0cheat\0fpgaconf\0chipfeat\0bsregs\0gameloop\0dacboost\0cat\0mv\0";
+enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_EXIT, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16, CMD_MEMSET, CMD_CHEAT, CMD_FPGACONF, CMD_CHIPFEAT, CMD_BSREGS, CMD_GAMELOOP, CMD_DACBOOST, CMD_CAT, CMD_MV };
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
@@ -72,6 +72,35 @@ static uint8_t skip_spaces(void) {
     curchar++;
 
   return res;
+}
+
+/* return pointer to the next argument. Argument stops at a whitespace or end of
+   string; whitespace may be escaped with a backslash '\'. curchar is unescaped
+   in place. */
+static char *parse_string(void) {
+  int ignore_space = 0;
+  char *begin = curchar;
+
+  /* walk string, remove backslashes that may escape spaces */
+  while(*curchar && (*curchar != ' ' || (ignore_space && (*curchar ==  ' ')))) {
+    ignore_space = 0;
+    if(*curchar == '\\') {
+      ignore_space = 1;
+      memmove(curchar, curchar + 1, strlen(curchar+1)+1);
+    } else {
+      curchar++;
+    }
+  }
+
+  /* separate next token if present */
+  if(*curchar) {
+    *curchar = 0;
+    curchar++;
+    skip_spaces();
+  }
+
+  /* return start of this token */
+  return begin;
 }
 
 /* Parse the string in curchar for an integer with bounds [lower,upper] */
@@ -480,8 +509,24 @@ static void cmd_cat(void) {
         uart_puts(buf);
       }
     } else {
-      printf("f_open %s failed with result %d\n", curchar, res);
+      printf("f_open %s failed, result %d\n", curchar, res);
     }
+  }
+}
+
+static void cmd_mv(void) {
+//  FRESULT res;
+//  FIL mvfile;
+  char *arg1 = parse_string();
+  char *arg2 = parse_string();
+  if(!*arg2 || !*arg1) {
+    printf("Usage: mv <source> <destination>\n");
+    return;
+  }
+  printf("%s --> %s\n", arg1, arg2);
+  file_res = f_rename(arg1, arg2);
+  if(file_res) {
+    printf("f_rename failed, result %d\n", file_res);
   }
 }
 
@@ -654,6 +699,10 @@ void cli_loop(void) {
 
       case CMD_CAT:
         cmd_cat();
+        break;
+
+      case CMD_MV:
+        cmd_mv();
         break;
     }
   }
