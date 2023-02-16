@@ -37,7 +37,12 @@ module main(
   output ROM_2CE,
   output ROM_ZZ,
   /* debug */
+`ifdef SGB_SERIAL_OVER_DBG
+  // serial clock
+  inout PM6_out,
+`else
   output PM6_out,
+`endif
   output PN6_out,
   input  PT5_in,
 `endif
@@ -558,6 +563,16 @@ sgb snes_sgb (
   .MAPPER(MAPPER),
   .SAVERAM_MASK(SAVERAM_MASK),
   .ROM_MASK(ROM_MASK),
+  
+`ifdef SGB_SERIAL_OVER_DBG
+  .SER_CLK(PM6_out),
+  .SER_IN(PT5_in),
+  .SER_OUT(PN6_out),
+`else
+  //.SER_CLK(),
+  .SER_IN(1'b1),
+  //.SER_OUT(),
+`endif
   
   // Halt interface
   .HLT_REQ(HLT_REQ),

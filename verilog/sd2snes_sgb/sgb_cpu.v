@@ -51,6 +51,11 @@ module sgb_cpu(
   output [1:0]  P1O,
   input  [3:0]  P1I,
 
+  // SER
+  inout         SER_CLK,
+  input         SER_IN,
+  output        SER_OUT,
+
   // Halt
   input         HLT_REQ,
   output        HLT_RSP,
@@ -581,12 +586,12 @@ always @(posedge CLK) begin
 
     // timers
     if (CLK_CPU_EDGE & DBG_advance) begin
-      {tmr_ovf_16_r,  REG_DIV_r[3:0]  } <= REG_DIV_r[3:0]   + 1;
-      {tmr_ovf_64_r,  REG_DIV_r[5:4]  } <= REG_DIV_r[5:4]   + tmr_ovf_16_r;
-      {tmr_ovf_256_r, REG_DIV_r[7:6]  } <= REG_DIV_r[7:6]   + tmr_ovf_64_r;
-      {tmr_ovf_1024_r,REG_DIV_r[9:8]  } <= REG_DIV_r[9:8]   + tmr_ovf_256_r;
-      {tmr_apu_step_r,REG_DIV_r[12:10]} <= REG_DIV_r[12:10] + tmr_ovf_1024_r;
-      {               REG_DIV_r[15:13]} <= REG_DIV_r[15:13] + tmr_apu_step_r;
+      REG_DIV_r      <= REG_DIV_r + 1;
+      tmr_ovf_16_r   <= &REG_DIV_r[3:0];
+      tmr_ovf_64_r   <= &REG_DIV_r[5:0];
+      tmr_ovf_256_r  <= &REG_DIV_r[7:0];
+      tmr_ovf_1024_r <= &REG_DIV_r[9:0];
+      tmr_apu_step_r <= &REG_DIV_r[12:0];
     end
 
     tmr_cpu_edge_d1_r <= CLK_CPU_EDGE;
@@ -618,6 +623,10 @@ always @(posedge CLK) begin
         REG_IF_r[`IE_TIMER]    <= (REG_IF_r[`IE_TIMER]    | tmr_ovf_tima_r               | (reg_int_write_r & reg_int_write_data_r[`IE_TIMER])   ) & ~(IFD_REG_ic[`IE_TIMER]    | (reg_int_write_r & ~reg_int_write_data_r[`IE_TIMER])   );
         REG_IF_r[`IE_SERIAL]   <= (REG_IF_r[`IE_SERIAL]   | SER_REG_done                 | (reg_int_write_r & reg_int_write_data_r[`IE_SERIAL])  ) & ~(IFD_REG_ic[`IE_SERIAL]   | (reg_int_write_r & ~reg_int_write_data_r[`IE_SERIAL])  );
         REG_IF_r[`IE_JOYPAD]   <= (REG_IF_r[`IE_JOYPAD]   | |(REG_P1_r[3:0] & ~P1I[3:0]) | (reg_int_write_r & reg_int_write_data_r[`IE_JOYPAD])  ) & ~(IFD_REG_ic[`IE_JOYPAD]   | (reg_int_write_r & ~reg_int_write_data_r[`IE_JOYPAD])  );
+      end
+      else if (~HLT_REQ) begin
+        // clear any outstanding VBLANK so we don't take 2 of them in KDL2
+        REG_IF_r[`IE_VBLANK] <= 0;
       end
     end
 
@@ -679,7 +688,7 @@ always @(posedge CLK) begin
           8'h20: reg_mdr_r[7:0] <= 8'hFF;
           8'h21: reg_mdr_r[7:0] <= REG_NR42_r;
           8'h22: reg_mdr_r[7:0] <= REG_NR43_r;
-          8'h23: reg_mdr_r[7:0] <= {1'h1,REG_NR44_r[6],6'hFF};
+          8'h23: reg_mdr_r[7:0] <= {1'h1,REG_NR44_r[6],6'h3F};
 
           8'h24: reg_mdr_r[7:0] <= REG_NR50_r;
           8'h25: reg_mdr_r[7:0] <= REG_NR51_r;
@@ -2509,14 +2518,12 @@ always @(posedge CLK) begin
           // volume side effect (inversion).  see register writes for additional side effects.
           if (apu_reg_update_nr12_dir_r ^ REG_NR12_r[`NR12_ENV_DIR]) apu_square1_volume_r <= ~apu_square1_volume_r + 1;
 
-          if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
-
           if (apu_square1_enable_r) apu_square1_enable_r <= |REG_NR12_r[7:3];
         end
         8'h13: begin // NR13
-          if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
         end
         8'h14: begin // NR14
+          // SML end of stage time counting requires this for ringing effect
           if (apu_reg_update_nr14_enable_r) apu_square1_pos_r <= apu_square1_pos_r + 1;
 
           if (REG_NR14_r[`NR14_FREQ_ENABLE]) begin
@@ -2539,14 +2546,12 @@ always @(posedge CLK) begin
           // volume side effect (inversion).  see register writes for additional side effects.
           if (apu_reg_update_nr22_dir_r ^ REG_NR22_r[`NR22_ENV_DIR]) apu_square2_volume_r <= ~apu_square2_volume_r + 1;
 
-          if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
-
           if (apu_square2_enable_r) apu_square2_enable_r <= |REG_NR22_r[7:3];
         end
         8'h18: begin // NR23
-          if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
         end
         8'h19: begin // NR24
+          // SML end of stage time counting requires this for ringing effect
           if (apu_reg_update_nr24_enable_r) apu_square2_pos_r <= apu_square2_pos_r + 1;
 
           if (REG_NR24_r[`NR24_FREQ_ENABLE]) begin
@@ -3012,51 +3017,64 @@ end
 // SERIAL
 //-------------------------------------------------------------------
 
-// Basic functionality to allow multiplayer games to pass.  missing external clock/data.
+// Functional on MK3 using 3-wire P* debug bus.  See config.vh to enable.
 
 `ifdef SGB_SERIAL
-reg         ser_active_d1_r;
-reg         ser_clk_d1_r;
+reg  [7:0]  ser_clk_d_r;
 reg  [9:0]  ser_ctr_r;
-reg  [2:0]  ser_pos_r;
+reg         ser_out_r;
+reg  [3:0]  ser_pos_r;
 reg         ser_done_r;
 
-assign      SER_REG_done = ser_done_r;
+assign SER_CLK = ~REG_SC_r[0] ? 1'bZ : ser_ctr_r[9];
+assign SER_OUT = ser_out_r;
+//assign SER_OE = REG_SC_r[7]; // output (and input) enable when clock is valid
+//assign SER_DIR = REG_SC_r[0]; // 0=clock driven by external source, 1=output when clock driven by this device
+
+assign SER_REG_done = ser_done_r;
 
 assign HLT_SER_rsp = HLT_REQ_sync & (~REG_SC_r[7] | ~REG_SC_r[0]);
+
+assign ser_clk_d0 = ~REG_SC_r[7] ? 1'b1 : SER_CLK;
 
 always @(posedge CLK) begin
   if (cpu_ireset_r) begin
     REG_SB_r <= 0;
     REG_SC_r <= 8'h7F;
 
-    ser_active_d1_r <= 0;
     ser_done_r      <= 0;
+    ser_ctr_r       <= 10'h200;
+    ser_out_r       <= 1;
+    ser_clk_d_r     <= 8'hFF;
   end
   else begin
+    ser_clk_d_r <= {ser_clk_d_r[6:0],ser_clk_d0};
+
+    if (REG_SC_r[7] & ~ser_pos_r[3]) begin
+      // 1->0 transition
+      if (ser_clk_d_r[5:0] == 6'b111000) begin
+        ser_out_r <= REG_SB_r[7];
+      end
+      // 0->1 transition
+      else if(ser_clk_d_r[5:0] == 6'b000111) begin
+        REG_SB_r <= {REG_SB_r[6:0],SER_IN};
+        ser_pos_r <= ser_pos_r + 1;
+      end
+    end
+
     if (CLK_CPU_EDGE) begin
-      ser_active_d1_r <= REG_SC_r[7];
       ser_done_r      <= 0;
 
-      if (REG_SC_r[7]) begin
-        if (~ser_active_d1_r) begin
-          ser_ctr_r <= 0;
-          ser_clk_d1_r <= 0;
-          ser_pos_r <= 0;
-        end
-        else begin
-          ser_ctr_r <= REG_SC_r[0] ? ser_ctr_r + 1 : ser_ctr_r;
-          ser_clk_d1_r <= ser_ctr_r[9];
+      if (~REG_SC_r[7]) begin
+        ser_ctr_r <= 10'h200;
+        ser_pos_r <= 0;
+      end
+      else begin
+        ser_ctr_r <= REG_SC_r[0] ? ser_ctr_r + 1 : ser_ctr_r;
 
-          if (ser_clk_d1_r ^ ser_ctr_r[9]) begin
-            REG_SB_r[~ser_pos_r] <= 1'b1;
-            ser_pos_r <= ser_pos_r + 1;
-
-            if (&ser_pos_r) begin
-              REG_SC_r[7] <= 0;
-              ser_done_r <= 1;
-            end
-          end
+        if (ser_pos_r[3]) begin
+          REG_SC_r[7] <= 0;
+          ser_done_r <= 1;
         end
       end
     end
@@ -3436,6 +3454,12 @@ always @(posedge CLK) begin
             //8'h45:    dbg_misc_data_r <= dbg_timer_ly_r;
             //8'h46:    dbg_misc_data_r <= dbg_timer_dot_ctr_r[7:0];
             //8'h47:    dbg_misc_data_r <= dbg_timer_dot_ctr_r[8:8];
+
+            8'h50:    dbg_misc_data_r <= ser_clk_d_r;
+            8'h51:    dbg_misc_data_r <= ser_done_r;
+            8'h52:    dbg_misc_data_r <= ser_pos_r;
+            8'h55:    dbg_misc_data_r <= ser_ctr_r[7:0];
+            8'h56:    dbg_misc_data_r <= ser_ctr_r[9:8];
 
             8'hA0:    dbg_misc_data_r <= apu_square1_enable_r;
             8'hA1:    dbg_misc_data_r <= apu_square1_timer_r[7:0];
