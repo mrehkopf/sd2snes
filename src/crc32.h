@@ -17,8 +17,7 @@
 #ifndef __CRC___H__
 #define __CRC___H__
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
-#include <stdlib.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {

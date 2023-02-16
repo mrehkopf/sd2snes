@@ -1,4 +1,3 @@
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "config.h"
 #include "timer.h"
 #include "uart.h"

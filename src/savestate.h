@@ -2,7 +2,7 @@
 #define SAVESTATE_H
 
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
+#include CONFIG_MCU_H
 #include "snes.h"
 
 #define SS_BASEDIR          ("/sd2snes/states/")

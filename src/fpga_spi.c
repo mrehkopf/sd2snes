@@ -156,7 +156,6 @@
 
 */
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
 #include "fpga.h"
 #include "config.h"
@@ -168,7 +167,7 @@
 
 void fpga_spi_init(void) {
   spi_init();
-  BITBAND(FPGA_MCU_RDY_REG->FIODIR, FPGA_MCU_RDY_BIT) = 0;
+  GPIO_MODE_IN(FPGA_MCU_RDY_REG, FPGA_MCU_RDY_BIT);
 }
 
 void set_msu_addr(uint16_t address) {
@@ -258,7 +257,7 @@ void fpga_set_sddma_range(uint16_t start, uint16_t end) {
 }
 
 void fpga_sddma(uint8_t tgt, uint8_t partial) {
-  BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 0;
+  GPIO_MODE_IN(SD_CLKREG, SD_CLKBIT);
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_SDDMA | (tgt & 3) | (partial ? FPGA_SDDMA_PARTIAL : 0));
   FPGA_TX_BYTE(0x00); /* dummy for falling DMA_EN edge */
@@ -269,7 +268,7 @@ void fpga_sddma(uint8_t tgt, uint8_t partial) {
   while(FPGA_RX_BYTE() & 0x80) {
     FPGA_RX_BYTE(); /* eat the 2nd status byte */
   }
-  BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 1;
+  GPIO_MODE_OUT(SD_CLKREG, SD_CLKBIT);
   DBG_SD_OFFLOAD printf("...complete\n");
   FPGA_DESELECT();
 }

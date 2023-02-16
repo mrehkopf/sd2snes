@@ -212,7 +212,22 @@ reg snescmd_unlock_disable_strobe = 1'b0;
 reg [6:0] snescmd_unlock_disable_countdown = 0;
 reg snescmd_unlock_disable = 0;
 
+// force savestate handler entry until savestate handler returns on its own
+// (in-game hook must keep jumping to savestate handler until its logic has finished)
+reg savestate_force_entry_enable_strobe = 0;
+reg savestate_force_entry_disable_strobe = 0;
+reg savestate_force_entry = 0;
+
 always @(posedge clk) begin
+  if(savestate_force_entry_enable_strobe) begin
+    savestate_force_entry <= 1'b1;
+  end else if(savestate_force_entry_disable_strobe) begin
+    savestate_force_entry <= 1'b0;
+  end
+end
+
+always @(posedge clk) begin
+  savestate_force_entry_disable_strobe <= 0;
   if(SNES_reset_strobe) begin
     snescmd_unlock_r <= 0;
     snescmd_unlock_disable <= 0;
@@ -221,7 +236,7 @@ always @(posedge clk) begin
   end else begin
     if (~nmi_addr_match)   exe_to_hook_transition_r <= 0;
     else if (map_unlock_r) exe_to_hook_transition_r <= 1;
-  
+
     if(SNES_rd_strobe) begin
       // *** GAME -> USB HOOK ***
       if(hook_enable_sync
@@ -276,6 +291,9 @@ always @(posedge clk) begin
       if(rst_match_bits[1] & |reset_unlock_r) begin
         snescmd_unlock_r <= 1;
       end
+      if(branch1_enable & savestate_enable & |pad_data) begin
+        savestate_force_entry_enable_strobe <= 1;
+      end
     end
     
 /// TODO unlock disable on hook exit needs rework, there are potential issues:
@@ -309,6 +327,7 @@ always @(posedge clk) begin
         end else if(snescmd_unlock_disable_countdown == 0) begin
           snescmd_unlock_r <= 0;
           snescmd_unlock_disable <= 0;
+          savestate_force_entry_disable_strobe <= 1;
         end
       end
     end
@@ -443,13 +462,13 @@ end
 always @* begin
   if(buttons_enable) begin
     if(snes_ajr) begin
-      if(nmicmd) begin
+      if(|nmicmd) begin
         branch1_offset = 8'h30;   // nmi_echocmd
       end else begin
         if(branch_wram) begin
           branch1_offset = 8'h3a; // nmi_patches
         end else begin
-          if(savestate_enable & |pad_data) begin
+          if(savestate_enable & (savestate_force_entry | |pad_data)) begin
             branch1_offset = 8'h3f; // nmi_savestate
           end else begin
             branch1_offset = 8'h43; // nmi_exit

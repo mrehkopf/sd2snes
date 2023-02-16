@@ -8,7 +8,7 @@
 #
 # Format:
 # CKSUM: DST,SRC[OPERATION][;PCADDR,PATCH] # game name/comments
-# OR
+#  * OR *
 # CKSUM: @OPCODES
 #
 # YAML multi-line lists are supported, e.g.:
@@ -16,6 +16,7 @@
 #   - 7E0000,2140^FF;C0FF00,EA
 #   - 7E0001,2141
 #
+# CKSUM: 16-bit game checksum from ROM header (7FDE/FFDE)
 # DST: target WRAM address to update
 # SRC: APU address contents (2140-2143) or immediate value (0000-00FF) to write to TGT
 # OPERATION: consists of operator and operand, e.g. ^80 = XOR $80
@@ -54,8 +55,11 @@ F199: 7EFFFE,2142 # mm7 (US)
 5B9A: 000002,2142 # aladdin (JP)
 0B11: 7EFFFB,2142 # breath of fire 1 (US)
 7C7D: 7EFFFC,2142 # breath of fire 2 (US)
+A109: 000000,2140 # dkc1 v1.0 (EU)
+53B7: 000000,2140 # dkc1 v1.1 (EU)
 EF80: 000000,2140 # dkc1 v1.0 (US)
-2BCC: 000000,2140 # dkc1 v1.1 (US)
+D17C: 000000,2140 # dkc1 v1.1 (US)
+2BCC: 000000,2140 # dkc1 v1.2 (US)
 0C17: 000000,2140 # dkc1 v1.0 (JP)
 83EC: 000000,2140 # dkc1 v1.0 timer (US)
 1202: 000000,2140 # dkc2 v1.0 (US)
@@ -102,3 +106,18 @@ B856: 7E1D15,2141 # Bahamut Lagoon (J)
 0E46: 7E1D15,2141 # Bahamut Lagoon (T+Eng1.0_Near)
 ACCC: 7E1D15,2141 # Bahamut Lagoon (T+Eng1.1_Near)
 414C: 7E1D15,2141 # Bahamut Lagoon (T+Eng1.2_Near)
+F5E1: 0000B1,2140 # Super Morph (E)
+C971: 0000FE,2143 # Captain America and the Avengers (US)
+3703: 0000F6,2140 # The Terminator (US)
+F834: 001D00,2140 # Shadowrun (US)
+7473: 7E96A2,2140 # Dragon Quest III (JP, T+Eng1.1_DQT)
+E3DA: # Dragon Quest V (T+Eng 2.01F)
+  - 002140,00
+  - 0008D8,00
+  - 0008DA,00
+  - 0008DC,00
+BAF9: # Dragon Quest V (JP)
+  - 002140,00
+  - 0008D8,00
+  - 0008DA,00
+  - 0008DC,00

@@ -26,6 +26,12 @@
 
 #include "usb.h"
 
+#ifdef DEBUG_USBHW
+  #define DBG_USBHW
+#else
+  #define DBG_USBHW while(0)
+#endif
+
 /* USB RAM Definitions */
 #define USB_RAM_ADR     0x20080000  /* USB RAM Start Address */
 #define USB_RAM_SZ      0x00004000  /* USB RAM Size (4kB) */
@@ -88,6 +94,8 @@ typedef struct _USB_DMA_DESCRIPTOR {
 /* USB Hardware Functions */
 extern void  USB_Init       (void);
 extern void  USB_Connect    (uint32_t  con);
+extern void  USB_EnableIRQ  (void);
+extern void  USB_DisableIRQ (void);
 extern void  USB_Reset      (void);
 extern void  USB_Suspend    (void);
 extern void  USB_Resume     (void);
@@ -118,5 +126,7 @@ extern void  USB_IRQHandler (void);
 extern uint32_t EPAdr (uint32_t EPNum);
 extern uint32_t RdCmdDat (uint32_t cmd);
 extern void WrCmd (uint32_t cmd);
+
+extern char Endpoint_IsINReady(void);
 
 #endif  /* __USBHW_H__ */

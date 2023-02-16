@@ -13,6 +13,9 @@ Secondly, I also wanna thank my friend Vitor Vilela that helped me alot with ass
 4. Custom Inputs for Save/Load for specific games in *savestate_inputs.yml*
 5. Savestates are stored in the SD (*sd2snes/states*)
 
+### How to enable Savestates
+In order to use Savestates, In-game hook must be enabled from the "Configuration->In-game Settings" menu. In addition, In-game savestates must be enabled from the "Configuration->Savestates Settings" menu.
+
 ### Savestates Slots
 Enabling this option you'll have 4 slots to choose, pressing `Select+Dpad` (each direction is a slot)
 |Select +|Slot|
@@ -76,8 +79,6 @@ Savestates will only work with games that don't have special chips like SuperFX/
 Flashcart savestates aren't perfect, the code runs on NMI to save a bunch of addresses to another place. You'll notice the song in some games will keep playing after you load state, others will just crash.
 
 RedGuy did a great job finding fixes for some games, but for now he will focus on other projects. But you can try to find/contact someone who knows assembly and try to find a solution for that.
-
-Savestates currently doesn't work with In-game Hooks, you must disable it to use this feature.
 
 Final Words
 ---

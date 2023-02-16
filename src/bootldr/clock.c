@@ -48,9 +48,9 @@ void clock_init() {
  */
   enableMainOsc();
   setClkSrc(CLKSRC_MAINOSC);
-  setPLL0MultPrediv(12, 1);
+  setPLL0MultPrediv(16, 1);
   enablePLL0();
-  setCCLKDiv(3);
+  setCCLKDiv(4);
   connectPLL0();
 }
 

@@ -3,11 +3,32 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include <getopt.h>
+#include <ctype.h>
 
 #define ll8(x)    (x & 0xff)
 #define lh8(x)    ((x >> 8) & 0xff)
 #define hl8(x)    ((x >> 16) & 0xff)
 #define hh8(x)    ((x >> 24) & 0xff)
+
+typedef struct cfg {
+  bool in_place;
+  char *headerfile;
+  size_t headersize;
+  char *signature;
+  char *version;
+  char *infile;
+} cfg_t;
+
+cfg_t cfg = {
+  .in_place = false,
+  .headerfile = NULL,
+  .headersize = 0,
+  .signature = NULL,
+  .version = NULL,
+  .infile = NULL
+};
 
 /* Generated on Thu Feb 17 10:57:01 2011,
  * by pycrc v0.7.1, http://www.tty1.net/pycrc/
@@ -48,27 +69,115 @@ uint32_t crc_update(uint32_t crc, const uint8_t *buf, uint32_t len) {
     return crc & 0xffffffff;
 }
 
+void print_usage(const char *prog) {
+  printf("\nUsage: %s [-o <header file>] [-I] -svh <input file>\n", prog);
+  puts  ("  input file       file to be headered (modified in-place if -o is not specified)\n"
+         "  -o --output      output file containing header\n"
+         "  -s --signature   magic value at start of header (4-char string)\n"
+         "  -v --version     firmware version (string) - 32-bit magic generated internally\n"
+         "  -h --headersize  size of firmware header (padding up to start of vector table)\n"
+         "  -I --inplace     modify input file even with -o specified\n"
+	       "Output is written in place.\n");
+}
+
+int parse_opts(int argc, char *argv[]) {
+  static const struct option lopts[] = {
+    { "output",     required_argument, NULL, 'o' },
+    { "signature",  required_argument, NULL, 's' },
+    { "version",    required_argument, NULL, 'v' },
+    { "headersize", required_argument, NULL, 'h' },
+    { "inplace",    no_argument,       NULL, 'I' },
+    { NULL, no_argument, NULL, 0 }
+  };
+
+  typedef enum opts {
+    OPT_SIGNATURE  = 0x01,
+    OPT_VERSION    = 0x02,
+    OPT_HEADERSIZE = 0x04,
+    OPT_INFILE     = 0x08
+  } opts;
+
+  opts missing_opts = OPT_SIGNATURE | OPT_VERSION | OPT_HEADERSIZE | OPT_INFILE;
+
+  while(true) {
+    int c;
+
+    c = getopt_long(argc, argv, "o:s:v:h:I", lopts, NULL);
+
+    if(c == -1) {
+      break;
+    }
+
+    switch(c) {
+      case 'o':
+        cfg.headerfile = optarg;
+        break;
+
+      case 's':
+        cfg.signature = optarg;
+        missing_opts &= ~OPT_SIGNATURE;
+        break;
+
+      case 'v':
+        cfg.version = optarg;
+        missing_opts &= ~OPT_VERSION;
+        break;
+
+      case 'h':
+        cfg.headersize = strtol(optarg, NULL, 0);
+        missing_opts &= ~OPT_HEADERSIZE;
+        break;
+
+      case 'I':
+        cfg.in_place = true;
+        break;
+
+      case '?':
+        return 1;
+        break;
+    }
+  }
+
+  for(int index = optind; index < argc; index++) {
+    if(cfg.infile != NULL) {
+      fprintf(stderr, "Extra argument `%s'.\n", argv[index]);
+      missing_opts |= OPT_INFILE;
+    } else {
+      missing_opts &= ~OPT_INFILE;
+      cfg.infile = argv[index];
+    }
+  }
+
+  return missing_opts;
+}
+
 int main(int argc, char **argv) {
   FILE *f;
   size_t flen;
 
-  if(argc < 4) {
-    printf("Usage: genhdr <input file> <signature> <version>\n"
-           "  input file: file to be headered\n"
-           "  signature : magic value at start of header (4-char string)\n"
-           "  version   : firmware version (string) - 32-bit magic generated internally\n"
-           "Output is written in place.\n");
-    return 1;
+  if(parse_opts(argc, argv)) {
+    print_usage(argv[0]);
+    abort();
   }
-  if((f=fopen(argv[1], "rb+"))==NULL) {
-    printf("Unable to open input file %s", argv[1]);
+
+  if(cfg.headerfile == NULL) {
+    cfg.in_place = true;
+  }
+
+  if(cfg.headersize < 20) {
+    fprintf(stderr, "Header does not fit specified header size (at least 20 bytes)\n");
+    abort();
+  }
+
+  if((f=fopen(cfg.infile, "rb+"))==NULL) {
+    fprintf(stderr, "Unable to open input file %s: ", cfg.infile);
     perror("");
     return 1;
   }
   fseek(f,0,SEEK_END);
   flen=ftell(f);
 
-  if(flen+256 < flen) {
+  if(flen + cfg.headersize < flen) {
     printf("File too large ;)\n");
     fclose(f);
     return 1;
@@ -76,30 +185,30 @@ int main(int argc, char **argv) {
 
   /* calculate version magic CRC from version string */
   uint32_t version = 0xffffffff;
-  version = crc_update(version, (uint8_t*)argv[3], strlen(argv[3]));
+  version = crc_update(version, (uint8_t*)cfg.version, strlen(cfg.version));
   version = crc_reflect(version, 32);
   version ^= 0xffffffff;
 
-  if(strlen(argv[2]) > 4) {
-    printf("Magic string '%s' too long. Truncated to 4 characters.\n", argv[2]);
+  if(strlen(cfg.signature) > 4) {
+    printf("Magic string '%s' too long. Truncated to 4 characters.\n", cfg.signature);
   }
-  uint8_t *buf = malloc(flen+256);
+  uint8_t *buf = malloc(flen + cfg.headersize);
   if(!buf) {
     perror("malloc");
     fclose(f);
     return -1;
   }
-  memset(buf, 0xff, 256);
+  memset(buf, 0xff, cfg.headersize);
   fseek(f, 0, SEEK_SET);
-  fread(buf+256, 1, flen, f);
+  fread(buf + cfg.headersize, 1, flen, f);
 
   uint32_t crcc = 0xffffffff, crc;
-  crcc = crc_update(crcc, buf+256, flen);
+  crcc = crc_update(crcc, buf + cfg.headersize, flen);
   crcc = crc_reflect(crcc, 32);
   crc = crcc ^ 0xffffffff;
 
   memset(buf, 0, 4);
-  strncpy((char*)buf, argv[2], 4);
+  strncpy((char*)buf, cfg.signature, 4);
 
   buf[4]  = ll8(version);
   buf[5]  = lh8(version);
@@ -121,9 +230,23 @@ int main(int argc, char **argv) {
   buf[18] = hl8(crcc);
   buf[19] = hh8(crcc);
 
-  fseek(f, 0, SEEK_SET);
-  fwrite(buf, 1, 256+flen, f);
+  if(cfg.in_place) {
+    printf("patching input file in-place...\n");
+    fseek(f, 0, SEEK_SET);
+    fwrite(buf, 1, cfg.headersize+flen, f);
+  }
   fclose(f);
+
+  if(cfg.headerfile) {
+    printf("writing header file...\n");
+    if((f = fopen(cfg.headerfile, "wb+")) == NULL) {
+      fprintf(stderr, "Can't write output file %s: ", argv[2]);
+      perror("");
+    }
+    fwrite(buf, 1, cfg.headersize, f);
+    fclose(f);
+  }
   free(buf);
+
   return 0;
 }

@@ -57,9 +57,6 @@ include $(CONFIG)
 OBJDIR := obj$(CONFIGSUFFIX)
 DEPDIR := .dep$(CONFIGSUFFIX)
 
-# Output format. (can be srec, ihex, binary)
-FORMAT = binary
-
 # Linker script
 LINKERSCRIPT = $(CONFIG_LD_SCRIPT)
 
@@ -72,18 +69,17 @@ export FW_FILE=$(OBJDIR)/$(CONFIG_FW_FILE)
 export FLASH_SIZE=$(CONFIG_FLASH_SIZE)
 
 # Version
-include VERSION
+-include VERSION
+include version.mk
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC  = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c
-SRC += printf.c spi.c fileops.c rtc.c fpga.c fpga_spi.c snes.c smc.c
+SRC  = main.c ff.c ccsbcs.c
+SRC += printf.c fileops.c fpga.c fpga_spi.c snes.c smc.c
 SRC += memory.c filetypes.c faulthandler.c sort.c crc32.c cic.c
-SRC += cli.c xmodem.c irq.c rle.c sdnative.c msu1.c crc16.c sysinfo.c
+SRC += cli.c xmodem.c rle.c msu1.c crc16.c sysinfo.c
 SRC += cfg.c cheat.c yaml.c savestate.c sgb.c
 
-SRC += usbdesc.c usbcore.c usbuser.c usbhw.c cdcuser.c usbinterface.c
-
-# usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
+SRC += usbdesc.c usbcore.c usbuser.c cdcuser.c usbinterface.c
 
 # List Assembler source files here.
 #     Make them always end in a capital .S.  Files ending in a lowercase .s
@@ -92,8 +88,12 @@ SRC += usbdesc.c usbcore.c usbuser.c usbhw.c cdcuser.c usbinterface.c
 #     Even though the DOS/Win* filesystem matches both .s and .S the same,
 #     it will preserve the spelling of the filenames, and gcc itself does
 #     care about how the name is spelled on its command-line.
-ASRC = startup.S crc.S
+ASRC = crc.S
 
+# add in platform specific configuration
+include $(CONFIG_ARCH)/variables.mk
+
+# usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
 
 # Optimization level, can be [0, 1, 2, 3, s].
 #     0 = turn off optimization. s = optimize for size.
@@ -165,7 +165,7 @@ CFLAGS += $(CPUFLAGS) -nostartfiles
 #CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -Wall -Wstrict-prototypes -Werror -Wno-strict-aliasing
 CFLAGS += -Wa,-adhlns=$(OBJDIR)/$(<:.c=.lst)
-CFLAGS += -I$(OBJDIR)
+CFLAGS += -I$(OBJDIR) -I$(CONFIG_ARCH)
 CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
 CFLAGS += $(CSTANDARD)
 CFLAGS += -ffunction-sections -fdata-sections
@@ -205,6 +205,8 @@ OBJ := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.o) $(ASRC:.S=.o))
 # Define all listing files.
 LST := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.lst) $(ASRC:.S=.lst))
 
+# Generate list of obj dirs
+OBJDIRS := $(sort $(dir $(OBJ)))
 
 # Compiler flags to generate dependency files.
 GENDEPFLAGS = -MMD -MP -MF $(DEPDIR)/$(@F).d
@@ -223,7 +225,6 @@ build: elf bin hex
 	$(E) "  SIZE   $(TARGET).elf"
 	$(Q)$(ELFSIZE)|grep -v debug
 	cp $(TARGET).bin $(OBJDIR)/$(CONFIG_FW_FILE)
-	utils/genhdr $(OBJDIR)/$(CONFIG_FW_FILE) $(CONFIG_FW_MAGIC) $(CONFIG_VERSION)
 
 elf: $(TARGET).elf
 bin: $(TARGET).bin
@@ -243,14 +244,22 @@ reset:
 	openocd -f openocd.cfg -f reset.cfg
 
 # Display size of file.
-HEXSIZE = $(SIZE) --target=$(FORMAT) $(TARGET).hex
 ELFSIZE = $(SIZE) -A $(TARGET).elf
+
+# Generate version.h
+.PRECIOUS : $(OBJDIR)/version.h
+$(OBJDIR)/version.h: .ARG_VERSION | $(OBJDIR)
+	$(E) "  VERSION $(CONFIG_VERSION)"
+	$(Q)printf "#ifndef __VERSION_H\n"\
+"#define __VERSION_H\n"\
+"#define CONFIG_VERSION \"$(CONFIG_VERSION)\"\n"\
+"#endif" > $(OBJDIR)/version.h
 
 # Generate autoconf.h from config
 .PRECIOUS : $(OBJDIR)/autoconf.h
-$(OBJDIR)/autoconf.h: $(CONFIG) VERSION | $(OBJDIR)
+$(OBJDIR)/autoconf.h: $(CONFIG) | $(OBJDIR)
 	$(E) "  CONF2H $(CONFIG)"
-	$(Q)$(AWK) -f conf2h.awk $(CONFIG) VERSION > $(OBJDIR)/autoconf.h
+	$(Q)$(AWK) -f conf2h.awk $(CONFIG) > $(OBJDIR)/autoconf.h
 
 # Generate embedded FPGA config from finished bitfile
 .PRECIOUS : $(OBJDIR)/cfgware.h
@@ -259,13 +268,19 @@ $(OBJDIR)/cfgware.h: $(CONFIG_CFGWARE) | $(OBJDIR) $(OBJDIR)/autoconf.h
 	$(Q)$(BIN2C) "$(CONFIG_CFGWARE)" cfgware > $(OBJDIR)/cfgware.h
 
 # Create final output files from ELF output file.
-$(OBJDIR)/%.bin: $(OBJDIR)/%.elf
+# --gap-fill 0xff is important to match the padding values as they end up
+# in physical flash; CRC calculation is wrong otherwise.
+$(TARGET)-intermediate.bin: $(TARGET)-intermediate.elf
+	$(E) "  BINTMP $@"
+	$(Q)$(OBJCOPY) --gap-fill 0xff -O binary -R .fwhdr $< $@
+
+$(TARGET).bin: $(OBJDIR)/fw.hdr $(TARGET)-intermediate.bin
 	$(E) "  BIN    $@"
-	$(Q)$(OBJCOPY) -O binary $< $@
+	$(Q)cat $^ > $@
 
 $(OBJDIR)/%.hex: $(OBJDIR)/%.elf
 	$(E) "  HEX    $@"
-	$(Q)$(OBJCOPY) -O $(FORMAT) $< $@
+	$(Q)$(OBJCOPY) -O ihex $< $@
 
 # Create extended listing file from ELF output file.
 $(OBJDIR)/%.lss: $(OBJDIR)/%.elf
@@ -279,37 +294,51 @@ $(OBJDIR)/%.sym: $(OBJDIR)/%.elf
 
 
 # Link: create ELF output file from object files.
-.SECONDARY : $(TARGET).elf
+.SECONDARY : $(TARGET)-intermediate.elf
 .PRECIOUS : $(OBJ)
-$(TARGET).elf : $(OBJ)
+$(TARGET)-intermediate.elf: .EXTRA_PREREQS = $(LINKERSCRIPT)
+$(TARGET)-intermediate.elf : $(OBJ)
 	$(E) "  LINK   $@"
 	$(Q)$(CC) $(ALL_CFLAGS) $^ --output $@ $(LDFLAGS)
 
+# create final ELF file with embedded firmware header
+.SECONDARY : $(TARGET).elf
+$(TARGET).elf: $(TARGET)-intermediate.elf $(OBJDIR)/fw.hdr
+	$(E) "  ELF    $@"
+	$(Q)$(OBJCOPY) --update-section .fwhdr=$(OBJDIR)/fw.hdr $< $@
+
+# firmware header file generated by genhdr
+$(OBJDIR)/fw.hdr: $(TARGET)-intermediate.bin
+	$(E) "  GENHDR $@"
+	$(Q)utils/genhdr -s $(CONFIG_FW_MAGIC) -v $(CONFIG_VERSION) -h $(CONFIG_FW_HEADERSIZE) -o $@ $<
+
+$(OBJDIR)/$(CONFIG_FW_FILE): $(TARGET).elf
+	cat $^ > $(OBJDIR)/$(CONFIG_FW_FILE)
 
 # Compile: create object files from C source files.
-$(OBJDIR)/%.o : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h $(OBJDIR)/cfgware.h
+$(OBJDIR)/%.o : %.c | $(OBJDIRS) $(OBJDIR)/autoconf.h $(OBJDIR)/cfgware.h $(OBJDIR)/version.h
 	$(E) "  CC     $<"
 	$(Q)$(CC) -c $(ALL_CFLAGS) $< -o $@
 
 
 # Compile: create assembler files from C source files.
-$(OBJDIR)/%.s : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h $(OBJDIR)/cfgware.h
+$(OBJDIR)/%.s : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h $(OBJDIR)/cfgware.h $(OBJDIR)/version.h
 	$(CC) -S $(ALL_CFLAGS) $< -o $@
 
 
 # Assemble: create object files from assembler source files.
-$(OBJDIR)/%.o : %.S | $(OBJDIR) $(OBJDIR)/autoconf.h
+$(OBJDIR)/%.o : %.S | $(OBJDIRS) $(OBJDIR)/autoconf.h
 	$(E) "  AS     $<"
 	$(Q)$(CC) -c $(ALL_ASFLAGS) $< -o $@
 
 # Create preprocessed source for use in sending a bug report.
-$(OBJDIR)/%.i : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h $(OBJDIR)/cfgware.h
+$(OBJDIR)/%.i : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h $(OBJDIR)/cfgware.h $(OBJDIR)/version.h
 	$(CC) -E -mmcu=$(MCU) -I. $(CFLAGS) $< -o $@
 
 # Create the output directory
-$(OBJDIR) :
-	$(E) "  MKDIR  $(OBJDIR)"
-	$(Q)mkdir $(OBJDIR)
+$(OBJDIRS) :
+	$(E) "  MKDIR  $(OBJDIRS)"
+	$(Q)mkdir -p $(OBJDIRS)
 
 # Target: clean project.
 clean: begin clean_list end
@@ -319,20 +348,23 @@ clean_list :
 	$(Q)$(REMOVE) $(TARGET).hex
 	$(Q)$(REMOVE) $(TARGET).bin
 	$(Q)$(REMOVE) $(TARGET).elf
+	$(Q)$(REMOVE) $(TARGET)-intermediate.bin
+	$(Q)$(REMOVE) $(TARGET)-intermediate.elf
 	$(Q)$(REMOVE) $(TARGET).map
 	$(Q)$(REMOVE) $(TARGET).sym
 	$(Q)$(REMOVE) $(TARGET).lss
 	$(Q)$(REMOVE) $(OBJ)
 	$(Q)$(REMOVE) $(OBJDIR)/autoconf.h
 	$(Q)$(REMOVE) $(OBJDIR)/cfgware.h
-	$(Q)$(REMOVE) $(OBJDIR)/*.bin
+	$(Q)$(REMOVE) $(OBJDIR)/version.h
 	$(Q)$(REMOVE) $(OBJDIR)/${CONFIG_FW_FILE}
+	$(Q)$(REMOVE) $(OBJDIR)/fw.hdr
 	$(Q)$(REMOVE) $(OBJDIR)/.DS_Store
 	$(Q)$(REMOVE) $(LST)
 	$(Q)$(REMOVE) $(CSRC:.c=.s)
 	$(Q)$(REMOVE) $(CSRC:.c=.d)
 	$(Q)$(REMOVE) $(DEPDIR)/*
-	-$(Q)rmdir $(OBJDIR)
+	-$(Q)rmdir --ignore-fail-on-non-empty -p $(OBJDIRS)
 
 # Include the dependency files.
 -include $(info $(DEPDIR)) $(shell mkdir $(DEPDIR) 2>/dev/null) $(wildcard $(DEPDIR)/*)

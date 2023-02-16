@@ -66,7 +66,5 @@ extern unsigned short CDC_GetSerialState (void);
 /* flow control */
 extern unsigned short CDC_DepInEmpty;         // DataEndPoint IN empty
 
-extern char Endpoint_IsINReady(void);
-
 #endif  /* __CDCUSER_H__ */
 

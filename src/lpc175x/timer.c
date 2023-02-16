@@ -1,6 +1,5 @@
 /* ___INGO___ */
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "power.h"
 #include "bits.h"
 #include "config.h"

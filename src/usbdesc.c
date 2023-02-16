@@ -155,7 +155,7 @@ const uint8_t USB_StringDescriptor[] = {
   USB_STRING_DESCRIPTOR_TYPE,        /* bDescriptorType */
   WBVAL(0x0409), /* US English */    /* wLANGID */
 /* Index 0x01: Manufacturer */
-  (8*2 + 2),                        /* bLength (13 Char + Type + lenght) */
+  (8*2 + 2),                         /* bLength (8 Char + Type + lenght) */
   USB_STRING_DESCRIPTOR_TYPE,        /* bDescriptorType */
   'i',0,
   'k',0,
@@ -166,7 +166,8 @@ const uint8_t USB_StringDescriptor[] = {
   '0',0,
   '1',0,
 /* Index 0x02: Product */
-  (7*2 + 2),                        /* bLength ( 17 Char + Type + lenght) */
+/* TODO: Identify as FXPAK Pro from Mk3 Rev.B onwards */
+  (7*2 + 2),                         /* bLength (7 Char + Type + lenght) */
   USB_STRING_DESCRIPTOR_TYPE,        /* bDescriptorType */
   's',0,
   'd',0,

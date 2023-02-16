@@ -22,7 +22,9 @@
  *          V1.00 Initial Version
  *----------------------------------------------------------------------------*/
 #include <stdint.h>
+#include <stdio.h>
 
+#include "config.h"
 #include "usb.h"
 #include "usbcfg.h"
 #include "usbhw.h"
@@ -71,9 +73,15 @@ uint16_t  USB_DeviceStatus;
 uint8_t  USB_DeviceAddress;
 //uint8_t  USB_Configuration;
 volatile uint8_t  USB_Configuration;
-uint32_t USB_EndPointMask;
-uint32_t USB_EndPointHalt;
-uint32_t USB_EndPointStall;                         /* EP must stay stalled */
+
+/* Endpoint status bitmaps:
+  [31:15]: IN Endpoints 15..0
+  [15: 0]: OUT Endpoints 15..0 */
+uint32_t USB_EndPointMask;  /* IRQ Mask mirror */
+uint32_t USB_EndPointHalt;  /* EP momentarily stalled, e.g. via bRequest=Set_Feature */
+uint32_t USB_EndPointStall; /* EP must not be un-stalled */
+
+
 uint8_t  USB_NumInterfaces;
 uint8_t  USB_AltSetting[USB_IF_NUM];
 
@@ -83,7 +91,14 @@ uint8_t  EP0Buf[USB_MAX_PACKET0];
 USB_EP_DATA EP0Data;
 
 USB_SETUP_PACKET SetupPacket;
+// extern USB_OTG_GRXSTSP_Typedef CurrentRxFifoStatus;
 
+uint8_t USB_NeedsZLP(uint32_t xfersize, uint32_t buffersize) {
+  if(xfersize % buffersize) {
+    return 0;
+  }
+  return 1;
+}
 
 /*
  *  Reset USB Core
@@ -109,7 +124,11 @@ void USB_ResetCore (void) {
  */
 
 void USB_SetupStage (void) {
+  /* Do nothing here for STM32, as the Setup packet has already been copied
+     to the SetupPacket buffer by the FIFO handling */
+#ifndef CONFIG_MK3_STM32
   USB_ReadEP(0x00, (uint8_t *)&SetupPacket);
+#endif
 }
 
 
@@ -127,9 +146,21 @@ void USB_DataInStage (void) {
   } else {
     cnt = EP0Data.Count;
   }
-  cnt = USB_WriteEP(0x80, EP0Data.pData, cnt);
-  EP0Data.pData += cnt;
-  EP0Data.Count -= cnt;
+  if(cnt == 0 && EP0Data.FinalZLP) {
+    DBG_USBHW printf("USB_DataInStage ZLP\n");
+    cnt = USB_WriteEP(0x80, NULL, 0);
+    EP0Data.FinalZLP = 0;
+  } else if (cnt) {
+    cnt = USB_WriteEP(0x80, EP0Data.pData, cnt);
+    DBG_USBHW printf("USB_DataInStage EP0.pData=%p count=%d, new: ", EP0Data.pData, EP0Data.Count);
+    EP0Data.pData += cnt;
+    EP0Data.Count -= cnt;
+    DBG_USBHW printf("pData=%p count=%d\n", EP0Data.pData, EP0Data.Count);
+    if(EP0Data.Count == 0 && cnt == USB_MAX_PACKET0) {
+      EP0Data.FinalZLP = 1;
+      DBG_USBHW printf("Next IN is ZLP\n");
+    }
+  }
 }
 
 
@@ -143,8 +174,10 @@ void USB_DataOutStage (void) {
   uint32_t cnt;
 
   cnt = USB_ReadEP(0x00, EP0Data.pData);
+  DBG_USBHW printf("USB_DataOutStage EP0.pData=%p count=%d, new: ", EP0Data.pData, EP0Data.Count);
   EP0Data.pData += cnt;
   EP0Data.Count -= cnt;
+  DBG_USBHW printf("pData=%p count=%d\n", EP0Data.pData, EP0Data.Count);
 }
 
 
@@ -155,6 +188,7 @@ void USB_DataOutStage (void) {
  */
 
 void USB_StatusInStage (void) {
+  DBG_USBHW printf("Sending ZLP as Status Data (after Setup with OUT/none Data Stage)\n");
   USB_WriteEP(0x80, (void*)0, 0);
 }
 
@@ -284,7 +318,11 @@ static inline uint32_t USB_ReqSetClrFeature (uint32_t sc) {
 static inline uint32_t USB_ReqSetAddress (void) {
   switch (SetupPacket.bmRequestType.BM.Recipient) {
     case REQUEST_TO_DEVICE:
+#ifdef CONFIG_MK3_STM32
+      USB_SetAddress(SetupPacket.wValue.WB.L);
+#else
       USB_DeviceAddress = 0x80 | SetupPacket.wValue.WB.L;
+#endif
       break;
     default:
       return (0);
@@ -307,10 +345,12 @@ static inline uint32_t USB_ReqGetDescriptor (void) {
     case REQUEST_TO_DEVICE:
       switch (SetupPacket.wValue.WB.H) {
         case USB_DEVICE_DESCRIPTOR_TYPE:
+          DBG_USBHW printf("Get Device Descriptor\n");
           EP0Data.pData = (uint8_t *)USB_DeviceDescriptor;
           len = USB_DEVICE_DESC_SIZE;
           break;
         case USB_CONFIGURATION_DESCRIPTOR_TYPE:
+          DBG_USBHW printf("Get Config Descriptor\n");
           pD = (uint8_t *)USB_ConfigDescriptor;
           for (n = 0; n != SetupPacket.wValue.WB.L; n++) {
             if (((USB_CONFIGURATION_DESCRIPTOR *)pD)->bLength != 0) {
@@ -324,6 +364,7 @@ static inline uint32_t USB_ReqGetDescriptor (void) {
           len = ((USB_CONFIGURATION_DESCRIPTOR *)pD)->wTotalLength;
           break;
         case USB_STRING_DESCRIPTOR_TYPE:
+          DBG_USBHW printf("Get String Descriptor Index=%d\n", SetupPacket.wValue.WB.L);
           pD = (uint8_t *)USB_StringDescriptor;
           for (n = 0; n != SetupPacket.wValue.WB.L; n++) {
             if (((USB_STRING_DESCRIPTOR *)pD)->bLength != 0) {
@@ -337,6 +378,7 @@ static inline uint32_t USB_ReqGetDescriptor (void) {
           len = ((USB_STRING_DESCRIPTOR *)EP0Data.pData)->bLength;
           break;
         default:
+          DBG_USBHW printf("Unknown Descriptor Request %02x\n", SetupPacket.wValue.WB.H);
           return (0);
       }
       break;
@@ -605,6 +647,7 @@ void USB_EndPoint0 (uint32_t event) {
       USB_SetupStage();
       USB_DirCtrlEP(SetupPacket.bmRequestType.BM.Dir);
       EP0Data.Count = SetupPacket.wLength;     /* Number of bytes to transfer */
+      DBG_USBHW printf("wLength=%d\n", SetupPacket.wLength);
       switch (SetupPacket.bmRequestType.BM.Type) {
 
         case REQUEST_STANDARD:
@@ -663,6 +706,7 @@ void USB_EndPoint0 (uint32_t event) {
               break;
 
             case USB_REQUEST_SET_CONFIGURATION:
+              DBG_USBHW printf("SetConfiguration\n");
               if (!USB_ReqSetConfiguration()) {
                 goto stall_i;
               }
@@ -680,6 +724,7 @@ void USB_EndPoint0 (uint32_t event) {
               break;
 
             case USB_REQUEST_SET_INTERFACE:
+              DBG_USBHW printf("SetInterface\n");
               if (!USB_ReqSetInterface()) {
                 goto stall_i;
               }
@@ -1061,6 +1106,7 @@ out_class_ok:                                                            /* requ
           }
         }
       } else {
+        DBG_USBHW printf("USB_StatusOutStage\n");
         USB_StatusOutStage();                                            /* receive Acknowledge */
       }
       break;  /* end case USB_EVT_OUT */
@@ -1069,10 +1115,12 @@ out_class_ok:                                                            /* requ
       if (SetupPacket.bmRequestType.BM.Dir == REQUEST_DEVICE_TO_HOST) {
         USB_DataInStage();                                               /* send data */
       } else {
+#ifndef CONFIG_MK3_STM32
         if (USB_DeviceAddress & 0x80) {
           USB_DeviceAddress &= 0x7F;
           USB_SetAddress(USB_DeviceAddress);
         }
+#endif
       }
       break;  /* end case USB_EVT_IN */
 

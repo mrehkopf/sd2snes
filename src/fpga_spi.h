@@ -27,18 +27,14 @@
 #ifndef _FPGA_SPI_H
 #define _FPGA_SPI_H
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
 #include "spi.h"
 #include "config.h"
 
-#define FPGA_SS_BIT 16
-#define FPGA_SS_REG LPC_GPIO0
-
-#define FPGA_SELECT() do {FPGA_TX_SYNC(); BITBAND(FPGA_SS_REG->FIOCLR, FPGA_SS_BIT) = 1;} while (0)
-#define FPGA_SELECT_ASYNC() do {BITBAND(FPGA_SS_REG->FIOCLR, FPGA_SS_BIT) = 1;} while (0)
-#define FPGA_DESELECT() do {FPGA_TX_SYNC(); BITBAND(FPGA_SS_REG->FIOSET, FPGA_SS_BIT) = 1;} while (0)
-#define FPGA_DESELECT_ASYNC() do {BITBAND(FPGA_SS_REG->FIOSET, FPGA_SS_BIT) = 1;} while (0)
+#define FPGA_SELECT() do {FPGA_TX_SYNC(); CLEAR_BIT(FPGA_SSREG, FPGA_SSBIT);} while (0)
+#define FPGA_SELECT_ASYNC() do {CLEAR_BIT(FPGA_SSREG, FPGA_SSBIT);} while (0)
+#define FPGA_DESELECT() do {FPGA_TX_SYNC(); SET_BIT(FPGA_SSREG, FPGA_SSBIT);} while (0)
+#define FPGA_DESELECT_ASYNC() do {SET_BIT(FPGA_SSREG, FPGA_SSBIT);} while (0)
 
 #define FPGA_TX_SYNC()     spi_tx_sync()
 #define FPGA_TX_BYTE(x)    spi_tx_byte(x)
@@ -59,7 +55,7 @@
 #define FEAT_ST0010        (1 << 1)
 #define FEAT_DSPX          (1 << 0)
 
-#define FPGA_WAIT_RDY()    do {while(BITBAND(SSP_REGS->SR, SSP_BSY)); while(!BITBAND(FPGA_MCU_RDY_REG->FIOPIN, FPGA_MCU_RDY_BIT));} while (0)
+#define FPGA_WAIT_RDY()    do {__NOP(); __NOP(); __NOP(); __NOP(); while(!BITBAND(SPI_REGS->SPI_SR, SPI_TFE)); __NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP(); while(!BITBAND(FPGA_MCU_RDY_REG->GPIO_I, FPGA_MCU_RDY_BIT)); } while (0)
 
 /* command parameters */
 #define FPGA_MEM_AUTOINC        (0x8)

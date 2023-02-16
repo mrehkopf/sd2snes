@@ -31,13 +31,13 @@
 
 enum filestates { FILE_OK=0, FILE_ERR, FILE_EOF };
 
-BYTE file_buf[512] __attribute__((aligned(4)));
-FATFS fatfs;
-FIL file_handle;
-FRESULT file_res;
-uint8_t file_lfn[258];
-uint16_t file_block_off, file_block_max;
-enum filestates file_status;
+extern BYTE file_buf[512] __attribute__((aligned(4)));
+extern FATFS fatfs;
+extern FIL file_handle;
+extern FRESULT file_res;
+extern uint8_t file_lfn[258];
+extern uint16_t file_block_off, file_block_max;
+extern enum filestates file_status;
 
 void file_init(void);
 void file_open(uint8_t* filename, BYTE flags);

@@ -1,4 +1,3 @@
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include <arm/bits.h>
 #include "config.h"
 #include "rtc.h"

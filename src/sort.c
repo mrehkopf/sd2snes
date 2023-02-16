@@ -1,5 +1,4 @@
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include <string.h>
 #include <stdlib.h>
 #include "config.h"

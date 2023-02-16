@@ -231,8 +231,9 @@ wire free_slot = (SNES_PULSE_end | free_strobe) & ~SD_DMA_TO_ROM;
 // TODO: Provide full bandwidth if snes is not accessing the bus.
 reg [7:0] SNES_cycle_end_delay;
 always @(posedge CLK2) begin
-  free_strobe <= 1'b0;
+//  free_strobe <= 1'b0;
   if(SNES_cycle_start) free_strobe <= (~ROM_HIT);
+  if(SNES_PULSE_end) free_strobe <= 1'b0;
 end
 
 always @(posedge CLK2) begin

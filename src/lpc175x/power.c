@@ -1,6 +1,6 @@
 /* ___DISCLAIMER___ */
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
+#include "config.h"
 #include "bits.h"
 #include "power.h"
 

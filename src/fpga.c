@@ -25,7 +25,6 @@
 */
 
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
 
 #include "fpga.h"
@@ -45,46 +44,40 @@
 uint8_t SPI_OFFLOAD;
 
 const uint8_t *fpga_config;
-
 void fpga_set_prog_b(uint8_t val) {
-  if(val)
-    BITBAND(FPGA_PROGBREG->FIOSET, FPGA_PROGBBIT) = 1;
-  else
-    BITBAND(FPGA_PROGBREG->FIOCLR, FPGA_PROGBBIT) = 1;
+  OUT_BIT(FPGA_PROGBREG, FPGA_PROGBBIT, val);
 }
 
 void fpga_set_cclk(uint8_t val) {
-  if(val)
-    BITBAND(FPGA_CCLKREG->FIOSET, FPGA_CCLKBIT) = 1;
-  else
-    BITBAND(FPGA_CCLKREG->FIOCLR, FPGA_CCLKBIT) = 1;
+  OUT_BIT(FPGA_CCLKREG, FPGA_CCLKBIT, val);
 }
 
 int fpga_get_initb() {
-  return BITBAND(FPGA_INITBREG->FIOPIN, FPGA_INITBBIT);
+  return BITBAND(FPGA_INITBREG->GPIO_I, FPGA_INITBBIT);
 }
 
 void fpga_init() {
 /* mainly GPIO directions */
-  BITBAND(FPGA_CCLKREG->FIODIR, FPGA_CCLKBIT) = 1; /* CCLK */
-  BITBAND(FPGA_DONEREG->FIODIR, FPGA_DONEBIT) = 0; /* DONE */
-  BITBAND(FPGA_PROGBREG->FIODIR, FPGA_PROGBBIT) = 1; /* PROG_B */
-  BITBAND(FPGA_DINREG->FIODIR, FPGA_DINBIT) = 1; /* DIN */
-  BITBAND(FPGA_INITBREG->FIODIR, FPGA_INITBBIT) = 0; /* INIT_B */
+  GPIO_MODE_OUT(FPGA_CCLKREG, FPGA_CCLKBIT);   /* CCLK */
+  GPIO_MODE_IN(FPGA_DONEREG, FPGA_DONEBIT);    /* DONE */
+  GPIO_MODE_OUT(FPGA_PROGBREG, FPGA_PROGBBIT); /* PROG_B */
+  GPIO_MODE_OUT(FPGA_DINREG, FPGA_DINBIT);     /* DIN */
+  GPIO_MODE_IN(FPGA_INITBREG, FPGA_INITBBIT);  /* INIT_B */
 
-  LPC_GPIO2->FIOMASK1 = 0;
+/* pullup inputs */
+  GPIO_PULLUP(FPGA_DONEREG, FPGA_DONEBIT);
+  GPIO_PULLUP(FPGA_INITBREG, FPGA_INITBBIT);
 
   SPI_OFFLOAD=0;
   fpga_set_cclk(0);    /* initial clk=0 */
 }
 
 int fpga_get_done(void) {
-  return BITBAND(FPGA_DONEREG->FIOPIN, FPGA_DONEBIT);
+  return BITBAND(FPGA_DONEREG->GPIO_I, FPGA_DONEBIT);
 }
 
 void fpga_postinit() {
-  LPC_GPIO2->FIOMASK1 = 0;
-  BITBAND(FPGA_DINREG->FIODIR, FPGA_DINBIT) = 0; /* DATA0 -> MCU_RDY */
+  GPIO_MODE_IN(FPGA_DINREG, FPGA_DINBIT); /* DATA0 -> MCU_RDY */
 }
 
 void fpga_pgm(uint8_t* filename) {
@@ -106,7 +99,7 @@ void fpga_pgm(uint8_t* filename) {
     i=0;
     timeout = getticks() + 1;
     fpga_set_prog_b(0);
-    while(BITBAND(FPGA_PROGBREG->FIOPIN, FPGA_PROGBBIT)) {
+    while(BITBAND(FPGA_PROGBREG->GPIO_I, FPGA_PROGBBIT)) {
       if(getticks() > timeout) {
         printf("fpga_pgm: PROGB is stuck high!\n");
         led_panic(LED_PANIC_FPGA_PROGB_STUCK);
@@ -128,16 +121,17 @@ void fpga_pgm(uint8_t* filename) {
         led_panic(LED_PANIC_FPGA_DONE_STUCK);
       }
     }
-    LPC_GPIO2->FIOMASK1 = ~(BV(0));
     uart_putc('p');
 
     uart_putc('C');
+    FPGA_DIN_MASK();
     for (;;) {
       data = rle_file_getc();
       i++;
       if (file_status || file_res) break;   /* error or eof */
       FPGA_SEND_BYTE_SERIAL(data);
     }
+    FPGA_DIN_UNMASK();
     uart_putc('c');
     file_close();
     printf("fpga_pgm: %d bytes programmed\n", i);
@@ -187,18 +181,19 @@ void fpga_rompgm() {
         led_panic(LED_PANIC_FPGA_DONE_STUCK);
       }
     }
-    LPC_GPIO2->FIOMASK1 = ~(BV(0));
     uart_putc('p');
 
     /* open configware file */
     rle_mem_init(cfgware, sizeof(cfgware));
     printf("sizeof(cfgware) = %d\n", sizeof(cfgware));
+    FPGA_DIN_MASK();
     for (;;) {
       data = rle_mem_getc();
       if(rle_state) break;
       i++;
       FPGA_SEND_BYTE_SERIAL(data);
     }
+    FPGA_DIN_UNMASK();
     uart_putc('c');
     printf("fpga_rompgm: %d bytes programmed\n", i);
     delay_ms(1);

@@ -1,4 +1,3 @@
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
 #include "config.h"
 #include "uart.h"
@@ -24,10 +23,10 @@ enum cicstates get_cic_state() {
   uint32_t togglecount = 0;
   uint8_t state, state_old;
 
-  state_old = BITBAND(SNES_CIC_STATUS_REG->FIOPIN, SNES_CIC_STATUS_BIT);
+  state_old = BITBAND(SNES_CIC_STATUS_REG->GPIO_I, SNES_CIC_STATUS_BIT);
 /* this loop samples at ~10MHz */
   for(count=0; count<CIC_SAMPLECOUNT; count++) {
-    state = BITBAND(SNES_CIC_STATUS_REG->FIOPIN, SNES_CIC_STATUS_BIT);
+    state = BITBAND(SNES_CIC_STATUS_REG->GPIO_I, SNES_CIC_STATUS_BIT);
     if(state != state_old) {
       togglecount++;
     }
@@ -45,12 +44,10 @@ enum cicstates get_cic_state() {
 }
 
 void cic_init(int allow_pairmode) {
-  BITBAND(SNES_CIC_PAIR_REG->FIODIR, SNES_CIC_PAIR_BIT) = 1;
-  if(allow_pairmode) {
-    BITBAND(SNES_CIC_PAIR_REG->FIOCLR, SNES_CIC_PAIR_BIT) = 1;
-  } else {
-    BITBAND(SNES_CIC_PAIR_REG->FIOSET, SNES_CIC_PAIR_BIT) = 1;
-  }
+  GPIO_MODE_OUT(SNES_CIC_PAIR_REG, SNES_CIC_PAIR_BIT);
+  OUT_BIT(SNES_CIC_PAIR_REG, SNES_CIC_PAIR_BIT, !allow_pairmode);
+  GPIO_MODE_IN(SNES_CIC_D0_REG, SNES_CIC_D0_BIT);
+  GPIO_MODE_IN(SNES_CIC_D1_REG, SNES_CIC_D1_BIT);
 }
 
 /* prepare GPIOs for pair mode + set initial modes */
@@ -58,23 +55,15 @@ void cic_pair(int init_vmode, int init_d4) {
   cic_videomode(init_vmode);
   cic_d4(init_d4);
 
-  BITBAND(SNES_CIC_D0_REG->FIODIR, SNES_CIC_D0_BIT) = 1;
-  BITBAND(SNES_CIC_D1_REG->FIODIR, SNES_CIC_D1_BIT) = 1;
+  GPIO_MODE_OUT(SNES_CIC_D0_REG, SNES_CIC_D0_BIT);
+  GPIO_MODE_OUT(SNES_CIC_D1_REG, SNES_CIC_D1_BIT);
 }
 
 void cic_videomode(int value) {
-  if(value) {
-    BITBAND(SNES_CIC_D0_REG->FIOSET, SNES_CIC_D0_BIT) = 1;
-  } else {
-    BITBAND(SNES_CIC_D0_REG->FIOCLR, SNES_CIC_D0_BIT) = 1;
-  }
+  OUT_BIT(SNES_CIC_D0_REG, SNES_CIC_D0_BIT, value);
 }
 
 void cic_d4(int value) {
-  if(value) {
-    BITBAND(SNES_CIC_D1_REG->FIOSET, SNES_CIC_D1_BIT) = 1;
-  } else {
-    BITBAND(SNES_CIC_D1_REG->FIOCLR, SNES_CIC_D1_BIT) = 1;
-  }
+  OUT_BIT(SNES_CIC_D1_REG, SNES_CIC_D1_BIT, value);
 }
 

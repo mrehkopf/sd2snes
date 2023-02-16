@@ -19,7 +19,6 @@
  *          V1.20 Added USB_ClearEPBuf
  *          V1.00 Initial Version
  *----------------------------------------------------------------------------*/
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include <arm/bits.h>
 
 #include "config.h"
@@ -153,19 +152,20 @@ void USB_Init (void) {
   LPC_SC->PCONP |= (1UL<<31);                /* USB PCLK -> enable USB Per.       */
 
  /* disable pull-up on fake USB_CONNECT pin, set P1.30 function to VBUS */
-  USB_CONN_MODEREG |= BV(USB_CONN_MODEBIT);
-  USB_VBUS_PINSEL |= BV(USB_VBUS_PINSELBIT);
-  USB_VBUS_MODEREG |= BV(USB_VBUS_MODEBIT);
+  GPIO_MODE_AF(USB_VBUSREG, USB_VBUSBIT, 2);
+  GPIO_PULLNONE(USB_VBUSREG, USB_VBUSBIT);
+  GPIO_PULLNONE(USB_CONNREG, USB_CONNBIT);
 
-  LPC_PINCON->PINSEL1 &= ~((3<<26)|(3<<28));   /* P0.29 D+, P0.30 D- */
-  LPC_PINCON->PINSEL1 |=  ((1<<26)|(1<<28));   /* PINSEL1 26.27, 28.29  = 01 */
+  /* P0.29 D+, P0.30 D- */
+  GPIO_MODE_AF(USB_DPLUSREG, USB_DPLUSBIT, 1);
+  GPIO_MODE_AF(USB_DMINUSREG, USB_DMINUSBIT, 1);
 
   LPC_USB->USBClkCtrl = 0x12;                /* Dev, PortSel, AHB clock enable */
   while ((LPC_USB->USBClkSt & 0x12) != 0x12);
   NVIC_EnableIRQ(USB_IRQn);               /* enable USB interrupt */
   USB_Reset();
   USB_SetAddress(0);
-  BITBAND(USB_CONNREG->FIOCLR, USB_CONNBIT) = 1;
+  USB_CONNREG->FIOCLR = BV(USB_CONNBIT);
   BITBAND(USB_CONNREG->FIODIR, USB_CONNBIT) = 1;
 }
 
@@ -186,6 +186,16 @@ void USB_Connect (uint32_t con) {
   }
 }
 
+/*
+ * IRQ disable/enable wrapper
+ */
+
+void USB_EnableIRQ() {
+  NVIC_EnableIRQ(USB_IRQn);
+}
+void USB_DisableIRQ() {
+  NVIC_DisableIRQ(USB_IRQn);
+}
 
 /*
  *  USB Reset Function
@@ -835,4 +845,17 @@ void USB_IRQHandler (void) {
 
 isr_end:
   return;
+}
+
+char Endpoint_IsINReady(void) {
+  uint8_t SelEP_Data;
+
+  WrCmd(CMD_SEL_EP(2));
+  SelEP_Data = RdCmdDat(DAT_SEL_EP(2));
+
+  if ((SelEP_Data & 1) == 0) {
+    return 1;
+  }
+
+  return 0;
 }

@@ -4,44 +4,11 @@
 
 */
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
 #include "config.h"
 #include "uart.h"
 #include "led.h"
 
-/* A few symbols to make this code work for all four UARTs */
-#if defined(CONFIG_UART_NUM) && CONFIG_UART_NUM == 0
-#  define UART_PCONBIT 3
-#  define UART_PCLKREG PCLKSEL0
-#  define UART_PCLKBIT 6
-#  define UART_REGS    LPC_UART0
-#  define UART_HANDLER UART0_IRQHandler
-#  define UART_IRQ     UART0_IRQn
-#elif CONFIG_UART_NUM == 1
-#  define UART_PCONBIT 4
-#  define UART_PCLKREG PCLKSEL0
-#  define UART_PCLKBIT 8
-#  define UART_REGS    LPC_UART1
-#  define UART_HANDLER UART1_IRQHandler
-#  define UART_IRQ     UART1_IRQn
-#elif CONFIG_UART_NUM == 2
-#  define UART_PCONBIT 24
-#  define UART_PCLKREG PCLKSEL1
-#  define UART_PCLKBIT 16
-#  define UART_REGS    LPC_UART2
-#  define UART_HANDLER UART2_IRQHandler
-#  define UART_IRQ     UART2_IRQn
-#elif CONFIG_UART_NUM == 3
-#  define UART_PCONBIT 25
-#  define UART_PCLKREG PCLKSEL1
-#  define UART_PCLKBIT 18
-#  define UART_REGS    LPC_UART3
-#  define UART_HANDLER UART3_IRQHandler
-#  define UART_IRQ     UART3_IRQn
-#else
-#  error CONFIG_UART_NUM is not set or has an invalid value!
-#endif
 static uint8_t uart_lookupratio(float f_fr) {
   uint16_t errors[72]={0,67,71,77,83,91,100,111,125,
                        133,143,154,167,182,200,214,222,231,
@@ -181,6 +148,10 @@ unsigned char uart_gotc(void) {
 
 void uart_init(void) {
   uint32_t div;
+
+  /* Connect UART on P0[25:26] */
+  GPIO_MODE_AF(LPC_GPIO0, 25, 3);
+  GPIO_MODE_AF(LPC_GPIO0, 26, 3);
 
   /* Turn on power to UART */
   BITBAND(LPC_SC->PCONP, UART_PCONBIT) = 1;

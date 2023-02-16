@@ -27,7 +27,6 @@
 #ifndef FPGA_H
 #define FPGA_H
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
 #include "config.h"
 
@@ -57,8 +56,8 @@ extern const uint8_t *fpga_config;
 #define FPGA_TEST_TOKEN	(0xa5)
 
 // some macros for bulk transfers (faster)
-#define SET_CCLK()          do {BITBAND(FPGA_CCLKREG->FIOSET, FPGA_CCLKBIT) = 1;} while (0)
-#define CLR_CCLK()          do {BITBAND(FPGA_CCLKREG->FIOCLR, FPGA_CCLKBIT) = 1;} while (0)
+#define SET_CCLK()          do {SET_BIT(FPGA_CCLKREG, FPGA_CCLKBIT);} while (0)
+#define CLR_CCLK()          do {CLEAR_BIT(FPGA_CCLKREG, FPGA_CCLKBIT);} while (0)
 #define CCLK()              do {SET_CCLK(); CLR_CCLK();} while (0)
-#define SET_FPGA_DIN(data)  do {FPGA_DINREG->FIOPIN1 = data;} while (0)
+
 #endif

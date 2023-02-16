@@ -1,4 +1,3 @@
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include <stdio.h>
 #include "config.h"
 #include "crc.h"
@@ -179,43 +178,59 @@ uint8_t* sdn_getcid() {
 static inline void wiggle_slow_pos(uint16_t times) {
   while(times--) {
     delay_us(2);
-    BITBAND(SD_CLKREG->FIOSET, SD_CLKPIN) = 1;
+    SET_BIT(SD_CLKREG, SD_CLKBIT);
     delay_us(2);
-    BITBAND(SD_CLKREG->FIOCLR, SD_CLKPIN) = 1;
+    CLEAR_BIT(SD_CLKREG, SD_CLKBIT);
   }
 }
 
 static inline void wiggle_slow_neg(uint16_t times) {
   while(times--) {
     delay_us(2);
-    BITBAND(SD_CLKREG->FIOCLR, SD_CLKPIN) = 1;
+    CLEAR_BIT(SD_CLKREG, SD_CLKBIT);
     delay_us(2);
-    BITBAND(SD_CLKREG->FIOSET, SD_CLKPIN) = 1;
+    SET_BIT(SD_CLKREG, SD_CLKBIT);
   }
 }
 
 static inline void wiggle_fast_pos(uint16_t times) {
   while(times--) {
-    BITBAND(SD_CLKREG->FIOSET, SD_CLKPIN) = 1;
-    BITBAND(SD_CLKREG->FIOCLR, SD_CLKPIN) = 1;
+    SET_BIT(SD_CLKREG, SD_CLKBIT);
+    __DSB();
+//    __NOP();
+    CLEAR_BIT(SD_CLKREG, SD_CLKBIT);
+    __DSB();
+//    __NOP();
   }
 }
 
 static inline void wiggle_fast_neg(uint16_t times) {
   while(times--) {
-    BITBAND(SD_CLKREG->FIOCLR, SD_CLKPIN) = 1;
-    BITBAND(SD_CLKREG->FIOSET, SD_CLKPIN) = 1;
+    CLEAR_BIT(SD_CLKREG, SD_CLKBIT);
+//    __DSB();
+    __NOP();
+    SET_BIT(SD_CLKREG, SD_CLKBIT);
+//    __DSB();
+    __NOP();
   }
 }
 
 static inline void wiggle_fast_neg1(void) {
-  BITBAND(SD_CLKREG->FIOCLR, SD_CLKPIN) = 1;
-  BITBAND(SD_CLKREG->FIOSET, SD_CLKPIN) = 1;
+    CLEAR_BIT(SD_CLKREG, SD_CLKBIT);
+//    __DSB();
+    __NOP();
+    SET_BIT(SD_CLKREG, SD_CLKBIT);
+//    __DSB();
+    __NOP();
 }
 
 static inline void wiggle_fast_pos1(void) {
-  BITBAND(SD_CLKREG->FIOSET, SD_CLKPIN) = 1;
-  BITBAND(SD_CLKREG->FIOCLR, SD_CLKPIN) = 1;
+    SET_BIT(SD_CLKREG, SD_CLKBIT);
+//    __DSB();
+    __NOP();
+    CLEAR_BIT(SD_CLKREG, SD_CLKBIT);
+//    __DSB();
+    __NOP();
 }
 
 
@@ -227,7 +242,7 @@ int get_and_check_datacrc(uint8_t *buf) {
   uint16_t datcnt;
   /* get crcs from card */
   for (datcnt=0; datcnt < 16; datcnt++) {
-    datdata = SD_DAT;
+    datdata = SD_DAT_IN;
     wiggle_fast_neg1();
     sdcrc0 = ((sdcrc0 << 1) & 0xfffe) | ((datdata >> 3) & 0x0001);
     sdcrc1 = ((sdcrc1 << 1) & 0xfffe) | ((datdata >> 2) & 0x0001);
@@ -256,7 +271,7 @@ int get_and_check_datacrc(uint8_t *buf) {
 }
 
 static inline void wait_busy(void) {
-  while(!(BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))) {
+  while(!(BITBAND(SD_DAT0REG->GPIO_I, SD_DAT0BIT))) {
     wiggle_fast_neg1();
   }
   wiggle_fast_neg(4);
@@ -285,7 +300,7 @@ int send_command_slow(uint8_t* cmd, uint8_t* rsp){
       rsplen = 6;
   }
   /* send command */
-  BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 1;
+  GPIO_MODE_OUT(SD_CMDREG, SD_CMDBIT);
 
   while(i--) {
     shift = 8;
@@ -294,9 +309,9 @@ int send_command_slow(uint8_t* cmd, uint8_t* rsp){
       uint8_t data = *cmd;
       *cmd<<=1;
       if(data&0x80) {
-        BITBAND(SD_CMDREG->FIOSET, SD_CMDPIN) = 1;
+        SET_BIT(SD_CMDREG, SD_CMDBIT);
       } else {
-        BITBAND(SD_CMDREG->FIOCLR, SD_CMDPIN) = 1;
+        CLEAR_BIT(SD_CMDREG, SD_CMDBIT);
       }
       wiggle_slow_pos(1);
     } while (shift);
@@ -304,11 +319,11 @@ int send_command_slow(uint8_t* cmd, uint8_t* rsp){
   }
 
   wiggle_slow_pos(1);
-  BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 0;
+  GPIO_MODE_IN(SD_CMDREG, SD_CMDBIT);
 
   if(rsplen) {
     uint16_t timeout=1000;
-    while((BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN)) && --timeout) {
+    while((BITBAND(SD_CMDREG->GPIO_I, SD_CMDBIT)) && --timeout) {
       wiggle_slow_neg(1);
     }
     if(!timeout) {
@@ -322,7 +337,7 @@ int send_command_slow(uint8_t* cmd, uint8_t* rsp){
       uint8_t data=0;
       do {
         shift--;
-        data |= (BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN)) << shift;
+        data |= (BITBAND(SD_CMDREG->GPIO_I, SD_CMDBIT)) << shift;
         wiggle_slow_neg(1);
       } while (shift);
       *rsp=data;
@@ -370,7 +385,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
     return 0;
   }
   /* send command */
-  BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 1;
+  GPIO_MODE_OUT(SD_CMDREG, SD_CMDBIT);
 
   while(i--) {
     uint8_t data = *cmd;
@@ -378,9 +393,9 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
     do {
       cmdshift--;
       if(data&0x80) {
-        BITBAND(SD_CMDREG->FIOSET, SD_CMDPIN) = 1;
+        SET_BIT(SD_CMDREG, SD_CMDBIT);
       } else {
-        BITBAND(SD_CMDREG->FIOCLR, SD_CMDPIN) = 1;
+        CLEAR_BIT(SD_CMDREG, SD_CMDBIT);
       }
       data<<=1;
       wiggle_fast_pos1();
@@ -389,12 +404,12 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
   }
 
   wiggle_fast_pos1();
-  BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 0;
+  GPIO_MODE_IN(SD_CMDREG, SD_CMDBIT);
 
   if(rsplen) {
     uint32_t timeout=200000;
     /* wait for response */
-    while((BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN)) && --timeout) {
+    while((BITBAND(SD_CMDREG->GPIO_I, SD_CMDBIT)) && --timeout) {
       wiggle_fast_neg1();
     }
     if(!timeout) {
@@ -407,7 +422,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
       cmdshift = 8;
       do {
         if(dat) {
-          if(!(BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN))) {
+          if(!(BITBAND(SD_DAT0REG->GPIO_I, SD_DAT0BIT))) {
             printf("data start during response\n");
             j=datcnt;
             state=CMD_RSPDAT;
@@ -415,7 +430,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
           }
         }
         cmdshift--;
-        cmddata |= (BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN)) << cmdshift;
+        cmddata |= (BITBAND(SD_CMDREG->GPIO_I, SD_CMDBIT)) << cmdshift;
         wiggle_fast_neg1();
       } while (cmdshift);
       if(state==CMD_RSPDAT)break;
@@ -430,7 +445,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
       datshift=8;
       while(1) {
         cmdshift--;
-        cmddata |= (BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN)) << cmdshift;
+        cmddata |= (BITBAND(SD_CMDREG->GPIO_I, SD_CMDBIT)) << cmdshift;
         if(!cmdshift) {
           cmdshift=8;
           *rsp=cmddata;
@@ -445,7 +460,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
         }
         if(!startbit) {
           datshift-=4;
-          datdata |= SD_DAT << datshift;
+          datdata |= SD_DAT_IN << datshift;
           if(!datshift) {
             datshift=8;
             *buf=datdata;
@@ -461,14 +476,14 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
     }
 
     if(dat && state != CMD_DAT) { /* response ended before data */
-      BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 1;
+      GPIO_MODE_OUT(SD_CMDREG, SD_CMDBIT);
       state=CMD_DAT;
       j=datcnt;
       datshift=8;
       timeout=2000000;
       DBG_SD printf("response over, waiting for data...\n");
       /* wait for data start bit on DAT0 */
-      while((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) && --timeout) {
+      while((BITBAND(SD_DAT0REG->GPIO_I, SD_DAT0BIT)) && --timeout) {
         wiggle_fast_neg1();
       }
 // printf("%ld\n", timeout);
@@ -501,10 +516,10 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
       DBG_SD printf("remaining data: %d\n", j);
       if(datshift==8) {
         while(1) {
-          datdata |= SD_DAT << 4;
+          datdata |= SD_DAT_IN << 4;
           wiggle_fast_neg1();
 
-          datdata |= SD_DAT;
+          datdata |= SD_DAT_IN;
           wiggle_fast_neg1();
 
           *buf=datdata;
@@ -517,7 +532,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
 
         while(1) {
           datshift-=4;
-          datdata |= SD_DAT << datshift;
+          datdata |= SD_DAT_IN << datshift;
           if(!datshift) {
             datshift=8;
             *buf=datdata;
@@ -549,7 +564,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
   }
   rsp-=rsplen;
   DBG_SD printf("send_command_fast: CMD%d response: %02x%02x%02x%02x%02x%02x\n", cmdno, rsp[0], rsp[1], rsp[2], rsp[3], rsp[4], rsp[5]);
-  BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 1;
+  GPIO_MODE_OUT(SD_CMDREG, SD_CMDBIT);
   return rsplen;
 }
 
@@ -615,7 +630,7 @@ int stream_datablock(uint8_t *buf) {
 
   DBG_SD printf("stream_datablock: wait for ready...\n");
   if(during_blocktrans != TRANS_MID) {
-    while((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) && --timeout) {
+    while((BITBAND(SD_DAT0REG->GPIO_I, SD_DAT0BIT)) && --timeout) {
       wiggle_fast_neg1();
     }
     DBG_SD if(!timeout) printf("timeout!\n");
@@ -637,10 +652,10 @@ int stream_datablock(uint8_t *buf) {
     }
   } else {
     while(1) {
-      datdata = SD_DAT << 4;
+      datdata = SD_DAT_IN << 4;
       wiggle_fast_neg1();
 
-      datdata |= SD_DAT;
+      datdata |= SD_DAT_IN;
       wiggle_fast_neg1();
 
       *buf=datdata;
@@ -663,15 +678,12 @@ void send_datablock(uint8_t *buf) {
   uint8_t dat0=0, dat1=0, dat2=0, dat3=0, crcshift, datshift;
 
   wiggle_fast_pos1();
-  BITBAND(SD_DAT0REG->FIODIR, SD_DAT0PIN) = 1;
-  BITBAND(SD_DAT1REG->FIODIR, SD_DAT1PIN) = 1;
-  BITBAND(SD_DAT2REG->FIODIR, SD_DAT2PIN) = 1;
-  BITBAND(SD_DAT3REG->FIODIR, SD_DAT3PIN) = 1;
+  GPIO_MODE_OUT(SD_DAT0REG, SD_DAT0BIT);
+  GPIO_MODE_OUT(SD_DAT1REG, SD_DAT1BIT);
+  GPIO_MODE_OUT(SD_DAT2REG, SD_DAT2BIT);
+  GPIO_MODE_OUT(SD_DAT3REG, SD_DAT3BIT);
 
-  BITBAND(SD_DAT0REG->FIOCLR, SD_DAT0PIN) = 1;
-  BITBAND(SD_DAT1REG->FIOCLR, SD_DAT1PIN) = 1;
-  BITBAND(SD_DAT2REG->FIOCLR, SD_DAT2PIN) = 1;
-  BITBAND(SD_DAT3REG->FIOCLR, SD_DAT3PIN) = 1;
+  SD_DAT_OUT(0);
 
   wiggle_fast_pos1(); /* send start bit to card */
   crcshift=8;
@@ -679,27 +691,7 @@ void send_datablock(uint8_t *buf) {
     datshift=8;
     do {
       datshift-=4;
-/*      if(((*buf)>>datshift) & 0x8) {
-        BITBAND(SD_DAT3REG->FIOSET, SD_DAT3PIN) = 1;
-      } else {
-        BITBAND(SD_DAT3REG->FIOCLR, SD_DAT3PIN) = 1;
-      }
-      if(((*buf)>>datshift) & 0x4) {
-        BITBAND(SD_DAT2REG->FIOSET, SD_DAT2PIN) = 1;
-      } else {
-        BITBAND(SD_DAT2REG->FIOCLR, SD_DAT2PIN) = 1;
-      }
-      if(((*buf)>>datshift) & 0x2){
-        BITBAND(SD_DAT1REG->FIOSET, SD_DAT1PIN) = 1;
-      } else {
-        BITBAND(SD_DAT1REG->FIOCLR, SD_DAT1PIN) = 1;
-      }
-      if(((*buf)>>datshift) & 0x1){
-        BITBAND(SD_DAT0REG->FIOSET, SD_DAT0PIN) = 1;
-      } else {
-        BITBAND(SD_DAT0REG->FIOCLR, SD_DAT0PIN) = 1;
-      }*/
-      SD_DAT0REG->FIOPIN0 = (*buf) >> datshift;
+      SD_DAT_OUT(((*buf)>>datshift) & 0xf);
       wiggle_fast_pos1();
     } while (datshift);
 
@@ -726,40 +718,22 @@ void send_datablock(uint8_t *buf) {
   datshift=16;
   do {
     datshift--;
-    if((crc0 >> datshift) & 1) {
-      BITBAND(SD_DAT0REG->FIOSET, SD_DAT0PIN) = 1;
-    } else {
-      BITBAND(SD_DAT0REG->FIOCLR, SD_DAT0PIN) = 1;
-    }
-    if((crc1 >> datshift) & 1) {
-      BITBAND(SD_DAT1REG->FIOSET, SD_DAT1PIN) = 1;
-    } else {
-      BITBAND(SD_DAT1REG->FIOCLR, SD_DAT1PIN) = 1;
-    }
-    if((crc2 >> datshift) & 1) {
-      BITBAND(SD_DAT2REG->FIOSET, SD_DAT2PIN) = 1;
-    } else {
-      BITBAND(SD_DAT2REG->FIOCLR, SD_DAT2PIN) = 1;
-    }
-    if((crc3 >> datshift) & 1) {
-      BITBAND(SD_DAT3REG->FIOSET, SD_DAT3PIN) = 1;
-    } else {
-      BITBAND(SD_DAT3REG->FIOCLR, SD_DAT3PIN) = 1;
-    }
+    OUT_BIT(SD_DAT0REG, SD_DAT0BIT, (crc0 >> datshift) & 1);
+    OUT_BIT(SD_DAT1REG, SD_DAT1BIT, (crc1 >> datshift) & 1);
+    OUT_BIT(SD_DAT2REG, SD_DAT2BIT, (crc2 >> datshift) & 1);
+    OUT_BIT(SD_DAT3REG, SD_DAT3BIT, (crc3 >> datshift) & 1);
     wiggle_fast_pos1();
   } while(datshift);
+
   /* send end bit */
-  BITBAND(SD_DAT0REG->FIOSET, SD_DAT0PIN) = 1;
-  BITBAND(SD_DAT1REG->FIOSET, SD_DAT1PIN) = 1;
-  BITBAND(SD_DAT2REG->FIOSET, SD_DAT2PIN) = 1;
-  BITBAND(SD_DAT3REG->FIOSET, SD_DAT3PIN) = 1;
+  SD_DAT_OUT(0xf);
 
   wiggle_fast_pos1();
 
-  BITBAND(SD_DAT0REG->FIODIR, SD_DAT0PIN) = 0;
-  BITBAND(SD_DAT1REG->FIODIR, SD_DAT1PIN) = 0;
-  BITBAND(SD_DAT2REG->FIODIR, SD_DAT2PIN) = 0;
-  BITBAND(SD_DAT3REG->FIODIR, SD_DAT3PIN) = 0;
+  GPIO_MODE_IN(SD_DAT0REG, SD_DAT0BIT);
+  GPIO_MODE_IN(SD_DAT1REG, SD_DAT1BIT);
+  GPIO_MODE_IN(SD_DAT2REG, SD_DAT2BIT);
+  GPIO_MODE_IN(SD_DAT3REG, SD_DAT3BIT);
 
   wiggle_fast_neg(3);
   dat0=0;
@@ -767,7 +741,7 @@ void send_datablock(uint8_t *buf) {
   datshift=4;
   do {
     datshift--;
-    dat0 |= ((BITBAND(SD_DAT0REG->FIOPIN, SD_DAT0PIN)) << datshift);
+    dat0 |= ((BITBAND(SD_DAT0REG->GPIO_I, SD_DAT0BIT)) << datshift);
     wiggle_fast_neg1();
   } while (datshift);
   DBG_SD printf("crc %02x\n", dat0);
@@ -834,6 +808,7 @@ void read_block(uint32_t address, uint8_t *buf) {
 #endif
     sd_offload_partial = 0;
   }
+//  uart_trace(buf, 0, 512);
 //  printf("trans state = %d\n", during_blocktrans);
 }
 
@@ -927,15 +902,15 @@ DSTATUS sdn_initialize(BYTE drv) {
      power-up because it has already been initialized by the bootloader as well
   */
   for(rsplen=0; rsplen<2042; rsplen++) {
-    if(!(BITBAND(SD_DAT3REG->FIOPIN, SD_DAT3PIN))) {
+    if(!(BITBAND(SD_DAT3REG->GPIO_I, SD_DAT3BIT))) {
       printf("card seems to be sending data, attempting deselect\n");
       cmd_slow(SELECT_CARD, 0, 0, NULL, rsp);
     }
     wiggle_slow_neg(1);
   }
   printf("sd_init start\n");
-  BITBAND(SD_DAT3REG->FIODIR, SD_DAT3PIN) = 1;
-  BITBAND(SD_DAT3REG->FIOSET, SD_DAT3PIN) = 1;
+  GPIO_MODE_OUT(SD_DAT3REG, SD_DAT3BIT);
+  SET_BIT(SD_DAT3REG, SD_DAT3BIT);
   cmd_slow(GO_IDLE_STATE, 0, 0x95, NULL, rsp);
 
   if((rsplen=cmd_slow(SEND_IF_COND, 0x000001aa, 0x87, NULL, rsp))) {
@@ -949,9 +924,8 @@ DSTATUS sdn_initialize(BYTE drv) {
     }
     if(rsp[1]&0x80) break;
   }
-
-  BITBAND(SD_DAT3REG->FIODIR, SD_DAT3PIN) = 0;
-  BITBAND(SD_DAT3REG->FIOCLR, SD_DAT3PIN) = 1;
+  GPIO_MODE_IN(SD_DAT3REG, SD_DAT3BIT);
+  CLEAR_BIT(SD_DAT3REG, SD_DAT3BIT);
 
   ccs = (rsp[1]>>6) & 1; /* SDHC/XC */
 
@@ -999,19 +973,19 @@ void sdn_init(void) {
   /* enable GPIO interrupt on SD detect pin, both edges */
 /*  NVIC_EnableIRQ(EINT3_IRQn);
   SD_DT_INT_SETUP(); */
-  /* disconnect SSP1 */
-  LPC_PINCON->PINSEL0 &= ~(BV(13) | BV(15) | BV(17) | BV(19));
   /* prepare GPIOs */
-  BITBAND(SD_DAT3REG->FIODIR, SD_DAT3PIN) = 0;
-  BITBAND(SD_DAT2REG->FIODIR, SD_DAT2PIN) = 0;
-  BITBAND(SD_DAT1REG->FIODIR, SD_DAT1PIN) = 0;
-  BITBAND(SD_DAT0REG->FIODIR, SD_DAT0PIN) = 0;
-  BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 1;
-  BITBAND(SD_CMDREG->FIODIR, SD_CMDPIN) = 1;
-  BITBAND(SD_CMDREG->FIOPIN, SD_CMDPIN) = 1;
-  LPC_PINCON->PINMODE0 &= ~(BV(14) | BV(15));
-  LPC_GPIO2->FIOPIN0 = 0x00;
-  LPC_GPIO2->FIOMASK0 = ~0xf;
+  GPIO_MODE_IN(SD_DTREG, SD_DTBIT);
+  GPIO_PULLUP(SD_DTREG, SD_DTBIT);
+  GPIO_MODE_IN(SD_DAT3REG, SD_DAT3BIT);
+  GPIO_MODE_IN(SD_DAT2REG, SD_DAT2BIT);
+  GPIO_MODE_IN(SD_DAT1REG, SD_DAT1BIT);
+  GPIO_MODE_IN(SD_DAT0REG, SD_DAT0BIT);
+  GPIO_MODE_OUT(SD_CLKREG, SD_CLKBIT);
+  GPIO_MODE_OUT(SD_CMDREG, SD_CMDBIT);
+  SET_BIT(SD_CMDREG, SD_CMDBIT);
+  GPIO_PULLUP(SD_CLKREG, SD_CLKBIT);
+  SD_DAT_OUT(0);
+  SD_DAT_MASK();
 }
 void disk_init(void) __attribute__ ((weak, alias("sdn_init")));
 

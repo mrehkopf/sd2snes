@@ -14,8 +14,8 @@
  *    Algorithm    = table-driven
  *    Direct       = True
  *****************************************************************************/
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "crc16.h"
+#include <stdint.h>
 
 /**
  * Static table used for the table_driven implementation.

@@ -4,8 +4,10 @@ README := README*
 
 MK2MCUPATH := $(MCUSRC)/obj-mk2
 MK3MCUPATH := $(MCUSRC)/obj-mk3
+STMMCUPATH := $(MCUSRC)/obj-mk3-stm32
 MK2MCU := firmware.img
 MK3MCU := firmware.im3
+STMMCU := firmware.stm
 
 SAVESTATEPATH := savestate
 SAVESTATEFILES := savestate*.yml
@@ -31,7 +33,8 @@ MK3CLEAN := $(foreach C,$(MK3CORES) mini,$(FPGAPATH)/sd2snes_$C/.clean.$(MK3EXT)
 
 UTILS := utils
 
-include src/VERSION
+-include src/VERSION
+include src/version.mk
 
 TARGETPARENT := release/v$(CONFIG_VERSION)
 TARGET := $(TARGETPARENT)/sd2snes
@@ -56,11 +59,13 @@ build: $(MK2MINI) $(MK3MINI)
 	$(MAKE) -C snes
 	$(MAKE) -C src CONFIG=config-mk2
 	$(MAKE) -C src CONFIG=config-mk3
+	$(MAKE) -C src CONFIG=config-mk3-stm32
 
 clean: $(MK2CLEAN) $(MK3CLEAN)
 	$(MAKE) -C snes clean
 	$(MAKE) -C src clean CONFIG=config-mk2
 	$(MAKE) -C src clean CONFIG=config-mk3
+	$(MAKE) -C src clean CONFIG=config-mk3-stm32
 
 release: version bsxpage
 	rm -rf $(TARGETPARENT)
@@ -71,6 +76,7 @@ release: version bsxpage
 	cp $(MK3FPGA) $(TARGET)
 	cp $(MK2MCUPATH)/$(MK2MCU) $(TARGET)
 	cp $(MK3MCUPATH)/$(MK3MCU) $(TARGET)
+	cp $(STMMCUPATH)/$(STMMCU) $(TARGET)
 	cp $(MENUPATH)/$(MK2MENU) $(TARGET)
 	cp $(MENUPATH)/$(MK3MENU) $(TARGET)
 	cp $(SAVESTATEPATH)/$(SAVESTATEFILES) $(TARGET)

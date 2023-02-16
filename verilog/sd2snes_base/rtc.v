@@ -18,6 +18,11 @@
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
+`ifdef MK2
+  `define SECOND_PERIOD 24000000
+`else
+  `define SECOND_PERIOD 8000000
+`endif
 module rtc (
   input clkin,
   input pgm_we,
@@ -42,7 +47,7 @@ reg [31:0] tick_cnt;
 
 always @(posedge clkin) begin
   tick_cnt <= tick_cnt + 1;
-  if((tick_cnt == 24000000) || pgm_we_rising) tick_cnt <= 0;
+  if((tick_cnt == `SECOND_PERIOD) || pgm_we_rising) tick_cnt <= 0;
 end
 
 assign rtc_data = rtc_data_out_r;

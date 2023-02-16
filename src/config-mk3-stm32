@@ -1,0 +1,218 @@
+CPUFLAGS = -mthumb -mcpu=cortex-m4 -mfloat-abi=hard
+CONFIG_ARCH = stm32f4xx
+CONFIG_MCU = stm32f401
+CONFIG_MCU_H = <arm/ST/STM32F4/stm32f401xc.h>
+
+CONFIG_MCU_FOSC = 8000000
+
+CONFIG_MK2 = n
+CONFIG_MK3 = y
+CONFIG_MK3_STM32 = y
+
+CONFIG_LD_SCRIPT     = stm32f401.ld
+CONFIG_OPENOCD_CFG   = lpc175x.cfg
+CONFIG_FLASH_START   = 0x08000000
+CONFIG_FLASH_SIZE    = 0x40000
+CONFIG_FW_FILE       = firmware.stm
+CONFIG_FW_START      = 0x0800c000
+CONFIG_FW_HEADERSIZE = 0x200
+CONFIG_FW_MAGIC      = STM3
+CONFIG_CFGWARE       = ../verilog/sd2snes_mini/fpga_mini.bi3
+
+DEBUG_FS         = n
+DEBUG_SD         = n
+DEBUG_SD_OFFLOAD = n
+DEBUG_IRQ        = n
+DEBUG_MSU1       = n
+DEBUG_YAML       = n
+DEBUG_USB        = n
+DEBUG_USBHW      = n
+
+GPIO_I = IDR
+GPIO_O = ODR
+SET_BIT(reg,b)        = reg->BSRR = (0x00000001 << b)
+CLEAR_BIT(reg,b)      = reg->BSRR = (0x00010000 << b)
+OUT_BIT(reg,b,val)    = reg->BSRR = ((0x00010000 << b) | ((val) << b))
+GPIO_DIR(reg,b,dir)   = reg->MODER = (reg->MODER & ~(3 << (2*b))) | ((dir & 1) << (2*b))
+GPIO_MODE_OUT(reg,b)  = reg->MODER = (reg->MODER & ~(3 << (2*b))) | (1 << (2*b))
+GPIO_MODE_IN(reg,b)   = reg->MODER = (reg->MODER & ~(3 << (2*b)))
+GPIO_MODE_AF(reg,b)   = reg->MODER = (reg->MODER & ~(3 << (2*b))) | (2 << (2*b))
+GPIO_MODE_ANALOG(reg,b) = reg->MODER = (reg->MODER & ~(3 << (2*b))) | (3 << (2*b))
+GPIO_OPENDRAIN(reg,b) = BITBAND(reg->OTYPER, b) = 1
+GPIO_PUSHPULL(reg,b)  = BITBAND(reg->OTYPER, b) = 0
+GPIO_PULLUP(reg,b)    = reg->PUPDR = (reg->PUPDR & ~(3 << (2*b))) | (1 << (2*b))
+GPIO_PULLDOWN(reg,b)  = reg->PUPDR = (reg->PUPDR & ~(3 << (2*b))) | (2 << (2*b))
+GPIO_PULLNONE(reg,b)  = reg->PUPDR = (reg->PUPDR & ~(3 << (2*b)))
+GPIO_SPEED(reg,b,sp)  = reg->OSPEEDR = (reg->OSPEEDR & ~(3 << (2*b))) | (sp << (2*b))
+GPIO_SEL_AF(reg,b,af) = reg->AFR[b>>3] = (reg->AFR[b>>3] & ~(15 << (4*(b&7)))) | (af << (4*(b&7)))
+
+IO_SPEED_L  = 0b00
+IO_SPEED_M  = 0b01
+IO_SPEED_H  = 0b10
+IO_SPEED_VH = 0b11
+
+DEBUG_FS         = n
+DEBUG_SD         = n
+DEBUG_SD_OFFLOAD = n
+DEBUG_IRQ        = n
+DEBUG_MSU1       = n
+DEBUG_YAML       = n
+DEBUG_USB        = n
+
+MENU_FILENAME = "/sd2snes/m3nu.bin"
+
+CONFIG_UART_NUM	         = 2
+CONFIG_CPU_FREQUENCY     = 84000000
+CONFIG_UART_PCLKDIV      = 2
+CONFIG_UART_TX_BUF_SHIFT = 8
+CONFIG_UART_BAUDRATE     = 921600
+CONFIG_UART_DEADLOCKABLE = y
+
+DEVICE_NAME = "FXPAK PRO STM32"
+
+# PLL0 84MHz
+# Base clock:     8MHz
+# Pre-Divisor (M):   4
+# Multiplier  (N): 168
+# Divisor     (P):   4
+# USB divisor (Q):   7
+# => FCCO = 336MHz
+# => CCLK = 84MHz
+# => USBCLK = 48MHz
+
+CONFIG_CLK_MULT         = 168
+CONFIG_CLK_PREDIV       =   4
+CONFIG_CLK_CCLKDIV      =   4
+CONFIG_USB_DIV          =   7
+
+SSP_CLK_DIVISOR         =   2
+
+SNES_RESET_REG          = GPIOA
+SNES_RESET_BIT          = 0
+
+SNES_CIC_D0_REG         = GPIOC
+SNES_CIC_D0_BIT         = 3
+
+SNES_CIC_D1_REG         = GPIOC
+SNES_CIC_D1_BIT         = 2
+
+SNES_CIC_STATUS_REG     = GPIOC
+SNES_CIC_STATUS_BIT     = 1
+
+SNES_CIC_PAIR_REG       = GPIOC
+SNES_CIC_PAIR_BIT       = 0
+
+
+# FPGA pin mapping
+# ================
+# CCLK        PB9  out
+# PROG_B      PA1  out
+# INIT_B      PB7   in
+# DIN         PB8  out
+# DONE        PA15  in
+
+FPGA_CONF_EXT = "bi3"
+
+FPGA_CCLKREG  = GPIOB
+FPGA_CCLKBIT  = (9)
+
+FPGA_PROGBREG = GPIOA
+FPGA_PROGBBIT = (1)
+
+FPGA_INITBREG = GPIOB
+FPGA_INITBBIT = (7)
+
+FPGA_DINREG   = GPIOB
+FPGA_DINBIT   = (8)
+
+FPGA_DONEREG  = GPIOA
+FPGA_DONEBIT  = (15)
+
+FPGA_SSREG    = GPIOA
+FPGA_SSBIT    = (4)
+
+FPGA_SEND_BYTE_SERIAL(data) = do {SET_FPGA_DIN(data); CCLK();\
+ SET_FPGA_DIN(data>>1); CCLK(); SET_FPGA_DIN(data>>2); CCLK();\
+ SET_FPGA_DIN(data>>3); CCLK(); SET_FPGA_DIN(data>>4); CCLK();\
+ SET_FPGA_DIN(data>>5); CCLK(); SET_FPGA_DIN(data>>6); CCLK();\
+ SET_FPGA_DIN(data>>7); CCLK();} while (0)
+
+SET_FPGA_DIN(data)      = do {OUT_BIT(FPGA_DINREG, FPGA_DINBIT, data & 1);} while (0)
+
+FPGA_DIN_MASK()         =
+FPGA_DIN_UNMASK()       =
+
+FPGA_MCU_RDY_REG        = GPIOB
+FPGA_MCU_RDY_BIT        = 8
+
+FPGA_CLK_REG            = GPIOA
+FPGA_CLK_BIT            = 8
+
+QSORT_MAXELEM           = 2048
+SORT_STRLEN             = 256
+CLTBL_SIZE              = 100
+
+DIR_FILE_MAX            = 16380
+
+SPI_REGS     = SPI1
+SPI_SR       = SR
+SSP_PCLKREG  =
+SSP_PCLKBIT  =
+SSP_DMAID_TX =
+SSP_DMAID_RX =
+SSP_DMACH    =
+
+SD_HAS_WP = n
+
+SD_DTREG = GPIOC
+SD_DTBIT = (13)
+
+SD_CLKREG  = GPIOC
+SD_CLKBIT  = (12)
+
+SD_CMDREG  = GPIOD
+SD_CMDBIT  = (2)
+
+SD_DAT0REG = GPIOC
+SD_DAT1REG = GPIOC
+SD_DAT2REG = GPIOC
+SD_DAT3REG = GPIOC
+SD_DAT0BIT = (8)
+SD_DAT1BIT = (9)
+SD_DAT2BIT = (10)
+SD_DAT3BIT = (11)
+
+SD_DAT_MASK() =
+SD_DAT_UNMASK() =
+SD_DAT_IN = ((SD_DAT0REG->IDR & 0xF00) >> 8)
+SD_DAT_OUT(x) = (SD_DAT0REG->BSRR = 0x0F000000 | ((x) << 8))
+
+USB_CONNREG   =
+USB_CONNBIT   =
+USB_VBUSREG   = GPIOA
+USB_VBUSBIT   = 9
+USB_DPLUSREG  = GPIOA
+USB_DPLUSBIT  = 12
+USB_DMINUSREG = GPIOA
+USB_DMINUSBIT = 11
+
+DAC_DEMREG = n
+DAC_DEMBIT =
+
+# LED connections Mk.III+STM32
+# LED    color  IO    PWM
+# ---------------------------
+# ready  green  PA6   TIM3_CH1
+# read   yellow PA7   TIM3_CH2
+# write  red    PB0   TIM3_CH3
+
+LED_READY_REG         = GPIOA
+LED_READY_BIT         = 6
+LED_READ_REG          = GPIOA
+LED_READ_BIT          = 7
+LED_WRITE_REG         = GPIOB
+LED_WRITE_BIT         = 0
+
+SYSTICK_CALIB_CLOCK   = 10500000
+SYSTICK_CALIB_MS      = 1
+SYSTICK_DESIRED_MS    = 10

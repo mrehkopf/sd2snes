@@ -9,6 +9,9 @@
 ; Currently this code is heavily optimized for size and not necessarily CPU
 ; cycle count.
 
+; TODO do not execute from Bank C0 anymore; HDMA can fetch while handler is mapped,
+; causing glitches or crashes (Notably Star Fox)
+
 .link page $c0
 #include "memmap.i65"
 #include "savestate.i65"
@@ -134,7 +137,7 @@ register_restore_return
 
 return_align
 	; align back with the NMI/IRQ
-; TODO persist entry flag ("entered hook via NMI or IRQ when saving the state?")
+; TODO persistent entry flag ("entered hook via NMI or IRQ when saving the state?")
 ;      when saving state, then restore when loading and align with correct
 ;      type of interrupt when resuming game.
 	lda @BRAM_RETURN_VECTOR ; HACK read back FPGA injected return vector low byte
@@ -206,6 +209,8 @@ ss_start:
 	cmp #$01
 	bne ss_start_skip
 
+	; THIS PART (ss_irq_inc) MUST NEVER BE REACHED OUTSIDE A NESTED NMI/IRQ!
+	; It expects to RTI to the calling handler, NEVER to the game!
 ss_irq_inc:
 	;signal flag
 	lda @CS_STATE
@@ -312,7 +317,7 @@ save_state
 	lda @$00FFDE
 	cmp #$F8DF
 	bne +
-	; if SM, check return address and make sure it's not in the sound loading code $808159-$808110
+	; if SM, check return address and make sure it's not in the sound loading code $808059-$808110
 	lda 10,s
 	cmp #$8059
 	bcc +
