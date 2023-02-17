@@ -219,12 +219,12 @@ USB_DMINUSBIT       = 30
 DAC_DEMREG = LPC_GPIO1
 DAC_DEMBIT = 1
 
-# LED connections Mk.II
-# LED    color  IO    PWM
-# ---------------------------
-# ready  green  P1.24 PWM1[5]
-# read   yellow P1.23 PWM1[4]
-# write  red    P1.20 PWM1[2]
+# LED connections Mk.III
+# LED    color  IO    PWM     AF(PWM)
+# -----------------------------------
+# ready  green  P1.24 PWM1[5] 2
+# read   yellow P1.23 PWM1[4] 2
+# write  red    P1.20 PWM1[2] 2
 
 LED_READY_REG         = LPC_GPIO1
 LED_READY_BIT         = 24
@@ -232,6 +232,10 @@ LED_READ_REG          = LPC_GPIO1
 LED_READ_BIT          = 23
 LED_WRITE_REG         = LPC_GPIO1
 LED_WRITE_BIT         = 20
+
+LED_READY_PWM_AFNUM   = 2
+LED_READ_PWM_AFNUM    = 2
+LED_WRITE_PWM_AFNUM   = 2
 
 LED_READY_PCRBIT      = 13
 LED_READ_PCRBIT       = 12
