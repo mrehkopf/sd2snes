@@ -43,27 +43,29 @@ enum cicstates get_cic_state() {
   } else return CIC_FAIL;
 }
 
+void cic_preinit() {
+  GPIO_MODE_IN(SNES_CIC_D0_REG, SNES_CIC_D0_BIT);
+  GPIO_MODE_IN(SNES_CIC_D1_REG, SNES_CIC_D1_BIT);
+}
+
 void cic_init(int allow_pairmode) {
   GPIO_MODE_OUT(SNES_CIC_PAIR_REG, SNES_CIC_PAIR_BIT);
   OUT_BIT(SNES_CIC_PAIR_REG, SNES_CIC_PAIR_BIT, !allow_pairmode);
-  GPIO_MODE_IN(SNES_CIC_D0_REG, SNES_CIC_D0_BIT);
-  GPIO_MODE_IN(SNES_CIC_D1_REG, SNES_CIC_D1_BIT);
 }
 
 /* prepare GPIOs for pair mode + set initial modes */
 void cic_pair(int init_vmode, int init_d4) {
   cic_videomode(init_vmode);
   cic_d4(init_d4);
-
-  GPIO_MODE_OUT(SNES_CIC_D0_REG, SNES_CIC_D0_BIT);
-  GPIO_MODE_OUT(SNES_CIC_D1_REG, SNES_CIC_D1_BIT);
 }
 
 void cic_videomode(int value) {
   OUT_BIT(SNES_CIC_D0_REG, SNES_CIC_D0_BIT, value);
+  GPIO_MODE_OUT(SNES_CIC_D0_REG, SNES_CIC_D0_BIT);
 }
 
 void cic_d4(int value) {
   OUT_BIT(SNES_CIC_D1_REG, SNES_CIC_D1_BIT, value);
+  GPIO_MODE_OUT(SNES_CIC_D1_REG, SNES_CIC_D1_BIT);
 }
 

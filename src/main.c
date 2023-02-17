@@ -120,6 +120,8 @@ int main(void) {
   printf("PCONP=%lx\n", LPC_SC->PCONP);
 #endif
   file_init();
+
+  cic_preinit();
   cic_init(0);
 
   fpga_init();

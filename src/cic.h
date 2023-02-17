@@ -15,6 +15,7 @@ void print_cic_state(void);
 char *get_cic_statename(enum cicstates state);
 char *get_cic_statefriendlyname(enum cicstates state);
 enum cicstates get_cic_state(void);
+void cic_preinit(void);
 void cic_init(int allow_pairmode);
 
 void cic_pair(int init_vmode, int init_d4);
