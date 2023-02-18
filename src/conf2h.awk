@@ -1,4 +1,4 @@
-#! /usr/bin/gawk -f
+#!/usr/bin/gawk -f
 
 # Trivial little script to convert from a makefile-style configuration
 # file to a C header. No copyright claimed.

@@ -148,7 +148,7 @@ SIZE = $(ARCH)-size
 NM = $(ARCH)-nm
 REMOVE = rm -f
 COPY = cp
-AWK = awk
+AWK = gawk
 BIN2C = ../utils/bin2c
 
 #---------------- Compiler Options ----------------
