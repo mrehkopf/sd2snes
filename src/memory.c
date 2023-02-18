@@ -263,6 +263,16 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     printf(" OK.\n");
   }
 
+  /* SGB detect and file management */
+  uint8_t *sgb_filename = filename;
+  DWORD sgb_filesize = file_handle.fsize;
+  sgb_id(&sgb_romprops, sgb_filename);
+  if (!sgb_update_file(&filename)) return 0;
+
+  filesize = file_handle.fsize;
+  smc_id(&romprops, file_offset);
+  file_close();
+
   if(flags & LOADROM_WITH_COMBO) {
     printf("Combo Transition...");
     uint32_t romslot = snescmd_readbyte(SNESCMD_MCU_CMD + 1);
@@ -274,15 +284,6 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     romprops.has_combo = 1;
     printf(" OK.\n");
   }
-  /* SGB detect and file management */
-  uint8_t *sgb_filename = filename;
-  DWORD sgb_filesize = file_handle.fsize;
-  sgb_id(&sgb_romprops, sgb_filename);
-  if (!sgb_update_file(&filename)) return 0;
-
-  filesize = file_handle.fsize;
-  smc_id(&romprops, file_offset);
-  file_close();
 
   /* SGB assign the SGB FPGA file and relocate the snes image to the 512KB RAM */
   if (!sgb_update_romprops(&romprops, sgb_filename)) return 0;
@@ -517,6 +518,9 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       combo_srambase = romprops.srambase;
       combo_sramsize_bytes = romprops.sramsize_bytes;
     }
+
+    // enable use of the DMA unit
+    romprops.fpga_features |= FEAT_DMA1;
   }
 
 //printf("%04lx\n", romprops.header_address + ((void*)&romprops.header.vect_irq16 - (void*)&romprops.header));
