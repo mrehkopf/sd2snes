@@ -697,3 +697,13 @@ set_bar_color:
     sta @hdma_math+11
   plp
   rts
+
+; disable screen update (DMA from WRAM to VRAM)
+disable_screen_update:
+  inc screen_dma_disable
+  rts
+
+; enable screen update (DMA from WRAM to VRAM)
+enable_screen_update:
+  stz screen_dma_disable
+  rts
