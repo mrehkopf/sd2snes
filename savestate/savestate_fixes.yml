@@ -107,3 +107,88 @@ B856: 7E1D15,2141 # Bahamut Lagoon (J)
 ACCC: 7E1D15,2141 # Bahamut Lagoon (T+Eng1.1_Near)
 414C: 7E1D15,2141 # Bahamut Lagoon (T+Eng1.2_Near)
 F5E1: 0000B1,2140 # Super Morph (E)
+C971: 0000FE,2143 # Captain America and the Avengers (US)
+3703: 0000F6,2140 # The Terminator (US)
+17F9: 000000,2143 # T2 - The Arcade Game (US)
+D7A6: 000000,2143 # T2 - The Arcade Game (JP)
+F834: 001D00,2140 # Shadowrun (US)
+2E40: 001D00,2140 # Shadowrun (JP)
+7473: 7E96A2,2140 # Dragon Quest III (JP, T+Eng1.1_DQT)
+E3DA: # Dragon Quest V (T+Eng 2.01F)
+  - 002140,00
+  - 0008D8,00
+  - 0008DA,00
+  - 0008DC,00
+BAF9: # Dragon Quest V (JP)
+  - 002140,00
+  - 0008D8,00
+  - 0008DA,00
+  - 0008DC,00
+01A3: 0003F7,2140 # Death and Return of Superman (US)
+19EF: 001C15,2141 # Seiken no Densetsu 3 (JP,T+Eng)
+FED6: 0000EA,2140 # James Bond Jr (US)
+3EB3: 000000,2140 # Addams Family Values (US)
+B304: 7F0316,2140 # Aero Fighters (US)
+C1A1: # Aero theh Acro-Bat (US)
+  - 001F1E,2140
+  - 001F1F,2141
+5949: 000000,2143 # Batman Forever (US)
+A910: 00189A,2140 # Battle Cars (US)
+2843: 000008,2143 # Battletoads-Double Dragon (US)
+ECC5: 000000,2143 # Beauty and the Beast (US)
+FEB3: 000000,2143 # Bram Stoker's Dracula (US)
+D5F1: 00000A,2143 # Breakthru! (US)
+24AE: 001C1F,2141 # Casper (US)
+8C86: 0000D5,2140 # Champions World Class Soccer (US)
+7751: 001F34,2141 # Choplifter II (US)
+C6A6: 000200,2143 # Chuck Rock (US)
+FEF2: 7EFFF6,2140 # Circuit USA (US)
+80F5: 7EFFF6,2140 # Double Dragon V - The Shadows Fall (US)
+F78C: 000000,2140 # Frantic Flea (US)
+42CB: # Frogger (US)
+  - 001C1E,2140
+  - 001C1F,2141
+5E4E: 7EFFF6,2140 # Fun 'n Games (US)
+02BF: # Home Improvement (US)
+  - 001C30,2140
+  - 001C31,2141
+5402: 000000,2143 # The Hurricanes (US)
+8D67: 0000F6,2140 # Incredible Crash Dummies (US)
+C3CF: 0015B8,2143 # Indiana Jones' Greatest Adventure (US)
+E93F: 0000FC,2140 # Jammit (US)
+514C: 000000,2143 # Judge Dredd (US)
+CFE5: 000013,2143 # Lemmings (US)
+2F85: 001F5D,2140 # Mechwarrior (US)
+53F6: 00001C,2143 # Metal Warriors (US)
+2E97: 00172B,2142 # Mortal Kombat 2 (US)
+7149: 00174B,2142 # Mortal Kombat 3 (US)
+7799: 001877,2140 # New Horizons (US)
+3592: 001877,2140 # Nobunaga's Ambition (US)
+8A02: 000000,2143 # Obitus (US)
+673C: 000000,2143 # The Pagemaster (US)
+6721: 000EC9,2140 # Paperboy 2 (US)
+4140: 00008E,2140 # Pinball Dreams (US)
+8F91: 001353,2140 # Pit-Fighter (US)
+720F: 00005E,2143 # Q-Bert 3 (US)
+CD51: # Ren & Stimpy Show - The Buckeroos (US)
+  - 001C1E,2140
+  - 001C1F,2141
+828F: 0000F1,2140 # Ren & Stimpy Show - The Veediots! (US)
+81D7: 0000FE,2143 # Skuljagger (US)
+3DA4: 001042,2140 # Sim City 2000 (US)
+6213: 001E04,2140 # SOS (US)
+DC9A: 00053A,2143 # Star Trek: The Next Generation (US)
+2C72: 000000,2143 # Stargate (US)
+D30E: 0000F5,2140 # Steel Talons (US)
+22ED: # Super Battletank 2 (US)
+  - 001D1E,2140
+  - 001D1F,2141
+BF96: 001D83,2140 # Super High Impact (US)
+5DBC: 000093,2140 # Super Troll Islands (US)
+6073: 001A4F,2140 # True Lies (US)
+10BE: 00000E,2142 # Virtual Bart (US)
+0000: 000000,2143 # Virtual Soccer (US)
+0B07: 000059,2143 # Warlock (US)
+A608: 0000F6,2140 # Wayne's World (US)
+FF49: 0000D4,2143 # Wings 2 - Aces High (US)
+1B63: 000200,2143 # Wolf Child (US)
