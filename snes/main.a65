@@ -308,6 +308,8 @@ video_init:
   stz fade_count
   stz idle_count
   stz idle_count+1
+  stz screen_dma_disable
+  stz screen_dma_disable+1
   rts
 
 screen_on:

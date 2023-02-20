@@ -95,10 +95,15 @@ listdisp        .word 0 ; number of displayable list entries
 ;-misc
 testvar         .word 0,0,0,0
 ;menu system
-listsel_sel     .byt 0
-listsel_step    .byt 0
-listsel_max     .byt 0
-listsel_pickbutton .byt 0
+listsel_sel         .byt 0
+listsel_step        .byt 0
+listsel_max         .byt 0
+listsel_pickbutton  .byt 0
+listsel_dirty       .byt 0
+listsel_backup      .byt 0
+
+screen_dma_disable  .word 0
+
 ;----------hdma tables in WRAM (must be stable when cartridge is cut off)
 hdma_pal
   .byt 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

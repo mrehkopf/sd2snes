@@ -1003,12 +1003,14 @@ select_favorite_file:
   php
   sep #$20 : .as
   rep #$10 : .xl
+  lda #$00
+  sta listsel_backup
+select_favorite_redraw:
   lda @ST_NUM_FAVORITE_GAMES
-  sta num_favorite_games
   bne +
-  plp
-  rtl
-+ lda #^text_favorite
+  jmp select_favorite_file_out
++ sta num_favorite_games
+  lda #^text_favorite
   sta window_tbank
   ldx #!text_favorite
   stx window_taddr
@@ -1023,13 +1025,19 @@ select_favorite_file:
   pha
   lda @last_win_w
   sta window_w
-  lda @ST_NUM_FAVORITE_GAMES
+  lda num_favorite_games
   inc
   inc
   sta window_h
   jsr push_window
   lda num_favorite_games
   sta listsel_max
+  dec ; listsel_max is an element count but listsel_sel is 0..max-1
+  cmp listsel_backup
+  bcs +
+  sta listsel_backup
++ lda listsel_backup
+  sta listsel_sel
   jsr draw_window
   stz print_pal
   lda #^FAVORITE_GAMES
@@ -1048,10 +1056,14 @@ select_favorite_file:
   inc print_y
   dec num_favorite_games
   bne -
+  stz listsel_dirty
+  jsr enable_screen_update
+select_favorite_choose:
   lda #$01
   sta listsel_step
-  sta listsel_pickbutton
-  jsr menu_select
+  sta listsel_pickbutton ; allow button Y
+  jsr menu_select_noinit
+  sta listsel_backup
   sta @MCU_PARAM ; store selected item index in mcu param
   cmp #$ff ; if no selected item, do nothing
   beq select_favorite_file_done
@@ -1068,11 +1080,17 @@ select_favorite_file_play
   bra select_favorite_file_done
 select_favorite_file_context_menu
   jsr filesel_favorites_contextmenu
+  lda listsel_dirty          ; need redraw?
+  bne +
+  jmp select_favorite_choose ; return to previous view
++ stz listsel_dirty
   jsr pop_window
-  plp
-  jmp select_favorite_file ; return to favorite list after closing the ctx menu
+  jsr disable_screen_update
+  jmp select_favorite_redraw   ; redraw favorite list
 select_favorite_file_done
   jsr pop_window
+select_favorite_file_out
+  jsr enable_screen_update
   plp
   rtl
 
@@ -1102,6 +1120,7 @@ remove_selected_favorite_file:
   bra -
   + lda #$55
   sta @MCU_CMD
+  sta listsel_dirty
   jsr pop_window
   plb
   plp

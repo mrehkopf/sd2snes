@@ -59,6 +59,10 @@ module sgb(
   input  [23:0] SAVERAM_MASK,
   input  [23:0] ROM_MASK,
 
+  inout         SER_CLK,
+  input         SER_IN,
+  output        SER_OUT,
+  
   // Halt inferface
   input         HLT_REQ,
   output        HLT_RSP,
@@ -254,6 +258,10 @@ sgb_cpu cpu(
   .P1O(CPU_P1O),
   .P1I(CPU_P1I),
 
+  .SER_CLK(SER_CLK),
+  .SER_IN(SER_IN),
+  .SER_OUT(SER_OUT),
+  
   .HLT_REQ(HLT_REQ),
   .HLT_RSP(HLT_RSP),
   .IDL_ICD(IDL_ICD),

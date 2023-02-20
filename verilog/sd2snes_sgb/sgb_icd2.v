@@ -335,6 +335,7 @@ always @(posedge CLK) begin
     case (REG_CTL_r[5:4]) // 1(0),2(1),4(3) players enabled.  0 out if not enabled to avoid spurious presses
       0: begin REG_PAD_r[1] <= 8'hFF; REG_PAD_r[2] <= 8'hFF; REG_PAD_r[3] <= 8'hFF; end
       1: begin                        REG_PAD_r[2] <= 8'hFF; REG_PAD_r[3] <= 8'hFF; end
+      default: begin end // added to make the xilinx compiler not apply condition '1' to '2' and '3'
     endcase
 
     reg_pktrdy_clear_r <= 0;

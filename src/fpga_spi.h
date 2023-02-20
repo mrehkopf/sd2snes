@@ -45,6 +45,7 @@
 
 #define FEAT_COMBO         (1 << 13)
 #define FEAT_SATELLABASE   (1 << 12)
+#define FEAT_DMA1          (1 << 11)
 #define FEAT_2100_LIMIT(x) ((x & 15) << 7)
 #define FEAT_2100_LIMIT_NONE FEAT_2100_LIMIT(15)
 #define FEAT_2100          (1 << 6)
