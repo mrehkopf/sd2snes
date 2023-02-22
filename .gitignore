@@ -101,6 +101,7 @@ utils/derle
 *.gvp
 *.drl
 *.cmd
+*.orig
 src/utils/genhdr.o
 src/utils/genhdr
 src/utils/lpcchksum.o
