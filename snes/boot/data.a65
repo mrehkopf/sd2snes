@@ -1,4 +1,6 @@
+*=$7E0000
 .data
+.link page $7e
 ;don't anger the stack!
 ;----------parameters for text output----------
 print_x	.byt 0		;x coordinate
