@@ -56,4 +56,7 @@ uint8_t file_getc(void);
 void append_file_basename(char *dirbase, char *filename, char *extension, int num);
 FRESULT check_or_create_folder(TCHAR *dir);
 
+char *get_fresult_name(FRESULT res);
+char *get_fresult_friendlyname(FRESULT res);
+
 #endif

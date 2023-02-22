@@ -43,6 +43,20 @@ enum filestates file_status;
 
 int newcard;
 
+char *fresult_names[] = { "FR_OK", "FR_DISK_ERR", "FR_INT_ERR",
+  "FR_NOT_READY", "FR_NO_FILE", "FR_NO_PATH", "FR_INVALID_NAME",
+  "FR_DENIED", "FR_EXIST", "FR_INVALID_OBJECT", "FR_WRITE_PROTECTED",
+  "FR_INVALID_DRIVE", "FR_NOT_ENABLED", "FR_NO_FILESYSTEM", "FR_MKFS_ABORTED",
+  "FR_TIMEOUT", "FR_LOCKED", "FR_NOT_ENOUGH_CORE", "FR_TOO_MANY_OPEN_FILES",
+  "FR_INVALID_PARAMETER" };
+
+char *fresult_friendly_names[] = { "No error", "Card I/O error", "Internal FS driver error",
+  "Drive not ready", "File not found", "Directory not found", "Invalid path name",
+  "Access denied", "Access denied (exists)", "Invalid file object", "Write protected",
+  "Invalid drive specified", "No work area", "Not a valid file system", "mkfs() aborted",
+  "Drive access timeout", "Shared access locked", "Not enough memory", "Too many open files",
+  "Invalid parameter" };
+
 void file_init() {
   file_res=f_mount(&fatfs, "/", 1);
   newcard = 0;
@@ -152,3 +166,12 @@ FRESULT check_or_create_folder(TCHAR *dir) {
   }
   return FR_OK;
 }
+
+char *get_fresult_name(FRESULT res) {
+  return fresult_names[res];
+}
+
+char *get_fresult_friendlyname(FRESULT res) {
+  return fresult_friendly_names[res];
+}
+
