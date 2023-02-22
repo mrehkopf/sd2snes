@@ -31,6 +31,7 @@
 #include "diskio.h"
 
 #include <string.h>
+#include <stdarg.h>
 
 BYTE file_buf[512] __attribute__((aligned(4)));
 FATFS fatfs;
@@ -69,7 +70,7 @@ void file_open(const uint8_t* filename, BYTE flags) {
   file_block_off = sizeof(file_buf);
   file_block_max = sizeof(file_buf);
   file_status = file_res ? FILE_ERR : FILE_OK;
-  printf("file_open (%s, %02x) = %d\n", filename, flags, file_res);
+  print_fresult(file_res, "file_open (%s, %02x)", filename, flags);
 }
 
 void file_close() {
@@ -175,3 +176,14 @@ char *get_fresult_friendlyname(FRESULT res) {
   return fresult_friendly_names[res];
 }
 
+void vprint_fresult(FRESULT res, const char *fmt, va_list arglist) {
+  vprintf(fmt, arglist);
+  printf(": %s(%d)\n", get_fresult_name(res), res);
+}
+
+void print_fresult(FRESULT res, const char *fmt, ...) {
+  va_list arglist;
+  va_start(arglist, fmt);
+  vprint_fresult(res, fmt, arglist);
+  va_end(arglist);
+}

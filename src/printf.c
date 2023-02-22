@@ -263,6 +263,14 @@ int printf(const char *format, ...) {
   return res;
 }
 
+int vprintf(const char *format, va_list ap) {
+  int res;
+
+  maxlen = -1;
+  res = internal_nprintf(outchar, format, ap);
+  return res;
+}
+
 int snprintf(char *str, size_t size, const char *format, ...) {
   va_list ap;
   int res;
