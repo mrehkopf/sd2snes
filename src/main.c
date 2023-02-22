@@ -142,6 +142,8 @@ int main(void) {
     uint8_t card_go = 0;
     while(!card_go) {
       if(disk_status(0) & (STA_NODISK)) {
+        snes_bootclear();
+        delay_ms(50);
         snes_bootprint_version();
         snes_bootprint_center( 8, "No SD Card found!");
         snes_bootprint_center( 9, "-----------------");
@@ -154,14 +156,10 @@ int main(void) {
       }
       file_open((uint8_t*)MENU_FILENAME, FA_READ);
       if(file_status != FILE_OK) {
-        char bootmsg[33];
         char *errorname;
         errorname = get_fresult_friendlyname(file_res);
-        bootmsg[32] = 0;
-        memset(bootmsg, ' ', 32);
-        memcpy(bootmsg + (16 - strlen(errorname) / 2), errorname, sizeof(bootmsg) - 2);
-        snprintf(bootmsg,  sizeof(bootmsg) - 1, "  %s", get_fresult_friendlyname(file_res));
         snes_bootclear();
+        delay_ms(50);
         snes_bootprint_version();
         snes_bootprint_center( 5, "Could not load menu ROM!");
         snes_bootprint_center( 6, "------------------------");
@@ -172,7 +170,7 @@ int main(void) {
         snes_bootprint_center(18, MENU_FILENAME);
         snes_bootprint_center(20, "exists.");
         cli_entrycheck();
-        while(disk_status(0) == 0);
+        while((disk_status(0) & ~STA_PROTECT) == 0);
       } else {
         card_go = 1;
       }
