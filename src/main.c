@@ -142,20 +142,47 @@ int main(void) {
     uint8_t card_go = 0;
     while(!card_go) {
       if(disk_status(0) & (STA_NODISK)) {
-        snes_bootprint("        No SD Card found!       \0");
+        snes_bootprint_version();
+        snes_bootprint_center( 8, "No SD Card found!");
+        snes_bootprint_center( 9, "-----------------");
+        snes_bootprint_center(11, "Please insert SD Card and");
+        snes_bootprint_center(13, "make sure it is seated");
+        snes_bootprint_center(15, "correctly.");
+        cli_entrycheck();
         while(disk_status(0) & (STA_NODISK));
         delay_ms(200);
       }
       file_open((uint8_t*)MENU_FILENAME, FA_READ);
       if(file_status != FILE_OK) {
-        snes_bootprint("  " MENU_FILENAME " not found!  \0");
+        char bootmsg[33];
+        char *errorname;
+        errorname = get_fresult_friendlyname(file_res);
+        bootmsg[32] = 0;
+        memset(bootmsg, ' ', 32);
+        memcpy(bootmsg + (16 - strlen(errorname) / 2), errorname, sizeof(bootmsg) - 2);
+        snprintf(bootmsg,  sizeof(bootmsg) - 1, "  %s", get_fresult_friendlyname(file_res));
+        snes_bootclear();
+        snes_bootprint_version();
+        snes_bootprint_center( 5, "Could not load menu ROM!");
+        snes_bootprint_center( 6, "------------------------");
+        snes_bootprint_center( 9, "Error: %s", errorname);
+        snes_bootprint_center(12, "Check that your card is wor-");
+        snes_bootprint_center(14, "king, formatted correctly");
+        snes_bootprint_center(16, "(FAT32), and that the file:");
+        snes_bootprint_center(18, MENU_FILENAME);
+        snes_bootprint_center(20, "exists.");
+        cli_entrycheck();
         while(disk_status(0) == 0);
       } else {
         card_go = 1;
       }
       file_close();
     }
-    if(fpga_config == FPGA_ROM) snes_bootprint("           Loading ...          \0");
+    if(fpga_config == FPGA_ROM) {
+      snes_bootclear();
+      snes_bootprint_version();
+      snes_bootprint_center(12, "Loading ...");
+    }
     led_pwm();
     rdyled(1);
     readled(0);

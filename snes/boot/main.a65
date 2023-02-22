@@ -15,19 +15,12 @@ GAME_MAIN:
 	jsr setup_hdma
 	jsr tests
 
-	; clear text buffer
-	ldx #$0041
-	lda #$00
--	dex
-	sta @MCU_TXT, x
-	bne -
-
 	; copy routines to WRAM
 	lda #^printloop_wram
 	ldx #!printloop_wram
 	sta $2183
 	stx $2181
-	DMA0(#$00, #$6F, #^printloop, #!printloop, #$80);
+	DMA0(#$00, #$85, #^printloop, #!printloop, #$80);
 
 	lda #^loprint_wram
 	ldx #!loprint_wram
@@ -42,7 +35,7 @@ printloop
 	sep #$20 : .as
 	lda #$00
 	sta @print_x
-	lda #13
+	lda #2
 	sta @print_y
 	lda #^MCU_TXT
 	sta @print_bank
@@ -52,10 +45,21 @@ printloop
 	sep #$20 : .as
 	lda #$00
 	sta @print_pal
-	jsr loprint_wram
-	rep #$20 : .al
-        lda #!BG1_TILE_BASE
-        sta $2116
+-	jsr loprint_wram
+	lda @print_y
+	cmp #25
+	beq +
+	inc
+	sta @print_y
+	rep #$21 : .al ; + clear carry
+	lda @print_src
+	adc #33
+	sta @print_src
+	sep #$20 : .as
+	bra -
++	rep #$20 : .al
+	lda #!BG1_TILE_BASE
+	sta $2116
 	sep #$20 : .as
 	lda #$01
 	sta $4300
@@ -75,7 +79,7 @@ printloop
 	beq -
 	lda #$01
 	sta $420b
-	bra printloop
+	brl printloop
 printloop_end
 
 	cli
