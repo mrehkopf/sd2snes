@@ -688,7 +688,7 @@ uint32_t migrate_and_load_srm(uint8_t* filename, uint32_t base_addr) {
     f_rename((TCHAR*)filename, (TCHAR*)srmfile);
     filesize = load_sram(srmfile, base_addr);
     if(file_res) {
-      printf("migrate_and_load_sram: could not open %s, res=%d\n", srmfile, file_res);
+      print_fresult(file_res, "migrate_and_load_sram: could not open %s\n", srmfile);
       return 0;
     }
   }

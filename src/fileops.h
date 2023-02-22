@@ -28,6 +28,8 @@
 #define FILEOPS_H
 #include <stdio.h>
 #include <stdint.h>
+#include <stdarg.h>
+
 #include "ff.h"
 
 enum filestates { FILE_OK=0, FILE_ERR, FILE_EOF };
@@ -58,5 +60,8 @@ FRESULT check_or_create_folder(TCHAR *dir);
 
 char *get_fresult_name(FRESULT res);
 char *get_fresult_friendlyname(FRESULT res);
+
+void print_fresult(FRESULT res, const char *fmt, ...);
+void vprint_fresult(FRESULT res, const char *fmt, va_list arglist);
 
 #endif

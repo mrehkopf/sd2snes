@@ -262,7 +262,7 @@ static void cmd_show_directory(void) {
 
   res = f_opendir(&dh, (TCHAR*)buf);
   if (res != FR_OK) {
-    printf("f_opendir failed, result %d\n",res);
+    print_fresult(res, "f_opendir failed");
     return;
   }
 
@@ -273,7 +273,7 @@ static void cmd_show_directory(void) {
     /* Read the next entry */
     res = f_readdir(&dh, &finfo);
     if (res != FR_OK) {
-      printf("f_readdir failed, result %d\n",res);
+      print_fresult(res, "f_readdir failed");
       return;
     }
 
@@ -370,12 +370,12 @@ void cmd_put(void) {
 
 void cmd_rm(void) {
   FRESULT res = f_unlink(curchar);
-  if(res) printf("Error %d removing %s\n", res, curchar);
+  if(res) print_fresult(res, "Error %d removing %s", res, curchar);
 }
 
 void cmd_mkdir(void) {
   FRESULT res = f_mkdir(curchar);
-  if(res) printf("Error %d creating directory %s\n", res, curchar);
+  if(res) print_fresult(res, "Error %d creating directory %s\n", res, curchar);
 }
 
 void cmd_mapper(void) {
@@ -509,7 +509,7 @@ static void cmd_cat(void) {
         uart_puts(buf);
       }
     } else {
-      printf("f_open %s failed, result %d\n", curchar, res);
+      print_fresult(res, "f_open %s failed", curchar);
     }
   }
 }
@@ -526,7 +526,7 @@ static void cmd_mv(void) {
   printf("%s --> %s\n", arg1, arg2);
   file_res = f_rename(arg1, arg2);
   if(file_res) {
-    printf("f_rename failed, result %d\n", file_res);
+    print_fresult(file_res, "f_rename(\"%s, %s\") failed", arg1, arg2);
   }
 }
 
@@ -540,7 +540,7 @@ static void cmd_cd(void) {
   } else {
     res = f_chdir((const TCHAR *)curchar);
     if (res != FR_OK) {
-      printf("chdir %s failed with result %d\n",curchar,res);
+      print_fresult(res, "f_chdir %s failed", curchar);
     } else {
       printf("Ok.\n");
     }
