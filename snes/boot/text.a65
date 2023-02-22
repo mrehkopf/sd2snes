@@ -1,3 +1,4 @@
+.link page $c0
 .text
 #include "memmap.i65"
 loprint:
