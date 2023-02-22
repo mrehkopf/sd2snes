@@ -25,6 +25,7 @@
 */
 
 #include <string.h>
+#include <stdarg.h>
 #include "bits.h"
 #include "config.h"
 #include "uart.h"
@@ -42,6 +43,7 @@
 #include "cfg.h"
 #include "usbinterface.h"
 #include "sgb.h"
+#include "version.h"
 
 uint32_t saveram_crc, saveram_crc_old;
 uint8_t sram_crc_valid;
@@ -389,20 +391,64 @@ void get_selected_name(uint8_t* fn) {
   }
 }
 
-void snes_bootprint(void* msg) {
+void vsnes_bootprint(int line, int center, void *fmt, va_list arglist) {
+  char bootmsg[33];
+  bootmsg[sizeof(bootmsg) - 1] = 0;
+  if(center) {
+    char msgtmp[33];
+    vsnprintf(msgtmp, sizeof(msgtmp) - 1, fmt, arglist);
+    int centerpos = ((sizeof(bootmsg) - 1) / 2) - (strlen(msgtmp) / 2);
+    memset(bootmsg, ' ', sizeof(bootmsg) - 1);
+    vsnprintf(bootmsg + centerpos, sizeof(bootmsg) - 1 - centerpos, fmt, arglist);
+  } else {
+    vsnprintf(bootmsg, sizeof(bootmsg) - 1, fmt, arglist);
+  }
+  if(line > SNES_BOOTPRINT_MAX_LINES - 1) {
+    printf("snes_bootprint: illegal line %d (range: 0..%d)\n", line, SNES_BOOTPRINT_MAX_LINES - 1);
+    return;
+  }
   if(!snes_boot_configured) {
     fpga_rompgm();
-    sram_writebyte(0, SRAM_CMD_ADDR);
+    snes_reset(1);
     load_bootrle(SRAM_MENU_ADDR);
+    sram_memset(SRAM_CMD_ADDR, SNES_BOOTPRINT_MAX_LINES*33, 0);
     set_saveram_mask(0x1fff);
     set_rom_mask(0x3fffff);
     set_mapper(0x7);
-    snes_reset_pulse();
+    snes_reset(0);
     snes_boot_configured = 1;
     sleep_ms(200);
   }
-  printf("snes_bootprint: \"%s\"\n", (char*)msg);
-  sram_writeblock(msg, SRAM_CMD_ADDR, 33);
+  printf("snes_bootprint, line %d: \"%s\"\n", line, bootmsg);
+  sram_writeblock(bootmsg, SRAM_CMD_ADDR + 33 * line, 33);
+}
+
+void snes_bootprint(int line, void* fmt, ...) {
+  int center = 0;
+  va_list arglist;
+
+  va_start(arglist, fmt);
+  vsnes_bootprint(line, center, fmt, arglist);
+  va_end(arglist);
+}
+
+void snes_bootprint_center(int line, void *fmt, ...) {
+  int center = 1;
+  va_list arglist;
+
+  va_start(arglist, fmt);
+  vsnes_bootprint(line, center, fmt, arglist);
+  va_end(arglist);
+}
+
+void snes_bootclear() {
+  for(int line = 0; line < SNES_BOOTPRINT_MAX_LINES; line++) {
+    snes_bootprint(line, "                                \0");
+  }
+}
+
+void snes_bootprint_version() {
+  snes_bootprint(0,"   v" CONFIG_VERSION "\0");
 }
 
 void snes_menu_errmsg(int err, void* msg) {

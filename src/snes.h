@@ -119,6 +119,8 @@
 
 #define SNES_NUM_BUTTONS (12)
 
+#define SNES_BOOTPRINT_MAX_LINES (24)
+
 enum snes_button_bits {
   SNES_BUTTON_B       = 0x8000,
   SNES_BUTTON_Y       = 0x4000,
@@ -162,7 +164,10 @@ uint8_t snes_reset_loop(void);
 uint8_t snes_main_loop(void);
 uint8_t menu_main_loop(void);
 void get_selected_name(uint8_t* lfn);
-void snes_bootprint(void* msg);
+void snes_bootprint(int line, void* fmt, ...);
+void snes_bootclear(void);
+void snes_bootprint_version(void);
+void snes_bootprint_center(int line, void *fmt, ...);
 void snes_menu_errmsg(int err, void* msg);
 uint8_t snes_get_last_game_index(void);
 uint8_t snes_get_mcu_cmd(void);

@@ -277,6 +277,16 @@ int snprintf(char *str, size_t size, const char *format, ...) {
   return res;
 }
 
+int vsnprintf(char *str, size_t size, const char *format, va_list ap) {
+  int res;
+  maxlen = size;
+  outptr = str;
+  res = internal_nprintf(outstr, format, ap);
+  if (res < size)
+    str[res] = 0;
+  return res;
+}
+
 /* Required for gcc compatibility */
 int puts(const char *str) {
   uart_puts(str);
