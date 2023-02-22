@@ -393,20 +393,26 @@ void get_selected_name(uint8_t* fn) {
 
 void vsnes_bootprint(int line, int center, void *fmt, va_list arglist) {
   char bootmsg[33];
-  bootmsg[sizeof(bootmsg) - 1] = 0;
-  if(center) {
-    char msgtmp[33];
-    vsnprintf(msgtmp, sizeof(msgtmp) - 1, fmt, arglist);
-    int centerpos = ((sizeof(bootmsg) - 1) / 2) - (strlen(msgtmp) / 2);
-    memset(bootmsg, ' ', sizeof(bootmsg) - 1);
-    vsnprintf(bootmsg + centerpos, sizeof(bootmsg) - 1 - centerpos, fmt, arglist);
-  } else {
-    vsnprintf(bootmsg, sizeof(bootmsg) - 1, fmt, arglist);
-  }
+  int count;
+
   if(line > SNES_BOOTPRINT_MAX_LINES - 1) {
     printf("snes_bootprint: illegal line %d (range: 0..%d)\n", line, SNES_BOOTPRINT_MAX_LINES - 1);
     return;
   }
+
+  bootmsg[sizeof(bootmsg) - 1] = 0;
+  if(center) {
+    char msgtmp[33];
+    count = vsnprintf(msgtmp, sizeof(msgtmp) - 1, fmt, arglist);
+    int centerpos = ((sizeof(bootmsg) - 1) / 2) - (strlen(msgtmp) / 2);
+    vsnprintf(bootmsg + centerpos, sizeof(bootmsg) - 1 - centerpos, fmt, arglist);
+    memset(bootmsg, ' ', centerpos);
+    memset(bootmsg + centerpos + count, ' ', 32 - centerpos - count);
+  } else {
+    count = vsnprintf(bootmsg, sizeof(bootmsg) - 1, fmt, arglist);
+    memset(bootmsg + count, ' ', 32 - count);
+  }
+  bootmsg[32] = 0;
   if(!snes_boot_configured) {
     fpga_rompgm();
     snes_reset(1);
