@@ -44,6 +44,7 @@
 #include "usbinterface.h"
 #include "sgb.h"
 #include "version.h"
+#include "hwinfo.h"
 
 uint32_t saveram_crc, saveram_crc_old;
 uint8_t sram_crc_valid;
@@ -454,7 +455,10 @@ void snes_bootclear() {
 }
 
 void snes_bootprint_version() {
-  snes_bootprint(0,"   v" CONFIG_VERSION "\0");
+  hwinfo_t hwinfo;
+  get_hwinfo(&hwinfo);
+  snes_bootprint(0,"   v" CONFIG_VERSION);
+  snes_bootprint_center(23, "  %s %s Rev.%s", hwinfo.makername, hwinfo.modelname, hwinfo.revname);
 }
 
 void snes_menu_errmsg(int err, void* msg) {
