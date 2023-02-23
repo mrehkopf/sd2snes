@@ -458,7 +458,7 @@ void snes_bootprint_version() {
   hwinfo_t hwinfo;
   get_hwinfo(&hwinfo);
   snes_bootprint(0,"   v" CONFIG_VERSION);
-  snes_bootprint_center(23, "  %s %s Rev.%s", hwinfo.makername, hwinfo.modelname, hwinfo.revname);
+  snes_bootprint_center(23, "%s %s Rev.%s", hwinfo.makername, hwinfo.modelname, hwinfo.revname);
 }
 
 void snes_menu_errmsg(int err, void* msg) {
