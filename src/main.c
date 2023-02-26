@@ -146,7 +146,7 @@ int main(void) {
         delay_ms(50);
         snes_bootprint_version();
         snes_bootprint_center( 8, "No SD Card found!");
-        snes_bootprint_center( 9, "-----------------");
+        snes_bootprint_center( 9, "\x12\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x11");
         snes_bootprint_center(11, "Please insert SD Card and");
         snes_bootprint_center(13, "make sure it is seated");
         snes_bootprint_center(15, "correctly.");
@@ -162,7 +162,7 @@ int main(void) {
         delay_ms(50);
         snes_bootprint_version();
         snes_bootprint_center( 5, "Could not load menu ROM!");
-        snes_bootprint_center( 6, "------------------------");
+        snes_bootprint_center( 6, "\x12\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x11");
         snes_bootprint_center( 9, "Error: %s", errorname);
         snes_bootprint_center(12, "Check that your card is wor-");
         snes_bootprint_center(14, "king, formatted correctly");
