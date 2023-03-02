@@ -21,6 +21,11 @@
 # To rebuild project do "make clean" then "make all".
 #----------------------------------------------------------------------------
 
+# select programming interface (default: ae-ft2232)
+# setting is expanded to filename interface/$INTERFACE.cfg
+# available: ae-ft2232 usb-blaster oocdlink usbjtag
+export INTERFACE ?= ae-ft2232
+
 # Read configuration file
 ifdef CONFIG
  CONFIGSUFFIX = $(CONFIG:config%=%)
@@ -53,6 +58,10 @@ LINKERSCRIPT = lpc1754boot.ld
 # Target file name (without extension).
 TARGET = $(OBJDIR)/sd2snes_bootldr
 
+# Environment variables for openocd reuse
+export FW_START=$(CONFIG_FW_START)
+export FW_FILE=$(OBJDIR)/$(CONFIG_FW_FILE)
+export FLASH_SIZE=$(CONFIG_FLASH_SIZE)
 
 # List C source files here. (C dependencies are automatically generated.)
 SRC = timer.c main.c ff.c clock.c uart.c power.c led.c faulthandler.c crc32.c sdnative.c fileops.c iap.c printf.c 
@@ -216,16 +225,16 @@ sym: $(TARGET).sym
 fresh: erase program
 
 program: bin
-	openocd -f openocd-usb.cfg -f lpc1754.cfg -f flash.cfg
+	openocd -f openocd.cfg -f flash.cfg
 
 debug: bin
-	openocd -f openocd-usb.cfg -f lpc1754.cfg
+	openocd -f openocd.cfg
 
 reset:
-	openocd -f openocd-usb.cfg -f lpc1754.cfg -f reset.cfg
+	openocd -f openocd.cfg -f reset.cfg
 
 erase:
-	openocd -f openocd-usb.cfg -f lpc1754.cfg -f erase.cfg
+	openocd -f openocd.cfg -f erase.cfg
 
 # Display size of file.
 HEXSIZE = $(SIZE) --target=$(FORMAT) $(TARGET).hex
