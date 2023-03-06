@@ -2546,9 +2546,12 @@ always @(posedge CLK) begin
   else begin
     case (EXE_STATE)
       ST_EXE_IDLE: begin
-        if (~CCNT_r[`CCNT_SA1_RESB] & sa1_clock_en) begin
+        if (CCNT_r[`CCNT_SA1_RESB]) begin
           {PBR_r,PC_r} <= {8'h00,CRV_r};
           exe_fetch_addr_r <= {8'h00,CRV_r};
+        end
+
+        if (~(CCNT_r[`CCNT_SA1_RESB] | CCNT_r[`CCNT_SA1_RDYB]) & sa1_clock_en) begin
           exe_fetch_size_r <= 0;
           exe_mmc_byte_total_r <= 1;
           exe_data_word_r <= 0;
@@ -3208,7 +3211,7 @@ always @(posedge CLK) begin
           // reset internal PCs to help with debugging
           exe_nextpc_r   <= 0;
 
-          EXE_STATE <= (exe_active_r & ~CCNT_r[`CCNT_SA1_RESB]) ? ST_EXE_FETCH : ST_EXE_IDLE;
+          EXE_STATE <= (exe_active_r & ~(CCNT_r[`CCNT_SA1_RESB] | CCNT_r[`CCNT_SA1_RDYB])) ? ST_EXE_FETCH : ST_EXE_IDLE;
         end
       end
     endcase
