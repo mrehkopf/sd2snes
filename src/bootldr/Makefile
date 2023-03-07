@@ -46,6 +46,9 @@ endif
 # Include the configuration file
 include $(CONFIG)
 
+# OpenOCD search path from config
+export CONFIG_OPENOCD_SCRIPT_PATH ?= ..
+
 # Directory for all generated files
 OBJDIR := obj$(CONFIGSUFFIX)
 
@@ -93,7 +96,7 @@ DEBUG = dwarf-2
 #     Each directory must be seperated by a space.
 #     Use forward slashes for directory separators.
 #     For a directory that has spaces, enclose it in quotes.
-EXTRAINCDIRS = include
+EXTRAINCDIRS = ../include
 
 
 # Compiler flag to set the C Standard level.
@@ -175,6 +178,10 @@ ifeq ($(CONFIG_LINKER_RELAX),y)
   LDFLAGS += -Wl,-O9,--relax
 endif
 
+# OpenOCD options
+# -s <path>:      set additional script search path
+# -f openocd.cfg: load common script
+OPENOCDFLAGS = -s $(CONFIG_OPENOCD_SCRIPT_PATH) -f openocd.cfg
 
 #============================================================================
 
@@ -225,16 +232,16 @@ sym: $(TARGET).sym
 fresh: erase program
 
 program: bin
-	openocd -f openocd.cfg -f flash.cfg
+	openocd $(OPENOCDFLAGS) -f flash.cfg
 
 debug: bin
-	openocd -f openocd.cfg
+	openocd $(OPENOCDFLAGS)
 
 reset:
-	openocd -f openocd.cfg -f reset.cfg
+	openocd $(OPENOCDFLAGS) -f reset.cfg
 
 erase:
-	openocd -f openocd.cfg -f erase.cfg
+	openocd $(OPENOCDFLAGS) -f erase.cfg
 
 # Display size of file.
 HEXSIZE = $(SIZE) --target=$(FORMAT) $(TARGET).hex
