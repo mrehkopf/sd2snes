@@ -53,6 +53,9 @@ endif
 # Include the configuration file
 include $(CONFIG)
 
+# OpenOCD search path from config
+export CONFIG_OPENOCD_SCRIPT_PATH ?= .
+
 # Directory for all generated files
 OBJDIR := obj$(CONFIGSUFFIX)
 DEPDIR := .dep$(CONFIGSUFFIX)
@@ -192,6 +195,10 @@ ifeq ($(CONFIG_LINKER_RELAX),y)
   LDFLAGS += -Wl,-O9,--relax
 endif
 
+# OpenOCD options
+# -s <path>:      set additional script search path
+# -f openocd.cfg: load common script
+OPENOCDFLAGS = -s $(CONFIG_OPENOCD_SCRIPT_PATH) -f openocd.cfg
 
 #============================================================================
 
@@ -235,13 +242,13 @@ sym: $(TARGET).sym
 
 program: build
 	utils/lpcchksum $(TARGET).bin
-	openocd -f openocd.cfg -f flash.cfg
+	openocd $(OPENOCDFLAGS) -f flash.cfg
 
 debug: build
-	openocd -f openocd.cfg
+	openocd $(OPENOCDFLAGS)
 
 reset:
-	openocd -f openocd.cfg -f reset.cfg
+	openocd $(OPENOCDFLAGS) -f reset.cfg
 
 # Display size of file.
 ELFSIZE = $(SIZE) -A $(TARGET).elf
