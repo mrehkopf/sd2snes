@@ -150,6 +150,7 @@ static int internal_nprintf(void (*output_function)(char c), const char *fmt, va
       switch (*fmt) {
       case 'c':
         buffer[0] = va_arg(ap, int);
+        buffer[1] = 0;
         ptr = buffer;
         break;
 
