@@ -1,15 +1,16 @@
 zero		.word 0
-; hdma_blank: write to $2100 once (mode 0)
+; hdma_blank: write to $21ff-$2100 once (mode 1)
+; [specific workaround for S-CPU B DMA silicon bug]
 ; force blanking up to line 40 and from line 184
 ; (active display = 144 lines)
 hdma_blank	.byt 40
-		.byt $8f
+		.byt $8f, $8f
 		.byt 127
-		.byt $0f
+		.byt $0f, $0f
 		.byt 17
-		.byt $0f
+		.byt $0f, $0f
 		.byt 1
-		.byt $8f
+		.byt $8f, $8f
 		.byt 0
 
 ; h/vscroll: write to $210d twice, write to $210e twice (mode 3)

@@ -40,10 +40,14 @@ setup_hdma:
 	sty $4322
 	sta $4324
 
-; BLANKING CHANNEL MUST NOT BE A DIRECT NEIGHBOUR OF THE GPDMA CHANNEL.
-	lda #$00		;A to B; direct; 1x single reg
+; HDMA to $2100 is verboten (S-CPU B silicon bug makes it drop GPDMA transfers)
+; It's not the transfer itself but the fact that $43x1 somehow must not contain
+; zero.  So we setup HDMA to $21ff, make it write two B-bus regs and let it wrap
+; around to $2100 this way.
+
+	lda #$01		;A to B; direct; Mode 1: 1x 2 regs
 	sta $4330		;ch. 3 for blanking
-	lda #$00		;2100 = inidisp
+	lda #$ff		;2100 = inidisp
 	sta $4331
 	lda #^hdma_blank
 	ldy #!hdma_blank
