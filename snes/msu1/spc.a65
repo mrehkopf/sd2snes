@@ -1,3 +1,5 @@
+.link page $c0
+
 spc_upload:
 	rep #$20 : .al
 	sep #$10 : .xs

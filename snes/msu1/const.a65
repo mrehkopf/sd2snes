@@ -1,3 +1,4 @@
+.link page $c0
 zero		.word 0
 ; hdma_blank: write to $21ff-$2100 once (mode 1)
 ; [specific workaround for S-CPU B DMA silicon bug]

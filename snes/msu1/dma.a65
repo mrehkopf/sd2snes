@@ -1,3 +1,4 @@
+.link page $c0
 
 dma0:
 	rep #$10 : .xl
