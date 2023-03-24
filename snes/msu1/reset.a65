@@ -1,6 +1,8 @@
 ; This file is part of the snescom-asm demo - a demo of how to build a SNES program.
 ; See http://bisqwit.iki.fi/source/snescom.html for details.
 
+.link page $c0
+
 #include "dma.i65"
 
 #define TILE_ADDR_REG_VAL(addr, scsize) \

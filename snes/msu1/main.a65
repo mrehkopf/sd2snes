@@ -1,3 +1,5 @@
+.link page $c0
+
 #include "dma.i65"
 
 GAME_MAIN:
