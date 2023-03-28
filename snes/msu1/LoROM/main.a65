@@ -1,0 +1,197 @@
+.link page $80
+
+#include "dma.i65"
+
+GAME_MAIN:
+	sep #$20 : .as
+	stz $4200 ; inhibit IRQs
+	jsr waitblank
+	jsr killdma
+	jsr waitblank
+	jsr waitblank
+	jsr waitblank
+	jsr waitblank
+	jsr snes_init
+	jsr spc_upload
+	lda #$01
+	sta $420d ; fast cpu
+	jsr setup_gfx
+	jsr colortest
+	jsr screen_init
+	jsr setup_hdma
+	sep #$20 : .as
+-	jsr msu1init
+	cli
+	jsr waitblank
+	jsr msu1loop
+	sei
+	bra -
+
+killdma:
+;	stz $420b
+	stz $420c
+	rts
+
+
+waitblank:
+-	lda $4212
+	and #$80
+	bne -
+-	lda $4212
+	and #$80
+	beq -
+	rts
+
+colortest:
+	sep #$20 : .as
+	rep #$10 : .xl
+	stz $2130
+	rts
+
+setup_gfx:
+	sep #$20 : .as
+	rep #$10 : .xl
+
+;clear VRAM
+	ldx #$0000
+	stx $2116
+	DMA0(#$09, #$0000, #^zero, #!zero, #$18)
+
+;copy low tilemap
+	ldx #$3F80 ; == 8-bit address $7F00
+	stx $2116
+	DMA0(#$01, #$100, #^tilemap, #!tilemap, #$18)
+
+;copy high tilemap
+	ldx #$7F80 ; == 8-bit address $FF00
+	stx $2116
+	DMA0(#$01, #$20, #^tilemap2, #!tilemap2, #$18)
+
+;clear OAM tables
+	ldx #$0000
+	stx $2102
+	DMA0(#$08, #544, #^zero, #!zero, #$04)
+
+	rts
+
+screen_init:
+	sep #$20 : .as		;8-bit accumulator
+	rep #$10 : .xl		;16-bit index
+	lda #$13		;mode 3, 16x16
+	sta $2105
+	lda #$3C		;Tilemap addr 0x7800, 32x32
+	sta $2107		;for BG1
+	lda #$00		;chr base addr:
+	sta $210b		;BG1=0x0000, BG2=0x0000
+	lda #$01		;enable BG1
+	sta $212c		;BG Main
+	lda #$01		;enable none
+	sta $212d		;BG Sub
+	lda #$20		;Window 1 for color
+	sta $2125		;Color window
+;	lda #$02		;Window 1 for BG1
+;	sta $2123
+	lda #$10		;cut off 16 pixels left
+	sta $2126
+	lda #$ef		;cut off 16 pixels right
+	sta $2127
+	lda #$40		;enable clipping outside window
+	sta $2130
+;	lda #$01		;enable clipping for BG1
+;	sta $212e
+	stz $2121		;reset CGRAM ptr
+;	lda #$0f
+;	sta $2100		;screen on, full brightness
+	rts
+
+snes_init:
+	sep #$20 : .as		;8-bit accumulator
+	rep #$10 : .xl		;16-bit index
+	stz $4200		;
+	lda #$ff
+	sta $4201		;
+	stz $4202		;
+	stz $4203		;
+	stz $4204		;
+	stz $4205		;
+	stz $4206		;
+	stz $4207		;
+	stz $4208		;
+	stz $4209		;
+	stz $420a		;
+	stz $420d		;
+	lda #$8f
+	sta $2100		;INIDISP: force blank
+	stz $2101		;
+	stz $2102		;
+	stz $2103		;
+;	stz $2104		; (OAM Data?!)
+;	stz $2104		; (OAM Data?!)
+	stz $2105		;
+	stz $2106		;
+	stz $2107		;
+	stz $2108		;
+	stz $2109		;
+	stz $210a		;
+	stz $210b		;
+	stz $210c		;
+	stz $210d		;
+	stz $210d		;
+	stz $210e		;
+	stz $210e		;
+	stz $210f		;
+	stz $210f		;
+	stz $2110		;
+	stz $2110		;
+	stz $2111		;
+	stz $2111		;
+	stz $2112		;
+	stz $2112		;
+	stz $2113		;
+	stz $2113		;
+	stz $2114		;
+	stz $2114		;
+	lda #$80		;VRAM addr increment after high byte
+	sta $2115		;
+	stz $2116		;
+	stz $2117		;
+;	stz $2118		;(VRAM Data?!)
+;	stz $2119		;(VRAM Data?!)
+	stz $211a		;
+	stz $211b		;
+	lda #$01
+	sta $211b		;
+	stz $211c		;
+	stz $211c		;
+	stz $211d		;
+	stz $211d		;
+	stz $211e		;
+	sta $211e		;
+	stz $211f		;
+	stz $211f		;
+	stz $2120		;
+	stz $2120		;
+	stz $2121		;
+;	stz $2122		; (CG Data?!)
+;	stz $2122		; (CG Data?!)
+	stz $2123		;
+	stz $2124		;
+	stz $2125		;
+	stz $2126		;
+	stz $2127		;
+	stz $2128		;
+	stz $2129		;
+	stz $212a		;
+	stz $212b		;
+	stz $212c		;
+	stz $212d		;
+	stz $212e		;
+	stz $212f		;
+	stz $2130		;
+	stz $2131		;
+	lda #$e0		;clear fixed color
+	sta $2132		;
+	stz $2133		;
+
+	rts
+

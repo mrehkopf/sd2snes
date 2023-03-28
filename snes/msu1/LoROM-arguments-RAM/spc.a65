@@ -1,0 +1,58 @@
+.link page $80
+
+spc_upload:
+	rep #$20 : .al
+	sep #$10 : .xs
+
+	lda #$bbaa	; wait for IPL bootup
+-	cmp $2140
+	bne -
+
+	; IPL portmap outside transfer state:
+	; $2141   = command (transfer / run)
+	; $2142-3 = target address
+	; $2140   = trigger
+	lda @spcaddr
+	sta $2142
+	ldx #$01	; transfer
+	stx $2141
+	ldx #$cc
+	stx $2140
+	; wait for echo
+-	cpx $2140
+	bne -
+
+	; IPL portmap inside transfer state:
+	; $2140 = sequence number
+	; $2141 = payload
+	; init counters
+	sep #$20 : .as
+	ldx #$00	; sequence counter
+	lda @spclen
+	tay		; countdown
+spc_loop
+	lda @spccode, x	; fill data byte
+	sta $2141	; write data...
+	stx $2140	; ...and write sequence counter
+-	cpx $2140	; wait for echo from IPL
+	bne -
+	inx		; increment sequence counter...
+	dey
+	bne spc_loop	; if not, do it again
+
+spc_end
+	rep #$20 : .al
+	lda @spcexec
+	sta $2142	; set exec address
+	stz $2141	; command: run
+	ldx $2140
+	inx
+	inx
+	stx $2140	; send sequence end / execute
+-	cpx $2140	; wait for last echo
+	bne -
+
+	sep #$20 : .as
+	rep #$10 : .xl
+
+	rts		; and done!

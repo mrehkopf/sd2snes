@@ -1,0 +1,82 @@
+; This file is part of the snescom-asm demo - a demo of how to build a SNES program.
+; See http://bisqwit.iki.fi/source/snescom.html for details.
+
+; fill whole area beforehand so the linker does not create multiple
+; objects from it. (necessary for map creation)
+
+*= $80FF00
+  .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+; Begin assembling to this address.
+*= $80FF00
+
+RESET:
+        sei: clc: xce
+        jmp @GAME_MAIN
+
+NMI_16bit:
+	pha
+	sep #$20 : .as
+        lda $4210       ; ack interrupt
+        lda #$0e
+        sta $420c  ; enable HDMA ch. 1-3
+	pla
+        rti
+
+IRQ_16bit:
+	pha
+	sep #$20 : .as
+        lda #$01
+        sta isr_flag
+        lda $4211  ;Acknowledge irq
+	pla
+        rti
+
+;error vectors
+ABT_8bit: ABT_16bit:
+BRK_8bit: BRK_16bit:
+COP_8bit: COP_16bit:
+IRQ_8bit:
+NMI_8bit:
+        - wai: lda $ABCDEF : bra -
+
+*= $80FFB0
+        ; Zero the area from $FFB0 - $FFFF
+        ; to ensure that the linker won't get clever
+        ; and fill it with small pieces of code.
+        .word 0,0,0,0, 0,0,0,0
+        .word 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0
+        .word 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0
+
+*= $80FFB0
+
+.byt "MR"         ;2 bytes - company id
+.byt "MSU1"       ;4 bytes - rom id
+
+*= $80FFC0
+.byt "MSU1 VIDEO PLAYER    "
+     ;123456789012345678901; - max 21 chars
+
+*= $80FFD5     .byt $30  ;rom speed
+*= $80FFD6     .byt $02  ;rom type
+*= $80FFD7     .byt $06  ;rom size   64 kByte
+*= $80FFD8     .byt $03  ;sram size  8 kBit
+*= $80FFD9     .byt $00  ;rom region 0 = Japan/NTSC (player wants 60Hz)
+*= $80FFDA     .byt $33  ;company id flag
+
+*= $80FFDC     .word 0,0 ;checksums
+
+*= $80FFE4     .word COP_16bit
+*= $80FFE6     .word BRK_16bit
+*= $80FFE8     .word ABT_16bit
+*= $80FFEA     .word NMI_16bit
+*= $80FFEE     .word IRQ_16bit
+*= $80FFF4     .word COP_8bit
+*= $80FFF8     .word ABT_8bit
+*= $80FFFA     .word NMI_8bit
+*= $80FFFC     .word RESET
+*= $80FFFE     .word BRK_8bit
+*= $80FFFE     .word IRQ_8bit

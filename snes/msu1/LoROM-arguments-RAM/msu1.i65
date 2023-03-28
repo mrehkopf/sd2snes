@@ -1,0 +1,19 @@
+// example addresses:
+// - MSU_VIDEOSRC_LO|HI contain the 32-bit MSU1 data offset of the video stream
+//   inside the MSU1 data file in the usual little endian format
+// - MSU_AUDIOSRC_TRACK contains the 16-bit MSU1 audio track number
+
+#define MSU_VIDEOSRC_LO    $7E0700
+#define MSU_VIDEOSRC_HI    $7E0702
+#define MSU_AUDIOSRC_TRACK $7E0704
+
+#define MSU_STATUS	$2000
+#define MSU_READ	$2001
+#define MSU_ID		$2002
+
+#define MSU_SEEK_OFFSET	$2000
+#define MSU_SEEK_BANK	$2002
+#define MSU_TRACK	$2004
+#define MSU_VOLUME	$2006
+#define MSU_CONTROL	$2007
+

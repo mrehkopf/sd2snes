@@ -1,0 +1,13 @@
+#define DMA0(mode, len, a_bank, a_addr, b_reg)\
+	lda mode \
+: 	sta dma_mode \
+:	ldx a_addr \
+:	lda a_bank \
+:	stx dma_a_addr \
+:	sta dma_a_bank \
+:	ldx len \
+:	stx dma_len \
+:	lda b_reg \
+:	sta dma_b_reg \
+:	jsr dma0
+
