@@ -1,0 +1,23 @@
+*=$7E0000
+.data
+.link page $7e
+
+dispcnt		.byt 0
+
+stddur		.byt 0	; standard picture duration in fields
+altdur		.byt 0	; alternate picture duration in fields
+altcnt		.byt 0	; use alternate picture duration every n frames
+curdur		.byt 0	; current valid duration
+curcnt		.byt 0	; current frame count for picture duration
+numframes	.word 0
+firstframe	.byt 0
+charptr		.byt 0
+
+;----------parameters for dma----------
+dma_a_bank      .byt 0
+dma_a_addr      .word 0
+dma_b_reg       .byt 0
+dma_len         .word 0
+dma_mode        .byt 0
+
+isr_flag	.byt 0

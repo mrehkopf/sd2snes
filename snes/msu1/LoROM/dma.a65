@@ -1,0 +1,66 @@
+.link page $80
+
+dma0:
+	rep #$10 : .xl
+	sep #$20 : .as
+	lda dma_mode
+	sta $4300
+	lda dma_b_reg
+	sta $4301
+	lda dma_a_bank
+	ldx dma_a_addr
+	stx $4302
+	sta $4304
+	ldx dma_len
+	stx $4305
+	lda #$01
+	sta $420b
+	rts
+
+setup_hdma:
+	sep #$20 : .as
+	rep #$10 : .xl
+;	stz $420b
+;	stz $420c
+
+	lda #$00		;A to B; direct; 1x single reg
+	sta $4310		;ch. 1 for tilemap switch
+	lda #$07		;2107 = BG1 Tilemap Address
+	sta $4311
+	lda #^hdma_tilemap
+	ldy #!hdma_tilemap
+	sty $4312
+	sta $4314
+
+	lda #$03		;A to B; direct; 2x 2x single reg
+	sta $4320		;ch. 2 for scroll
+	lda #$0d		;210d = BG1HOFS
+	sta $4321
+	lda #^hdma_scroll
+	ldy #!hdma_scroll
+	sty $4322
+	sta $4324
+
+; HDMA to $2100 is verboten (S-CPU B silicon bug makes it drop GPDMA transfers)
+; It's not the transfer itself but the fact that $43x1 somehow must not contain
+; zero.  So we setup HDMA to $21ff, make it write two B-bus regs and let it wrap
+; around to $2100 this way.
+
+	lda #$01		;A to B; direct; Mode 1: 1x 2 regs
+	sta $4330		;ch. 3 for blanking
+	lda #$ff		;2100 = inidisp
+	sta $4331
+	lda #^hdma_blank
+	ldy #!hdma_blank
+	sty $4332
+	sta $4334
+
+	jsr waitblank
+
+	ldx #185		;Set IRQ trigger to line 185
+	stx $4209		;
+	lda #$0e
+	sta $420c
+	rts
+
+
