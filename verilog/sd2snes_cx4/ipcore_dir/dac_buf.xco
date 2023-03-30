@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Tue Apr 19 12:35:46 2016
+# Date: Wed Mar 29 15:08:06 2023
 #
 ##############################################################
 #
@@ -24,7 +24,7 @@ SET createndf = false
 SET designentry = Verilog
 SET device = xc3s400
 SET devicefamily = spartan3
-SET flowvendor = Foundation_ISE
+SET flowvendor = Other
 SET formalverification = false
 SET foundationsym = false
 SET implementationfiletype = Ngc
@@ -105,4 +105,4 @@ CSET write_width_b=32
 MISC pkg_timestamp=2012-11-19T16:22:25Z
 # END Extra information
 GENERATE
-# CRC: d8d224e9
+# CRC: 4ddba3c7
