@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Fri Oct 02 11:12:48 2020
+# Date: Wed Mar 29 21:35:45 2023
 #
 ##############################################################
 #
@@ -46,7 +46,7 @@ CSET axi_id_width=4
 CSET axi_slave_type=Memory_Slave
 CSET axi_type=AXI4_Full
 CSET byte_size=9
-CSET coe_file=.\dec_table.coe
+CSET coe_file=./dec_table.coe
 CSET collision_warnings=ALL
 CSET component_name=dec_table
 CSET disable_collision_warnings=false
@@ -105,4 +105,4 @@ CSET write_width_b=16
 MISC pkg_timestamp=2012-11-19T16:22:25Z
 # END Extra information
 GENERATE
-# CRC: f2d98495
+# CRC: db580cfe
