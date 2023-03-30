@@ -48,6 +48,8 @@ module msu(
   output DBG_msu_address_ext_write_rising
 );
 
+reg msu_addr_inc_arm = 0;
+
 reg [1:0] status_reset_we_r;
 always @(posedge clkin) status_reset_we_r = {status_reset_we_r[0], status_reset_we};
 wire status_reset_en = (status_reset_we_r == 2'b01);
@@ -137,10 +139,18 @@ reg [7:0] data_out_r;
 assign reg_data_out = data_out_r;
 
 always @(posedge clkin) begin
-  if(msu_address_ext_write_rising)
+  if(msu_address_ext_write_rising) begin
     msu_address_r <= msu_address_ext;
-  else if(reg_oe_rising & enable & (reg_addr == 3'h1)) begin
+  end else if(reg_oe_rising & msu_addr_inc_arm) begin
     msu_address_r <= msu_address_r + 1;
+  end
+end
+
+always @(posedge clkin) begin
+  if(reg_oe_falling & enable & (reg_addr == 3'h1)) begin
+    msu_addr_inc_arm <= 1'b1;
+  end else if(reg_oe_rising) begin
+    msu_addr_inc_arm <= 1'b0;
   end
 end
 
