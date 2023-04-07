@@ -1,7 +1,7 @@
 .link page $c0
 zero		.word 0
 ; hdma_blank: write to $21ff-$2100 once (mode 1)
-; [specific workaround for S-CPU B DMA silicon bug]
+; [specific workaround for S-CPU A DMA silicon bug]
 ; force blanking up to line 40 and from line 184
 ; (active display = 144 lines)
 hdma_blank	.byt 40

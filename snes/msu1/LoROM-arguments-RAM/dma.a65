@@ -41,7 +41,7 @@ setup_hdma:
 	sty $4322
 	sta $4324
 
-; HDMA to $2100 is verboten (S-CPU B silicon bug makes it drop GPDMA transfers)
+; HDMA to $2100 is verboten (S-CPU A silicon bug makes it drop GPDMA transfers)
 ; It's not the transfer itself but the fact that $43x1 somehow must not contain
 ; zero.  So we setup HDMA to $21ff, make it write two B-bus regs and let it wrap
 ; around to $2100 this way.
