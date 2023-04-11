@@ -333,7 +333,8 @@ always @(posedge CLK2) begin
   end
 
   // count of write low
-  if (SNES_reset_strobe | SNES_SNOOPPARD_end) begin
+  // prioritize writes when there is a DMA from a PPU reg
+  if (SNES_reset_strobe | SNES_SNOOPPARD_end | ~SNES_WRITE) begin
     SNES_SNOOPPARD_count <= 0;
     SNES_SNOOPPARD_DATA_OE <= 0;
   end
