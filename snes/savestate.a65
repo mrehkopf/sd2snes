@@ -261,7 +261,10 @@ controller_reg
 	lda @CS_SLOT
 	rep #$30 : .al : .xl
 	beq skipslot
+	bpl checkslot
+	jmp ss_exit
 
+checkslot
 ; loadstate input check
 	lda @CS_INPUT_CUR
 	and @CS_SLOT_INPUT
@@ -276,6 +279,7 @@ controller_reg
 loadslot
 	; load last savestate slot
 	sta @MCU_PARAM
+	ora #$80
 	sta @CS_SLOT
 	lda #CMD_LOADSTATE
 	sta @MCU_CMD
@@ -458,6 +462,12 @@ saveinputloop
 	bne +
 	lda #$01
 +	sta @MCU_PARAM
+	; there is a race with saving twice and then changing the slot
+	; before the second save writes to SD, but it seems unlikely to hit.
+	; the following commented code protects against it, however, it
+	; also delays the save->load time which users may not like
+;	ora #$80
+;	sta @CS_SLOT
 	lda #CMD_SAVESTATE
 	sta @MCU_CMD
 
