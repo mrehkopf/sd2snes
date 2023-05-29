@@ -325,6 +325,15 @@ reg [15:0] bmf_data_r;
 reg [23:0] debug_inst_addr_r;
 
 reg [31:0] gsu_cycle_cnt_r; initial gsu_cycle_cnt_r = 0;
+reg [31:0] gsu_cycle_run_r; initial gsu_cycle_run_r = 0;
+reg [31:0] gsu_cache_hit_r; initial gsu_cache_hit_r = 0;
+reg [31:0] gsu_cache_acc_r; initial gsu_cache_acc_r = 0;
+reg [31:0] gsu_cache_inv_r; initial gsu_cache_inv_r = 0;
+reg [31:0] gsu_cache_cbr_r; initial gsu_cache_cbr_r = 0;
+reg [31:0] gsu_plot_inst_r; initial gsu_plot_inst_r = 0;
+reg [31:0] gsu_plot_read_r; initial gsu_plot_read_r = 0;
+reg [31:0] gsu_plot_writ_r; initial gsu_plot_writ_r = 0;
+reg [31:0] gsu_plot_dump_r; initial gsu_plot_dump_r = 0;
 
 reg [1:0]  gsu_cycle_r; initial gsu_cycle_r = 0;
 reg        gsu_clock_en; initial gsu_clock_en = 0;
@@ -348,11 +357,12 @@ end
 // terms of GSU clocks so this is used to align transitions and
 // operate counters.
 
+wire exe_idle;
 always @(posedge CLK) begin
   if (RST) begin
     gsu_cycle_cnt_r <= 0;
   end
-  else if (pipeline_advance) begin
+  else if (gsu_clock_en & ~exe_idle & step_r) begin
     gsu_cycle_cnt_r <= gsu_cycle_cnt_r + 1;
   end
 end
@@ -448,9 +458,9 @@ always @(posedge CLK) begin
   // pipeline latencies for multi-cycle operations.  starfox is the only game that
   // doesn't set CLS.
   lat_fetch_r  <= SPEED ? 0 : CLSR_CLS ? 0                  : 1;
-  lat_rom_r    <= SPEED ? 2 : CLSR_CLS ? 5-1                : 6-2;
-  lat_ram_r    <= SPEED ? 1 : CLSR_CLS ? 5-1                : 6-3;
-  lat_fmult_r  <= SPEED ? 2 : CLSR_CLS ? (CFGR_MS0 ? 7 : 7) : (CFGR_MS0 ? 7 : 14-6);  // minimum 2.  starfox2 uses slow ms0 for some reason...
+  lat_rom_r    <= SPEED ? 2 : CLSR_CLS ? 5-1                : 6-1;//6-2;
+  lat_ram_r    <= SPEED ? 1 : CLSR_CLS ? 5-1                : 6-1;//6-3;
+  lat_fmult_r  <= SPEED ? 2 : CLSR_CLS ? (CFGR_MS0 ? 7 : 7) : (CFGR_MS0 ? 7 : 14-0);//14-6);  // minimum 2.  starfox2 uses slow ms0 for some reason...
   lat_mult_r   <= SPEED ? 0 : CLSR_CLS ? (CFGR_MS0 ? 0 : 1) : (CFGR_MS0 ? 0 :  2-0);
 end
 
@@ -833,10 +843,10 @@ always @(posedge CLK) begin
   else begin
     // decrement delay counters
     if (i2c_waitcnt_val_r) fetch_waitcnt_r <= i2c_waitcnt_r;
-    else if (gsu_clock_en & |fetch_waitcnt_r) fetch_waitcnt_r <= fetch_waitcnt_r - 1;
+    else if (gsu_clock_en & |fetch_waitcnt_r & step_r) fetch_waitcnt_r <= fetch_waitcnt_r - 1;
 
     if (e2c_waitcnt_val_r) exe_waitcnt_r <= e2c_waitcnt_r;
-    else if (gsu_clock_en & |exe_waitcnt_r) exe_waitcnt_r <= exe_waitcnt_r - 1;
+    else if (gsu_clock_en & |exe_waitcnt_r & step_r) exe_waitcnt_r <= exe_waitcnt_r - 1;
 
     // ok to advance to next instruction byte
     step_r <= CONFIG_CONTROL_ENABLED || (!op_complete & !CONFIG_CONTROL_MATCHPARTINST) || (stepcnt_r != CONFIG_STEP_COUNT);
@@ -1216,6 +1226,7 @@ always @(posedge CLK) begin
           bmp_index_r  <= e2b_index_r;
 
           if (bmp_hit) begin
+            gsu_plot_inst_r <= gsu_plot_inst_r + 1;
             //bmp_plane_r  <= 0;
 
             BMP_STATE <= ST_BMP_END;
@@ -1315,6 +1326,8 @@ always @(posedge CLK) begin
           bmf_plane_r <= 0;
           bmf_rmw_r <= ~&PIXBUF_VALID_r[~PIXBUF_HEAD_r];
 
+          gsu_plot_dump_r <= gsu_plot_dump_r + 1;
+
           BMF_STATE <= &PIXBUF_VALID_r[~PIXBUF_HEAD_r] ? ST_BMF_FLUSH_WRITE : ST_BMF_FLUSH_READ;
         end
       end
@@ -1329,6 +1342,7 @@ always @(posedge CLK) begin
           // read
           bmf_ram_rd_r <= 1;
           bmf_word_r <= 0;
+          gsu_plot_read_r <= gsu_plot_read_r + 1;
 
           BMF_STATE <= ST_BMF_FLUSH_READ_WAIT;
         end
@@ -1357,6 +1371,7 @@ always @(posedge CLK) begin
           bmf_data_r <= ({PIXBUF_r[~PIXBUF_HEAD_r][7][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][6][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][5][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][4][bmf_plane_r],
                           PIXBUF_r[~PIXBUF_HEAD_r][3][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][2][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][1][bmf_plane_r],PIXBUF_r[~PIXBUF_HEAD_r][0][bmf_plane_r]} & PIXBUF_VALID_r[~PIXBUF_HEAD_r])
                         | (bmf_flush_data_r & ~PIXBUF_VALID_r[~PIXBUF_HEAD_r]);
+          gsu_plot_writ_r <= gsu_plot_writ_r + 1;
 
           BMF_STATE <= ST_BMF_FLUSH_WRITE_WAIT;
         end
@@ -1520,6 +1535,7 @@ always @(posedge CLK) begin
     if ((e2i_flush_r & pipeline_advance) | (r2i_flush_r & idle_r)) begin
       // pulsed for one clock
       cache_val_r <= 0;
+      gsu_cache_inv_r <= gsu_cache_inv_r + 1;
     end
     else if (fetch_install_val_r) begin
       // demand fill
@@ -1534,7 +1550,10 @@ always @(posedge CLK) begin
       CBR_r[15:4] <= 0;
     end
     else if (pipeline_advance & op_complete) begin
-      if (e2r_wcbr_r)  CBR_r[15:4] <= e2r_cbr_r[15:4];
+      if (e2r_wcbr_r)  begin
+        CBR_r[15:4] <= e2r_cbr_r[15:4];
+        gsu_cache_cbr_r <= gsu_cache_cbr_r + 1;
+      end
     end
 
     // PBR is updated by SNES or JMP instructions.
@@ -1572,6 +1591,8 @@ always @(posedge CLK) begin
         // transition based on hit/miss
         debug_inst_addr_r <= cache_addr_r;
 
+        if (fetch_cache_match_r) gsu_cache_acc_r <= gsu_cache_acc_r + 1;
+
         if (fetch_cache_match_r & cache_val_r[cache_gsu_addr_r[8:4]]) begin
           // FIXME: need to put this 2 cycles before WAIT
           i2c_waitcnt_val_r <= 1;
@@ -1590,9 +1611,12 @@ always @(posedge CLK) begin
 
       end
       ST_FETCH_HIT: begin
+        i2c_waitcnt_val_r <= 0;
         // get data from cache.  Looks like it takes 2 cycles to read out of a true dual port??
         fetch_data_r <= cache_rddata;
         fetch_cache_data_r <= cache_rddata;
+
+        gsu_cache_hit_r <= gsu_cache_hit_r + 1;
 
         // uncomment to test cache
         //fetch_cache_match_r <= 0;
@@ -1780,6 +1804,8 @@ parameter
   ;
 reg [7:0]  EXE_STATE; initial EXE_STATE = ST_EXE_IDLE;
 
+assign exe_idle = (EXE_STATE & ST_EXE_IDLE);
+
 reg        exe_branch_r;
 
 reg [7:0]  exe_opcode_r;
@@ -1886,6 +1912,7 @@ always @(posedge CLK) begin
         // align to GSU clock.  Sinks up with fetch.
         if (SFR_GO & gsu_clock_en) begin
           EXE_STATE <= ST_EXE_DECODE;
+          gsu_cycle_run_r <= gsu_cycle_run_r + 1;
         end
       end
       ST_EXE_DECODE: begin
@@ -2789,6 +2816,26 @@ always @(posedge CLK) begin
 //      8'hA3           : pgmpre_out[0] <= bmp_rpix_y_r;
 //      8'hA4           : pgmpre_out[0] <= bmp_index_r;
 
+      8'h90           : pgmpre_out[0] <= gsu_plot_inst_r[31:24];
+      8'h91           : pgmpre_out[0] <= gsu_plot_inst_r[23:16];
+      8'h92           : pgmpre_out[0] <= gsu_plot_inst_r[15: 8];
+      8'h93           : pgmpre_out[0] <= gsu_plot_inst_r[ 7: 0];
+
+      8'h94           : pgmpre_out[0] <= gsu_plot_read_r[31:24];
+      8'h95           : pgmpre_out[0] <= gsu_plot_read_r[23:16];
+      8'h96           : pgmpre_out[0] <= gsu_plot_read_r[15: 8];
+      8'h97           : pgmpre_out[0] <= gsu_plot_read_r[ 7: 0];
+
+      8'h98           : pgmpre_out[0] <= gsu_plot_writ_r[31:24];
+      8'h99           : pgmpre_out[0] <= gsu_plot_writ_r[23:16];
+      8'h9A           : pgmpre_out[0] <= gsu_plot_writ_r[15: 8];
+      8'h9B           : pgmpre_out[0] <= gsu_plot_writ_r[ 7: 0];
+
+      8'h9C           : pgmpre_out[0] <= gsu_plot_dump_r[31:24];
+      8'h9D           : pgmpre_out[0] <= gsu_plot_dump_r[23:16];
+      8'h9E           : pgmpre_out[0] <= gsu_plot_dump_r[15: 8];
+      8'h9F           : pgmpre_out[0] <= gsu_plot_dump_r[ 7: 0];
+
       //8'hA5           : pgmpre_out[0] <= e2b_plot_r;
       //8'hA6           : pgmpre_out[0] <= e2b_rpix_r;
       //8'hA7           : pgmpre_out[0] <= RAM_STATE;
@@ -2800,6 +2847,16 @@ always @(posedge CLK) begin
       8'hB4           : pgmpre_out[0] <= exe_operand_r[15:8];
       8'hB5           : pgmpre_out[0] <= exe_opsize_r;
       //8'hB6           : pgmpre_out[0] <= exe_byte_r;
+
+      8'hC0           : pgmpre_out[0] <= gsu_cache_cbr_r[31:24];
+      8'hC1           : pgmpre_out[0] <= gsu_cache_cbr_r[23:16];
+      8'hC2           : pgmpre_out[0] <= gsu_cache_cbr_r[15: 8];
+      8'hC3           : pgmpre_out[0] <= gsu_cache_cbr_r[ 7: 0];
+
+      8'hC4           : pgmpre_out[0] <= gsu_cache_inv_r[31:24];
+      8'hC5           : pgmpre_out[0] <= gsu_cache_inv_r[23:16];
+      8'hC6           : pgmpre_out[0] <= gsu_cache_inv_r[15: 8];
+      8'hC7           : pgmpre_out[0] <= gsu_cache_inv_r[ 7: 0];
 
       //8'hC0           : pgmpre_out[0] <= FETCH_STATE;
       //8'hC1           : pgmpre_out[0] <= EXE_STATE;
@@ -2841,6 +2898,21 @@ always @(posedge CLK) begin
       8'hF1           : pgmpre_out[0] <= gsu_cycle_cnt_r[23:16];
       8'hF2           : pgmpre_out[0] <= gsu_cycle_cnt_r[15: 8];
       8'hF3           : pgmpre_out[0] <= gsu_cycle_cnt_r[ 7: 0];
+
+      8'hF4           : pgmpre_out[0] <= gsu_cycle_run_r[31:24];
+      8'hF5           : pgmpre_out[0] <= gsu_cycle_run_r[23:16];
+      8'hF6           : pgmpre_out[0] <= gsu_cycle_run_r[15: 8];
+      8'hF7           : pgmpre_out[0] <= gsu_cycle_run_r[ 7: 0];
+
+      8'hF8           : pgmpre_out[0] <= gsu_cache_hit_r[31:24];
+      8'hF9           : pgmpre_out[0] <= gsu_cache_hit_r[23:16];
+      8'hFA           : pgmpre_out[0] <= gsu_cache_hit_r[15: 8];
+      8'hFB           : pgmpre_out[0] <= gsu_cache_hit_r[ 7: 0];
+
+      8'hFC           : pgmpre_out[0] <= gsu_cache_acc_r[31:24];
+      8'hFD           : pgmpre_out[0] <= gsu_cache_acc_r[23:16];
+      8'hFE           : pgmpre_out[0] <= gsu_cache_acc_r[15: 8];
+      8'hFF           : pgmpre_out[0] <= gsu_cache_acc_r[ 7: 0];
 
 //      8'hF0           : pgmpre_out[0] <= cache_val_r[31:23];
 //      8'hF1           : pgmpre_out[0] <= cache_val_r[23:16];
