@@ -96,7 +96,7 @@ void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
   f_close(&msuaudio);
   msu_audio_usage = MSU_IDLE;
   if(is_msu_free_to_save()) {
-    msu_savecheck(1);
+    msu_savecheck(0);
   }
   snprintf(suffix, sizeof(suffix), "-%d.pcm", msu_track);
   strcpy((char*)file_buf, (char*)file_lfn);
