@@ -47,7 +47,9 @@ cfg_t CFG_DEFAULT = {
   .sgb_enh_override = 0,
   .sgb_clock_fix = 1,
   .sgb_bios_version = 2,
-  .show_tribute = 1
+  .show_tribute = 1,
+  .enable_autosave = 1,
+  .enable_autosave_msu1 = 1
 };
 
 cfg_t CFG;
@@ -146,6 +148,11 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %d\n", CFG_MSU_VOLUME_BOOST, CFG.msu_volume_boost);
   f_puts("\n# Show Near memorial screen (only in 1.11.0)\n", &file_handle);
   f_printf(&file_handle, "%s: %d\n", CFG_SHOW_TRIBUTE, CFG.show_tribute);
+  f_puts("\n# Autosave (save SRAM contents to card when changes are detected)\n", &file_handle);
+  f_printf(&file_handle, "#  %s: Autosave for everything except MSU-1 games\n", CFG_ENABLE_AUTOSAVE);
+  f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_AUTOSAVE, CFG.enable_autosave ? "true" : "false");
+  f_printf(&file_handle, "#  %s: Opportunistic Autosave for MSU-1 games\n", CFG_ENABLE_AUTOSAVE_MSU1);
+  f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_AUTOSAVE_MSU1, CFG.enable_autosave_msu1 ? "true" : "false");
   file_close();
   return err;
 }
@@ -272,6 +279,12 @@ int cfg_load() {
     if(yaml_get_itemvalue(CFG_SHOW_TRIBUTE, &tok)) {
       CFG.show_tribute = tok.longvalue;
       printf("show_tribute is %d\n", CFG.show_tribute);
+    }
+    if(yaml_get_itemvalue(CFG_ENABLE_AUTOSAVE, &tok)) {
+      CFG.enable_autosave = tok.boolvalue ? 1 : 0;
+    }
+    if(yaml_get_itemvalue(CFG_ENABLE_AUTOSAVE_MSU1, &tok)) {
+      CFG.enable_autosave_msu1 = tok.boolvalue ? 1 : 0;
     }
   }
   yaml_file_close();
@@ -597,4 +610,8 @@ uint16_t cfg_buttons_string2bits(char *str) {
   }
 //  printf("converted button string %s to bits: %04X\n", str, input);
   return input;
+}
+
+uint8_t cfg_is_msu1_autosave_enabled() {
+  return CFG.enable_autosave && CFG.enable_autosave_msu1;
 }

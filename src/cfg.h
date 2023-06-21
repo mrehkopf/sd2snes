@@ -48,6 +48,9 @@
 #define CFG_SGB_CLOCK_FIX                ("SGBClockFix")
 #define CFG_SGB_BIOS_VERSION             ("SGBBiosVersion")
 #define CFG_SHOW_TRIBUTE                 ("ShowTribute")
+#define CFG_ENABLE_AUTOSAVE              ("EnableAutoSave")
+#define CFG_ENABLE_AUTOSAVE_MSU1         ("EnableMSU1AutoSave")
+
 typedef enum {
   VIDMODE_60 = 0,
   VIDMODE_50,
@@ -93,6 +96,8 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t  sgb_clock_fix;           /* SGB timing/clock (true: original/sgb2, false: snes/sgb1) */
   uint8_t  sgb_bios_version;        /* SGB bios firmware version (defined number loads: sgbX_boot.bin and sgbX_snes.bin) */
   uint8_t  show_tribute;
+  uint8_t  enable_autosave;         /* enable automatic saving when SRAM contents change */
+  uint8_t  enable_autosave_msu1;    /* enable opportunistic auto saving when SRAM contents change for MSU1 games */
 } cfg_t;
 
 int cfg_save(void);
@@ -138,5 +143,7 @@ uint8_t cfg_is_reset_to_menu(void);
 
 void cfg_buttons_bits2string(uint16_t bits, char *out);
 uint16_t cfg_buttons_string2bits(char *str);
+
+uint8_t cfg_is_msu1_autosave_enabled(void);
 
 #endif

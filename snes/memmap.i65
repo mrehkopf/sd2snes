@@ -132,6 +132,8 @@
 #define CFG_SGB_CLOCK_FIX               CFG_ADDR+$00B1
 #define CFG_SGB_BIOS_VERSION            CFG_ADDR+$00B2
 #define CFG_SHOW_TRIBUTE                CFG_ADDR+$00B3
+#define CFG_ENABLE_AUTOSAVE             CFG_ADDR+$00B4
+#define CFG_ENABLE_AUTOSAVE_MSU1        CFG_ADDR+$00B5
 
 #define MENU_ENTRY_SIZE             23
 
