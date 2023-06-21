@@ -16,6 +16,7 @@
 #include "led.h"
 #include "usbinterface.h"
 #include "savestate.h"
+#include "cfg.h"
 
 FIL msudata;
 FIL msuaudio;
@@ -41,6 +42,7 @@ uint16_t fpga_status_prev = 0;
 uint16_t fpga_status_now = 0;
 
 inline int is_msu_free_to_save(void);
+extern volatile cfg_t CFG;
 
 int msu_audio_usage = MSU_IDLE;
 int msu_data_usage = MSU_IDLE;
@@ -64,11 +66,14 @@ int is_msu_free_to_save() {
 }
 
 /* check if SRAM content has changed and save
- * immediate: 0 = do not check again before one second has expired
+ * immediate: 0 = do not check if last check is less than one one second ago
  *            1 = check immediately
  */
 void msu_savecheck(int immediate) {
   uint32_t currentcrc;
+  if(!cfg_is_msu1_autosave_enabled()) {
+    return;
+  }
   if(immediate || (getticks() > msu_last_sram_check + MS_TO_TICKS(1000))) {
     currentcrc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes, 0);
     if(msu_last_crc != currentcrc) {

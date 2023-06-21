@@ -13,6 +13,7 @@
 ; 1 byte   data type of parameter (see below)
 ; 3 bytes  long pointer to parameter value (of data type above)
 ; 3 bytes  long pointer to text description of item
+; Function pointers: (address - 1!)
 ; 3 bytes  long pointer to change-hook function (called whenever the value is changed during selection; no return value)
 ; 3 bytes  long pointer to post-hook function (called when the value is set; no return value)
 ; 3 bytes  long pointer to isEnabled function (return: c=0: enabled, c=1: disabled)
@@ -509,6 +510,35 @@ menu_enttab_ingame:
 ; ENTRIES
 
  .byt  MTYPE_VALUE
+ .word !mtext_ingame_autosave
+ .byt  ^mtext_ingame_autosave
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_ENABLE_AUTOSAVE
+ .byt  ^CFG_ENABLE_AUTOSAVE
+ .word !mdesc_ingame_autosave
+ .byt  ^mdesc_ingame_autosave
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_VALUE
+ .word !mtext_ingame_autosave_msu1
+ .byt  ^mtext_ingame_autosave_msu1
+ .word !kv_onoff
+ .byt  ^kv_onoff
+ .byt  OPTTYPE_KVBYTE
+ .word !CFG_ENABLE_AUTOSAVE_MSU1
+ .byt  ^CFG_ENABLE_AUTOSAVE_MSU1
+ .word !mdesc_ingame_autosave_msu1
+ .byt  ^mdesc_ingame_autosave_msu1
+ .byt  0,0,0
+ .byt  0,0,0
+ .word !(mfunc_isenabled_autosave-1)
+ .byt  ^(mfunc_isenabled_autosave-1)
+
+ .byt  MTYPE_VALUE
  .word !mtext_ingame_cheats
  .byt  ^mtext_ingame_cheats
  .word !kv_yesno
@@ -828,6 +858,12 @@ mfunc_isenabled_savestate:
 mfunc_isenabled_scic:
   lda @CFG_PAIR_MODE_ALLOWED
   and @ST_PAIRMODE
+  eor #$ff
+  ror
+  rtl
+
+mfunc_isenabled_autosave:
+  lda @CFG_ENABLE_AUTOSAVE
   eor #$ff
   ror
   rtl

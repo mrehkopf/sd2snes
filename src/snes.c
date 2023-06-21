@@ -289,7 +289,7 @@ uint8_t snes_main_loop() {
   /* save the GB RTC if enabled */
   sgb_gtc_save(file_lfn);
 
-  if(romprops.sramsize_bytes) {
+  if(romprops.sramsize_bytes && CFG.enable_autosave) {
     uint32_t crc_bytes = min(romprops.sramsize_bytes - saveram_offset, SRAM_REGION_SIZE);
     saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase + saveram_offset, crc_bytes, saveram_crc);
     saveram_offset += crc_bytes;
@@ -336,8 +336,7 @@ uint8_t snes_main_loop() {
         saveram_crc = 0;
       }
     }
-  }
-  else {
+  } else {
     diffcount = 0;
     samecount = 0;
     didnotsave = 0;
