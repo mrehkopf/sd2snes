@@ -92,6 +92,7 @@ void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
   DBG_MSU1 printf("offset=%08lx sect=%08lx sample=%08lx\n", audio_offset, audio_sect, audio_sect_offset_sample);
   /* open file, fill buffer */
   char suffix[11];
+  dac_pause();
   f_close(&msuaudio);
   msu_audio_usage = MSU_IDLE;
   if(is_msu_free_to_save()) {
@@ -101,7 +102,6 @@ void prepare_audio_track(uint16_t msu_track, uint32_t audio_offset) {
   strcpy((char*)file_buf, (char*)file_lfn);
   strcpy(strrchr((char*)file_buf, (int)'.'), suffix);
   DBG_MSU1 printf("filename: %s\n", file_buf);
-  dac_pause();
   dac_reset(audio_sect_offset_sample);
   set_msu_status(MSU_SNES_STATUS_CLEAR_AUDIO_PLAY | MSU_SNES_STATUS_CLEAR_AUDIO_REPEAT);
   if(f_open(&msuaudio, (const TCHAR*)file_buf, FA_READ) == FR_OK) {
