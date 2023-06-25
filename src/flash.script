@@ -1,3 +1,5 @@
-program $_FW_FILE reset exit $_FW_START
+program $_FW_FILE $_FW_START
+soft_reset_halt
+resume
 shutdown
 
