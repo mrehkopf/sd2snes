@@ -148,3 +148,5 @@ obj/
 snes/menu.rtc
 snes/menu.srm
 *.sample
+!www/**/*
+www/themes/Themes/**/*
