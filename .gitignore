@@ -129,6 +129,7 @@ utils/chili2chr
 utils/genbsxpage
 utils/gentilemap
 utils/mem2lorom
+utils/palconv
 utils/palremap
 utils/palreorder
 utils/sneschksum

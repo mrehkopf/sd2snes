@@ -2,7 +2,7 @@ CC := gcc
 
 CFLAGS = -Wall -Wstrict-prototypes -Werror
 
-BIN = bin2asm bin2c bin2coe chili2chr derle gentilemap mem2lorom palremap palreorder rle genbsxpage sneschksum
+BIN = bin2asm bin2c bin2coe chili2chr derle gentilemap mem2lorom palconv palremap palreorder rle genbsxpage sneschksum
 
 all: $(BIN)
 
@@ -25,6 +25,9 @@ gentilemap: gentilemap.o
 	$(CC) $(CFLAGS) $^ --output $@
 
 mem2lorom: mem2lorom.o
+	$(CC) $(CFLAGS) $^ --output $@
+
+palconv: palconv.o
 	$(CC) $(CFLAGS) $^ --output $@
 
 palremap: palremap.o
