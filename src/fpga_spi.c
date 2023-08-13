@@ -367,6 +367,7 @@ void set_bsx_regs(uint8_t set, uint8_t reset) {
 uint64_t get_fpga_time() {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_RTCGET);
+  FPGA_TX_BYTE(0x00); /* dummy (copy current ftime to register) */
   uint64_t result = ((uint64_t)FPGA_RX_BYTE()) << 48;
   result |= ((uint64_t)FPGA_RX_BYTE()) << 40;
   result |= ((uint64_t)FPGA_RX_BYTE()) << 32;

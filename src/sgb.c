@@ -412,7 +412,7 @@ void sgb_gtc_load(uint8_t* filename) {
 
     unsigned ftimel = (ftime >>  0) & 0xFFFFFFFF;
     unsigned ftimeh = (ftime >> 32) & 0xFFFFFFFF;
-    printf("SGB load GB RTC: days=%ld, hour=%hhd, min=%hhd, sec=%hhd, ftime=0x%04x%04x\n", gtime_cur.gtm_days,
+    printf("SGB load GB RTC: days=%ld, hour=%hhd, min=%hhd, sec=%hhd, ftime=0x%08x%08x\n", gtime_cur.gtm_days,
       gtime_cur.gtm_hour,
       gtime_cur.gtm_min,
       gtime_cur.gtm_sec,
@@ -459,7 +459,7 @@ void sgb_gtc_save(uint8_t* filename) {
 
       unsigned ftimel = (ftime >>  0) & 0xFFFFFFFF;
       unsigned ftimeh = (ftime >> 32) & 0xFFFFFFFF;
-      printf("SGB save GB RTC: days=%ld, hour=%hhd, min=%hhd, sec=%hhd, ftime=0x%04x%04x\n", gtime_cur.gtm_days,
+      printf("SGB save GB RTC: days=%ld, hour=%hhd, min=%hhd, sec=%hhd, ftime=0x%08x%08x\n", gtime_cur.gtm_days,
         gtime_cur.gtm_hour,
         gtime_cur.gtm_min,
         gtime_cur.gtm_sec,
