@@ -38,7 +38,8 @@ extern char current_filename[];
 #define SRAM_SAVE_ADDR               (0xE00000L)
 
 #define SRAM_MENU_ADDR               (0xC00000L)
-#define SRAM_DIR_ADDR                (0xC10000L)
+#define SRAM_THEME_ADDR              (0xC10000L)
+#define SRAM_DIR_ADDR                (0xC20000L)
 #define SRAM_DB_ADDR                 (0xC80000L)
 
 #define SRAM_NUM_CHEATS              (0xCFFFFEL)
