@@ -72,7 +72,7 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t  sort_directories;        /* sort directories (slower) (default: on) */
   uint8_t  hide_extensions;         /* hide file extensions (default: off) */
   uint8_t  cx4_speed;               /* Cx4 speed (0: original, 1: no waitstates */
-  uint8_t  skin_name[128];          /* file name of selected skin */
+  uint8_t  theme_name[128];         /* file name of selected theme */
   uint8_t  control_type;            /* control type (0: A=OK, B=Cancel; 1: A=Cancel, B=OK) */
   uint8_t  msu_volume_boost;        /* volume boost (0: none; 1=+3.5dB; 2=+6dB; 3=+9dB; 4=+12dB) */
   uint8_t  onechip_transient_fixes; /* override register 2100 bits 3-0 */

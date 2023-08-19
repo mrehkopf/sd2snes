@@ -163,8 +163,8 @@ SNES_FTYPE determine_filetype(FILINFO fno) {
   if(!strcasecmp(ext+1, "CHT")) {
     return TYPE_CHT;
   }
-  if(!strcasecmp(ext+1, "SKIN")) {
-    return TYPE_SKIN;
+  if(!strcasecmp(ext+1, "THM")) {
+    return TYPE_THM;
   }
   return TYPE_UNKNOWN;
 }
