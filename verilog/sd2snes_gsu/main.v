@@ -235,7 +235,7 @@ reg GSU_RANr;    initial GSU_RANr = 0;
 always @(posedge CLK2) begin
   // synchronize to the SNES cycle to avoid reading partial interrupt vector
   //if (SNES_WR_end | SNES_RD_end) begin
-  if (SNES_PULSE_end) begin
+  if (SNES_cycle_end) begin
     GSU_RONr    <= GSU_RON & GSU_GO;
     GSU_RANr    <= GSU_RAN & GSU_GO;
   end
@@ -1109,15 +1109,15 @@ assign MCU_RDY = RQ_MCU_RDYr & RQ_RAM_MCU_RDYr;
 
 //--------------
 
-assign SNES_DATABUS_OE = msu_enable & ~(SNES_READ_narrow & SNES_WRITE) ? 1'b0 :
-                         gsu_enable & ~(SNES_READ_narrow & SNES_WRITE) ? 1'b0 :
-                         snescmd_enable & ~(SNES_READ_narrow & SNES_WRITE) ? ~(snescmd_unlock | feat_cmd_unlock) :
+assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
+                         gsu_enable & ~(SNES_READ & SNES_WRITE) ? 1'b0 :
+                         snescmd_enable & ~(SNES_READ & SNES_WRITE) ? ~(snescmd_unlock | feat_cmd_unlock) :
                          (r213f_enable & !SNES_PARD) ? 1'b0 :
                          (r2100_enable & ~SNES_PAWR) ? 1'b0 :
                          snoop_4200_enable ? SNES_WRITE :
                          ( (IS_ROM & SNES_ROMSEL)
                          | (!IS_ROM & !IS_SAVERAM & !IS_WRITABLE)
-                         | (SNES_READ_narrow & SNES_WRITE)
+                         | (SNES_READ & SNES_WRITE)
                          );
 
 /* data bus direction: 0 = SNES -> FPGA; 1 = FPGA -> SNES
