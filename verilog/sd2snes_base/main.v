@@ -280,7 +280,7 @@ always @(posedge CLK2) begin
 end
 
 wire SD_DMA_TO_ROM;
-wire free_slot = (SNES_PULSE_end | free_strobe) & ~SD_DMA_TO_ROM;
+wire free_slot = (SNES_cycle_end | free_strobe) & ~SD_DMA_TO_ROM;
 
 wire ROM_HIT;
 
@@ -1186,11 +1186,11 @@ reg ReadOrWrite_r; always @(posedge CLK2) ReadOrWrite_r <= ~(SNES_READr[1] & SNE
 
 assign SNES_DATABUS_OE = (msu_enable & ReadOrWrite_r) ? 1'b0 :
                          (dma_enable & ReadOrWrite_r) ? 1'b0 :
-                         (loop_enable & ~SNES_READ_narrow) ? 1'b0 :
+                         (loop_enable & ~SNES_READ) ? 1'b0 :
                          (bsx_data_ovr & ~IS_PATCH & ReadOrWrite_r) ? 1'b0 :
                          (srtc_enable & ReadOrWrite_r) ? 1'b0 :
-                         (snescmd_enable & ReadOrWrite_r) ? (~(snescmd_unlock | feat_cmd_unlock | (map_snescmd_wr_unlock_r & ~SNES_WRITE) | (map_snescmd_rd_unlock_r & ~SNES_READ_narrow))) :
-                         (bs_page_enable & ~SNES_READ_narrow) ? 1'b0 :
+                         (snescmd_enable & ReadOrWrite_r) ? (~(snescmd_unlock | feat_cmd_unlock | (map_snescmd_wr_unlock_r & ~SNES_WRITE) | (map_snescmd_rd_unlock_r & ~SNES_READ))) :
+                         (bs_page_enable & ~SNES_READ) ? 1'b0 :
                          (r213f_enable & ~SNES_PARD) ? 1'b0 :
                          (r2100_enable & ~SNES_PAWR) ? 1'b0 :
                          (snoop_4200_enable & ~SNES_WRITE) ? 1'b0 :
@@ -1199,7 +1199,7 @@ assign SNES_DATABUS_OE = (msu_enable & ReadOrWrite_r) ? 1'b0 :
                          (ctx_pard_enable & SNES_SNOOPPARD_DATA_OE)? 1'b0 :
                          ((IS_ROM & SNES_ROMSEL)
                           |(!IS_ROM & !IS_SAVERAM & !IS_WRITABLE & !IS_FLASHWR)
-                          |(SNES_READ_narrow & SNES_WRITE)
+                          |(SNES_READ & SNES_WRITE)
                           | bsx_tristate
                          );
 
