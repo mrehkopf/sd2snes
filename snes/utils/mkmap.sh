@@ -11,7 +11,7 @@ while read obj; do
   base="0x${base}"
   fn=${args[$idx-1]}
   echo ======$fn, base=$base====== > ${fn%%.*}.map
-  sed -e '/^Externs/,$d;/^Labels/d' < $fn.log | \
+  sed -e '/^Externs/,$d;/^Labels/d;/^Warning/d' < $fn.log | \
   while read line; do
     read addr label <<< "$line"
     addr="0x$addr"
