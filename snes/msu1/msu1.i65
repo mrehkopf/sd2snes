@@ -9,3 +9,6 @@
 #define MSU_VOLUME	$2006
 #define MSU_CONTROL	$2007
 
+// adjustment for NTSC snes vsync speedup (~0.264% = 173/65536)
+#define MSU_VSYNC_ACC_INCREMENT 173 // for 1000/1001 sources (e.g. 29.97fps)
+// #define MSU_VSYNC_ACC_INCREMENT 107 // for 1/1 sources (e.g. 30fps)

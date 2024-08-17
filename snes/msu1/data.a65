@@ -21,3 +21,5 @@ dma_len         .word 0
 dma_mode        .byt 0
 
 isr_flag	.byt 0
+
+vsync_acc .word 0

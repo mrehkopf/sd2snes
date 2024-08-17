@@ -33,6 +33,8 @@ msu1init:
 	lda #$01
 	sta firstframe
 
+	stx vsync_acc
+
 	rts
 
 
@@ -74,6 +76,17 @@ msu1loop2
 	lda #$01
 	sta $420b
 +	inc dispcnt	;inc field count
+	; phase accumulator for vsync error compensation (59.97 vs 60.098fps)
+	rep #$20 : .al
+	lda vsync_acc
+	clc
+	adc #MSU_VSYNC_ACC_INCREMENT
+	sta vsync_acc
+	sep #$20 : .as
+	bcc no_repeat_frame
+	inc curdur
+no_repeat_frame
+
 	lda dispcnt	;and compare with current duration
 	cmp curdur	;if not reached...
 	bne msu1loop2   ;...wait another field
