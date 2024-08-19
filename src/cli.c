@@ -526,7 +526,7 @@ static void cmd_mv(void) {
   printf("%s --> %s\n", arg1, arg2);
   file_res = f_rename(arg1, arg2);
   if(file_res) {
-    print_fresult(file_res, "f_rename(\"%s, %s\") failed", arg1, arg2);
+    print_fresult(file_res, "f_rename(\"%s\", \"%s\") failed", arg1, arg2);
   }
 }
 
