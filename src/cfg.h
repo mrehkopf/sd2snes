@@ -146,4 +146,6 @@ uint16_t cfg_buttons_string2bits(char *str);
 
 uint8_t cfg_is_msu1_autosave_enabled(void);
 
+int cfg_get_stringvalue(const char *key, char *target, size_t count);
+
 #endif

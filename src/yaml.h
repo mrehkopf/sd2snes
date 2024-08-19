@@ -86,8 +86,8 @@ void yaml_rewind_item(void);
 /* go to next item */
 int yaml_next_item(void);
 /* retrieve value of a given key */
-int yaml_get_value(char *key, yaml_token_t *tok, yaml_scope scope);
+int yaml_get_value(const char *key, yaml_token_t *tok, yaml_scope scope);
 /* retrieve value from within current item only */
-int yaml_get_itemvalue(char *key, yaml_token_t *tok);
+int yaml_get_itemvalue(const char *key, yaml_token_t *tok);
 
 #endif

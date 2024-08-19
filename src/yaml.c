@@ -314,7 +314,7 @@ int yaml_next_item() {
 }
 
 /* retrieve value of a given key (returns next hit) */
-int yaml_get_value(char *key, yaml_token_t *tok, yaml_scope scope) {
+int yaml_get_value(const char *key, yaml_token_t *tok, yaml_scope scope) {
   int found;
   /* always search whole item */
   if(scope == YAML_SCOPE_ITEM) {
@@ -332,6 +332,6 @@ int yaml_get_value(char *key, yaml_token_t *tok, yaml_scope scope) {
   return found;
 }
 
-int yaml_get_itemvalue(char *key, yaml_token_t *tok) {
+int yaml_get_itemvalue(const char *key, yaml_token_t *tok) {
   return yaml_get_value(key, tok, YAML_SCOPE_ITEM);
 }

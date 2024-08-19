@@ -615,3 +615,13 @@ uint16_t cfg_buttons_string2bits(char *str) {
 uint8_t cfg_is_msu1_autosave_enabled() {
   return CFG.enable_autosave && CFG.enable_autosave_msu1;
 }
+
+int cfg_get_stringvalue(const char *key, char *target, size_t count) {
+  yaml_token_t tok;
+  int found = 0;
+  yaml_file_open(CFG_FILE, FA_READ);
+  found = yaml_get_itemvalue(key, &tok);
+  strncpy(target, tok.stringvalue, count);
+  yaml_file_close();
+  return found;
+}
