@@ -444,7 +444,7 @@ int usbint_handler(void) {
 
 int usbint_handler_cmd(void) {
     int ret = 0;
-    uint8_t *fileName = (uint8_t *)cmd_buffer + 256;
+    uint8_t *stringParam = (uint8_t *)cmd_buffer + 256;
 
     PRINT_FUNCTION();
     PRINT_MSG("[hcmd]");
@@ -471,10 +471,10 @@ int usbint_handler_cmd(void) {
         if (server_info.space == USBINT_SERVER_SPACE_FILE) {
             fi.lfname = fbuf;
             fi.lfsize = MAX_STRING_LENGTH;
-            server_info.error |= f_stat((TCHAR*)fileName, &fi);
+            server_info.error |= f_stat((TCHAR*)stringParam, &fi);
             server_info.size = fi.fsize;
             server_info.total_size = server_info.size;
-            server_info.error |= f_open(&fh, (TCHAR*)fileName, FA_READ);
+            server_info.error |= f_open(&fh, (TCHAR*)stringParam, FA_READ);
         }
         else {
             server_info.offset  = cmd_buffer[256]; server_info.offset <<= 8;
@@ -487,7 +487,7 @@ int usbint_handler_cmd(void) {
     case USBINT_SERVER_OPCODE_PUT: {
         if (server_info.space == USBINT_SERVER_SPACE_FILE) {
             // file
-            server_info.error = f_open(&fh, (TCHAR*)fileName, FA_WRITE | FA_CREATE_ALWAYS);
+            server_info.error = f_open(&fh, (TCHAR*)stringParam, FA_WRITE | FA_CREATE_ALWAYS);
         }
         else {
             server_info.offset  = cmd_buffer[256]; server_info.offset <<= 8;
@@ -543,17 +543,17 @@ int usbint_handler_cmd(void) {
         fiCont = 0;
         fi.lfname = fbuf;
         fi.lfsize = MAX_STRING_LENGTH;
-        server_info.error |= f_opendir(&dh, (TCHAR *)fileName) != FR_OK;
+        server_info.error |= f_opendir(&dh, (TCHAR *)stringParam) != FR_OK;
         server_info.size = 1;
         server_info.total_size = server_info.size;
         break;
     }
     case USBINT_SERVER_OPCODE_MKDIR: {
-        server_info.error |= f_mkdir((TCHAR *)fileName) != FR_OK;
+        server_info.error |= f_mkdir((TCHAR *)stringParam) != FR_OK;
         break;
     }
     case USBINT_SERVER_OPCODE_RM: {
-        server_info.error |= f_unlink((TCHAR *)fileName) != FR_OK;
+        server_info.error |= f_unlink((TCHAR *)stringParam) != FR_OK;
         break;
     }
     case USBINT_SERVER_OPCODE_RESET: {
@@ -580,7 +580,7 @@ int usbint_handler_cmd(void) {
     }
     case USBINT_SERVER_OPCODE_MV: {
         // copy string name
-        strncpy((TCHAR *)fbuf, (TCHAR *)fileName, MAX_STRING_LENGTH + 1);
+        strncpy((TCHAR *)fbuf, (TCHAR *)stringParam, MAX_STRING_LENGTH + 1);
         char *newFileName = fbuf;
         // remove the basename
         if ((newFileName = strrchr(newFileName, '/'))) *(newFileName + 1) = '\0';
@@ -588,7 +588,7 @@ int usbint_handler_cmd(void) {
         // add the new basename
         strncat((TCHAR *)newFileName, (TCHAR *)cmd_buffer + 8, MAX_STRING_LENGTH - 8 - strlen(fbuf));
         // perform move
-        server_info.error |= f_rename((TCHAR *)fileName, (TCHAR *)newFileName) != FR_OK;
+        server_info.error |= f_rename((TCHAR *)stringParam, (TCHAR *)newFileName) != FR_OK;
         break;
     }
     case USBINT_SERVER_OPCODE_STREAM: {
@@ -629,7 +629,7 @@ int usbint_handler_cmd(void) {
     if (server_info.opcode == USBINT_SERVER_OPCODE_BOOT) {
         // manually control reset in case we want to patch
         if (!(server_info.flags & USBINT_SERVER_FLAGS_ONLYRESET)) {
-            strncpy ((char *)file_lfn, (char *)fileName, 256);
+            strncpy ((char *)file_lfn, (char *)stringParam, 256);
             cfg_add_last_game(file_lfn);
             // assert reset before loading
             assert_reset();
