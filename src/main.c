@@ -166,8 +166,8 @@ int main(void) {
         snes_bootprint_center( 9, "Error: %s", errorname);
         snes_bootprint_center(12, "Check that your card is wor-");
         snes_bootprint_center(14, "king, formatted correctly");
-        snes_bootprint_center(16, "(FAT32), and that the file:");
-        snes_bootprint_center(18, MENU_FILENAME);
+        snes_bootprint_center(16, "(MBR+FAT32), and that the");
+        snes_bootprint_center(18, "file " MENU_FILENAME);
         snes_bootprint_center(20, "exists.");
         cli_entrycheck();
         while((disk_status(0) & ~STA_PROTECT) == 0);
