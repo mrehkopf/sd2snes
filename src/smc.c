@@ -356,8 +356,6 @@ uint8_t smc_headerscore(uint32_t addr, snes_header_t* header, uint32_t file_offs
   uint32_t file_addr = (((addr - header_offset) & ~0x7fff) | (resetvector & 0x7fff)) + header_offset;
   uint8_t bsx_bytecode_adjust = 0;
 
-  if(resetvector < 0x8000) return 0;
-
   score += 2*isFixed(&header->licensee, sizeof(header->licensee), 0x33);
   score += 4*checkChksum(header->cchk, header->chk);
   if(header->carttype < 0x08) score++;
@@ -371,6 +369,11 @@ uint8_t smc_headerscore(uint32_t addr, snes_header_t* header, uint32_t file_offs
      && header->gamecode[2] == 0x00 && header->gamecode[3] == 0x00) {
     score++;
     bsx_bytecode_adjust = 2;
+  }
+
+  /* short-circuit on invalid reset vector except for BS-X bytecode */
+  if((!bsx_bytecode_adjust) && (resetvector < 0x8000)) {
+    return 0;
   }
 
   if((addr-header_offset) == 0x007fb0 && (mapper == 0x20 || bsxmapper == 0x20)) score += 2;
