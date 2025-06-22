@@ -226,15 +226,18 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
       break;
 
     case 0x22: /* ExLoROM */
-      /* Star Ocean 96MBit */
-      if(file_handle.fsize > 0x600200) {
-        props->mapper_id = 6;
-      }
       /* S-DD1 */
-      else if(header->carttype == 0x43 || header->carttype == 0x45) {
-        props->mapper_id = 4;
-        props->has_sdd1 = 1;
-        props->fpga_conf = FPGA_SDD1;
+      if(header->carttype == 0x43 || header->carttype == 0x45) {
+        /* Not really S-DD1 but Star Ocean 96MBit */
+        if(file_handle.fsize == 0xc00200) {
+          props->mapper_id = 6;
+        }
+        /* actual S-DD1 */
+        else {
+          props->mapper_id = 4;
+          props->has_sdd1 = 1;
+          props->fpga_conf = FPGA_SDD1;
+        }
       }
       /* Standard LoROM */
       else {
@@ -424,6 +427,7 @@ uint8_t smc_headerscore(uint32_t addr, snes_header_t* header, uint32_t file_offs
       break;
   }
 
+  /* prefer header in upper area for big ROMs */
   if(score && addr > 0x400000) score += 4;
   if(score < 0) score = 0;
   return score;
