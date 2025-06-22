@@ -6,6 +6,18 @@
 # set window title to indicate FPGA build status
 T = @echo -e "\e]0;$(1)\a"
 
+# Xilinx coregen needs an updated JVM (link /usr/bin/java into
+# (e.g.) /opt/Xilinx/14.7/ISE/ISE_DS/java/lin64/jre/bin) on recent linuxes;
+# the bundled 64-bit JVM fails to load its own classes.
+#
+# However current JVMs do not support the -d64 switch as used by coregen
+# anymore.
+# so set JAVA_OPTS / _JAVA_OPTIONS (depending on Oracle/OpenJDK)
+# to ignore unrecognized switches:
+export JAVA_OPTS := "-XX:+IgnoreUnrecognizedVMOptions"
+export _JAVA_OPTIONS := "-XX:+IgnoreUnrecognizedVMOptions"
+
+
 # these are relative to the core subdir, not the path of common.mk
 XILINX_XST_TMPDIR := "xst/projnav.tmp"
 XILINX_SCRIPTS := "../xilinx_scripts"
@@ -13,14 +25,10 @@ mkpath = $(subst $(eval) ,:,$(wildcard $1))
 
 XILINX_PATH := $(patsubst %,$(XILINX_HOME)/%,$(XILINX_PATHS))
 
-ifeq ($(HOST),LINUX)
-	XILINX_SETTINGS := $(shell . $(XILINX_HOME)/settings64.sh)
-else
-	XILINX := $(XILINX_HOME)/ISE
-	XILINX_EDK := $(XILINX_HOME)/EDK
-	XILINX_PLANAHEAD := $(XILINX_HOME)/PlanAhead
-	XILINX_DSP := $(XILINX_HOME)/ISE
-endif
+XILINX := $(XILINX_HOME)/ISE
+XILINX_EDK := $(XILINX_HOME)/EDK
+XILINX_PLANAHEAD := $(XILINX_HOME)/PlanAhead
+XILINX_DSP := $(XILINX_HOME)/ISE
 
 # make pretty Windows style paths for SmartXplorer...
 ifeq ($(HOST),CYGWIN)
@@ -32,11 +40,13 @@ ifeq ($(HOST),CYGWIN)
 endif
 
 ifeq ($(HOST),WSL)
-	WSL := MSYS2_ARG_CONV_EXCL='*' wsl . $(XILINX_HOME)/settings64.sh \> /dev/null \;
+	XILINX_ENV := MSYS2_ARG_CONV_EXCL='*' wsl . $(XILINX_HOME)/settings64.sh \> /dev/null \;
+else
+	XILINX_ENV := [ -f $(XILINX_HOME)/settings64.sh ] && . $(XILINX_HOME)/settings64.sh > /dev/null ; 
 endif
 
 XILINX_PATH := $(call mkpath,$(XILINX_PATH))
-XILINX_PART = $(shell $(WSL) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgetpartname.tcl sd2snes_$(CORE).xise)
+XILINX_PART = $(shell $(XILINX_ENV) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgetpartname.tcl sd2snes_$(CORE).xise)
 
 # prepare source lists
 VSRC := $(sort $(VSRC))
@@ -53,6 +63,12 @@ endif
 XIL_IP := $(sort $(XIL_IP))
 XIL_IP += $(sort $(COMMON_IP))
 XIL_IP := $(patsubst %,$(XIL_IPCORE_DIR)/%.ngc,$(XIL_IP))
+
+
+export QUARTUS_ROOTDIR
+export XILINX_EDK XILINX_DSP XILINX_PLANAHEAD XILINX XILINX_PATH
+
+# INTEL_ENV := [ -d $(QUARTUS_ROOTDIR)/adm ] && . $(QUARTUS_ROOTDIR)/adm/qenv.sh ;
 
 INT_IP := $(sort $(INT_IP))
 INT_IP += $(sort $(COMMON_IP))
@@ -77,7 +93,7 @@ smartxplorer: main.ngd currentProps.stratfile hostlistfile.txt
 	PATH="$(XILINX_PATH)":"$(PATH)"; \
 	export XILINX="$(XILINX)" XILINX_DSP="$(XILINX_DSP)" XILINX_EDK="$(XILINX_EDK)" XILINX_PLANAHEAD="$(XILINX_PLANAHEAD)" XILINX_PATH="$(XILINX_PATH)"; \
 	echo "Running SmartXPlorer. Check smartxplorer_results/smartxplorer.html for progress."; \
-	$(WSL) $(XILINX_BIN)/smartxplorer -p $(XILINX_PART) -b -wd smartxplorer_results main.ngd -to "-v 3 -s 4 -n 3 -fastpaths -xml main.twx -ucf $(UCF)" $(XPLORER_PARAMS) \
+	$(XILINX_ENV) $(XILINX_BIN)/smartxplorer -p $(XILINX_PART) -b -wd smartxplorer_results main.ngd -to "-v 3 -s 4 -n 3 -fastpaths -xml main.twx -ucf $(UCF)" $(XPLORER_PARAMS) \
 	&& (while true; do \
 		touch $@; \
 		export SX_RUN=`grep "Run index" smartxplorer_results/smartxplorer.log | sed -e 's/^.*\:.*run\([0-9]\+\).*$$/\1/g'`; \
@@ -97,32 +113,32 @@ main.ngc: main.xst main.prj
 	$(call T,[mk2] fpga_$(CORE) - Synthesize)
 	rm -f $@
 	mkdir -p $(XILINX_XST_TMPDIR)
-	$(WSL) $(XILINX_BIN)/xst -ifn main.xst -ofn main.syr
+	$(XILINX_ENV) $(XILINX_BIN)/xst -ifn main.xst -ofn main.syr
 
 main.ngd: main.ngc $(XIL_IP)
 	$(call T,[mk2] fpga_$(CORE) - Translate)
-	$(WSL) $(XILINX_BIN)/ngdbuild -dd _ngo -sd $(XIL_IPCORE_DIR) -nt timestamp -uc $(UCF) -p $(XILINX_PART) $< $@
+	$(XILINX_ENV) $(XILINX_BIN)/ngdbuild -dd _ngo -sd $(XIL_IPCORE_DIR) -nt timestamp -uc $(UCF) -p $(XILINX_PART) $< $@
 
 main_map.ncd: main.ngd
 	$(call T,[mk2] fpga_$(CORE) - Map)
-	$(eval XILINX_MAP_OPTS := $(shell $(WSL) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenmapcmd.tcl sd2snes_$(CORE).xise))
-	$(WSL) $(XILINX_BIN)/map -p $(XILINX_PART) $(XILINX_MAP_OPTS) -o $@ $^ main.pcf
+	$(eval XILINX_MAP_OPTS := $(shell $(XILINX_ENV) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenmapcmd.tcl sd2snes_$(CORE).xise))
+	$(XILINX_ENV) $(XILINX_BIN)/map -p $(XILINX_PART) $(XILINX_MAP_OPTS) -o $@ $^ main.pcf
 
 main.ncd: main_map.ncd
 	$(call T,[mk2] fpga_$(CORE) - Place and Route)
-	$(eval XILINX_PAR_OPTS := $(shell $(WSL) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenparcmd.tcl sd2snes_$(CORE).xise))
-	$(WSL) $(XILINX_BIN)/par -w $(XILINX_PAR_OPTS) $^ $@ main.pcf
+	$(eval XILINX_PAR_OPTS := $(shell $(XILINX_ENV) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenparcmd.tcl sd2snes_$(CORE).xise))
+	$(XILINX_ENV) $(XILINX_BIN)/par -w $(XILINX_PAR_OPTS) $^ $@ main.pcf
 	@! grep -q 'Timing Score: [1-9][0-9]*' main.par || (echo "[mk2] sd2snes_$(CORE): Timing not met! Aborting."; exit 55)
 
 main.bit: main.ncd main.ut
 	$(call T,[mk2] fpga_$(CORE) - Generate Programming File)
-	$(WSL) $(XILINX_BIN)/bitgen -f main.ut $<
+	$(XILINX_ENV) $(XILINX_BIN)/bitgen -f main.ut $<
 	$(call T)
 
 # IP Core regeneration
 $(XIL_IPCORE_DIR)/%.ngc: $(XIL_IPCORE_DIR)/%.xco | $(XIL_IPCORE_DIR)/coregen.cgc
 	$(call T,[mk2] fpga_$(CORE) - Regenerate IP Cores)
-	$(WSL) $(XILINX_BIN)/coregen -p $(XIL_IPCORE_DIR) -b $< -r
+	$(XILINX_ENV) $(XILINX_BIN)/coregen -p $(XIL_IPCORE_DIR) -b $< -r
 
 # ## Supplementary files required for Xilinx processes ##
 # PRJ file - basically a list of files that comprise the project
@@ -133,15 +149,15 @@ main.prj: $(XIL_IP) $(VSRC) $(VHSRC) $(HEADER)
 
 # XST file - list of command line options for the synthesis tool (xst)
 main.xst: sd2snes_$(CORE).xise main.prj
-	$(WSL) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenxstfile.tcl $< $@ main.prj $(XIL_IPCORE_DIR) $(XILINX_XST_TMPDIR)
+	$(XILINX_ENV) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenxstfile.tcl $< $@ main.prj $(XIL_IPCORE_DIR) $(XILINX_XST_TMPDIR)
 
 # UT file - list of command line options for the bit file generator (bitgen)
 main.ut: sd2snes_$(CORE).xise
-	$(WSL) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenbitgenfile.tcl $^ $@
+	$(XILINX_ENV) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenbitgenfile.tcl $^ $@
 
 # Generate Strategy file for SmartXPlorer
 currentProps.stratfile: sd2snes_$(CORE).xise
-	$(WSL) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenstratfile.tcl sd2snes_$(CORE).xise
+	$(XILINX_ENV) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenstratfile.tcl sd2snes_$(CORE).xise
 
 # Generate host list file for SmartXPlorer (enable parallel operation)
 hostlistfile.txt:
@@ -149,6 +165,7 @@ hostlistfile.txt:
 
 
 # ######## ALTERA / INTEL ########
+
 fpga_$(CORE).bi3: output_files/main.rbf
 	../../utils/rle $^ $@
 
@@ -156,15 +173,15 @@ fpga_$(CORE).bi3: output_files/main.rbf
 output_files/main.rbf: $(VSRC) $(VHSRC) $(HEADER) $(INT_IP) main.sdc
 	rm -rf db incremental_db
 	$(call T,[mk3] fpga_$(CORE) - Map)
-	$(INTEL_BIN)/quartus_map --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
+	$(INTEL_ENV) $(INTEL_BIN)/quartus_map --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
 	$(call T,[mk3] fpga_$(CORE) - Fit)
-	$(INTEL_BIN)/quartus_fit --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
+	$(INTEL_ENV) $(INTEL_BIN)/quartus_fit --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
 	$(call T,[mk3] fpga_$(CORE) - Timing Analysis)
-	$(INTEL_BIN)/quartus_sta sd2snes_$(CORE) -c main
+	$(INTEL_ENV) $(INTEL_BIN)/quartus_sta sd2snes_$(CORE) -c main
 	@! grep -q 'TNS.*-' output_files/main.sta.summary || (echo "[mk3] sd2snes_$(CORE): Timing not met! Aborting."; exit 55)
 	$(call T,[mk3] fpga_$(CORE) - Assemble)
-	$(INTEL_BIN)/quartus_asm --read_settings_files=off --write_settings_files=off sd2snes_$(CORE) -c main
-#	$(INTEL_BIN)/quartus_eda --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
+	$(INTEL_ENV) $(INTEL_BIN)/quartus_asm --read_settings_files=off --write_settings_files=off sd2snes_$(CORE) -c main
+#	$(INTEL_ENV) $(INTEL_BIN)/quartus_eda --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
 	$(call T)
 
 
