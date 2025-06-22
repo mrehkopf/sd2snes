@@ -100,7 +100,10 @@ smartxplorer: main.ngd currentProps.stratfile hostlistfile.txt
 		export SX_RUN=$${SX_RUN:-1}; \
 		echo Winner: "$$SX_RUN"; \
 		cp -af smartxplorer_results/run$$SX_RUN/* ./; \
+		touch -r sd2snes_$(CORE).xise .xise_timestamp; \
 		sed -i'' -e 's/\(Starting Placer Cost Table.*value="\)[0-9]*/\1'$$SX_RUN'/' sd2snes_$(CORE).xise; \
+		touch -r .xise_timestamp sd2snes_$(CORE).xise; \
+		rm -f .xise_timestamp; \
 		echo Results and settings have been copied.; \
 		break; \
 	done) \
