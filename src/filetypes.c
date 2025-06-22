@@ -128,6 +128,7 @@ printf("start\n");
   }
 printf("end\n");
 printf("%d entries, time: %d\n", numentries, getticks()-ticks);
+  f_closedir(&dir);
   return numentries;
 }
 
