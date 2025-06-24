@@ -487,8 +487,6 @@ mcu_cmd snes_mcu_cmd(
 );
 
 address snes_addr(
-  .CLK(CLK2),
-  .MAPPER(MAPPER),
   .featurebits(featurebits),
   .SNES_ADDR(SNES_ADDR), // requested address from SNES
   .SNES_PA(SNES_PA),

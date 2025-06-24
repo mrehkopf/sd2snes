@@ -227,11 +227,13 @@ begin
 	-- allow a ROM read slot just after REFRESH is started and just after REFRESH is finished
 	SNES_Refresh_Cycle							<= '1' when SNES_Refresh_Pipe(5 downto 1) = "00011" OR SNES_Refresh_Pipe(5 downto 1) = "11100" else '0';
 
-	-- decode SRAM access [$7X]:[$6000-$7FFF]; be careful with W-RAM $7E and $7F
+	-- decode SRAM access [$70-$73]:[$0000-$7FFF] and [$00-$3F;$80-$BF]:[$6000-$7FFF]
+	-- be careful with W-RAM $7E and $7F
 	-- RG access only driven by address compare.
 	Process(SNES_ADDR, SNES_RD, SNES_WR)
 	Begin
-		if( SNES_ADDR(23 downto 19) = B"01110" AND SNES_ADDR(15 downto 13) = "011" ) then
+		if( (SNES_ADDR(23 downto 18) = B"011100" AND SNES_ADDR(15) = '0')
+		 OR (SNES_ADDR(22) = '0' AND SNES_ADDR(15 downto 13) = B"011") ) then
 			SRAM_CS									<= SNES_RD AND SNES_WR;
 			SRAM_RD									<= SNES_RD;
 			SRAM_WR									<= SNES_WR;

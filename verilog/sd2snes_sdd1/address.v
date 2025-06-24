@@ -18,9 +18,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module address(
-  input CLK,
   input [15:0] featurebits, // peripheral enable/disable
-  input [2:0] MAPPER,       // MCU detected mapper
   input [23:0] SNES_ADDR,   // requested address from SNES
   input [7:0] SNES_PA,      // peripheral address from SNES
   input SNES_ROMSEL,        // ROMSEL from SNES
@@ -32,13 +30,6 @@ module address(
   input [23:0] SAVERAM_MASK,
   input [23:0] ROM_MASK,
   output msu_enable,
-  output srtc_enable,
-  output use_bsx,
-  output bsx_tristate,
-  input [14:0] bsx_regs,
-  output dspx_enable,
-  output dspx_dp_enable,
-  output dspx_a0,
   output r213f_enable,
   output r2100_hit,
   output snescmd_enable,
@@ -51,80 +42,59 @@ module address(
 
 /* feature bits. see src/fpga_spi.c for mapping */
 parameter [2:0]
-  FEAT_DSPX = 0,
-  FEAT_ST0010 = 1,
-  FEAT_SRTC = 2,
   FEAT_MSU1 = 3,
-  FEAT_213F = 4,
-  FEAT_2100 = 6
+  FEAT_213F = 4
 ;
 
 wire [23:0] SRAM_SNES_ADDR;
 
-/* currently supported mappers:
-   Index     Mapper
-      000      HiROM
-      001      LoROM
-      010      ExHiROM (48-64Mbit)
-      011      BS-X
-      100      ExLoROM (StarOCean and SFA2)
-      110      brainfuck interleaved 96MBit Star Ocean =)
-      111      menu (ROM in upper SRAM)
+/*
+  S-DD1 memory mapper.
+  NOTE: Part of the ROM mapping/bankswitching is carried out in SDD1.vhd!
+  SaveRAM mapping is still defined here.
 */
 
 // active high to select ROM in banks 00-3f,80-bf:8000-ffff and 40-7d,c0-ff:0000-ffff
 // (decoded by SNES)
 assign IS_ROM = ~SNES_ROMSEL;
 
-// select backup RAM when
-              // ST0010 chip is present, SRAM is mapped to
-assign IS_SAVERAM = SAVERAM_MASK[0]&(featurebits[FEAT_ST0010]?((SNES_ADDR[22:19] == 4'b1101) & &(~SNES_ADDR[15:12]) & SNES_ADDR[11])
-              // for HiROM, ExtHIROM or interleaved StarOcean -> $3X:[$6000-$7FFF] or $BX:[$6000-$7FFF]
-              :((MAPPER == 3'b000 || MAPPER == 3'b010 || MAPPER == 3'b110) ? (!SNES_ADDR[22] & SNES_ADDR[21] & &SNES_ADDR[14:13] & !SNES_ADDR[15])
-              // for ExtLoROM -> $7X:[$6000-$7FFF]
-              :(MAPPER == 3'b100) ? ((SNES_ADDR[23:19] == 5'b01110) && (SNES_ADDR[15:13] == 3'b011))
-              // LoROM:   SRAM @ Bank 0x70-0x7d, 0xf0-0xff
-              // Offset 0000-7fff for ROM >= 32 MBit, otherwise 0000-ffff
-              :(MAPPER == 3'b001)? (&SNES_ADDR[22:20] & (~SNES_ROMSEL) & (~SNES_ADDR[15] | ~ROM_MASK[21]))
-              // BS-X: SRAM @ Bank 0x10-0x17 Offset 5000-5fff
-              :(MAPPER == 3'b011) ? ((SNES_ADDR[23:19] == 5'b00010) & (SNES_ADDR[15:12] == 4'b0101) )
-              // Menu mapper: 8Mbit "SRAM" @ Bank 0xf0-0xff (entire banks!)
-              :(MAPPER == 3'b111) ? (&SNES_ADDR[23:20])
-              : 1'b0));
+/* Save RAM mapping: up to 1Mbit;
+   Address ranges: 70-73:0000-7fff,
+                   00-3f:6000-7fff,
+                   80-bf:6000-7fff.
+
+   Mirrored like this:
+    ( x = 0,1,2,3,8,9,a,b )
+    70:0000  -  x0:6000
+    70:1fff  -  x0:7fff
+    70:2000  -  x1:6000
+    70:3fff  -  x1:7fff
+            ...
+    70:7fff  -  x3:7fff
+    71:0000  -  x4:6000
+    71:7fff  -  x4:7fff
+            ...
+    73:0000  -  xc:6000
+            ...
+    73:7fff  -  xf:7fff
+*/
+
+wire IS_SAVERAM_BIGBANKS   = ((SNES_ADDR[23:18] == 6'b011100) && (SNES_ADDR[15] == 1'b0));
+wire IS_SAVERAM_SMALLBANKS = ((SNES_ADDR[22] == 1'b0) && (SNES_ADDR[15:13] == 3'b011));
+
+wire  [1:0] SAVERAM_BANK_BIG     = SNES_ADDR[17:16];
+wire  [3:0] SAVERAM_BANK_SMALL   = SNES_ADDR[19:16];
+wire [14:0] SAVERAM_OFFSET_BIG   = SNES_ADDR[14:0];
+wire [12:0] SAVERAM_OFFSET_SMALL = SNES_ADDR[12:0];
+
+assign IS_SAVERAM = IS_SAVERAM_BIGBANKS | IS_SAVERAM_SMALLBANKS;
 
 // '1' to signal access to cartrigde writable range (Backup RAM or BS-X RAM)
 assign IS_WRITABLE = IS_SAVERAM;
 
-/* BSX regs:
- Index  Function
-    1   0=map flash to ROM area; 1=map PRAM to ROM area
-    2   1=HiROM; 0=LoROM
-    3   1=Mirror PRAM @60-6f:0000-ffff
-    5   1=DO NOT mirror PRAM @40-4f:0000-ffff
-    6   1=DO NOT mirror PRAM @50-5f:0000-ffff
-    7   1=map BSX cartridge ROM @00-1f:8000-ffff
-    8   1=map BSX cartridge ROM @80-9f:8000-ffff
-*/
-                // HiROM
-assign SRAM_SNES_ADDR = ((MAPPER == 3'b000) ? (IS_SAVERAM	? 24'hE00000 + ({SNES_ADDR[20:16], SNES_ADDR[12:0]} & SAVERAM_MASK)
-                                        : ({1'b0, SNES_ADDR[22:0]} & ROM_MASK))
-                // LoROM
-                :(MAPPER == 3'b001) ? (IS_SAVERAM 	? 24'hE00000 + ({SNES_ADDR[20:16], SNES_ADDR[14:0]} & SAVERAM_MASK)
-                                        : ({1'b0, ~SNES_ADDR[23], SNES_ADDR[22:16], SNES_ADDR[14:0]} & ROM_MASK))
-                // ExtHiROM
-                :(MAPPER == 3'b010) ? (IS_SAVERAM 	? 24'hE00000 + ({7'b0000000, SNES_ADDR[19:16], SNES_ADDR[12:0]} & SAVERAM_MASK)
-                                        : ({1'b0, !SNES_ADDR[23], SNES_ADDR[21:0]} & ROM_MASK))
-                // ExtLoROM
-                :(MAPPER == 3'b100) ? (IS_SAVERAM 	? 24'hE00000 + ({7'b0000000, SNES_ADDR[19:16], SNES_ADDR[12:0]} & SAVERAM_MASK)
-                                        : ({1'b0, !SNES_ADDR[23], SNES_ADDR[21:0]} & ROM_MASK))
-                // interleaved StarOcean
-                :(MAPPER == 3'b110) ? (IS_SAVERAM	? 24'hE00000 + ((SNES_ADDR[14:0] - 15'h6000) & SAVERAM_MASK)
-                                        :(SNES_ADDR[15] ? ({1'b0, SNES_ADDR[23:16], SNES_ADDR[14:0]})
-                                        :({2'b10, SNES_ADDR[23], SNES_ADDR[21:16], SNES_ADDR[14:0]}) ) )
-                // menu
-                :(MAPPER == 3'b111) ? (IS_SAVERAM	? SNES_ADDR
-                                        : (({1'b0, SNES_ADDR[22:0]} & ROM_MASK) + 24'hC00000) )
-                : 24'b0);
+assign SRAM_SNES_ADDR = IS_SAVERAM_BIGBANKS ? 24'hE00000 + ({SAVERAM_BANK_BIG, SAVERAM_OFFSET_BIG} & SAVERAM_MASK)
+                      : IS_SAVERAM_SMALLBANKS ? 24'hE00000 + ({SAVERAM_BANK_SMALL, SAVERAM_OFFSET_SMALL} & SAVERAM_MASK)
+                      : ({1'b0, !SNES_ADDR[23], SNES_ADDR[21:0]} & ROM_MASK);
 
 assign ROM_ADDR = SRAM_SNES_ADDR;
 
@@ -133,14 +103,6 @@ assign ROM_HIT = IS_ROM | IS_WRITABLE;
 
 // '1' when accessing to MSU register map $2000:$2007
 assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
-
-// MAGNO -> disabled for S-DD1 core
-//assign use_bsx = (MAPPER == 3'b011);
-assign use_bsx = 1'b0;
-
-// MAGNO -> disabled for S-DD1 core
-//assign srtc_enable = featurebits[FEAT_SRTC] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h2800));
-assign srtc_enable = 1'b0;
 
 assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 assign r2100_hit = (SNES_PA == 8'h00);
