@@ -24,6 +24,42 @@
    usbinterface.h: usb packet interface handler
 */
 
+/***********************
+ * USB command format: *
+ ***********************
+
+ offset  len  contents
+ ----------------------
+   0       4    magic: 'USBA'
+   4       1    opcode
+   5       1    space (context/realm to apply the command to)
+   6       1    flags (options for the command/expected response size)
+ 256     256    file/directory name (for file system related opcodes)
+
+
+ ************************
+ * USB response format: *
+ ************************
+
+ offset  len  contents
+ ---------------------
+   0      4   magic: 'USBA'
+   4      1   opcode = 0x0f (USBINT_SERVER_OPCODE_RESPONSE)
+   5      1   error code if applicable
+ 252      4   size of response (U32BE)
+ OPCODE_INFO response only:
+   6      2   feature flags (U16LE; FPGA feature enable bits)
+   8      2   reserved (0; possibly additional FPGA feature flags)
+  10      2   various state flags (U16LE; e.g. savestate enabled flag)
+  12      4   reserved (0)
+  16    240   current ROM file name
+ 256      4   FWVER magic (U32BE)
+ 260     64   firmware version string (e.g. 'v1.11.1')
+ 324     64   name of device (e.g. "sd2snes Mk.II", "FXPAK PRO STM32")
+
+
+*/
+
 #ifndef USBINTERFACE_H
 #define USBINTERFACE_H
 
@@ -58,6 +94,9 @@
 #define USB_SNES_STATUS_SET_CONNECTED    (0x0001)
 
 #define USB_SNES_STATUS_CLR_CONNECTED    (0x0100)
+
+#define USBINT_SYSCFG_INGAMEHOOK (0x0001);
+#define USBINT_SYSCFG_SAVESTATES (0x0002);
 
 /* enums */
 

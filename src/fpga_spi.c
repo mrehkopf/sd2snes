@@ -444,7 +444,6 @@ void fpga_set_dac_boost(uint8_t boost) {
   FPGA_DESELECT();
 }
 
-uint16_t current_features;
 void fpga_set_features(uint16_t feat) {
   printf("set features: %04x\n", feat);
   FPGA_SELECT();

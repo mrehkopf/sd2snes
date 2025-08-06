@@ -44,6 +44,8 @@ int sd_offload_end_mid = 0;
 uint16_t sd_offload_partial_start = 0;
 uint16_t sd_offload_partial_end = 0;
 
+uint16_t current_features = 0;
+
 int snes_boot_configured, firstboot;
 extern const uint8_t *fpga_config;
 

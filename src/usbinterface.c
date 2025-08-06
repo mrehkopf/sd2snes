@@ -178,7 +178,7 @@ struct usbint_server_info_t {
 
 volatile struct usbint_server_info_t server_info;
 extern snes_romprops_t romprops;
-extern uint8_t current_features;
+extern uint16_t current_features;
 
 unsigned recv_buffer_offset = 0;
 unsigned char recv_buffer[USB_BLOCK_SIZE];
@@ -698,7 +698,25 @@ int usbint_handler_cmd(void) {
         strncpy((char *)(send_buffer[send_buffer_index]) + 260 + 64, DEVICE_NAME, 64);
 
         // features
-        send_buffer[send_buffer_index][6] = current_features;
+        send_buffer[send_buffer_index][6] =  current_features        & 0xFF;
+        send_buffer[send_buffer_index][7] = (current_features >>  8) & 0xFF;
+        send_buffer[send_buffer_index][8] = (current_features >> 16) & 0xFF;
+        send_buffer[send_buffer_index][9] = (current_features >> 24) & 0xFF;
+
+        // cfg switches
+        uint16_t current_cfg = 0;
+        if(CFG.enable_ingame_hook) current_cfg |= USBINT_SYSCFG_INGAMEHOOK;
+        if(CFG.enable_ingame_savestate && CFG.enable_ingame_hook) current_cfg |= USBINT_SYSCFG_SAVESTATES;
+        send_buffer[send_buffer_index][10] =  current_cfg       & 0xFF;
+        send_buffer[send_buffer_index][11] = (current_cfg >> 8) & 0xFF;
+
+        // capabilities
+        // TODO v1.11.2+
+        // USB interface command/request capabilites
+        // e.g. request list of supported command strings to invoke functions
+        //  ("enable/disable savestate handler; select slot; save/load state"
+        // "get yaml config key"
+
         // currently executing ROM
         char *tempFileName = current_filename;
         // chop from the beginning

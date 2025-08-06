@@ -108,6 +108,8 @@
 #define FPGA_CMD_GETSYSCLK       (0xfe)
 #define FPGA_CMD_ECHO            (0xff)
 
+extern uint16_t current_features;
+
 void fpga_spi_init(void);
 uint8_t fpga_test(void);
 uint16_t fpga_status(void);
