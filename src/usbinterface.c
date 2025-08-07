@@ -48,6 +48,7 @@
 #include "cfg.h"
 #include "cdcuser.h"
 #include "cheat.h"
+#include "yaml.h"
 
 static inline void __DMB2(void) { asm volatile ("dmb" ::: "memory"); }
 
@@ -134,7 +135,9 @@ static const char *usbint_server_opcode_s[] = { FOREACH_SERVER_OPCODE(GENERATE_S
   OP(USBINT_SERVER_SPACE_SNES)                  \
   OP(USBINT_SERVER_SPACE_MSU)                   \
   OP(USBINT_SERVER_SPACE_CMD)                   \
-  OP(USBINT_SERVER_SPACE_CONFIG)
+  OP(USBINT_SERVER_SPACE_CONFIG)                \
+  OP(USBINT_SERVER_SPACE_CFG)
+
 enum usbint_server_space_e { FOREACH_SERVER_SPACE(GENERATE_ENUM) };
 #ifdef DEBUG_USB
 static const char *usbint_server_space_s[] = { FOREACH_SERVER_SPACE(GENERATE_STRING) };
@@ -475,6 +478,12 @@ int usbint_handler_cmd(void) {
             server_info.size = fi.fsize;
             server_info.total_size = server_info.size;
             server_info.error |= f_open(&fh, (TCHAR*)stringParam, FA_READ);
+        }
+        else if (server_info.space == USBINT_SERVER_SPACE_CFG) {
+            int found = cfg_get_stringvalue((char *)stringParam, fbuf, MAX_STRING_LENGTH);
+            server_info.error |= !found;
+            server_info.size = strlen(fbuf) + 1;
+            server_info.total_size = server_info.size;
         }
         else {
             server_info.offset  = cmd_buffer[256]; server_info.offset <<= 8;
