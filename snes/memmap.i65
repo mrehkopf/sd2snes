@@ -42,7 +42,8 @@
 #define WRAM_WAIT_MCU               $7EF200
 #define WRAM_LOAD_ULTRA16_CFG       $7EF210
 
-#define ROOT_DIR                    $C10000
+#define THEME_BASE                  $C10000
+#define ROOT_DIR                    $C20000
 
 #define NUM_CHEATS                  $CFFFFE
 #define CHEAT_ADDR                  $D00000
@@ -171,6 +172,6 @@
 #define TYPE_SPC                    $03
 #define TYPE_IPS                    $04
 #define TYPE_CHT                    $05
-#define TYPE_SKIN                   $06
+#define TYPE_THM                    $06
 #define TYPE_SUBDIR                 $40
 #define TYPE_PARENT                 $80

@@ -97,27 +97,59 @@ hdma_bg2scroll_src
   .byt 0
 
 ; colors:
-; upper border: + #547fff -> 10,15,31
-; selection bar:+ #5400ff -> 10,0,31
-; lower border: 1/2 #5400ff
+; upper border:  add #547fff -> 10,15,31
+; selection bar: add #5400ff -> 10,0,31
+; lower border:  avg #5400ff
+; COLDATA can only set one distinct value to any set of components (R/G/B)
+; per write so setting up the initial color takes three entries.
 hdma_math_src
   .byt 1 ; these are filled in...
-  .byt $00, $2a
+  .byt $00, $00
   .byt 1 ; ...to move the color bar
-  .byt $00, $4f
-  .byt 1
-  .byt $33, $9f
-  .byt 7
-  .byt $33, $40
-  .byt 1
-  .byt $73, $00
-  .byt 1
-  .byt $00, $e0
+  .byt $00, $00
+  .byt $8c
+  .byt $00, $00 ; placeholders
+  .byt $00, $00 ; |
+  .byt $00, $00 ; |
+  .byt $00, $00 ; |
+  .byt $00, $00 ; |
+  .byt $00, $00 ; |
+  .byt $00, $00 ; |
+  .byt $00, $00 ; |
+  .byt $00, $00 ; |
+  .byt $00, $00 ; |
+  .byt $00, $00 ; to be filled in by color tables below
+  .byt $00, $e0 ; set RGB; value = $00; also disable math
   .byt 0
 
 hdma_bar_color_src
-  .byt $2a, $4f, $9f, $40 ; normal color
-  .byt $36, $4f, $8a, $40 ; highlight color (active editing)
+  ; normal color
+  .byt $00, $2a ; set R; value = $0a
+  .byt $00, $4f ; set G; value = $0f
+  .byt $33, $9f ; set B; value = $1f; also enable math
+  .byt $33, $40 ; set G; value = $00
+  .byt $33, $00 ; math stays on, no color changes
+  .byt $33, $00 ; |
+  .byt $33, $00 ; |
+  .byt $33, $00 ; |
+  .byt $33, $00 ; |
+  .byt $33, $00 ; |
+  .byt $73, $00 ; change math to averaging mode for bottom edge of bar
+  .byt $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff; padding to 32b align tables
+
+  ; highlight color (active editing)
+  .byt $00, $36 ; set R; value = $16
+  .byt $00, $4f ; set G; value = $0f
+  .byt $33, $8a ; set B; value = $0a
+  .byt $33, $40 ; set G; value = $00
+  .byt $33, $00 ; math stays on, no color changes
+  .byt $33, $00 ; |
+  .byt $33, $00 ; |
+  .byt $33, $00 ; |
+  .byt $33, $00 ; |
+  .byt $33, $00 ; |
+  .byt $73, $00 ; change math to averaging mode for bottom edge of bar
+  .byt $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff; padding to 32b align tables
 
 oam_data_l
   .byt 88, 56, 0, $08

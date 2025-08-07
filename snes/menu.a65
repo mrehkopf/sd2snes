@@ -991,8 +991,10 @@ menu_edit_value:
   txy ; save address of menu entry (bank is still set)
   tax ; jump table offset
   phx
+  phy
     lda #$01
     jsr set_bar_color
+  ply
   plx
   rep #$20 : .al
   lda [w_value_addr]

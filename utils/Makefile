@@ -39,6 +39,9 @@ rle: rle.o
 genbsxpage: genbsxpage.o
 	$(CC) $(CFLAGS) $^ --output $@
 
+palconv: palconv.o
+	$(CC) $(CFLAGS) $^ --output $@
+
 %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 

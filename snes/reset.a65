@@ -23,10 +23,11 @@ NMI_ROUTINE:
   stx $2116
   DMA7(#$01, #64*9, #^BG2_TILE_BUF, #!BG2_TILE_BUF, #$18)
 +
-  lda bar_yl
+  lda bar_yl    ; calculate (Y-1) * 8 - 2
   dec
   asl
   asl
+  dec
   asl
   sta bar_y     ; physical pos = logical pos * 8 - 8
   cmp #224

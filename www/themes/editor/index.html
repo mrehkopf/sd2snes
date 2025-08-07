@@ -1,0 +1,1385 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="jscolor.js"></script>
+<script type="text/javascript">
+	var BITMAP_IMG_BASE = 0x3FA;
+	var BITMAP_PAL_BASE = 0x36;
+	var MENU_IMG_BASE = 0x25C8; // logo
+	var MENU_PAL_BASE = 0x199D; // palette
+	var MENU_HDMA_BASE = 0x1BC1; // hdma_pal_src
+	var FONT_BASE = 0x099D; // font
+	var MENU_HDMA_LEN = 18;
+	var MENU_SELECTION_MATH_BASE = 0x1D02; // hdma_math_src
+	var MENU_SELECTION_BASE = 0x1D15; // hdma_bar_color_src
+	var IMAGE_WIDTH = 256, IMAGE_HEIGHT = 56;
+	var menu;
+	var menuName;
+	var means; // palette
+	var parentMeans; // indices
+	var colors;
+	var debug;
+	var manualBGMode = false;
+
+	function MenuOffsetTemplate() {
+		this.name = "";
+		this.font = 0;
+		this.logo = 0;
+		this.logospr = 0;
+		this.hdma_math_src = 0;
+		this.hdma_bar_color_src = 0;
+		this.hdma_pal_src = 0;
+		this.oam_data_l = 0;
+		this.oam_data_h = 0;
+		this.palette = 0;
+	};
+
+
+	var offsets = {
+		0xD4F0: {
+			"name": "v1.7d",
+			"font": 0x099D,
+			"logo": 0x25C8,
+			"logospr": 0x5DC8,
+			"hdma_math_src": 0x1D02,
+			"hdma_bar_color_src": 0x1D15,
+			"hdma_pal_src": 0x1BC1,
+			"oam_data_l": 0x1D1D,
+			"oam_data_h": 0x1D7D,
+			"palette": 0x199D
+		},
+		0xCDD1: {
+			"name": "v1.7e",
+			"font": 0x099D,
+			"logo": 0x25C8,
+			"logospr": 0x5DC8,
+			"hdma_math_src": 0x1D02,
+			"hdma_bar_color_src": 0x1D15,
+			"hdma_pal_src": 0x1BC1,
+			"oam_data_l": 0x1D1D,
+			"oam_data_h": 0x1D7D,
+			"palette": 0x199D
+		},
+		0xAC48: {
+			"name": "v1.7e-gsu-v07",
+			"font": 0x099D,
+			"logo": 0x2623,
+			"logospr": 0x5E23,
+			"hdma_math_src": 0x1D02,
+			"hdma_bar_color_src": 0x1D15,
+			"hdma_pal_src": 0x1BC1,
+			"oam_data_l": 0x1D1D,
+			"oam_data_h": 0x1D7D,
+			"palette": 0x199D
+		},
+		0xEEFD: {
+			"name": "v1.8.0",
+			"font": 0x0996,
+			"logo": 0x2776,
+			"logospr": 0x5F76,
+			"hdma_math_src": 0x1CFB,
+			"hdma_bar_color_src": 0x1D0E,
+			"hdma_pal_src": 0x1BBA,
+			"oam_data_l": 0x1D16,
+			"oam_data_h": 0x1D76,
+			"palette": 0x1996
+		},
+		0x4EDE: {
+			"name": "v1.8.0 - Savestate",
+			"font": 0x0996,
+			"logo": 0x28BE,
+			"logospr": 0x60BE,
+			"hdma_math_src": 0x1CFB,
+			"hdma_bar_color_src": 0x1D0E,
+			"hdma_pal_src": 0x1BBA,
+			"oam_data_l": 0x1D16,
+			"oam_data_h": 0x1D76,
+			"palette": 0x1996
+		},
+		0x723E: {
+			"name": "v1.8.0 SDD1",
+			"font": 0x9C1,
+			"logo": 0x28FB,
+			"logospr": 0x60FB,
+			"hdma_math_src": 0x1D26,
+			"hdma_bar_color_src": 0x1D39,
+			"hdma_pal_src": 0x1BE5,
+			"oam_data_l": 0x1D41,
+			"oam_data_h": 0x1DA1,
+			"palette": 0x19C1
+
+		},
+		0x70DE: {
+			"name": "v1.9.0 SDD1",
+			"font": 0x9C9,
+			"logo": 0x2903,
+			"logospr": 0x6103,
+			"hdma_math_src": 0x1D2E,
+			"hdma_bar_color_src": 0x1D41,
+			"hdma_pal_src": 0x1BED,
+			"oam_data_l": 0x1D49,
+			"oam_data_h": 0x1DA9,
+			"palette": 0x19C9
+
+		},
+		0x9DB3: {
+			"name": "v1.9.0",
+			"font": 0x9C9,
+			"logo": 0x2903,
+			"logospr": 0x6103,
+			"hdma_math_src": 0x1D2E,
+			"hdma_bar_color_src": 0x1D41,
+			"hdma_pal_src": 0x1BED,
+			"oam_data_l": 0x1D49,
+			"oam_data_h": 0x1DA9,
+			"palette": 0x19C9
+
+		},
+		0x9DBB: {
+			"name": "v1.10.0",
+			"font": 0x9C9,
+			"logo": 0x2903,
+			"logospr": 0x6103,
+			"hdma_math_src": 0x1D2E,
+			"hdma_bar_color_src": 0x1D41,
+			"hdma_pal_src": 0x1BED,
+			"oam_data_l": 0x1D49,
+			"oam_data_h": 0x1DA9,
+			"palette": 0x19C9
+		},
+		0x9DBC: {
+			"name": "v1.10.1",
+			"font": 0x9C9,
+			"logo": 0x2903,
+			"logospr": 0x6103,
+			"hdma_math_src": 0x1D2E,
+			"hdma_bar_color_src": 0x1D41,
+			"hdma_pal_src": 0x1BED,
+			"oam_data_l": 0x1D49,
+			"oam_data_h": 0x1DA9,
+			"palette": 0x19C9
+		},
+
+		0x9DFF: {
+			"name": "v1.10.2",
+			"font": 0x9C9,
+			"logo": 0x2903,
+			"logospr": 0x6103,
+			"hdma_math_src": 0x1D2E,
+			"hdma_bar_color_src": 0x1D41,
+			"hdma_pal_src": 0x1BED,
+			"oam_data_l": 0x1D49,
+			"oam_data_h": 0x1DA9,
+			"palette": 0x19C9
+		},
+		0xA3BF: {
+			"name": "v1.10.3",
+			"font": 0x9D2,
+			"logo": 0x290C,
+			"logospr": 0x610C,
+			"hdma_math_src": 0x1D37,
+			"hdma_bar_color_src": 0x1D4A,
+			"hdma_pal_src": 0x1BF6,
+			"oam_data_l": 0x1D52,
+			"oam_data_h": 0x1DB2,
+			"palette": 0x19D2
+		},
+		0x2AC2: {
+			"name": "v1.10.3-frs-v11",
+			"font": 0x9D2,
+			"logo": 0x2A31,
+			"logospr": 0x6231,
+			"hdma_math_src": 0x1D37,
+			"hdma_bar_color_src": 0x1D4A,
+			"hdma_pal_src": 0x1BF6,
+			"oam_data_l": 0x1D52,
+			"oam_data_h": 0x1DB2,
+			"palette": 0x19D2
+		},
+		0xF0BC: {
+			"name": "v1.10.3-frs-v12",
+			"font": 0x9D2,
+			"logo": 0x2C1A,
+			"logospr": 0x641A,
+			"hdma_math_src": 0x1D37,
+			"hdma_bar_color_src": 0x1D4A,
+			"hdma_pal_src": 0x1BF6,
+			"oam_data_l": 0x1D52,
+			"oam_data_h": 0x1DB2,
+			"palette": 0x19D2
+		},
+		0x1AF2: {
+			"name": "v1.10.3-frs-v12B",
+			"font": 0x9D2,
+			"logo": 0x2C36,
+			"logospr": 0x6436,
+			"hdma_math_src": 0x1D37,
+			"hdma_bar_color_src": 0x1D4A,
+			"hdma_pal_src": 0x1BF6,
+			"oam_data_l": 0x1D52,
+			"oam_data_h": 0x1DB2,
+			"palette": 0x19D2
+		},
+		0x0969: {
+			"name": "v1.11.0b1",
+			"font": 0x9E1,
+			"logo": 0x2D0A,
+			"logospr": 0x650A,
+			"hdma_math_src": 0x1D46,
+			"hdma_bar_color_src": 0x1D59,
+			"hdma_pal_src": 0x1C05,
+			"oam_data_l": 0x1D61,
+			"oam_data_h": 0x1DC1,
+			"palette": 0x19E1
+		},
+	};
+
+	/////////////////
+	// http://stackoverflow.com/questions/25354313/saving-a-uint8array-to-a-binary-file
+	downloadBlob = function (data, fileName, mimeType) {
+		var blob, url;
+		blob = new Blob([data], {
+			type: mimeType
+		});
+		url = window.URL.createObjectURL(blob);
+		downloadURL(url, fileName, mimeType);
+		setTimeout(function () {
+			return window.URL.revokeObjectURL(url);
+		}, 1000);
+	};
+	downloadURL = function (data, fileName) {
+		var a;
+		a = document.createElement('a');
+		a.href = data;
+		a.download = fileName;
+		document.body.appendChild(a);
+		a.style = 'display: none';
+		a.click();
+		a.remove();
+	};
+	/////////////////
+	// http://stackoverflow.com/questions/18996491/get-byte-array-from-html-file
+	$(document).ready(function () {
+		$('#cmdUpload').click(function () {
+			uploadFileM();
+		});
+		$('#bmpUpload').click(function () {
+			uploadFileB();
+		});
+		showAllVersions();
+	});
+
+	function showAllVersions() {
+		versions = "";
+		for (var x in offsets) {
+			versions += offsets[x].name + "\n";
+		}
+		$("#versions").attr("title", versions);
+	}
+
+	function findStringInByteArray(pattern, data) {
+		var i = 0, j = 0;
+		for (i = 0; i < data.length && j < pattern.length; i++) {
+			if (data[i] == pattern.charCodeAt(j)) {
+				j++;
+			} else {
+				i -= j;
+				j = 0;
+			}
+		}
+		if (j == pattern.length) {
+			return i - j;
+		} else {
+			return -1;
+		}
+	}
+
+	function read16le(data, offset) {
+		return data[offset] | (data[offset + 1] << 8);
+	}
+
+	function readString(data, offset, length) {
+		var result = "";
+		for (i = 0; i < length; i++) {
+			result += String.fromCharCode(data[offset++]);
+		}
+		return result;
+	}
+
+	function getValuesFromPointerTable(data, ptrTableOffset) {
+		var result = new MenuOffsetTemplate();
+		console.warn(JSON.stringify(result));
+
+		ptrTableOffset += 8; // skip _GFXPTR_ marker
+		result.name = readString(data, 0xFFC0, 21);
+		result.font = read16le(data, ptrTableOffset);
+		result.logo = read16le(data, ptrTableOffset + 2);
+		result.logospr = read16le(data, ptrTableOffset + 4);
+		result.hdma_math_src = read16le(data, ptrTableOffset + 6);
+		result.hdma_bar_color_src = read16le(data, ptrTableOffset + 8);
+		result.hdma_pal_src = read16le(data, ptrTableOffset + 10);
+		result.oam_data_l = read16le(data, ptrTableOffset + 12);
+		result.oam_data_h = read16le(data, ptrTableOffset + 14);
+		result.palette = read16le(data, ptrTableOffset + 16);
+		console.warn(JSON.stringify(result));
+
+		return result;
+	}
+
+	function selectVersion(data) {
+		var result;
+		var ptrTableOffset = findStringInByteArray("_GFXPTR_", data);
+		if (ptrTableOffset != -1) {
+			result = getValuesFromPointerTable(data, ptrTableOffset);
+			return result;
+		} else {
+			checksum = data[0xFFDE] | (data[0xFFDF] << 8);
+			result = offsets[checksum];
+			if (result) {
+				return result;
+			} else {
+				return null;
+			}
+		}
+	}
+
+	function setGlobalMenuPointers(ptr) {
+		MENU_IMG_BASE = ptr.logo;
+		MENU_PAL_BASE = ptr.palette;
+		MENU_HDMA_BASE = ptr.hdma_pal_src;
+		MENU_SELECTION_MATH_BASE = ptr.hdma_math_src;
+		MENU_SELECTION_BASE = ptr.hdma_bar_color_src;
+		FONT_BASE = ptr.font;
+	}
+
+	function uploadFileM() {
+		var input = document.getElementById('objFileM');
+		// var file = $("#objFileM")[0].files[0];
+		var file = input.files[0];
+		fr = new FileReader();
+		fr.readAsArrayBuffer(file);
+		fr.onloadend = function () {
+			menu = new Uint8Array(fr.result);
+			v = selectVersion(menu);
+			setGlobalMenuPointers(v);
+			menuName = input.value.replace(/.*[\/\\]/, '');
+
+			if (menuName === "menu.bin" || menuName === "m3nu.bin") {
+				if (v) {
+					$("#menucheck").html(menuName + " loaded - version " + v.name + " detected!");
+				} else {
+					$("#menucheck").html(menuName + " loaded. (might be the wrong size, or incompatible version)");
+				}
+			} else {
+				$("#menucheck").html(menuName + " loaded. (might be the wrong file)");
+			}
+		}
+	}
+
+	function charCodeFromCharacter(c) {
+		return c.charCodeAt(0);
+	}
+
+	function b64toBlobM(b64Data, contentType, sliceSize) {
+		contentType = contentType || '';
+		sliceSize = sliceSize || 0x10000;
+		var byteCharacters = atob(b64Data);
+		var byteArrays = [];
+
+		for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+			var slice = byteCharacters.slice(offset, offset + sliceSize);
+			var byteNumbers = Array.prototype.map.call(slice, charCodeFromCharacter);
+			var byteArray = new Uint8Array(byteNumbers);
+			byteArrays.push(byteArray);
+		}
+		menu = byteArrays[0];
+	}
+	/////////////////
+	// http://stackoverflow.com/questions/22255580/javascript-upload-image-file-and-draw-it-into-a-canvas
+	function uploadFileB() {
+		var input = document.getElementById('objFileB');
+		// var file = $("#objFileB")[0].files[0];
+		var file = input.files[0];
+		fr = new FileReader();
+		fr.onload = function (e) {
+			var img = new Image();
+			img.onload = function () {
+				document.getElementById("bmpprev").getContext("2d").drawImage(img, 0, 0);
+			};
+			img.src = e.target.result;
+			$("#loading").html("Indexing color...");
+			setTimeout(function () {
+				indexColor();
+				drawPreview();
+			}, 500);
+		}
+		//fr.readAsText(file);
+		fr.readAsDataURL(file);
+	}
+	/////////////////
+	// http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+	function hexToRgb(hex) {
+		var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+		return result ? {
+			r: parseInt(result[1], 16),
+			g: parseInt(result[2], 16),
+			b: parseInt(result[3], 16)
+		} : null;
+	}
+/////////////////
+var palIndices = [
+	                        0x04,                   0x08,                   0x0C,
+	0x10,                   0x14,                   0x18,                   0x1C, 
+	0x20,                   0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F,
+	0x30,                   0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
+	0x40,                   0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F,
+	0x50,                   0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5A, 0x5B, 0x5C, 0x5D, 0x5E, 0x5F,
+	0x60,                   0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F,
+	0x70,                   0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, 0x7E, 0x7F,
+	0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F,
+	0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F,
+	0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xAB, 0xAC, 0xAD, 0xAE, 0xAF,
+	0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 0xB8, 0xB9, 0xBA, 0xBB, 0xBC, 0xBD, 0xBE, 0xBF,
+	0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF,
+	0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9, 0xDA, 0xDB, 0xDC, 0xDD, 0xDE, 0xDF,
+	0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF,
+	0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF
+];
+var menuIndices = [
+	      0x01, 0x02, 0x03,       0x05, 0x06, 0x07,       0x09, 0x0A, 0x0B,       0x0D, 0x0E, 0x0F,
+	      0x11, 0x12, 0x13,       0x15, 0x16, 0x17,       0x19, 0x1A, 0x1B,       0x1D, 0x1E, 0x1F,
+	      0x21, 0x22, 0x23,
+	      0x31, 0x32, 0x33,
+	      0x41, 0x42, 0x43,
+	      0x51, 0x52, 0x53,
+	      0x61, 0x62, 0x63,
+	      0x71, 0x72, 0x73
+];
+var selection = [
+	[5, 0, 15], [10, 0, 31]
+];
+var menuPalette = [
+	[31, 31, 31], [ 6,  6,  6], [24, 24, 24], // WHITE (files)
+	[31, 31, 16], [ 6,  6,  3], [18, 18, 12], // YELLOW A (folder)
+	[16, 31, 16], [ 3,  6,  3], [12, 24, 12], // GREEN A
+	[17, 29, 31], [ 1,  5,  9], [12, 23, 24], // BLUE A (menu)
+	[31, 31, 16], [ 6,  6,  3], [18, 18, 12], // YELLOW B (folder)
+	[31, 13, 17], [ 6,  3,  5], [24, 10, 14], // RED A
+	[ 8,  8,  8], [ 4,  4,  4], [ 4,  4,  4], // GRAY A (previous menu)
+	[31, 23, 12], [ 7,  5,  4], [24, 17, 10], // ORANGE A
+	[61, 31, 61], [ 3,  6,  3], [12, 24, 12], // GREEN B
+	[17, 29, 31], [ 1,  5,  9], [12, 23, 24], // BLUE B (menu)
+	[31, 31, 16], [ 6,  6,  3], [18, 18, 12], // YELLOW C
+	[31, 13, 17], [ 6,  3,  5], [24, 10, 14], // RED B
+	[ 8,  8,  8], [ 4,  4,  4], [ 4,  4,  4], // GRAY B (previous menu)
+	[31, 23, 12], [ 7,  5,  4], [24, 17, 10]  // ORANGE B
+];
+var menuHDMA = [
+	[56+11, 7, 5, 12],
+	[11, 6, 5, 11],
+	[11, 5, 4, 10],
+	[11, 4, 4, 9],
+	[11, 3, 3, 8],
+	[11, 3, 3, 7],
+	[11, 2, 2, 6],
+	[11, 2, 2, 5],
+	[11, 2, 2, 4],
+	[11, 1, 1, 3],
+	[11, 1, 1, 2],
+	[11, 1, 1, 1],
+	[1, 0, 0, 0]
+];
+
+	function doStuff() {
+		if (menu) {
+			grabColors();
+			uploadGFX();
+			uploadPalettes();
+			antiAlias();
+			downloadBlob(menu, menuName);
+		}
+	}
+	function grabColors() {
+		var gradhi = hexToRgb($("#gradhi").val());
+		var gradlo = hexToRgb($("#gradlo").val());
+		if (!manualBGMode) {
+			for (var i = 0; i < 13; i++) {
+				menuHDMA[i][1] = parseInt((((12 - i) * gradhi.r / 12) + (i * gradlo.r / 12)) / 8);
+				menuHDMA[i][2] = parseInt((((12 - i) * gradhi.g / 12) + (i * gradlo.g / 12)) / 8);
+				menuHDMA[i][3] = parseInt((((12 - i) * gradhi.b / 12) + (i * gradlo.b / 12)) / 8);
+			}
+		}
+		var averageBackground = gradhi;
+		averageBackground.r = (gradhi.r + gradlo.r) / 2;
+		averageBackground.g = (gradhi.g + gradlo.g) / 2;
+		averageBackground.b = (gradhi.b + gradlo.b) / 2;
+		var selHilight = hexToRgb($("#selhilight").val());
+		selection[0][0] = parseInt(selHilight.r / 8);
+		selection[0][1] = parseInt(selHilight.g / 8);
+		selection[0][2] = parseInt(selHilight.b / 8);
+		var selselect = hexToRgb($("#selselect").val());
+		selection[1][0] = parseInt(selselect.r / 8);
+		selection[1][1] = parseInt(selselect.g / 8);
+		selection[1][2] = parseInt(selselect.b / 8);
+
+		var textWhite = hexToRgb($("#textfile").val());
+		var textYellow = hexToRgb($("#textfolder").val());
+		var textGreen = hexToRgb($("#textugreen").val());
+		var textBlue = hexToRgb($("#textmenu").val());
+		var textRed = hexToRgb($("#textured").val());
+		var textGray = hexToRgb($("#textprev").val());
+		var textOrange = hexToRgb($("#textuorange").val());
+
+		var order = [
+			textWhite, textYellow, textGreen, textBlue,
+			textYellow, textRed, textGray, textOrange,
+			textGreen, textBlue, textYellow, textRed, textGray, textOrange
+		];
+
+		for (var i = 0; i < order.length; i++) {
+			menuPalette[3 * i + 0][0] = parseInt(order[i].r / 8);
+			menuPalette[3 * i + 0][1] = parseInt(order[i].g / 8);
+			menuPalette[3 * i + 0][2] = parseInt(order[i].b / 8);
+			menuPalette[3 * i + 1][0] = parseInt((order[i].r + 3 * averageBackground.r) / 4 / 8);
+			menuPalette[3 * i + 1][1] = parseInt((order[i].g + 3 * averageBackground.g) / 4 / 8);
+			menuPalette[3 * i + 1][2] = parseInt((order[i].b + 3 * averageBackground.b) / 4 / 8);
+			menuPalette[3 * i + 2][0] = parseInt((3 * order[i].r + averageBackground.r) / 4 / 8);
+			menuPalette[3 * i + 2][1] = parseInt((3 * order[i].g + averageBackground.g) / 4 / 8);
+			menuPalette[3 * i + 2][2] = parseInt((3 * order[i].b + averageBackground.b) / 4 / 8);
+		}
+	}
+	function uploadGFX() {
+		if ($("#masterChangeImage").prop("checked")) {
+			var sizeX = 256, sizeY = 56;
+			for (var i = 0; i < sizeX * sizeY + 148 * 8; i++) {
+				menu[MENU_IMG_BASE + i] = 0;
+			}
+			for (var i = 0; i < sizeX * sizeY; i++) {
+				var imgX = i % sizeX, imgY = parseInt(i / sizeX);
+				var snesColor = parentMeans[i];
+				var color = palIndices[snesColor];
+
+				var base = MENU_IMG_BASE + 0x800 * parseInt(i / 0x800) + 0x40 * parseInt(imgX / 8) + 0x2 * (imgY % 8);
+				var x = i % 8;
+
+				menu[base + 0x00] |= ((color & 0x01) >> 0) << (7 - x);
+				menu[base + 0x01] |= ((color & 0x02) >> 1) << (7 - x);
+				menu[base + 0x10] |= ((color & 0x04) >> 2) << (7 - x);
+				menu[base + 0x11] |= ((color & 0x08) >> 3) << (7 - x);
+				menu[base + 0x20] |= ((color & 0x10) >> 4) << (7 - x);
+				menu[base + 0x21] |= ((color & 0x20) >> 5) << (7 - x);
+				menu[base + 0x30] |= ((color & 0x40) >> 6) << (7 - x);
+				menu[base + 0x31] |= ((color & 0x80) >> 7) << (7 - x);
+			}
+		}
+	}
+	function uploadPalettes() {
+		if ($("#masterChangeImage").prop("checked")) {
+			//alert("image");
+			for (var i = 0; i < palIndices.length; i++) {
+				var r = means[i][0];
+				var g = means[i][1];
+				var b = means[i][2];
+
+				var palIndex = palIndices[i];
+
+				menu[MENU_PAL_BASE + 2 * palIndex + 0] = r | ((g << 5) & 0xFF);
+				menu[MENU_PAL_BASE + 2 * palIndex + 1] = ((b << 2) & 0xFF) | ((g >> 3) & 0xFF);
+			}
+		}
+
+		if ($("#masterChangeText").prop("checked")) {
+			//alert("text");
+			for (var i = 0; i < menuIndices.length; i++) {
+				var r = menuPalette[i][0];
+				var g = menuPalette[i][1];
+				var b = menuPalette[i][2];
+
+				var palIndex = menuIndices[i];
+
+				menu[MENU_PAL_BASE + 2 * palIndex + 0] = r | ((g << 5) & 0xFF);
+				menu[MENU_PAL_BASE + 2 * palIndex + 1] = ((b << 2) & 0xFF) | ((g >> 3) & 0xFF);
+			}
+		}
+
+		if ($("#masterChangeBackground").prop("checked")) {
+			//alert("bg");
+			var last = 0;
+			for (var i = 0; i < menuHDMA.length && i < MENU_HDMA_LEN; i++) {
+				var l = menuHDMA[i][0];
+				var r = menuHDMA[i][1];
+				var g = menuHDMA[i][2];
+				var b = menuHDMA[i][3];
+
+				menu[MENU_HDMA_BASE + 3 * i + 0] = l < 128 ? l : 127;
+				menu[MENU_HDMA_BASE + 3 * i + 1] = r | ((g << 5) & 0xFF);
+				menu[MENU_HDMA_BASE + 3 * i + 2] = ((b << 2) & 0xFF) | ((g >> 3) & 0xFF);
+				last = i + 1;
+			}
+			menu[MENU_HDMA_BASE + 3 * last] = 0;
+		}
+
+		if ($("#masterChangeSelector").prop("checked")) {
+			//alert("sel");
+			for (var i = 0; i < selection.length; i++) {
+				var r = selection[i][0] | 0x20;
+				var g = selection[i][1] | 0x40;
+				var b = selection[i][2] | 0x80;
+
+				menu[MENU_SELECTION_BASE + 4 * i + 0] = r;
+				menu[MENU_SELECTION_BASE + 4 * i + 1] = g;
+				menu[MENU_SELECTION_BASE + 4 * i + 2] = b;
+				menu[MENU_SELECTION_BASE + 4 * i + 3] = 0x00;
+			}
+			menu[MENU_SELECTION_MATH_BASE + 2] = selection[0][0] | 0x20;
+			menu[MENU_SELECTION_MATH_BASE + 5] = selection[0][1] | 0x40;
+			menu[MENU_SELECTION_MATH_BASE + 8] = selection[0][2] | 0x80;
+			menu[MENU_SELECTION_MATH_BASE + 11] = 0;
+		}
+	}
+	function indexColor() {
+		colors = getRGBColors();
+
+		colList = [];
+		for (var i = 0; i < colors.length; i++) {
+			var xrgb = (colors[i][0] << 16) | (colors[i][1] << 8) | (colors[i][2]);
+			if (!colList.includes(xrgb)) {
+				colList.push(xrgb);
+			}
+		}
+
+		means = [];
+
+		if (!$("#forceindex").prop("checked") && colList.length <= palIndices.length) {
+			for (var i = 0; i < palIndices.length; i++) {
+				if (i < colList.length) {
+					means[i] = [];
+					means[i][0] = (colList[i] >> 16) & 0xFF;
+					means[i][1] = (colList[i] >> 8) & 0xFF;
+					means[i][2] = colList[i] & 0xFF;
+				} else {
+					means[i] = [0, 0, 0];
+				}
+			}
+
+			parentMeans = [];
+			for (var i = 0; i < colors.length; i++) {
+				parentMeans[i] = 0;
+				for (var j = 0; j < colList.length; j++) {
+					if (colors[i][0] == ((colList[j] >> 16) & 0xFF) && colors[i][1] == ((colList[j] >> 8) & 0xFF) && colors[i][2] == (colList[j] & 0xFF)) {
+						parentMeans[i] = j;
+						break;
+					}
+				}
+			}
+			$("#loading").html("Image converted directly to indexed color since it had only " + colList.length + " colors. Force reindexing using the checkbox above.");
+		} else {
+			for (var i = 0; i < palIndices.length; i++) {
+				means[i] = [];
+				means[i][0] = Math.floor(Math.random() * 0x100);
+				means[i][1] = Math.floor(Math.random() * 0x100);
+				means[i][2] = Math.floor(Math.random() * 0x100);
+			}
+
+			parentMeans = [];
+			var quality = $("#quality").val();
+			for (var i = 0; i < quality; i++) {
+				parentMeans = [];
+				for (var j = 0; j < colors.length; j++) {
+					var min = 9999999;
+					var minMean = -1;
+					for (var k = 0; k < means.length; k++) {
+						var dr = colors[j][0] - means[k][0];
+						var dg = colors[j][1] - means[k][1];
+						var db = colors[j][2] - means[k][2];
+						var dist = dr * dr + dg * dg + db * db;
+						if (dist < min) {
+							min = dist;
+							minMean = k;
+						}
+					}
+					parentMeans[j] = minMean;
+				}
+
+				var good = [], bad = []
+				for (var j = 0; j < means.length; j++) {
+					var sumr = 0, sumg = 0, sumb = 0, count = 0;
+					for (var k = 0; k < colors.length; k++) {
+						if (parentMeans[k] == j) {
+							sumr += colors[k][0];
+							sumg += colors[k][1];
+							sumb += colors[k][2];
+							count++;
+						}
+					}
+					if (count > 0) {
+						means[j][0] = parseInt(sumr / count);
+						means[j][1] = parseInt(sumg / count);
+						means[j][2] = parseInt(sumb / count);
+						good.push(j);
+					} else {
+						bad.push(j);
+					}
+				}
+
+				for (var j = 0; j < bad.length; j++) {
+					var a = Math.floor(Math.random() * good.length);
+					var jitter = Math.floor(Math.random() * 10) - 4;
+					means[bad[j]][0] = means[good[a]][0] + jitter < 0 || means[good[a]][0] + jitter > 255 ? means[good[a]][0] : means[good[a]][0] + jitter;
+					means[bad[j]][1] = means[good[a]][1] + jitter < 0 || means[good[a]][1] + jitter > 255 ? means[good[a]][1] : means[good[a]][1] + jitter;
+					means[bad[j]][2] = means[good[a]][2] + jitter < 0 || means[good[a]][2] + jitter > 255 ? means[good[a]][2] : means[good[a]][2] + jitter;
+				}
+			}
+			$("#loading").html("<-- Detected " + colList.length + " colors. You can click upload again to re-index the image in case it came out ugly this time.");
+		}
+
+		for (var i = 0; i < colors.length; i++) {
+			colors[i][0] = means[parentMeans[i]][0];
+			colors[i][1] = means[parentMeans[i]][1];
+			colors[i][2] = means[parentMeans[i]][2];
+		}
+
+		var ctx = document.getElementById("bmpprev").getContext("2d");
+		for (var y = 0; y < IMAGE_HEIGHT; y++) {
+			for (var x = 0; x < IMAGE_WIDTH; x++) {
+				var i = y * IMAGE_WIDTH + x;
+				ctx.fillStyle = colorArr(colors[i], true);
+				ctx.fillRect(x, y, 1, 1);
+			}
+		}
+		if (debug) {
+			for (var i = 0; i < palIndices.length; i++) {
+				ctx.fillStyle = colorArr(means[i], true);
+				ctx.fillRect(i, 0, 1, 1);
+			}
+		}
+	}
+	function antiAlias() {
+		if ($("#antialias").prop("checked")) {
+			for (var i = FONT_BASE; i < FONT_BASE + 0x1000; i += 2) {
+				for (var j = 0; j < 8; j++) {
+					if ((menu[i + 1] >> j) & 0x01 == 1) {
+						menu[i + 0] &= ~(1 << j);
+						menu[i + 1] &= ~(1 << j);
+					}
+				}
+			}
+		}
+	}
+	function getRGBColors() {
+		var ctx = document.getElementById("bmpprev").getContext("2d");
+		var pixels = ctx.getImageData(0, 0, IMAGE_WIDTH, IMAGE_HEIGHT);
+		var c = [];
+		for (var i = 0; i < pixels.height * pixels.width; i++) {
+			c[i] = [];
+			c[i][0] = pixels.data[4 * i] >> 3;
+			c[i][1] = pixels.data[4 * i + 1] >> 3;
+			c[i][2] = pixels.data[4 * i + 2] >> 3;
+		}
+		return c;
+	}
+	function drawPreview() {
+		grabColors();
+		var ctx = document.getElementById("preview").getContext("2d");
+		ctx.globalCompositeOperation = "source-over";
+		{ // draw background gradient
+			if (manualBGMode) {
+				for (var i = 0; i < menuHDMA.length; i++) {
+					var size = parseInt($("#manualSize" + i).val());
+					var color = parseInt($("#manualGrad" + i).val(), 0x10);
+					menuHDMA[i][0] = size;
+					menuHDMA[i][1] = ((color >> 16) & 0xFF) >> 3;
+					menuHDMA[i][2] = ((color >> 8) & 0xFF) >> 3;
+					menuHDMA[i][3] = ((color >> 0) & 0xFF) >> 3;
+				}
+			} else {
+				for (var i = 0; i < menuHDMA.length; i++) {
+					var color = colorArr(menuHDMA[i], true, 1);
+					var size = parseInt($("#gradsize").val());
+					if (i == 0) { size += parseInt($("#gradoffset").val()); }
+					if (i == menuHDMA.length - 1) { size = 1; }
+					document.getElementById("manualGrad" + i).jscolor.fromString(color);
+					$("#manualSize" + i).val(size);
+					menuHDMA[i][0] = size;
+				}
+			}
+			ctx.fillStyle = colorArr(menuHDMA[12], true, 1);
+			ctx.fillRect(0, 0, 512, 448);
+			var runningX = 0;
+			for (var i = 0; i < menuHDMA.length - 1; i++) {
+				var color = colorArr(menuHDMA[i], true, 1);
+				var size = menuHDMA[i][0];
+				ctx.fillStyle = color;
+				ctx.fillRect(0, runningX, 512, 2 * size);
+				runningX += 2 * size
+			}
+		}
+		{ // draw banner image
+			var lowres = document.getElementById("bmpprev").getContext("2d").getImageData(0, 0, IMAGE_WIDTH, IMAGE_HEIGHT).data;
+			for (var i = 0; i < IMAGE_WIDTH; i++) {
+				for (var j = 0; j < IMAGE_HEIGHT; j++) {
+					var idx = 4 * (j * IMAGE_WIDTH + i);
+					var r = lowres[idx], g = lowres[idx + 1], b = lowres[idx + 2];
+					ctx.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
+					ctx.fillRect(2 * i, 2 * j, 2, 2);
+				}
+			}
+		}
+		{ // draw text
+			var coloridx = [3, 4, 5, 0, 1, 2, 9, 10, 11, 18, 19, 20];
+			var imgurls = [
+				"text_folder_1.png", "text_folder_2.png", "text_folder_3.png",
+				"text_file_1.png", "text_file_2.png", "text_file_3.png",
+				"text_menu_1.png", "text_menu_2.png", "text_menu_3.png",
+				"text_unfocused_1.png", "text_unfocused_2.png", "text_unfocused_3.png"
+			];
+			var hctx = document.getElementById("hidden").getContext("2d");
+			for (var i = 0; i < 12; i++) {
+				if ($("#antialias").prop("checked") && i % 3 != 0) {
+					continue;
+				}
+				(function () {
+					var img = new Image();
+					img.my_index = coloridx[i];
+					img.addEventListener("load", function () {
+						hctx.globalCompositeOperation = "source-over";
+						hctx.fillStyle = colorArr(menuPalette[img.my_index], true);
+						hctx.fillRect(0, 0, 512, 448);
+						hctx.globalCompositeOperation = "destination-in";
+						hctx.drawImage(img, 0, 0);
+						ctx.globalCompositeOperation = "source-over";
+						ctx.drawImage(document.getElementById("hidden"), 0, 0);
+					});
+					img.setAttribute("src", "img/" + imgurls[i]);
+				}());
+			}
+		}
+		{ // draw palette
+			var pctx = document.getElementById("palette").getContext("2d");
+			pctx.fillStyle = "black";
+			pctx.fillRect(0, 0, 256, 256);
+			if (means) {
+				for (var i = 0; i < means.length; i++) {
+					var p = palIndices[i];
+					var x = p % 0x10, y = parseInt(p / 0x10);
+					pctx.fillStyle = colorArr(means[i], true);
+					pctx.fillRect(0x10 * x, 0x10 * y, 0x10, 0x10);
+				}
+			}
+			for (var i = 0; i < menuPalette.length; i++) {
+				var p = menuIndices[i];
+				var x = p % 0x10, y = parseInt(p / 0x10);
+				pctx.fillStyle = colorArr(menuPalette[i], true);
+				pctx.fillRect(0x10 * x, 0x10 * y, 0x10, 0x10);
+			}
+		}
+		setTimeout(function () { // draw selection bars
+			ctx.fillStyle = colorArr(selection[0], true);
+			ctx.globalCompositeOperation = "lighter";
+			ctx.fillRect(6, 130, 500, 16);
+			ctx.fillRect(6, 386, 500, 16);
+			ctx.fillStyle = colorArr(selection[1], true);
+			ctx.fillRect(282, 306, 28, 16);
+
+			var t = [];
+			t[0] = (menuHDMA[0][1] + selection[0][0]) / 2;
+			t[1] = (menuHDMA[0][2] + selection[0][1]) / 2;
+			t[2] = (menuHDMA[0][3] + selection[0][2]) / 2;
+			ctx.fillStyle = colorArr(t, true);
+			ctx.fillRect(6, 130, 500, 2);
+			t[0] = (menuHDMA[9][1] + selection[1][0]) / 2;
+			t[1] = (menuHDMA[9][2] + selection[1][1]) / 2;
+			t[2] = (menuHDMA[9][3] + selection[1][2]) / 2;
+			ctx.fillStyle = colorArr(t, true);
+			ctx.fillRect(282, 322, 28, 2);
+			t[0] = (menuHDMA[12][1] + selection[0][0]) / 2;
+			t[1] = (menuHDMA[12][2] + selection[0][1]) / 2;
+			t[2] = (menuHDMA[12][3] + selection[0][2]) / 2;
+			ctx.fillStyle = colorArr(t, true);
+			ctx.fillRect(6, 402, 500, 2);
+		}, 100);
+		saveOptions();
+	}
+	function colorArr(arr, shift, o = 0) {
+		var x = shift ? 3 : 0;
+		return "rgb(" + (arr[0 + o] << x) + "," + (arr[1 + o] << x) + "," + (arr[2 + o] << x) + ")";
+	}
+	function toggleManual() {
+		manualBGMode = !manualBGMode;
+		$("#manualBGDiv").css("display", manualBGMode ? "block" : "none");
+		drawPreview();
+	}
+	window.onload = function () {
+		if (localStorage.getItem("savedOptions")) {
+			var all = localStorage.getItem("savedOptions");
+			loadOptions(all);
+		}
+		drawPreview();
+	}
+	function loadOptions(data) {
+		var all = JSON.parse(data);
+		$("#antialias").prop("checked", all.antialias);
+		document.getElementById("selhilight").jscolor.fromString(all.selhilight || "");
+		document.getElementById("selselect").jscolor.fromString(all.selselect || "");
+		document.getElementById("textfile").jscolor.fromString(all.textfile || "");
+		document.getElementById("textfolder").jscolor.fromString(all.textfolder || "");
+		document.getElementById("textugreen").jscolor.fromString(all.textugreen || "");
+		document.getElementById("textmenu").jscolor.fromString(all.textmenu || "");
+		document.getElementById("textured").jscolor.fromString(all.textured || "");
+		document.getElementById("textprev").jscolor.fromString(all.textprev || "");
+		document.getElementById("textuorange").jscolor.fromString(all.textuorange || "");
+		document.getElementById("gradhi").jscolor.fromString(all.gradhi || "");
+		document.getElementById("gradlo").jscolor.fromString(all.gradlo || "");
+		$("#gradsize").val(all.gradsize);
+		$("#gradoffset").val(all.gradoffset);
+		$("#manualBG").prop("checked", all.manual);
+		document.getElementById("manualGrad0").jscolor.fromString(all.gradC0 || "");
+		document.getElementById("manualGrad1").jscolor.fromString(all.gradC1 || "");
+		document.getElementById("manualGrad2").jscolor.fromString(all.gradC2 || "");
+		document.getElementById("manualGrad3").jscolor.fromString(all.gradC3 || "");
+		document.getElementById("manualGrad4").jscolor.fromString(all.gradC4 || "");
+		document.getElementById("manualGrad5").jscolor.fromString(all.gradC5 || "");
+		document.getElementById("manualGrad6").jscolor.fromString(all.gradC6 || "");
+		document.getElementById("manualGrad7").jscolor.fromString(all.gradC7 || "");
+		document.getElementById("manualGrad8").jscolor.fromString(all.gradC8 || "");
+		document.getElementById("manualGrad9").jscolor.fromString(all.gradC9 || "");
+		document.getElementById("manualGrad10").jscolor.fromString(all.gradC10 || "");
+		document.getElementById("manualGrad11").jscolor.fromString(all.gradC11 || "");
+		document.getElementById("manualGrad12").jscolor.fromString(all.gradC12 || "");
+		$("#manualSize0").val(all.gradS0);
+		$("#manualSize1").val(all.gradS1);
+		$("#manualSize2").val(all.gradS2);
+		$("#manualSize3").val(all.gradS3);
+		$("#manualSize4").val(all.gradS4);
+		$("#manualSize5").val(all.gradS5);
+		$("#manualSize6").val(all.gradS6);
+		$("#manualSize7").val(all.gradS7);
+		$("#manualSize8").val(all.gradS8);
+		$("#manualSize9").val(all.gradS9);
+		$("#manualSize10").val(all.gradS10);
+		$("#manualSize11").val(all.gradS11);
+		$("#manualSize12").val(all.gradS12);
+		manualBGMode = all.manual
+		$("#manualBGDiv").css("display", manualBGMode ? "block" : "none");
+	}
+	function saveOptions() {
+		var all = {};
+		all.antialias = $("#antialias").prop("checked");
+		all.selhilight = $("#selhilight").val();
+		all.selselect = $("#selselect").val();
+		all.textfile = $("#textfile").val();
+		all.textfolder = $("#textfolder").val();
+		all.textugreen = $("#textugreen").val();
+		all.textmenu = $("#textmenu").val();
+		all.textured = $("#textured").val();
+		all.textprev = $("#textprev").val();
+		all.textuorange = $("#textuorange").val();
+		all.gradhi = $("#gradhi").val();
+		all.gradlo = $("#gradlo").val();
+		all.gradsize = parseInt($("#gradsize").val());
+		all.gradoffset = parseInt($("#gradoffset").val());
+		all.manual = $("#manualBG").prop("checked");
+		all.gradC0 = $("#manualGrad0").val();
+		all.gradC1 = $("#manualGrad1").val();
+		all.gradC2 = $("#manualGrad2").val();
+		all.gradC3 = $("#manualGrad3").val();
+		all.gradC4 = $("#manualGrad4").val();
+		all.gradC5 = $("#manualGrad5").val();
+		all.gradC6 = $("#manualGrad6").val();
+		all.gradC7 = $("#manualGrad7").val();
+		all.gradC8 = $("#manualGrad8").val();
+		all.gradC9 = $("#manualGrad9").val();
+		all.gradC10 = $("#manualGrad10").val();
+		all.gradC11 = $("#manualGrad11").val();
+		all.gradC12 = $("#manualGrad12").val();
+		all.gradS0 = $("#manualSize0").val();
+		all.gradS1 = $("#manualSize1").val();
+		all.gradS2 = $("#manualSize2").val();
+		all.gradS3 = $("#manualSize3").val();
+		all.gradS4 = $("#manualSize4").val();
+		all.gradS5 = $("#manualSize5").val();
+		all.gradS6 = $("#manualSize6").val();
+		all.gradS7 = $("#manualSize7").val();
+		all.gradS8 = $("#manualSize8").val();
+		all.gradS9 = $("#manualSize9").val();
+		all.gradS10 = $("#manualSize10").val();
+		all.gradS11 = $("#manualSize11").val();
+		all.gradS12 = $("#manualSize12").val();
+		localStorage.setItem("savedOptions", JSON.stringify(all));
+		return JSON.stringify(all);
+	}
+</script>
+<html>
+
+<head>
+	<link href='img/2.png' rel='icon' type='image/x-icon' />
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<body>
+	<style>
+		.navbar {
+			overflow: hidden;
+			max-width: 960px;
+			margin: auto;
+			background-color: #4f43ae;
+			font-family: Arial, Helvetica, sans-serif;
+			border-radius: 0px 0px 5px 20px;
+		}
+
+		.navbar a {
+			float: left;
+			font-size: 16px;
+			color: white;
+			text-align: center;
+			padding: 14px 16px;
+			text-decoration: none;
+		}
+
+		.dropdown {
+			float: right;
+			overflow: hidden;
+		}
+
+		.dropdown .dropbtn {
+			cursor: pointer;
+			font-size: 16px;
+			border: none;
+			outline: none;
+			color: white;
+			padding: 14px 16px;
+			background-color: inherit;
+			font-family: inherit;
+			margin: 0;
+		}
+
+		.navbar a:hover,
+		.dropdown:hover .dropbtn,
+		.dropbtn:focus {
+			background-color: #b5b6e4;
+			border-radius: 5px 20px 5px 20px;
+		}
+
+		.dropdown-content {
+			display: none;
+			position: absolute;
+			background-color: #b5b6e4;
+			min-width: 160px;
+			box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+			z-index: 1;
+			border-radius: 5px 20px 5px 20px;
+		}
+
+		.dropdown-content a {
+			float: none;
+			color: black;
+			padding: 12px 16px;
+			text-decoration: none;
+			display: block;
+			text-align: left;
+		}
+
+		.dropdown-content a:hover {
+			background-color: #4f43ae;
+		}
+
+		.show {
+			display: block;
+		}
+
+		#custom-button {
+			padding: 5px;
+			color: white;
+			background-color: #4f43ae;
+			border: 1px solid #000;
+			border-radius: 5px;
+			cursor: pointer;
+
+		}
+
+		#custom-button:hover {
+			background-color: #b5b6e4;
+		}
+
+		#custom-text {
+			margin-left: 5px;
+			font-family: sans-serif;
+			color: #000;
+			font-size: 12;
+		}
+
+		#custom-button1 {
+			padding: 5px;
+			color: white;
+			background-color: #9932cc;
+			border: 1px solid #000;
+			border-radius: 5px;
+			cursor: pointer;
+		}
+
+		#custom-button1:hover {
+			background-color: #4a026d;
+		}
+
+		#custom-text1 {
+			margin-left: 5px;
+			font-family: sans-serif;
+			color: #000;
+			font-size: 12;
+		}
+
+		#custom-button2 {
+			padding: 5px;
+			color: white;
+			background-color: #4f43ae;
+			border: 1px solid #000;
+			border-radius: 5px;
+			cursor: pointer;
+
+		}
+
+		#custom-button2:hover {
+			background-color: #b5b6e4;
+		}
+
+		#custom-text2 {
+			margin-left: 5px;
+			font-family: sans-serif;
+			color: #000;
+			font-size: 12;
+		}
+
+		#custom-button3 {
+			padding: 5px;
+			color: white;
+			background-color: #9932cc;
+			border: 1px solid #000;
+			border-radius: 5px;
+			cursor: pointer;
+		}
+
+		#custom-button3:hover {
+			background-color: #4a026d;
+		}
+
+		#custom-text3 {
+			margin-left: 5px;
+			font-family: sans-serif;
+			color: #000;
+			font-size: 12;
+		}
+
+		#custom-button4 {
+			padding: 5px;
+			color: white;
+			background-color: #4f43ae;
+			border: 1px solid #000;
+			border-radius: 5px;
+			cursor: pointer;
+		}
+
+		#custom-button4:hover {
+			background-color: #b5b6e4;
+		}
+
+		body {
+			background-image: url(img/3.jpg);
+			background-attachment: fixed;
+		}
+
+
+		.content {
+
+			max-width: 960px;
+			margin: auto;
+			background: white;
+			padding: 10px;
+			border-radius: 5px 20px 5px 20px;
+		}
+
+		img {
+			border-radius: 5px 20px 0px 0px;
+		}
+
+		input[type="text"],
+		input.jscolor {
+			width: 70px;
+		}
+	</style>
+	</head>
+
+
+	<div class="content">
+		<div class="uploadmenu">
+
+			<div id="wrapperHeader">
+				<div id="header">
+					<img src="img/1.png" style="width:100%;">
+				</div>
+			</div>
+			<div class="navbar">
+				<a href="../" target="_blank">Menu Converter</a>
+				<a href="../Themes/" target="_blank">Menu Themes</a>
+				<div class="dropdown">
+					<button class="dropbtn" onclick="myFunction()">Links
+						<i class="fa fa-caret-down"></i>
+					</button>
+					<div class="dropdown-content" id="myDropdown">
+						<a href="https://sd2snes.de/blog/downloads" target="_blank">SD2SNES Firmware</a>
+						<a href="http://krikzz.com/forum/index.php" target="_blank">Krikzz Forum</a>
+						<a href="../" target="_blank">Sd2snes Menu Converter</a>
+						<a href="https://discordapp.com/channels/418895913210216448/430550791552630800" target="_blank">Classic
+							Gaming Discord</a>
+						<a href="http://retrorgb.com/" target="_blank">Retro RGB</a>
+						<a href="https://snescentral.com/index.php" target="_blank">snescentral</a>
+						<a href="https://github.com/mrehkopf/sd2snes/branches" target="_blank">Ikari Github</a>
+						<a href="https://github.com/RedGuyyyy/sd2snes/branches" target="_blank">Redguy Github</a>
+						<a href="https://github.com/magnotrans/sd2snes/branches" target="_blank">Magno Github</a>
+						<a href="https://github.com/furious/sd2snes/branches" target="_blank">FURiOUS Github</a>
+						<a href="https://github.com/redacted173/sd2snes" target="_blank">redacted173 Github</a>
+					</div>
+				</div>
+			</div>
+
+
+
+			<script>
+				/* When the user clicks on the button, 
+				toggle between hiding and showing the dropdown content */
+				function myFunction() {
+					document.getElementById("myDropdown").classList.toggle("show");
+				}
+
+				// Close the dropdown if the user clicks outside of it
+				window.onclick = function (e) {
+					if (!e.target.matches('.dropbtn')) {
+						var myDropdown = document.getElementById("myDropdown");
+						if (myDropdown.classList.contains('show')) {
+							myDropdown.classList.remove('show');
+						}
+					}
+				}
+			</script>
+			<h2>sd2snes / FXPAK Pro menu.bin Editor</h2>
+			<h4>Load your menu.bin (sd2snes) or m3nu.bin (sd2snes / FXPAK Pro) from your sd2snes folder:</h4>
+			<input type="file" id="objFileM" hidden="hidden" size="50" /><br />
+			<button type="button" id="custom-button">Choose File</button>
+			<span id="custom-text">No File Chosen</span><br />
+			<br />
+			<div id="menucheck"></div><br />
+			<input type="button" id="cmdUpload" value="Upload" hidden="hidden" />
+			<script type="text/javascript">
+				const realFileBtn = document.getElementById('objFileM');
+				const realFileBtn1 = document.getElementById('cmdUpload');
+				const customBtn = document.getElementById("custom-button");
+				const customTxt = document.getElementById("custom-text");
+
+				customBtn.addEventListener("click", function () {
+					realFileBtn.click();
+				});
+				realFileBtn.addEventListener("change", function () {
+					if (realFileBtn.value) {
+						customTxt.innerHTML = realFileBtn.value.match(/[\/\\]([\w\d\s\.\-\(\)]+)$/)[1];
+						realFileBtn1.click();
+					} else {
+						customTxt.innerHTML = "No File chosen";
+					}
+				}); 
+			</script>
+
+
+			<h4>Load image (256 × 56):</h4><br />
+
+
+			<input type="file" id="objFileB" size="50" hidden="hidden" />
+			<button type="button" id="custom-button2">Choose File</button>
+			<span id="custom-text2">No File Chosen</span><span style="display:inline-block; width: 50px;"></span> Quality:
+			<input type="number" id="quality" min="1" max="50" steps="1" value="10" /> Force reindexing: <input
+				type="checkbox" id="forceindex" /><br /><br />
+			<input type="button" id="bmpUpload" value="Upload" hidden="hidden" />
+
+			<script type="text/javascript">
+				const realFileBtn2 = document.getElementById('objFileB');
+				const realFileBtn3 = document.getElementById('bmpUpload');
+				const customBtn2 = document.getElementById("custom-button2");
+				const customTxt2 = document.getElementById("custom-text2");
+
+				customBtn2.addEventListener("click", function () {
+					realFileBtn2.click();
+				});
+				realFileBtn2.addEventListener("change", function () {
+					if (realFileBtn2.value) {
+						customTxt2.innerHTML = realFileBtn2.value.match(/[\/\\]([\w\d\s\.\-\(\)]+)$/)[1];
+						realFileBtn3.click();
+					} else {
+						customTxt2.innerHTML = "No File chosen";
+					}
+				}); 
+			</script>
+
+
+			<canvas id="bmpprev" width="256" height="56"></canvas><br />
+			<input type="checkbox" id="antialias" onchange="drawPreview();" />Anti-alias Text?<br />
+			<input class="jscolor" value="5000F8" id="selhilight" onchange="drawPreview();"> - Selection Highlight Color<br />
+			<input class="jscolor" value="B00050" id="selselect" onchange="drawPreview();"> - Selection Selected Color<br />
+			<input class="jscolor" value="FFFFFF" id="textfile" onchange="drawPreview();"> - White Text Color (Used by
+			files)<br />
+			<input class="jscolor" value="FFFF84" id="textfolder" onchange="drawPreview();"> - Yellow Text Color (Used by
+			folders)<br />
+			<input class="jscolor" value="84FF84" id="textugreen" onchange="drawPreview();"> - Green Text Color (used by BS-X
+			time)<br />
+			<input class="jscolor" value="8CEFFF" id="textmenu" onchange="drawPreview();"> - Blue Text Color (Used by
+			menu)<br />
+			<input class="jscolor" value="FF6B8C" id="textured" onchange="drawPreview();"> - Red Text Color<br />
+			<input class="jscolor" value="A5A5A5" id="textprev" onchange="drawPreview();"> - Gray Text Color (Used by
+			unfocused menu)<br />
+			<input class="jscolor" value="FFBD63" id="textuorange" onchange="drawPreview();"> - Orange Text Color<br />
+			<input class="jscolor" value="000000" id="gradhi" onchange="drawPreview();"> - Background Gradient Color
+			(Top)<br />
+			<input class="jscolor" value="0A605D" id="gradlo" onchange="drawPreview();"> - Background Gradient Color
+			(Bottom)<br />
+			<input type="number" min="1" max="127" steps="1" value="11" id="gradsize" onchange="drawPreview();"> - Background
+			Gradient Size<br />
+			<input type="number" min="1" max="99" steps="1" value="56" id="gradoffset" onchange="drawPreview();"> - Background
+			Gradient Offset<br />
+			<input type="checkbox" id="manualBG" onchange="toggleManual();" /> Manual background edit mode<br />
+			<div id="manualBGDiv" style="display:none;">
+				<input class="jscolor" value="5000F8" id="manualGrad0" onchange="drawPreview();"> <input type="number" min="1"
+					max="127" steps="1" value="11" id="manualSize0" onchange="drawPreview();" /> - Top<br />
+				<input class="jscolor" value="5000F8" id="manualGrad1" onchange="drawPreview();"> <input type="number" min="1"
+					max="127" steps="1" value="11" id="manualSize1" onchange="drawPreview();" /><br />
+				<input class="jscolor" value="5000F8" id="manualGrad2" onchange="drawPreview();"> <input type="number" min="1"
+					max="127" steps="1" value="11" id="manualSize2" onchange="drawPreview();" /><br />
+				<input class="jscolor" value="5000F8" id="manualGrad3" onchange="drawPreview();"> <input type="number" min="1"
+					max="127" steps="1" value="11" id="manualSize3" onchange="drawPreview();" /><br />
+				<input class="jscolor" value="5000F8" id="manualGrad4" onchange="drawPreview();"> <input type="number" min="1"
+					max="127" steps="1" value="11" id="manualSize4" onchange="drawPreview();" /><br />
+				<input class="jscolor" value="5000F8" id="manualGrad5" onchange="drawPreview();"> <input type="number" min="1"
+					max="127" steps="1" value="11" id="manualSize5" onchange="drawPreview();" /><br />
+				<input class="jscolor" value="5000F8" id="manualGrad6" onchange="drawPreview();"> <input type="number" min="1"
+					max="127" steps="1" value="11" id="manualSize6" onchange="drawPreview();" /><br />
+				<input class="jscolor" value="5000F8" id="manualGrad7" onchange="drawPreview();"> <input type="number" min="1"
+					max="127" steps="1" value="11" id="manualSize7" onchange="drawPreview();" /><br />
+				<input class="jscolor" value="5000F8" id="manualGrad8" onchange="drawPreview();"> <input type="number" min="1"
+					max="127" steps="1" value="11" id="manualSize8" onchange="drawPreview();" /><br />
+				<input class="jscolor" value="5000F8" id="manualGrad9" onchange="drawPreview();"> <input type="number" min="1"
+					max="127" steps="1" value="11" id="manualSize9" onchange="drawPreview();" /><br />
+				<input class="jscolor" value="5000F8" id="manualGrad10" onchange="drawPreview();"> <input type="number" min="1"
+					max="127" steps="1" value="11" id="manualSize10" onchange="drawPreview();" /><br />
+				<input class="jscolor" value="5000F8" id="manualGrad11" onchange="drawPreview();"> <input type="number" min="1"
+					max="127" steps="1" value="11" id="manualSize11" onchange="drawPreview();" /><br />
+				<input class="jscolor" value="5000F8" id="manualGrad12" onchange="drawPreview();"> <input type="number" min="1"
+					max="127" steps="1" value="11" id="manualSize12" onchange="drawPreview();" /> - Bottom<br />
+			</div>
+			<br />
+			Export: <input type="checkbox" id="masterChangeImage" checked /> Image | <input type="checkbox"
+				id="masterChangeText" checked /> Text Colors | <input type="checkbox" id="masterChangeBackground" checked />
+			Background | <input type="checkbox" id="masterChangeSelector" checked /> Selector Colors<br />
+			<button id="custom-button4" onclick="doStuff();">Download</button> <button id="custom-button4"
+				onclick="drawPreview();">Preview</button><br />
+			<canvas id="preview" width="512" height="448"></canvas> <canvas id="palette" width="256" height="256"></canvas>
+			<canvas id="hidden" width="512" height="448" style="display:none;"></canvas><br />
+			Thanks @ Dotsarecool<br />
+			<em>Last updated Jan 15th 2023 - v1.7D - v1.11.0b1+ - generic</em>
+		</div>
+</body>
+
+</html>

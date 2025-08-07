@@ -42,6 +42,7 @@ bar_x           .byt 0      ; pixel x position of select bar
 bar_y           .byt 0      ; pixel y position of select bar
 bar_w           .byt 0      ; bar width
 bar_wl          .byt 0      ; bar width
+bar_color       .word 0     ; bar color index (lookup into HDMA table presets)
 filesel_state   .byt 0      ; menu state (0=file select)
 filesel_dirty   .byt 0      ; menu dirty (e.g. after state change or when redraw is needed)
 filesel_sel     .word 0     ; selected item #
@@ -154,18 +155,18 @@ hdma_math
   .byt 0,0
   .byt 0
   .byt 0,0
-hdma_math_upperborder
   .byt 0
   .byt 0,0
-hdma_math_selection
-  .byt 0
   .byt 0,0
-hdma_math_lowerborder
-  .byt 0
   .byt 0,0
-  .byt 0
   .byt 0,0
-  .byt 0
+  .byt 0,0
+  .byt 0,0
+  .byt 0,0
+  .byt 0,0
+  .byt 0,0
+  .byt 0,0
+  .byt 0,0
   .byt 0,0
   .byt 0
 
