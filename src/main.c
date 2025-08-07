@@ -151,7 +151,7 @@ int main(void) {
         snes_bootprint_center( 9, "\x12\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x11");
         snes_bootprint_center(11, "Please insert SD Card and");
         snes_bootprint_center(13, "make sure it is seated");
-        snes_bootprint_center(15, "correctly.");
+        snes_bootprint_center(15, "properly.");
         cli_entrycheck();
         while(disk_status(0) & (STA_NODISK));
         delay_ms(200);
