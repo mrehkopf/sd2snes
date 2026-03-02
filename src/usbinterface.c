@@ -210,7 +210,7 @@ void usbint_set_state(unsigned open) {
 }
 
 #define NMI_COUNTER 0x2C0A
-#define VECTORS_SIZE 128
+#define VECTORS_SIZE 64
 #define VECTOR_SIZE 4
 
 typedef struct {
@@ -481,11 +481,9 @@ void usbint_check_connect(void) {
 
 uint8_t usbint_server_nmi() { return nmi_state; }
 
-void usbint_set_game_state(uint8_t state)
-{
+void usbint_set_game_state(uint8_t state) {
     ingame = state;
 }
-//static int reset_ticks = 0;
 
 int usbint_handler(void) {
     int ret = 0;
@@ -874,8 +872,7 @@ int usbint_handler_dat(void) {
                 f_close(&fh);
             }
         }
-        else if (server_info.space == USBINT_SERVER_SPACE_NMI) 
-        {
+        else if (server_info.space == USBINT_SERVER_SPACE_NMI) {
             static uint16_t vector_offset = 0;
             static uint8_t  meta[3];
             static uint8_t  meta_index = 0;

@@ -767,7 +767,7 @@ uint32_t load_bootrle(uint32_t base_addr) {
     file_ctx_t file;
 } sram_save_t;*/
 
-static sram_save_t sram_save;
+//static sram_save_t sram_save;
 
 void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
     //if (sram_save.active) // if we already have sram file open we need to close it
