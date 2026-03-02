@@ -759,19 +759,19 @@ uint32_t load_bootrle(uint32_t base_addr) {
   return (uint32_t)filesize;
 }
 
-typedef struct {
+/*typedef struct {
     uint8_t active;
     uint32_t base_addr;
     uint32_t total;
     uint32_t offset;
     file_ctx_t file;
-} sram_save_t;
+} sram_save_t;*/
 
 static sram_save_t sram_save;
 
 void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
-    if (sram_save.active) // if we already have sram file open we need to close it
-      file_close_ctx(&sram_save.file);
+    //if (sram_save.active) // if we already have sram file open we need to close it
+      //file_close_ctx(&sram_save.file);
     char srmfile[256] = SAVE_BASEDIR;
     check_or_create_folder(SAVE_BASEDIR);
     append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
@@ -810,7 +810,7 @@ void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
 }
 
 // Setup the sram file into the struct
-void start_save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
+/*void start_save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
     char srmfile[256] = SAVE_BASEDIR;
     check_or_create_folder(SAVE_BASEDIR);
     append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
@@ -830,13 +830,13 @@ void start_save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) 
 }
 
 #define SAVE_CHUNK 256
-
+*/
 /*
  *  Save sram file over the course of multiple calls.
  *  This is so usb interface can push data and isnt blocked by sram saving.
  *  Amount saved per called defined by SAVE_CHUNK.
  */
-int save_sram_step(void)
+/*int save_sram_step(void)
 {
     if (!sram_save.active)
         return 1;
@@ -870,7 +870,7 @@ int save_sram_step(void)
 
     sram_save.offset += chunk;
     return 0;
-}
+}*/
 
 uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size, uint32_t crc) {
   uint8_t data;

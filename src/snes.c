@@ -281,8 +281,8 @@ uint8_t get_snes_reset_state(void) {
 static enum {
   SAVE_IDLE = 0,
   SAVE_DO_CRC,
-  SAVE_CHECK,
-  SAVE_FILE
+  SAVE_CHECK
+  //SAVE_FILE
 } save_state = SAVE_IDLE;
 
 /*
@@ -332,21 +332,22 @@ uint8_t snes_main_loop() {
             if (saveram_crc != saveram_crc_old) {
               printf("SaveRAM CRC changed: 0x%08lx\n", saveram_crc);
               writeled(1);
-              start_save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
-              //save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+              //start_save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+              save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
               writeled(0);
               saveram_crc_old = saveram_crc;
-              save_state = SAVE_FILE;
+              //save_state = SAVE_FILE;
             }
           }
         }
-        if (save_state != SAVE_FILE)
-          save_state = SAVE_IDLE;
+        //if (save_state != SAVE_FILE)
+        save_state = SAVE_IDLE;
         break;
-      case SAVE_FILE:
+      /*case SAVE_FILE:
         if(save_sram_step())
           save_state = SAVE_IDLE;
         break;
+        */
     }
   } else {
     //diffcount = 0;

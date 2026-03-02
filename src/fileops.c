@@ -189,7 +189,7 @@ void print_fresult(FRESULT res, const char *fmt, ...) {
 }
 
 // New file api that allows for opening and closing multiple files (dont know how useful this would be)
-
+/*
 void file_open_ctx(file_ctx_t *ctx, const TCHAR *filename, BYTE flags) {
     ctx->res = f_open(&ctx->handle, filename, flags);
     ctx->block_off = sizeof(ctx->buf);
@@ -241,4 +241,4 @@ uint8_t file_getc_ctx(file_ctx_t *ctx) {
     }
     return ctx->buf[ctx->block_off++];
 }
-
+*/
