@@ -108,4 +108,8 @@ uint16_t calc_sram_sum(uint32_t base_addr, uint32_t size);
 uint8_t sram_reliable(void);
 void sram_memset(uint32_t base_addr, uint32_t len, uint8_t val);
 
+int save_sram_step(void);
+void start_save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
+
+
 #endif

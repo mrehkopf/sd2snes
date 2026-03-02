@@ -415,20 +415,20 @@ int main(void) {
     }
 
     cmd=0;
-    int loop_ticks = getticks();
+    //int loop_ticks = getticks();
     uint8_t usb_cmd = 0;
 // uint8_t snes_res;
     while(fpga_test() == FPGA_TEST_TOKEN) {
-      cli_entrycheck();
+      //cli_entrycheck();
       //usb upload/boot/lock
       usbint_set_game_state(1);
       usb_cmd |= usbint_handler();
       if (usb_cmd == SNES_CMD_GAMELOOP) usb_cmd = 0;
   //        sleep_ms(250);
-      sram_reliable();
+      //sram_reliable();
 
       // loop if we are in the middle of a reset
-      if (usbint_server_reset()) continue;
+      if (usbint_server_reset() || usbint_server_nmi()) continue;
       
       if(reset_changed) {
         printf("reset\n");
@@ -447,8 +447,8 @@ int main(void) {
       {
         if (resetState == SNES_RESET_SHORT) resetButtonState = 1;
         
-        if(getticks() > loop_ticks + 25 && !usbint_server_nmi()) {
-          loop_ticks = getticks();
+        //if(getticks() > loop_ticks + 25 && !usbint_server_nmi()) {
+          //loop_ticks = getticks();
  //         sram_reliable();
           printf("%s ", get_cic_statename(get_cic_state()));
           cmd=snes_main_loop();
@@ -489,7 +489,7 @@ int main(void) {
             }
             snes_set_mcu_cmd(0);
           }
-        }
+        //}
       }
     }
     /* fpga test fail: panic */

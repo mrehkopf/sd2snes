@@ -278,74 +278,84 @@ uint8_t get_snes_reset_state(void) {
   return result;
 }
 
+static enum {
+  SAVE_IDLE = 0,
+  SAVE_DO_CRC,
+  SAVE_CHECK,
+  SAVE_FILE
+} save_state = SAVE_IDLE;
+
 /*
  * SD2SNES game loop.
  * monitors SRAM changes and other things
+ * 
+ * Game loop chunks data into 256 byte blocks as to not block any usb data
  */
-uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_save_failed = 0, saveram_offset = 0;
+//uint32_t diffcount = 0, samecount = 0, didnotsave = 0, save_failed = 0, last_save_failed = 0, saveram_offset = 0;
+uint32_t saveram_offset = 0;
 uint8_t sram_valid = 0;
+
 uint8_t snes_main_loop() {
+  static int save_ticks = 0;
   recalculate_sram_range();
 
   /* save the GB RTC if enabled */
   sgb_gtc_save(file_lfn);
 
-  if(romprops.sramsize_bytes && CFG.enable_autosave) {
-    uint32_t crc_bytes = min(romprops.sramsize_bytes - saveram_offset, SRAM_REGION_SIZE);
-    saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase + saveram_offset, crc_bytes, saveram_crc);
-    saveram_offset += crc_bytes;
-    sram_valid = sram_reliable();
-    if(crc_valid && sram_valid) {
-      if (saveram_offset >= romprops.sramsize_bytes) {
-        if(save_failed) didnotsave++;
-        if(saveram_crc != saveram_crc_old) {
-          if(samecount) {
-            diffcount=1;
-          } else {
-            diffcount++;
-            didnotsave++;
-          }
-          samecount=0;
-        }
-        if(saveram_crc == saveram_crc_old) {
-          samecount++;
-        }
-        if(diffcount>=1 && samecount==5) {
-          printf("SaveRAM CRC: 0x%04lx; saving %s\n", saveram_crc, file_lfn);
-          writeled(1);
-          save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
-          last_save_failed = save_failed;
-          save_failed = file_res ? 1 : 0;
-          didnotsave = save_failed ? 25 : 0;
-          writeled(0);
-        }
-        if(didnotsave>50) {
-          printf("periodic save (sram contents keep changing or previous save failed)\n");
-          diffcount=0;
-          writeled(1);
-          save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
-          last_save_failed = save_failed;
-          save_failed = file_res ? 1 : 0;
-          didnotsave = save_failed ? 25 : 0;
-          writeled(!last_save_failed);
-        }
-        saveram_offset = 0;
-        saveram_crc_old = saveram_crc;
-        
-        printf("crc=%lx crc_valid=%d sram_valid=%d diffcount=%ld samecount=%ld, didnotsave=%ld\n", saveram_crc, crc_valid, sram_valid, diffcount, samecount, didnotsave);
+  if (romprops.sramsize_bytes && CFG.enable_autosave) {
+    switch (save_state) {
 
+      case SAVE_IDLE:
+        saveram_offset = 0;
         saveram_crc = 0;
+        save_state = SAVE_DO_CRC;
+        break;
+
+      case SAVE_DO_CRC: {
+        uint32_t crc_bytes = min(romprops.sramsize_bytes - saveram_offset, SRAM_REGION_SIZE);
+
+        saveram_crc = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase + saveram_offset, crc_bytes, saveram_crc);
+
+        saveram_offset += crc_bytes;
+
+        if (saveram_offset >= romprops.sramsize_bytes)
+          save_state = SAVE_CHECK;
+        break;
       }
+
+      case SAVE_CHECK:
+        if (getticks() > save_ticks + 25)
+        {
+          sram_valid = sram_reliable();
+          save_ticks = getticks();
+          if (sram_valid && crc_valid) {
+            if (saveram_crc != saveram_crc_old) {
+              printf("SaveRAM CRC changed: 0x%08lx\n", saveram_crc);
+              writeled(1);
+              start_save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+              //save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+              writeled(0);
+              saveram_crc_old = saveram_crc;
+              save_state = SAVE_FILE;
+            }
+          }
+        }
+        if (save_state != SAVE_FILE)
+          save_state = SAVE_IDLE;
+        break;
+      case SAVE_FILE:
+        if(save_sram_step())
+          save_state = SAVE_IDLE;
+        break;
     }
   } else {
-    diffcount = 0;
-    samecount = 0;
-    didnotsave = 0;
+    //diffcount = 0;
+    //samecount = 0;
+    //didnotsave = 0;
     saveram_offset = 0;
     saveram_crc_old = 0;
     saveram_crc = 0;
   }
-
   return snes_get_mcu_cmd();
 }
 

@@ -759,7 +759,19 @@ uint32_t load_bootrle(uint32_t base_addr) {
   return (uint32_t)filesize;
 }
 
+typedef struct {
+    uint8_t active;
+    uint32_t base_addr;
+    uint32_t total;
+    uint32_t offset;
+    file_ctx_t file;
+} sram_save_t;
+
+static sram_save_t sram_save;
+
 void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
+    if (sram_save.active) // if we already have sram file open we need to close it
+      file_close_ctx(&sram_save.file);
     char srmfile[256] = SAVE_BASEDIR;
     check_or_create_folder(SAVE_BASEDIR);
     append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
@@ -778,7 +790,7 @@ void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
   }
   set_mcu_addr(base_addr);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x88); /* read */
+  FPGA_TX_BYTE(0x88); // read
   while(remain) {
     copy = (remain > 512) ? 512 : remain;
     for(int j=0; j < copy; j++) {
@@ -795,6 +807,69 @@ void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
   }
   FPGA_DESELECT();
   file_close();
+}
+
+// Setup the sram file into the struct
+void start_save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
+    char srmfile[256] = SAVE_BASEDIR;
+    check_or_create_folder(SAVE_BASEDIR);
+    append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
+
+    memset(&sram_save, 0, sizeof(sram_save));
+    sram_save.active = 1;
+    sram_save.base_addr = base_addr;
+    sram_save.total = sram_size;
+    sram_save.offset = 0;
+
+    file_open_ctx(&sram_save.file, srmfile, FA_CREATE_ALWAYS | FA_WRITE);
+    if (sram_save.file.status) { 
+      uart_putc(0x30 + sram_save.file.status); 
+      sram_save.active = 0; 
+      return; 
+    }
+}
+
+#define SAVE_CHUNK 256
+
+/*
+ *  Save sram file over the course of multiple calls.
+ *  This is so usb interface can push data and isnt blocked by sram saving.
+ *  Amount saved per called defined by SAVE_CHUNK.
+ */
+int save_sram_step(void)
+{
+    if (!sram_save.active)
+        return 1;
+
+    if (sram_save.offset >= sram_save.total) {
+        file_close_ctx(&sram_save.file);
+        sram_save.active = 0;
+        return 1;
+    }
+
+    uint32_t remain = sram_save.total - sram_save.offset;
+    uint32_t chunk = (remain > SAVE_CHUNK) ? SAVE_CHUNK : remain;
+
+    set_mcu_addr(sram_save.base_addr + sram_save.offset);
+    FPGA_SELECT();
+    FPGA_TX_BYTE(0x88);
+
+    for (uint32_t i = 0; i < chunk; i++) {
+        FPGA_WAIT_RDY();
+        file_buf[i] = FPGA_RX_BYTE();
+    }
+
+    FPGA_DESELECT();
+
+    file_write_ctx(&sram_save.file, chunk);
+    if (sram_save.file.status) {
+        uart_putc(0x30 + sram_save.file.status);
+        sram_save.active = 0;
+        return 1;
+    }
+
+    sram_save.offset += chunk;
+    return 0;
 }
 
 uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size, uint32_t crc) {
@@ -833,7 +908,7 @@ uint8_t sram_reliable() {
   }
   if(score<SRAM_RELIABILITY_SCORE) {
     result = 0;
-/* dprintf("score=%d\n", score); */
+// dprintf("score=%d\n", score);
   } else {
     result = 1;
   }

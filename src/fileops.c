@@ -187,3 +187,58 @@ void print_fresult(FRESULT res, const char *fmt, ...) {
   vprint_fresult(res, fmt, arglist);
   va_end(arglist);
 }
+
+// New file api that allows for opening and closing multiple files (dont know how useful this would be)
+
+void file_open_ctx(file_ctx_t *ctx, const TCHAR *filename, BYTE flags) {
+    ctx->res = f_open(&ctx->handle, filename, flags);
+    ctx->block_off = sizeof(ctx->buf);
+    ctx->block_max = sizeof(ctx->buf);
+    ctx->status = ctx->res ? FILE_ERR : FILE_OK;
+}
+
+void file_close_ctx(file_ctx_t *ctx) {
+    ctx->res = f_close(&ctx->handle);
+}
+
+void file_seek_ctx(file_ctx_t *ctx, uint32_t offset) {
+    ctx->res = f_lseek(&ctx->handle, (DWORD)offset);
+}
+
+UINT file_read_ctx(file_ctx_t *ctx) {
+    UINT bytes_read;
+    ctx->res = f_read(&ctx->handle, ctx->buf, sizeof(ctx->buf), &bytes_read);
+    return bytes_read;
+}
+
+UINT file_write_ctx(file_ctx_t *ctx, size_t len) {
+    UINT bytes_written;
+    ctx->res = f_write(&ctx->handle, ctx->buf, len, &bytes_written);
+    return bytes_written;
+}
+
+UINT file_readblock_ctx(file_ctx_t *ctx, void* buf, uint32_t addr, uint16_t size) {
+    UINT bytes_read;
+    ctx->res = f_lseek(&ctx->handle, addr);
+    if (ctx->handle.fptr != addr) return 0;
+    ctx->res = f_read(&ctx->handle, buf, size, &bytes_read);
+    return bytes_read;
+}
+
+UINT file_writeblock_ctx(file_ctx_t *ctx, void* buf, uint32_t addr, uint16_t size) {
+    UINT bytes_written;
+    ctx->res = f_lseek(&ctx->handle, addr);
+    if (ctx->res) return 0;
+    ctx->res = f_write(&ctx->handle, buf, size, &bytes_written);
+    return bytes_written;
+}
+
+uint8_t file_getc_ctx(file_ctx_t *ctx) {
+    if (ctx->block_off == ctx->block_max) {
+        ctx->block_max = file_read_ctx(ctx);
+        if (ctx->block_max == 0) ctx->status = FILE_EOF;
+        ctx->block_off = 0;
+    }
+    return ctx->buf[ctx->block_off++];
+}
+
