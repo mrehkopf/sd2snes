@@ -205,11 +205,15 @@ setup_gfx:
   ldx #!hdma_math
   stx $2181
   sta $2183
-  DMA7(#$00, #19, #^hdma_math_src, #!hdma_math_src, #$80);
+  DMA7(#$00, #32, #^hdma_math_src, #!hdma_math_src, #$80);
 
 ; initialize window stack
   ldx #$ffff
   stx window_stack_head
+
+; initialize bar color
+  lda #$00
+  jsr set_bar_color
   rts
 
 genfonts:
