@@ -44,7 +44,7 @@
 #include "fpga.h"
 #include "fpga_spi.h"
 #include "cic.h"
-#include "xmodem.h"
+#include "ymodem.h"
 #include "rtc.h"
 
 #include "cli.h"
@@ -359,8 +359,8 @@ void cmd_put(void) {
     if(file_res) {
       printf("FAIL: error opening file %s\n", curchar);
     } else {
-      printf("OK, start xmodem transfer now.\n");
-      xmodem_rxfile(&file_handle);
+      printf("OK, start YMODEM transfer now.\n");
+      ymodem_rxfile(&file_handle);
     }
     file_close();
   } else {
