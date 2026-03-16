@@ -525,6 +525,61 @@ void cfg_dump_favorite_games_for_snes(uint32_t address) {
   file_close();
 }
 
+/* ---- Autoboot ROM functions ---- */
+
+uint8_t cfg_is_autoboot_enabled() {
+  uint8_t fn[4];
+  fn[0] = 0;
+  file_open(AUTOBOOT_FILE, FA_READ);
+  if(file_status != FILE_OK) {
+    if(file_res == FR_NO_FILE || file_res == FR_NO_PATH) {
+      file_res = FR_OK;
+    }
+    return 0;
+  }
+  f_gets((TCHAR*)fn, sizeof(fn), &file_handle);
+  file_close();
+  return fn[0] != 0;
+}
+
+int cfg_get_autoboot_rom(uint8_t *fn) {
+  fn[0] = 0;
+  file_open(AUTOBOOT_FILE, FA_READ);
+  if(file_status != FILE_OK) {
+    if(file_res == FR_NO_FILE || file_res == FR_NO_PATH) {
+      file_res = FR_OK;
+    }
+    return 1;
+  }
+  f_gets((TCHAR*)fn, 255, &file_handle);
+  file_close();
+  return (fn[0] == 0) ? 1 : 0;
+}
+
+int cfg_set_autoboot_rom(const uint8_t *fn) {
+  int err = 0;
+  TCHAR fqfn[256];
+  fqfn[0] = 0;
+  if(fn[0] != '/') {
+    strncpy(fqfn, (const char*)file_path, 256);
+    fqfn[255] = 0;
+  }
+  strncat(fqfn, (const char*)fn, 256 - strlen(fqfn) - 1);
+  file_open(AUTOBOOT_FILE, FA_CREATE_ALWAYS | FA_WRITE);
+  err = f_puts((const TCHAR*)fqfn, &file_handle);
+  err |= (f_putc(0, &file_handle) == EOF) ? 1 : 0;
+  file_close();
+  return err;
+}
+
+int cfg_clr_autoboot_rom() {
+  f_unlink((TCHAR*)AUTOBOOT_FILE);
+  if(file_res == FR_NO_FILE || file_res == FR_NO_PATH) {
+    file_res = FR_OK;
+  }
+  return 0;
+}
+
 /* make binary config available to menu */
 void cfg_load_to_menu() {
   sram_writeblock(&CFG, SRAM_MENU_CFG_ADDR, sizeof(cfg_t));

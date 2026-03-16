@@ -1126,6 +1126,68 @@ remove_selected_favorite_file:
   plp
   rtl
 
+set_selected_as_autoboot_rom:
+; have MCU save the currently selected file as the autoboot ROM
+; the file path should already have been saved to MCU_PARAM before calling
+; this routine (done by open_context_menu / ctx_is_file)
+  php
+  phb
+  sep #$20 : .as
+  lda #$01
+  jsr hide_cursor
+  jsr draw_loading_window
+  jsr waitblank
+  lda #$00
+  sta @SNES_CMD
+  lda #CMD_SET_AUTOBOOT_ROM
+  sta @MCU_CMD
+; wait for ACK/NACK
+- lda @SNES_CMD
+  cmp #$55
+; success
+  beq +
+  cmp #$aa
+; failure
+  beq +
+  bra -
++ lda #$55
+  sta @MCU_CMD
+  jsr pop_window
+  plb
+  plp
+  rtl
+
+set_favorite_as_autoboot_rom:
+; have MCU save the selected favorite game as the autoboot ROM
+; the list index of the favorite should already have been saved to MCU_PARAM
+; before calling this routine (done by select_favorite_file)
+  php
+  phb
+  sep #$20 : .as
+  lda #$01
+  jsr hide_cursor
+  jsr draw_loading_window
+  jsr waitblank
+  lda #$00
+  sta @SNES_CMD
+  lda #CMD_SET_AUTOBOOT_FAV
+  sta @MCU_CMD
+; wait for ACK/NACK
+- lda @SNES_CMD
+  cmp #$55
+; success
+  beq +
+  cmp #$aa
+; failure
+  beq +
+  bra -
++ lda #$55
+  sta @MCU_CMD
+  jsr pop_window
+  plb
+  plp
+  rtl
+
 scroll_direntry_clean:
   lda #$01
   sta direntry_xscroll_state
