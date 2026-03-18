@@ -82,15 +82,13 @@ coldboot:       ; Regular, cold-start init
   jsr setup_hdma
   jsr detect_ultra16
   jsr detect_satellaview
-  jsr screen_on
   jsr wait_mcu_ready
-  jsr filesel_init
-  sep #$20 : .as
-  lda @ST_RTC_VALID
-  beq +
-  jsl rtc_init
-+
-  ; Check if an autoboot ROM is configured
+  ; Check if an autoboot ROM is configured.
+  ; Screen is still in force-blank ($2100=$8f from snes_init) — no menu is
+  ; visible yet.  If autoboot fires successfully the MCU hardware-resets the
+  ; SNES and we never return, so the user sees no menu flash at all.
+  ; Only if no autoboot is set, START is held, or the ROM can't be loaded do
+  ; we fall through to the normal screen_on / filesel_init path below.
   sep #$20 : .as
   lda @ST_AUTOBOOT_ENABLED
   beq coldboot_autoboot_out       ; no autoboot configured
@@ -116,6 +114,13 @@ coldboot_bypass_autoboot:
   ; START was held: clear autoboot for future boots and show menu
   jsr clr_autoboot_at_boot
 coldboot_autoboot_out:
+  jsr screen_on
+  jsr filesel_init
+  sep #$20 : .as
+  lda @ST_RTC_VALID
+  beq +
+  jsl rtc_init
++
   jsr fileselloop
   sei
   stz $4200
