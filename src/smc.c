@@ -218,6 +218,14 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
         props->fpga_conf = FPGA_DSP;
         props->fpga_features |= FEAT_DSPX;
       }
+      /* SuperFX HiROM (homebrew - no commercial cart used this combination) */
+      else if ((header->carttype >= 0x13 && header->carttype <= 0x15) ||
+          header->carttype == 0x1a) {
+        props->has_gsu = 1;
+        props->fpga_conf = FPGA_GSU;
+        props->fpga_dspfeat = CFG.gsu_speed;
+        header->ramsize = header->expramsize & 0x7;
+      }
       else if (header->carttype == 0xcb) {
         // custom combo type
         props->has_combo = 1;
