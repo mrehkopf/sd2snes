@@ -9,7 +9,6 @@
 #define FAVORITES_FILE     ((const uint8_t*)"/sd2snes/favorites.cfg")
 #define FAVORITES_FILE_BAK ((const uint8_t*)"/sd2snes/~favorites.cfg")
 #define AUTOBOOT_FILE      ((const uint8_t*)"/sd2snes/autoboot.cfg")
-#define AUTOBOOT_FILE_BAK  ((const uint8_t*)"/sd2snes/~autoboot.cfg")
 
 #define CFG_VIDMODE_MENU                 ("VideoModeMenu")
 #define CFG_VIDMODE_GAME                 ("VideoModeGame")
