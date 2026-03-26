@@ -681,12 +681,7 @@ wait_mcu_ready:
 ; NOTE: do NOT call WRAM_ROUTINE here — MCU uses LOADROM_WITH_RESET only.
 autoboot_cmd_handshake:
   php
-  phb
   sep #$20 : .as
-  lda #$01
-  jsr hide_cursor
-  jsr draw_loading_window
-  jsr waitblank
   lda #$00
   sta @SNES_CMD
   lda #CMD_LOAD_AUTOBOOT
@@ -699,8 +694,6 @@ autoboot_cmd_handshake:
   bra -
 + lda #$55
   sta @MCU_CMD
-  jsr pop_window
-  plb
   plp
   rts
 
@@ -709,12 +702,7 @@ autoboot_cmd_handshake:
 ; Does NOT load a ROM; returns so the normal menu loop can proceed.
 clr_autoboot_at_boot:
   php
-  phb
   sep #$20 : .as
-  lda #$01
-  jsr hide_cursor
-  jsr draw_loading_window
-  jsr waitblank
   lda #$00
   sta @SNES_CMD
   lda #CMD_CLR_AUTOBOOT_ROM
@@ -727,8 +715,6 @@ clr_autoboot_at_boot:
   bra -
 + lda #$55
   sta @MCU_CMD
-  jsr pop_window
-  plb
   plp
   rts
 
