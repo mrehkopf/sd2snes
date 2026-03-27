@@ -51,12 +51,14 @@ GAME_MAIN:
   jsr store_wram_routines
   jsr colortest
   jsr video_init
+  jsr pad_init
   jsr setup_hdma
   jsr detect_ultra16
   jsr detect_satellaview
   lda @CFG_BRIGHTNESS_LIMIT
   sta cur_bright
   sta tgt_bright
+  sta menu_brightness
   sta $2100
   jmp @set_bank ; Set bios bank, just to be sure
 set_bank:
@@ -79,11 +81,43 @@ coldboot:       ; Regular, cold-start init
   jsr store_wram_routines
   jsr colortest
   jsr video_init
+  jsr pad_init
   jsr setup_hdma
   jsr detect_ultra16
   jsr detect_satellaview
-  jsr screen_on
   jsr wait_mcu_ready
+  ; Check if an autoboot ROM is configured.
+  ; Screen is still in force-blank ($2100=$8f from snes_init) — no menu is
+  ; visible yet.  If autoboot fires successfully the MCU hardware-resets the
+  ; SNES and we never return, so the user sees no menu flash at all.
+  ; Only if no autoboot is set, START is held, or the ROM can't be loaded do
+  ; we fall through to the normal screen_on / filesel_init path below.
+  sep #$20 : .as
+  lda @ST_AUTOBOOT_ENABLED
+  beq coldboot_autoboot_out       ; no autoboot configured
+  ; setup_hdma already set $4200=$81 (NMI + joypad auto-read enabled).
+  ; Do NOT touch $4200 — disabling NMI would freeze fileselloop.
+  ; Poll START for ~60 frames (~1 second) so the user has time to react.
+  rep #$10 : .xl        ; 16-bit index for loop counter
+  ldx #60
+autoboot_start_poll:
+  jsr waitblank         ; sync to VBlank boundary (NMI fires here, sets isr_done)
+- lda @$004212          ; HVBJOY: bit 0 = auto-joypad read in progress
+  and #$01
+  bne -                 ; wait until auto-read is done
+  lda @$004219          ; joypad 1 high byte: B,Y,SEL,STA,UP,DN,L,R
+  and #$10              ; bit 4 = START
+  bne coldboot_bypass_autoboot    ; START held -> bypass autoboot
+  dex
+  bne autoboot_start_poll
+  ; START not held after ~1 second: trigger autoboot
+  jsr autoboot_cmd_handshake
+  bra coldboot_autoboot_out
+coldboot_bypass_autoboot:
+  ; START was held: clear autoboot for future boots and show menu
+  jsr clr_autoboot_at_boot
+coldboot_autoboot_out:
+  jsr screen_on
   jsr filesel_init
   sep #$20 : .as
   lda @ST_RTC_VALID
@@ -303,6 +337,7 @@ video_init:
   sta bar_yl
   stz cur_bright
   stz tgt_bright
+  stz menu_brightness
   lda #$01
   sta fade_speed
   stz fade_count
@@ -316,7 +351,7 @@ screen_on:
   stz $2100     ; screen on, 0% brightness
   lda @CFG_BRIGHTNESS_LIMIT
   sta tgt_bright
-  sta bright_limit
+  sta menu_brightness
   rts
 
 snes_init:
@@ -640,6 +675,54 @@ wait_mcu_ready:
 - lda @SNES_CMD
   cmp #$55
   bne -
+  plp
+  rts
+
+; autoboot_cmd_handshake: send CMD_LOAD_AUTOBOOT to MCU and wait for response.
+; If MCU loads a ROM it will hardware-reset the SNES — we never return in that case.
+; If MCU NACKs (0xaa) or sends ready (0x55, e.g. old firmware), pop the loading
+; window and return so fileselloop can continue normally.
+; NOTE: do NOT call WRAM_ROUTINE here — MCU uses LOADROM_WITH_RESET only.
+autoboot_cmd_handshake:
+  php
+  sep #$20 : .as
+  lda #$00
+  sta @SNES_CMD
+  lda #CMD_LOAD_AUTOBOOT
+  sta @MCU_CMD
+- lda @SNES_CMD
+  cmp #$55
+  beq +
+  cmp #$aa
+  beq +
+  bra -
++ lda #$55
+  sta @MCU_CMD
+  plp
+  rts
+
+; clr_autoboot_at_boot: called at cold boot when START is held.
+; Sends CMD_CLR_AUTOBOOT_ROM to clear the autoboot ROM setting.
+; Does NOT load a ROM; returns so the normal menu loop can proceed.
+clr_autoboot_at_boot:
+  php
+  sep #$20 : .as
+  lda #$00
+  sta @SNES_CMD
+  lda #CMD_CLR_AUTOBOOT_ROM
+  sta @MCU_CMD
+- lda @SNES_CMD
+  cmp #$55
+  beq +
+  cmp #$aa
+  beq +
+  bra -
++ lda #$55
+  sta @MCU_CMD
+; pretend START button had already been pressed so subsequent read_pads don't
+; detect a START press
+  lda #$10
+  sta pad1mem+1
   plp
   rts
 

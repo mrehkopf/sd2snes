@@ -223,7 +223,7 @@ current_dir
 infloop         .byt 0,0  ; to be filled w/ 80 FE
 tgt_bright      .byt 0
 cur_bright      .byt 0
-bright_limit    .byt 0
+menu_brightness .byt 0
 ;-- pad
 pad_b           .byt 0
 pad_y           .byt 0

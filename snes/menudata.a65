@@ -792,6 +792,19 @@ menu_enttab_filesel_context_file:
  .byt  0,0,0
  .byt  0,0,0
 
+ .byt  MTYPE_FUNC_CLOSE
+ .word !text_filesel_context_set_as_autoboot
+ .byt  ^text_filesel_context_set_as_autoboot
+ .word !set_selected_as_autoboot_rom-1
+ .byt  ^set_selected_as_autoboot_rom-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_filesel_context_set_as_autoboot
+ .byt  ^mdesc_filesel_context_set_as_autoboot
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
  .byt  0
 
 menu_enttab_filesel_favorites_context:
@@ -809,6 +822,19 @@ menu_enttab_filesel_favorites_context:
  .byt  0,0,0
  .word !mdesc_filesel_favorites_context_remove_from_favorites
  .byt  ^mdesc_filesel_favorites_context_remove_from_favorites
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_FUNC_CLOSE
+ .word !text_filesel_favorites_context_set_as_autoboot
+ .byt  ^text_filesel_favorites_context_set_as_autoboot
+ .word !set_favorite_as_autoboot_rom-1
+ .byt  ^set_favorite_as_autoboot_rom-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_filesel_favorites_context_set_as_autoboot
+ .byt  ^mdesc_filesel_favorites_context_set_as_autoboot
  .byt  0,0,0
  .byt  0,0,0
  .byt  0,0,0
@@ -870,7 +896,7 @@ mfunc_isenabled_autosave:
 
 mfunc_chg_brightness:
   sta @tgt_bright
-  sta @bright_limit
+  sta @menu_brightness
   rtl
 
 mfunc_chg_ledbright:

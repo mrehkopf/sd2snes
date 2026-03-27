@@ -267,6 +267,10 @@ int main(void) {
       default:
         STM.pairmode = 0;
     }
+    STM.autoboot_enabled = cfg_is_autoboot_enabled();
+    /* Clear any transient file_res left by init-phase file probing (e.g.
+       validity checks, autoboot.cfg probe) so led_error() stays silent. */
+    file_res = FR_OK;
     status_load_to_menu();
 
     uint8_t cmd = 0;
@@ -386,6 +390,49 @@ int main(void) {
           cfg_dump_favorite_games_for_snes(SRAM_FAVORITEGAMES_ADDR);
           status_load_to_menu();
           cmd=0; /* stay in menu loop */
+          break;
+        case SNES_CMD_SET_AUTOBOOT_ROM:
+          get_selected_name(file_lfn);
+          printf("Set autoboot ROM: %s\n", file_lfn);
+          cfg_set_autoboot_rom(file_lfn);
+          STM.autoboot_enabled = 1;
+          status_load_to_menu();
+          cmd=0; /* stay in menu loop */
+          break;
+        case SNES_CMD_SET_AUTOBOOT_FAV:
+          cfg_get_favorite_game(file_lfn, snes_get_mcu_param() & 0xff);
+          printf("Set autoboot from favorite: %s\n", file_lfn);
+          cfg_set_autoboot_rom(file_lfn);
+          STM.autoboot_enabled = 1;
+          status_load_to_menu();
+          cmd=0; /* stay in menu loop */
+          break;
+        case SNES_CMD_CLR_AUTOBOOT_ROM:
+          printf("Clear autoboot ROM\n");
+          cfg_clr_autoboot_rom();
+          STM.autoboot_enabled = 0;
+          status_load_to_menu();
+          cmd=0; /* stay in menu loop */
+          break;
+        case SNES_CMD_LOAD_AUTOBOOT:
+          cfg_get_autoboot_rom(file_lfn);
+          printf("Autobooting: %s\n", file_lfn);
+          if(file_lfn[0]) {
+            cfg_add_last_game(file_lfn);
+            /* LOADROM_WITH_RESET (no WAIT_SNES): MCU directly hardware-resets SNES.
+               SNES side uses autoboot_cmd_handshake which does NOT call WRAM_ROUTINE,
+               so the WAIT_SNES handshake is not needed and must not be used. */
+            filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET);
+            if(filesize) break; /* ROM loaded and SNES reset, exit menu loop */
+          }
+          /* No ROM loaded (empty path, file not found, or load error):
+             Clear file_res unconditionally so led_error() does not blink.
+             file_res may be FR_NO_FILE, FR_INVALID_OBJECT, or other transient
+             values left by cfg_add_last_game / load_rom file operations. */
+          file_res = FR_OK;
+          /* NACK so autoboot_cmd_handshake returns cleanly to menu */
+          snescmd_writebyte(0xaa, SNESCMD_SNES_CMD);
+          cmd=0;
           break;
         case SNES_CMD_LOAD_CHT:
           /* load cheats */
