@@ -719,6 +719,10 @@ clr_autoboot_at_boot:
   bra -
 + lda #$55
   sta @MCU_CMD
+; pretend START button had already been pressed so subsequent read_pads don't
+; detect a START press
+  lda #$10
+  sta pad1mem+1
   plp
   rts
 
