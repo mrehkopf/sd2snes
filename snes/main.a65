@@ -51,12 +51,14 @@ GAME_MAIN:
   jsr store_wram_routines
   jsr colortest
   jsr video_init
+  jsr pad_init
   jsr setup_hdma
   jsr detect_ultra16
   jsr detect_satellaview
   lda @CFG_BRIGHTNESS_LIMIT
   sta cur_bright
   sta tgt_bright
+  sta menu_brightness
   sta $2100
   jmp @set_bank ; Set bios bank, just to be sure
 set_bank:
@@ -79,6 +81,7 @@ coldboot:       ; Regular, cold-start init
   jsr store_wram_routines
   jsr colortest
   jsr video_init
+  jsr pad_init
   jsr setup_hdma
   jsr detect_ultra16
   jsr detect_satellaview
@@ -334,6 +337,7 @@ video_init:
   sta bar_yl
   stz cur_bright
   stz tgt_bright
+  stz menu_brightness
   lda #$01
   sta fade_speed
   stz fade_count
