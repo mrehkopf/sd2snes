@@ -179,3 +179,5 @@
 #define TYPE_SKIN                   $06
 #define TYPE_SUBDIR                 $40
 #define TYPE_PARENT                 $80
+
+#define DIM_BRIGHTNESS              $03

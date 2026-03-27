@@ -347,7 +347,7 @@ screen_on:
   stz $2100     ; screen on, 0% brightness
   lda @CFG_BRIGHTNESS_LIMIT
   sta tgt_bright
-  sta bright_limit
+  sta menu_brightness
   rts
 
 snes_init:

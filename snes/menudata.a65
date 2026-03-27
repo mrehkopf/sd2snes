@@ -896,7 +896,7 @@ mfunc_isenabled_autosave:
 
 mfunc_chg_brightness:
   sta @tgt_bright
-  sta @bright_limit
+  sta @menu_brightness
   rtl
 
 mfunc_chg_ledbright:
