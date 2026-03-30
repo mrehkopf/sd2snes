@@ -86,19 +86,13 @@ coldboot:       ; Regular, cold-start init
   jsr detect_ultra16
   jsr detect_satellaview
   jsr wait_mcu_ready
-  ; Check if an autoboot ROM is configured.
-  ; Screen is still in force-blank ($2100=$8f from snes_init) — no menu is
-  ; visible yet.  If autoboot fires successfully the MCU hardware-resets the
-  ; SNES and we never return, so the user sees no menu flash at all.
-  ; Only if no autoboot is set, START is held, or the ROM can't be loaded do
-  ; we fall through to the normal screen_on / filesel_init path below.
-  sep #$20 : .as
+  ; Check autoboot flag (set by MCU if autoboot.cfg is present)
+  ; Screen is still black (tgt_bright set in video_init)
+  ; If autoboot is inactive, START is held, or the ROM can't be loaded:
+  ; fall through to normal menu startup
   lda @ST_AUTOBOOT_ENABLED
   beq coldboot_autoboot_out       ; no autoboot configured
-  ; setup_hdma already set $4200=$81 (NMI + joypad auto-read enabled).
-  ; Do NOT touch $4200 — disabling NMI would freeze fileselloop.
-  ; Poll START for ~60 frames (~1 second) so the user has time to react.
-  rep #$10 : .xl        ; 16-bit index for loop counter
+  ; Poll the controller for ~60 frames (~1 second) so the user has time to act.
   ldx #60
 autoboot_start_poll:
   jsr waitblank         ; sync to VBlank boundary (NMI fires here, sets isr_done)
@@ -109,11 +103,10 @@ autoboot_start_poll:
   bne coldboot_bypass_autoboot    ; START pressed -> bypass autoboot
   dex
   bne autoboot_start_poll
-  ; START not held after ~1 second: trigger autoboot
+  ; timeout - START not pressed after ~1 second: trigger autoboot
   jsr autoboot_cmd_handshake
   bra coldboot_autoboot_out
-coldboot_bypass_autoboot:
-  ; START was held: clear autoboot for future boots and show menu
+coldboot_bypass_autoboot:         ; clear autoboot flag, continue to menu
   jsr clr_autoboot_at_boot
 coldboot_autoboot_out:
   jsr screen_on
@@ -678,9 +671,7 @@ wait_mcu_ready:
   rts
 
 ; autoboot_cmd_handshake: send CMD_LOAD_AUTOBOOT to MCU and wait for response.
-; If MCU loads a ROM it will hardware-reset the SNES — we never return in that case.
-; If MCU NACKs (0xaa) or sends ready (0x55, e.g. old firmware), pop the loading
-; window and return so fileselloop can continue normally.
+; return to menu if autoboot ROM loading fails (e.g. file not found)
 ; NOTE: do NOT call WRAM_ROUTINE here — MCU uses LOADROM_WITH_RESET only.
 autoboot_cmd_handshake:
   php
