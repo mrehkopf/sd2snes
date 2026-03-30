@@ -672,7 +672,6 @@ wait_mcu_ready:
 
 ; autoboot_cmd_handshake: send CMD_LOAD_AUTOBOOT to MCU and wait for response.
 ; return to menu if autoboot ROM loading fails (e.g. file not found)
-; NOTE: do NOT call WRAM_ROUTINE here — MCU uses LOADROM_WITH_RESET only.
 autoboot_cmd_handshake:
   php
   sep #$20 : .as
@@ -684,10 +683,12 @@ autoboot_cmd_handshake:
   cmp #$55
   beq +
   cmp #$aa
-  beq +
+  beq autoboot_cmd_handshake_error
   bra -
 + lda #$55
   sta @MCU_CMD
+  jsl @WRAM_ROUTINE
+autoboot_cmd_handshake_error:
   plp
   rts
 
