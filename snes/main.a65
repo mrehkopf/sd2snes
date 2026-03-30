@@ -102,12 +102,11 @@ coldboot:       ; Regular, cold-start init
   ldx #60
 autoboot_start_poll:
   jsr waitblank         ; sync to VBlank boundary (NMI fires here, sets isr_done)
-- lda @$004212          ; HVBJOY: bit 0 = auto-joypad read in progress
-  and #$01
-  bne -                 ; wait until auto-read is done
-  lda @$004219          ; joypad 1 high byte: B,Y,SEL,STA,UP,DN,L,R
-  and #$10              ; bit 4 = START
-  bne coldboot_bypass_autoboot    ; START held -> bypass autoboot
+  phx
+    jsr read_pad
+  plx
+  lda pad_start         ; TODO possibly use configurable button combo here
+  bne coldboot_bypass_autoboot    ; START pressed -> bypass autoboot
   dex
   bne autoboot_start_poll
   ; START not held after ~1 second: trigger autoboot
@@ -719,10 +718,6 @@ clr_autoboot_at_boot:
   bra -
 + lda #$55
   sta @MCU_CMD
-; pretend START button had already been pressed so subsequent read_pads don't
-; detect a START press
-  lda #$10
-  sta pad1mem+1
   plp
   rts
 
