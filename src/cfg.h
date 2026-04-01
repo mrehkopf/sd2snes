@@ -6,8 +6,9 @@
 #define CFG_FILE ("/sd2snes/config.yml")
 #define LAST_FILE ((const uint8_t*)"/sd2snes/lastgame.cfg")
 #define LAST_FILE_BAK ((const uint8_t*)"/sd2snes/~lastgame.cfg")
-#define FAVORITES_FILE ((const uint8_t*)"/sd2snes/favorites.cfg")
+#define FAVORITES_FILE     ((const uint8_t*)"/sd2snes/favorites.cfg")
 #define FAVORITES_FILE_BAK ((const uint8_t*)"/sd2snes/~favorites.cfg")
+#define AUTOBOOT_FILE      ((const uint8_t*)"/sd2snes/autoboot.cfg")
 
 #define CFG_VIDMODE_MENU                 ("VideoModeMenu")
 #define CFG_VIDMODE_GAME                 ("VideoModeGame")
@@ -113,6 +114,11 @@ int cfg_add_favorite_game(uint8_t *fn);
 int cfg_remove_favorite_game(uint8_t index_to_remove);
 int cfg_get_favorite_game(uint8_t *fn, uint8_t index);
 void cfg_dump_favorite_games_for_snes(uint32_t address);
+
+uint8_t cfg_is_autoboot_enabled(void);
+int cfg_get_autoboot_rom(uint8_t *fn);
+int cfg_set_autoboot_rom(const uint8_t *fn);
+int cfg_clr_autoboot_rom(void);
 
 void cfg_load_to_menu(void);
 void cfg_get_from_menu(void);

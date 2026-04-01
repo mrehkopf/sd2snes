@@ -44,6 +44,10 @@
 #define SNES_CMD_LED_BRIGHTNESS      (0x12)
 #define SNES_CMD_ADD_FAVORITE_ROM    (0x13)
 #define SNES_CMD_REMOVE_FAVORITE_ROM (0x14)
+#define SNES_CMD_SET_AUTOBOOT_ROM    (0x15) /* set autoboot from file browser selection */
+#define SNES_CMD_SET_AUTOBOOT_FAV    (0x16) /* set autoboot from favorites list (index in MCU_PARAM) */
+#define SNES_CMD_CLR_AUTOBOOT_ROM    (0x17) /* clear autoboot ROM setting */
+#define SNES_CMD_LOAD_AUTOBOOT       (0x18) /* boot into the stored autoboot ROM */
 
 #define SNES_CMD_SAVESTATE           (0x40)
 #define SNES_CMD_LOADSTATE           (0x41)
@@ -143,6 +147,7 @@ typedef struct __attribute__ ((__packed__)) _mcu_status {
   uint8_t num_recent_games;
   uint8_t pairmode;
   uint8_t num_favorite_games;
+  uint8_t autoboot_enabled;    /* 1 if an autoboot ROM is configured */
 } mcu_status_t;
 
 typedef struct __attribute__ ((__packed__)) _snes_status {
