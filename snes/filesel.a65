@@ -284,10 +284,6 @@ dirent_is_file
   bne +
   lda #$0002
   bra dirent_type_cont
-  cmp #TYPE_IPS ; IPS -> palette 2 (green)
-  bne +
-  lda #$0002
-  bra dirent_type_cont
 +
   lda #$0000    ; default -> palette 0
 dirent_type_cont
@@ -574,7 +570,7 @@ select_item:
 select_item_cont
   rts
 sel_is_file
-  jsr select_file
+  jsr ips_select_file
   bra select_item_cont
 sel_is_parent
   jsr select_parent

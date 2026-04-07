@@ -101,6 +101,7 @@ listsel_max         .byt 0
 listsel_pickbutton  .byt 0
 listsel_dirty       .byt 0
 listsel_backup      .byt 0
+ips_idx_tmp         .byt 0      ; IPS menu: loop counter / result temp
 
 screen_dma_disable  .word 0
 

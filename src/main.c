@@ -28,6 +28,7 @@
 #include "sysinfo.h"
 #include "cfg.h"
 #include "savestate.h"
+#include "patch.h"
 
 //usb
 #include "usb.h"
@@ -293,11 +294,32 @@ int main(void) {
       uart_putc('-');
       switch(cmd) {
         case SNES_CMD_LOADROM:
+          /* Read the IPS patch index BEFORE get_selected_name so that the
+             MCU_PARAM+7 byte is not overwritten.  set_mcu_addr() only uses
+             the lower 24 bits, so the index byte at offset +7 is safe. */
+          ips_pending_index = snescmd_readbyte(SNESCMD_MCU_PARAM + 7);
           get_selected_name(file_lfn);
-          printf("Selected name: %s\n", file_lfn);
+          printf("Selected name: %s (patch idx=%d)\n", file_lfn, ips_pending_index);
           cfg_add_last_game(file_lfn);
+          /* Build the SRM-override path from the IPS file's full SD path. */
+          current_ips_srm_source[0] = '\0';
+          if(ips_pending_index > 0 && ips_pending_index <= IPS_MAX_PATCHES) {
+            sram_readstrn(current_ips_srm_source,
+                          SRAM_IPS_LIST_ADDR + 512
+                          + (uint32_t)(ips_pending_index - 1) * IPS_PATH_LEN,
+                          sizeof(current_ips_srm_source));
+            printf("Patch SRM source: %s\n", current_ips_srm_source);
+          }
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;
+        case SNES_CMD_QUERY_IPS_PATCHES: {
+          uint8_t qpath[256];
+          get_selected_name(qpath);
+          current_ips_srm_source[0] = '\0';
+          ips_find_patches(qpath, SRAM_IPS_LIST_ADDR);
+          cmd = 0; /* stay in menu loop */
+          break;
+        }
         case SNES_CMD_SETRTC:
           /* get time from RAM */
           btime = snescmd_gettime();
@@ -325,12 +347,16 @@ int main(void) {
           cmd=0; /* stay in menu loop */
           break;
         case SNES_CMD_LOADLAST:
+          ips_pending_index = 0;
+          current_ips_srm_source[0] = '\0';
           cfg_get_last_game(file_lfn, snes_get_mcu_param() & 0xff);
           printf("Selected name: %s\n", file_lfn);
           cfg_add_last_game(file_lfn);
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;
         case SNES_CMD_LOADFAVORITE:
+          ips_pending_index = 0;
+          current_ips_srm_source[0] = '\0';
           cfg_get_favorite_game(file_lfn, snes_get_mcu_param() & 0xff);
           printf("Selected name: %s\n", file_lfn);
           cfg_add_last_game(file_lfn);
@@ -412,6 +438,8 @@ int main(void) {
           cmd=0; /* stay in menu loop */
           break;
         case SNES_CMD_LOAD_AUTOBOOT:
+          ips_pending_index = 0;
+          current_ips_srm_source[0] = '\0';
           cfg_get_autoboot_rom(file_lfn);
           printf("Autobooting: %s\n", file_lfn);
           if(file_lfn[0]) {
