@@ -34,6 +34,7 @@ module address(
   input [7:0] SAVERAM_BASE,
   input [23:0] SAVERAM_MASK,
   input [23:0] ROM_MASK,
+  input [23:0] ROM_MASK_B,
   input  map_unlock,
   input  map_Ex_rd_unlock,
   input  map_Ex_wr_unlock,
@@ -116,12 +117,15 @@ assign IS_SAVERAM_pre = (~map_unlock & SAVERAM_MASK[0])
                       ? ((SNES_ADDR_early[23:19] == 5'b00010)
                          & (SNES_ADDR_early[15:12] == 4'b0101)
                         )
-/*  Sufami Turbo: Slot A SRAM @ Bank 0x60-0x63, Offset 0x8000-0xFFFF
- *  Banks 0x60-0x63: A23=0,A22=1,A21=1,A20=0  (~A20 excludes Slot B SRAM 0x70-0x73) */
+/*  Sufami Turbo: Slot A SRAM @ Bank 0x60-0x63, Slot B SRAM @ Bank 0x70-0x73, Offset 0x8000-0xFFFF
+ *  Banks 0x60-0x63 (Slot A): A23=0,A22=1,A21=1,A20=0,A19=0,A18=0
+ *  Banks 0x70-0x73 (Slot B): A23=0,A22=1,A21=1,A20=1,A19=0,A18=0
+ *  Common guard: ~A19 & ~A18 selects both groups */
                       :(MAPPER_DEC[3'b101])
                       ? ((SNES_ADDR_early[22:21] == 2'b11)
                          & ~SNES_ADDR_early[23]
-                         & ~SNES_ADDR_early[20]
+                         & ~SNES_ADDR_early[19]
+                         & ~SNES_ADDR_early[18]
                          & SNES_ADDR_early[15]
                          & (~SNES_ROMSEL)
                         )
@@ -230,7 +234,7 @@ assign SRAM_SNES_ADDR = IS_PATCH
                              : (~SNES_ADDR[22] &  SNES_ADDR[21]) // Slot A ROM banks 20-3F, A0-BF
                              ? (24'h200000 | ({4'b0, SNES_ADDR[20:16], SNES_ADDR[14:0]}
                                             & ROM_MASK))  // Slot A ROM at PSRAM 0x200000
-                             : (24'h600000 | {9'b0, SNES_ADDR[14:0]}) // Slot B absent: zeroed region, BIOS reads 0x00 != "BANDAI SFC-ADX"
+                             : (24'h600000 | ({4'b0, SNES_ADDR[20:16], SNES_ADDR[14:0]} & ROM_MASK_B)) // Slot B ROM: ROM_MASK_B=0 → reads 0x600000 (zeroed, BIOS rejects)
                             )
                            :(MAPPER_DEC[3'b110])
                            ?(IS_SAVERAM

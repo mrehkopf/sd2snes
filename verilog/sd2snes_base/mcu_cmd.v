@@ -38,6 +38,7 @@ module mcu_cmd(
   output [7:0]  saveram_base_out,
   output [23:0] saveram_mask_out,
   output [23:0] rom_mask_out,
+  output [23:0] rom_mask_b_out,
 
   // SD "DMA" extension
   output SD_DMA_EN,
@@ -193,6 +194,7 @@ assign SD_DMA_PARTIAL_END = SD_DMA_PARTIAL_ENDr;
 reg [7:0]  SAVERAM_BASE; initial SAVERAM_BASE = 0;
 reg [23:0] SAVERAM_MASK;
 reg [23:0] ROM_MASK;
+reg [23:0] ROM_MASK_B; initial ROM_MASK_B = 0;
 
 assign spi_data_out = MCU_DATA_IN_BUF;
 
@@ -249,6 +251,15 @@ always @(posedge clk) begin
         endcase
       8'h4x:
         SD_DMA_ENr <= 1'b0;
+      8'h5x:
+        case (spi_byte_cnt)
+          32'h2:
+            ROM_MASK_B[23:16] <= param_data;
+          32'h3:
+            ROM_MASK_B[15:8] <= param_data;
+          32'h4:
+            ROM_MASK_B[7:0] <= param_data;
+        endcase
       8'h6x:
         case (spi_byte_cnt)
           32'h2: begin
@@ -586,6 +597,7 @@ assign srtc_reset = srtc_reset_buf;
 assign mcu_data_out = SD_DMA_STATUS ? SD_DMA_SRAM_DATA : MCU_DATA_OUT_BUF;
 assign mcu_mapper = MAPPER_BUF;
 assign rom_mask_out = ROM_MASK;
+assign rom_mask_b_out = ROM_MASK_B;
 assign saveram_mask_out = SAVERAM_MASK;
 assign saveram_base_out = SAVERAM_BASE;
 

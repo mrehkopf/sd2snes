@@ -31,6 +31,7 @@
 #include "smc.h"
 
 extern char current_filename[];
+extern char slotb_filename[];
 
 #define MENU_ADDR_BRAM_SRC           (0xFF00)
 

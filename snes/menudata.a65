@@ -807,6 +807,53 @@ menu_enttab_filesel_context_file:
 
  .byt  0
 
+menu_enttab_filesel_context_st_file:
+; HEADER
+ .byt  1              ; listsel_step=1
+ .word !text_filesel_selected_file ; window title
+ .byt  ^text_filesel_selected_file ; for this menu
+; ENTRIES
+ .byt  MTYPE_FUNC_CLOSE
+ .word !text_filesel_context_add_to_favorites
+ .byt  ^text_filesel_context_add_to_favorites
+ .word !add_selected_file_to_favorites-1
+ .byt  ^add_selected_file_to_favorites-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_filesel_context_add_to_favorites
+ .byt  ^mdesc_filesel_context_add_to_favorites
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_FUNC_CLOSE
+ .word !text_filesel_context_set_as_autoboot
+ .byt  ^text_filesel_context_set_as_autoboot
+ .word !set_selected_as_autoboot_rom-1
+ .byt  ^set_selected_as_autoboot_rom-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_filesel_context_set_as_autoboot
+ .byt  ^mdesc_filesel_context_set_as_autoboot
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_FUNC_CLOSE
+ .word !text_filesel_context_set_as_slotb
+ .byt  ^text_filesel_context_set_as_slotb
+ .word !set_selected_as_slotb_rom-1
+ .byt  ^set_selected_as_slotb_rom-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_filesel_context_set_as_slotb
+ .byt  ^mdesc_filesel_context_set_as_slotb
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  0
+
 menu_enttab_filesel_favorites_context:
 ; HEADER
  .byt  1              ; listsel_step=1

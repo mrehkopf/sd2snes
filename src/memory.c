@@ -234,6 +234,7 @@ uint16_t sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
 }
 
 char current_filename[258];
+char slotb_filename[258];
 uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   UINT bytes_read;
   DWORD filesize;
@@ -364,14 +365,44 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       set_fpga_time(get_bcdtime());
     }
   }
+  uint32_t slotb_rammask = 0;
   if(romprops.mapper_id==5) {
     printf("Sufami Turbo ROM\n");
     printf("Loading ST BIOS %s...\n", STBIOS_FW);
     load_sram_offload((uint8_t*)STBIOS_FW, 0x000000, LOADRAM_AUTOSKIP_HEADER);
     if(file_res) snes_menu_errmsg(MENU_ERR_SUPPLFILE, (void*)STBIOS_FW);
-    /* Zero Slot B header region (PSRAM 0x600000) so BIOS reads 0x00 there
-       and does not detect a spurious second cart (would trigger dual-cart wait) */
-    sram_memset(0x600000, 0x100, 0x00);
+    if(slotb_filename[0]) {
+      uint8_t slotb_buf[258];
+      strncpy((char*)slotb_buf, slotb_filename, sizeof(slotb_buf)-1);
+      slotb_buf[sizeof(slotb_buf)-1] = 0;
+      printf("Loading Slot B ROM %s...\n", slotb_buf);
+      uint32_t slotb_filesize = load_sram_offload(slotb_buf, 0x600000, LOADRAM_AUTOSKIP_HEADER);
+      if(file_res) {
+        printf("Slot B ROM load failed, disabling\n");
+        sram_memset(0x600000, 0x100, 0x00);
+        set_rom_mask_b(0);
+      } else {
+        /* Compute Slot B ROM mask: next power of 2 >= filesize */
+        uint32_t slotb_sz = 1;
+        while(slotb_sz < slotb_filesize) slotb_sz <<= 1;
+        set_rom_mask_b(slotb_sz - 1);
+        /* Read Slot B SRAM size from ST header byte 0x37 (2KB units) */
+        uint32_t slotb_ramsize = (uint32_t)sram_readbyte(0x600037) * 2048;
+        slotb_rammask = slotb_ramsize ? (slotb_ramsize - 1) : 0;
+        /* Initialize Slot B SRAM region (0xE80000) and load from .srm file */
+        if(slotb_ramsize) {
+          sram_memset(0xE80000, slotb_ramsize, 0xFF);
+          strncpy((char*)slotb_buf, slotb_filename, sizeof(slotb_buf)-1);
+          slotb_buf[sizeof(slotb_buf)-1] = 0;
+          migrate_and_load_srm(slotb_buf, 0xE80000);
+          if(file_res == FR_NO_FILE) file_res = 0;
+        }
+      }
+    } else {
+      /* No Slot B: zero header region so BIOS rejects second cart */
+      sram_memset(0x600000, 0x100, 0x00);
+      set_rom_mask_b(0);
+    }
   }
   if(romprops.has_dspx) {
     printf("DSPx game. Loading firmware image %s...\n", romprops.dsp_fw);
@@ -400,9 +431,12 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     romprops.sramsize_bytes = romprops.ramsize_bytes;
     rammask = 1;
   } else if(romprops.mapper_id == 5) {
-    /* Sufami Turbo: SRAM size comes from ST header byte 0x37, not standard header.
-       header.ramsize is never populated for ST carts (early return in smc_id). */
-    rammask = romprops.ramsize_bytes ? (romprops.ramsize_bytes - 1) : 0;
+    /* Sufami Turbo Slot A: SRAM size from ST header byte 0x37, not standard header.
+       When Slot B is present, bit 19 of SAVERAM_MASK separates Slot A (0xE00000)
+       from Slot B SRAM (0xE80000). Use larger of the two masks for the window size. */
+    uint32_t slota_rammask = romprops.ramsize_bytes ? (romprops.ramsize_bytes - 1) : 0;
+    rammask = (slota_rammask > slotb_rammask) ? slota_rammask : slotb_rammask;
+    if(slotb_rammask) rammask |= 0x80000;
   } else if(romprops.header.ramsize == 0) {
     rammask = 0;
   } else {
