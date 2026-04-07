@@ -123,6 +123,7 @@ void prepare_reset() {
   snes_reset(1);
   fpga_dspx_reset(1);
   delay_ms(200);
+  slotb_filename[0] = 0; /* clear Slot B selection on every return-to-menu */
 }
 
 void snes_init() {

@@ -117,16 +117,12 @@ assign IS_SAVERAM_pre = (~map_unlock & SAVERAM_MASK[0])
                       ? ((SNES_ADDR_early[23:19] == 5'b00010)
                          & (SNES_ADDR_early[15:12] == 4'b0101)
                         )
-/*  Sufami Turbo: Slot A SRAM @ Bank 0x60-0x63, Slot B SRAM @ Bank 0x70-0x73, Offset 0x8000-0xFFFF
- *  Banks 0x60-0x63 (Slot A): A23=0,A22=1,A21=1,A20=0,A19=0,A18=0
- *  Banks 0x70-0x73 (Slot B): A23=0,A22=1,A21=1,A20=1,A19=0,A18=0
- *  Common guard: ~A19 & ~A18 selects both groups */
+/*  Sufami Turbo: Slot A SRAM @ Banks 0x60-0x6F (+mirrors 0xE0-0xEF), Slot B @ 0x70-0x7F (+0xF0-0xFF)
+ *  ROMSEL fires for full $0000-$FFFF in banks $60-$6F (and mirrors). The STBIOS dispatches
+ *  into SRAM at sub-$8000 offsets (e.g. $E0:$78F9), so no A15 guard and no ~A23 guard.
+ *  Match MiSTer SufamiMap: SRAM_BASE_SEL|SRAM_TURBO_SEL = CA[22:21]="11" & ~ROMSEL_N */
                       :(MAPPER_DEC[3'b101])
                       ? ((SNES_ADDR_early[22:21] == 2'b11)
-                         & ~SNES_ADDR_early[23]
-                         & ~SNES_ADDR_early[19]
-                         & ~SNES_ADDR_early[18]
-                         & SNES_ADDR_early[15]
                          & (~SNES_ROMSEL)
                         )
 /*  Menu mapper: 8Mbit "SRAM" @ Bank 0xf0-0xff (entire banks!) */

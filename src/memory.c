@@ -399,8 +399,8 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
         }
       }
     } else {
-      /* No Slot B: zero header region so BIOS rejects second cart */
-      sram_memset(0x600000, 0x100, 0x00);
+      /* No Slot B: zero header area so STBIOS cannot match "BANDAI SFC-ADX" signature */
+      sram_memset(0x600000, 0x40, 0x00);
       set_rom_mask_b(0);
     }
   }
@@ -434,7 +434,11 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     /* Sufami Turbo Slot A: SRAM size from ST header byte 0x37, not standard header.
        When Slot B is present, bit 19 of SAVERAM_MASK separates Slot A (0xE00000)
        from Slot B SRAM (0xE80000). Use larger of the two masks for the window size. */
-    uint32_t slota_rammask = romprops.ramsize_bytes ? (romprops.ramsize_bytes - 1) : 0;
+    /* ST hardware always has a physical 8KB SRAM used by STBIOS as runtime RAM.
+       Games with no declared save SRAM (byte 0x37 == 0) still need the SRAM
+       accessible so the STBIOS can dispatch into it (e.g. $E0:$78F9). */
+    uint32_t slota_ramsize = (romprops.ramsize_bytes > 0x2000) ? romprops.ramsize_bytes : 0x2000;
+    uint32_t slota_rammask = slota_ramsize - 1;
     rammask = (slota_rammask > slotb_rammask) ? slota_rammask : slotb_rammask;
     if(slotb_rammask) rammask |= 0x80000;
   } else if(romprops.header.ramsize == 0) {
@@ -509,7 +513,8 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   printf("done\n");
 
   printf("r213fen=%d is_u16=%d filename=%s\n", cfg_is_r213f_override_enabled(), STS.is_u16, filename);
-  if(cfg_is_r213f_override_enabled() && !is_menu && !STS.is_u16) {
+  if(cfg_is_r213f_override_enabled() && !is_menu && !STS.is_u16
+     && romprops.mapper_id != 5) { /* Sufami Turbo: STBIOS reads $213F for region detection; override breaks it */
     romprops.fpga_features |= FEAT_213F; /* e.g. for general consoles */
   }
   fpga_set_213f(romprops.region);
