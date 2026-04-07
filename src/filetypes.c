@@ -154,11 +154,6 @@ SNES_FTYPE determine_filetype(FILINFO fno) {
     ) {
     return TYPE_ROM;
   }
-/*  if(  (!strcasecmp(ext+1, "IPS"))
-     ||(!strcasecmp(ext+1, "UPS"))
-    ) {
-    return TYPE_IPS;
-  }*/
   if(!strcasecmp(ext+1, "SPC")) {
     return TYPE_SPC;
   }

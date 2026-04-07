@@ -400,7 +400,7 @@ loading_win_w   .byt 34
 loading_win_h   .byt 1
 
 text_cheat      .byt "Cheats for ", 0
-text_ips_header .byt "IPS Patches", 0
+text_ips_header .byt "Patches", 0
 text_ips_nopatch .byt "[No patch]", 0
 cheat_win_x     .byt 6
 cheat_win_y     .byt 11

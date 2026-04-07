@@ -28,7 +28,7 @@
 #include "sysinfo.h"
 #include "cfg.h"
 #include "savestate.h"
-#include "ips.h"
+#include "patch.h"
 
 //usb
 #include "usb.h"
@@ -299,7 +299,7 @@ int main(void) {
              the lower 24 bits, so the index byte at offset +7 is safe. */
           ips_pending_index = snescmd_readbyte(SNESCMD_MCU_PARAM + 7);
           get_selected_name(file_lfn);
-          printf("Selected name: %s (IPS idx=%d)\n", file_lfn, ips_pending_index);
+          printf("Selected name: %s (patch idx=%d)\n", file_lfn, ips_pending_index);
           cfg_add_last_game(file_lfn);
           /* Build the SRM-override path from the IPS file's full SD path. */
           current_ips_srm_source[0] = '\0';
@@ -308,7 +308,7 @@ int main(void) {
                           SRAM_IPS_LIST_ADDR + 512
                           + (uint32_t)(ips_pending_index - 1) * IPS_PATH_LEN,
                           sizeof(current_ips_srm_source));
-            printf("IPS SRM source: %s\n", current_ips_srm_source);
+            printf("Patch SRM source: %s\n", current_ips_srm_source);
           }
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;

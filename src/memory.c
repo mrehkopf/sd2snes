@@ -50,7 +50,7 @@ memory.c: RAM operations
 #include "rtc.h"
 #include "savestate.h"
 #include "sgb.h"
-#include "ips.h"
+#include "patch.h"
 
 #include <string.h>
 char* hex = "0123456789ABCDEF";
@@ -534,21 +534,41 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
        ips_pending_index is set by the CMD_LOADROM handler in main.c before
        calling load_rom().  We consume+clear it here. */
     if(ips_pending_index > 0) {
-      /* Pass the copier-header size so ips_apply can correct record offsets
-         if the IPS was authored using a headered (512-byte prefix) ROM.
-         For combo ROMs romprops.offset carries a slot shift in the upper
-         bits; mask those off to get just the header size (0 or 0x200). */
+      /* Dispatch to ips_apply or bps_apply based on the patch file extension.
+         For IPS: pass the copier-header size so offset correction works when
+         the IPS was authored for a headered ROM.  For combo ROMs
+         romprops.offset carries a slot shift in the upper bits; mask those
+         off to get just the header size (0 or 0x200).
+         BPS encodes exact sizes so no header correction is needed there. */
       uint32_t ips_header_size = romprops.offset & 0xFFFFF;
-      uint32_t ips_end = ips_apply(SRAM_IPS_LIST_ADDR, ips_pending_index,
-                                   SRAM_ROM_ADDR + romprops.load_address,
-                                   romprops.romsize_bytes,
-                                   ips_header_size);
+      uint32_t ips_end = patch_apply(SRAM_IPS_LIST_ADDR, ips_pending_index,
+                                     SRAM_ROM_ADDR + romprops.load_address,
+                                     romprops.romsize_bytes,
+                                     ips_header_size);
       ips_pending_index = 0;
       /* If the IPS patch wrote past the original ROM boundary (ROM expansion
          hack), expand the FPGA ROM mask so those new banks are accessible.
          romprops.romsize_bytes is always a power of 2, so a simple left-
          shift loop finds the next fitting power of 2. */
       if(ips_end > romprops.romsize_bytes) {
+        /* IPS/BPS patches authored for a headered (512-byte copier prefix)
+           ROM image sometimes have max_end that overshoots a clean power-of-2
+           ROM boundary by exactly 512 bytes.  Those extra bytes are the
+           copier header padding — not real ROM data — so they must not cause
+           the mask to double.  Snap ips_end back to the clean boundary when
+           the overshoot is ≤ 512 bytes. */
+        if (ips_end > 512) {
+          /* Largest power-of-2 that is ≤ ips_end */
+          uint32_t p2 = ips_end;
+          p2 |= p2 >> 1; p2 |= p2 >> 2; p2 |= p2 >> 4;
+          p2 |= p2 >> 8; p2 |= p2 >> 16;
+          p2 = (p2 + 1) >> 1;
+          if (p2 < ips_end && ips_end - p2 <= 512) {
+            printf("IPS/BPS: header padding trimmed 0x%lx -> 0x%lx\n",
+                   (unsigned long)ips_end, (unsigned long)p2);
+            ips_end = p2;
+          }
+        }
         uint32_t new_size = romprops.romsize_bytes;
         while(new_size < ips_end) new_size <<= 1;
         /* For LoROM (mapper_id 1) the FPGA address formula uses ~A23 to

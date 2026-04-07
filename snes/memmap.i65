@@ -88,7 +88,7 @@
 
 #define IPS_LIST                    $FF5000  /* IPS patch list written by MCU */
 #define IPS_NAME_LEN                64       /* bytes per display name entry */
-#define IPS_MAX_PATCHES             7        /* maximum patches per ROM */
+#define IPS_MAX_PATCHES             8        /* maximum patches per ROM */
 #define CMD_SAVESTATE               $40
 #define CMD_LOADSTATE               $41
 #define CMD_MCU_RDY                 $55

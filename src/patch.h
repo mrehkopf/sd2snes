@@ -1,5 +1,5 @@
 /* sd2snes - SD card based universal cartridge for the SNES
-   ips.h: IPS ROM patch support
+   patch.h: ROM patch support (IPS and BPS)
 */
 
 #ifndef IPS_H
@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 /* Maximum number of IPS patches shown in the selection menu */
-#define IPS_MAX_PATCHES  7
+#define IPS_MAX_PATCHES  8
 /* Bytes reserved per display-name slot in the IPS SRAM list */
 #define IPS_NAME_LEN     64
 /* Bytes reserved per full-path slot in the IPS SRAM list */
@@ -58,5 +58,27 @@ uint8_t ips_find_patches(const uint8_t *rom_path, uint32_t sram_addr);
  */
 uint32_t ips_apply(uint32_t sram_addr, uint8_t index, uint32_t rom_base_addr,
                    uint32_t original_rom_size, uint32_t rom_header_size);
+
+/*
+ * bps_apply
+ *   Apply a BPS patch at <index> (1-based) from the list stored at sram_addr.
+ *   target_size is known from the BPS header so no two-pass scan is needed.
+ *   Returns target_size on success, 0 on error.
+ */
+uint32_t bps_apply(uint32_t sram_addr, uint8_t index, uint32_t rom_base_addr,
+                   uint32_t original_rom_size);
+
+/*
+ * patch_apply
+ *   Dispatcher: reads the stored SD path for <index>, detects the format
+ *   from the file extension (.ips → ips_apply, .bps → bps_apply), and
+ *   calls the appropriate apply function.
+ *   rom_header_size is forwarded to ips_apply for copier-header correction
+ *   (BPS encodes sizes explicitly so it is not needed there).
+ *   Returns the required ROM size after patching (adj_max_end for IPS,
+ *   target_size for BPS), or 0 on error.
+ */
+uint32_t patch_apply(uint32_t sram_addr, uint8_t index, uint32_t rom_base_addr,
+                     uint32_t original_rom_size, uint32_t rom_header_size);
 
 #endif /* IPS_H */
