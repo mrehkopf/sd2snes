@@ -534,9 +534,37 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
        ips_pending_index is set by the CMD_LOADROM handler in main.c before
        calling load_rom().  We consume+clear it here. */
     if(ips_pending_index > 0) {
-      ips_apply(SRAM_IPS_LIST_ADDR, ips_pending_index,
-                SRAM_ROM_ADDR + romprops.load_address);
+      /* Pass the copier-header size so ips_apply can correct record offsets
+         if the IPS was authored using a headered (512-byte prefix) ROM.
+         For combo ROMs romprops.offset carries a slot shift in the upper
+         bits; mask those off to get just the header size (0 or 0x200). */
+      uint32_t ips_header_size = romprops.offset & 0xFFFFF;
+      uint32_t ips_end = ips_apply(SRAM_IPS_LIST_ADDR, ips_pending_index,
+                                   SRAM_ROM_ADDR + romprops.load_address,
+                                   romprops.romsize_bytes,
+                                   ips_header_size);
       ips_pending_index = 0;
+      /* If the IPS patch wrote past the original ROM boundary (ROM expansion
+         hack), expand the FPGA ROM mask so those new banks are accessible.
+         romprops.romsize_bytes is always a power of 2, so a simple left-
+         shift loop finds the next fitting power of 2. */
+      if(ips_end > romprops.romsize_bytes) {
+        uint32_t new_size = romprops.romsize_bytes;
+        while(new_size < ips_end) new_size <<= 1;
+        /* For LoROM (mapper_id 1) the FPGA address formula uses ~A23 to
+           overlay the two SNES bank halves onto the same SRAM window.
+           This only works correctly when the ROM mask has bit 22 clear
+           (i.e. mask <= 0x3FFFFF, ROM <= 4 MB).  LoROM's addressing limit
+           is 4 MB regardless of IPS expansion, so if the loop doubled past
+           4 MB (typically due to a single stray IPS byte sitting just past
+           the 4 MB boundary), cap new_size back to 4 MB. */
+        if(romprops.mapper_id == 1 && new_size > 0x400000)
+          new_size = 0x400000;
+        printf("IPS ROM expansion: %lx -> %lx (mask %lx)\n",
+               romprops.romsize_bytes, new_size, new_size - 1);
+        romprops.romsize_bytes = new_size;
+        set_rom_mask(new_size - 1);
+      }
     }
     deassert_reset();
   }

@@ -197,8 +197,9 @@ static void sram_write_from_buf(uint32_t addr, const uint8_t *buf, uint16_t len)
     FPGA_DESELECT();
 }
 
-int ips_apply(uint32_t sram_addr, uint8_t index, uint32_t rom_base_addr) {
-    if (index < 1 || index > IPS_MAX_PATCHES) return -1;
+uint32_t ips_apply(uint32_t sram_addr, uint8_t index, uint32_t rom_base_addr,
+                   uint32_t original_rom_size, uint32_t rom_header_size) {
+    if (index < 1 || index > IPS_MAX_PATCHES) return 0;
 
     /* Read the full IPS file path from SRAM */
     uint8_t ips_path[IPS_PATH_LEN];
@@ -211,7 +212,7 @@ int ips_apply(uint32_t sram_addr, uint8_t index, uint32_t rom_base_addr) {
     file_open(ips_path, FA_READ);
     if (file_res != FR_OK) {
         printf("ips_apply: open failed (%d)\n", file_res);
-        return -1;
+        return 0;
     }
 
     /* Read and verify the 5-byte "PATCH" header */
@@ -221,11 +222,78 @@ int ips_apply(uint32_t sram_addr, uint8_t index, uint32_t rom_base_addr) {
     if (br != 5 || memcmp(hdr, "PATCH", 5) != 0) {
         printf("ips_apply: bad header\n");
         file_close();
-        return -1;
+        return 0;
     }
 
+    /* ------------------------------------------------------------------
+     * Pass 1: scan all record headers (skipping data bytes with f_lseek)
+     * to determine max_end.  If the patch expands the ROM beyond
+     * original_rom_size we must zero-fill the new area first — the SRAM
+     * may contain old data from a previously loaded larger ROM.
+     * ------------------------------------------------------------------ */
+    uint32_t max_end = 0;
+    uint32_t min_offset = 0xFFFFFFFFUL;
+    uint32_t adj = 0;
+    uint32_t adj_max_end = 0;
+    uint8_t  rec[3];
+
+    for (;;) {
+        f_read(&file_handle, rec, 3, &br);
+        if (br != 3) break;
+        if (rec[0] == 0x45 && rec[1] == 0x4F && rec[2] == 0x46) break; /* EOF */
+
+        uint8_t sz[2];
+        f_read(&file_handle, sz, 2, &br);
+        if (br != 2) break;
+        uint16_t hunk_size = ((uint16_t)sz[0] << 8) | sz[1];
+
+        if (hunk_size == 0) {
+            /* RLE: 2-byte count, 1-byte value */
+            uint8_t rle[3];
+            f_read(&file_handle, rle, 3, &br);
+            if (br != 3) break;
+            uint32_t offset = ((uint32_t)rec[0] << 16) | ((uint32_t)rec[1] << 8) | rec[2];
+            uint32_t rle_count = ((uint16_t)rle[0] << 8) | rle[1];
+            if (offset < min_offset) min_offset = offset;
+            if (offset + rle_count > max_end) max_end = offset + rle_count;
+        } else {
+            uint32_t offset = ((uint32_t)rec[0] << 16) | ((uint32_t)rec[1] << 8) | rec[2];
+            if (offset < min_offset) min_offset = offset;
+            if (offset + (uint32_t)hunk_size > max_end) max_end = offset + (uint32_t)hunk_size;
+            /* Skip data bytes */
+            f_lseek(&file_handle, file_handle.fptr + hunk_size);
+        }
+    }
+
+    /* If the patch writes beyond the original ROM, zero-fill the extension
+     * so that gaps between IPS records contain 0x00 as expected by the hack. */
+    /* Determine the header-offset correction factor.
+     * If the IPS was authored using a ROM with a copier header (common for
+     * older IPS tools), its record offsets include those 512 header bytes.
+     * When the ROM was loaded into SRAM without the header (rom_header_size==0
+     * but the IPS starts below offset 512) we auto-detect this and compensate
+     * so that the patch data lands at the correct SRAM positions. */
+    adj = rom_header_size;
+    if (adj == 0 && min_offset < 512)
+        adj = 512;
+    if (adj > 0)
+        printf("IPS: header offset correction: %lu bytes\n", (unsigned long)adj);
+
+    adj_max_end = (max_end > adj) ? (max_end - adj) : 0;
+
+    if (adj_max_end > original_rom_size) {
+        uint32_t fill_len = adj_max_end - original_rom_size;
+        printf("IPS: zeroing 0x%lx bytes from 0x%lx\n", (unsigned long)fill_len,
+               (unsigned long)(rom_base_addr + original_rom_size));
+        sram_memset(rom_base_addr + original_rom_size, fill_len, 0x00);
+    }
+
+    /* ------------------------------------------------------------------
+     * Pass 2: seek back to the start of records and apply the patch.
+     * ------------------------------------------------------------------ */
+    f_lseek(&file_handle, 5); /* rewind to just after "PATCH" header */
+
     int err = 0;
-    uint8_t rec[3];
 
     for (;;) {
         f_read(&file_handle, rec, 3, &br);
@@ -253,18 +321,34 @@ int ips_apply(uint32_t sram_addr, uint8_t index, uint32_t rom_base_addr) {
             uint16_t rle_count = ((uint16_t)rle[0] << 8) | rle[1];
             uint8_t  rle_val   = rle[2];
 
-            set_mcu_addr(rom_base_addr + offset);
+            /* Skip records entirely within the header region. */
+            if (offset + (uint32_t)rle_count <= adj) continue;
+            /* Trim leading bytes that fall within the header region. */
+            uint32_t rle_skip = (offset < adj) ? (adj - offset) : 0;
+            uint32_t sram_off = (offset < adj) ? 0 : (offset - adj);
+            uint16_t rle_write = (uint16_t)(rle_count - rle_skip);
+
+            set_mcu_addr(rom_base_addr + sram_off);
             FPGA_SELECT();
             FPGA_TX_BYTE(0x98);
-            for (uint16_t j = 0; j < rle_count; j++) {
+            for (uint16_t j = 0; j < rle_write; j++) {
                 FPGA_TX_BYTE(rle_val);
                 FPGA_WAIT_RDY();
             }
             FPGA_DESELECT();
         } else {
-            /* Data record: hunk_size bytes of replacement data */
-            uint32_t remain   = hunk_size;
-            uint32_t cur_off  = offset;
+            /* Data record: hunk_size bytes of replacement data. */
+            /* Skip records entirely within the header region. */
+            if (offset + (uint32_t)hunk_size <= adj) {
+                f_lseek(&file_handle, file_handle.fptr + hunk_size);
+                continue;
+            }
+            /* Seek past any leading bytes that fall within the header region. */
+            uint32_t file_skip = (offset < adj) ? (adj - offset) : 0;
+            if (file_skip > 0)
+                f_lseek(&file_handle, file_handle.fptr + file_skip);
+            uint32_t remain  = hunk_size - file_skip;
+            uint32_t cur_off = (offset < adj) ? 0 : (offset - adj);
             while (remain > 0) {
                 UINT to_read = (remain > sizeof(file_buf))
                                ? (UINT)sizeof(file_buf)
@@ -281,6 +365,7 @@ int ips_apply(uint32_t sram_addr, uint8_t index, uint32_t rom_base_addr) {
 ips_apply_done:
     file_close();
     if (err) printf("ips_apply: error during patching\n");
-    else     printf("ips_apply: done\n");
-    return err ? -1 : 0;
+    else     printf("ips_apply: done, adj=%lu adj_max_end=0x%lx\n",
+                    (unsigned long)adj, (unsigned long)adj_max_end);
+    return err ? 0 : adj_max_end;
 }
