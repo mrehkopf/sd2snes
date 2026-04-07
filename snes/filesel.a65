@@ -574,7 +574,7 @@ select_item:
 select_item_cont
   rts
 sel_is_file
-  jsr select_file
+  jsr ips_select_file
   bra select_item_cont
 sel_is_parent
   jsr select_parent

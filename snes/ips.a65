@@ -1,0 +1,268 @@
+.link page $c0
+
+#include "memmap.i65"
+#include "dma.i65"
+
+; ===========================================================================
+; ips_select_file
+;
+; Drop-in replacement for the `jsr select_file` call in filesel.a65
+; sel_is_file.  Queries the MCU for IPS patches that match the selected ROM,
+; then either:
+;   - loads the ROM directly if no patches were found, or
+;   - shows the IPS patch selection dialog and loads with the chosen patch
+;     index stored in MCU_PARAM+7.
+;
+; On entry: 8-bit A, 16-bit XY
+;           Y = 4*filesel_sel + 3  (points to TYPE byte in dirptr table)
+; ===========================================================================
+
+ips_select_file:
+    ; ---- Set up MCU_PARAM identically to the original select_file ----
+    dey                         ; Y = 4N + 2  (bank-relative byte)
+    rep #$20 : .al
+    lda [dirptr_addr], y        ; word: {type_byte, bank_rel_byte}
+    and #$00ff                  ; keep bank_rel only; high byte forced to $00
+    sta @MCU_PARAM+6            ; 16-bit store: PARAM+6=bank_rel, PARAM+7=$00
+    dey
+    dey                         ; Y = 4N + 0  (file-entry lo-word)
+    lda [dirptr_addr], y        ; lo-word of file entry address
+    sta @MCU_PARAM+4            ; PARAM+4..5
+    lda #!FILESEL_CWD
+    sta @MCU_PARAM              ; PARAM+0..1 = lo-word of FILESEL_CWD
+
+    sep #$20 : .as
+    lda #^FILESEL_CWD
+    sta @MCU_PARAM+2            ; PARAM+2 = bank of FILESEL_CWD
+    lda #$00
+    sta @MCU_PARAM+3
+
+    ; ---- Save dirent info for ROM name display inside ips_patch_menu ----
+    ; dirent_bank = MCU_PARAM+6 + $C0  (sub-bank byte → SNES ROM bank)
+    lda @MCU_PARAM+6
+    clc
+    adc #$c0
+    sta dirent_bank             ; lo byte of the dirent_bank word
+    rep #$20 : .al
+    lda @MCU_PARAM+4            ; lo-word of file entry address
+    sep #$20 : .as
+    tax                         ; X = 16-bit lo-word (rep #$10 still active)
+    stx dirent_addr             ; 16-bit store to dirent_addr word
+
+    ; ---- Query MCU for IPS patches (WRAM_WAIT_MCU pattern) ----
+    ; NMI stays enabled so the screen keeps refreshing while the MCU scans
+    ; the SD card.
+    phb
+    lda #$00
+    pha
+    plb                         ; DB = $00 for MCU port access
+    jsr draw_loading_window     ; push + display loading indicator
+    lda #$00
+    sta @SNES_CMD               ; clear ready flag so WRAM_WAIT_MCU does not
+                                ; return immediately with a stale $55
+    lda #CMD_QUERY_IPS_PATCHES
+    sta @MCU_CMD                ; trigger the query
+    jsl @WRAM_WAIT_MCU          ; spin until MCU writes $55 to SNES_CMD
+
+    jsr pop_window              ; remove loading indicator tile region
+
+    plb                         ; restore data bank
+
+    ; ---- How many patches did the MCU find? ----
+    sep #$20 : .as
+    rep #$10 : .xl
+    lda @IPS_LIST               ; byte 0 of IPS list = num_patches
+    beq ips_sf_no_patch         ; zero → load ROM without a patch
+
+    ; ---- Show IPS selection menu ----
+    jsr ips_patch_menu          ; A = 0 (no patch) .. N (patch N), $FF = B cancel
+
+    cmp #$ff
+    beq ips_sf_cancel           ; B pressed → abort load entirely
+
+    ; Store selected IPS index into MCU_PARAM+7 (0 = no patch, 1..N = patch N)
+    sta @MCU_PARAM+7
+
+ips_sf_no_patch:
+    ; ---- Trigger CMD_LOADROM as usual ----
+    sep #$20 : .as
+    lda #CMD_LOADROM
+    jsr game_handshake          ; disables NMI, loads ROM, resets SNES
+
+ips_sf_cancel:
+    rts
+
+
+; ===========================================================================
+; ips_patch_menu
+;
+; Draws a centred dialog that lists "[No patch]" plus up to IPS_MAX_PATCHES
+; named IPS patches and lets the user choose one with A or cancel with B.
+;
+; Reads:   IPS_LIST + 0 = num_patches (must be >= 1 on entry)
+; Returns: A = 0 (no patch selected)
+;             1 .. num_patches (patch N selected)
+;             $FF (B button pressed, cancel)
+; Clobbers: window_x/y/w/h/taddr/tbank, print_*, listsel_*, bar_*,
+;           ips_idx_tmp
+; Note:    processor flags on entry must have M=1 (8-bit A), X=0 (16-bit XY).
+; ===========================================================================
+
+ips_patch_menu:
+    php                         ; save caller flags (M=1, X=0)
+    sep #$20 : .as
+    rep #$10 : .xl
+
+    ; ---- window_h = num_patches + 4 ----
+    ; Rows: [top-border | ROM-name-header | [No patch] | patch-1..N | bot-border]
+    lda @IPS_LIST               ; num_patches
+    clc
+    adc #$04
+    sta window_h
+
+    ; ---- Centre vertically: window_y = (28 - window_h) / 2 ----
+    lda #$1c                    ; 28 SNES tile rows
+    sec
+    sbc window_h
+    lsr
+    sta window_y
+
+    lda #$02
+    sta window_x
+    lda #$3c                    ; 60 chars wide
+    sta window_w
+
+    ; ---- Window title ----
+    lda #^text_ips_header
+    sta window_tbank
+    rep #$20 : .al
+    lda #!text_ips_header
+    sta window_taddr
+    sep #$20 : .as
+
+    jsr push_window
+    jsr window_greyout
+    jsr draw_window
+
+    ; ==== Row: ROM filename (non-selectable header, palette 0 = white) ====
+    ; print_y = window_y + 1  (first content row inside top border)
+    lda window_y
+    inc
+    sta print_y
+    lda #$04                    ; left margin
+    sta print_x
+    stz print_pal               ; palette 0 = white
+
+    ; source = bank dirent_bank, address dirent_addr + 6
+    ; (offset +6 skips the 6-byte size field in the directory entry to reach
+    ; the null-terminated filename)
+    lda dirent_bank             ; bank byte
+    sta print_bank
+    rep #$20 : .al
+    lda dirent_addr
+    clc
+    adc #$0006                  ; skip size field
+    tax                         ; X = 16-bit source lo-word
+    sep #$20 : .as
+    stx print_src               ; 16-bit store (X is 16-bit)
+    lda #52                     ; max chars (60 wide - 4+4 margins)
+    sta print_count
+    jsr hiprint
+
+    ; ==== Row: [No patch]  (selectable item 0, palette 0 = white) ====
+    lda window_y
+    clc
+    adc #$02                    ; print_y = window_y + 2
+    sta print_y
+    lda #$04
+    sta print_x
+    stz print_pal
+    lda #^text_ips_nopatch
+    sta print_bank
+    rep #$20 : .al
+    lda #!text_ips_nopatch
+    tax
+    sep #$20 : .as
+    stx print_src
+    lda #52
+    sta print_count
+    jsr hiprint
+
+    ; ==== Rows: patch display names (items 1..N, palette 2 = green) ====
+    ; Name[idx] is stored at IPS_LIST + 1 + idx * IPS_NAME_LEN  (64 bytes each)
+    stz ips_idx_tmp             ; loop counter: idx = 0
+
+    lda window_y
+    clc
+    adc #$03                    ; first patch name row = window_y + 3
+    sta print_y
+
+ips_pm_print_loop:
+    sep #$20 : .as
+    lda ips_idx_tmp
+    cmp @IPS_LIST               ; done when idx == num_patches
+    beq ips_pm_print_done
+
+    lda #$02                    ; palette 2 = green
+    sta print_pal
+    lda #$04
+    sta print_x
+    lda #52
+    sta print_count
+
+    ; address = IPS_LIST + 1 + idx * 64
+    rep #$20 : .al
+    lda ips_idx_tmp
+    and #$00ff                  ; zero-extend 8-bit idx to 16 bits
+    asl : asl : asl : asl : asl : asl  ; * 64 (= IPS_NAME_LEN)
+    clc
+    adc #!IPS_LIST              ; + lo-word of IPS_LIST ($5000)
+    tax                         ; X = base of name[idx] in IPS bank
+    inx                         ; + 1 to skip count byte at IPS_LIST+0
+    sep #$20 : .as
+    stx print_src
+    lda #^IPS_LIST              ; bank $FF
+    sta print_bank
+
+    jsr hiprint                 ; flags restored to M=1, X=0 by hiprint's plp
+
+    sep #$20 : .as
+    inc ips_idx_tmp
+    inc print_y
+    bra ips_pm_print_loop
+
+ips_pm_print_done:
+
+    ; ==== Set up and run menu_select ====
+    ;
+    ; Coordinate system: bar_y = (bar_yl - 1) * 8 pixels.
+    ; Text at print_y = P maps to screen tile row P.
+    ; bar_yl = P aligns bar with text at print_y = P + 1.
+    ;
+    ; Our first selectable item ("[No patch]") is at print_y = window_y + 2.
+    ; For bar alignment we need bar_yl = window_y + 1 at sel = 0.
+    ; menu_select initialises bar_yl = window_y + sel*step = window_y.
+    ; So we add 1 to window_y before calling menu_select.
+    ; draw_window was already completed above; this does not re-draw borders.
+    sep #$20 : .as
+    inc window_y
+
+    lda @IPS_LIST               ; num_patches
+    inc                         ; + 1 for the "[No patch]" entry
+    sta listsel_max
+    lda #$01
+    sta listsel_step
+    lda #$00                    ; only A selects; B -> $FF cancel
+    sta listsel_pickbutton
+
+    jsr menu_select             ; A = 0..N (selection) or $FF (cancel)
+
+    ; Preserve result across pop_window (which clobbers A).
+    sep #$20 : .as
+    sta ips_idx_tmp
+
+    jsr pop_window              ; restore tile region; restores flags M=1,X=0
+
+    plp                         ; restore caller's flags
+    lda ips_idx_tmp             ; reload result (8-bit)
+    rts
