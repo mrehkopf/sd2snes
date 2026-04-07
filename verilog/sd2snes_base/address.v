@@ -116,6 +116,15 @@ assign IS_SAVERAM_pre = (~map_unlock & SAVERAM_MASK[0])
                       ? ((SNES_ADDR_early[23:19] == 5'b00010)
                          & (SNES_ADDR_early[15:12] == 4'b0101)
                         )
+/*  Sufami Turbo: Slot A SRAM @ Bank 0x60-0x63, Offset 0x8000-0xFFFF
+ *  Banks 0x60-0x63: A23=0,A22=1,A21=1,A20=0  (~A20 excludes Slot B SRAM 0x70-0x73) */
+                      :(MAPPER_DEC[3'b101])
+                      ? ((SNES_ADDR_early[22:21] == 2'b11)
+                         & ~SNES_ADDR_early[23]
+                         & ~SNES_ADDR_early[20]
+                         & SNES_ADDR_early[15]
+                         & (~SNES_ROMSEL)
+                        )
 /*  Menu mapper: 8Mbit "SRAM" @ Bank 0xf0-0xff (entire banks!) */
                       :(MAPPER_DEC[3'b111])
                       ? (&SNES_ADDR_early[23:20])
@@ -212,6 +221,17 @@ assign SRAM_SNES_ADDR = IS_PATCH
                               ? (24'h900000 + {bs_page,bs_page_offset})
                               : (BSX_ADDR & 24'h0fffff)
                            )
+                           :(MAPPER_DEC[3'b101])  // Sufami Turbo
+                           ?(IS_SAVERAM
+                             ? SAVERAM_ADDR + ({SNES_ADDR[20:16], SNES_ADDR[14:0]}
+                                             & SAVERAM_MASK)
+                             : (~SNES_ADDR[22] & ~SNES_ADDR[21]) // BIOS banks 00-1F, 80-9F
+                             ? ({6'b0, SNES_ADDR[18:16], SNES_ADDR[14:0]})
+                             : (~SNES_ADDR[22] &  SNES_ADDR[21]) // Slot A ROM banks 20-3F, A0-BF
+                             ? (24'h200000 | ({4'b0, SNES_ADDR[20:16], SNES_ADDR[14:0]}
+                                            & ROM_MASK))  // Slot A ROM at PSRAM 0x200000
+                             : (24'h600000 | {9'b0, SNES_ADDR[14:0]}) // Slot B absent: zeroed region, BIOS reads 0x00 != "BANDAI SFC-ADX"
+                            )
                            :(MAPPER_DEC[3'b110])
                            ?(IS_SAVERAM
                              ? SAVERAM_ADDR + ((SNES_ADDR[14:0] - 15'h6000)

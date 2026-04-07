@@ -364,6 +364,15 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       set_fpga_time(get_bcdtime());
     }
   }
+  if(romprops.mapper_id==5) {
+    printf("Sufami Turbo ROM\n");
+    printf("Loading ST BIOS %s...\n", STBIOS_FW);
+    load_sram_offload((uint8_t*)STBIOS_FW, 0x000000, LOADRAM_AUTOSKIP_HEADER);
+    if(file_res) snes_menu_errmsg(MENU_ERR_SUPPLFILE, (void*)STBIOS_FW);
+    /* Zero Slot B header region (PSRAM 0x600000) so BIOS reads 0x00 there
+       and does not detect a spurious second cart (would trigger dual-cart wait) */
+    sram_memset(0x600000, 0x100, 0x00);
+  }
   if(romprops.has_dspx) {
     printf("DSPx game. Loading firmware image %s...\n", romprops.dsp_fw);
     load_dspx(romprops.dsp_fw, romprops.fpga_features);
@@ -390,6 +399,10 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     romprops.srambase       = 0;
     romprops.sramsize_bytes = romprops.ramsize_bytes;
     rammask = 1;
+  } else if(romprops.mapper_id == 5) {
+    /* Sufami Turbo: SRAM size comes from ST header byte 0x37, not standard header.
+       header.ramsize is never populated for ST carts (early return in smc_id). */
+    rammask = romprops.ramsize_bytes ? (romprops.ramsize_bytes - 1) : 0;
   } else if(romprops.header.ramsize == 0) {
     rammask = 0;
   } else {
