@@ -114,6 +114,11 @@ void prepare_reset() {
     save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
     writeled(0);
   }
+  if(slotb_ramsize_bytes && fpga_test() == FPGA_TEST_TOKEN) {
+    writeled(1);
+    save_srm((uint8_t*)slotb_filename, slotb_ramsize_bytes, 0xE80000);
+    writeled(0);
+  }
   // don't save SGB RTC since we are in reset and it may be undefined
   rdyled(1);
   readled(1);
@@ -123,7 +128,8 @@ void prepare_reset() {
   snes_reset(1);
   fpga_dspx_reset(1);
   delay_ms(200);
-  slotb_filename[0] = 0; /* clear Slot B selection on every return-to-menu */
+  slotb_filename[0] = 0;     /* clear Slot B selection on every return-to-menu */
+  slotb_ramsize_bytes = 0;
 }
 
 void snes_init() {
@@ -314,6 +320,7 @@ uint8_t snes_main_loop() {
           printf("SaveRAM CRC: 0x%04lx; saving %s\n", saveram_crc, file_lfn);
           writeled(1);
           save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+          if(slotb_ramsize_bytes) save_srm((uint8_t*)slotb_filename, slotb_ramsize_bytes, 0xE80000);
           last_save_failed = save_failed;
           save_failed = file_res ? 1 : 0;
           didnotsave = save_failed ? 25 : 0;
@@ -324,6 +331,7 @@ uint8_t snes_main_loop() {
           diffcount=0;
           writeled(1);
           save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
+          if(slotb_ramsize_bytes) save_srm((uint8_t*)slotb_filename, slotb_ramsize_bytes, 0xE80000);
           last_save_failed = save_failed;
           save_failed = file_res ? 1 : 0;
           didnotsave = save_failed ? 25 : 0;

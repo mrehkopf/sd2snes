@@ -32,6 +32,7 @@
 
 extern char current_filename[];
 extern char slotb_filename[];
+extern uint32_t slotb_ramsize_bytes;
 
 #define MENU_ADDR_BRAM_SRC           (0xFF00)
 

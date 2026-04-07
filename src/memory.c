@@ -235,6 +235,7 @@ uint16_t sram_writeblock(void* buf, uint32_t addr, uint16_t size) {
 
 char current_filename[258];
 char slotb_filename[258];
+uint32_t slotb_ramsize_bytes = 0; /* Slot B SRAM size in bytes; 0 when no Slot B or no SRAM */
 uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   UINT bytes_read;
   DWORD filesize;
@@ -389,6 +390,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
         /* Read Slot B SRAM size from ST header byte 0x37 (2KB units) */
         uint32_t slotb_ramsize = (uint32_t)sram_readbyte(0x600037) * 2048;
         slotb_rammask = slotb_ramsize ? (slotb_ramsize - 1) : 0;
+        slotb_ramsize_bytes = slotb_ramsize;
         /* Initialize Slot B SRAM region (0xE80000) and load from .srm file */
         if(slotb_ramsize) {
           sram_memset(0xE80000, slotb_ramsize, 0xFF);
