@@ -396,6 +396,14 @@ int main(void) {
           status_load_to_menu();
           cmd=0; /* stay in menu loop */
           break;
+        case SNES_CMD_SET_SLOTB_ROM:
+          get_selected_name(file_lfn);
+          printf("Set Slot B ROM: %s\n", file_lfn);
+          strncpy(slotb_filename, (char*)file_lfn, 257);
+          slotb_filename[257] = 0;
+          status_load_to_menu();
+          cmd=0; /* stay in menu loop, non-persistent */
+          break;
         case SNES_CMD_SET_AUTOBOOT_FAV:
           cfg_get_favorite_game(file_lfn, snes_get_mcu_param() & 0xff);
           printf("Set autoboot from favorite: %s\n", file_lfn);

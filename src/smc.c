@@ -65,6 +65,44 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
   uint8_t ext_coprocessor=0;
   snes_header_t* header = &(props->header);
 
+  /* Sufami Turbo detection: "BANDAI SFC-ADX" signature at byte 0 */
+  {
+    uint8_t st_hdr[0x40]; /* must be >= 0x38 to reach SRAM size at 0x37 */
+    file_readblock(st_hdr, file_offset, sizeof(st_hdr));
+    if(!memcmp(st_hdr, "BANDAI SFC-ADX", 14)) {
+      uint32_t sz = 1;
+      props->load_address   = 0x200000; /* Slot A ROM at physical PSRAM 0x200000 */
+      props->offset         = 0;
+      props->has_dspx       = 0;
+      props->has_st0010     = 0;
+      props->has_st0011     = 0;
+      props->has_st0018     = 0;
+      props->has_msu1       = 0;
+      props->has_spc7110    = 0;
+      props->has_cx4        = 0;
+      props->has_obc1       = 0;
+      props->has_gsu        = 0;
+      props->has_sa1        = 0;
+      props->has_sdd1       = 0;
+      props->has_combo      = 0;
+      props->srambase       = 0;
+      props->fpga_features  = 0;
+      props->fpga_dspfeat   = 0;
+      props->fpga_conf      = NULL;
+      while(sz < file_handle.fsize) sz <<= 1;
+      props->romsize_bytes    = sz;
+      /* ST header byte 0x37 = SRAM size in 2KB units (fullsnes spec) */
+      props->sramsize_bytes   = (uint32_t)st_hdr[0x37] * 2048;
+      props->ramsize_bytes    = props->sramsize_bytes;
+      props->expramsize_bytes = 0;
+      props->region           = 1; /* Japan only */
+      props->mapper_id        = 5; /* Sufami Turbo */
+      printf("Sufami Turbo: ROM=%ldKB SRAM=%ldKB\n",
+             sz >> 10, props->sramsize_bytes >> 10);
+      return;
+    }
+  }
+
   props->load_address = 0;
   props->has_dspx = 0;
   props->has_st0010 = 0;
@@ -432,4 +470,3 @@ uint8_t smc_headerscore(uint32_t addr, snes_header_t* header, uint32_t file_offs
   if(score < 0) score = 0;
   return score;
 }
-
