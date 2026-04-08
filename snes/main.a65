@@ -111,6 +111,13 @@ coldboot_bypass_autoboot:         ; clear autoboot flag, continue to menu
 coldboot_autoboot_out:
   jsr screen_on
   jsr filesel_init
+  ; If reset_to_menu == 2 ("Last"), navigate to last game's directory
+  sep #$20 : .as
+  lda @CFG_ENABLE_RST_TO_MENU
+  cmp #$02
+  bne +
+  jsr filesel_nav_last
++
   sep #$20 : .as
   lda @ST_RTC_VALID
   beq +

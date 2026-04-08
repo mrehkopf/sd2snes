@@ -555,8 +555,8 @@ menu_enttab_ingame:
  .byt  MTYPE_VALUE
  .word !mtext_ingame_shortreset
  .byt  ^mtext_ingame_shortreset
- .word !kv_onoff
- .byt  ^kv_onoff
+ .word !kv_rst_to_menu
+ .byt  ^kv_rst_to_menu
  .byt  OPTTYPE_KVBYTE
  .word !CFG_ENABLE_RST_TO_MENU
  .byt  ^CFG_ENABLE_RST_TO_MENU
@@ -915,6 +915,12 @@ kv_bsx_timesource:
 kv_onoff:
 .word $0000, !text_off : .byt ^text_off
 .word $0001, !text_on : .byt ^text_on
+.word $ffff
+
+kv_rst_to_menu:
+.word $0000, !text_off : .byt ^text_off
+.word $0001, !text_on : .byt ^text_on
+.word $0002, !text_nav_last : .byt ^text_nav_last
 .word $ffff
 
 kv_enabledisable:
