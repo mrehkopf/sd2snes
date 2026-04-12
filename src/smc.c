@@ -95,7 +95,7 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
       props->sramsize_bytes   = (uint32_t)st_hdr[0x37] * 2048;
       props->ramsize_bytes    = props->sramsize_bytes;
       props->expramsize_bytes = 0;
-      props->region           = 1; /* Japan only */
+      props->region           = 0; /* Japan only */
       props->mapper_id        = 5; /* Sufami Turbo */
       printf("Sufami Turbo: ROM=%ldKB SRAM=%ldKB\n",
              sz >> 10, props->sramsize_bytes >> 10);
