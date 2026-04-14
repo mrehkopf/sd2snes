@@ -108,6 +108,7 @@ wire [2:0] MAPPER;
 wire [7:0] SAVERAM_BASE;
 wire [23:0] SAVERAM_MASK;
 wire [23:0] ROM_MASK;
+wire [23:0] ROM_MASK_B;
 wire [7:0] SD_DMA_SRAM_DATA;
 wire [1:0] SD_DMA_TGT;
 wire [10:0] SD_DMA_PARTIAL_START;
@@ -621,6 +622,7 @@ mcu_cmd snes_mcu_cmd(
   .saveram_base_out(SAVERAM_BASE),
   .saveram_mask_out(SAVERAM_MASK),
   .rom_mask_out(ROM_MASK),
+  .rom_mask_b_out(ROM_MASK_B),
   .SD_DMA_EN(SD_DMA_EN),
   .SD_DMA_STATUS(SD_DMA_STATUS),
   .SD_DMA_NEXTADDR(SD_DMA_NEXTADDR),
@@ -693,6 +695,7 @@ address snes_addr(
   .SAVERAM_BASE(SAVERAM_BASE),
   .SAVERAM_MASK(SAVERAM_MASK),
   .ROM_MASK(ROM_MASK),
+  .ROM_MASK_B(ROM_MASK_B),
   .map_unlock(map_unlock),
   .map_Ex_rd_unlock(map_Ex_rd_unlock_r),
   .map_Ex_wr_unlock(map_Ex_wr_unlock_r),

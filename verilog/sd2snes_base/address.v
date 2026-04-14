@@ -34,6 +34,7 @@ module address(
   input [7:0] SAVERAM_BASE,
   input [23:0] SAVERAM_MASK,
   input [23:0] ROM_MASK,
+  input [23:0] ROM_MASK_B,
   input  map_unlock,
   input  map_Ex_rd_unlock,
   input  map_Ex_wr_unlock,
@@ -115,6 +116,14 @@ assign IS_SAVERAM_pre = (~map_unlock & SAVERAM_MASK[0])
                       :(MAPPER_DEC[3'b011])
                       ? ((SNES_ADDR_early[23:19] == 5'b00010)
                          & (SNES_ADDR_early[15:12] == 4'b0101)
+                        )
+/*  Sufami Turbo: Slot A SRAM @ Banks 0x60-0x6F (+mirrors 0xE0-0xEF), Slot B @ 0x70-0x7F (+0xF0-0xFF)
+ *  ROMSEL fires for full $0000-$FFFF in banks $60-$6F (and mirrors). The STBIOS dispatches
+ *  into SRAM at sub-$8000 offsets (e.g. $E0:$78F9), so no A15 guard and no ~A23 guard.
+ *  Match MiSTer SufamiMap: SRAM_BASE_SEL|SRAM_TURBO_SEL = CA[22:21]="11" & ~ROMSEL_N */
+                      :(MAPPER_DEC[3'b101])
+                      ? ((SNES_ADDR_early[22:21] == 2'b11)
+                         & (~SNES_ROMSEL)
                         )
 /*  Menu mapper: 8Mbit "SRAM" @ Bank 0xf0-0xff (entire banks!) */
                       :(MAPPER_DEC[3'b111])
@@ -212,6 +221,17 @@ assign SRAM_SNES_ADDR = IS_PATCH
                               ? (24'h900000 + {bs_page,bs_page_offset})
                               : (BSX_ADDR & 24'h0fffff)
                            )
+                           :(MAPPER_DEC[3'b101])  // Sufami Turbo
+                           ?(IS_SAVERAM
+                             ? SAVERAM_ADDR + ({SNES_ADDR[20:16], SNES_ADDR[14:0]}
+                                             & SAVERAM_MASK)
+                             : (~SNES_ADDR[22] & ~SNES_ADDR[21]) // BIOS banks 00-1F, 80-9F
+                             ? ({6'b0, SNES_ADDR[18:16], SNES_ADDR[14:0]})
+                             : (~SNES_ADDR[22] &  SNES_ADDR[21]) // Slot A ROM banks 20-3F, A0-BF
+                             ? (24'h200000 | ({4'b0, SNES_ADDR[20:16], SNES_ADDR[14:0]}
+                                            & ROM_MASK))  // Slot A ROM at PSRAM 0x200000
+                             : (24'h600000 | ({4'b0, SNES_ADDR[20:16], SNES_ADDR[14:0]} & ROM_MASK_B)) // Slot B ROM: ROM_MASK_B=0 → reads 0x600000 (zeroed, BIOS rejects)
+                            )
                            :(MAPPER_DEC[3'b110])
                            ?(IS_SAVERAM
                              ? SAVERAM_ADDR + ((SNES_ADDR[14:0] - 15'h6000)
