@@ -209,7 +209,7 @@ void usbint_set_state(unsigned open) {
 }
 
 #define NMI_COUNTER 0x2C0A
-#define VECTORS_SIZE 320
+#define VECTORS_SIZE 256
 #define VECTOR_SIZE 4
 #define SNAPSHOT_SIZE 2040
 
@@ -222,7 +222,7 @@ static uint16_t current_size  = 0;
 static uint8_t  ingame        = 0;
 static uint16_t vector_index  = 0;
 static uint8_t  nmi_state     = 0;
-static uint32_t vectors_total = 0;
+static uint16_t vectors_total = 0;
 
 static usbint_vector_t vectors[VECTORS_SIZE];
 
@@ -360,9 +360,7 @@ void usbint_recv_block(void) {
         else if (server_info.space == USBINT_SERVER_SPACE_NMI) {
             current_size  = (recv_buffer[count] << 8) | recv_buffer[count + 1];
             count += 2;
-            vectors_total = (recv_buffer[count] << 16) 
-                          | (recv_buffer[count + 1] << 8) 
-                          | recv_buffer[count + 2];
+            vectors_total = (recv_buffer[count] << 8) | recv_buffer[count + 1];
             count = server_info.size;
         }
         else {
@@ -913,7 +911,7 @@ int usbint_handler_dat(void) {
                     if (!(meta & (1 << 1)))
                         meta |= (get_snes_reset() & 1) << 1;
                     if ((meta & (1 << 1)) || !connected) break;
-                    delay_us(12);
+                    delay_us(8);
                 }
             }
             
