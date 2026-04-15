@@ -70,7 +70,7 @@ math_cont
   beq nobuttonspressed
 buttonspressed
   stz idle_count
-  lda bright_limit
+  lda menu_brightness ; restore normal brightness when button pressed
   tax
   stx tgt_bright
   ldx #$01
@@ -83,7 +83,7 @@ nobuttonspressed
   sep #$20 : .as
   bne +
 ; no input for a long time
-  ldx #$03
+  ldx #DIM_BRIGHTNESS
   stx tgt_bright
   ldx #$10
   stx fade_speed

@@ -291,8 +291,14 @@ text_filesel_selected_file .byt "Selected file", 0
 text_filesel_context_add_to_favorites .byt "Add to favorites", 0
 mdesc_filesel_context_add_to_favorites .byt "Add the selected file to favorites", 0
 
+text_filesel_context_set_as_autoboot .byt "Set as autoboot", 0
+mdesc_filesel_context_set_as_autoboot .byt "Boot this ROM automatically on next power-on (hold START to cancel)", 0
+
 text_filesel_favorites_context_remove_from_favorites .byt "Remove from favorites", 0
 mdesc_filesel_favorites_context_remove_from_favorites .byt "Remove the selected file from favorites", 0
+
+text_filesel_favorites_context_set_as_autoboot .byt "Set as autoboot", 0
+mdesc_filesel_favorites_context_set_as_autoboot .byt "Boot this ROM automatically on next power-on (hold START to cancel)", 0
 
 text_statusbar_play .byt "A:Play B:Back X:Menu", 0
 text_statusbar_keys .byt "A:Select B:Back X:Menu Y:Context", 0
