@@ -147,6 +147,7 @@
 #define ST_PAIRMODE                 ST_MCU_ADDR+$0002
 #define ST_NUM_FAVORITE_GAMES       ST_MCU_ADDR+$0003
 #define ST_AUTOBOOT_ENABLED         ST_MCU_ADDR+$0004
+#define ST_RESET_TO_MENU_ACTIVE     ST_MCU_ADDR+$0005
 
 #define ST_IS_U16                   ST_SNES_ADDR+$0000
 #define ST_U16_CFG                  ST_SNES_ADDR+$0001

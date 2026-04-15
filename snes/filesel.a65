@@ -1332,9 +1332,13 @@ filesel_nav_last:
   ; Bail out early if no directory path is stored
   lda @LAST_GAME_DIR
   beq fnl_out
-  ; Bail out early if no last game filename is stored
+  ; For Rom mode (3) also bail if no last game filename is stored
+  lda @CFG_ENABLE_RST_TO_MENU
+  cmp #$03
+  bne +
   lda @LAST_GAME
   beq fnl_out
++
   ; Navigate path components one by one.
   ; LAST_GAME_DIR = "/A/B/C" — start after leading '/'
   ldx #$0001
@@ -1360,6 +1364,11 @@ fnl_got_comp_eos:
   jsr fnl_enter_subdir    ; navigate into last path component
   ; fall through to file scan
 fnl_find_file:
+  ; Only pre-select ROM when mode is Rom (3); Folder (2) skips this
+  sep #$20 : .as
+  lda @CFG_ENABLE_RST_TO_MENU
+  cmp #$03
+  bne fnl_out
   jsr fnl_select_file
 fnl_out:
   sep #$20 : .as
@@ -1480,7 +1489,14 @@ fnl_es_not_found:
 fnl_append_cwd:
   sep #$20 : .as
   rep #$10 : .xl
-  ; Find the null-terminator of FILESEL_CWD
+  ; Point longptr at LAST_GAME_DIR ($FF1F00) for [longptr],y access
+  rep #$20 : .al
+  lda #$1F00
+  sta longptr
+  sep #$20 : .as
+  lda #$FF
+  sta longptr+2
+  ; Find the null-terminator of FILESEL_CWD using X (long,X)
   ldx #$0000
 fnl_ac_find_end:
   lda @FILESEL_CWD, x
@@ -1498,13 +1514,13 @@ fnl_ac_has_slash:
   lda #$2f
   sta @FILESEL_CWD, x
   inx
-  ; Copy path component
-  ldy testvar             ; fnl_comp_start
+  ; Copy path component via indirect long Y ([longptr],y = $B7, valid)
+  ldy testvar             ; Y = comp_start index
 fnl_ac_copy:
-  cpy testvar+2           ; fnl_comp_end
+  cpy testvar+2           ; Y == comp_end?
   beq fnl_ac_done
-  lda @LAST_GAME_DIR, y
-  sta @FILESEL_CWD, x
+  lda [longptr], y        ; LAST_GAME_DIR[Y] — indirect long Y, valid
+  sta @FILESEL_CWD, x     ; FILESEL_CWD[X] — long,X, valid
   inx
   iny
   bra fnl_ac_copy
@@ -1656,7 +1672,8 @@ fnl_cmp_file:
   php
   sep #$20 : .as
   rep #$10 : .xl
-  ldy #$0000
+  ldy #$0000              ; Y indexes entry string via [longptr]
+  ldx #$0000              ; X indexes LAST_GAME via long,X
 fnl_cf_loop:
   ; Read entry char; $01 = hidden extension dot
   lda [longptr], y
@@ -1666,14 +1683,15 @@ fnl_cf_loop:
 fnl_cf_not_ext:
   and #$DF
   sta mm_tmp
-  ; Read LAST_GAME[0] char
-  lda @LAST_GAME, y
+  ; Read LAST_GAME[X] char — long,X ($BF), valid in 65816
+  lda @LAST_GAME, x
   and #$DF
   cmp mm_tmp
   bne fnl_cf_no
   cmp #$00                ; both null = full match
   beq fnl_cf_yes
   iny
+  inx
   bra fnl_cf_loop
 fnl_cf_yes:
   plp

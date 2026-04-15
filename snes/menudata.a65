@@ -920,7 +920,8 @@ kv_onoff:
 kv_rst_to_menu:
 .word $0000, !text_off : .byt ^text_off
 .word $0001, !text_on : .byt ^text_on
-.word $0002, !text_nav_last : .byt ^text_nav_last
+.word $0002, !text_nav_folder : .byt ^text_nav_folder
+.word $0003, !text_nav_rom : .byt ^text_nav_rom
 .word $ffff
 
 kv_enabledisable:

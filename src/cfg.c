@@ -80,7 +80,7 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %s\n", CFG_1CHIP_TRANSIENT_FIXES, CFG.onechip_transient_fixes ? "true" : "false");
   f_puts("\n# Brightness limit - can be used to limit RGB output levels on S-CPUN based consoles\n", &file_handle);
   f_printf(&file_handle, "%s: %d\n", CFG_BRIGHTNESS_LIMIT, CFG.brightness_limit);
-  f_puts("\n# Reset to menu on short reset (0: off, 1: on, 2: on+restore last position)\n", &file_handle);
+  f_puts("\n# Reset to menu on short reset (0: off, 1: on, 2: on+return to last folder, 3: on+return to folder and pre-select ROM)\n", &file_handle);
   f_printf(&file_handle, "%s: %d\n", CFG_ENABLE_RST_TO_MENU, CFG.reset_to_menu);
   f_puts("\n# Initial cheats state when loading a game (true: enabled, false: disabled)\n", &file_handle);
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_CHEATS, CFG.enable_cheats ? "true" : "false");
@@ -224,7 +224,7 @@ int cfg_load() {
       if(tok.type == YAML_BOOL) {
         CFG.reset_to_menu = tok.boolvalue ? 1 : 0;
       } else {
-        CFG.reset_to_menu = tok.longvalue > 2 ? 1 : (uint8_t)tok.longvalue;
+        CFG.reset_to_menu = tok.longvalue > 3 ? 1 : (uint8_t)tok.longvalue;
       }
     }
     if(yaml_get_itemvalue(CFG_LED_BRIGHTNESS, &tok)) {

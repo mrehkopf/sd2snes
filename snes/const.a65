@@ -259,7 +259,7 @@ mdesc_browser_screensaver         .byt "Fade-out the screen after some time", 0
 mdesc_browser_screensaver_timeout .byt "Set time after which to fade the screen", 0
 mdesc_browser_ledbright           .byt "Change brightness of LEDs", 0
 mdesc_ingame_cheats               .byt "Whether to start out with cheats enabled. Can be changed using in-game buttons", 0
-mdesc_ingame_shortreset           .byt "Go back to menu on short reset (Off/On/Last). Last: return to last game folder and pre-select.", 0
+mdesc_ingame_shortreset           .byt "Go back to menu on short reset (Off/On/Folder/Rom). Folder: return to last game folder. Rom: also pre-select the ROM.", 0
 mdesc_ingame_enable               .byt "Required for in-game buttons and 7E/7F cheats", 0
 mdesc_ingame_buttons              .byt "Enable in-game buttons (reset, en/disable cheats", 127, 128, "). Requires in-game hook to be enabled.", 0
 mdesc_ingame_holdoff              .byt "Wait 10 seconds before enabling hook (helps some games boot with hook enabled)", 0
@@ -312,7 +312,8 @@ text_on_p1      .byt "On: P1", 0
 text_on_p2      .byt "On: P2", 0
 text_on         .byt "On", 0
 text_off        .byt "Off", 0
-text_nav_last   .byt "Last", 0
+text_nav_folder .byt "Folder", 0
+text_nav_rom    .byt "Rom", 0
 text_enabled    .byt "Enabled", 0
 text_disabled   .byt "Disabled", 0
 text_normal     .byt "Normal", 0

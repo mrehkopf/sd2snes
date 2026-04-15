@@ -147,7 +147,8 @@ typedef struct __attribute__ ((__packed__)) _mcu_status {
   uint8_t num_recent_games;
   uint8_t pairmode;
   uint8_t num_favorite_games;
-  uint8_t autoboot_enabled;    /* 1 if an autoboot ROM is configured */
+  uint8_t autoboot_enabled;        /* 1 if an autoboot ROM is configured */
+  uint8_t reset_to_menu_active;    /* 1 if this boot is a reset-to-menu (not cold power-on) */
 } mcu_status_t;
 
 typedef struct __attribute__ ((__packed__)) _snes_status {

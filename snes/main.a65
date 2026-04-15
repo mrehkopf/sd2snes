@@ -111,11 +111,14 @@ coldboot_bypass_autoboot:         ; clear autoboot flag, continue to menu
 coldboot_autoboot_out:
   jsr screen_on
   jsr filesel_init
-  ; If reset_to_menu == 2 ("Last"), navigate to last game's directory
+  ; If reset_to_menu >= 2 (Folder/Rom) AND this was a reset-to-menu (not cold power-on):
+  ; navigate to last game's directory and optionally pre-select the ROM.
   sep #$20 : .as
   lda @CFG_ENABLE_RST_TO_MENU
   cmp #$02
-  bne +
+  bcc +                          ; < 2 → Off or On, skip nav
+  lda @ST_RESET_TO_MENU_ACTIVE
+  beq +                          ; not a reset-to-menu boot → skip nav
   jsr filesel_nav_last
 +
   sep #$20 : .as
