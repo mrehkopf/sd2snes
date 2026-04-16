@@ -1315,3 +1315,393 @@ filesel_request_filelist_wait_mcu:
   plb
   plp
   rts
+
+; =========================================================
+; filesel_nav_last:
+;   Navigate the file browser to the folder of the most
+;   recently played game.
+;   Folder mode (CFG_ENABLE_RST_TO_MENU == 2): folder only.
+;   Rom mode   (CFG_ENABLE_RST_TO_MENU == 3): folder + pre-select ROM.
+;   Called after filesel_init when reset_to_menu >= 2 AND
+;   ST_RESET_TO_MENU_ACTIVE is set (i.e. the console returned to
+;   the menu via a short reset, not via a cold power-on).
+;   Precondition: filesel_init has already been called.
+;   Uses scratch variables: testvar[0..5], longptr,
+;   dirent_addr, dirent_bank, mm_tmp.
+; =========================================================
+filesel_nav_last:
+  php
+  sep #$20 : .as
+  rep #$10 : .xl
+  ; Bail out early if no directory path is stored
+  lda @LAST_GAME_DIR
+  beq fnl_out
+  ; For Rom mode (3) also bail if no last game filename is stored
+  lda @CFG_ENABLE_RST_TO_MENU
+  cmp #$03
+  bne +
+  lda @LAST_GAME
+  beq fnl_out
++
+  ; Navigate path components one by one.
+  ; LAST_GAME_DIR = "/A/B/C" — start after leading '/'
+  ldx #$0001
+fnl_comp_loop:
+  lda @LAST_GAME_DIR, x
+  beq fnl_find_file       ; end of path → already in correct dir
+  stx testvar             ; fnl_comp_start = x
+fnl_find_comp_end:
+  lda @LAST_GAME_DIR, x
+  beq fnl_got_comp_eos    ; null = last component
+  cmp #$2f                ; '/'
+  beq fnl_got_comp_slash
+  inx
+  bra fnl_find_comp_end
+fnl_got_comp_slash:
+  stx testvar+2           ; fnl_comp_end = x (exclusive, '/' position)
+  jsr fnl_enter_subdir
+  bcc fnl_out             ; not found — bail out
+  inx                     ; skip '/'
+  bra fnl_comp_loop
+fnl_got_comp_eos:
+  stx testvar+2           ; fnl_comp_end = x (at null)
+  jsr fnl_enter_subdir    ; navigate into last path component
+  ; fall through to file scan
+fnl_find_file:
+  ; Only pre-select ROM when mode is Rom (3); Folder (2) skips this
+  sep #$20 : .as
+  lda @CFG_ENABLE_RST_TO_MENU
+  cmp #$03
+  bne fnl_out
+  jsr fnl_select_file
+fnl_out:
+  sep #$20 : .as
+  lda #$01
+  sta filesel_dirty
+  plp
+  rts
+
+; =========================================================
+; fnl_enter_subdir:
+;   Scan current directory for a TYPE_SUBDIR entry whose
+;   name matches LAST_GAME_DIR[comp_start..comp_end).
+;   On match: saves parent state to dirlog, appends the
+;   component to FILESEL_CWD, requests the new listing,
+;   and resets dir pointers.
+;   Returns carry set = found, carry clear = not found.
+; =========================================================
+fnl_enter_subdir:
+  rep #$20 : .al
+  lda #$0000
+  sta testvar+4           ; current entry byte offset = 0
+fnl_es_loop:
+  ; Point longptr at current entry in $C1
+  lda testvar+4
+  sta longptr
+  sep #$20 : .as
+  lda #$C1
+  sta longptr+2
+  ; bank offset of entry (= 0 → end of list)
+  rep #$10 : .xl
+  ldy #$0002
+  sep #$20 : .as
+  lda [longptr], y
+  beq fnl_es_not_found
+  ; check type == TYPE_SUBDIR
+  iny
+  lda [longptr], y
+  cmp #TYPE_SUBDIR
+  bne fnl_es_next
+  ; Read name address: entry[0-1] → dirent_addr, entry[2]+$C0 → dirent_bank
+  ldy #$0000
+  rep #$20 : .al
+  lda [longptr], y
+  sta dirent_addr
+  ldy #$0002
+  sep #$20 : .as
+  lda [longptr], y
+  clc
+  adc #$C0
+  sta dirent_bank
+  ; Point longptr at name start (dirent_addr + 6 skips size string)
+  rep #$20 : .al
+  lda dirent_addr
+  clc
+  adc #$0006
+  sta longptr
+  sep #$20 : .as
+  lda dirent_bank
+  sta longptr+2
+  ; Compare name against path component
+  jsr fnl_cmp_subdir
+  bcc fnl_es_next
+  ; ---- Match: save dirlog entry ----
+  ; Layout (8 bytes): dirstart_addr(2), dirstart_bank(1),
+  ;                   dirptr_addr(2), dirptr_bank(1), filesel_sel(2)
+  rep #$20 : .al
+  ldy #$0000
+  lda #$0000
+  sta [dirlog_idx], y     ; dirstart_addr = 0
+  iny
+  iny
+  lda #$00C1
+  sta [dirlog_idx], y     ; dirstart_bank lo = $C1 (hi byte overwritten next)
+  iny
+  lda testvar+4           ; dirptr_addr = entry offset (screen starts here on B)
+  sta [dirlog_idx], y
+  iny
+  iny
+  lda #$00C1
+  sta [dirlog_idx], y     ; dirptr_bank lo = $C1
+  iny
+  lda #$0000
+  sta [dirlog_idx], y     ; filesel_sel = 0
+  ; Advance dirlog_idx by 8
+  lda dirlog_idx
+  clc
+  adc #$0008
+  sta dirlog_idx
+  ; Append component to FILESEL_CWD and reload directory
+  jsr fnl_append_cwd
+  jsr filesel_request_filelist
+  rep #$20 : .al
+  lda #$0000
+  sta @dirptr_addr
+  sta @dirstart_addr
+  sep #$20 : .as
+  sta @filesel_sel
+  sta @direntry_xscroll
+  sta @direntry_xscroll_state
+  sec                     ; carry set = found
+  rts
+fnl_es_next:
+  rep #$20 : .al
+  lda testvar+4
+  clc
+  adc #$0004
+  sta testvar+4
+  bra fnl_es_loop
+fnl_es_not_found:
+  clc                     ; carry clear = not found
+  rts
+
+; =========================================================
+; fnl_append_cwd:
+;   Append '/' + LAST_GAME_DIR[comp_start..comp_end) to
+;   FILESEL_CWD and null-terminate.
+; =========================================================
+fnl_append_cwd:
+  sep #$20 : .as
+  rep #$10 : .xl
+  ; Point longptr at LAST_GAME_DIR ($FF1F00) for [longptr],y access
+  rep #$20 : .al
+  lda #$1F00
+  sta longptr
+  sep #$20 : .as
+  lda #$FF
+  sta longptr+2
+  ; Find the null-terminator of FILESEL_CWD using X (long,X)
+  ldx #$0000
+fnl_ac_find_end:
+  lda @FILESEL_CWD, x
+  beq fnl_ac_at_end
+  inx
+  bra fnl_ac_find_end
+fnl_ac_at_end:
+  ; x is at null. Back up to last char and check for '/'
+  dex
+  lda @FILESEL_CWD, x
+  cmp #$2f
+  beq fnl_ac_has_slash
+  inx                     ; move x past last non-slash char
+fnl_ac_has_slash:
+  lda #$2f
+  sta @FILESEL_CWD, x
+  inx
+  ; Copy path component via indirect long Y ([longptr],y = $B7, valid)
+  ldy testvar             ; Y = comp_start index
+fnl_ac_copy:
+  cpy testvar+2           ; Y == comp_end?
+  beq fnl_ac_done
+  lda [longptr], y        ; LAST_GAME_DIR[Y] — indirect long Y, valid
+  sta @FILESEL_CWD, x     ; FILESEL_CWD[X] — long,X, valid
+  inx
+  iny
+  bra fnl_ac_copy
+fnl_ac_done:
+  lda #$00
+  sta @FILESEL_CWD, x
+  rts
+
+; =========================================================
+; fnl_select_file:
+;   Scan the current directory for a TYPE_ROM or TYPE_SPC
+;   entry whose name matches LAST_GAME[0] (just filename).
+;   On match: sets filesel_sel and adjusts dirptr_addr so
+;   the entry is visible.
+; =========================================================
+fnl_select_file:
+  rep #$20 : .al
+  lda #$0000
+  sta testvar+4           ; current entry byte offset = 0
+fnl_sf_loop:
+  lda testvar+4
+  sta longptr
+  sep #$20 : .as
+  lda #$C1
+  sta longptr+2
+  rep #$10 : .xl
+  ldy #$0002
+  sep #$20 : .as
+  lda [longptr], y
+  beq fnl_sf_done         ; end of list
+  iny
+  lda [longptr], y
+  cmp #TYPE_ROM
+  beq fnl_sf_check
+  cmp #TYPE_SPC
+  beq fnl_sf_check
+  bra fnl_sf_next
+fnl_sf_check:
+  ldy #$0000
+  rep #$20 : .al
+  lda [longptr], y
+  sta dirent_addr
+  ldy #$0002
+  sep #$20 : .as
+  lda [longptr], y
+  clc
+  adc #$C0
+  sta dirent_bank
+  rep #$20 : .al
+  lda dirent_addr
+  clc
+  adc #$0006
+  sta longptr
+  sep #$20 : .as
+  lda dirent_bank
+  sta longptr+2
+  jsr fnl_cmp_file
+  bcc fnl_sf_next
+  ; Match: compute entry index = testvar+4 / 4
+  rep #$20 : .al
+  lda testvar+4
+  lsr
+  lsr                     ; A = entry index
+  cmp listdisp
+  bcs fnl_sf_scroll
+  ; index < listdisp: show from top, cursor at index
+  sta @filesel_sel
+  lda #$0000
+  sta @dirptr_addr
+  sta @dirstart_addr
+  bra fnl_sf_done
+fnl_sf_scroll:
+  ; index >= listdisp: scroll so entry appears last on screen
+  pha
+  sec
+  sbc listdisp
+  inc
+  asl
+  asl                     ; dirptr_addr = (index - listdisp + 1) * 4
+  sta @dirptr_addr
+  sta @dirstart_addr
+  pla
+  lda listdisp
+  dec
+  sta @filesel_sel
+  bra fnl_sf_done
+fnl_sf_next:
+  rep #$20 : .al
+  lda testvar+4
+  clc
+  adc #$0004
+  sta testvar+4
+  bra fnl_sf_loop
+fnl_sf_done:
+  rts
+
+; =========================================================
+; fnl_cmp_subdir:
+;   Case-insensitive compare of name at longptr[0..] against
+;   LAST_GAME_DIR[comp_start..comp_end).
+;   Subdir entry names end with '/' in PSRAM.
+;   Returns carry set = match, carry clear = no match.
+; =========================================================
+fnl_cmp_subdir:
+  php
+  sep #$20 : .as
+  rep #$10 : .xl
+  ldy #$0000
+  ldx testvar             ; X = comp_start
+fnl_cs_loop:
+  cpx testvar+2           ; end of target component?
+  beq fnl_cs_eot
+  ; Read and uppercase entry char
+  lda [longptr], y
+  and #$DF
+  sta mm_tmp
+  ; Read and uppercase target char
+  lda @LAST_GAME_DIR, x
+  and #$DF
+  cmp mm_tmp
+  bne fnl_cs_no
+  inx
+  iny
+  bra fnl_cs_loop
+fnl_cs_eot:
+  ; Target exhausted: entry must have trailing '/' (or null)
+  lda [longptr], y
+  cmp #$2f
+  beq fnl_cs_yes
+  cmp #$00
+  beq fnl_cs_yes
+fnl_cs_no:
+  plp
+  clc
+  rts
+fnl_cs_yes:
+  plp
+  sec
+  rts
+
+; =========================================================
+; fnl_cmp_file:
+;   Case-insensitive compare of name at longptr[0..] against
+;   LAST_GAME[0] (null-terminated filename).
+;   Handles hide_extensions: $01 in entry name treated as '.'.
+;   Returns carry set = match, carry clear = no match.
+; =========================================================
+fnl_cmp_file:
+  php
+  sep #$20 : .as
+  rep #$10 : .xl
+  ldy #$0000              ; Y indexes entry string via [longptr]
+  ldx #$0000              ; X indexes LAST_GAME via long,X
+fnl_cf_loop:
+  ; Read entry char; $01 = hidden extension dot
+  lda [longptr], y
+  cmp #$01
+  bne fnl_cf_not_ext
+  lda #$2e                ; treat $01 as '.'
+fnl_cf_not_ext:
+  and #$DF
+  sta mm_tmp
+  ; Read LAST_GAME[X] char — long,X ($BF), valid in 65816
+  lda @LAST_GAME, x
+  and #$DF
+  cmp mm_tmp
+  bne fnl_cf_no
+  cmp #$00                ; both null = full match
+  beq fnl_cf_yes
+  iny
+  inx
+  bra fnl_cf_loop
+fnl_cf_yes:
+  plp
+  sec
+  rts
+fnl_cf_no:
+  plp
+  clc
+  rts

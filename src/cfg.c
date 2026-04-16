@@ -80,8 +80,8 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %s\n", CFG_1CHIP_TRANSIENT_FIXES, CFG.onechip_transient_fixes ? "true" : "false");
   f_puts("\n# Brightness limit - can be used to limit RGB output levels on S-CPUN based consoles\n", &file_handle);
   f_printf(&file_handle, "%s: %d\n", CFG_BRIGHTNESS_LIMIT, CFG.brightness_limit);
-  f_puts("\n# Reset to menu on short reset\n", &file_handle);
-  f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_RST_TO_MENU, CFG.reset_to_menu ? "true" : "false");
+  f_puts("\n# Reset to menu on short reset (0: off, 1: on, 2: on+return to last folder, 3: on+return to folder and pre-select ROM)\n", &file_handle);
+  f_printf(&file_handle, "%s: %d\n", CFG_ENABLE_RST_TO_MENU, CFG.reset_to_menu);
   f_puts("\n# Initial cheats state when loading a game (true: enabled, false: disabled)\n", &file_handle);
   f_printf(&file_handle, "%s: %s\n", CFG_ENABLE_CHEATS, CFG.enable_cheats ? "true" : "false");
   f_puts("\n\n# IRQ hook related settings\n", &file_handle);
@@ -221,7 +221,11 @@ int cfg_load() {
       CFG.brightness_limit = tok.longvalue & 0xf;
     }
     if(yaml_get_itemvalue(CFG_ENABLE_RST_TO_MENU, &tok)) {
-      CFG.reset_to_menu = tok.boolvalue ? 1 : 0;
+      if(tok.type == YAML_BOOL) {
+        CFG.reset_to_menu = tok.boolvalue ? 1 : 0;
+      } else {
+        CFG.reset_to_menu = tok.longvalue > 3 ? 1 : (uint8_t)tok.longvalue;
+      }
     }
     if(yaml_get_itemvalue(CFG_LED_BRIGHTNESS, &tok)) {
       CFG.led_brightness = tok.longvalue;
@@ -381,11 +385,27 @@ int cfg_get_last_game(uint8_t *fn, uint8_t index) {
 
 void cfg_dump_recent_games_for_snes(uint32_t address) {
   TCHAR fntmp[256];
+  TCHAR dirtmp[256];
   int index;
+  sram_writebyte(0, SRAM_LASTGAME_DIR_ADDR); /* default: empty dir path */
   file_open(LAST_FILE, FA_READ);
   for(index = 0; index < 10 && !f_eof(&file_handle); index++) {
     f_gets(fntmp, 255, &file_handle);
     sram_writestrn(strrchr((const char*)fntmp, '/')+1, address+256*index, 256);
+    if(index == 0) {
+      /* write directory of most recent game for reset_to_menu >= 2 (Folder/Rom) navigation */
+      char *slash = strrchr((const char*)fntmp, '/');
+      if(slash != NULL) {
+        size_t dir_len = slash - fntmp;
+        if(dir_len == 0) {
+          sram_writestrn((uint8_t*)"/", SRAM_LASTGAME_DIR_ADDR, 256);
+        } else {
+          strncpy(dirtmp, fntmp, dir_len);
+          dirtmp[dir_len] = '\0';
+          sram_writestrn((uint8_t*)dirtmp, SRAM_LASTGAME_DIR_ADDR, 256);
+        }
+      }
+    }
   }
   STM.num_recent_games = index;
   file_close();
