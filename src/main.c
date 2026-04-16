@@ -269,7 +269,7 @@ int main(void) {
     }
     STM.autoboot_enabled = cfg_is_autoboot_enabled();
     status_load_to_menu();
-    STM.reset_to_menu_active = 0;  /* clear after write; SNES has the value, subsequent status_load_to_menu calls should not rebroadcast it */
+    STM.reset_to_menu_active = 0;  /* SRAM now holds the flag for the SNES; zero in RAM so later status_load_to_menu() calls don't re-broadcast it */
 
     uint8_t cmd = 0;
     uint64_t btime = 0;

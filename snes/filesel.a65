@@ -1318,9 +1318,13 @@ filesel_request_filelist_wait_mcu:
 
 ; =========================================================
 ; filesel_nav_last:
-;   Navigate the file browser to the directory of the most
-;   recently played game and pre-select that game's entry.
-;   Called at cold boot when CFG_ENABLE_RST_TO_MENU == 2.
+;   Navigate the file browser to the folder of the most
+;   recently played game.
+;   Folder mode (CFG_ENABLE_RST_TO_MENU == 2): folder only.
+;   Rom mode   (CFG_ENABLE_RST_TO_MENU == 3): folder + pre-select ROM.
+;   Called after filesel_init when reset_to_menu >= 2 AND
+;   ST_RESET_TO_MENU_ACTIVE is set (i.e. the console returned to
+;   the menu via a short reset, not via a cold power-on).
 ;   Precondition: filesel_init has already been called.
 ;   Uses scratch variables: testvar[0..5], longptr,
 ;   dirent_addr, dirent_bank, mm_tmp.
@@ -1380,7 +1384,7 @@ fnl_out:
 ; =========================================================
 ; fnl_enter_subdir:
 ;   Scan current directory for a TYPE_SUBDIR entry whose
-;   name matches LAST_GAME_DIR[testvar..testvar+2-1].
+;   name matches LAST_GAME_DIR[comp_start..comp_end).
 ;   On match: saves parent state to dirlog, appends the
 ;   component to FILESEL_CWD, requests the new listing,
 ;   and resets dir pointers.
@@ -1483,7 +1487,7 @@ fnl_es_not_found:
 
 ; =========================================================
 ; fnl_append_cwd:
-;   Append '/' + LAST_GAME_DIR[testvar..testvar+2-1] to
+;   Append '/' + LAST_GAME_DIR[comp_start..comp_end) to
 ;   FILESEL_CWD and null-terminate.
 ; =========================================================
 fnl_append_cwd:
@@ -1620,7 +1624,7 @@ fnl_sf_done:
 ; =========================================================
 ; fnl_cmp_subdir:
 ;   Case-insensitive compare of name at longptr[0..] against
-;   LAST_GAME_DIR[testvar..testvar+2-1].
+;   LAST_GAME_DIR[comp_start..comp_end).
 ;   Subdir entry names end with '/' in PSRAM.
 ;   Returns carry set = match, carry clear = no match.
 ; =========================================================

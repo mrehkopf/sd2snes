@@ -393,7 +393,7 @@ void cfg_dump_recent_games_for_snes(uint32_t address) {
     f_gets(fntmp, 255, &file_handle);
     sram_writestrn(strrchr((const char*)fntmp, '/')+1, address+256*index, 256);
     if(index == 0) {
-      /* write directory of most recent game for reset_to_menu=2 navigation */
+      /* write directory of most recent game for reset_to_menu >= 2 (Folder/Rom) navigation */
       char *slash = strrchr((const char*)fntmp, '/');
       if(slash != NULL) {
         size_t dir_len = slash - fntmp;
