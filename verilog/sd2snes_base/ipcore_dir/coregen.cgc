@@ -68,15 +68,15 @@
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.MATCH_TYPE_11">basic_with_edges</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.MATCH_TYPE_12">basic_with_edges</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXAMPLE_DESIGN">false</spirit:configurableElementValue>
-            <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.MATCH_TYPE_13">basic_with_edges</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.TRIGGER_PORT_WIDTH_10">8</spirit:configurableElementValue>
+            <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.MATCH_TYPE_13">basic_with_edges</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.MATCH_TYPE_14">basic_with_edges</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.TRIGGER_PORT_WIDTH_11">8</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.MATCH_TYPE_15">basic_with_edges</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.TRIGGER_PORT_WIDTH_12">8</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.DATA_SAME_AS_TRIGGER">true</spirit:configurableElementValue>
-            <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.MATCH_TYPE_16">basic_with_edges</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.TRIGGER_PORT_WIDTH_13">8</spirit:configurableElementValue>
+            <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.MATCH_TYPE_16">basic_with_edges</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.TRIGGER_PORT_WIDTH_14">8</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.TRIGGER_PORT_WIDTH_15">8</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.TRIGGER_PORT_WIDTH_16">8</spirit:configurableElementValue>
@@ -130,17 +130,17 @@
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.COUNTER_WIDTH_5">Disabled</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_1">false</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.COUNTER_WIDTH_6">Disabled</spirit:configurableElementValue>
-            <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_10">false</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_2">false</spirit:configurableElementValue>
+            <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_10">false</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.COUNTER_WIDTH_7">Disabled</spirit:configurableElementValue>
-            <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_11">false</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_3">false</spirit:configurableElementValue>
+            <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_11">false</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.COUNTER_WIDTH_8">Disabled</spirit:configurableElementValue>
-            <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_12">false</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_4">false</spirit:configurableElementValue>
+            <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_12">false</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.COUNTER_WIDTH_9">Disabled</spirit:configurableElementValue>
-            <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_13">false</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_5">false</spirit:configurableElementValue>
+            <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_13">false</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_14">false</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_6">false</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.EXCLUDE_FROM_DATA_STORAGE_15">false</spirit:configurableElementValue>
@@ -258,7 +258,7 @@
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.MEM_FILE">no_Mem_file_loaded</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_FAMILY">spartan3</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_XDEVICEFAMILY">spartan3</spirit:configurableElementValue>
-            <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_ELABORATION_DIR">/mnt/d/prj/sd2snes/verilog/sd2snes_base/ipcore_dir/tmp/_cg/</spirit:configurableElementValue>
+            <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_ELABORATION_DIR">/home/ise/Projects/sd2snes-build-docker/sd2snes/verilog/sd2snes_base/ipcore_dir/tmp/_cg/</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_INTERFACE_TYPE">0</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_AXI_TYPE">1</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_AXI_SLAVE_TYPE">0</spirit:configurableElementValue>
@@ -360,7 +360,7 @@
                   <xilinx:file>
                      <xilinx:name>./summary.log</xilinx:name>
                      <xilinx:userFileType>unknown</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:19 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:24:49 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0xCF133F2B</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -370,8 +370,8 @@
                   <xilinx:file>
                      <xilinx:name>./dac_buf.xco</xilinx:name>
                      <xilinx:userFileType>xco</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:19 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0xC78FEC3C</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:24:49 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x35C826E2</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -410,8 +410,8 @@
                   <xilinx:file>
                      <xilinx:name>./dac_buf.ngc</xilinx:name>
                      <xilinx:userFileType>ngc</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:35 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0xD1028707</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:25:58 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x7F080373</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -426,8 +426,8 @@
                   <xilinx:file>
                      <xilinx:name>./dac_buf.veo</xilinx:name>
                      <xilinx:userFileType>veo</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:35 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0xBA792FC1</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:26:05 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x0400966D</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -436,8 +436,8 @@
                   <xilinx:file>
                      <xilinx:name>./dac_buf.v</xilinx:name>
                      <xilinx:userFileType>verilog</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:35 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0xF9518EA2</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:26:07 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x670BCA94</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -447,7 +447,7 @@
                      <xilinx:name>./dac_buf/doc/blk_mem_gen_v7_3_vinfo.html</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>unknown</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:35 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:26:08 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0x702C7FA8</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -457,14 +457,14 @@
                   <xilinx:file>
                      <xilinx:name>./dac_buf.asy</xilinx:name>
                      <xilinx:userFileType>asy</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:36 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:26:13 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0xBAE97F25</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                   <xilinx:file>
                      <xilinx:name>./summary.log</xilinx:name>
                      <xilinx:userFileType>unknown</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:36 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:26:13 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0xCF133F2B</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -475,7 +475,7 @@
                      <xilinx:name>./dac_buf_xmdf.tcl</xilinx:name>
                      <xilinx:userFileType>tclXmdf</xilinx:userFileType>
                      <xilinx:userFileType>tcl</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:36 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:26:15 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0x1E0DB03C</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -486,7 +486,7 @@
                      <xilinx:name>./dac_buf.gise</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>gise</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:37 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:26:30 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0x35F53496</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -494,26 +494,18 @@
                      <xilinx:name>./dac_buf.xise</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>xise</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:37 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0x28C17B2C</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:26:29 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x8D860B0C</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
                <xilinx:fileSet>
                   <xilinx:name>ise_generator</xilinx:name>
                   <xilinx:file>
-                     <xilinx:name>./_xmsgs/pn_parser.xmsgs</xilinx:name>
-                     <xilinx:userFileType>ignore</xilinx:userFileType>
-                     <xilinx:userFileType>unknown</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:38 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0xA685D62B</xilinx:checkSum>
-                     <xilinx:generationId>generationID_1879581046</xilinx:generationId>
-                  </xilinx:file>
-                  <xilinx:file>
                      <xilinx:name>./dac_buf.gise</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>gise</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:38 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:26:42 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0xD8FCD680</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -521,8 +513,8 @@
                      <xilinx:name>./dac_buf.xise</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>xise</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:38 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0x7512A4BB</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:26:42 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x4E762DE5</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -536,8 +528,8 @@
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>txtFlist</xilinx:userFileType>
                      <xilinx:userFileType>txt</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:39 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0xE3B7F600</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:26:46 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x9F33CB82</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -612,7 +604,7 @@
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.MEM_FILE">no_Mem_file_loaded</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_FAMILY">spartan3</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_XDEVICEFAMILY">spartan3</spirit:configurableElementValue>
-            <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_ELABORATION_DIR">/mnt/d/prj/sd2snes/verilog/sd2snes_base/ipcore_dir/tmp/_cg/</spirit:configurableElementValue>
+            <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_ELABORATION_DIR">/home/ise/Projects/sd2snes-build-docker/sd2snes/verilog/sd2snes_base/ipcore_dir/tmp/_cg/</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_INTERFACE_TYPE">0</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_AXI_TYPE">1</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_AXI_SLAVE_TYPE">0</spirit:configurableElementValue>
@@ -714,7 +706,7 @@
                   <xilinx:file>
                      <xilinx:name>./summary.log</xilinx:name>
                      <xilinx:userFileType>unknown</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:41 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:27:45 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0x2CA2F431</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -724,8 +716,8 @@
                   <xilinx:file>
                      <xilinx:name>./msu_databuf.xco</xilinx:name>
                      <xilinx:userFileType>xco</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:36:41 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0x127E2AD4</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:27:47 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x0C586773</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -764,8 +756,8 @@
                   <xilinx:file>
                      <xilinx:name>./msu_databuf.ngc</xilinx:name>
                      <xilinx:userFileType>ngc</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:04 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0x273108B2</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:29:06 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x21267F8D</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -780,8 +772,8 @@
                   <xilinx:file>
                      <xilinx:name>./msu_databuf.veo</xilinx:name>
                      <xilinx:userFileType>veo</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:04 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0xEA56D32B</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:29:14 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x3996DFE9</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -790,8 +782,8 @@
                   <xilinx:file>
                      <xilinx:name>./msu_databuf.v</xilinx:name>
                      <xilinx:userFileType>verilog</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:05 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0x19ACB9AE</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:29:17 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0xBAE90076</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -801,7 +793,7 @@
                      <xilinx:name>./msu_databuf/doc/blk_mem_gen_v7_3_vinfo.html</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>unknown</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:05 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:29:18 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0x702C7FA8</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -811,14 +803,14 @@
                   <xilinx:file>
                      <xilinx:name>./msu_databuf.asy</xilinx:name>
                      <xilinx:userFileType>asy</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:05 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:29:25 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0x13FF58F0</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                   <xilinx:file>
                      <xilinx:name>./summary.log</xilinx:name>
                      <xilinx:userFileType>unknown</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:05 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:29:25 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0x2CA2F431</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -829,7 +821,7 @@
                      <xilinx:name>./msu_databuf_xmdf.tcl</xilinx:name>
                      <xilinx:userFileType>tclXmdf</xilinx:userFileType>
                      <xilinx:userFileType>tcl</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:05 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:29:27 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0xB678F66C</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -840,7 +832,7 @@
                      <xilinx:name>./msu_databuf.gise</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>gise</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:06 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:29:38 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0xBEF74AC2</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -848,26 +840,18 @@
                      <xilinx:name>./msu_databuf.xise</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>xise</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:06 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0x0613D46A</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:29:37 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0xF070C423</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
                <xilinx:fileSet>
                   <xilinx:name>ise_generator</xilinx:name>
                   <xilinx:file>
-                     <xilinx:name>./_xmsgs/pn_parser.xmsgs</xilinx:name>
-                     <xilinx:userFileType>ignore</xilinx:userFileType>
-                     <xilinx:userFileType>unknown</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:08 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0x80E43B71</xilinx:checkSum>
-                     <xilinx:generationId>generationID_1879581046</xilinx:generationId>
-                  </xilinx:file>
-                  <xilinx:file>
                      <xilinx:name>./msu_databuf.gise</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>gise</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:08 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 22:29:52 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0x7EA61AB3</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -875,8 +859,8 @@
                      <xilinx:name>./msu_databuf.xise</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>xise</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:08 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0xD053297B</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:29:52 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x723F175A</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -890,8 +874,8 @@
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>txtFlist</xilinx:userFileType>
                      <xilinx:userFileType>txt</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:08 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0xC9039949</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 22:30:00 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x05A4E7BB</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -966,7 +950,7 @@
             <spirit:configurableElementValue spirit:referenceId="PARAM_VALUE.MEM_FILE">no_Mem_file_loaded</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_FAMILY">spartan3</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_XDEVICEFAMILY">spartan3</spirit:configurableElementValue>
-            <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_ELABORATION_DIR">/mnt/d/prj/sd2snes/verilog/sd2snes_base/ipcore_dir/tmp/_cg/</spirit:configurableElementValue>
+            <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_ELABORATION_DIR">/home/ise/Projects/sd2snes-build-docker/sd2snes/verilog/sd2snes_base/ipcore_dir/tmp/_cg/</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_INTERFACE_TYPE">0</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_AXI_TYPE">1</spirit:configurableElementValue>
             <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_AXI_SLAVE_TYPE">0</spirit:configurableElementValue>
@@ -1068,7 +1052,7 @@
                   <xilinx:file>
                      <xilinx:name>./summary.log</xilinx:name>
                      <xilinx:userFileType>unknown</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:10 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 23:02:22 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0xB6A6775F</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -1078,8 +1062,8 @@
                   <xilinx:file>
                      <xilinx:name>./snescmd_buf.xco</xilinx:name>
                      <xilinx:userFileType>xco</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:10 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0xFF12BFF2</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 23:02:23 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0xB2A02C4F</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -1118,8 +1102,8 @@
                   <xilinx:file>
                      <xilinx:name>./snescmd_buf.ngc</xilinx:name>
                      <xilinx:userFileType>ngc</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:26 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0x4248584C</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 23:03:38 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x4EB11D9F</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -1134,8 +1118,8 @@
                   <xilinx:file>
                      <xilinx:name>./snescmd_buf.veo</xilinx:name>
                      <xilinx:userFileType>veo</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:26 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0x39618B0A</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 23:03:46 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0xF1F8ABA7</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -1144,8 +1128,8 @@
                   <xilinx:file>
                      <xilinx:name>./snescmd_buf.v</xilinx:name>
                      <xilinx:userFileType>verilog</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:26 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0x92533884</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 23:03:49 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0xF3812A44</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -1155,7 +1139,7 @@
                      <xilinx:name>./snescmd_buf/doc/blk_mem_gen_v7_3_vinfo.html</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>unknown</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:26 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 23:03:50 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0x702C7FA8</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -1165,14 +1149,14 @@
                   <xilinx:file>
                      <xilinx:name>./snescmd_buf.asy</xilinx:name>
                      <xilinx:userFileType>asy</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:27 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 23:03:56 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0x810E425E</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                   <xilinx:file>
                      <xilinx:name>./summary.log</xilinx:name>
                      <xilinx:userFileType>unknown</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:27 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 23:03:56 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0xB6A6775F</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -1183,7 +1167,7 @@
                      <xilinx:name>./snescmd_buf_xmdf.tcl</xilinx:name>
                      <xilinx:userFileType>tclXmdf</xilinx:userFileType>
                      <xilinx:userFileType>tcl</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:27 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 23:03:59 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0x697591DF</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -1194,7 +1178,7 @@
                      <xilinx:name>./snescmd_buf.gise</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>gise</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:28 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 23:04:13 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0x3F90DBA7</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -1202,26 +1186,18 @@
                      <xilinx:name>./snescmd_buf.xise</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>xise</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:28 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0xADF46FD1</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 23:04:12 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x85FC08EC</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
                <xilinx:fileSet>
                   <xilinx:name>ise_generator</xilinx:name>
                   <xilinx:file>
-                     <xilinx:name>./_xmsgs/pn_parser.xmsgs</xilinx:name>
-                     <xilinx:userFileType>ignore</xilinx:userFileType>
-                     <xilinx:userFileType>unknown</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:30 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0xCD2C4DA4</xilinx:checkSum>
-                     <xilinx:generationId>generationID_1879581046</xilinx:generationId>
-                  </xilinx:file>
-                  <xilinx:file>
                      <xilinx:name>./snescmd_buf.gise</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>gise</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:30 GMT 2024</xilinx:timeStamp>
+                     <xilinx:timeStamp>Fri Mar 13 23:04:26 GMT 2026</xilinx:timeStamp>
                      <xilinx:checkSum>0x40E08C96</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
@@ -1229,8 +1205,8 @@
                      <xilinx:name>./snescmd_buf.xise</xilinx:name>
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>xise</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:30 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0x32DC0783</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 23:04:26 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0xB612F3B1</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
@@ -1244,8 +1220,8 @@
                      <xilinx:userFileType>ignore</xilinx:userFileType>
                      <xilinx:userFileType>txtFlist</xilinx:userFileType>
                      <xilinx:userFileType>txt</xilinx:userFileType>
-                     <xilinx:timeStamp>Thu Dec 19 15:37:30 GMT 2024</xilinx:timeStamp>
-                     <xilinx:checkSum>0x6D94CAE4</xilinx:checkSum>
+                     <xilinx:timeStamp>Fri Mar 13 23:04:32 GMT 2026</xilinx:timeStamp>
+                     <xilinx:checkSum>0x4D9F4935</xilinx:checkSum>
                      <xilinx:generationId>generationID_1879581046</xilinx:generationId>
                   </xilinx:file>
                </xilinx:fileSet>
