@@ -458,6 +458,7 @@ int main(void) {
     uint8_t usb_cmd = 0;
 // uint8_t snes_res;
     while(fpga_test() == FPGA_TEST_TOKEN) {
+      usbint_set_game_state(1);
       cli_entrycheck();
       //usb upload/boot/lock  
       usb_cmd |= usbint_handler();
