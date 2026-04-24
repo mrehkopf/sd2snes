@@ -30,7 +30,7 @@ void ymodem_rxfile(FIL* fil) {
   uint32_t totalwritten = 0;
   int blocksize;
   UINT written;
-  FRESULT res = FR_OK;
+  //FRESULT res = FR_OK;
   uint16_t crc = 0, crc_sender;
   uint32_t filesize, remaining = 0;
   int have_filesize = 0, first_block = 1;
@@ -85,7 +85,7 @@ restart:
         blocksize = remaining;
       }
     }
-    res=f_write(fil, rxbuf, blocksize, &written);
+    f_write(fil, rxbuf, blocksize, &written);
     totalwritten += written;
     remaining -= blocksize;
     uart_putc(ASC_ACK);
@@ -96,5 +96,5 @@ restart:
 end:
   uart_flush();
   sleep_ms(1000);
-  printf("received %ld bytes (actual size: %ld bytes), wrote %ld bytes. last res = %d\n", totalbytes, (have_filesize ? filesize : totalbytes), totalwritten, res);
+  //printf("received %ld bytes (actual size: %ld bytes), wrote %ld bytes. last res = %d\n", totalbytes, (have_filesize ? filesize : totalbytes), totalwritten, res);
 }

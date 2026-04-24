@@ -126,4 +126,7 @@ int usbint_handler_dat(void);
 int usbint_handler_exe(void);
 void usbint_check_connect(void);
 
+uint8_t usbint_server_nmi(void);
+void usbint_set_game_state(uint8_t state);
+
 #endif
