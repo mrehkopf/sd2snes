@@ -353,6 +353,7 @@ uint8_t snes_main_loop() {
  * monitors menu selection. return when selection was made.
  */
 uint8_t menu_main_loop() {
+  usbint_set_game_state(0);
   uint8_t cmd = 0;
   snes_set_mcu_cmd(0);
   while(!cmd) {

@@ -81,4 +81,5 @@ int main(int argc, char** argv) {
 	free(obuf);
 	fclose(out);
 	fclose(in);
+	return 0;
 }

@@ -1,6 +1,6 @@
 CORE = dsp
 
-VSRC = address.v cheat.v clk_test.v dac.v dcm.v upd77c25.v main.v mcu_cmd.v msu.v sd_dma.v spi.v
+VSRC = address.v cheat.v clk_test.v dac.v dcm.v upd77c25.v main.v mcu_cmd.v msu.v sd_dma.v spi.v ctx.v dma.v
 VHSRC =
 
 COMMON_IP = dac_buf msu_databuf snescmd_buf upd77c25_datram upd77c25_datrom upd77c25_pgmrom
