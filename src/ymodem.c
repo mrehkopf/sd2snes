@@ -30,6 +30,7 @@ void ymodem_rxfile(FIL* fil) {
   uint32_t totalwritten = 0;
   int blocksize;
   UINT written;
+  //FRESULT res = FR_OK;
   uint16_t crc = 0, crc_sender;
   uint32_t filesize, remaining = 0;
   int have_filesize = 0, first_block = 1;
