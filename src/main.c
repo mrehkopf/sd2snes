@@ -154,6 +154,7 @@ int main(void) {
         snes_bootprint_center(15, "properly.");
         cli_entrycheck();
         while(disk_status(0) & (STA_NODISK));
+        snes_bootprint_center(17, "SD Card inserted!");
         delay_ms(200);
       }
       file_open((uint8_t*)MENU_FILENAME, FA_READ);
