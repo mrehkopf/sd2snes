@@ -4,6 +4,8 @@
 #include "config.h"
 #include "hwinfo.h"
 
+char *makername[10] = { "ikari_01", "KRIKzz", "Unsupported", [8]="RedScorpion", "Legacy" };
+uint8_t makernum[10] = { 0x00, 0xb0, 0x00, [8]=0x00, 0x00 };
 char *hwinfo_model_name[] = { "sd2snes", "FXPAK Pro", "future Mk.4", "future Mk.5", "future Mk.6" };
 char revname[2];
 
@@ -32,17 +34,14 @@ uint8_t get_hwinfo(hwinfo_t *hw) {
 
   if(id >= 0xb0) {
     hw->maker = MAKER_KRIKZZ;
-    hw->makername = "KRIKzz";
   } else if (id <= 0x40) {
     hw->maker = MAKER_IKARI_01;
-    hw->makername = "ikari_01";
   } else {
-    hw->maker = MAKER_UNKNOWN;
-    hw->makername = "???";
+    hw->maker = MAKER_LEGACY;
   }
 
-  if(hw->maker != MAKER_UNKNOWN) {
-    id -= hw->maker;
+  if(hw->maker != MAKER_LEGACY) {
+    id -= makernum[hw->maker];
     hw->model = (id >> 4);
     hw->modelname = hwinfo_model_name[hw->model];
     hw->revision = (id & 0x0f);
@@ -58,5 +57,16 @@ uint8_t get_hwinfo(hwinfo_t *hw) {
     hw->revname = "?";
   }
 
+  if(id == 0x51 || id == 0x52) {
+    hw->maker = MAKER_UNSUPPORTED;
+  } else if (id == 0x58) {
+    hw->maker = MAKER_REDSCORPION;
+    hw->modelname = "sd2snes";
+    hw->revname = "F";
+  } else if (id == 0x59) {
+    hw->maker = MAKER_LEGACY;
+  }
+
+  hw->makername = makername[hw->maker];
   return id_bak;
 }
