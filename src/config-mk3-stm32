@@ -51,14 +51,6 @@ IO_SPEED_M  = 0b01
 IO_SPEED_H  = 0b10
 IO_SPEED_VH = 0b11
 
-DEBUG_FS         = n
-DEBUG_SD         = n
-DEBUG_SD_OFFLOAD = n
-DEBUG_IRQ        = n
-DEBUG_MSU1       = n
-DEBUG_YAML       = n
-DEBUG_USB        = n
-
 MENU_FILENAME = "/sd2snes/m3nu.bin"
 
 CONFIG_UART_NUM	         = 2
