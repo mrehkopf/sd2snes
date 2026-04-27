@@ -131,7 +131,8 @@ main.ncd: main_map.ncd
 	$(call T,[mk2] fpga_$(CORE) - Place and Route)
 	$(eval XILINX_PAR_OPTS := $(shell $(XILINX_ENV) $(XILINX_BIN)/xtclsh $(XILINX_SCRIPTS)/xgenparcmd.tcl sd2snes_$(CORE).xise))
 	$(XILINX_ENV) $(XILINX_BIN)/par -w $(XILINX_PAR_OPTS) $^ $@ main.pcf
-	@! grep -q 'Timing Score: [1-9][0-9]*' main.par || (echo "[mk2] sd2snes_$(CORE): Timing not met! Aborting."; exit 55)
+	@! grep -q 'Timing Score: [1-9][0-9]*' main.par || (echo "[mk2] sd2snes_$(CORE): Timing not met!"; \
+		[ "$(IGNORE_TIMING)"a = 1a ] || (echo "Aborting. To ignore timing violations, run make [...] IGNORE_TIMING=1."; rm "$@"; exit 55))
 
 main.bit: main.ncd main.ut
 	$(call T,[mk2] fpga_$(CORE) - Generate Programming File)
@@ -181,7 +182,8 @@ output_files/main.rbf: $(VSRC) $(VHSRC) $(HEADER) $(INT_IP) main.sdc
 	$(INTEL_ENV) $(INTEL_BIN)/quartus_fit --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
 	$(call T,[mk3] fpga_$(CORE) - Timing Analysis)
 	$(INTEL_ENV) $(INTEL_BIN)/quartus_sta sd2snes_$(CORE) -c main
-	@! grep -q 'TNS.*-' output_files/main.sta.summary || (echo "[mk3] sd2snes_$(CORE): Timing not met! Aborting."; exit 55)
+	@! grep -q 'TNS.*-' output_files/main.sta.summary || (echo "[mk3] sd2snes_$(CORE): Timing not met!"; \
+		[ "$(IGNORE_TIMING)"a = 1a ] || (echo "Aborting. To ignore timing violations, run make [...] IGNORE_TIMING=1."; rm "$@"; exit 55))
 	$(call T,[mk3] fpga_$(CORE) - Assemble)
 	$(INTEL_ENV) $(INTEL_BIN)/quartus_asm --read_settings_files=off --write_settings_files=off sd2snes_$(CORE) -c main
 #	$(INTEL_ENV) $(INTEL_BIN)/quartus_eda --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
