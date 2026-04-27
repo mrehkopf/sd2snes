@@ -245,7 +245,6 @@ int main(void) {
 
     fpga_set_dac_boost(CFG.msu_volume_boost);
     cfg_load_to_menu();
-    CFG.show_tribute = 0;
     cfg_save();
     snes_reset(0);
 
