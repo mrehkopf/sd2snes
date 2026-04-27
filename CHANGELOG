@@ -1,3 +1,43 @@
+v1.11.1
+=======
+ * [All] Autoboot: set a ROM as autoboot from the context menu to launch
+         automatically on power-on;  hold a button during boot to skip autoboot
+         and return to the menu
+ * [All] Add config toggles for autosave and MSU-1 autosave independently
+         (config.yml: autosave, msu1_autosave)
+ * [All] File browser now shows .SGB files
+ * [All] Early boot screen shows hardware maker, model, and revision
+ * [All] S-DD1: Detect ROMs larger than 48 Mbits and support "mixed mapper" SRAM
+         layout (this fixes the PT-BR translation of Star Ocean)
+ * fixes:
+   - [All] SA-1: fix execution speed regression introduced in v1.10.0
+   - [All] SA-1: implement CCNT_RESB wait bit — SA-1 now correctly halts
+           after last completed instruction on suspend (no known commercial
+           game uses this but improves correctness)
+   - [All] SuperFX: fix branch latency and readjust memory latencies for
+           improved accuracy (improves synchronization in Star Fox credits)
+   - [All] SuperFX: revert bus sampling timing to fix stability regression
+   - [All] SGB: fix real-time clock (RTC) behavior
+   - [Mk2] SGB: fix controller multitap handling
+   - [All] MSU-1: eliminate static buzzing noise on track change
+   - [All] MSU-1: fix audio/video desync in video player
+   - [All] MSU-1: fix data buffer address not incrementing at end of DMA
+   - [All] MSU-1: speed up bulk PCM file scanning used by some games
+   - [All] Save states: fix bug where loading didn't wait for slot change
+           to complete before proceeding
+   - [All] Save states: add compatibility patches for more games
+   - [All] BS-X: fix loading of bytecode ROMs (e.g. BS Magazines)
+   - [All] Fix cursor and refresh glitches in Favorites menu
+   - [All] Fix wrong game video mode when running in SuperCIC pair mode
+   - [All] Fix shutdown when saving settings on unmodified consoles
+   - [All] Fix combo ROM detection broken by SGB merge
+   - [All] Fix DMA write snoop conflict in base core (fixes save state related
+           issues in Chrono Trigger)
+   - [All] Fix flickering screen on boot error messages when card is write
+           protected
+   - [Mk2] Fix green and yellow LED not lighting up at all
+
+
 v1.11.0
 =======
  * [Pro] Add hardware support for FXPAK Pro Rev.D
