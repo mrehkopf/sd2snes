@@ -84,6 +84,7 @@
 #define CMD_SET_AUTOBOOT_FAV        $16 /* set autoboot from favorites (index in MCU_PARAM) */
 #define CMD_CLR_AUTOBOOT_ROM        $17 /* clear autoboot ROM setting */
 #define CMD_LOAD_AUTOBOOT           $18 /* trigger autoboot at cold boot */
+#define CMD_SET_SLOTB_ROM           $19 /* set Slot B companion cart for Sufami Turbo (non-persistent) */
 #define CMD_SAVESTATE               $40
 #define CMD_LOADSTATE               $41
 #define CMD_MCU_RDY                 $55
@@ -174,6 +175,7 @@
 #define TYPE_ROM                    $01
 #define TYPE_SRM                    $02
 #define TYPE_SPC                    $03
+#define TYPE_ROM_ST                 $07
 #define TYPE_IPS                    $04
 #define TYPE_CHT                    $05
 #define TYPE_SKIN                   $06

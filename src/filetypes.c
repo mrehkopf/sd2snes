@@ -80,6 +80,7 @@ printf("start\n");
       if(is_requested_filetype(type, filetypes)) {
         switch(type) {
           case TYPE_ROM:
+          case TYPE_ROM_ST:
           case TYPE_SPC:
           case TYPE_SUBDIR:
           case TYPE_PARENT:
@@ -153,6 +154,9 @@ SNES_FTYPE determine_filetype(FILINFO fno) {
      ||(!strcasecmp(ext+1, "SGB"))
     ) {
     return TYPE_ROM;
+  }
+  if(!strcasecmp(ext+1, "ST")) {
+    return TYPE_ROM_ST;
   }
 /*  if(  (!strcasecmp(ext+1, "IPS"))
      ||(!strcasecmp(ext+1, "UPS"))

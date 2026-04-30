@@ -68,6 +68,7 @@
 /* commands */
 #define FPGA_CMD_SETADDR         (0x00)
 #define FPGA_CMD_SETROMMASK      (0x10)
+#define FPGA_CMD_SETROMMASK_B    (0x50)
 #define FPGA_CMD_SETRAMMASK      (0x20)
 #define FPGA_CMD_SETRAMBASE      (0x20 | 1)
 #define FPGA_CMD_SETMAPPER(x)    (0x30 | (x & 15))
@@ -124,6 +125,7 @@ void set_msu_status(uint16_t status);
 void set_saveram_base(uint8_t);
 void set_saveram_mask(uint32_t);
 void set_rom_mask(uint32_t);
+void set_rom_mask_b(uint32_t);
 void set_mapper(uint8_t val);
 void fpga_sddma(uint8_t tgt, uint8_t partial);
 void fpga_set_sddma_range(uint16_t start, uint16_t end);

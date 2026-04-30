@@ -565,6 +565,8 @@ select_item:
   lda [dirptr_addr], y
   cmp #TYPE_ROM
   beq sel_is_file
+  cmp #TYPE_ROM_ST
+  beq sel_is_file
   cmp #TYPE_SPC
   beq sel_is_spc
   cmp #TYPE_SUBDIR
@@ -800,6 +802,8 @@ open_context_menu:
   lda [dirptr_addr], y
   cmp #TYPE_ROM
   beq ctx_is_file
+  cmp #TYPE_ROM_ST
+  beq ctx_is_file_st
   cmp #TYPE_SPC
   beq ctx_is_spc
   cmp #TYPE_SUBDIR
@@ -827,6 +831,26 @@ ctx_is_file
   lda #$00
   sta @MCU_PARAM+3
   jsr filesel_contextmenu_file
+  bra open_context_menu_cont
+ctx_is_file_st
+; save selected ST file path to MCU_PARAM (same as ctx_is_file)
+  dey
+  rep #$20 : .al
+  lda [dirptr_addr], y
+  and #$00ff
+  sta @MCU_PARAM+6
+  dey
+  dey
+  lda [dirptr_addr], y
+  sta @MCU_PARAM+4
+  lda #!FILESEL_CWD
+  sta @MCU_PARAM
+  sep #$20 : .as
+  lda #^FILESEL_CWD
+  sta @MCU_PARAM+2
+  lda #$00
+  sta @MCU_PARAM+3
+  jsr filesel_contextmenu_st_file
   bra open_context_menu_cont
 ctx_is_parent
   bra open_context_menu_cont
@@ -1157,6 +1181,37 @@ set_selected_as_autoboot_rom:
   plp
   rtl
 
+set_selected_as_slotb_rom:
+; have MCU store the selected .ST file as the Slot B companion cart
+; the file path should already have been saved to MCU_PARAM before calling
+; this routine (done by open_context_menu / ctx_is_file_st)
+  php
+  phb
+  sep #$20 : .as
+  lda #$01
+  jsr hide_cursor
+  jsr draw_loading_window
+  jsr waitblank
+  lda #$00
+  sta @SNES_CMD
+  lda #CMD_SET_SLOTB_ROM
+  sta @MCU_CMD
+; wait for ACK/NACK
+- lda @SNES_CMD
+  cmp #$55
+; success
+  beq +
+  cmp #$aa
+; failure
+  beq +
+  bra -
++ lda #$55
+  sta @MCU_CMD
+  jsr pop_window
+  plb
+  plp
+  rtl
+
 set_favorite_as_autoboot_rom:
 ; have MCU save the selected favorite game as the autoboot ROM
 ; the list index of the favorite should already have been saved to MCU_PARAM
@@ -1287,8 +1342,10 @@ filesel_request_filelist:
   sta @MCU_PARAM+10
   lda #TYPE_SPC
   sta @MCU_PARAM+11
-  lda #$00
+  lda #TYPE_ROM_ST
   sta @MCU_PARAM+12
+  lda #$00
+  sta @MCU_PARAM+13
   sta @SNES_CMD
   lda #CMD_READDIR
   sta @MCU_CMD

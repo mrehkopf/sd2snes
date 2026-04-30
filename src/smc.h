@@ -33,6 +33,7 @@
 #define DSPFW_4 ((const uint8_t*)"/sd2snes/dsp4.bin")
 #define DSPFW_1B ((const uint8_t*)"/sd2snes/dsp1b.bin")
 #define DSPFW_ST0010 ((const uint8_t*)"/sd2snes/st0010.bin")
+#define STBIOS_FW ((const uint8_t*)"/sd2snes/STBIOS.bin")
 
 typedef struct __attribute__ ((__packed__)) _snes_header {
   uint8_t maker[2];     /* 0xB0 */

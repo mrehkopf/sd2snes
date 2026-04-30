@@ -46,6 +46,7 @@ typedef enum {
   TYPE_IPS     =   4,
   TYPE_CHT     =   5,
   TYPE_SKIN    =   6,
+  TYPE_ROM_ST  =   7,
   TYPE_SUBDIR  =  64,
   TYPE_PARENT  = 128
 } SNES_FTYPE;

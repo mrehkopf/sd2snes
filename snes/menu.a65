@@ -60,6 +60,33 @@ filesel_contextmenu_file:
   jsr pop_window
   rts
 
+filesel_contextmenu_st_file:
+  sep #$20 : .as
+  rep #$10 : .xl
+  lda #$02
+  sta window_x
+  lda #$09
+  sta window_y
+  lda #60
+  sta window_w
+  lda #18
+  sta window_h
+  jsr push_window
+  jsr window_greyout
+  lda #$06
+  sta window_x
+  lda #$0b
+  sta window_y
+  phb
+    lda #^menu_enttab_filesel_context_st_file
+    pha
+    plb
+    ldx #!menu_enttab_filesel_context_st_file
+    jsr show_menu
+  plb
+  jsr pop_window
+  rts
+
 filesel_favorites_contextmenu:
   sep #$20 : .as
   rep #$10 : .xl
