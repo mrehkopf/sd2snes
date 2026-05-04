@@ -6,9 +6,11 @@
 #include "bits.h"
 
 typedef enum {
-  MAKER_IKARI_01 = 0x00,
-  MAKER_KRIKZZ   = 0xb0,
-  MAKER_UNKNOWN  = 0xaa
+  MAKER_IKARI_01    = 0x00,
+  MAKER_KRIKZZ      = 0x01,
+  MAKER_UNSUPPORTED = 0x02,
+  MAKER_REDSCORPION = 0x08,
+  MAKER_LEGACY      = 0x09
 } hwinfo_maker;
 
 typedef struct {

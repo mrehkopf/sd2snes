@@ -181,16 +181,16 @@ reg SNES_reset_strobe = 0;
 reg free_strobe = 0;
 reg ram_free_strobe = 0;
 
-wire [23:0] SNES_ADDR = SNES_ADDRr[1] & SNES_ADDRr[0]; //(SNES_ADDRr[6] & SNES_ADDRr[5]);
+wire [23:0] SNES_ADDR = SNES_ADDRr[0]; //(SNES_ADDRr[6] & SNES_ADDRr[5]);
 //wire [23:0] SNES_ADDR_early = SNES_ADDRr[0];
 wire [7:0] SNES_PA = SNES_PAr[0]; //(SNES_PAr[6] & SNES_PAr[5]);
 wire [7:0] SNES_DATA_IN = (SNES_DATAr[3] & SNES_DATAr[2]);
 
 wire SNES_PULSE_IN = SNES_READ_IN & SNES_WRITE_IN & ~SNES_CPU_CLK_IN;
 
-wire SNES_PULSE_end = (SNES_PULSEr[6:1] == 6'b000011);
+wire SNES_PULSE_end = (SNES_PULSEr[6:1] == 6'b000001);
 wire SNES_PARD_start = (SNES_PARDr[6:1] == 6'b111110);
-wire SNES_PARD_end = (SNES_PARDr[6:1] == 6'b000001);
+// wire SNES_PARD_end = (SNES_PARDr[6:1] == 6'b000001);
 // Sample PAWR data earlier on CPU accesses, later on DMA accesses...
 wire SNES_PAWR_start = (SNES_PAWRr[6:1] == (({SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h02100) ? 6'b111000 : 6'b100000));
 wire SNES_PAWR_end = (SNES_PAWRr[6:1] == 6'b000001);
@@ -209,7 +209,7 @@ wire SNES_CPU_CLK = SNES_CPU_CLKr[2] & SNES_CPU_CLKr[1];
 wire SNES_PARD = SNES_PARDr[2] & SNES_PARDr[1];
 wire SNES_PAWR = SNES_PAWRr[2] & SNES_PAWRr[1];
 
-wire SNES_ROMSEL = (SNES_ROMSELr[5] & SNES_ROMSELr[4]);
+wire SNES_ROMSEL = (SNES_ROMSELr[0]);
 
 reg [7:0] BUS_DATA;
 
@@ -222,18 +222,18 @@ wire ROM_HIT;
 wire IS_ROM;
 assign DCM_RST=0;
 wire IS_SAVERAM;
-
-//wire mcu_free_slot = SNES_cycle_end | free_strobe;
 // TODO does this free_slot style cause problems with SA1 performance?
 wire SD_DMA_TO_ROM;
-wire free_slot = (SNES_PULSE_end | free_strobe) & ~SD_DMA_TO_ROM;
+// wire free_slot = (SNES_PULSE_end | free_strobe) & ~SD_DMA_TO_ROM;
+wire free_slot = SNES_cycle_end | ~IS_ROM;
+
+//wire free_slot = (SNES_PULSEr[0] | ~IS_ROM) & ~SD_DMA_TO_ROM;
 
 // TODO: Provide full bandwidth if snes is not accessing the bus.
-reg [7:0] SNES_cycle_end_delay;
 always @(posedge CLK2) begin
-//  free_strobe <= 1'b0;
-  if(SNES_cycle_start) free_strobe <= (~ROM_HIT);
-  if(SNES_PULSE_end) free_strobe <= 1'b0;
+  if (SNES_cycle_start) free_strobe <= ~ROM_HIT;
+  else if (SNES_cycle_end) free_strobe <= 1'b0;
+  else free_strobe <= 1'b0;
 end
 
 always @(posedge CLK2) begin
@@ -263,8 +263,6 @@ always @(posedge CLK2) begin
   SNES_DATAr[2] <= SNES_DATAr[1];
   SNES_DATAr[1] <= SNES_DATAr[0];
   SNES_DATAr[0] <= SNES_DATA;
-
-  SNES_cycle_end_delay <= {SNES_cycle_end_delay[6:1],SNES_cycle_end};
 end
 
 parameter ST_IDLE            = 11'b00000000001;
@@ -281,13 +279,13 @@ parameter ST_SA1_RAM_WR_END  = 11'b10000000000;
 
 `ifdef MK2
 parameter SNES_DEAD_TIMEOUT = 17'd85714; // 1ms
+parameter ROM_CYCLE_LEN = 4'd7; // Increased from 6 due to tight timing on some sd2snes.  Two pics from boards with errors had a Micron chip with 0LA41/PW510.  Same build lot.
 `endif
 `ifdef MK3
 // Cyclone IV PLL allows us to get a bit closer to original speed
 parameter SNES_DEAD_TIMEOUT = 17'd85867; // 1ms
+parameter ROM_CYCLE_LEN = 4'd6;
 `endif
-
-parameter ROM_CYCLE_LEN = 4'd7; // Increased from 6 due to tight timing on some sd2snes.  Two pics from boards with errors had a Micron chip with 0LA41/PW510.  Same build lot.
 
 reg [10:0] STATE;
 initial STATE = ST_IDLE;
@@ -773,6 +771,7 @@ always @(posedge CLK2) ROM_ADDR0_r <= ROM_ADDR0;
 
 // MCU r/w request
 always @(posedge CLK2) begin
+  // MCU E0-E8 (Save RAM) goes to RAM1 instead
   if(MCU_RRQ && MCU_ADDR[23:19] != 5'b11100) begin
     MCU_RD_PENDr <= 1'b1;
     RQ_MCU_RDYr <= 1'b0;
@@ -838,10 +837,11 @@ always @(posedge CLK2) begin
           STATE <= ST_SA1_ROM_RD_ADDR;
           ST_MEM_DELAYr <= ROM_CYCLE_LEN;
         end
-        else if(MCU_RD_PENDr) begin
+        // early notify from MCU to save a clock
+        else if(MCU_RD_PENDr | (MCU_RRQ && MCU_ADDR[23:19] != 5'b11100)) begin
           STATE <= ST_MCU_RD_ADDR;
           ST_MEM_DELAYr <= ROM_CYCLE_LEN;
-        end else if(MCU_WR_PENDr) begin
+        end else if(MCU_WR_PENDr | (MCU_WRQ && MCU_ADDR[23:19] != 5'b11100)) begin
           STATE <= ST_MCU_WR_ADDR;
           ST_MEM_DELAYr <= ROM_CYCLE_LEN;
         end

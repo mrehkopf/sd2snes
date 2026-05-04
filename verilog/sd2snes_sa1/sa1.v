@@ -412,6 +412,24 @@ always @(posedge CLK) begin
   end
 end
 
+// Minimum cycle counter for pipeline advance.
+// Enforce 8 CLK2 cycle minimum between instruction commits
+// without the alignment penalty of sa1_clock_en.
+reg [2:0] sa1_commit_cnt_r = 2'b00;
+wire      sa1_commit_ready = &sa1_commit_cnt_r;
+
+always @(posedge CLK) begin
+  if (RST) begin
+    sa1_commit_cnt_r <= 0;
+  end
+  else if (pipeline_advance) begin
+    sa1_commit_cnt_r <= 0;
+  end
+  else if (~&sa1_commit_cnt_r) begin
+    sa1_commit_cnt_r <= sa1_commit_cnt_r + 1;
+  end
+end
+
 reg [31:0] sa1_cycle_cnt_r; initial sa1_cycle_cnt_r = 0;
 
 //-------------------------------------------------------------------
@@ -1387,24 +1405,24 @@ always @(posedge CLK) begin
 
           mmc_state_end_r <= ST_MMC_DMA_END;
         end
-//        // save a cycle in fetch if we are going to rom.
-//        else if (EXE_STATE[clog2(ST_EXE_FETCH)] & ~exe_mmc_int & ~exe_fetch_byte_val & ~exe_fetch_move) begin
-//          mmc_byte_total_r <= exe_mmc_byte_total_r;
-//          mmc_dpe_r <= exe_mmc_dpe_r;
-//          mmc_wr_r <= 0;
-//          mmc_long_r <= exe_mmc_long_r;
-//
-//          if (`IS_ROM(exe_fetch_addr_r)/* & ROM_BUS_RDY*/) begin
-//            rom_bus_rrq_r <= 1;
-//            rom_bus_addr_r <= `MAP_ROM(exe_fetch_addr_r);
-//            rom_bus_word_r <= 1;
-//            mmc_rom_misaligned <= exe_fetch_addr_r[0];
-//
-//            MMC_STATE <= ST_MMC_ROM;
-//          end
-//
-//          mmc_state_end_r <= ST_MMC_EXE_END;
-//        end
+        // save a cycle in fetch if we are going to rom.
+        else if (EXE_STATE[clog2(ST_EXE_FETCH)] & ~exe_mmc_int & ~exe_fetch_byte_val & ~exe_fetch_move) begin
+          mmc_byte_total_r <= exe_mmc_byte_total_r;
+          mmc_dpe_r <= exe_mmc_dpe_r;
+          mmc_wr_r <= 0;
+          mmc_long_r <= exe_mmc_long_r;
+
+          if (`IS_ROM(exe_fetch_addr_r)/* & ROM_BUS_RDY*/) begin
+            rom_bus_rrq_r <= 1;
+            rom_bus_addr_r <= `MAP_ROM(exe_fetch_addr_r);
+            rom_bus_word_r <= 1;
+            mmc_rom_misaligned <= exe_fetch_addr_r[0];
+
+            MMC_STATE <= ST_MMC_ROM;
+          end
+
+          mmc_state_end_r <= ST_MMC_EXE_END;
+        end
         else if (exe_mmc_rd_r | exe_mmc_wr_r) begin
           mmc_byte_total_r <= exe_mmc_byte_total_r;
           mmc_dpe_r <= exe_mmc_dpe_r;
@@ -3282,7 +3300,12 @@ reg cycle_wait_r;
 reg dma_active_r;
 
 always @(posedge CLK) begin
-  dma_active_r <= dma_cc1_active_r | dma_normal_pri_active_r | vbd_active_r;
+  // Stall CPU only when DMA has a ROM bus conflict
+  // - CC1 (might occupy ROM bus) TODO: maybe refine this
+  // - Normal DMA with ROM source (SD=00, CDEN=0)
+  // - VBD: reads from ROM (et al.)
+  // Normal DMA from IRAM/BRAM and CC2 (reg -> IRAM) do not halt the CPU
+  dma_active_r <= dma_cc1_active_r | (dma_normal_pri_active_r & ~dma_dcnt_r[`DCNT_CDEN] & ~|dma_dcnt_r[`DCNT_SD]) | vbd_active_r;
 
 `ifdef DEBUG
   if (sa1_clock_en & ~|exe_waitcnt_r & EXE_STATE[clog2(ST_EXE_WAIT)] & ~step_r) cycle_wait_r <= 1;
@@ -3297,7 +3320,7 @@ always @(posedge CLK) begin
 `endif
 end
 
-assign pipeline_advance = sa1_clock_en & ~|exe_waitcnt_r & EXE_STATE[clog2(ST_EXE_WAIT)] & step_r & ~dma_active_r & ~WAI_r;
+assign pipeline_advance = ~|exe_waitcnt_r & EXE_STATE[clog2(ST_EXE_WAIT)] & step_r & ~dma_active_r & ~WAI_r & sa1_commit_ready;
 
 //-------------------------------------------------------------------
 // DEBUG OUTPUT

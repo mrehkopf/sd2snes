@@ -154,6 +154,7 @@ int main(void) {
         snes_bootprint_center(15, "properly.");
         cli_entrycheck();
         while(disk_status(0) & (STA_NODISK));
+        snes_bootprint_center(17, "SD Card inserted!");
         delay_ms(200);
       }
       file_open((uint8_t*)MENU_FILENAME, FA_READ);
@@ -245,7 +246,6 @@ int main(void) {
 
     fpga_set_dac_boost(CFG.msu_volume_boost);
     cfg_load_to_menu();
-    CFG.show_tribute = 0;
     cfg_save();
     snes_reset(0);
 
