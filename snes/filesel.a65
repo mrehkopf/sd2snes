@@ -1361,6 +1361,7 @@ fnl_got_comp_slash:
   stx testvar+2           ; fnl_comp_end = x (exclusive, '/' position)
   jsr fnl_enter_subdir
   bcc fnl_out             ; not found — bail out
+  ldx testvar+2           ; restore x — fnl_enter_subdir clobbers it
   inx                     ; skip '/'
   bra fnl_comp_loop
 fnl_got_comp_eos:
