@@ -548,6 +548,10 @@ int usbint_handler_cmd(void) {
             server_info.offset |= cmd_buffer[257]; server_info.offset <<= 8;
             server_info.offset |= cmd_buffer[258]; server_info.offset <<= 8;
             server_info.offset |= cmd_buffer[259]; server_info.offset <<= 0;
+            if (server_info.offset == 0xFFFFFF) {
+                server_info.size = server_info.total_size;
+                server_info.space = USBINT_SERVER_SPACE_NMI;
+            }
         }
         break;
     }
