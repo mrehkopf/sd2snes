@@ -657,25 +657,12 @@ wait_mcu_ready:
   plp
   rts
 
-; autoboot_cmd_handshake: send CMD_LOAD_AUTOBOOT to MCU and wait for response.
-; return to menu if autoboot ROM loading fails (e.g. file not found)
+; autoboot_cmd_handshake: run game_handshake with CMD_LOAD_AUTOBOOT
 autoboot_cmd_handshake:
   php
   sep #$20 : .as
-  lda #$00
-  sta @SNES_CMD
   lda #CMD_LOAD_AUTOBOOT
-  sta @MCU_CMD
-- lda @SNES_CMD
-  cmp #$55
-  beq +
-  cmp #$aa
-  beq autoboot_cmd_handshake_error
-  bra -
-+ lda #$55
-  sta @MCU_CMD
-  jsl @WRAM_ROUTINE
-autoboot_cmd_handshake_error:
+  jsr game_handshake
   plp
   rts
 
