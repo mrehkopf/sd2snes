@@ -85,18 +85,12 @@ coldboot:       ; Regular, cold-start init
   ; fall through to normal menu startup
   lda @ST_AUTOBOOT_ENABLED
   beq coldboot_autoboot_out       ; no autoboot configured
-  ; Poll the controller for ~60 frames (~1 second) so the user has time to act.
-  ldx #60
 autoboot_start_poll:
-  jsr waitblank         ; sync to VBlank boundary (NMI fires here, sets isr_done)
-  phx
-    jsr read_pad
-  plx
+  jsr waitblank         ; sync to VBlank boundary
+  jsr read_pad          ; early enough to preempt Auto Joypad Read
   lda pad_start         ; TODO possibly use configurable button combo here
   bne coldboot_bypass_autoboot    ; START pressed -> bypass autoboot
-  dex
-  bne autoboot_start_poll
-  ; timeout - START not pressed after ~1 second: trigger autoboot
+  ; timeout - START not held: trigger autoboot
   jsr autoboot_cmd_handshake
   bra coldboot_autoboot_out
 coldboot_bypass_autoboot:         ; clear autoboot flag, continue to menu
