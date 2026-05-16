@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <getopt.h>
 #include <ctype.h>
+#include <time.h>
 
 #define ll8(x)    (x & 0xff)
 #define lh8(x)    ((x >> 8) & 0xff)
@@ -14,6 +15,7 @@
 
 typedef struct cfg {
   bool in_place;
+  bool magic_from_version;
   char *headerfile;
   size_t headersize;
   char *signature;
@@ -23,6 +25,7 @@ typedef struct cfg {
 
 cfg_t cfg = {
   .in_place = false,
+  .magic_from_version = false,
   .headerfile = NULL,
   .headersize = 0,
   .signature = NULL,
@@ -70,14 +73,16 @@ uint32_t crc_update(uint32_t crc, const uint8_t *buf, uint32_t len) {
 }
 
 void print_usage(const char *prog) {
-  printf("\nUsage: %s [-o <header file>] [-I] -svh <input file>\n", prog);
+  printf("\nUsage: %s -s <signature> -h <hdrsize> [-o <header file>] [-I] [-v <version>] <input file>\n", prog);
   puts  ("  input file       file to be headered (modified in-place if -o is not specified)\n"
-         "  -o --output      output file containing header\n"
          "  -s --signature   magic value at start of header (4-char string)\n"
-         "  -v --version     firmware version (string) - 32-bit magic generated internally\n"
          "  -h --headersize  size of firmware header (padding up to start of vector table)\n"
-         "  -I --inplace     modify input file even with -o specified\n"
-	       "Output is written in place.\n");
+         "  -o --output      output file containing header\n"
+         "  -I --inplace     modify input file even with -o specified (both will be written)\n"
+         "  -v --version     specify firmware version (string) to hash into repeatable version magic\n"
+	       "Output is written in place.\n"
+         "When -v is not specified, a hash of the current timestamp is used as\n"
+         "the version magic.\n");
 }
 
 int parse_opts(int argc, char *argv[]) {
@@ -97,7 +102,7 @@ int parse_opts(int argc, char *argv[]) {
     OPT_INFILE     = 0x08
   } opts;
 
-  opts missing_opts = OPT_SIGNATURE | OPT_VERSION | OPT_HEADERSIZE | OPT_INFILE;
+  opts missing_opts = OPT_SIGNATURE | OPT_HEADERSIZE | OPT_INFILE;
 
   while(true) {
     int c;
@@ -120,7 +125,7 @@ int parse_opts(int argc, char *argv[]) {
 
       case 'v':
         cfg.version = optarg;
-        missing_opts &= ~OPT_VERSION;
+        cfg.magic_from_version = true;
         break;
 
       case 'h':
@@ -157,7 +162,7 @@ int main(int argc, char **argv) {
 
   if(parse_opts(argc, argv)) {
     print_usage(argv[0]);
-    abort();
+    return 1;
   }
 
   if(cfg.headerfile == NULL) {
@@ -166,7 +171,7 @@ int main(int argc, char **argv) {
 
   if(cfg.headersize < 20) {
     fprintf(stderr, "Header does not fit specified header size (at least 20 bytes)\n");
-    abort();
+    return 1;
   }
 
   if((f=fopen(cfg.infile, "rb+"))==NULL) {
@@ -183,9 +188,22 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  /* calculate version magic CRC from version string */
+  uint8_t *version_src;
+  size_t version_size;
+  struct timespec t;
+
+  if(cfg.magic_from_version) {
+    /* calculate version magic CRC from version string */
+    version_src = (uint8_t*)cfg.version;
+    version_size = strlen(cfg.version);
+  } else {
+    /* calculate version magic CRC from current time */
+    clock_gettime(CLOCK_REALTIME, &t);
+    version_src = (uint8_t*)&t;
+    version_size = sizeof(struct timespec);
+  }
   uint32_t version = 0xffffffff;
-  version = crc_update(version, (uint8_t*)cfg.version, strlen(cfg.version));
+  version = crc_update(version, version_src, version_size);
   version = crc_reflect(version, 32);
   version ^= 0xffffffff;
 
