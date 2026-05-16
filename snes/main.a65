@@ -622,8 +622,6 @@ game_handshake:
 ; send initial request to MCU
   lda #$00
   sta @SNES_CMD
-  sta $4200
-  sei
   pla
   sta @MCU_CMD
 ; wait for ACK/NACK with error (noimpl warning etc.)
@@ -633,7 +631,9 @@ game_handshake:
   cmp #$aa
   beq game_handshake_error
   bra -
-+ lda #$55
++ stz $4200
+  sei
+  lda #$55
   sta @MCU_CMD
 ; jump to WRAM
   jsl @WRAM_ROUTINE
