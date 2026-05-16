@@ -842,7 +842,6 @@ add_selected_file_to_favorites:
   php
   phb
   sep #$20 : .as
-  lda #$01
   jsr hide_cursor
   jsr draw_loading_window
   jsr waitblank

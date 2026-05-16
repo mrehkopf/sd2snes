@@ -615,7 +615,6 @@ game_handshake:
   php
   sep #$20 : .as
   pha
-  lda #$01
   jsr hide_cursor
   jsr draw_loading_window
   jsr waitblank
