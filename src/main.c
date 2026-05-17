@@ -194,12 +194,12 @@ int main(void) {
     if(firstboot) {
       cfg_load();
       cfg_save();
-      cfg_validity_check_recent_games();
-      cfg_validity_check_favorite_games();
+      cfg_validity_check_listed_games(LAST_FILE);
+      cfg_validity_check_listed_games(FAVORITES_FILE);
     }
     if(fpga_config != FPGA_BASE) fpga_pgm((uint8_t*)FPGA_BASE);
-    cfg_dump_recent_games_for_snes(SRAM_LASTGAME_ADDR);
-    cfg_dump_favorite_games_for_snes(SRAM_FAVORITEGAMES_ADDR);
+    STM.num_recent_games = cfg_dump_listed_games_for_snes(LAST_FILE, SRAM_LASTGAME_ADDR);
+    STM.num_favorite_games = cfg_dump_listed_games_for_snes(FAVORITES_FILE, SRAM_FAVORITEGAMES_ADDR);
     led_set_brightness(CFG.led_brightness);
 
     /* load menu */
@@ -295,7 +295,7 @@ int main(void) {
         case SNES_CMD_LOADROM:
           get_selected_name(file_lfn);
           printf("Selected name: %s\n", file_lfn);
-          cfg_add_last_game(file_lfn);
+          cfg_add_listed_game(LAST_FILE, file_lfn, true);
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;
         case SNES_CMD_SETRTC:
@@ -325,15 +325,15 @@ int main(void) {
           cmd=0; /* stay in menu loop */
           break;
         case SNES_CMD_LOADLAST:
-          cfg_get_last_game(file_lfn, snes_get_mcu_param() & 0xff);
+          cfg_get_listed_game(LAST_FILE, file_lfn, snes_get_mcu_param() & 0xff);
           printf("Selected name: %s\n", file_lfn);
-          cfg_add_last_game(file_lfn);
+          cfg_add_listed_game(LAST_FILE, file_lfn, true);
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;
         case SNES_CMD_LOADFAVORITE:
-          cfg_get_favorite_game(file_lfn, snes_get_mcu_param() & 0xff);
+          cfg_get_listed_game(FAVORITES_FILE, file_lfn, snes_get_mcu_param() & 0xff);
           printf("Selected name: %s\n", file_lfn);
-          cfg_add_last_game(file_lfn);
+          cfg_add_listed_game(LAST_FILE, file_lfn, true);
           filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
           break;
 /*        case SNES_CMD_SET_ALLOW_PAIR:
@@ -377,14 +377,28 @@ int main(void) {
         case SNES_CMD_ADD_FAVORITE_ROM:
           get_selected_name(file_lfn);
           printf("Selected name: %s\n", file_lfn);
-          cfg_add_favorite_game(file_lfn);
-          cfg_dump_favorite_games_for_snes(SRAM_FAVORITEGAMES_ADDR);
+          cfg_add_listed_game(FAVORITES_FILE, file_lfn, false);
+          STM.num_favorite_games = cfg_dump_listed_games_for_snes(FAVORITES_FILE, SRAM_FAVORITEGAMES_ADDR);
           status_load_to_menu();
           cmd=0; /* stay in menu loop */
           break;
+        case SNES_CMD_ADD_FAVORITE_RECENT:
+          cfg_get_listed_game(LAST_FILE, file_lfn, snes_get_mcu_param() & 0xff);
+          printf("Selected name from recent: %s\n", file_lfn);
+          cfg_add_listed_game(FAVORITES_FILE, file_lfn, true);
+          STM.num_favorite_games = cfg_dump_listed_games_for_snes(FAVORITES_FILE, SRAM_FAVORITEGAMES_ADDR);
+          status_load_to_menu();
+          cmd=0;
+          break;
+        case SNES_CMD_REMOVE_RECENT_ROM:
+          cfg_remove_listed_game(LAST_FILE, snes_get_mcu_param() & 0xff);
+          STM.num_recent_games = cfg_dump_listed_games_for_snes(LAST_FILE, SRAM_LASTGAME_ADDR);
+          status_load_to_menu();
+          cmd=0;
+          break;
         case SNES_CMD_REMOVE_FAVORITE_ROM:
-          cfg_remove_favorite_game(snes_get_mcu_param() & 0xff);
-          cfg_dump_favorite_games_for_snes(SRAM_FAVORITEGAMES_ADDR);
+          cfg_remove_listed_game(FAVORITES_FILE, snes_get_mcu_param() & 0xff);
+          STM.num_favorite_games = cfg_dump_listed_games_for_snes(FAVORITES_FILE, SRAM_FAVORITEGAMES_ADDR);
           status_load_to_menu();
           cmd=0; /* stay in menu loop */
           break;
@@ -397,8 +411,16 @@ int main(void) {
           cmd=0; /* stay in menu loop */
           break;
         case SNES_CMD_SET_AUTOBOOT_FAV:
-          cfg_get_favorite_game(file_lfn, snes_get_mcu_param() & 0xff);
+          cfg_get_listed_game(FAVORITES_FILE, file_lfn, snes_get_mcu_param() & 0xff);
           printf("Set autoboot from favorite: %s\n", file_lfn);
+          cfg_set_autoboot_rom(file_lfn);
+          STM.autoboot_enabled = 1;
+          status_load_to_menu();
+          cmd=0; /* stay in menu loop */
+          break;
+        case SNES_CMD_SET_AUTOBOOT_RECENT:
+          cfg_get_listed_game(LAST_FILE, file_lfn, snes_get_mcu_param() & 0xff);
+          printf("Selected name: %s\n", file_lfn);
           cfg_set_autoboot_rom(file_lfn);
           STM.autoboot_enabled = 1;
           status_load_to_menu();
@@ -415,7 +437,7 @@ int main(void) {
           cfg_get_autoboot_rom(file_lfn);
           printf("Autobooting: %s\n", file_lfn);
           if(file_lfn[0]) {
-            cfg_add_last_game(file_lfn);
+            cfg_add_listed_game(LAST_FILE, file_lfn, true);
             filesize = load_rom(file_lfn, SRAM_ROM_ADDR, LOADROM_WITH_SRAM | LOADROM_WITH_RESET | LOADROM_WAIT_SNES);
             if(filesize) break; /* ROM loaded and SNES reset, exit menu loop */
           }

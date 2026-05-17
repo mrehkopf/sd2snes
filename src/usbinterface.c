@@ -639,7 +639,7 @@ int usbint_handler_cmd(void) {
         // manually control reset in case we want to patch
         if (!(server_info.flags & USBINT_SERVER_FLAGS_ONLYRESET)) {
             strncpy ((char *)file_lfn, (char *)stringParam, 256);
-            cfg_add_last_game(file_lfn);
+            cfg_add_listed_game(LAST_FILE, file_lfn, true);
             // assert reset before loading
             assert_reset();
             // there may not be a menu to interact with so don't wait for SNES

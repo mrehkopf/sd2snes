@@ -245,7 +245,7 @@ void load_backup_state() {
   char line[256] = SS_BASEDIR;
   char extend[10];
   check_or_create_folder(SS_BASEDIR);
-  cfg_get_last_game(file_lfn, 0);
+  cfg_get_listed_game(LAST_FILE, file_lfn, 0);
   snprintf(extend, sizeof(extend), "%02d.state", slot);
   append_file_basename(line, (char*)file_lfn, extend, sizeof(line));
 
@@ -261,7 +261,7 @@ void save_backup_state() {
   char line[256] = SS_BASEDIR;
   char extend[10];
   check_or_create_folder(SS_BASEDIR);
-  cfg_get_last_game(file_lfn, 0);
+  cfg_get_listed_game(LAST_FILE, file_lfn, 0);
   snprintf(extend, sizeof(extend), "%02d.state", slot);
   append_file_basename(line, (char*)file_lfn, extend, sizeof(line));
 
