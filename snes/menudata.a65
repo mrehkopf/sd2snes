@@ -793,14 +793,61 @@ menu_enttab_filesel_context_file:
  .byt  0,0,0
 
  .byt  MTYPE_FUNC_CLOSE
- .word !text_filesel_context_set_as_autoboot
- .byt  ^text_filesel_context_set_as_autoboot
+ .word !text_filesel_set_as_autoboot
+ .byt  ^text_filesel_set_as_autoboot
  .word !set_selected_as_autoboot_rom-1
  .byt  ^set_selected_as_autoboot_rom-1
  .byt  0
  .byt  0,0,0
- .word !mdesc_filesel_context_set_as_autoboot
- .byt  ^mdesc_filesel_context_set_as_autoboot
+ .word !mdesc_filesel_set_as_autoboot
+ .byt  ^mdesc_filesel_set_as_autoboot
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  0
+
+menu_enttab_recent_context:
+; HEADER
+ .byt  1              ; listsel_step=1
+ .word !text_filesel_selected_file ; window title
+ .byt  ^text_filesel_selected_file ; for this menu
+; ENTRIES
+ .byt  MTYPE_FUNC_CLOSE
+ .word !text_filesel_context_add_to_favorites
+ .byt  ^text_filesel_context_add_to_favorites
+ .word !add_recent_file_to_favorites-1
+ .byt  ^add_recent_file_to_favorites-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_filesel_context_add_to_favorites
+ .byt  ^mdesc_filesel_context_add_to_favorites
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_FUNC_CLOSE
+ .word !text_filesel_set_as_autoboot
+ .byt  ^text_filesel_set_as_autoboot
+ .word !set_recent_as_autoboot_rom-1
+ .byt  ^set_recent_as_autoboot_rom-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_filesel_set_as_autoboot
+ .byt  ^mdesc_filesel_set_as_autoboot
+ .byt  0,0,0
+ .byt  0,0,0
+ .byt  0,0,0
+
+ .byt  MTYPE_FUNC_CLOSE
+ .word !text_recent_context_remove_from_recent
+ .byt  ^text_recent_context_remove_from_recent
+ .word !remove_selected_recent_file-1
+ .byt  ^remove_selected_recent_file-1
+ .byt  0
+ .byt  0,0,0
+ .word !mdesc_recent_context_remove_from_recent
+ .byt  ^mdesc_recent_context_remove_from_recent
  .byt  0,0,0
  .byt  0,0,0
  .byt  0,0,0
@@ -814,27 +861,27 @@ menu_enttab_filesel_favorites_context:
  .byt  ^text_filesel_selected_file ; for this menu
 ; ENTRIES
  .byt  MTYPE_FUNC_CLOSE
- .word !text_filesel_favorites_context_remove_from_favorites
- .byt  ^text_filesel_favorites_context_remove_from_favorites
+ .word !text_filesel_context_remove_from_favorites
+ .byt  ^text_filesel_context_remove_from_favorites
  .word !remove_selected_favorite_file-1
  .byt  ^remove_selected_favorite_file-1
  .byt  0
  .byt  0,0,0
- .word !mdesc_filesel_favorites_context_remove_from_favorites
- .byt  ^mdesc_filesel_favorites_context_remove_from_favorites
+ .word !mdesc_filesel_context_remove_from_favorites
+ .byt  ^mdesc_filesel_context_remove_from_favorites
  .byt  0,0,0
  .byt  0,0,0
  .byt  0,0,0
 
  .byt  MTYPE_FUNC_CLOSE
- .word !text_filesel_favorites_context_set_as_autoboot
- .byt  ^text_filesel_favorites_context_set_as_autoboot
+ .word !text_filesel_set_as_autoboot
+ .byt  ^text_filesel_set_as_autoboot
  .word !set_favorite_as_autoboot_rom-1
  .byt  ^set_favorite_as_autoboot_rom-1
  .byt  0
  .byt  0,0,0
- .word !mdesc_filesel_favorites_context_set_as_autoboot
- .byt  ^mdesc_filesel_favorites_context_set_as_autoboot
+ .word !mdesc_filesel_set_as_autoboot
+ .byt  ^mdesc_filesel_set_as_autoboot
  .byt  0,0,0
  .byt  0,0,0
  .byt  0,0,0

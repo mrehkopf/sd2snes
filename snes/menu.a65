@@ -87,6 +87,33 @@ filesel_favorites_contextmenu:
   jsr pop_window
   rts
 
+filesel_recent_contextmenu:
+  sep #$20 : .as
+  rep #$10 : .xl
+  lda #$02
+  sta window_x
+  lda #$09
+  sta window_y
+  lda #60
+  sta window_w
+  lda #18
+  sta window_h
+  jsr push_window
+  jsr window_greyout
+  lda #$06
+  sta window_x
+  lda #$0b
+  sta window_y
+  phb
+    lda #^menu_enttab_recent_context
+    pha
+    plb
+    ldx #!menu_enttab_recent_context
+    jsr show_menu
+  plb
+  jsr pop_window
+  rts
+
 ; menu_select:
 ; helper routine to select a list entry
 ; window and list items must be printed in advance

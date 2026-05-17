@@ -79,11 +79,14 @@
 #define CMD_RUNROM                  $11 /* TODO WIP - ROM must first be selected by SELECTROM */
 #define CMD_LED_BRIGHTNESS          $12
 #define CMD_ADD_FAVORITE_ROM        $13
-#define CMD_REMOVE_FAVORITE_ROM     $14
-#define CMD_SET_AUTOBOOT_ROM        $15 /* set autoboot from file browser */
-#define CMD_SET_AUTOBOOT_FAV        $16 /* set autoboot from favorites (index in MCU_PARAM) */
-#define CMD_CLR_AUTOBOOT_ROM        $17 /* clear autoboot ROM setting */
-#define CMD_LOAD_AUTOBOOT           $18 /* trigger autoboot at cold boot */
+#define CMD_ADD_FAVORITE_RECENT     $14
+#define CMD_REMOVE_FAVORITE_ROM     $15
+#define CMD_REMOVE_RECENT_ROM       $16
+#define CMD_SET_AUTOBOOT_ROM        $17 /* set autoboot from file browser */
+#define CMD_SET_AUTOBOOT_FAV        $18 /* set autoboot from favorites (index in MCU_PARAM) */
+#define CMD_SET_AUTOBOOT_RECENT     $19
+#define CMD_CLR_AUTOBOOT_ROM        $1a /* clear autoboot ROM setting */
+#define CMD_LOAD_AUTOBOOT           $1b /* trigger autoboot at cold boot */
 #define CMD_SAVESTATE               $40
 #define CMD_LOADSTATE               $41
 #define CMD_MCU_RDY                 $55

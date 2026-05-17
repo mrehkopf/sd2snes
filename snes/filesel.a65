@@ -835,36 +835,6 @@ ctx_is_dir
 ctx_is_spc
   bra open_context_menu_cont
 
-add_selected_file_to_favorites:
-; have MCU save the file to the favorites list
-; the file path should already have been saved to MCU_PARAM before calling
-; this routine
-  php
-  phb
-  sep #$20 : .as
-  jsr hide_cursor
-  jsr draw_loading_window
-  jsr waitblank
-  lda #$00
-  sta @SNES_CMD
-  lda #CMD_ADD_FAVORITE_ROM
-  sta @MCU_CMD
-; wait for ACK/NACK
-- lda @SNES_CMD
-  cmp #$55
-; success
-  beq +
-  cmp #$aa
-; failure
-  beq +
-  bra -
-+ lda #$55
-  sta @MCU_CMD
-  jsr pop_window
-  plb
-  plp
-  rtl
-
 setup_224:
   php
   rep #$30 : .xl : .al
@@ -937,12 +907,14 @@ select_last_file:
   php
   sep #$20 : .as
   rep #$10 : .xl
+  lda #$00
+  sta listsel_backup
+select_last_redraw:
   lda @ST_NUM_RECENT_GAMES
   sta num_recent_games
   stz recent_sel
   bne +
-  plp
-  rtl
+  jmp select_last_file_out
 + lda #^text_last
   sta window_tbank
   ldx #!text_last
@@ -965,6 +937,12 @@ select_last_file:
   jsr push_window
   lda num_recent_games
   sta listsel_max
+  dec
+  cmp listsel_backup
+  bcs +
+  sta listsel_backup
++ lda listsel_backup
+  sta listsel_sel
   jsr draw_window
   stz print_pal
   lda #^LAST_GAME
@@ -983,17 +961,41 @@ select_last_file:
   inc print_y
   dec num_recent_games
   bne -
+  stz listsel_dirty
+  jsr enable_screen_update
+select_last_choose:
   lda #$01
   sta listsel_step
-  stz listsel_pickbutton
-  jsr menu_select
+  sta listsel_pickbutton ; allow button Y
+  jsr menu_select_noinit
+  sta listsel_backup
   sta @MCU_PARAM
   cmp #$ff
-  beq +
+  beq select_last_file_done
+  lda listsel_pickbutton
+  cmp #$00 ; button A was pressed
+  beq select_last_file_play
+  cmp #$01 ; button Y was pressed
+  beq select_last_file_context_menu
+  bra select_last_file_done
+select_last_file_play:
   sep #$20 : .as
   lda #CMD_LOADLAST
   jsr game_handshake
-+ jsr pop_window
+  bra select_favorite_file_done
+select_last_file_context_menu:
+  jsr filesel_recent_contextmenu
+  lda listsel_dirty
+  bne +
+  jmp select_last_choose
++ stz listsel_dirty
+  jsr pop_window
+  jsr disable_screen_update
+  jmp select_last_redraw
+select_last_file_done:
+  jsr pop_window
+select_last_file_out:
+  jsr enable_screen_update
   plp
   rtl
 
@@ -1093,6 +1095,101 @@ select_favorite_file_out
   plp
   rtl
 
+; TODO the following seven functions differ only in the command byte
+;      sent to the MCU and whether the listsel_dirty flag is set.
+;      consider merging!
+add_selected_file_to_favorites:
+; have MCU save the file to the favorites list
+; the file path should already have been saved to MCU_PARAM before calling
+; this routine
+  php
+  phb
+  sep #$20 : .as
+  jsr hide_cursor
+  jsr draw_loading_window
+  jsr waitblank
+  lda #$00
+  sta @SNES_CMD
+  lda #CMD_ADD_FAVORITE_ROM
+  sta @MCU_CMD
+; wait for ACK/NACK
+- lda @SNES_CMD
+  cmp #$55
+; success
+  beq +
+  cmp #$aa
+; failure
+  beq +
+  bra -
++ lda #$55
+  sta @MCU_CMD
+  jsr pop_window
+  plb
+  plp
+  rtl
+
+add_recent_file_to_favorites:
+; have MCU remove the file from the recent list
+; the list index of the file should already have been saved to MCU_PARAM before
+; calling this routine
+  php
+  phb
+  sep #$20 : .as
+  jsr hide_cursor
+  jsr draw_loading_window
+  jsr waitblank
+  lda #$00
+  sta @SNES_CMD
+  lda #CMD_ADD_FAVORITE_RECENT
+  sta @MCU_CMD
+  ; wait for ACK/NACK
+  - lda @SNES_CMD
+  cmp #$55
+  ; success
+  beq +
+  cmp #$aa
+  ; failure
+  beq +
+  bra -
+  + lda #$55
+  sta @MCU_CMD
+;  sta listsel_dirty
+  jsr pop_window
+  plb
+  plp
+  rtl
+
+remove_selected_recent_file:
+; have MCU remove the file from the recent list
+; the list index of the file should already have been saved to MCU_PARAM before
+; calling this routine
+  php
+  phb
+  sep #$20 : .as
+  jsr hide_cursor
+  jsr draw_loading_window
+  jsr waitblank
+  lda #$00
+  sta @SNES_CMD
+  lda #CMD_REMOVE_RECENT_ROM
+  sta @MCU_CMD
+  ; wait for ACK/NACK
+  - lda @SNES_CMD
+  cmp #$55
+  ; success
+  beq +
+  cmp #$aa
+  ; failure
+  beq +
+  bra -
+  + lda #$55
+  sta @MCU_CMD
+  sta listsel_dirty
+  jsr pop_window
+  plb
+  plp
+  rtl
+
 remove_selected_favorite_file:
 ; have MCU remove the file from the favorites list
 ; the list index of the file should already have been saved to MCU_PARAM before
@@ -1100,7 +1197,6 @@ remove_selected_favorite_file:
   php
   phb
   sep #$20 : .as
-  lda #$01
   jsr hide_cursor
   jsr draw_loading_window
   jsr waitblank
@@ -1132,13 +1228,40 @@ set_selected_as_autoboot_rom:
   php
   phb
   sep #$20 : .as
-  lda #$01
   jsr hide_cursor
   jsr draw_loading_window
   jsr waitblank
   lda #$00
   sta @SNES_CMD
   lda #CMD_SET_AUTOBOOT_ROM
+  sta @MCU_CMD
+; wait for ACK/NACK
+- lda @SNES_CMD
+  cmp #$55
+; success
+  beq +
+  cmp #$aa
+; failure
+  beq +
+  bra -
++ lda #$55
+  sta @MCU_CMD
+  jsr pop_window
+  plb
+  plp
+  rtl
+
+set_recent_as_autoboot_rom:
+; have MCU save the selected recent game as the autoboot ROM.
+  php
+  phb
+  sep #$20 : .as
+  jsr hide_cursor
+  jsr draw_loading_window
+  jsr waitblank
+  lda #$00
+  sta @SNES_CMD
+  lda #CMD_SET_AUTOBOOT_RECENT
   sta @MCU_CMD
 ; wait for ACK/NACK
 - lda @SNES_CMD
@@ -1163,7 +1286,6 @@ set_favorite_as_autoboot_rom:
   php
   phb
   sep #$20 : .as
-  lda #$01
   jsr hide_cursor
   jsr draw_loading_window
   jsr waitblank
