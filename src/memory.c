@@ -50,9 +50,12 @@ memory.c: RAM operations
 #include "rtc.h"
 #include "savestate.h"
 #include "sgb.h"
+#include "patch.h"
 
 #include <string.h>
 char* hex = "0123456789ABCDEF";
+
+uint8_t current_ips_srm_source[256];
 
 extern snes_romprops_t romprops;
 extern uint32_t saveram_crc_old, saveram_crc, saveram_offset;
@@ -527,6 +530,62 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   if(flags & (LOADROM_WITH_RESET|LOADROM_WAIT_SNES)) {
     assert_reset();
     init(filename);
+    /* Apply IPS patch to the ROM in SRAM while the SNES is in hardware reset.
+       ips_pending_index is set by the CMD_LOADROM handler in main.c before
+       calling load_rom().  We consume+clear it here. */
+    if(ips_pending_index > 0) {
+      /* Dispatch to ips_apply or bps_apply based on the patch file extension.
+         For IPS: pass the copier-header size so offset correction works when
+         the IPS was authored for a headered ROM.  For combo ROMs
+         romprops.offset carries a slot shift in the upper bits; mask those
+         off to get just the header size (0 or 0x200).
+         BPS encodes exact sizes so no header correction is needed there. */
+      uint32_t ips_header_size = romprops.offset & 0xFFFFF;
+      uint32_t ips_end = patch_apply(SRAM_IPS_LIST_ADDR, ips_pending_index,
+                                     SRAM_ROM_ADDR + romprops.load_address,
+                                     romprops.romsize_bytes,
+                                     ips_header_size);
+      ips_pending_index = 0;
+      /* If the IPS patch wrote past the original ROM boundary (ROM expansion
+         hack), expand the FPGA ROM mask so those new banks are accessible.
+         romprops.romsize_bytes is always a power of 2, so a simple left-
+         shift loop finds the next fitting power of 2. */
+      if(ips_end > romprops.romsize_bytes) {
+        /* IPS/BPS patches authored for a headered (512-byte copier prefix)
+           ROM image sometimes have max_end that overshoots a clean power-of-2
+           ROM boundary by exactly 512 bytes.  Those extra bytes are the
+           copier header padding — not real ROM data — so they must not cause
+           the mask to double.  Snap ips_end back to the clean boundary when
+           the overshoot is ≤ 512 bytes. */
+        if (ips_end > 512) {
+          /* Largest power-of-2 that is ≤ ips_end */
+          uint32_t p2 = ips_end;
+          p2 |= p2 >> 1; p2 |= p2 >> 2; p2 |= p2 >> 4;
+          p2 |= p2 >> 8; p2 |= p2 >> 16;
+          p2 = (p2 + 1) >> 1;
+          if (p2 < ips_end && ips_end - p2 <= 512) {
+            printf("IPS/BPS: header padding trimmed 0x%lx -> 0x%lx\n",
+                   (unsigned long)ips_end, (unsigned long)p2);
+            ips_end = p2;
+          }
+        }
+        uint32_t new_size = romprops.romsize_bytes;
+        while(new_size < ips_end) new_size <<= 1;
+        /* For LoROM (mapper_id 1) the FPGA address formula uses ~A23 to
+           overlay the two SNES bank halves onto the same SRAM window.
+           This only works correctly when the ROM mask has bit 22 clear
+           (i.e. mask <= 0x3FFFFF, ROM <= 4 MB).  LoROM's addressing limit
+           is 4 MB regardless of IPS expansion, so if the loop doubled past
+           4 MB (typically due to a single stray IPS byte sitting just past
+           the 4 MB boundary), cap new_size back to 4 MB. */
+        if(romprops.mapper_id == 1 && new_size > 0x400000)
+          new_size = 0x400000;
+        printf("IPS ROM expansion: %lx -> %lx (mask %lx)\n",
+               romprops.romsize_bytes, new_size, new_size - 1);
+        romprops.romsize_bytes = new_size;
+        set_rom_mask(new_size - 1);
+      }
+    }
     deassert_reset();
   }
   // loading a new rom implies the previous crc is no longer valid
@@ -673,13 +732,22 @@ uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr, uint8_t flags)
 
 uint32_t migrate_and_load_srm(uint8_t* filename, uint32_t base_addr) {
   uint8_t srmfile[256] = SAVE_BASEDIR;
-  append_file_basename((char*)srmfile, (char*)filename, ".srm", sizeof(srmfile));
+  /* When a patched load is active, derive the .srm name from the IPS file
+     path instead of the ROM filename so each patch gets its own save. */
+  const uint8_t *srm_src = current_ips_srm_source[0]
+                            ? current_ips_srm_source
+                            : filename;
+  append_file_basename((char*)srmfile, (char*)srm_src, ".srm", sizeof(srmfile));
   printf("SRM file: %s\n", srmfile);
 
   uint32_t filesize;
   /* check for SRM file in new centralized sram folder */
   filesize = load_sram(srmfile, base_addr);
   if(file_res) {
+    if(current_ips_srm_source[0]) {
+      /* No old-style migration for patched ROMs; a missing save is fine. */
+      return 0;
+    }
     /* try to move SRM file from old place to new one and to load again */
     strcpy(strrchr((char*)filename, (int)'.'), ".srm");
     printf("%s not found, trying to load and migrate %s...\n", srmfile, filename);
@@ -762,7 +830,11 @@ uint32_t load_bootrle(uint32_t base_addr) {
 void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
     char srmfile[256] = SAVE_BASEDIR;
     check_or_create_folder(SAVE_BASEDIR);
-    append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
+    /* Use the IPS source path as the save name when a patch was active. */
+    const uint8_t *srm_src = current_ips_srm_source[0]
+                              ? current_ips_srm_source
+                              : filename;
+    append_file_basename(srmfile, (char*)srm_src, ".srm", sizeof(srmfile));
     save_sram((uint8_t*)srmfile, sram_size, base_addr);
 }
 

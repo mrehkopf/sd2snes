@@ -59,6 +59,7 @@ extern char current_filename[];
 #define SRAM_SYSINFO_ADDR            (0xFF1200L)
 #define SRAM_LASTGAME_ADDR           (0xFF1420L)
 #define SRAM_FAVORITEGAMES_ADDR      (0xFF4000L)
+#define SRAM_IPS_LIST_ADDR           (0xFF5000L)
 #define SRAM_SCRATCHPAD              (0xFFFF00L)
 #define SRAM_DIRID                   (0xFFFFF0L)
 #define SRAM_RELIABILITY_SCORE       (0x100)
@@ -102,6 +103,7 @@ uint16_t sram_writestrn(void* buf, uint32_t addr, uint16_t size);
 void sram_readlongblock(uint32_t* buf, uint32_t addr, uint16_t count);
 uint16_t sram_writeblock(void* buf, uint32_t addr, uint16_t size);
 void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
+extern uint8_t current_ips_srm_source[256];
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
 uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size, uint32_t crc);
 uint16_t calc_sram_sum(uint32_t base_addr, uint32_t size);

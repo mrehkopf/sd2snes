@@ -27,6 +27,7 @@ DEBUG_MSU1       = n
 DEBUG_YAML       = n
 DEBUG_USB        = n
 DEBUG_USBHW      = n
+CONFIG_CDC_DEBUG = n
 
 GPIO_I = IDR
 GPIO_O = ODR

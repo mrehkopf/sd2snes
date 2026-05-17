@@ -9,6 +9,23 @@
 #include "uart.h"
 #include "led.h"
 
+#ifdef CONFIG_CDC_DEBUG
+/* Forward-declare the two USB CDC symbols needed for debug mirroring. */
+extern volatile uint8_t USB_Configuration;
+extern uint32_t CDC_block_send(uint8_t *buffer, uint32_t send_size);
+
+/* 60-byte line buffer (< one 64-byte USB frame); flushed on '\n' or full. */
+static uint8_t cdc_lb[60];
+static uint8_t cdc_lb_pos = 0;
+
+static void cdc_lb_flush(void) {
+    if (!cdc_lb_pos || !USB_Configuration) { cdc_lb_pos = 0; return; }
+    uint8_t len = cdc_lb_pos;
+    cdc_lb_pos = 0;
+    CDC_block_send(cdc_lb, len);
+}
+#endif
+
 static uint8_t uart_lookupratio(float f_fr) {
   uint16_t errors[72]={0,67,71,77,83,91,100,111,125,
                        133,143,154,167,182,200,214,222,231,
@@ -115,6 +132,12 @@ void UART_HANDLER(void) {
 }
 
 void uart_putc(char c) {
+#ifdef CONFIG_CDC_DEBUG
+  /* Mirror raw char to CDC before CR injection — CDC log uses bare \n. */
+  cdc_lb[cdc_lb_pos++] = (uint8_t)c;
+  if (c == '\n' || cdc_lb_pos >= sizeof(cdc_lb))
+    cdc_lb_flush();
+#endif
   if (c == '\n')
     uart_putc('\r');
 

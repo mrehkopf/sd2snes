@@ -27,6 +27,7 @@ DEBUG_MSU1       = n
 DEBUG_YAML       = n
 DEBUG_USB        = n
 DEBUG_USBHW      = n
+CONFIG_CDC_DEBUG = n
 
 MENU_FILENAME = "/sd2snes/menu.bin"
 
