@@ -1,3 +1,11 @@
+v1.11.2
+=======
+ * [All] Add context menu to recent games list:
+          - Remove from recent games list
+          - Add to favorites
+          - Set as autoboot
+ * [All] Fix autoboot not booting on some games using enhancement chips
+
 v1.11.1
 =======
  * [All] Autoboot: set a ROM as autoboot from the context menu to launch
