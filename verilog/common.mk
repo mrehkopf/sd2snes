@@ -112,7 +112,7 @@ smartxplorer: main.ngd currentProps.stratfile hostlistfile.txt
 fpga_$(CORE).bit: main.bit
 	../../utils/rle $^ $@
 
-main.ngc: main.xst main.prj main.ucf
+main.ngc: main.xst main.prj $(UCF)
 	$(call T,[mk2] fpga_$(CORE) - Synthesize)
 	rm -f $@
 	mkdir -p $(XILINX_XST_TMPDIR)
