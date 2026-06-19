@@ -1,5 +1,5 @@
-    #include <p12f629.inc>
 processor p12f629
+    #include <p12f629.inc>
 
 ; ---------------------------------------------------------------------
 ;   SNES CIC clone for PIC Microcontroller (lock mode, auto key region detect,
@@ -245,7 +245,7 @@ main
 	bcf     STATUS, RP0
 	movlw	0x24		; "wait" 1
 	call	wait		; wait 112
-;	nop
+  nop
 	movlw	0x1		; 'first time' bit
 	movwf	0x43		; for key detection
 ; --------main loop--------
@@ -739,5 +739,5 @@ check_save
 	movwf	0x32
 check_done
 	return
-end
+ end
 ; ------------------------------------------------------------------------
