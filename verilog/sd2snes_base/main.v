@@ -146,6 +146,7 @@ wire [7:0] SRTC_SNES_DATA_OUT;
 wire [15:0] featurebits;
 wire feat_cmd_unlock = featurebits[5];
 wire feat_bs_base_enable = featurebits[12];
+wire feat_bs_slot = featurebits[14];
 
 wire r213f_enable;
 
@@ -561,6 +562,9 @@ dma snes_dma (
 bsx snes_bsx(
   .clkin(CLK2),
   .use_bsx(use_bsx),
+  .bs_slot(feat_bs_slot),
+  .bs_hirom(feat_bs_slot & (MAPPER == 3'b000)), // HiROM slot -> $E0-$EF
+
   .pgm_we(bsx_regs_reset_we),
   .snes_addr_in(SNES_ADDR),
   .reg_data_in(BSX_SNES_DATA_IN),

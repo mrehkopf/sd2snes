@@ -47,6 +47,9 @@
 #include "hwinfo.h"
 
 uint32_t saveram_crc, saveram_crc_old;
+uint32_t bs_pack_crc, bs_pack_crc_old; /* BS Memory Pack autosave */
+/* pack autosave scan state (globals so load_rom resets them per game) */
+uint32_t bs_pack_offset, bs_pack_diff, bs_pack_same, bs_pack_didnotsave, bs_pack_save_failed;
 uint8_t sram_crc_valid;
 uint8_t sram_crc_init;
 uint32_t sram_crc_romsize;
@@ -113,6 +116,19 @@ void prepare_reset() {
     writeled(1);
     save_srm(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
     writeled(0);
+  }
+  /* save the pack only if it changed (CRC vs the last-saved baseline) -- no 1MB write
+     of an unchanged pack on every reset.  calc_pack_crc_inreset reads raw since the
+     SNES is in reset (calc_sram_crc would bail). */
+  if((romprops.fpga_features & FEAT_BSSLOT) && fpga_test() == FPGA_TEST_TOKEN) {
+    uint32_t crc = calc_pack_crc_inreset();
+    if(crc != bs_pack_crc_old) {
+      writeled(1);
+      save_bs_pack(file_lfn);
+      bs_pack_crc_old = crc;
+      bs_pack_diff = 0;
+      writeled(0);
+    }
   }
   // don't save SGB RTC since we are in reset and it may be undefined
   rdyled(1);
@@ -343,6 +359,57 @@ uint8_t snes_main_loop() {
     saveram_offset = 0;
     saveram_crc_old = 0;
     saveram_crc = 0;
+  }
+
+  /* pack autosave: same chunked-CRC scan as SaveRAM above, over the 1MB pack.
+     bs_pack_crc_old is seeded at load so an unchanged pack isn't rewritten. */
+  if((romprops.fpga_features & FEAT_BSSLOT) && CFG.enable_autosave) {
+    uint32_t crc_bytes = min(BS_PACK_SIZE - bs_pack_offset, SRAM_REGION_SIZE);
+    bs_pack_crc = calc_sram_crc(BS_PACK_ADDR + bs_pack_offset, crc_bytes, bs_pack_crc);
+    bs_pack_offset += crc_bytes;
+    if(crc_valid && sram_reliable()) {
+      if(bs_pack_offset >= BS_PACK_SIZE) {
+        if(bs_pack_save_failed) bs_pack_didnotsave++;
+        if(bs_pack_crc != bs_pack_crc_old) {
+          bs_pack_diff = 1;          /* dirty since last save */
+          bs_pack_same = 0;
+          bs_pack_didnotsave++;
+        } else if(bs_pack_diff) {
+          bs_pack_same++;            /* dirty but stable this pass */
+        }
+        if(bs_pack_diff && bs_pack_same >= 5) {
+          printf("BS pack CRC: 0x%04lx; saving %s\n", bs_pack_crc, file_lfn);
+          writeled(1);
+          save_bs_pack(file_lfn);
+          bs_pack_save_failed = file_res ? 1 : 0;
+          if(!bs_pack_save_failed) { bs_pack_diff = 0; bs_pack_same = 0; }
+          bs_pack_didnotsave = bs_pack_save_failed ? 25 : 0;
+          writeled(0);
+        }
+        if(bs_pack_didnotsave > 50) {
+          printf("BS pack periodic save (pack keeps changing or a save failed)\n");
+          writeled(1);
+          save_bs_pack(file_lfn);
+          bs_pack_save_failed = file_res ? 1 : 0;
+          if(!bs_pack_save_failed) bs_pack_diff = 0;
+          bs_pack_didnotsave = bs_pack_save_failed ? 25 : 0;
+          writeled(0);
+        }
+        bs_pack_offset = 0;
+        bs_pack_crc_old = bs_pack_crc;
+        bs_pack_crc = 0;
+      }
+    } else {
+      bs_pack_offset = 0;
+      bs_pack_crc = 0;
+    }
+  } else {
+    /* reset the scan, but keep bs_pack_crc_old: prepare_reset compares against it
+       (zeroing it, like SaveRAM does, would force a full flush every reset) */
+    bs_pack_offset = 0;
+    bs_pack_crc = 0;
+    bs_pack_same = 0;
+    bs_pack_didnotsave = 0;
   }
 
   return snes_get_mcu_cmd();
