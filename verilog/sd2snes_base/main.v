@@ -559,6 +559,9 @@ dma snes_dma (
   .ROM_WORD_ENABLE(DMA_WORD)
 );
 
+// BS Memory Pack flash-erase request -> exposed in the MCU status word (mcu_cmd)
+wire [1:0] bs_erase_seq;
+wire [3:0] bs_erase_blk;
 bsx snes_bsx(
   .clkin(CLK2),
   .use_bsx(use_bsx),
@@ -585,9 +588,6 @@ bsx snes_bsx(
   .bs_erase_seq(bs_erase_seq),
   .bs_erase_blk(bs_erase_blk)
 );
-// BS Memory Pack flash-erase request -> exposed in the MCU status word (mcu_cmd)
-wire [1:0] bs_erase_seq;
-wire [3:0] bs_erase_blk;
 
 spi snes_spi(
   .clk(CLK2),
