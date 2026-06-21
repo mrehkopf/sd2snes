@@ -50,6 +50,7 @@ uint32_t saveram_crc, saveram_crc_old;
 uint32_t bs_pack_crc, bs_pack_crc_old; /* BS Memory Pack autosave */
 /* pack autosave scan state (globals so load_rom resets them per game) */
 uint32_t bs_pack_offset, bs_pack_diff, bs_pack_same, bs_pack_didnotsave, bs_pack_save_failed;
+uint8_t bs_pack_erase_seq; /* last-seen FPGA flash-erase seq counter (status bits12-11) */
 uint8_t sram_crc_valid;
 uint8_t sram_crc_init;
 uint32_t sram_crc_romsize;
@@ -359,6 +360,25 @@ uint8_t snes_main_loop() {
     saveram_offset = 0;
     saveram_crc_old = 0;
     saveram_crc = 0;
+  }
+
+  /* BS pack flash erase: the FPGA flips status-word bit12 when the game issues a block
+     erase ($20/$D0) or chip erase ($A7/$D0).  The FPGA can't do a 64KB fill, so the MCU
+     does it: fill the block (bits 11..8) -- or the whole pack (bit7) -- with 0xFF.  Runs
+     independent of autosave so delete works regardless; the change then rides the
+     autosave path below to persist.  bs_pack_erase_toggle is synced at load. */
+  if(romprops.fpga_features & FEAT_BSSLOT) {
+    uint16_t bs_st = fpga_status();
+    uint8_t seq = (bs_st >> 11) & 0x3;       /* status bits 12-11 */
+    if(seq != bs_pack_erase_seq) {
+      bs_pack_erase_seq = seq;
+      uint8_t blk = ((bs_st >> 8) & 0x7) | (((bs_st >> 7) & 1) << 3); /* bits 10-8 + bit7 */
+      if(blk == 0xF) {
+        sram_memset(BS_PACK_ADDR, BS_PACK_SIZE, 0xFF);     /* chip erase */
+      } else {
+        sram_memset(BS_PACK_ADDR + ((uint32_t)blk << 16), 0x10000, 0xFF);
+      }
+    }
   }
 
   /* pack autosave: same chunked-CRC scan as SaveRAM above, over the 1MB pack.

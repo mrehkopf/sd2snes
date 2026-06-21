@@ -581,8 +581,13 @@ bsx snes_bsx(
   .bs_page_out(bs_page), // support only page 0000-03ff
   .bs_page_enable(bs_page_enable),
   .bs_page_offset(bs_page_offset),
-  .feat_bs_base_enable(feat_bs_base_enable)
+  .feat_bs_base_enable(feat_bs_base_enable),
+  .bs_erase_seq(bs_erase_seq),
+  .bs_erase_blk(bs_erase_blk)
 );
+// BS Memory Pack flash-erase request -> exposed in the MCU status word (mcu_cmd)
+wire [1:0] bs_erase_seq;
+wire [3:0] bs_erase_blk;
 
 spi snes_spi(
   .clk(CLK2),
@@ -645,6 +650,8 @@ mcu_cmd snes_mcu_cmd(
   .dac_ptr_out(dac_ptr_addr),
   .msu_addr_out(msu_write_addr),
   .MSU_STATUS(msu_status_out),
+  .bs_erase_seq(bs_erase_seq),
+  .bs_erase_blk(bs_erase_blk),
   .msu_status_reset_out(msu_status_reset_bits),
   .msu_status_set_out(msu_status_set_bits),
   .msu_status_reset_we(msu_status_reset_we),
@@ -949,7 +956,7 @@ assign ROM_OE = 1'b0;
 reg[17:0] SNES_DEAD_CNTr;
 initial SNES_DEAD_CNTr = 0;
 
-// context engine request
+// context engine request -- also reused for the BS flash program write.
 always @(posedge CLK2) begin
   if(CTX_WRQ) begin
     CTX_WR_PENDr <= 1'b1;
@@ -957,7 +964,15 @@ always @(posedge CLK2) begin
     CTX_ROM_ADDRr <= CTX_ADDR;
     CTX_ROM_DATAr <= CTX_DOUT;
     CTX_ROM_WORDr <= CTX_WORD;
-  end 
+  end
+  // BS flash program byte: the live SNES byte is valid at WR_end.  Skip $FF (flash AND
+  // makes it a no-op, so it preserves the byte the game wrote earlier, e.g. the name).
+  else if(SNES_WR_end & IS_FLASHWR & (SNES_DATA != 8'hff) & ~CTX_WR_PENDr) begin
+    CTX_WR_PENDr <= 1'b1;
+    CTX_ROM_ADDRr <= MAPPED_SNES_ADDR;
+    CTX_ROM_DATAr <= {SNES_DATA, SNES_DATA};
+    CTX_ROM_WORDr <= 1'b0; // byte write
+  end
   else if(STATE & ST_CTX_WR_END) begin
     CTX_WR_PENDr <= 1'b0;
     RQ_CTX_RDYr <= 1'b1;
@@ -1179,7 +1194,8 @@ assign ROM_WE = SD_DMA_TO_ROM
                 ? MCU_WRITE
                 : CTX_WE_HIT ? 1'b0
                 : DMA_WE_HIT ? 1'b0
-                : (ROM_HIT & ~loop_enable & (IS_WRITABLE | IS_FLASHWR) & SNES_CPU_CLK) ? SNES_WRITE
+                // flash program writes (IS_FLASHWR) are done by the CTX path above, not here
+                : (ROM_HIT & ~loop_enable & IS_WRITABLE & SNES_CPU_CLK) ? SNES_WRITE
                 : MCU_WE_HIT ? 1'b0
                 : 1'b1;
 

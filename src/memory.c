@@ -58,6 +58,7 @@ extern snes_romprops_t romprops;
 extern uint32_t saveram_crc_old, saveram_crc, saveram_offset;
 extern uint32_t bs_pack_crc, bs_pack_crc_old, bs_pack_offset, bs_pack_diff, bs_pack_same,
                 bs_pack_didnotsave, bs_pack_save_failed;
+extern uint8_t bs_pack_erase_seq;
 static uint8_t rom_scan_bs_vendor(uint32_t size); /* BS slot auto-detect (defined below) */
 static uint8_t bs_pack_exists(uint8_t *filename);
 extern sgb_romprops_t sgb_romprops;
@@ -456,27 +457,44 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     }
   }
 
-  /* BS Memory Pack slot, auto-detected (no title list): if a <rom>.mpk exists, scan the
-     ROM for the pack-probe signature.  Pre-gate to base core + mapper 0/1, and HiROM
-     <=2MB (above that its own ROM reaches $E0+, where the HiROM pack maps).  The window
-     follows the mapper (LoROM $C0-$DF / HiROM $E0-$EF).  FEAT_BSLOROM here for a >2MB
-     LoROM cart with a pack; standalone (no pack) boot of Derby/SN is in smc.c. */
-  if((flags & LOADROM_WITH_SRAM) && !romprops.fpga_conf
-     && (romprops.mapper_id == 1
-         || (romprops.mapper_id == 0 && romprops.romsize_bytes <= 0x200000))
-     && bs_pack_exists(filename)
-     && rom_scan_bs_vendor(romprops.romsize_bytes)) {
-    if(romprops.mapper_id == 1 && romprops.romsize_bytes > 0x200000) {
-      romprops.fpga_features |= FEAT_BSLOROM;
+  /* BS Memory Pack slot, auto-detected (no title list): needs a <rom>.mpk present.
+     Two families:
+       - base mapper (LoROM, or HiROM <=2MB; above that its own ROM reaches $E0+, where
+         the HiROM pack maps): confirm with the pack-probe ROM scan (LDA $bb:FF00/$bb:FF02).
+         The window follows the mapper (LoROM $C0-$DF / HiROM $E0-$EF).  FEAT_BSLOROM here
+         for a >2MB LoROM cart with a pack; standalone (no pack) boot of Derby/SN is in smc.c.
+       - SA-1 slotted (e.g. SD Gundam G Next): the game validates the pack on the S-CPU and
+         reads it through SuperMMC block 4 (the SA-1 core redirects MMC block>=4 to the pack
+         at PSRAM 0x900000).  It writes no flash registers, so there is no pack-probe
+         signature to scan -- gate on has_sa1 + a present .mpk (an explicit user action). */
+  uint8_t bs_slot = 0;
+  if((flags & LOADROM_WITH_SRAM) && bs_pack_exists(filename)) {
+    if(!romprops.fpga_conf
+       && (romprops.mapper_id == 1
+           || (romprops.mapper_id == 0 && romprops.romsize_bytes <= 0x200000))
+       && rom_scan_bs_vendor(romprops.romsize_bytes)) {
+      if(romprops.mapper_id == 1 && romprops.romsize_bytes > 0x200000) {
+        romprops.fpga_features |= FEAT_BSLOROM;
+      }
+      bs_slot = 1;
+    } else if(romprops.has_sa1) {
+      bs_slot = 1;
     }
-    if(load_bs_pack(filename)) {
-      printf("BS Memory Pack present\n");
-      romprops.fpga_features |= FEAT_BSSLOT;
-      /* seed the autosave baseline + reset scan state per game (globals, like
-         saveram_offset) so an unchanged pack is not re-written */
-      bs_pack_crc_old = calc_sram_crc(BS_PACK_ADDR, BS_PACK_SIZE, 0);
-      bs_pack_crc = bs_pack_offset = bs_pack_diff = bs_pack_same = 0;
-      bs_pack_didnotsave = bs_pack_save_failed = 0;
+  }
+  if(bs_slot && load_bs_pack(filename)) {
+    printf("BS Memory Pack present\n");
+    romprops.fpga_features |= FEAT_BSSLOT;
+    /* seed the autosave baseline + reset scan state per game (globals, like
+       saveram_offset) so an unchanged pack is not re-written */
+    bs_pack_crc_old = calc_sram_crc(BS_PACK_ADDR, BS_PACK_SIZE, 0);
+    bs_pack_crc = bs_pack_offset = bs_pack_diff = bs_pack_same = 0;
+    bs_pack_didnotsave = bs_pack_save_failed = 0;
+    /* sync the erase seq to the FPGA's current value so a stale seq from a previous
+       game doesn't trigger a spurious erase on the first poll */
+    bs_pack_erase_seq = (fpga_status() >> 11) & 0x3;
+    /* RTC is the Satellaview base-unit clock (base core only); the SA-1 core has no
+       BS-X base regs, so don't poke the FPGA time there. */
+    if(!romprops.has_sa1) {
       if(CFG.bsx_use_usertime) {
         set_fpga_time(srtctime2bcdtime(CFG.bsx_time));
       } else {
