@@ -56,6 +56,11 @@ char* hex = "0123456789ABCDEF";
 
 extern snes_romprops_t romprops;
 extern uint32_t saveram_crc_old, saveram_crc, saveram_offset;
+extern uint32_t bs_pack_crc, bs_pack_crc_old, bs_pack_offset, bs_pack_diff, bs_pack_same,
+                bs_pack_didnotsave, bs_pack_save_failed;
+extern uint8_t bs_pack_erase_seq;
+static uint8_t rom_scan_bs_vendor(uint32_t size); /* BS slot auto-detect (defined below) */
+static uint8_t bs_pack_exists(uint8_t *filename);
 extern sgb_romprops_t sgb_romprops;
 extern uint32_t saveram_crc_old;
 extern uint8_t sram_crc_valid;
@@ -452,6 +457,52 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     }
   }
 
+  /* BS Memory Pack slot, auto-detected (no title list): needs a <rom>.mpk present.
+     Two families:
+       - base mapper (LoROM, or HiROM <=2MB; above that its own ROM reaches $E0+, where
+         the HiROM pack maps): confirm with the pack-probe ROM scan (LDA $bb:FF00/$bb:FF02).
+         The window follows the mapper (LoROM $C0-$DF / HiROM $E0-$EF).  FEAT_BSLOROM here
+         for a >2MB LoROM cart with a pack; standalone (no pack) boot of Derby/SN is in smc.c.
+       - SA-1 slotted (e.g. SD Gundam G Next): the game validates the pack on the S-CPU and
+         reads it through SuperMMC block 4 (the SA-1 core redirects MMC block>=4 to the pack
+         at PSRAM 0x900000).  It writes no flash registers, so there is no pack-probe
+         signature to scan -- gate on has_sa1 + a present .mpk (an explicit user action). */
+  uint8_t bs_slot = 0;
+  if((flags & LOADROM_WITH_SRAM) && bs_pack_exists(filename)) {
+    if(!romprops.fpga_conf
+       && (romprops.mapper_id == 1
+           || (romprops.mapper_id == 0 && romprops.romsize_bytes <= 0x200000))
+       && rom_scan_bs_vendor(romprops.romsize_bytes)) {
+      if(romprops.mapper_id == 1 && romprops.romsize_bytes > 0x200000) {
+        romprops.fpga_features |= FEAT_BSLOROM;
+      }
+      bs_slot = 1;
+    } else if(romprops.has_sa1) {
+      bs_slot = 1;
+    }
+  }
+  if(bs_slot && load_bs_pack(filename)) {
+    printf("BS Memory Pack present\n");
+    romprops.fpga_features |= FEAT_BSSLOT;
+    /* seed the autosave baseline + reset scan state per game (globals, like
+       saveram_offset) so an unchanged pack is not re-written */
+    bs_pack_crc_old = calc_sram_crc(BS_PACK_ADDR, BS_PACK_SIZE, 0);
+    bs_pack_crc = bs_pack_offset = bs_pack_diff = bs_pack_same = 0;
+    bs_pack_didnotsave = bs_pack_save_failed = 0;
+    /* sync the erase seq to the FPGA's current value so a stale seq from a previous
+       game doesn't trigger a spurious erase on the first poll */
+    bs_pack_erase_seq = (fpga_status() >> 11) & 0x3;
+    /* RTC is the Satellaview base-unit clock (base core only); the SA-1 core has no
+       BS-X base regs, so don't poke the FPGA time there. */
+    if(!romprops.has_sa1) {
+      if(CFG.bsx_use_usertime) {
+        set_fpga_time(srtctime2bcdtime(CFG.bsx_time));
+      } else {
+        set_fpga_time(get_bcdtime());
+      }
+    }
+  }
+
   printf("check MSU...");
   if(msu1_check(filename)) {
     romprops.fpga_features |= FEAT_MSU1;
@@ -759,11 +810,74 @@ uint32_t load_bootrle(uint32_t base_addr) {
   return (uint32_t)filesize;
 }
 
+/* is there a <rom>.mpk?  cheap f_stat that gates the ROM scan below */
+static uint8_t bs_pack_exists(uint8_t *filename) {
+  uint8_t bsfile[256] = SAVE_BASEDIR;
+  FILINFO fno;
+  append_file_basename((char*)bsfile, (char*)filename, ".mpk", sizeof(bsfile));
+  fno.lfname = NULL;
+  return f_stat((TCHAR*)bsfile, &fno) == FR_OK;
+}
+
+/* BS slot auto-detect: scan the staged ROM for the pack-probe vendor read
+   (LDA $bb:FF00 then LDA $bb:FF02 within 24 bytes, bb>=$C0).  Returns the vendor bank
+   ($C0/$C1 LoROM, $E0 HiROM) or 0.  SA-1 / normal carts have no such pattern.  SNES is
+   in reset during load, so the raw PSRAM read is stable. */
+static uint8_t rom_scan_bs_vendor(uint32_t size) {
+  uint8_t w0=0, w1=0, w2=0, w3=0; /* sliding 4-byte window, w3 = newest */
+  uint8_t pend=0; uint16_t cd=0;  /* pending AF 00 FF bb + countdown to its $FF02 */
+  uint8_t found=0;
+  set_mcu_addr(0);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_READMEM | FPGA_MEM_AUTOINC);
+  for(uint32_t i=0; i<size; i++) {
+    FPGA_WAIT_RDY();
+    w0=w1; w1=w2; w2=w3; w3=FPGA_RX_BYTE();
+    if(w0==0xAF && w2==0xFF && w3>=0xC0) {
+      if(w1==0x00) { pend=w3; cd=24; }
+      else if(w1==0x02 && cd && w3==pend) { found=w3; break; }
+    }
+    if(cd) cd--;
+  }
+  FPGA_DESELECT();
+  return found;
+}
+
 void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
     char srmfile[256] = SAVE_BASEDIR;
     check_or_create_folder(SAVE_BASEDIR);
     append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
     save_sram((uint8_t*)srmfile, sram_size, base_addr);
+}
+
+/* stage <rom>.mpk into PSRAM at BS_PACK_ADDR.  returns 1 if a pack loaded, 0 = empty
+   slot (no file -> nothing mapped, game boots standalone).  .mpk not .bs (.bs is a
+   bootable BS-X ROM type in the browser). */
+uint8_t load_bs_pack(uint8_t* filename) {
+  uint8_t bsfile[256] = SAVE_BASEDIR;
+  FILINFO fno;
+  append_file_basename((char*)bsfile, (char*)filename, ".mpk", sizeof(bsfile));
+  fno.lfname = NULL;
+  if(f_stat((TCHAR*)bsfile, &fno) != FR_OK) {
+    printf("no pack (%s); empty slot\n", bsfile);
+    return 0;
+  }
+  printf("BS pack file: %s\n", bsfile);
+  load_sram(bsfile, BS_PACK_ADDR);
+  /* clear only the tail past a short .mpk (a full 1MB one overwrites the window) */
+  if(fno.fsize < BS_PACK_SIZE) {
+    sram_memset(BS_PACK_ADDR + fno.fsize, BS_PACK_SIZE - fno.fsize, 0x00);
+  }
+  file_res = 0;
+  printf("pack loaded\n");
+  return 1;
+}
+
+void save_bs_pack(uint8_t* filename) {
+  char bsfile[256] = SAVE_BASEDIR;
+  check_or_create_folder(SAVE_BASEDIR);
+  append_file_basename(bsfile, (char*)filename, ".mpk", sizeof(bsfile));
+  save_sram((uint8_t*)bsfile, BS_PACK_SIZE, BS_PACK_ADDR);
 }
 
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
@@ -814,6 +928,21 @@ uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size, uint32_t crc) {
       break;
     }
     crc = crc32_update(crc, data);
+  }
+  FPGA_DESELECT();
+  return crc;
+}
+
+/* CRC the 1MB pack -- like calc_sram_crc but no get_snes_reset bail (prepare_reset
+   holds the SNES in reset, so the read is stable) */
+uint32_t calc_pack_crc_inreset(void) {
+  uint32_t crc = 0;
+  set_mcu_addr(BS_PACK_ADDR);
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_READMEM | FPGA_MEM_AUTOINC);
+  for(uint32_t i = 0; i < BS_PACK_SIZE; i++) {
+    FPGA_WAIT_RDY();
+    crc = crc32_update(crc, FPGA_RX_BYTE());
   }
   FPGA_DESELECT();
   return crc;

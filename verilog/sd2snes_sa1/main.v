@@ -445,7 +445,8 @@ sa1 snes_sa1 (
   .IRQ(SA1_IRQ),
   
   .SPEED(dsp_feat[0]),
-  
+  .bs_slot_en(featurebits[14]),   // BS Memory Pack slot: SA-1-side reads of block>=4 -> pack
+
   // State debug read interface
   .PGM_ADDR(SA1_PGM_ADDR), // [11:0]
   .PGM_DATA(SA1_PGM_DATA), // [7:0]
@@ -470,6 +471,9 @@ wire [31:0] cheat_pgm_data;
 wire [7:0] cheat_data_out;
 wire [2:0] cheat_pgm_idx;
 
+// BS Memory Pack flash-erase request -> exposed in the MCU status word (mcu_cmd)
+wire [1:0] bs_erase_seq;
+wire [3:0] bs_erase_blk;
 mcu_cmd snes_mcu_cmd(
   .clk(CLK2),
   .snes_sysclk(SNES_SYSCLK),
@@ -507,6 +511,8 @@ mcu_cmd snes_mcu_cmd(
   .dac_ptr_out(dac_ptr_addr),
   .msu_addr_out(msu_write_addr),
   .MSU_STATUS(msu_status_out),
+  .bs_erase_seq(bs_erase_seq),
+  .bs_erase_blk(bs_erase_blk),
   .msu_status_reset_out(msu_status_reset_bits),
   .msu_status_set_out(msu_status_set_bits),
   .msu_status_reset_we(msu_status_reset_we),
@@ -542,6 +548,11 @@ mcu_cmd snes_mcu_cmd(
   .dsp_feat_out(dsp_feat)
 );
 
+// BS Memory Pack flash slot (writable)
+wire IS_FLASHWR;
+wire bs_flash_ovr;
+wire [7:0] bs_flash_dout;
+
 address snes_addr(
   .CLK(CLK2),
   .MAPPER(MAPPER),
@@ -570,7 +581,15 @@ address snes_addr(
   .return_vector_enable(return_vector_enable),
   .branch1_enable(branch1_enable),
   .branch2_enable(branch2_enable),
-  .branch3_enable(branch3_enable)
+  .branch3_enable(branch3_enable),
+  // BS Memory Pack flash slot (writable)
+  .SNES_WR_end(SNES_WR_end),
+  .SNES_DATA_IN(SNES_DATA_IN),
+  .IS_FLASHWR(IS_FLASHWR),
+  .BS_FLASH_OVR(bs_flash_ovr),
+  .BS_FLASH_DOUT(bs_flash_dout),
+  .bs_erase_seq(bs_erase_seq),
+  .bs_erase_blk(bs_erase_blk)
 );
 
 reg pad_latch = 0;
@@ -670,6 +689,7 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
                                   : (ROM_HIT & IS_SAVERAM) ? RAM_DATA
                                   : (SA1_SCNT_NVSW & nmi_match) ? (SNES_ADDR[0] ? SA1_SNV[15:8] : SA1_SNV[7:0])
                                   : (SA1_SCNT_IVSW & irq_match) ? (SNES_ADDR[0] ? SA1_SIV[15:8] : SA1_SIV[7:0])
+                                  : bs_flash_ovr ? bs_flash_dout  // BS pack vendor/status override
                                   : (ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8])
                                   ) : 8'bZ;
 
@@ -963,7 +983,7 @@ assign ROM_DATA[15:8] = ROM_ADDR0
 
 assign ROM_WE = SD_DMA_TO_ROM
                 ?MCU_WRITE
-                : (ROM_HIT & IS_WRITABLE
+                : (ROM_HIT & (IS_WRITABLE | IS_FLASHWR)  // IS_FLASHWR: BS pack program data-phase
                   & ~IS_SAVERAM
                   & SNES_CPU_CLK) ? SNES_WRITE
                 : MCU_WE_HIT ? 1'b0

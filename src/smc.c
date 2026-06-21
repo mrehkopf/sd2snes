@@ -60,6 +60,26 @@ uint8_t checkChksum(uint16_t cchk, uint16_t chk) {
   return res;
 }
 
+/* Carts needing the $80-$9F -> upper-1MB boot remap (FEAT_BSLOROM) -- they run code
+   there and must boot with no pack, so it can't be auto-detected (a normal >2MB LoROM
+   RPG has the same header).  Derby (reset JML $80:854D), Sound Novel (SPC driver from
+   $8C:FE00).  The pack itself is auto-detected at load (memory.c), no list. */
+static int smc_needs_bslorom(const uint8_t *name) {
+  static const char *const tbl[] = {
+    "DERBY STALLION 96",
+    "SOUND NOVEL-TCOOL",
+  };
+  for(unsigned t = 0; t < sizeof(tbl) / sizeof(tbl[0]); t++) {
+    const char *want = tbl[t];
+    unsigned i;
+    for(i = 0; want[i]; i++) {
+      if((uint8_t)want[i] != name[i]) break;
+    }
+    if(!want[i]) return 1; /* whole prefix matched */
+  }
+  return 0;
+}
+
 void smc_id(snes_romprops_t* props, uint32_t file_offset) {
   uint8_t score, maxscore=1, score_idx=2; /* assume LoROM */
   uint8_t ext_coprocessor=0;
@@ -294,7 +314,13 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
     props->has_combo = 1;
     props->fpga_features |= FEAT_COMBO;
   }
-  
+
+  /* $80-$9F boot remap for the listed LoROM slot carts (see smc_needs_bslorom).
+     The pack window itself is auto-detected at load in memory.c. */
+  if(props->mapper_id == 1 && !props->fpga_conf && smc_needs_bslorom(header->name)) {
+    props->fpga_features |= FEAT_BSLOROM;
+  }
+
   if(header->romsize == 0 || header->romsize > 13) {
     props->romsize_bytes = 1024;
     header->romsize = 0;
