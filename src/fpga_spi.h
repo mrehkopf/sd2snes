@@ -56,6 +56,8 @@
 #define FEAT_ST0010        (1 << 1)
 #define FEAT_DSPX          (1 << 0)
 
+#define FPGA_STATUS_SNES_HOOK_ACTIVE (0x0100)
+
 #define FPGA_WAIT_RDY()    do {__NOP(); __NOP(); __NOP(); __NOP(); while(!BITBAND(SPI_REGS->SPI_SR, SPI_TFE)); __NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP(); while(!BITBAND(FPGA_MCU_RDY_REG->GPIO_I, FPGA_MCU_RDY_BIT)); } while (0)
 
 /* command parameters */

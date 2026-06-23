@@ -108,7 +108,10 @@ module mcu_cmd(
   // cheat configuration
   output reg [7:0] cheat_pgm_idx_out,
   output reg [31:0] cheat_pgm_data_out,
-  output reg cheat_pgm_we_out
+  output reg cheat_pgm_we_out,
+
+  // NMI hook status
+  input SNES_HOOK_ACTIVE
 );
 
 initial begin
@@ -170,10 +173,12 @@ wire mcu_nextaddr;
 reg DAC_STATUSr;
 reg SD_DMA_STATUSr;
 reg [7:0] MSU_STATUSr;
+reg SNES_HOOK_ACTIVEr;
 always @(posedge clk) begin
   DAC_STATUSr <= DAC_STATUS;
   SD_DMA_STATUSr <= SD_DMA_STATUS;
   MSU_STATUSr <= MSU_STATUS;
+  SNES_HOOK_ACTIVEr <= SNES_HOOK_ACTIVE;
 end
 
 reg SD_DMA_PARTIALr;
@@ -476,7 +481,7 @@ always @(posedge clk) begin
     else if (cmd_data[7:0] == 8'hF1)
       case (spi_byte_cnt[0])
         1'b1: // buffer status (1st byte)
-          MCU_DATA_IN_BUF <= {SD_DMA_STATUSr, DAC_STATUSr, MSU_STATUSr[7], 5'b0};
+          MCU_DATA_IN_BUF <= {SD_DMA_STATUSr, DAC_STATUSr, MSU_STATUSr[7], 4'b0, SNES_HOOK_ACTIVEr};
         1'b0: // control status (2nd byte)
           MCU_DATA_IN_BUF <= {1'b0, MSU_STATUSr[6:0]};
       endcase

@@ -640,7 +640,8 @@ mcu_cmd snes_mcu_cmd(
   .cheat_pgm_idx_out(cheat_pgm_idx),
   .cheat_pgm_data_out(cheat_pgm_data),
   .cheat_pgm_we_out(cheat_pgm_we),
-  .dsp_feat_out(dsp_feat)
+  .dsp_feat_out(dsp_feat),
+  .SNES_HOOK_ACTIVE(snescmd_unlock)
 );
 
 address snes_addr(
