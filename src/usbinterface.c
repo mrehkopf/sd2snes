@@ -1029,12 +1029,15 @@ int usbint_handler_exe(void) {
         fpga_write_snescmd(0x00);
 
         // wait to make sure we are out of the code.
+        int tick = getticks();
         uint16_t prev_status = fpga_status();
         while (1) {
             uint16_t current_status = fpga_status();
 
-            if ((prev_status & FPGA_STATUS_SNES_HOOK_ACTIVE) && 
-                !(current_status & FPGA_STATUS_SNES_HOOK_ACTIVE)) {
+            if (((prev_status & FPGA_STATUS_SNES_HOOK_ACTIVE) && 
+            !(current_status & FPGA_STATUS_SNES_HOOK_ACTIVE)) ||
+            getticks() > ticks + 2) 
+            {
                 break;
             }
 
