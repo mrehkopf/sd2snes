@@ -1028,9 +1028,21 @@ int usbint_handler_exe(void) {
         fpga_set_snescmd_addr(SNESCMD_EXE);
         fpga_write_snescmd(0x00);
 
-        // wait to make sure we are out of the code.  one frame should do
-        // TODO: could check with the fpga for this
-        sleep_ms(16);
+        // wait to make sure we are out of the code.
+        int ticks = getticks();
+        uint16_t prev_status = fpga_status();
+        while (1) {
+            uint16_t current_status = fpga_status();
+
+            if (((prev_status & FPGA_STATUS_SNES_HOOK_ACTIVE) && 
+            !(current_status & FPGA_STATUS_SNES_HOOK_ACTIVE)) ||
+            getticks() >= ticks + 2) 
+            {
+                break;
+            }
+
+            prev_status = current_status;
+        }
 
         for (int i = 1; i < server_info.size; i++) {
             uint8_t val = sram_readbyte(server_info.offset + i);
