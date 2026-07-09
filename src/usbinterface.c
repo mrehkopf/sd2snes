@@ -941,13 +941,13 @@ int usbint_handler_dat(void) {
 
             if (bytesSent + needed <= server_info.block_size) {
                 send_buffer[send_buffer_index][bytesSent++] = (fi.fattrib & AM_DIR) ? 0 : 1;
+                
+                uint32_t fsize = fi.fsize;
+                memcpy((TCHAR*)send_buffer[send_buffer_index] + bytesSent, &fsize, sizeof(fsize));
+                bytesSent += sizeof(fsize);
 
                 strcpy((TCHAR*)send_buffer[send_buffer_index] + bytesSent, (TCHAR*)name);
                 bytesSent += nameLen + 1;
-
-                uint32_t fsize = fi.fsize;
-                memcpy(send_buffer[send_buffer_index] + bytesSent, &fsize, sizeof(fsize));
-                bytesSent += sizeof(fsize);
             } 
             else {
                 send_buffer[send_buffer_index][bytesSent++] = 2;
