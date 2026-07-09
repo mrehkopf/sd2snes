@@ -124,7 +124,8 @@ enum usbint_server_stream_state_e { FOREACH_SERVER_STREAM_STATE(GENERATE_ENUM) }
   OP(USBINT_SERVER_OPCODE_STREAM)               \
   OP(USBINT_SERVER_OPCODE_TIME)                 \
                                                 \
-  OP(USBINT_SERVER_OPCODE_RESPONSE)
+  OP(USBINT_SERVER_OPCODE_RESPONSE)             \
+  OP(USBINT_SERVER_OPCODE_LS2)
 enum usbint_server_opcode_e { FOREACH_SERVER_OPCODE(GENERATE_ENUM) };
 #ifdef DEBUG_USB
 static const char *usbint_server_opcode_s[] = { FOREACH_SERVER_OPCODE(GENERATE_STRING) };
@@ -548,6 +549,7 @@ int usbint_handler_cmd(void) {
 
         break;
     }
+    case USBINT_SERVER_OPCODE_LS2:
     case USBINT_SERVER_OPCODE_LS: {
         fiCont = 0;
         fi.lfname = fbuf;
@@ -660,7 +662,7 @@ int usbint_handler_cmd(void) {
     PRINT_STATE(server_state);
 
     // decide next state
-    if (server_info.opcode == USBINT_SERVER_OPCODE_GET || server_info.opcode == USBINT_SERVER_OPCODE_VGET || server_info.opcode == USBINT_SERVER_OPCODE_LS) {
+    if (server_info.opcode == USBINT_SERVER_OPCODE_GET || server_info.opcode == USBINT_SERVER_OPCODE_VGET || server_info.opcode == USBINT_SERVER_OPCODE_LS || server_info.opcode == USBINT_SERVER_OPCODE_LS2) {
         // we lock on data transfers so use interrupt for everything
         server_state = USBINT_SERVER_STATE_HANDLE_DAT;
     }
@@ -896,6 +898,58 @@ int usbint_handler_dat(void) {
             }
             else {
                 // send continuation.  overwrite string flag to simplify parsing
+                send_buffer[send_buffer_index][bytesSent++] = 2;
+                fiCont = 1;
+                break;
+            }
+        } while (bytesSent < server_info.block_size);
+        break;
+    }
+    case USBINT_SERVER_OPCODE_LS2: {
+        uint8_t *name = NULL;
+        do {
+            int fiContPrev = fiCont;
+            fiCont = 0;
+
+            if (server_info.error || (!fiContPrev && f_readdir(&dh, &fi) != FR_OK)) {
+                send_buffer[send_buffer_index][bytesSent++] = 0xFF;
+                count = 1;
+                f_closedir(&dh);
+                break;
+            }
+
+            if (!fi.fname[0]) {
+                send_buffer[send_buffer_index][bytesSent++] = 0xFF;
+                count = 1;
+                f_closedir(&dh);
+                break;
+            }
+
+            if (fi.fattrib & AM_VOL)
+                continue;
+
+            if (fi.lfname[0]) {
+                name = (uint8_t*)fi.lfname;
+            } 
+            else {
+                name = (uint8_t*)fi.fname;
+                strlwr((char *)name);
+            }
+
+            size_t nameLen = strlen((TCHAR*)name);
+            size_t needed = 1 + nameLen + 1 + sizeof(uint32_t);
+
+            if (bytesSent + needed <= server_info.block_size) {
+                send_buffer[send_buffer_index][bytesSent++] = (fi.fattrib & AM_DIR) ? 0 : 1;
+
+                strcpy((TCHAR*)send_buffer[send_buffer_index] + bytesSent, (TCHAR*)name);
+                bytesSent += nameLen + 1;
+
+                uint32_t fsize = fi.fsize;
+                memcpy(send_buffer[send_buffer_index] + bytesSent, &fsize, sizeof(fsize));
+                bytesSent += sizeof(fsize);
+            } 
+            else {
                 send_buffer[send_buffer_index][bytesSent++] = 2;
                 fiCont = 1;
                 break;
