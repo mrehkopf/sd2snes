@@ -1582,7 +1582,7 @@ always @(posedge CLK) begin
         //cache_gsu_addr_r    <= (REG_r[R15][15:0] - CBR_r);
 
         // need to use PBR directly here because of prior cycle update
-        cache_addr_r <= (PBR_r < 8'h60) ? ((PBR_r[6] ? {PBR_r,REG_r[R15]} : {PBR_r,REG_r[R15][14:0]}) & ROM_MASK)
+        cache_addr_r <= (PBR_r < 8'h60) ? ((PBR_r[6] ? {PBR_r,REG_r[R15]} : {PBR_r,REG_r[R15][14:0]}) & ROM_MASK & 24'h1FFFFF)
                                         : 24'hE00000 + ({PBR_r[0],REG_r[R15]} & SAVERAM_MASK);
 
         FETCH_STATE <= ST_FETCH_CACHE;
@@ -1761,7 +1761,7 @@ always @(posedge CLK) begin
         prf_rom_rd_r <= 1;
         prf_word_r <= 0;
 
-        prf_addr_r <= ((ROMBR_r[6] ? {ROMBR_r,REG_r[R14]} : {ROMBR_r,REG_r[R14][14:0]}) & ROM_MASK);
+        prf_addr_r <= ((ROMBR_r[6] ? {ROMBR_r,REG_r[R14]} : {ROMBR_r,REG_r[R14][14:0]}) & ROM_MASK & 24'h1FFFFF);
 
         PRF_STATE <= ST_PRF_MEMORY_WAIT;
       end
@@ -2685,7 +2685,7 @@ always @(posedge CLK) begin
     brk_error        <= fetch_error; // FIXME: set this state based on opcode or other error condition
 
 
-    brk_addr_r <= (CONFIG_ADDR_WATCH[23:16] < 8'h60) ? ((CONFIG_ADDR_WATCH[22] ? CONFIG_ADDR_WATCH : {CONFIG_ADDR_WATCH[20:16],CONFIG_ADDR_WATCH[14:0]}) & ROM_MASK)
+    brk_addr_r <= (CONFIG_ADDR_WATCH[23:16] < 8'h60) ? ((CONFIG_ADDR_WATCH[22] ? CONFIG_ADDR_WATCH : {CONFIG_ADDR_WATCH[20:16],CONFIG_ADDR_WATCH[14:0]}) & ROM_MASK & 24'h1FFFFF)
                                                      : 24'hE00000 + (CONFIG_ADDR_WATCH & SAVERAM_MASK);
   end
 end
