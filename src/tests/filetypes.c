@@ -36,6 +36,8 @@
 #include "led.h"
 #include "sort.h"
 
+char fs_path[256];
+
 uint16_t scan_flat(const char* path) {
   DIR dir;
   FRESULT res;
@@ -259,7 +261,7 @@ SNES_FTYPE determine_filetype(char* filename) {
   if(ext == NULL)
     return TYPE_UNKNOWN;
   if(  (!strcasecmp(ext+1, "SMC"))
-    ||(!strcasecmp(ext+1, "SFC"))
+     ||(!strcasecmp(ext+1, "SFC"))
      ||(!strcasecmp(ext+1, "FIG"))
      ||(!strcasecmp(ext+1, "BS"))
     ) {

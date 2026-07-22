@@ -5,7 +5,6 @@
 #define CIC_TOGGLE_THRESH_PAIR	(2500)
 #define CIC_TOGGLE_THRESH_SCIC	(10)
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
 
 enum cicstates { CIC_OK = 0, CIC_FAIL, CIC_PAIR, CIC_SCIC };

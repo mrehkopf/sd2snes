@@ -46,7 +46,7 @@ typedef enum {
 } SNES_FTYPE;
 
 
-char fs_path[256];
+extern char fs_path[256];
 SNES_FTYPE determine_filetype(char* filename);
 //uint32_t scan_fs();
 uint16_t scan_flat(const char* path);

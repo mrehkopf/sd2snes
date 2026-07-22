@@ -1,4 +1,3 @@
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "config.h"
 #include "timer.h"
 #include "uart.h"
@@ -32,6 +31,6 @@ void xmodem_rxfile(FIL* fil) {
   } while (uart_getc() != ASC_EOT);
   uart_putc(ASC_ACK);
   uart_flush();
-  sleep_ms(1000);
+  delay_ms(1000);
   printf("received %ld bytes, wrote %ld bytes. last res = %d\n", totalbytes, totalwritten, res);
 }

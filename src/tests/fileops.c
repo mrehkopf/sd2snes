@@ -30,31 +30,30 @@
 #include "fileops.h"
 #include "diskio.h"
 
-/*
-WCHAR ff_convert(WCHAR w, UINT dir) {
-  return w;
-}*/
+#include <string.h>
+
+BYTE file_buf[512] __attribute__((aligned(4)));
+FATFS fatfs;
+FIL file_handle;
+FRESULT file_res;
+uint8_t file_lfn[258];
+uint8_t file_path[256];
+uint16_t file_block_off, file_block_max;
+enum filestates file_status;
 
 int newcard;
 
 void file_init() {
-  file_res=f_mount(0, &fatfs);
+  file_res=f_mount(&fatfs, "/", 1);
   newcard = 0;
+  file_path[0] = '/';
+  file_path[1] = 0;
 }
 
 void file_reinit(void) {
   disk_init();
   file_init();
 }
-
-FRESULT dir_open_by_filinfo(DIR* dir, FILINFO* fno) {
-  return l_opendirbycluster(&fatfs, dir, (TCHAR*)"", fno->clust);
-}
-
-void file_open_by_filinfo(FILINFO* fno) {
-  file_res = l_openfilebycluster(&fatfs, &file_handle, (TCHAR*)"", fno->clust, fno->fsize);
-}
-
 void file_open(uint8_t* filename, BYTE flags) {
 //  if (disk_state == DISK_CHANGED) {
 //    file_reinit();
@@ -80,10 +79,10 @@ UINT file_read() {
   return bytes_read;
 }
 
-UINT file_write() {
+UINT file_write(size_t len) {
   UINT bytes_written;
-  file_res = f_write(&file_handle, file_buf, sizeof(file_buf), &bytes_written);
-  if(bytes_written < sizeof(file_buf)) {
+  file_res = f_write(&file_handle, file_buf, len, &bytes_written);
+  if(bytes_written < len) {
     printf("wrote less than expected - card full?\n");
   }
   return bytes_written;
@@ -114,4 +113,49 @@ uint8_t file_getc() {
     file_block_off = 0;
   }
   return file_buf[file_block_off++];
+}
+
+void append_file_basename(char *dirbase, char *filename, char *extension, int num) {
+  char *append = strrchr(filename, '/');
+  if(append == NULL) {
+    append = filename;
+  } else {
+    append++;
+  }
+  strncat(dirbase, append, num-strlen(dirbase));
+  strcpy(strrchr(dirbase, (int)'.'), extension);
+}
+
+FRESULT check_or_create_folder(TCHAR *dir) {
+  FRESULT res;
+  FILINFO fno;
+  /* we are not interested in the file name of the existing object
+     so no extra LFN buffer needs to be allocated. */
+  fno.lfname = NULL;
+  TCHAR buf[256];
+  TCHAR *ptr = buf;
+  strncpy(buf, dir, sizeof(buf) - 1);
+  buf[sizeof(buf) - 1] = '\0';
+  while(*(ptr++)) {
+    if(*ptr == '/') {
+      *ptr = 0;
+      res = f_stat(buf, &fno);
+      printf("checking folder %s... res=%d\n", buf, res);
+      if(res != FR_OK) {
+        res = f_mkdir(buf);
+        printf("creating folder, res=%d\n", res);
+        if(res != FR_OK) {
+          printf("FATAL: could not create folder %s\n", buf);
+          return res;
+        }
+      } else {
+        if(!(fno.fattrib & AM_DIR)) {
+          printf("FATAL: %s exists but is not a directory.\n", buf);
+          return FR_NO_PATH;
+        }
+      }
+      *ptr = '/';
+    }
+  }
+  return FR_OK;
 }

@@ -1,8 +1,6 @@
 #ifndef _SORT_H
 #define _SORT_H
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
-
 uint32_t sort_get_elem(uint32_t base, unsigned int index);
 void sort_put_elem(uint32_t base, unsigned int index, uint32_t elem);
 int sort_cmp_idx(uint32_t base, unsigned int index1, unsigned int index2);

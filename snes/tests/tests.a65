@@ -1,34 +1,53 @@
+.link page $c0
 GAME_MAIN:
 	sep #$20 : .as
 	stz $4200 ; inhibit VBlank NMI
 	lda #$01
 	sta $420d ; fast cpu
-	jsr killdma
 	jsr waitblank
 	lda #$00
-	sta @$f00000
-	sta @$f00001
-	sta @$f00002
-	sta @$f00003
+	sta @$00ff00
+	sta @$00ff01
+	sta @$00ff02
+	sta @$00ff03
 	lda #$00
-	sta @$f01fff
+	sta @$00ff1f
+	sta $20 ; loop count
 	jsr snes_init
 	jsr video_init
 	jsr linetest
+-	dec $20
 	jsr batest
 	jsr snes_init
 	jsr video_init
-	jsr copy_memtest
+;	jsr copy_memtest
+	jsr copy_memconn
 	jsr irqtest
 	jsl $7e1800
+	lda $20
+	bne -
+	lda $10
+	sta @$00ff00
+	lda $12
+	sta @$00ff02
+	lda $11
+	sta @$00ff01
 -	bra -
 
-copy_memtest:
+; copy_memtest:
+; 	rep #$30 : .al : .xl
+; 	lda #$0300
+; 	ldx #!memtest
+; 	ldy #$1800
+; 	mvn $7e, ^memtest
+; 	rts
+
+copy_memconn:
 	rep #$30 : .al : .xl
 	lda #$0300
-	ldx #!memtest
+	ldx #!memconn
 	ldy #$1800
-	mvn $7e, ^memtest
+	mvn $7e, ^memconn
 	rts
 
 linetest
@@ -37,9 +56,9 @@ linetest
 	pha
 	plb
 -	lda $0000
-        lda $2100
-        sta $21ff
-	lda @$f01fff
+	lda $2100
+	sta $21ff
+	lda @$ff1f
 	cmp #$01
 	bne -
 	rts
@@ -56,9 +75,9 @@ irqtest:
 	sta $420a
 	lda #$ff
 	sta $4200
-	sta @$f00000
+	sta $10
 	lda #$01
-	sta @$002222
+	sta @$00ff22
 	rts
 
 batest:
@@ -66,296 +85,128 @@ batest:
 	sep #$20 : .as
 	rep #$10 : .xl
 	lda #$00
+	pha
+	plb
 	ldx #$2100
 -	sta !$0, x
 	inx
 	inc
 	bne -
-	lda #$e0
+	lda #$00
 	pha
 	plb
 	lda #$00
-	ldx #$0000
+	ldx #$fe00
 -	cmp !$0, x
 	bne batest_fail
 	inx
 	inc
 	bne -
 	lda #$5a
-	sta @$f00002
-	lda #$00
-	pha
-	plb
+	sta $12
 	rts
 batest_fail:
 	lda #$ff
-	sta @$f00002
-	lda #$00
-	pha
-	plb
+	sta $12
+	stz $20 ; stop after this test iteration
 	rts
 
-memtest:
-; test 4 areas: 00-3f:8000-ffff
-;               40-7d:0000-ffff
-;               80-bf:8000-ffff
-;               80-ff:0000-ffff
+
+; [0x8000] = 0;
+; index = 0;
+; for (addr=0x800; addr < 0x1000000; addr <<= 1)
+;  if(addr == 0x8000) continue;
+;  addr2 = addr | 0x8000;
+; //  if(!(addr & 0x400000)) addr2 = addr | 0x8000;
+;  if(addr2 != 0x8000) [addr2] = 0xff;
+;  if([0x8000] != 0x00) FAIL;
+;  if([addr2] != 0xff) FAIL;
+;  index++
+; next
+; FAIL: log[logindex++] = index;
+
+memconn:
+; test line connections as thorough as possible
+; indirect long address at $00-$02
+; error flag at $03
+; log index at $04-$06
+; done/result flag at $00:ff01
+; error log from $00:ff04
+	sei
 	sep #$20 : .as
 	rep #$10 : .xl
 
-	lda #$01
-	sta @$003333 ; switch to linear memory mode
-	ldx #$8000
-	stx $00
-	ldx #$8000
-	stx $10
-	lda #$00
-	sta $03 ; bank no.
-mem0_writeloop0:
-; switch bank
-	pha
-	plb
-	lda #$01
-	sta @$003333
--       lda $03
-	clc
-	adc $01
-	clc
-	adc $00
-	sta !$0000, x
-	inx
-	stx $00
-	bne -
-	ldx $10
-	inc $03
-	lda #$00
-	sta @$003333
-	lda $03
-	sta @$f00003
-	cmp #$40
-	bne mem0_writeloop0
-
-	ldx #$0000
-	stx $10
-mem0_writeloop1:
-; switch bank
-        lda #$01
-        sta @$003333
-	lda $03
-	pha
-	plb
--	lda $03
-	clc
-	adc $01
-	clc
-	adc $00
-	sta !$0000, x
-	inx
-	stx $00
-	bne -
-	ldx $10
-	inc $03
-	lda #$00
-	sta @$003333
-	lda $03
-	sta @$f00003
-	cmp #$7e
-	bne mem0_writeloop1
-
-	ldx #$8000
-	stx $10
-	lda #$80
-	sta $03 ; bank no.
-mem0_writeloop2:
-; switch bank
-        lda #$01
-        sta @$003333
-	lda $03
-	pha
-	plb
--	lda $03
-	clc
-	adc $01
-	clc
-	adc $00
-	sta !$0000, x
-	inx
-	stx $00
-	bne -
-	ldx $10
-	inc $03
-	lda #$00
-	sta @$003333
-	lda $03
-	sta @$f00003
-	cmp #$c0
-	bne mem0_writeloop2
-	ldx #$0000
-	stx $10
-mem0_writeloop3:
-; switch bank
-        lda #$01
-        sta @$003333
-	lda $03
-	pha
-	plb
--	lda $03
-	clc
-	adc $01
-	clc
-	adc $00
-	sta !$0000, x
-	inx
-	stx $00
-	bne -
-	ldx $10
-	inc $03
-	lda #$00
-	sta @$003333
-	lda $03
-	sta @$f00003
-	bne mem0_writeloop3
+	lda #$55
+	sta @$00ff33
+	lda #$aa
+	sta @$00ff34     ; switch to linear memory mode
 
 	lda #$00
-	sta @$002121
+	sta @$008400
+	sta @$008800
+	sta @$009000
+	sta @$00a000
+	sta @$00c000
+	sta @$008000
+	sta @$018000
+	sta @$028000
+	sta @$048000
+	sta @$088000
+	sta @$108000
+	sta @$208000
+	sta @$400000
+	sta @$408000
+	sta @$808000
+
+	ldy #$0000
+	ldx #$ff04
+	stx $04
+	ldx #$0400       ; start address: $00:0400 (changed into $00:8400)
+	stx $00
+	lda #$00
+	sta $02
+	sta $06
+	lda #$5a         ; default result: OK
+	sta $03
+memconn_loop:
+	lda $02          ; check for $00:8000 itself
+	bne +
+	ldx $00
+	cpx #$8000
+	beq memconn_skip ; skip $8000 which is our baseline
+
++	lda $01
+	ora #$80
+	sta $01          ; set A15 always
+	lda #$00
+	sta @$008000
 	lda #$ff
-	sta @$002122
-	lda #$03
-	sta @$002122
+	sta [$00]
+	lda @$008000
+	cmp #$00
+	bne memconn_error
+	lda [$00]
+	cmp #$ff
+	bne memconn_error
+memconn_cont:
+	iny
+	lda $01
+	and #$7f         ; clear A15 for shift
+	sta $01
+memconn_skip:
+	clc
+	rol $00          ; shift 24-bit address left by one bit
+	rol $01
+	rol $02
+	bcc memconn_loop ; as long as no bank overflow occurs, loop
+	lda #$55
+	sta @$00ff33
+	lda #$77
+	sta @$00ff34     ; exit linear memory mode
 
-	ldx #$8000
-	stx $00
-	ldx #$8000
-	stx $10
-	lda #$00
-	sta $03 ; bank no.
-mem0_verifyloop0:
-; switch bank
-        lda #$01
-        sta @$f00001
-        lda #$01
-        sta @$003333
 	lda $03
-	pha
-	plb
--	lda $03
-	clc
-	adc $01
-	clc
-	adc $00
-	cmp !$0000, x
-	bne mem0_fail
-	inx
-	stx $00
-	bne -
-	ldx $10
-	inc $03
-	lda #$00
-	sta @$003333
-	lda $03
-	sta @$f00003
-	cmp #$40
-	bne mem0_verifyloop0
-
-	ldx #$0000
-	stx $10
-mem0_verifyloop1:
-; switch bank
-        lda #$01
-        sta @$003333
-	lda $03
-	pha
-	plb
--	lda $03
-	clc
-	adc $01
-	clc
-	adc $00
-	cmp !$0000, x
-	bne mem0_fail
-	inx
-	stx $00
-	bne -
-	ldx $10
-	inc $03
-	lda #$00
-	sta @$003333
-	lda $03
-	sta @$f00003
-	cmp #$7e
-	bne mem0_verifyloop1
-
-	ldx #$8000
-	stx $10
-	lda #$80
-	sta $03 ; bank no.
-        bra mem0_verifyloop2
-mem0_fail:
-	lda #$00
-	pha
-	plb
-	sta @$003333
-	rep #$20 : .al
-	lda $00
-	sta @$f00004
-	sep #$20 : .as
-	lda $03
-	sta @$f00006
-	lda #$ff
-	sta @$f00001
-	rtl
-mem0_verifyloop2:
-; switch bank
-        lda #$01
-        sta @$003333
-	lda $03
-	pha
-	plb
--	lda $03
-	clc
-	adc $01
-	clc
-	adc $00
-	cmp !$0000, x
-	bne mem0_fail
-	inx
-	stx $00
-	bne -
-	ldx $10
-	inc $03
-	lda #$00
-	sta @$003333
-	lda $03
-	sta @$f00003
-	cmp #$c0
-	bne mem0_verifyloop2
-
-	ldx #$0000
-	stx $10
-mem0_verifyloop3:
-; switch bank
-        lda #$01
-        sta @$003333
-	lda $03
-	pha
-	plb
--	lda $03
-	clc
-	adc $01
-	clc
-	adc $00
-	cmp !$0000, x
-	bne mem0_fail
-	inx
-	stx $00
-	bne -
-	ldx $10
-	inc $03
-	lda #$00
-	sta @$003333
-	lda $03
-	sta @$f00003
-	bne mem0_verifyloop3
+	cmp #$5a
+	bne +
 
 	lda #$00
 	sta @$002121
@@ -364,56 +215,353 @@ mem0_verifyloop3:
 	lda #$03
 	sta @$002122
 
-	lda #$00
-	pha
-	plb
-	sta @$003333
-	lda #$5a
-	sta @$f00001
-	rtl
-	rtl
-	rtl
-	rtl
-	rtl
++	lda #$ff
+	sta [$04]
+	lda $03
+	sta $11
 	rtl
 
-killdma:
-	stz $420b
-	stz $420c
-	stz $4310
-	stz $4311
-	stz $4312
-	stz $4313
-	stz $4314
-	stz $4320
-	stz $4321
-	stz $4322
-	stz $4323
-	stz $4324
-	stz $4330
-	stz $4331
-	stz $4332
-	stz $4333
-	stz $4334
-	stz $4340
-	stz $4341
-	stz $4342
-	stz $4343
-	stz $4344
-	stz $4350
-	stz $4351
-	stz $4352
-	stz $4353
-	stz $4354
-	stz $4360
-	stz $4361
-	stz $4362
-	stz $4363
-	stz $4364
-	rts
+memconn_error:
+	lda #$55
+	sta @$00ff33
+	lda #$77
+	sta @$00ff34     ; exit linear memory mode
+	tya
+	sta [$04]
+	lda #$ff         ; overall result: FAIL
+	sta $03
+	stz $20          ; do not run again
+	ldx $04
+	inx
+	stx $04
+	lda #$55
+	sta @$00ff33
+	lda #$aa
+	sta @$00ff34     ; back to linear memory mode
+	bra memconn_cont
 
+; memtest:
+; ; test 4 areas: 00-3f:8000-ffff
+; ;               40-7d:0000-ffff
+; ;               80-bf:8000-ffff
+; ;               80-ff:0000-ffff
+; 	sei
+; 	sep #$20 : .as
+; 	rep #$10 : .xl
 
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$aa
+; 	sta @$00ff34  ; switch to linear memory mode
+; 	ldx #$8000
+; 	stx $00
+; 	ldx #$8000
+; 	stx $10
+; 	lda #$00
+; 	sta $03 ; bank no.
+; mem0_writeloop0:
+; ; switch bank
+; 	pha
+; 	plb
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$aa
+; 	sta @$00ff34  ; switch to linear memory mode
+; -	lda $03
+; 	clc
+; 	adc $01
+; 	clc
+; 	adc $00
+; 	sta !$0000, x
+; 	inx
+; 	stx $00
+; 	bne -
+; 	ldx $10
+; 	inc $03
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$77
+; 	sta @$00ff34  ; leave linear memory mode
+; 	lda $03
+; 	sta @$00ff03
+; 	cmp #$40
+; 	bne mem0_writeloop0
 
+; 	ldx #$0000
+; 	stx $10
+; mem0_writeloop1:
+; ; switch bank
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$aa
+; 	sta @$00ff34  ; switch to linear memory mode
+; 	lda $03
+; 	pha
+; 	plb
+; -	lda $03
+; 	clc
+; 	adc $01
+; 	clc
+; 	adc $00
+; 	sta !$0000, x
+; 	inx
+; 	stx $00
+; 	bne -
+; 	ldx $10
+; 	inc $03
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$77
+; 	sta @$00ff34  ; leave linear memory mode
+; 	lda $03
+; 	sta @$00ff03
+; 	cmp #$7e
+; 	bne mem0_writeloop1
+
+; 	ldx #$8000
+; 	stx $10
+; 	lda #$80
+; 	sta $03 ; bank no.
+; mem0_writeloop2:
+; ; switch bank
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$aa
+; 	sta @$00ff34  ; switch to linear memory mode
+; 	lda $03
+; 	pha
+; 	plb
+; -	lda $03
+; 	clc
+; 	adc $01
+; 	clc
+; 	adc $00
+; 	sta !$0000, x
+; 	inx
+; 	stx $00
+; 	bne -
+; 	ldx $10
+; 	inc $03
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$77
+; 	sta @$00ff34  ; leave linear memory mode
+; 	lda $03
+; 	sta @$00ff03
+; 	cmp #$c0
+; 	bne mem0_writeloop2
+; 	ldx #$0000
+; 	stx $10
+; mem0_writeloop3:
+; ; switch bank
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$aa
+; 	sta @$00ff34  ; switch to linear memory mode
+; 	lda $03
+; 	pha
+; 	plb
+; -	lda $03
+; 	clc
+; 	adc $01
+; 	clc
+; 	adc $00
+; 	sta !$0000, x
+; 	inx
+; 	stx $00
+; 	bne -
+; 	ldx $10
+; 	inc $03
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$77
+; 	sta @$00ff34  ; leave linear memory mode
+; 	lda $03
+; 	sta @$00ff03
+; 	bne mem0_writeloop3
+
+; 	lda #$00
+; 	sta @$002121
+; 	lda #$ff
+; 	sta @$002122
+; 	lda #$03
+; 	sta @$002122
+
+; 	ldx #$8000
+; 	stx $00
+; 	ldx #$8000
+; 	stx $10
+; 	lda #$00
+; 	sta $03 ; bank no.
+
+; mem0_verifyloop0:
+; ; switch bank
+; 	lda #$01
+; 	sta @$00ff01
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$aa
+; 	sta @$00ff34  ; switch to linear memory mode
+; 	lda #$32
+; 	sta @$00ff33
+; 	lda #$33
+; 	sta @$00ff34 ; fixup for linear switch
+; 	lda $03
+; 	pha
+; 	plb
+; -	lda $03
+; 	clc
+; 	adc $01
+; 	clc
+; 	adc $00
+; 	cmp !$0000, x
+; 	bne mem0_fail
+; 	inx
+; 	stx $00
+; 	bne -
+; 	ldx $10
+; 	inc $03
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$77
+; 	sta @$00ff34  ; leave linear memory mode
+; 	lda $03
+; 	sta @$00ff03
+; 	cmp #$40
+; 	bne mem0_verifyloop0
+
+; 	ldx #$0000
+; 	stx $10
+; mem0_verifyloop1:
+; ; switch bank
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$aa
+; 	sta @$00ff34  ; switch to linear memory mode
+; 	lda $03
+; 	pha
+; 	plb
+; -	lda $03
+; 	clc
+; 	adc $01
+; 	clc
+; 	adc $00
+; 	cmp !$0000, x
+; 	bne mem0_fail
+; 	inx
+; 	stx $00
+; 	bne -
+; 	ldx $10
+; 	inc $03
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$77
+; 	sta @$00ff34  ; leave linear memory mode
+; 	lda $03
+; 	sta @$00ff03
+; 	cmp #$7e
+; 	bne mem0_verifyloop1
+
+; 	ldx #$8000
+; 	stx $10
+; 	lda #$80
+; 	sta $03 ; bank no.
+; 	bra mem0_verifyloop2
+; mem0_fail:
+; 	lda #$00
+; 	pha
+; 	plb
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$77
+; 	sta @$00ff34  ; leave linear memory mode
+; 	rep #$20 : .al
+; 	lda $00
+; 	sta @$00ff04
+; 	sep #$20 : .as
+; 	lda $03
+; 	sta @$00ff06
+; 	lda #$ff
+; 	sta @$00ff01
+; 	rtl
+; mem0_verifyloop2:
+; ; switch bank
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$aa
+; 	sta @$00ff34  ; switch to linear memory mode
+; 	lda $03
+; 	pha
+; 	plb
+; -	lda $03
+; 	clc
+; 	adc $01
+; 	clc
+; 	adc $00
+; 	cmp !$0000, x
+; 	bne mem0_fail
+; 	inx
+; 	stx $00
+; 	bne -
+; 	ldx $10
+; 	inc $03
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$77
+; 	sta @$00ff34  ; leave linear memory mode
+; 	lda $03
+; 	sta @$00ff03
+; 	cmp #$c0
+; 	bne mem0_verifyloop2
+
+; 	ldx #$0000
+; 	stx $10
+; mem0_verifyloop3:
+; ; switch bank
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$aa
+; 	sta @$00ff34  ; switch to linear memory mode
+; 	lda $03
+; 	pha
+; 	plb
+; -	lda $03
+; 	clc
+; 	adc $01
+; 	clc
+; 	adc $00
+; 	cmp !$0000, x
+; 	bne mem0_fail
+; 	inx
+; 	stx $00
+; 	bne -
+; 	ldx $10
+; 	inc $03
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$77
+; 	sta @$00ff34  ; leave linear memory mode
+; 	lda $03
+; 	sta @$00ff03
+; 	bne mem0_verifyloop3
+
+; 	lda #$00
+; 	sta @$002121
+; 	lda #$e0
+; 	sta @$002122
+; 	lda #$03
+; 	sta @$002122
+
+; 	lda #$00
+; 	pha
+; 	plb
+; 	lda #$55
+; 	sta @$00ff33
+; 	lda #$77
+; 	sta @$00ff34  ; leave linear memory mode
+; 	lda #$5a
+; 	sta @$00ff01
+; -	bra -
 
 waitblank:
 -	lda $4212
@@ -505,26 +653,13 @@ snes_init:
 	stz $2113		;
 	stz $2114		;
 	stz $2114		;
-	lda #$80		
+	lda #$80
 	sta $2115		;
 	stz $2116		;
 	stz $2117		;
 ;	stz $2118		;(VRAM Data?!)
 ;	stz $2119		;(VRAM Data?!)
 	stz $211a		;
-	stz $211b		;
-	lda #$01
-	sta $211b		;
-	stz $211c		;
-	stz $211c		;
-	stz $211d		;
-	stz $211d		;
-	stz $211e		;
-	sta $211e		;
-	stz $211f		;
-	stz $211f		;
-	stz $2120		;
-	stz $2120		;
 	stz $2121		;
 ;	stz $2122		; (CG Data?!)
 ;	stz $2122		; (CG Data?!)

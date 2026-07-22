@@ -2,6 +2,7 @@
 ; See http://bisqwit.iki.fi/source/snescom.html for details.
 
 ; NMI - called on VBlank
+.link page $c0
 NMI_ROUTINE:
         sep #$20 : .as
 	rep #$10 : .xl
@@ -23,7 +24,7 @@ IRQ_ROUTINE:
 	sta @$002122
 	lda #$01
 	sta @$002122
-	lda #$5A
-	sta @$F00000
+	lda #$5a
+	sta $10
 	rtl
 

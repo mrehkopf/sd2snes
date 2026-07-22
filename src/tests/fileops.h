@@ -26,18 +26,19 @@
 
 #ifndef FILEOPS_H
 #define FILEOPS_H
-#include <arm/NXP/LPC17xx/LPC17xx.h>
+#include <stdio.h>
+#include <stdint.h>
 #include "ff.h"
 
 enum filestates { FILE_OK=0, FILE_ERR, FILE_EOF };
 
-BYTE file_buf[512];
-FATFS fatfs;
-FIL file_handle;
-FRESULT file_res;
-uint8_t file_lfn[258];
-uint16_t file_block_off, file_block_max;
-enum filestates file_status;
+extern BYTE file_buf[512];
+extern FATFS fatfs;
+extern FIL file_handle;
+extern FRESULT file_res;
+extern uint8_t file_lfn[258];
+extern uint16_t file_block_off, file_block_max;
+extern enum filestates file_status;
 
 void file_init(void);
 void file_open(uint8_t* filename, BYTE flags);
@@ -46,9 +47,12 @@ void file_open_by_filinfo(FILINFO* fno);
 void file_close(void);
 void file_seek(uint32_t offset);
 UINT file_read(void);
-UINT file_write(void);
+UINT file_write(size_t len);
 UINT file_readblock(void* buf, uint32_t addr, uint16_t size);
 UINT file_writeblock(void* buf, uint32_t addr, uint16_t size);
 
 uint8_t file_getc(void);
+void append_file_basename(char *dirbase, char *filename, char *extension, int num);
+FRESULT check_or_create_folder(TCHAR *dir);
+
 #endif

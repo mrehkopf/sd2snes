@@ -14,7 +14,7 @@
  *    Algorithm    = table-driven
  *    Direct       = True
  *****************************************************************************/
-#include <arm/NXP/LPC17xx/LPC17xx.h>
+#include "config.h"
 #include "crc16.h"
 
 /**
