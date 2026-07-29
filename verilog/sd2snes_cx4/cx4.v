@@ -160,15 +160,12 @@ reg [23:0] cpu_idb; // tmp register for reg file read
        OR selected cache page does not contain requested page already)
 */
 reg CACHE_TRIG_ENr;
-reg CACHE_TRIG_EN2r;
 reg cpu_cache_en;
 initial begin
   CACHE_TRIG_ENr = 1'b0;
-  CACHE_TRIG_EN2r = 1'b0;
   cpu_cache_en = 1'b0;
 end
-always @(posedge CLK) CACHE_TRIG_EN2r <= CACHE_TRIG_ENr;
-wire CACHE_TRIG_EN = CACHE_TRIG_EN2r;
+wire CACHE_TRIG_EN = CACHE_TRIG_ENr;
 
 reg DMA_TRIG_ENr;
 initial DMA_TRIG_ENr = 1'b0;
