@@ -186,6 +186,7 @@ reg [23:0] cpu_a;
 reg fl_n;
 reg fl_z;
 reg fl_c;
+reg condtrue;
 
 
 reg cpu_go_en_r;
@@ -316,8 +317,8 @@ always @(posedge CLK) begin
         cache_cachepage <= cx4_mmio_cachepage;
         cx4_busy[BUSY_CACHE] <= 1'b1;
       end else if(cpu_cache_en
-         & (~cachevalid[~cpu_page]
-            | |(cachetag[~cpu_page] ^ cpu_p))) begin
+         & (~cachevalid[~cpu_page] | |(cachetag[~cpu_page] ^ cpu_p))
+         & condtrue) begin
         CACHE_ST <= ST_CACHE_START;
         cache_pgmpage <= cpu_p;
         cache_cachepage <= ~cpu_page;
@@ -476,7 +477,6 @@ reg op_imm;
 reg op_p;
 reg op_call;
 reg op_jump;
-reg condtrue;
 reg mul_strobe = 0;
 
 always @(posedge CLK) begin
