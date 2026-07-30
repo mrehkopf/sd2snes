@@ -154,11 +154,7 @@ wire GPR_WR_EN = gpr_enable & reg_we_rising;
 
 reg [23:0] cpu_idb; // tmp register for reg file read
 
-/* Need to cache when:
-   1f48 is written
-  AND (selected cache page is invalid
-       OR selected cache page does not contain requested page already)
-*/
+/* Need to cache when 1f48 is written */
 reg CACHE_TRIG_ENr;
 reg cpu_cache_en;
 initial begin
@@ -314,9 +310,7 @@ initial cache_count = 9'b0;
 always @(posedge CLK) begin
   case(CACHE_ST)
     ST_CACHE_IDLE: begin
-      if(CACHE_TRIG_EN
-         & (~cachevalid[cx4_mmio_cachepage]
-            | |(cachetag[cx4_mmio_cachepage] ^ cx4_mmio_pgmpage))) begin
+      if(CACHE_TRIG_EN) begin
         CACHE_ST <= ST_CACHE_START;
         cache_pgmpage <= cx4_mmio_pgmpage;
         cache_cachepage <= cx4_mmio_cachepage;
