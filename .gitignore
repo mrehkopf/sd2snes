@@ -132,6 +132,8 @@ utils/palreorder
 release
 src/obj-mk2
 src/obj-mk3
+src/obj-mk3-stm32
+src/.ARG_VERSION
 verilog/*/output_files
 verilog/*/simulation
 verilog/*/smartxplorer
