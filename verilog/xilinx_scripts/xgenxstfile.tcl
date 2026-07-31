@@ -1,7 +1,7 @@
 set scriptdir [file dirname [file normalize [info script]]]
 
 set ifn main.prj
-set ipcoredir ipcore_dir
+set ipcoredir ip/mk2
 set tmpdir xst/projnav.tmp
 
 if { [llength $argv] < 1 } {

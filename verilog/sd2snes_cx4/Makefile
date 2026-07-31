@@ -8,7 +8,7 @@ COMMON_IP = cx4_datram cx4_datrom cx4_mul cx4_pgmrom dac_buf msu_databuf snescmd
 HEADER = config.vh
 
 XIL_IP =
-XIL_IPCORE_DIR = ipcore_dir
+XIL_IPCORE_DIR = ip/mk2
 
 INT_IP = pll
 

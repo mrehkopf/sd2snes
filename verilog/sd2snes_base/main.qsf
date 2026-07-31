@@ -522,13 +522,12 @@ set_global_assignment -name VERILOG_FILE clk_test.v
 set_global_assignment -name VERILOG_FILE cheat.v
 set_global_assignment -name VERILOG_FILE bsx.v
 set_global_assignment -name VERILOG_FILE address.v
-set_global_assignment -name QIP_FILE pll.qip
-set_global_assignment -name QIP_FILE snescmd_buf.qip
-set_global_assignment -name QIP_FILE msu_databuf.qip
-set_global_assignment -name QIP_FILE dac_buf.qip
+set_global_assignment -name QIP_FILE ip/mk3/pll.qip
+set_global_assignment -name QIP_FILE ip/mk3/snescmd_buf.qip
+set_global_assignment -name QIP_FILE ip/mk3/msu_databuf.qip
+set_global_assignment -name QIP_FILE ip/mk3/dac_buf.qip
 set_global_assignment -name SDC_FILE main.sdc
 set_global_assignment -name SIGNALTAP_FILE stp1.stp
-set_global_assignment -name QIP_FILE tap_pll.qip
 set_global_assignment -name SLD_NODE_CREATOR_ID 110 -section_id auto_signaltap_1
 set_global_assignment -name SLD_NODE_ENTITY_NAME sld_signaltap -section_id auto_signaltap_1
 set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_clk -to "pll:snes_pll|altpll:altpll_component|pll_altpll:auto_generated|wire_pll1_clk[0]" -section_id auto_signaltap_1

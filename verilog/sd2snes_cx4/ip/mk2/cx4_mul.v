@@ -11,10 +11,10 @@
 // \   \  /  \ 
 //  \___\/\___\
 //             
-// Command	: -w -sim -ofmt verilog /mnt/d/prj/sd2snes/verilog/sd2snes_cx4/ipcore_dir/tmp/_cg/cx4_mul.ngc /mnt/d/prj/sd2snes/verilog/sd2snes_cx4/ipcore_dir/tmp/_cg/cx4_mul.v 
+// Command	: -w -sim -ofmt verilog /mnt/d/prj/sd2snes/verilog/sd2snes_cx4/ip/mk2/tmp/_cg/cx4_mul.ngc /mnt/d/prj/sd2snes/verilog/sd2snes_cx4/ip/mk2/tmp/_cg/cx4_mul.v
 // Device	: 3s400pq208-4
-// Input file	: /mnt/d/prj/sd2snes/verilog/sd2snes_cx4/ipcore_dir/tmp/_cg/cx4_mul.ngc
-// Output file	: /mnt/d/prj/sd2snes/verilog/sd2snes_cx4/ipcore_dir/tmp/_cg/cx4_mul.v
+// Input file	: /mnt/d/prj/sd2snes/verilog/sd2snes_cx4/ip/mk2/tmp/_cg/cx4_mul.ngc
+// Output file	: /mnt/d/prj/sd2snes/verilog/sd2snes_cx4/ip/mk2/tmp/_cg/cx4_mul.v
 // # of Modules	: 1
 // Design Name	: cx4_mul
 // Xilinx        : /opt/Xilinx/14.7/ISE_DS/ISE/

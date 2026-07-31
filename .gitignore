@@ -108,7 +108,7 @@ src/utils/lpcchksum.o
 src/utils/lpcchksum
 src/bootldr/obj
 others/*
-verilog/*/ipcore_dir/*/*
+verilog/*/ip/mk2/*/*
 verilog/*/_xmsgs/
 verilog/*/iseconfig/
 verilog/*/xst/

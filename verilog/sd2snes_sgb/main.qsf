@@ -521,16 +521,16 @@ set_global_assignment -name VERILOG_FILE dac.v
 set_global_assignment -name VERILOG_FILE cheat.v
 set_global_assignment -name SDC_FILE main.sdc
 set_global_assignment -name VERILOG_FILE address.v
-set_global_assignment -name QIP_FILE dec_table.qip
-set_global_assignment -name QIP_FILE dac_buf.qip
-set_global_assignment -name QIP_FILE msu_databuf.qip
-set_global_assignment -name QIP_FILE pll.qip
-set_global_assignment -name QIP_FILE snescmd_buf.qip
+set_global_assignment -name QIP_FILE ip/mk3/dec_table.qip
+set_global_assignment -name QIP_FILE ip/mk3/dac_buf.qip
+set_global_assignment -name QIP_FILE ip/mk3/msu_databuf.qip
+set_global_assignment -name QIP_FILE ip/mk3/pll.qip
+set_global_assignment -name QIP_FILE ip/mk3/snescmd_buf.qip
 set_global_assignment -name VERILOG_FILE sgb_cpu.v
-set_global_assignment -name QIP_FILE vram.qip
-set_global_assignment -name QIP_FILE oam.qip
-set_global_assignment -name QIP_FILE hram.qip
-set_global_assignment -name QIP_FILE row_buf.qip
+set_global_assignment -name QIP_FILE ip/mk3/vram.qip
+set_global_assignment -name QIP_FILE ip/mk3/oam.qip
+set_global_assignment -name QIP_FILE ip/mk3/hram.qip
+set_global_assignment -name QIP_FILE ip/mk3/row_buf.qip
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to PT5_in
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to PM6_out
 

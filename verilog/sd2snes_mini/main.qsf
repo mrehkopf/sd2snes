@@ -550,5 +550,5 @@ set_global_assignment -name VERILOG_FILE main.v
 set_global_assignment -name VERILOG_FILE dcm.v
 set_global_assignment -name VERILOG_FILE data.v
 set_global_assignment -name VERILOG_FILE address.v
-set_global_assignment -name QIP_FILE pll.qip
+set_global_assignment -name QIP_FILE ip/mk3/pll.qip
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

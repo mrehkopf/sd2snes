@@ -6,7 +6,7 @@ VHSRC = FIFO_B2B.vhd FIFO_AXIS.vhd Golomb_0_Decoder.vhd Golomb_N_Decoder.vhd Inp
 COMMON_IP = dac_buf msu_databuf snescmd_buf
 
 XIL_IP =
-XIL_IPCORE_DIR = ipcore_dir
+XIL_IPCORE_DIR = ip/mk2
 
 INT_IP = pll
 

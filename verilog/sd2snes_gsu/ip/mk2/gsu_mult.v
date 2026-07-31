@@ -11,10 +11,10 @@
 // \   \  /  \ 
 //  \___\/\___\
 //             
-// Command	: -w -sim -ofmt verilog /mnt/d/prj/sd2snes/verilog/sd2snes_gsu/ipcore_dir/tmp/_cg/gsu_mult.ngc /mnt/d/prj/sd2snes/verilog/sd2snes_gsu/ipcore_dir/tmp/_cg/gsu_mult.v 
+// Command	: -w -sim -ofmt verilog /mnt/d/prj/sd2snes/verilog/sd2snes_gsu/ip/mk2/tmp/_cg/gsu_mult.ngc /mnt/d/prj/sd2snes/verilog/sd2snes_gsu/ip/mk2/tmp/_cg/gsu_mult.v
 // Device	: 3s400pq208-4
-// Input file	: /mnt/d/prj/sd2snes/verilog/sd2snes_gsu/ipcore_dir/tmp/_cg/gsu_mult.ngc
-// Output file	: /mnt/d/prj/sd2snes/verilog/sd2snes_gsu/ipcore_dir/tmp/_cg/gsu_mult.v
+// Input file	: /mnt/d/prj/sd2snes/verilog/sd2snes_gsu/ip/mk2/tmp/_cg/gsu_mult.ngc
+// Output file	: /mnt/d/prj/sd2snes/verilog/sd2snes_gsu/ip/mk2/tmp/_cg/gsu_mult.v
 // # of Modules	: 1
 // Design Name	: gsu_mult
 // Xilinx        : /opt/Xilinx/14.7/ISE_DS/ISE/
