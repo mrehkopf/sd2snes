@@ -496,6 +496,12 @@ end
 reg jp_docache;
 initial jp_docache = 1'b0;
 
+reg [1:0] cpu_wait_subcyc;
+initial cpu_wait_subcyc = 2'b00;
+
+reg op_jp_taken;
+reg op_skip_taken;
+
 always @(posedge CLK) begin
   mul_strobe <= 1'b0;
   case(CPU_STATE)
@@ -607,6 +613,7 @@ always @(posedge CLK) begin
       case(op)
         OP_JP: begin
           cpu_cache_en <= 1'b0;
+          op_jp_taken <= condtrue;
           if(!cpu_cache_en && !cx4_busy[BUSY_CACHE]) begin
             jp_docache <= 1'b0;
             if(condtrue) begin
@@ -621,6 +628,7 @@ always @(posedge CLK) begin
           end
         end
         OP_SKIP: begin
+          op_skip_taken <= condtrue;
           if(condtrue) cpu_pc <= cpu_pc + 2;
           else cpu_pc <= cpu_pc + 1;
         end
@@ -704,6 +712,7 @@ always @(posedge CLK) begin
       endcase
     end
     ST_CPU_3: begin
+      cpu_wait_subcyc <= 2'b00;
       case(op)
         OP_BUS: cpu_busaddr <= cpu_busaddr + 1;
         OP_WRRAM: cx4_cpu_datram_we <= 1'b0;
@@ -737,20 +746,20 @@ always @(posedge CLK) begin
 
       casex(cpu_op_w[15:11])
         5'b00100: begin // SKIP
-          cpu_wait <= 8'h01;
-          CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
+          cpu_wait <= op_skip_taken ? 8'h01 : 8'h00;
+          CPU_STATE <= (op_skip_taken && !speed) ? ST_CPU_4 : ST_CPU_0;
         end
         5'b00111: begin // RT
-          cpu_wait <= 8'h03;
+          cpu_wait <= 8'h02;
           CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
         end
         5'b00x01, 5'b00x10: begin // JP
           if(cpu_op_w[13]) begin // CALL
-            cpu_wait <= 8'h03;
+            cpu_wait <= op_jp_taken ? 8'h02 : 8'h00;
           end else begin
-            cpu_wait <= 8'h03;
+            cpu_wait <= op_jp_taken ? 8'h02 : 8'h00;
           end
-          CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
+          CPU_STATE <= (op_jp_taken && !speed) ? ST_CPU_4 : ST_CPU_0;
         end
 /*        5'b01110, 5'b01101, 5'b11101: begin // RDROM, RDRAM, WRRAM
           cpu_wait <= 8'h03;
@@ -814,9 +823,15 @@ always @(posedge CLK) begin
       op_sa <= cpu_op_w[9:8];
     end
     ST_CPU_4: begin
-      cpu_wait <= cpu_wait - 1;
-      if(cpu_wait) CPU_STATE <= ST_CPU_4;
-      else CPU_STATE <= ST_CPU_0;
+      if(cpu_wait_subcyc == 2'b11) begin
+        cpu_wait_subcyc <= 2'b00;
+        cpu_wait <= cpu_wait - 1;
+        if(cpu_wait == 8'h01) CPU_STATE <= ST_CPU_0;
+        else CPU_STATE <= ST_CPU_4;
+      end else begin
+        cpu_wait_subcyc <= cpu_wait_subcyc + 1;
+        CPU_STATE <= ST_CPU_4;
+      end
     end
   endcase
 end
