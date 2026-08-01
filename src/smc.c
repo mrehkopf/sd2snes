@@ -233,7 +233,7 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
       /* S-DD1 */
       if(header->carttype == 0x43 || header->carttype == 0x45) {
         /* Not really S-DD1 but Star Ocean 96MBit */
-        if(file_handle.fsize == 0xc00200) {
+        if(file_handle.fsize >= 0xc00000) {
           props->mapper_id = 6;
         }
         /* actual S-DD1 */
