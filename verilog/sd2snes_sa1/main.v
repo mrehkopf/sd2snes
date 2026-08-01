@@ -1,3 +1,4 @@
+// `default_nettype none
 `timescale 1 ns / 1 ns
 //////////////////////////////////////////////////////////////////////////////////
 // Company: Rehkopf
@@ -943,9 +944,9 @@ always @(posedge CLK2) MCU_WRITE_1<= MCU_WRITE;
 // odd addresses xxx1
 assign ROM_DATA[7:0] = ROM_ADDR0
                        ?(SD_DMA_TO_ROM ? (!MCU_WRITE_1 ? MCU_DOUT : 8'bZ)
-                                       : (ROM_HIT
-                                         & ~IS_SAVERAM
-                                         & ~SNES_WRITE) ? SNES_DATA
+//                                       : (ROM_HIT
+//                                         & ~IS_SAVERAM
+//                                         & ~SNES_WRITE) ? SNES_DATA
                                        : MCU_WR_HIT ? MCU_DOUT : 8'bZ
                         )
                        :8'bZ;
@@ -954,9 +955,9 @@ assign ROM_DATA[7:0] = ROM_ADDR0
 assign ROM_DATA[15:8] = ROM_ADDR0
                         ? 8'bZ
                         :(SD_DMA_TO_ROM ? (!MCU_WRITE_1 ? MCU_DOUT : 8'bZ)
-                                        : (ROM_HIT
-                                          & ~IS_SAVERAM
-                                          & ~SNES_WRITE) ? SNES_DATA
+//                                        : (ROM_HIT
+//                                          & ~IS_SAVERAM
+//                                          & ~SNES_WRITE) ? SNES_DATA
                                         : MCU_WR_HIT ? MCU_DOUT
                                         : 8'bZ
                          );
