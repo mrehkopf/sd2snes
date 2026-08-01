@@ -452,7 +452,7 @@ void cmd_memset(void) {
 }
 
 void cmd_cheat(void) {
-  int8_t index = parse_unsigned(0, 7, 10);
+  uint8_t index = parse_unsigned(0, 7, 10);
   uint32_t code = parse_unsigned(0, 0xffffffff, 16);
   fpga_write_cheat(index, code);
 }
@@ -703,6 +703,9 @@ void cli_loop(void) {
 
       case CMD_MV:
         cmd_mv();
+        break;
+
+      default:
         break;
     }
   }
