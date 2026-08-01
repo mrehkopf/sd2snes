@@ -147,29 +147,29 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
         props->fpga_features |= FEAT_DSPX;
         /* Pilotwings uses DSP1 instead of DSP1B */
         if(!memcmp(header->name, "PILOTWINGS", 10)) {
-          props->dsp_fw = DSPFW_1;
+          props->dsp_fw = DSPFW_DSP1;
         } else {
-          props->dsp_fw = DSPFW_1B;
+          props->dsp_fw = DSPFW_DSP1B;
         }
       }
       /* DSP2 LoROM */
       else if (header->map == 0x20 && header->carttype == 0x05) {
         props->has_dspx = 1;
-        props->dsp_fw = DSPFW_2;
+        props->dsp_fw = DSPFW_DSP2;
         props->fpga_conf = FPGA_DSP;
         props->fpga_features |= FEAT_DSPX;
       }
       /* DSP3 LoROM */
       else if (header->map == 0x30 && header->carttype == 0x05 && header->licensee == 0xb2) {
         props->has_dspx = 1;
-        props->dsp_fw = DSPFW_3;
+        props->dsp_fw = DSPFW_DSP3;
         props->fpga_conf = FPGA_DSP;
         props->fpga_features |= FEAT_DSPX;
       }
       /* DSP4 LoROM */
       else if (header->map == 0x30 && header->carttype == 0x03) {
         props->has_dspx = 1;
-        props->dsp_fw = DSPFW_4;
+        props->dsp_fw = DSPFW_DSP4;
         props->fpga_conf = FPGA_DSP;
         props->fpga_features |= FEAT_DSPX;
       }
@@ -184,7 +184,11 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
       }
       /* ST0011 LoROM */
       else if (header->map == 0x30 && header->carttype == 0xf6 && header->romsize < 0xa) {
+        props->has_dspx = 1;
         props->has_st0011 = 1;
+        props->dsp_fw = DSPFW_ST0011;
+        props->fpga_conf = FPGA_DSP;
+       // props->fpga_features |= FEAT_ST0011;
         props->error = MENU_ERR_NOIMPL;
         props->error_param = (uint8_t*)"ST0011";
       }
@@ -214,7 +218,7 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
       /* DSP1B HiROM */
       if((header->map & 0xef) == 0x21 && (header->carttype == 0x03 || header->carttype == 0x05)) {
         props->has_dspx = 1;
-        props->dsp_fw = DSPFW_1B;
+        props->dsp_fw = DSPFW_DSP1B;
         props->fpga_conf = FPGA_DSP;
         props->fpga_features |= FEAT_DSPX;
       }

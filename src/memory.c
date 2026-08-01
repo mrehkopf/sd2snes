@@ -368,8 +368,8 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     printf("DSPx game. Loading firmware image %s...\n", romprops.dsp_fw);
     load_dspx(romprops.dsp_fw, romprops.fpga_features);
     /* fallback to DSP1B firmware if DSP1.bin is not present */
-    if(file_res && romprops.dsp_fw == DSPFW_1) {
-      load_dspx(DSPFW_1B, romprops.fpga_features);
+    if(file_res && romprops.dsp_fw == DSPFW_DSP1) {
+      load_dspx(DSPFW_DSP1B, romprops.fpga_features);
     }
     if(file_res) {
       snes_menu_errmsg(MENU_ERR_SUPPLFILE, (void*)romprops.dsp_fw);
