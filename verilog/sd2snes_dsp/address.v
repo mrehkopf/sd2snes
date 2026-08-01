@@ -194,10 +194,8 @@ assign map_enable =                           (!SNES_ADDR[22] && ((SNES_ADDR[15:
 assign dspx_enable =
   featurebits[FEAT_DSPX]
   ?((MAPPER_DEC[3'b001])
-    ?(ROM_MASK[20]
-      ?(SNES_ADDR[22] & SNES_ADDR[21] & ~SNES_ADDR[20] & ~SNES_ADDR[15])
-      :(~SNES_ADDR[22] & SNES_ADDR[21] & SNES_ADDR[20] & SNES_ADDR[15])
-     )
+    ?( ( SNES_ADDR[22] & SNES_ADDR[21] & ~SNES_ADDR[20] & ~SNES_ADDR[15])
+      |(~SNES_ADDR[22] & SNES_ADDR[21] &  SNES_ADDR[20] &  SNES_ADDR[15]))
     :(MAPPER_DEC[3'b000])
       ?(~SNES_ADDR[22] & ~SNES_ADDR[21] & ~SNES_ADDR[20] & ~SNES_ADDR[15]
         & &SNES_ADDR[14:13])
