@@ -31,6 +31,8 @@ MK3MINI := $(FPGAPATH)/sd2snes_mini/fpga_mini.bi3
 MK2CLEAN := $(foreach C,$(MK2CORES) mini,$(FPGAPATH)/sd2snes_$C/.clean.$(MK2EXT))
 MK3CLEAN := $(foreach C,$(MK3CORES) mini,$(FPGAPATH)/sd2snes_$C/.clean.$(MK3EXT))
 
+BIN := bin
+
 UTILS := utils
 
 -include src/VERSION
@@ -70,8 +72,10 @@ clean: $(MK2CLEAN) $(MK3CLEAN)
 release: version bsxpage
 	rm -rf $(TARGETPARENT)
 	mkdir -p $(TARGET)
-	cp bin/*.bin $(TARGET)
+	cp $(BIN)/*.bin $(TARGET)
+ifneq ($(README),)
 	cp $(README) $(TARGET)
+endif
 	cp $(MK2FPGA) $(TARGET)
 	cp $(MK3FPGA) $(TARGET)
 	cp $(MK2MCUPATH)/$(MK2MCU) $(TARGET)
@@ -79,7 +83,9 @@ release: version bsxpage
 	cp $(STMMCUPATH)/$(STMMCU) $(TARGET)
 	cp $(MENUPATH)/$(MK2MENU) $(TARGET)
 	cp $(MENUPATH)/$(MK3MENU) $(TARGET)
+ifneq ($(SAVESTATEPATH),)
 	cp $(SAVESTATEPATH)/$(SAVESTATEFILES) $(TARGET)
+endif
 	cd $(TARGETPARENT) && zip -r sd2snes_firmware_v$(CONFIG_VERSION).zip sd2snes
 
 bsxpage:
