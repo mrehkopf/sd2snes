@@ -7,14 +7,14 @@
 // \   \   \/     Version: P.20131013
 //  \   \         Application: netgen
 //  /   /         Filename: cx4_mul.v
-// /___/   /\     Timestamp: Thu Jan  9 00:49:04 2025
+// /___/   /\     Timestamp: Mon May 18 12:25:38 2026
 // \   \  /  \ 
 //  \___\/\___\
 //             
-// Command	: -w -sim -ofmt verilog /mnt/d/prj/sd2snes/verilog/sd2snes_cx4/ip/mk2/tmp/_cg/cx4_mul.ngc /mnt/d/prj/sd2snes/verilog/sd2snes_cx4/ip/mk2/tmp/_cg/cx4_mul.v
+// Command	: -w -sim -ofmt verilog /home/ikari/prj/sd2snes/verilog/sd2snes_cx4/ipcore_dir/tmp/_cg/cx4_mul.ngc /home/ikari/prj/sd2snes/verilog/sd2snes_cx4/ipcore_dir/tmp/_cg/cx4_mul.v 
 // Device	: 3s400pq208-4
-// Input file	: /mnt/d/prj/sd2snes/verilog/sd2snes_cx4/ip/mk2/tmp/_cg/cx4_mul.ngc
-// Output file	: /mnt/d/prj/sd2snes/verilog/sd2snes_cx4/ip/mk2/tmp/_cg/cx4_mul.v
+// Input file	: /home/ikari/prj/sd2snes/verilog/sd2snes_cx4/ipcore_dir/tmp/_cg/cx4_mul.ngc
+// Output file	: /home/ikari/prj/sd2snes/verilog/sd2snes_cx4/ipcore_dir/tmp/_cg/cx4_mul.v
 // # of Modules	: 1
 // Design Name	: cx4_mul
 // Xilinx        : /opt/Xilinx/14.7/ISE_DS/ISE/

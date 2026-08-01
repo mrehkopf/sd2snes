@@ -7,14 +7,14 @@
 // \   \   \/     Version: P.20131013
 //  \   \         Application: netgen
 //  /   /         Filename: sa1_mult.v
-// /___/   /\     Timestamp: Thu Dec 19 16:48:46 2024
+// /___/   /\     Timestamp: Mon May 18 12:51:25 2026
 // \   \  /  \ 
 //  \___\/\___\
 //             
-// Command	: -w -sim -ofmt verilog /mnt/d/prj/sd2snes/verilog/sd2snes_sa1/ip/mk2/tmp/_cg/sa1_mult.ngc /mnt/d/prj/sd2snes/verilog/sd2snes_sa1/ip/mk2/tmp/_cg/sa1_mult.v
+// Command	: -w -sim -ofmt verilog /home/ikari/prj/sd2snes/verilog/sd2snes_sa1/ipcore_dir/tmp/_cg/sa1_mult.ngc /home/ikari/prj/sd2snes/verilog/sd2snes_sa1/ipcore_dir/tmp/_cg/sa1_mult.v 
 // Device	: 3s400pq208-4
-// Input file	: /mnt/d/prj/sd2snes/verilog/sd2snes_sa1/ip/mk2/tmp/_cg/sa1_mult.ngc
-// Output file	: /mnt/d/prj/sd2snes/verilog/sd2snes_sa1/ip/mk2/tmp/_cg/sa1_mult.v
+// Input file	: /home/ikari/prj/sd2snes/verilog/sd2snes_sa1/ipcore_dir/tmp/_cg/sa1_mult.ngc
+// Output file	: /home/ikari/prj/sd2snes/verilog/sd2snes_sa1/ipcore_dir/tmp/_cg/sa1_mult.v
 // # of Modules	: 1
 // Design Name	: sa1_mult
 // Xilinx        : /opt/Xilinx/14.7/ISE_DS/ISE/
