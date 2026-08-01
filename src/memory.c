@@ -701,6 +701,7 @@ uint32_t load_sram(uint8_t* filename, uint32_t base_addr) {
 
   set_mcu_addr(base_addr);
   file_open((uint8_t*)filename, FA_READ);
+  filesize = file_handle.fsize;
   if(file_res) {
     printf("load_sram: could not open %s, res=%d\n", filename, file_res);
     return 0;
