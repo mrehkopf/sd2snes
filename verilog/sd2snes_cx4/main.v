@@ -680,7 +680,7 @@ always @(posedge CLK2) begin
       if(cx4_active) begin
         if (CX4_RD_PENDr) begin
           STATE <= ST_CX4_RD_ADDR;
-          ST_MEM_DELAYr <= 16;
+          ST_MEM_DELAYr <= 9;
         end
       end else if(free_slot | SNES_DEADr) begin
         if(MCU_RD_PENDr) begin
