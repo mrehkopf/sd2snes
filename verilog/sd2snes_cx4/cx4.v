@@ -499,9 +499,6 @@ initial jp_docache = 1'b0;
 reg [1:0] cpu_wait_subcyc;
 initial cpu_wait_subcyc = 2'b00;
 
-reg op_jp_taken;
-reg op_skip_taken;
-
 always @(posedge CLK) begin
   mul_strobe <= 1'b0;
   case(CPU_STATE)
@@ -613,7 +610,6 @@ always @(posedge CLK) begin
       case(op)
         OP_JP: begin
           cpu_cache_en <= 1'b0;
-          op_jp_taken <= condtrue;
           if(!cpu_cache_en && !cx4_busy[BUSY_CACHE]) begin
             jp_docache <= 1'b0;
             if(condtrue) begin
@@ -624,18 +620,24 @@ always @(posedge CLK) begin
               end
               cpu_pc <= op_param;
               cpu_page <= cpu_page ^ op_p;
+              cpu_wait <= 8'h02;
+              CPU_STATE <= speed ? ST_CPU_2 : ST_CPU_4;
             end else cpu_pc <= cpu_pc + 1;
           end
         end
         OP_SKIP: begin
-          op_skip_taken <= condtrue;
-          if(condtrue) cpu_pc <= cpu_pc + 2;
-          else cpu_pc <= cpu_pc + 1;
+          if(condtrue) begin
+            cpu_pc <= cpu_pc + 2;
+            cpu_wait <= 8'h01;
+            CPU_STATE <= speed ? ST_CPU_2 : ST_CPU_4;
+          end else cpu_pc <= cpu_pc + 1;
         end
         OP_RT: begin
           cpu_page <= cpu_page_stack[cpu_sp - 1];
           cpu_pc <= cpu_pc_stack[cpu_sp - 1];
           cpu_sp <= cpu_sp - 1;
+          cpu_wait <= 8'h02;
+          CPU_STATE <= speed ? ST_CPU_2 : ST_CPU_4;
         end
         OP_WAI: if(BUS_RDY) cpu_pc <= cpu_pc + 1;
         OP_BUS: begin
@@ -743,41 +745,7 @@ always @(posedge CLK) begin
         end
       endcase
       cpu_op <= cpu_op_w;
-
-      casex(cpu_op_w[15:11])
-        5'b00100: begin // SKIP
-          cpu_wait <= op_skip_taken ? 8'h01 : 8'h00;
-          CPU_STATE <= (op_skip_taken && !speed) ? ST_CPU_4 : ST_CPU_0;
-        end
-        5'b00111: begin // RT
-          cpu_wait <= 8'h02;
-          CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
-        end
-        5'b00x01, 5'b00x10: begin // JP
-          if(cpu_op_w[13]) begin // CALL
-            cpu_wait <= op_jp_taken ? 8'h02 : 8'h00;
-          end else begin
-            cpu_wait <= op_jp_taken ? 8'h02 : 8'h00;
-          end
-          CPU_STATE <= (op_jp_taken && !speed) ? ST_CPU_4 : ST_CPU_0;
-        end
-/*        5'b01110, 5'b01101, 5'b11101: begin // RDROM, RDRAM, WRRAM
-          cpu_wait <= 8'h03;
-          CPU_STATE <= speed ? ST_CPU_0 : ST_CPU_4;
-        end
-/*        5'b10011: begin // MUL
-          cpu_wait <= 8'h03;
-          CPU_STATE <= ST_CPU_4;
-        end*/
-/*        5'b01000: begin // BUSRD
-          cpu_wait <= 8'h03;
-          CPU_STATE <= ST_CPU_4;
-        end*/
-        default: begin
-          cpu_wait <= 8'h00;
-          CPU_STATE <= ST_CPU_0;
-        end
-      endcase
+      CPU_STATE <= ST_CPU_0;
 
       casex(cpu_op_w[15:11])
         5'b00000: op <= OP_NOP;
@@ -826,7 +794,7 @@ always @(posedge CLK) begin
       if(cpu_wait_subcyc == 2'b11) begin
         cpu_wait_subcyc <= 2'b00;
         cpu_wait <= cpu_wait - 1;
-        if(cpu_wait == 8'h01) CPU_STATE <= ST_CPU_0;
+        if(cpu_wait == 8'h01) CPU_STATE <= ST_CPU_2;
         else CPU_STATE <= ST_CPU_4;
       end else begin
         cpu_wait_subcyc <= cpu_wait_subcyc + 1;
@@ -863,6 +831,7 @@ always @(posedge CLK) begin
       ST_BUSRD_END: begin
         if(~cpu_busaddr[22]) cpu_busdata <= BUS_DI;
         else cpu_busdata <= 8'h00;
+        BUSRD_STATE <= ST_BUSRD_IDLE;
       end
     endcase
   end
