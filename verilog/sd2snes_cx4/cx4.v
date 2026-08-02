@@ -623,6 +623,9 @@ always @(posedge CLK) begin
               cpu_wait <= 8'h02;
               CPU_STATE <= speed ? ST_CPU_2 : ST_CPU_4;
             end else cpu_pc <= cpu_pc + 1;
+          end else begin
+            CPU_STATE <= ST_CPU_1;
+            condtrue <= condtrue;
           end
         end
         OP_SKIP: begin
@@ -639,7 +642,10 @@ always @(posedge CLK) begin
           cpu_wait <= 8'h02;
           CPU_STATE <= speed ? ST_CPU_2 : ST_CPU_4;
         end
-        OP_WAI: if(BUS_RDY) cpu_pc <= cpu_pc + 1;
+        OP_WAI: begin
+          if(BUS_RDY) cpu_pc <= cpu_pc + 1;
+          else CPU_STATE <= ST_CPU_1;
+        end
         OP_BUS: begin
           cpu_bus_rq <= 1'b0;
           cpu_pc <= cpu_pc + 1;
