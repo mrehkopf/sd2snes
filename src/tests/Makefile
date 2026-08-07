@@ -21,12 +21,24 @@
 # To rebuild project do "make clean" then "make all".
 #----------------------------------------------------------------------------
 
+# select programming interface (default: ae-ft2232)
+# setting is expanded to filename interface/$INTERFACE.cfg
+# available: ae-ft2232 usb-blaster oocdlink usbjtag
+export INTERFACE ?= ae-ft2232
+
 # Read configuration file
-ifdef CONFIG
- CONFIGSUFFIX = $(CONFIG:config%=%)
+ifndef CONFIG
+$(info ERROR: Please use $(MAKE) CONFIG=... to specify at least one config file.)
+$(info Available configs:)
+$(foreach cfg,$(wildcard config-*),$(info $(patsubst %,  %,$(cfg))))
+$(info )
+$(info You may specify a programming interface using INTERFACE=...)
+$(info Available INTERFACEs (default/current: $(INTERFACE)):)
+$(foreach intf,$(wildcard interface/*),$(info $(patsubst interface/%.cfg,  %,$(intf))))
+$(info )
+$(error missing CONFIG parameter)
 else
- CONFIG = config
- CONFIGSUFFIX =
+ CONFIGSUFFIX = $(CONFIG:config%=%)
 endif
 
 # Enable verbose compilation with "make V=1"
@@ -41,21 +53,30 @@ endif
 # Include the configuration file
 include $(CONFIG)
 
+# OpenOCD search path from config
+export CONFIG_OPENOCD_SCRIPT_PATH ?= .
+
 # Directory for all generated files
 OBJDIR := obj$(CONFIGSUFFIX)
-
-# Output format. (can be srec, ihex, binary)
-FORMAT = binary
+DEPDIR := .dep$(CONFIGSUFFIX)
 
 # Linker script
-LINKERSCRIPT = lpc1754.ld
+LINKERSCRIPT = $(CONFIG_LD_SCRIPT)
 
 # Target file name (without extension).
 TARGET = $(OBJDIR)/sd2snes
 
+# Environment variables for openocd reuse
+export FW_START=$(CONFIG_FW_START)
+export FW_FILE=$(OBJDIR)/$(CONFIG_FW_FILE)
+export FLASH_SIZE=$(CONFIG_FLASH_SIZE)
+
+# Version
+-include VERSION
+include version.mk
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c printf.c spi.c fileops.c rtc.c fpga.c fpga_spi.c snes.c smc.c memory.c faulthandler.c sort.c crc32.c cic.c cli.c xmodem.c irq.c rle.c sdnative.c msu1.c tests.c
+SRC = main.c ff.c ccsbcs.c printf.c fileops.c fpga.c fpga_spi.c snes.c smc.c memory.c faulthandler.c sort.c crc32.c cic.c cli.c xmodem.c rle.c msu1.c tests.c
 
 # usbcontrol.c usb_hid.c usbhw_lpc.c usbinit.c usbstdreq.c
 
@@ -67,15 +88,16 @@ SRC = main.c ff.c ccsbcs.c clock.c uart.c power.c led.c timer.c printf.c spi.c f
 #     Even though the DOS/Win* filesystem matches both .s and .S the same,
 #     it will preserve the spelling of the filenames, and gcc itself does
 #     care about how the name is spelled on its command-line.
-ASRC = startup.S crc.S
+ASRC = crc.S
 
+# add in platform specific configuration
+include $(CONFIG_ARCH)/variables.mk
+-include $(CONFIG_ARCH)/debug-variables.mk
 
 # Optimization level, can be [0, 1, 2, 3, s].
 #     0 = turn off optimization. s = optimize for size.
 #     (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
-# Use s -mcall-prologues when you really need size...
-#OPT = 2
-OPT = 2
+OPT = s
 
 # Debugging format.
 DEBUG = dwarf-2
@@ -123,8 +145,8 @@ SIZE = $(ARCH)-size
 NM = $(ARCH)-nm
 REMOVE = rm -f
 COPY = cp
-AWK = awk
-
+AWK = gawk
+BIN2C = ../../utils/bin2c
 
 #---------------- Compiler Options ----------------
 #  -g*:          generate debugging information
@@ -138,13 +160,13 @@ CFLAGS += $(CDEFS) $(CINCS)
 CFLAGS += -O$(OPT)
 CFLAGS += $(CPUFLAGS) -nostartfiles
 #CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
-CFLAGS += -Wall -Wstrict-prototypes -Werror
+CFLAGS += -Wall -Wstrict-prototypes -Werror -Wno-strict-aliasing
 CFLAGS += -Wa,-adhlns=$(OBJDIR)/$(<:.c=.lst)
-CFLAGS += -I$(OBJDIR)
+CFLAGS += -I$(OBJDIR) -I$(CONFIG_ARCH)
 CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
 CFLAGS += $(CSTANDARD)
 CFLAGS += -ffunction-sections -fdata-sections
-
+CFLAGS += -save-temps
 
 #---------------- Assembler Options ----------------
 #  -Wa,...:   tell GCC to pass this to the assembler.
@@ -167,6 +189,10 @@ ifeq ($(CONFIG_LINKER_RELAX),y)
   LDFLAGS += -Wl,-O9,--relax
 endif
 
+# OpenOCD options
+# -s <path>:      set additional script search path
+# -f openocd.cfg: load common script
+OPENOCDFLAGS = -s $(CONFIG_OPENOCD_SCRIPT_PATH) -f openocd.cfg
 
 #============================================================================
 
@@ -180,9 +206,11 @@ OBJ := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.o) $(ASRC:.S=.o))
 # Define all listing files.
 LST := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.lst) $(ASRC:.S=.lst))
 
+# Generate list of obj dirs
+OBJDIRS := $(sort $(dir $(OBJ)))
 
 # Compiler flags to generate dependency files.
-GENDEPFLAGS = -MMD -MP -MF .dep/$(@F).d
+GENDEPFLAGS = -MMD -MP -MF $(DEPDIR)/$(@F).d
 
 
 # Combine all necessary flags and optional flags.
@@ -191,17 +219,13 @@ ALL_CFLAGS = -I. $(CFLAGS) $(GENDEPFLAGS)
 ALL_ASFLAGS = -I. -x assembler-with-cpp $(ASFLAGS) $(CDEFS)
 
 
-
-
-
 # Default target.
 all: build
 
 build: elf bin hex
 	$(E) "  SIZE   $(TARGET).elf"
 	$(Q)$(ELFSIZE)|grep -v debug
-	cp $(TARGET).bin $(OBJDIR)/firmware.img
-	../utils/genhdr $(OBJDIR)/firmware.img SNSD $(CONFIG_FWVER)
+	cp $(TARGET).bin $(OBJDIR)/$(CONFIG_FW_FILE)
 
 elf: $(TARGET).elf
 bin: $(TARGET).bin
@@ -215,21 +239,35 @@ sym: $(TARGET).sym
 #	cp $(TARGET).bin /mbed/hw_LPC1768.bin
 
 
+#	utils/lpcchksum $(TARGET).bin
+fresh: erase program
+
 program: build
-	../utils/lpcchksum $(TARGET).bin
-	openocd -f openocd-usb.cfg -f lpc1754.cfg -f flash.cfg
+	openocd $(OPENOCDFLAGS) -f flash.cfg
 
 debug: build
-	openocd -f openocd-usb.cfg -f lpc1754.cfg
+	openocd $(OPENOCDFLAGS)
 
 reset:
-	openocd -f openocd-usb.cfg -f lpc1754.cfg -f reset.cfg
+	openocd $(OPENOCDFLAGS) -f reset.cfg
+
+erase:
+	openocd $(OPENOCDFLAGS) -f erase.cfg
+
+dump:
+	openocd $(OPENOCDFLAGS) -f dump.cfg
 
 # Display size of file.
-HEXSIZE = $(SIZE) --target=$(FORMAT) $(TARGET).hex
 ELFSIZE = $(SIZE) -A $(TARGET).elf
 
-
+# Generate version.h
+.PRECIOUS : $(OBJDIR)/version.h
+$(OBJDIR)/version.h: .ARG_VERSION | $(OBJDIR)
+	$(E) "  VERSION $(CONFIG_VERSION)"
+	$(Q)printf "#ifndef __VERSION_H\n"\
+"#define __VERSION_H\n"\
+"#define CONFIG_VERSION \"$(CONFIG_VERSION)\"\n"\
+"#endif" > $(OBJDIR)/version.h
 
 # Generate autoconf.h from config
 .PRECIOUS : $(OBJDIR)/autoconf.h
@@ -238,13 +276,19 @@ $(OBJDIR)/autoconf.h: $(CONFIG) | $(OBJDIR)
 	$(Q)$(AWK) -f conf2h.awk $(CONFIG) > $(OBJDIR)/autoconf.h
 
 # Create final output files from ELF output file.
-$(OBJDIR)/%.bin: $(OBJDIR)/%.elf
+# --gap-fill 0xff is important to match the padding values as they end up
+# in physical flash; CRC calculation is wrong otherwise.
+$(TARGET)-intermediate.bin: $(TARGET)-intermediate.elf
+	$(E) "  BINTMP $@"
+	$(Q)$(OBJCOPY) --gap-fill 0xff -O binary -R .fwhdr $< $@
+
+$(TARGET).bin: $(OBJDIR)/fw.hdr $(TARGET)-intermediate.bin
 	$(E) "  BIN    $@"
-	$(Q)$(OBJCOPY) -O binary $< $@
+	$(Q)cat $^ > $@
 
 $(OBJDIR)/%.hex: $(OBJDIR)/%.elf
 	$(E) "  HEX    $@"
-	$(Q)$(OBJCOPY) -O $(FORMAT) $< $@
+	$(Q)$(OBJCOPY) -O ihex $< $@
 
 # Create extended listing file from ELF output file.
 $(OBJDIR)/%.lss: $(OBJDIR)/%.elf
@@ -256,39 +300,52 @@ $(OBJDIR)/%.sym: $(OBJDIR)/%.elf
 	$(E) "  SYM    $<"
 	$(E)$(NM) -n $< > $@
 
-
 # Link: create ELF output file from object files.
-.SECONDARY : $(TARGET).elf
+.SECONDARY : $(TARGET)-intermediate.elf
 .PRECIOUS : $(OBJ)
-$(TARGET).elf : $(OBJ)
+$(TARGET)-intermediate.elf: .EXTRA_PREREQS = $(LINKERSCRIPT)
+$(TARGET)-intermediate.elf : $(OBJ)
 	$(E) "  LINK   $@"
 	$(Q)$(CC) $(ALL_CFLAGS) $^ --output $@ $(LDFLAGS)
 
+# create final ELF file with embedded firmware header
+.SECONDARY : $(TARGET).elf
+$(TARGET).elf: $(TARGET)-intermediate.elf $(OBJDIR)/fw.hdr
+	$(E) "  ELF    $@"
+	$(Q)$(OBJCOPY) --update-section .fwhdr=$(OBJDIR)/fw.hdr $< $@
+
+# firmware header file generated by genhdr
+$(OBJDIR)/fw.hdr: $(TARGET)-intermediate.bin
+	$(E) "  GENHDR $@"
+	$(Q)utils/genhdr -s $(CONFIG_FW_MAGIC) -h $(CONFIG_FW_HEADERSIZE) -o $@ $<
+
+$(OBJDIR)/$(CONFIG_FW_FILE): $(TARGET).elf
+	cat $^ > $(OBJDIR)/$(CONFIG_FW_FILE)
 
 # Compile: create object files from C source files.
-$(OBJDIR)/%.o : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h
+$(OBJDIR)/%.o : %.c | $(OBJDIRS) $(OBJDIR)/autoconf.h $(OBJDIR)/version.h
 	$(E) "  CC     $<"
 	$(Q)$(CC) -c $(ALL_CFLAGS) $< -o $@
 
 
 # Compile: create assembler files from C source files.
-$(OBJDIR)/%.s : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h
+$(OBJDIR)/%.s : %.c | $(OBJDIRS) $(OBJDIR)/autoconf.h $(OBJDIR)/version.h
 	$(CC) -S $(ALL_CFLAGS) $< -o $@
 
 
 # Assemble: create object files from assembler source files.
-$(OBJDIR)/%.o : %.S | $(OBJDIR) $(OBJDIR)/autoconf.h
+$(OBJDIR)/%.o : %.S | $(OBJDIRS) $(OBJDIR)/autoconf.h
 	$(E) "  AS     $<"
 	$(Q)$(CC) -c $(ALL_ASFLAGS) $< -o $@
 
 # Create preprocessed source for use in sending a bug report.
-$(OBJDIR)/%.i : %.c | $(OBJDIR) $(OBJDIR)/autoconf.h
+$(OBJDIR)/%.i : %.c | $(OBJDIRS) $(OBJDIR)/autoconf.h
 	$(CC) -E -mmcu=$(MCU) -I. $(CFLAGS) $< -o $@
 
 # Create the output directory
-$(OBJDIR) :
-	$(E) "  MKDIR  $(OBJDIR)"
-	$(Q)mkdir $(OBJDIR)
+$(OBJDIRS) :
+	$(E) "  MKDIR  $(OBJDIRS)"
+	$(Q)mkdir -p $(OBJDIRS)
 
 # Target: clean project.
 clean: begin clean_list end
@@ -298,20 +355,26 @@ clean_list :
 	$(Q)$(REMOVE) $(TARGET).hex
 	$(Q)$(REMOVE) $(TARGET).bin
 	$(Q)$(REMOVE) $(TARGET).elf
+	$(Q)$(REMOVE) $(TARGET)-intermediate.bin
+	$(Q)$(REMOVE) $(TARGET)-intermediate.elf
 	$(Q)$(REMOVE) $(TARGET).map
 	$(Q)$(REMOVE) $(TARGET).sym
 	$(Q)$(REMOVE) $(TARGET).lss
 	$(Q)$(REMOVE) $(OBJ)
+	$(Q)$(REMOVE) $(OBJDIR)/$(LINKERSCRIPT).ts
 	$(Q)$(REMOVE) $(OBJDIR)/autoconf.h
-	$(Q)$(REMOVE) $(OBJDIR)/*.bin
+	$(Q)$(REMOVE) $(OBJDIR)/version.h
+	$(Q)$(REMOVE) $(OBJDIR)/${CONFIG_FW_FILE}
+	$(Q)$(REMOVE) $(OBJDIR)/fw.hdr
+	$(Q)$(REMOVE) $(OBJDIR)/.DS_Store
 	$(Q)$(REMOVE) $(LST)
 	$(Q)$(REMOVE) $(CSRC:.c=.s)
 	$(Q)$(REMOVE) $(CSRC:.c=.d)
-	$(Q)$(REMOVE) .dep/*
-	-$(Q)rmdir $(OBJDIR)
+	$(Q)$(REMOVE) $(DEPDIR)/*
+	-$(Q)rmdir --ignore-fail-on-non-empty -p $(OBJDIRS)
 
 # Include the dependency files.
--include $(shell mkdir .dep 2>/dev/null) $(wildcard .dep/*)
+-include $(info $(DEPDIR)) $(shell mkdir $(DEPDIR) 2>/dev/null) $(wildcard $(DEPDIR)/*)
 
 # Listing of phony targets.
 .PHONY : all begin finish end sizebefore sizeafter \

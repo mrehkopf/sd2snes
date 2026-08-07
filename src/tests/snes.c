@@ -24,7 +24,6 @@
    snes.c: SNES hardware control and monitoring
 */
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
 #include "config.h"
 #include "uart.h"
@@ -41,6 +40,8 @@
 
 uint8_t initloop=1;
 uint32_t saveram_crc, saveram_crc_old;
+uint8_t crc_valid;
+
 extern snes_romprops_t romprops;
 
 volatile int reset_changed;
@@ -48,7 +49,7 @@ volatile int reset_pressed;
 
 void prepare_reset() {
   snes_reset(1);
-  delay_ms(1);
+  delay_ms(SNES_RESET_PULSELEN_MS);
   if(romprops.ramsize_bytes && fpga_test() == FPGA_TEST_TOKEN) {
     writeled(1);
     save_sram(file_lfn, romprops.ramsize_bytes, SRAM_SAVE_ADDR);
@@ -66,9 +67,15 @@ void prepare_reset() {
 
 void snes_init() {
   /* put reset level on reset pin */
-  BITBAND(SNES_RESET_REG->FIOCLR, SNES_RESET_BIT) = 1;
+  CLEAR_BIT(SNES_RESET_REG, SNES_RESET_BIT);
   /* reset the SNES */
   snes_reset(1);
+}
+
+void snes_reset_pulse() {
+  snes_reset(1);
+  delay_ms(SNES_RESET_PULSELEN_MS);
+  snes_reset(0);
 }
 
 /*
@@ -77,7 +84,7 @@ void snes_init() {
  *  state: put SNES in reset state when 1, release when 0
  */
 void snes_reset(int state) {
-  BITBAND(SNES_RESET_REG->FIODIR, SNES_RESET_BIT) = state;
+  GPIO_DIR(SNES_RESET_REG, SNES_RESET_BIT, state);
 }
 
 /*
@@ -86,7 +93,78 @@ void snes_reset(int state) {
  * returns: 1 when reset, 0 when not reset
  */
 uint8_t get_snes_reset() {
-  return !BITBAND(SNES_RESET_REG->FIOPIN, SNES_RESET_BIT);
+  return !BITBAND(SNES_RESET_REG->GPIO_I, SNES_RESET_BIT);
+}
+
+uint8_t get_snes_reset_state(void) {
+
+  static tick_t rising_ticks;
+  tick_t rising_ticks_tmp = getticks();
+
+  static uint8_t resbutton=0, resbutton_prev=0;
+  static uint8_t pushes=0, reset_flag=0;
+
+  uint8_t first_detection=0;
+
+  uint8_t result=SNES_RESET_NONE;
+
+  /* first check: Had the reset been pushed?
+     If yes: - check for igr's double reset time and ...
+             - release  */
+  if(reset_flag) {
+    /* 230ms are gone (time for igr's double reset)
+       if time is exceeded, set pushes and reset_flag to zero  */
+    if(rising_ticks_tmp > rising_ticks + 22) {
+      pushes = 0;
+      reset_flag = 0;
+    }
+
+    /* release reset from the sd2snes-side */
+    snes_reset(0);
+    delay_us(SNES_RELEASE_RESET_DELAY_US);
+  }
+
+  /* now start new cycle */
+  resbutton = get_snes_reset(); /* SNES in reset? */
+
+  if(resbutton) { /* Yes (e.g. reset-button is pressed) */
+
+    result = /*cfg_is_reset_to_menu() ? SNES_RESET_LONG :*/ SNES_RESET_SHORT;
+    reset_flag = 1;
+
+    if(!resbutton_prev) { /* push, reset tick-timer */
+      pushes++;
+      rising_ticks = getticks();
+      if(pushes == 1) {
+        first_detection = 1;
+      }
+      if(pushes == 2) { /* second push within 230ms -> initiate long reset */
+        result = SNES_RESET_LONG;
+      }
+    }
+
+    if(rising_ticks_tmp > rising_ticks + 99) { /* a (normal) long reset is detected */
+      result = SNES_RESET_LONG;
+    }
+
+   /* no need to have the reset_flag set anymore
+      also reset the number of pushes */
+    if(result == SNES_RESET_LONG){
+      pushes = 0;
+      reset_flag = 0;
+    }
+  }
+
+  if(reset_flag) {
+    snes_reset(1);
+    if(first_detection)
+      delay_ms(190);
+    else
+      delay_ms(SNES_RESET_PULSELEN_MS);
+  }
+
+  resbutton_prev = resbutton;
+  return result;
 }
 
 /*

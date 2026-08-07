@@ -9,6 +9,7 @@ int test_sd(void);
 int test_rtc(void);
 int test_cic(void);
 int test_fpga(void);
+int test_memconn(void);
 int test_mem(void);
 int test_clk(void);
 int test_sddma(void);
@@ -26,6 +27,6 @@ enum tests { TEST_SD = 0,
              TEST_SNES_RAM,
              TEST_SNES_PA };
 
-enum teststates { NO_RUN = 0, PASSED, FAILED };
+enum teststates { NO_RUN = 0, PASSED, FAILED, NO_IMPL };
 
 #endif

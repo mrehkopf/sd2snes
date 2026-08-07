@@ -529,8 +529,8 @@ set_global_assignment -name VERILOG_FILE dcm.v
 set_global_assignment -name VERILOG_FILE dac.v
 set_global_assignment -name VERILOG_FILE clk_test.v
 set_global_assignment -name VERILOG_FILE address.v
-set_global_assignment -name QIP_FILE pll.qip
-set_global_assignment -name QIP_FILE bram.qip
-set_global_assignment -name QIP_FILE PA.qip
-set_global_assignment -name QIP_FILE dac_buf.qip
+set_global_assignment -name QIP_FILE ip/mk3/pll.qip
+set_global_assignment -name QIP_FILE ip/mk3/bram.qip
+set_global_assignment -name QIP_FILE ip/mk3/PA.qip
+set_global_assignment -name QIP_FILE ip/mk3/dac_buf.qip
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

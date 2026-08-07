@@ -247,8 +247,13 @@ assign map_enable =                           (!SNES_ADDR[22] && ((SNES_ADDR[15:
 assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 assign r2100_hit = (SNES_PA == 8'h00);
 
-// snescmd covers $2A00-$2FFF.  This overlaps with at least one hardware cheat device address range.
-assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:11]} == 6'b0_00101) && (SNES_ADDR[10:9] != 2'b00);
+// snescmd covers $2A00-$2DFF.  This overlaps with at least one hardware cheat device address range.
+// Since the mapped area starts at $2A00 which has its "offset MSB" set, it is
+// mapped to block RAM "criss-cross"; e.g.
+//  $2A00-$2BFF => BRAM $200-$3FF
+//  $2C00-$2DFF => BRAM $000-$1FF
+
+assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:11]} == 6'b0_0010_1) && ^SNES_ADDR[10:9];
 assign nmicmd_enable = (SNES_ADDR == 24'h002BF2);
 assign return_vector_enable = (SNES_ADDR == 24'h002A6C);
 assign branch1_enable = (SNES_ADDR == 24'h002A1F);

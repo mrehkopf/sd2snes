@@ -6,7 +6,7 @@ VHSRC =
 COMMON_IP = dac_buf msu_databuf obc_lower obc_upper snescmd_buf
 
 XIL_IP =
-XIL_IPCORE_DIR = ipcore_dir
+XIL_IPCORE_DIR = ip/mk2
 
 INT_IP = pll
 

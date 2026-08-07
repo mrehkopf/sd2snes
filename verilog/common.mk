@@ -70,9 +70,11 @@ export XILINX_EDK XILINX_DSP XILINX_PLANAHEAD XILINX XILINX_PATH
 
 # INTEL_ENV := [ -d $(QUARTUS_ROOTDIR)/adm ] && . $(QUARTUS_ROOTDIR)/adm/qenv.sh ;
 
-INT_IP := $(sort $(INT_IP))
-INT_IP += $(sort $(COMMON_IP))
-INT_IP := $(patsubst %,%.v,$(INT_IP))
+INT_IP_DIR ?= ip/mk3
+
+INT_IP_NAMES := $(sort $(INT_IP) $(COMMON_IP))
+INT_IP := $(patsubst %,$(INT_IP_DIR)/%.v,$(INT_IP_NAMES))
+INT_QIP := $(patsubst %,$(INT_IP_DIR)/%.qip,$(INT_IP_NAMES))
 
 mk2 := fpga_$(CORE).bit
 mk3 := fpga_$(CORE).bi3
@@ -174,7 +176,7 @@ fpga_$(CORE).bi3: output_files/main.rbf
 	../../utils/rle $^ $@
 
 # Intel pulls a lot more stuff from project context...
-output_files/main.rbf: $(VSRC) $(VHSRC) $(HEADER) $(INT_IP) main.sdc
+output_files/main.rbf: $(VSRC) $(VHSRC) $(HEADER) $(INT_IP) $(INT_QIP) main.sdc
 	rm -rf db incremental_db
 	$(call T,[mk3] fpga_$(CORE) - Map)
 	$(INTEL_ENV) $(INTEL_BIN)/quartus_map --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main

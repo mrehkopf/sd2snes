@@ -126,7 +126,6 @@
 
 */
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "bits.h"
 #include "fpga.h"
 #include "config.h"
@@ -137,62 +136,64 @@
 #include "sdnative.h"
 
 void fpga_spi_init(void) {
-  spi_init(SPI_SPEED_FAST);
-  BITBAND(FPGA_MCU_RDY_REG->FIODIR, FPGA_MCU_RDY_BIT) = 0;
+  spi_init();
+  GPIO_MODE_IN(FPGA_MCU_RDY_REG, FPGA_MCU_RDY_BIT);
 }
 
 void set_msu_addr(uint16_t address) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x02);
-  FPGA_TX_BYTE((address>>8)&0xff);
-  FPGA_TX_BYTE((address)&0xff);
+  FPGA_TX_BYTE(FPGA_CMD_SETADDR | FPGA_TGT_MSUBUF);
+  FPGA_TX_BYTE((address >> 8) & 0xff);
+  FPGA_TX_BYTE((address) & 0xff);
   FPGA_DESELECT();
 }
 
 void set_dac_addr(uint16_t address) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x01);
-  FPGA_TX_BYTE((address>>8)&0xff);
-  FPGA_TX_BYTE((address)&0xff);
+  FPGA_TX_BYTE(FPGA_CMD_SETADDR | FPGA_TGT_DACBUF);
+  FPGA_TX_BYTE((address >> 8) & 0xff);
+  FPGA_TX_BYTE((address) & 0xff);
   FPGA_DESELECT();
 }
 
 void set_mcu_addr(uint32_t address) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x00);
-  FPGA_TX_BYTE((address>>16)&0xff);
-  FPGA_TX_BYTE((address>>8)&0xff);
-  FPGA_TX_BYTE((address)&0xff);
+  // wait for prior operations to clear out
+  FPGA_WAIT_RDY();
+  FPGA_TX_BYTE(FPGA_CMD_SETADDR | FPGA_TGT_MEM);
+  FPGA_TX_BYTE((address >> 16) & 0xff);
+  FPGA_TX_BYTE((address >> 8) & 0xff);
+  FPGA_TX_BYTE((address) & 0xff);
   FPGA_DESELECT();
 }
 
 void set_saveram_mask(uint32_t mask) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x20);
-  FPGA_TX_BYTE((mask>>16)&0xff);
-  FPGA_TX_BYTE((mask>>8)&0xff);
-  FPGA_TX_BYTE((mask)&0xff);
+  FPGA_TX_BYTE(FPGA_CMD_SETRAMMASK);
+  FPGA_TX_BYTE((mask >> 16) & 0xff);
+  FPGA_TX_BYTE((mask >> 8) & 0xff);
+  FPGA_TX_BYTE((mask) & 0xff);
   FPGA_DESELECT();
 }
 
 void set_rom_mask(uint32_t mask) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x10);
-  FPGA_TX_BYTE((mask>>16)&0xff);
-  FPGA_TX_BYTE((mask>>8)&0xff);
-  FPGA_TX_BYTE((mask)&0xff);
+  FPGA_TX_BYTE(FPGA_CMD_SETROMMASK);
+  FPGA_TX_BYTE((mask >> 16) & 0xff);
+  FPGA_TX_BYTE((mask >> 8) & 0xff);
+  FPGA_TX_BYTE((mask) & 0xff);
   FPGA_DESELECT();
 }
 
 void set_mapper(uint8_t val) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x30 | (val & 0x0f));
+  FPGA_TX_BYTE(FPGA_CMD_SETMAPPER(val));
   FPGA_DESELECT();
 }
 
 uint8_t fpga_test() {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xF0); /* TEST */
+  FPGA_TX_BYTE(FPGA_CMD_TEST);
   uint8_t result = FPGA_RX_BYTE();
   FPGA_DESELECT();
   return result;
@@ -200,7 +201,7 @@ uint8_t fpga_test() {
 
 uint16_t fpga_status() {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xF1); /* STATUS */
+  FPGA_TX_BYTE(FPGA_CMD_GETSTATUS);
   uint16_t result = (FPGA_RX_BYTE()) << 8;
   result |= FPGA_RX_BYTE();
   FPGA_DESELECT();
@@ -208,20 +209,20 @@ uint16_t fpga_status() {
 }
 
 void fpga_set_sddma_range(uint16_t start, uint16_t end) {
+  DBG_SD_OFFLOAD printf("FPGA set partial range %u - %u\n", start, end);
   FPGA_SELECT();
-  FPGA_TX_BYTE(0x60); /* DMA_RANGE */
-  FPGA_TX_BYTE(start>>8);
-  FPGA_TX_BYTE(start&0xff);
-  FPGA_TX_BYTE(end>>8);
-  FPGA_TX_BYTE(end&0xff);
-//if(tgt==1 && (test=FPGA_RX_BYTE()) != 0x41) printf("!!!!!!!!!!!!!!! -%02x- \n", test);
+  FPGA_TX_BYTE(FPGA_CMD_SDDMA_RANGE);
+  FPGA_TX_BYTE(start >> 8);
+  FPGA_TX_BYTE(start & 0xff);
+  FPGA_TX_BYTE(end >> 8);
+  FPGA_TX_BYTE(end & 0xff);
   FPGA_DESELECT();
 }
 
 void fpga_sddma(uint8_t tgt, uint8_t partial) {
   uint32_t test = 0;
   uint8_t status = 0;
-  BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 0;
+  GPIO_MODE_IN(SD_CLKREG, SD_CLKBIT);
   FPGA_SELECT();
   FPGA_TX_BYTE(0x40 | (tgt & 0x3) | ((partial & 1) << 2) ); /* DO DMA */
   FPGA_TX_BYTE(0x00); /* dummy for falling DMA_EN edge */
@@ -236,7 +237,7 @@ void fpga_sddma(uint8_t tgt, uint8_t partial) {
   }
   DBG_SD printf("...complete\n");
   FPGA_DESELECT();
-  BITBAND(SD_CLKREG->FIODIR, SD_CLKPIN) = 1;
+  GPIO_MODE_OUT(SD_CLKREG, SD_CLKBIT);
 }
 
 void set_dac_vol(uint8_t volume) {
@@ -250,41 +251,39 @@ void set_dac_vol(uint8_t volume) {
 
 void dac_play() {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xe2);
+  FPGA_TX_BYTE(FPGA_CMD_DACPLAY);
   FPGA_TX_BYTE(0x00); /* latch reset */
   FPGA_DESELECT();
 }
 
 void dac_pause() {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xe1);
+  FPGA_TX_BYTE(FPGA_CMD_DACPAUSE);
   FPGA_TX_BYTE(0x00); /* latch reset */
   FPGA_DESELECT();
 }
 
-void dac_reset() {
+void dac_reset(uint16_t address) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xe3);
-  FPGA_TX_BYTE(0x00); /* latch reset */
-  FPGA_TX_BYTE(0x00); /* latch reset */
+  FPGA_TX_BYTE(FPGA_CMD_DACSETPTR);
+  FPGA_TX_BYTE((address >> 8) & 0xff); /* address hi */
+  FPGA_TX_BYTE(address & 0xff);      /* address lo */
   FPGA_DESELECT();
 }
 
 void msu_reset(uint16_t address) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xe4);
+  FPGA_TX_BYTE(FPGA_CMD_MSUSETPTR);
   FPGA_TX_BYTE((address>>8) & 0xff); /* address hi */
   FPGA_TX_BYTE(address & 0xff);      /* address lo */
-  FPGA_TX_BYTE(0x00);                /* latch reset */
-  FPGA_TX_BYTE(0x00);                /* latch reset */
   FPGA_DESELECT();
 }
 
-void set_msu_status(uint8_t set, uint8_t reset) {
+void set_msu_status(uint16_t status) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xe0);
-  FPGA_TX_BYTE(set);
-  FPGA_TX_BYTE(reset);
+  FPGA_TX_BYTE(FPGA_CMD_MSUSETBITS);
+  FPGA_TX_BYTE(status & 0xff);
+  FPGA_TX_BYTE((status >> 8) & 0xff);
   FPGA_TX_BYTE(0x00); /* latch reset */
   FPGA_DESELECT();
 }
@@ -299,7 +298,7 @@ uint8_t get_msu_volume() {
 
 uint16_t get_msu_track() {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xF3); /* MSU_TRACK */
+  FPGA_TX_BYTE(FPGA_CMD_MSUGETTRACK);
   uint16_t result = (FPGA_RX_BYTE()) << 8;
   result |= FPGA_RX_BYTE();
   FPGA_DESELECT();
@@ -309,6 +308,18 @@ uint16_t get_msu_track() {
 uint32_t get_msu_offset() {
   FPGA_SELECT();
   FPGA_TX_BYTE(0xF2); /* MSU_OFFSET */
+  uint32_t result = (FPGA_RX_BYTE()) << 24;
+  result |= (FPGA_RX_BYTE()) << 16;
+  result |= (FPGA_RX_BYTE()) << 8;
+  result |= (FPGA_RX_BYTE());
+  FPGA_DESELECT();
+  return result;
+}
+
+uint32_t get_snes_cicclk() {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(0xF6);
+  FPGA_TX_BYTE(0x00); /* dummy */
   uint32_t result = (FPGA_RX_BYTE()) << 24;
   result |= (FPGA_RX_BYTE()) << 16;
   result |= (FPGA_RX_BYTE()) << 8;
@@ -403,8 +414,8 @@ uint32_t get_snes_refreshclk() {
 
 uint32_t get_snes_sysclk() {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xFE); /* GET_SYSCLK */
-  FPGA_TX_BYTE(0x00); /* dummy */
+  FPGA_TX_BYTE(FPGA_CMD_GETSYSCLK);
+  FPGA_TX_BYTE(0x00); /* dummy (copy current sysclk count to register) */
   uint32_t result = (FPGA_RX_BYTE()) << 24;
   result |= (FPGA_RX_BYTE()) << 16;
   result |= (FPGA_RX_BYTE()) << 8;
@@ -415,7 +426,7 @@ uint32_t get_snes_sysclk() {
 
 void set_bsx_regs(uint8_t set, uint8_t reset) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xe6);
+  FPGA_TX_BYTE(FPGA_CMD_BSXSETBITS);
   FPGA_TX_BYTE(set);
   FPGA_TX_BYTE(reset);
   FPGA_TX_BYTE(0x00); /* latch reset */
@@ -424,7 +435,7 @@ void set_bsx_regs(uint8_t set, uint8_t reset) {
 
 void set_fpga_time(uint64_t time) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xe5);
+  FPGA_TX_BYTE(FPGA_CMD_RTCSET);
   FPGA_TX_BYTE((time >> 48) & 0xff);
   FPGA_TX_BYTE((time >> 40) & 0xff);
   FPGA_TX_BYTE((time >> 32) & 0xff);
@@ -438,7 +449,7 @@ void set_fpga_time(uint64_t time) {
 
 void fpga_reset_srtc_state() {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xe7);
+  FPGA_TX_BYTE(FPGA_CMD_SRTCRESET);
   FPGA_TX_BYTE(0x00);
   FPGA_TX_BYTE(0x00);
   FPGA_DESELECT();
@@ -446,7 +457,7 @@ void fpga_reset_srtc_state() {
 
 void fpga_reset_dspx_addr() {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xe8);
+  FPGA_TX_BYTE(FPGA_CMD_DSPRESETPTR);
   FPGA_TX_BYTE(0x00);
   FPGA_TX_BYTE(0x00);
   FPGA_DESELECT();
@@ -463,9 +474,9 @@ void fpga_write_bram_data(uint8_t data) {
 
 void fpga_write_dspx_dat(uint16_t data) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xea);
-  FPGA_TX_BYTE((data>>8)&0xff);
-  FPGA_TX_BYTE((data)&0xff);
+  FPGA_TX_BYTE(FPGA_CMD_DSPWRITEDAT);
+  FPGA_TX_BYTE((data >> 8) & 0xff);
+  FPGA_TX_BYTE((data) & 0xff);
   FPGA_TX_BYTE(0x00);
   FPGA_TX_BYTE(0x00);
   FPGA_DESELECT();
@@ -473,14 +484,21 @@ void fpga_write_dspx_dat(uint16_t data) {
 
 void fpga_dspx_reset(uint8_t reset) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(reset ? 0xeb : 0xec);
-  FPGA_TX_BYTE(0x00);
+  FPGA_TX_BYTE(FPGA_CMD_DSPRESET);
+  FPGA_TX_BYTE(reset);
+  FPGA_DESELECT();
+}
+
+void fpga_set_dac_boost(uint8_t boost) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_DACBOOST);
+  FPGA_TX_BYTE(boost);
   FPGA_DESELECT();
 }
 
 void fpga_set_features(uint8_t feat) {
   FPGA_SELECT();
-  FPGA_TX_BYTE(0xed);
+  FPGA_TX_BYTE(FPGA_CMD_SETFEATURE);
   FPGA_TX_BYTE(feat);
   FPGA_DESELECT();
 }

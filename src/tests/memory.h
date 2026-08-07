@@ -27,7 +27,6 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include <arm/NXP/LPC17xx/LPC17xx.h>
 #include "smc.h"
 
 #define SRAM_ROM_ADDR (0x000000L)
@@ -47,6 +46,7 @@
 #define LOADROM_WITH_SRAM	(1)
 #define LOADROM_WITH_RESET	(2)
 
+#define SAVE_BASEDIR    ("/sd2snes/saves/")
 uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags);
 uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr);
@@ -62,6 +62,7 @@ void sram_writelong(uint32_t val, uint32_t addr);
 void sram_readblock(void* buf, uint32_t addr, uint16_t size);
 void sram_readlongblock(uint32_t* buf, uint32_t addr, uint16_t count);
 void sram_writeblock(void* buf, uint32_t addr, uint16_t size);
+void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr);
 uint32_t calc_sram_crc(uint32_t base_addr, uint32_t size);
 uint8_t sram_reliable(void);

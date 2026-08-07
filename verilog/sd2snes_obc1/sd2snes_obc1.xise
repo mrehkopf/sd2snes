@@ -50,19 +50,19 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="9"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="6"/>
     </file>
-    <file xil_pn:name="ipcore_dir/obc_upper.xco" xil_pn:type="FILE_COREGEN">
+    <file xil_pn:name="ip/mk2/obc_upper.xco" xil_pn:type="FILE_COREGEN">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="10"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="1"/>
     </file>
-    <file xil_pn:name="ipcore_dir/dac_buf.xco" xil_pn:type="FILE_COREGEN">
+    <file xil_pn:name="ip/mk2/dac_buf.xco" xil_pn:type="FILE_COREGEN">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="11"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="4"/>
     </file>
-    <file xil_pn:name="ipcore_dir/msu_databuf.xco" xil_pn:type="FILE_COREGEN">
+    <file xil_pn:name="ip/mk2/msu_databuf.xco" xil_pn:type="FILE_COREGEN">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="12"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="3"/>
     </file>
-    <file xil_pn:name="ipcore_dir/obc_lower.xco" xil_pn:type="FILE_COREGEN">
+    <file xil_pn:name="ip/mk2/obc_lower.xco" xil_pn:type="FILE_COREGEN">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="13"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="2"/>
     </file>
@@ -74,7 +74,7 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="52"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="5"/>
     </file>
-    <file xil_pn:name="ipcore_dir/snescmd_buf.xco" xil_pn:type="FILE_COREGEN">
+    <file xil_pn:name="ip/mk2/snescmd_buf.xco" xil_pn:type="FILE_COREGEN">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="92"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="11"/>
     </file>
@@ -82,7 +82,7 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="104"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="14"/>
     </file>
-    <file xil_pn:name="ipcore_dir/snescmd_buf.xise" xil_pn:type="FILE_COREGENISE">
+    <file xil_pn:name="ip/mk2/snescmd_buf.xise" xil_pn:type="FILE_COREGENISE">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
   </files>

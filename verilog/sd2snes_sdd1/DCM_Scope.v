@@ -11,7 +11,7 @@
 // \   \  /  \ 
 //  \___\/\___\ 
 //
-//Command: xaw2verilog -intstyle D:/prj/sd2snes/verilog/sd2snes_sdd1/ipcore_dir/DCM_Scope.xaw -st DCM_Scope.v
+//Command: xaw2verilog -intstyle D:/prj/sd2snes/verilog/sd2snes_sdd1/ip/mk2/DCM_Scope.xaw -st DCM_Scope.v
 //Design Name: DCM_Scope
 //Device: xc3s400-4pq208
 //

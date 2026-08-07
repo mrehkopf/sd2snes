@@ -737,6 +737,8 @@ cheat snes_cheat(
   .SNES_reset_strobe(SNES_reset_strobe),
   .SNES_wr_strobe(SNES_WR_end),
   .SNES_rd_strobe(SNES_RD_start),
+  .SNES_rd_end_strobe(SNES_RD_end),
+  .SNES_PAWR_raw(SNES_PAWR_IN), // use raw SNES_PAWR to capture on cycle_start strobe
   .snescmd_enable(snescmd_enable),
   .nmicmd_enable(nmicmd_enable),
   .return_vector_enable(return_vector_enable),

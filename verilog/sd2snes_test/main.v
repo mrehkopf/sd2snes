@@ -393,6 +393,7 @@ parameter ROM_RD_WAIT_MCU = 4'h6;
 parameter ROM_WR_WAIT1 = 4'h2;
 parameter ROM_WR_WAIT2 = 4'h3;
 parameter ROM_WR_WAIT_MCU = 4'h6;
+parameter RAM_RD_WAIT_MCU = 4'h3;
 
 reg [17:0] STATE;
 initial STATE = ST_IDLE;
@@ -587,10 +588,14 @@ always @(posedge CLK2) begin
         snes_wr_cycle <= 1'b0;
       end
       ST_MCU_RD_ADDR: begin
-        if(MCU_RAMSEL == 1'b0) ROM_ADDRr <= MCU_ADDR;
-        else RAM_ADDRr <= MCU_ADDR;
+        if(MCU_RAMSEL == 1'b0) begin
+          ROM_ADDRr <= MCU_ADDR;
+          ST_MEM_DELAYr <= ROM_RD_WAIT_MCU;
+        end else begin
+          RAM_ADDRr <= MCU_ADDR;
+          ST_MEM_DELAYr <= RAM_RD_WAIT_MCU;
+        end
         STATE <= ST_MCU_RD_WAIT;
-        ST_MEM_DELAYr <= ROM_RD_WAIT_MCU;
       end
       ST_MCU_RD_WAIT: begin
         ST_MEM_DELAYr <= ST_MEM_DELAYr - 4'h1;
@@ -676,8 +681,8 @@ assign ROM_OE = 1'b0;
 assign ROM_BHE = !ROM_WE ? ROM_ADDR0 : 1'b0;
 assign ROM_BLE = !ROM_WE ? !ROM_ADDR0 : 1'b0;
 
-assign SNES_DATABUS_OE = PA_enable ? 1'b0
-                         : bram_enable ? 1'b0
+assign SNES_DATABUS_OE = PA_enable ? SNES_ROMSEL
+                         : bram_enable ? SNES_ROMSEL
                          : (~SNES_PAWR & SNES_READ) ? 1'b0
                          : SNES_ROMSEL ? SNES_WRITE
                          :((SNES_ROMSEL)

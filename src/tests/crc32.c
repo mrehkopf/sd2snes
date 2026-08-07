@@ -14,9 +14,8 @@
  *    Algorithm    = table-driven
  *    Direct       = True
  *****************************************************************************/
-#include "crc32.h"
 #include "config.h"
-#include <arm/NXP/LPC17xx/LPC17xx.h>
+#include "crc32.h"
 #include <stdlib.h>
 
 /**

@@ -25,7 +25,9 @@ module cheat(
   input [7:0] SNES_DATA,
   input SNES_wr_strobe,
   input SNES_rd_strobe,
+  input SNES_rd_end_strobe,
   input SNES_reset_strobe,
+  input SNES_PAWR_raw,
   input snescmd_enable,
   input nmicmd_enable,
   input return_vector_enable,
@@ -113,19 +115,23 @@ wire [1:0] nmi_match_bits = {SNES_ADDR == 24'h00FFEA, SNES_ADDR == 24'h00FFEB};
 wire [1:0] irq_match_bits = {SNES_ADDR == 24'h00FFEE, SNES_ADDR == 24'h00FFEF};
 wire [1:0] rst_match_bits = {SNES_ADDR == 24'h00FFFC, SNES_ADDR == 24'h00FFFD};
 
+wire nmi_match_first_fetch = nmi_match_bits[1];
+wire irq_match_first_fetch = irq_match_bits[1];
+
 wire nmi_addr_match = |nmi_match_bits;
 wire irq_addr_match = |irq_match_bits;
 wire rst_addr_match = |rst_match_bits;
 
 wire hook_enable = ~|hook_enable_count;
 
+// TODO generalize number of supported ROM cheats
 assign data_out = cheat_match_bits[0] ? cheat_data[0]
                 : cheat_match_bits[1] ? cheat_data[1]
                 : cheat_match_bits[2] ? cheat_data[2]
                 : cheat_match_bits[3] ? cheat_data[3]
                 : cheat_match_bits[4] ? cheat_data[4]
                 : cheat_match_bits[5] ? cheat_data[5]
-                // exe code
+                // "exe" = USB execution hook vector injection
                 : (exe_present & nmi_match_bits[0] & exe_unlock) ? 8'h2C
                 : (exe_present & nmi_match_bits[1] & exe_unlock) ? 8'h00
                 : nmi_match_bits[1] ? 8'h10
@@ -157,6 +163,8 @@ assign cheat_hit = (snescmd_unlock & hook_enable_sync & (nmicmd_enable | return_
 // two cycles.
 // B bus mirror is used (combined with A BUS /WR!) so the write pattern
 // cannot be confused with backwards DMA transfers.
+// Note that HDMA might interrupt the push sequence; in such a case the vector
+// fetch goes undetected.
 
 reg [7:0] next_pa_addr = 0;
 reg [2:0] cpu_push_cnt = 0;
@@ -180,21 +188,137 @@ always @(posedge clk) begin
   end
 end
 
-// make patched vectors visible for last cycles of NMI/IRQ handling only
+// NMI/IRQ VECTOR HIJACKING
+// ========================
+//
+// Simple read cycle countdown for vector hijacking works well for simpler
+// systems like NES or C64 but on the SNES, we have *HDMA*. Oh no.
+// HDMA can suspend CPU execution at any given point and do its (timing
+// critical) business; even between the two fetches of an interrupt vector word.
+// Therefore a simple countdown before disabling the vector patching is not
+// sufficient:
+//
+// Legend: WR = Write; RD = Read; SR = Stack Register
+//         HDxf = HDMA payload transfer (detectable)
+//         HDtb = HDMA table fetch (undetectable)
+//         FFEE/FFEF = IRQ vector address
+//         A000-A002, 5678: HDMA example addresses
+//         2A10 = hijacked IRQ vector
+//         8000 = example original ROM IRQ vector
+//         ! = hijacking triggered
+// Addresses are given as 16-bits for brevity.
+//
+// This is the regular case without HDMA:
+// operation:  WR   WR   WR   WR   RD   RD   RD
+// address:    SR  SR-1 SR-2 SR-3 FFEE FFEF 2A10
+// data:       **   **   **   **   10   2A   **
+// countdown:  --   --   --   -- ! 02   01   00
+// hijack:     no   no   no   no ! yes  yes  no
+//
+// This is a non-critical case with HDMA interjecting:
+// operation:  WR   WR  HDxf HDxf HDxf HDtb  WR   WR   RD   RD   RD
+// address:    SR  SR-1 A000 A001 A002 5678 SR-2 SR-3 FFEE FFEF 8000
+// data:       **   **   **   **   **   **   **   **   00   80   **
+// countdown:  --   --   --   --   --   --   --   --   --   --   --
+// hijack:     no   no   no   no   no   no   no   no   no   no   no
+//
+// Here, hijacking is never armed because the push sequence is not detected
+// because the four stack push operations do not occur in direct sequence.
+// No harm done except a missed hijacking opportunity.
+//
+// Now, a harmful case with HDMA interjecting:
+// operation:  WR   WR   WR   WR   RD  HDxf HDxf HDxf HDtb  RD   RD
+// address:    SR  SR-1 SR-2 SR-3 FFEE A000 A001 A002 5678 FFEF 8010!
+// data:       **   **   **   **   10   **   **   **   **   80   !?
+// countdown:  --   --   --   -- ! 02   --   --   --   01   00   --
+// hijack:     no   no   no   no ! yes  yes  yes  yes  yes !NO!  no
+//                                                         ~~~~
+//
+// here the countdown is exhausted by an extra HDMA cycle and only half of the
+// IRQ vector is hijacked, resulting in execution from an unintended address
+// (8010).
+//
+// Unfortunately the number of "HDtb" cycles is variable; it depends on the HDMA
+// modes and number of active HDMA channels at the time of IRQ.
+//
+// Alternative approach:
+// After successful push sequence detection, consider the next read from a known
+// vector address (00FFEA, 00FFEE) as authoritative. Then, keep hijacking active
+// until the second address from the same vector has been read.
+// e.g. 00FFEE, C01234, 00FFEB => hijacking still active, waiting for 00FFEF
+
+wire cpu_will_fetch_vector = (cpu_push_cnt == 4);
+
+reg [23:0] locked_in_vector_address = 24'h000000;
+reg [23:0] current_cycle_address = 24'h000000;    // valid AFTER cycle_start
+reg nmi_or_exe_enable = 1'b0;
+reg nmi_do_hijack = 1'b0;
+reg irq_do_hijack = 1'b0;
+reg cpu_reading_same_vector = 1'b0;
+
+// NMI hijacking is also triggered if a USB execution hook payload is present
+// except when 2A00 is explicitly enabled MCU-side, e.g. for the menu ROM.
+always @(posedge clk) begin
+  nmi_or_exe_enable <= nmi_enable | (exe_present & ~feat_cmd_unlock);
+end
+
+always @(posedge clk) begin
+  if(SNES_cycle_start) current_cycle_address <= SNES_ADDR;
+end
+
+always @(posedge clk) begin
+  nmi_do_hijack <= 1'b0;
+  irq_do_hijack <= 1'b0;
+  if(hook_enable_sync & cpu_will_fetch_vector) begin
+    nmi_do_hijack <= auto_nmi_enable_sync & nmi_or_exe_enable & nmi_match_first_fetch;
+    irq_do_hijack <= auto_irq_enable_sync & irq_enable & irq_match_first_fetch;
+  end
+end
+
+//  Lock in vector address when fetched.
+//  When both bytes of the locked-in vector location have been fetched,
+//  disable vector patching.
+/// TODO Do we actually need to lock in on the specific vector?
+/// What happens when IRQ is nested inside NMI / vice versa?
 always @(posedge clk) begin
   if(SNES_reset_strobe) begin
+    locked_in_vector_address <= 24'hffffff;
     vector_unlock_r <= 2'b00;
-  end else if(SNES_rd_strobe) begin
-    if(hook_enable_sync
-      & ((auto_nmi_enable_sync & (nmi_enable|(exe_present & ~feat_cmd_unlock)) & nmi_match_bits[1])
-        |(auto_irq_enable_sync & irq_enable & irq_match_bits[1]))
-      & cpu_push_cnt == 4) begin
+  end
+  // Lock in vector address for reset hook
+  if(SNES_cycle_start) begin
+    if(rst_addr_match & |reset_unlock_r) begin
+      locked_in_vector_address <= 24'h00FFFC;
+    end
+  end
+  // Lock in vector address for NMI/IRQ hooks
+  // Mask HDMA cycles by including /PAWR
+  if(SNES_rd_strobe & SNES_PAWR_raw) begin
+    if(nmi_do_hijack | irq_do_hijack) begin
       vector_unlock_r <= 2'b11;
-    end else if(|vector_unlock_r) begin
-      vector_unlock_r <= vector_unlock_r - 1;
+      locked_in_vector_address <= SNES_ADDR;
+    end
+  end
+  // Release vector injection when both vector addresses have been read
+  if(SNES_rd_end_strobe) begin
+    if(|vector_unlock_r & cpu_reading_same_vector) begin
+      if(current_cycle_address[0]) begin
+        vector_unlock_r[1] <= 1'b0;
+      end else begin
+        vector_unlock_r[0] <= 1'b0;
+      end
     end
   end
 end
+
+always @(posedge clk) begin
+  if(SNES_ADDR[23:1] == locked_in_vector_address[23:1]) begin
+    cpu_reading_same_vector <= 1'b1;
+  end else begin
+    cpu_reading_same_vector <= 1'b0;
+  end
+end
+
 
 // make patched reset vector visible for first fetch only
 // (including masked read by Ultra16)
@@ -241,7 +365,7 @@ always @(posedge clk) begin
       // *** GAME -> USB HOOK ***
       if(hook_enable_sync
         & ((auto_nmi_enable_sync & exe_present & ~feat_cmd_unlock & ~exe_unlock & nmi_match_bits[1]))
-        & (cpu_push_cnt == 4)) begin
+        & cpu_will_fetch_vector) begin
         // perform exe of $2C00
 
         // NOTE: only supported on NMI
@@ -291,49 +415,57 @@ always @(posedge clk) begin
       if(rst_match_bits[1] & |reset_unlock_r) begin
         snescmd_unlock_r <= 1;
       end
+      // Savestate handler entry becomes sticky
       if(branch1_enable & savestate_enable & |pad_data) begin
         savestate_force_entry_enable_strobe <= 1;
       end
     end
-    
+
 /// TODO unlock disable on hook exit needs rework, there are potential issues:
 ///
-/// 1. Countdown needs to be short because jumping back to ROM would
-///    otherwise yield wrong data (because of bank C0 overlay)
+//// 1. Countdown needs to be short because jumping back to ROM would
+////    otherwise yield wrong data (because of bank C0 overlay)
 ///
-/// 2. HDMA can interrupt the IRQ hook after writing the unlock trigger
-///    so the number of countdown cycles needed may be much bigger but can't
-///    be predicted, so countdown might be too short and disable nmi hook
-///    unlock before the CPU can exit. (this happens on Star Fox (2))
+//// 2. HDMA can interrupt the IRQ hook after writing the unlock trigger
+////    so the number of countdown cycles needed may be much bigger but can't
+////    be predicted, so countdown might be too short and disable nmi hook
+////    unlock before the CPU can exit. (this happens on Star Fox (2),
+////    Seiken Densetsu 3 (Duran intro after battle))
 ///
 /// 3. HDMA might access bank $C0 expecting ROM data during unlock but reads
-///    menu bank data instead ((( CANNOT FIX --- REVERT C0-FF UNLOCK? )))
+///    menu bank data instead ((( CANNOT FIX --- REVERT C0-FF UNLOCK! )))
 ///
 /// Possible solution:
-/// 1. arm disable detection after disable trigger has been written
-/// 2. wait for CPU to read 2 vector addresses (FFEA, FFEE, FFFC) and capture
+/// a) arm disable detection after disable trigger has been written
+/// b) wait for CPU to read 2 vector addresses (FFEA, FFEE, FFFC) and capture
 ///    the data read from those addresses
-/// 3. disarm detection and disable unlock when CPU starts reading the address
-///    captured in 2.
-
-    // give some time to exit snescmd memory and jump to original vector
-    // sta @NMI_VECT_DISABLE    1-2 (after effective write)
-    // jmp ($ffxx)              3 (excluding address fetch)
+/// c) disarm detection and disable unlock when CPU starts reading the address
+///    captured in a).
+///
+/// 1. and 2. are solved by triggering on CPU vector fetch after the unlock
+/// register ($2bfd) has been written:
+//  Use locked-in vector address from vector injection to arm hook unmapping.
+//  When CPU starts fetching the vector again by jmp $(ffxx) at the end of hook,
+//  disable unlock (= hook mapping = snescmd mapping).  At this time the CPU
+//  has already read the entire jmp instruction and does not need to read from
+//  the hook area anymore.
+/// TODO Do we actually need to lock in on the specific address?
+/// What happens when IRQ is nested inside NMI / vice versa?
     // *** (INGAME HOOK -> GAME) ***
-    if(SNES_cycle_start) begin
+    if(snescmd_unlock_disable_strobe) begin
+      snescmd_unlock_disable <= 1;
+    end
+    // Mask interjecting HDMA by including /PAWR
+    if(SNES_cycle_start & SNES_PAWR_raw) begin
       if(snescmd_unlock_disable) begin
-        if(|snescmd_unlock_disable_countdown) begin
-          snescmd_unlock_disable_countdown <= snescmd_unlock_disable_countdown - 1;
-        end else if(snescmd_unlock_disable_countdown == 0) begin
+        if(SNES_ADDR[23:1] == locked_in_vector_address[23:1]) begin
+          // jmp ($ffxx) instruction fully fetched; CPU has started loading
+          // the vector address -> we can safely unmap the SNESCMD area now.
           snescmd_unlock_r <= 0;
           snescmd_unlock_disable <= 0;
           savestate_force_entry_disable_strobe <= 1;
         end
       end
-    end
-    if(snescmd_unlock_disable_strobe) begin
-      snescmd_unlock_disable_countdown <= 7'd6;
-      snescmd_unlock_disable <= 1;
     end
   end
 end
@@ -372,6 +504,7 @@ always @(posedge clk) begin
 end
 
 // Do not change vectors while they are being read
+// relevant for hook enable/disable during gameplay
 always @(posedge clk) begin
   if(SNES_cycle_start) begin
     if(nmi_addr_match | irq_addr_match) sync_delay <= 2'b10;

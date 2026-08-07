@@ -8,7 +8,7 @@ HEADER = config.vh
 COMMON_IP = dec_table vram oam hram row_buf msu_databuf dac_buf snescmd_buf
 
 XIL_IP =
-XIL_IPCORE_DIR = ipcore_dir
+XIL_IPCORE_DIR = ip/mk2
 
 INT_IP = pll
 

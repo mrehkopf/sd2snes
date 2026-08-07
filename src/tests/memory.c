@@ -189,7 +189,7 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
     return 0;
   }
   filesize = file_handle.fsize;
-  smc_id(&romprops);
+  smc_id(&romprops, 0);
   file_close();
   /* reconfigure FPGA if necessary */
   if(romprops.fpga_conf) {
@@ -345,28 +345,37 @@ uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr) {
   return (uint32_t)filesize;
 }
 
+void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
+    char srmfile[256] = SAVE_BASEDIR;
+    check_or_create_folder(SAVE_BASEDIR);
+    append_file_basename(srmfile, (char*)filename, ".srm", sizeof(srmfile));
+    save_sram((uint8_t*)srmfile, sram_size, base_addr);
+}
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
   uint32_t count = 0;
-
+  uint32_t remain = sram_size;
+  size_t copy;
   FPGA_DESELECT();
   file_open(filename, FA_CREATE_ALWAYS | FA_WRITE);
   if(file_res) {
     uart_putc(0x30+file_res);
   }
-  while(count<sram_size) {
-    set_mcu_addr(base_addr+count);
+  set_mcu_addr(base_addr);
+  while(remain) {
     FPGA_SELECT();
     FPGA_TX_BYTE(0x88); /* read */
-    for(int j=0; j<sizeof(file_buf); j++) {
+    copy = (remain > 512) ? 512 : remain;
+    for(int j=0; j<copy; j++) {
       FPGA_WAIT_RDY();
       file_buf[j] = FPGA_RX_BYTE();
       count++;
     }
     FPGA_DESELECT();
-    file_write();
+    file_write(copy);
     if(file_res) {
       uart_putc(0x30+file_res);
     }
+    remain -= copy;
   }
   file_close();
 }

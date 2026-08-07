@@ -103,7 +103,7 @@ def main():
       except ValueError:
         print 'ValueError: ' + '{0:2x}'.format(i) + ' '.join(inst) + '\n'
   
-  output_files = ['ipcore_dir/dec_table.coe', 'dec_table.mif']
+  output_files = ['ip/mk2/dec_table.coe', 'dec_table.mif']
   
   for output_file in output_files:
     if os.path.exists(output_file):

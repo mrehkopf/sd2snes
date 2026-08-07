@@ -6,7 +6,7 @@ VHSRC =
 COMMON_IP = dec_table sa1_div sa1_iram sa1_mult snescmd_buf
 
 XIL_IP =
-XIL_IPCORE_DIR = ipcore_dir
+XIL_IPCORE_DIR = ip/mk2
 
 INT_IP = pll
 
