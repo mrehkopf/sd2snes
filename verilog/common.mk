@@ -23,12 +23,19 @@ XILINX_XST_TMPDIR := "xst/projnav.tmp"
 XILINX_SCRIPTS := "../xilinx_scripts"
 mkpath = $(subst $(eval) ,:,$(wildcard $1))
 
-XILINX_PATH := $(patsubst %,$(XILINX_HOME)/%,$(XILINX_PATHS))
-
+# Prepare Xilinx paths:
 XILINX := $(XILINX_HOME)/ISE
 XILINX_EDK := $(XILINX_HOME)/EDK
 XILINX_PLANAHEAD := $(XILINX_HOME)/PlanAhead
 XILINX_DSP := $(XILINX_HOME)/ISE
+XILINX_BIN := $(XILINX)/bin/$(XILINX_TARGET)
+XILINX_PATH := $(XILINX)/bin $(XILINX)/lib $(XILINX_EDK)/bin $(XILINX_EDK)/lib
+XILINX_PATH := $(patsubst %,%/$(XILINX_TARGET),$(XILINX_PATH))
+XILINX_PATH += $(XILINX_PLANAHEAD)/bin
+
+# SmartXPlorer settings
+XPLORER_PARAMS  = -sf currentProps.stratfile -host_list hostlistfile.txt
+XPLORER_PARAMS += -max_runs 99 -best_n_runs 1
 
 # make pretty Windows style paths for SmartXplorer...
 ifeq ($(HOST),CYGWIN)
