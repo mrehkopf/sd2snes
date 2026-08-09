@@ -156,6 +156,11 @@ static const char *usbint_server_space_s[] = { FOREACH_SERVER_SPACE(GENERATE_STR
 enum usbint_server_flags_e { FOREACH_SERVER_FLAGS(GENERATE_ENUM) };
 //static const char *usbint_server_flags_s[] = { FOREACH_SERVER_FLAGS(GENERATE_STRING) };
 
+#define FOREACH_FI_FLAGS(OP)       \
+  OP(USBINT_FI_FLAGS_NONE=0)       \
+  OP(USBINT_FI_FLAGS_FILESIZE=1)
+enum usbint_fi_flags_e { FOREACH_FI_FLAGS(GENERATE_ENUM) };
+
 volatile enum usbint_server_state_e server_state = USBINT_SERVER_STATE_IDLE;
 volatile enum usbint_server_stream_state_e stream_state;
 static int reset_state = 0;
@@ -199,6 +204,7 @@ static FILINFO fi;
 static int     fiCont = 0;
 static FIL     fh;
 static char    fbuf[MAX_STRING_LENGTH + 1];
+static enum usbint_fi_flags_e fiFlags = USBINT_FI_FLAGS_NONE;
 
 extern cfg_t CFG;
 
@@ -468,6 +474,8 @@ int usbint_handler_cmd(void) {
     server_info.offset = 0;
     server_info.error = 0;
 
+    fiFlags = USBINT_FI_FLAGS_NONE;
+
     memset((unsigned char *)send_buffer[send_buffer_index], 0, USB_BLOCK_SIZE);
 
     switch (server_info.opcode) {
@@ -550,6 +558,7 @@ int usbint_handler_cmd(void) {
         break;
     }
     case USBINT_SERVER_OPCODE_LS2:
+        fiFlags |= USBINT_FI_FLAGS_FILESIZE;
     case USBINT_SERVER_OPCODE_LS: {
         fiCont = 0;
         fi.lfname = fbuf;
@@ -854,7 +863,8 @@ int usbint_handler_dat(void) {
 
         break;
     }
-    case USBINT_SERVER_OPCODE_LS: {
+    case USBINT_SERVER_OPCODE_LS:
+    case USBINT_SERVER_OPCODE_LS2: {
         uint8_t *name = NULL;
         do {
             int fiContPrev = fiCont;
@@ -889,66 +899,23 @@ int usbint_handler_dat(void) {
                 strlwr((char *)name);
             }
 
-            // check for id(1) string(strlen + 1) is does not go past index
-            if (bytesSent + 1 + strlen((TCHAR*)name) + 1 <= server_info.block_size) {
-                send_buffer[send_buffer_index][bytesSent++] = (fi.fattrib & AM_DIR) ? 0 : 1;
-                strcpy((TCHAR*)send_buffer[send_buffer_index] + bytesSent, (TCHAR*)name);
-                bytesSent += strlen((TCHAR*)name) + 1;
-                // send string
-            }
-            else {
-                // send continuation.  overwrite string flag to simplify parsing
-                send_buffer[send_buffer_index][bytesSent++] = 2;
-                fiCont = 1;
-                break;
-            }
-        } while (bytesSent < server_info.block_size);
-        break;
-    }
-    case USBINT_SERVER_OPCODE_LS2: {
-        uint8_t *name = NULL;
-        do {
-            int fiContPrev = fiCont;
-            fiCont = 0;
-
-            if (server_info.error || (!fiContPrev && f_readdir(&dh, &fi) != FR_OK)) {
-                send_buffer[send_buffer_index][bytesSent++] = 0xFF;
-                count = 1;
-                f_closedir(&dh);
-                break;
-            }
-
-            if (!fi.fname[0]) {
-                send_buffer[send_buffer_index][bytesSent++] = 0xFF;
-                count = 1;
-                f_closedir(&dh);
-                break;
-            }
-
-            if (fi.fattrib & AM_VOL)
-                continue;
-
-            if (fi.lfname[0]) {
-                name = (uint8_t*)fi.lfname;
-            } 
-            else {
-                name = (uint8_t*)fi.fname;
-                strlwr((char *)name);
-            }
-
             size_t nameLen = strlen((TCHAR*)name);
-            size_t needed = 1 + nameLen + 1 + sizeof(uint32_t);
+            size_t needed = 1 + nameLen + 1;
+            if(fiFlags & USBINT_FI_FLAGS_FILESIZE) {
+                needed += sizeof(uint32_t);
+            }
 
             if (bytesSent + needed <= server_info.block_size) {
                 send_buffer[send_buffer_index][bytesSent++] = (fi.fattrib & AM_DIR) ? 0 : 1;
-                
-                uint32_t fsize = fi.fsize;
-                memcpy((TCHAR*)send_buffer[send_buffer_index] + bytesSent, &fsize, sizeof(fsize));
-                bytesSent += sizeof(fsize);
 
+                if(fiFlags & USBINT_FI_FLAGS_FILESIZE) {
+                    uint32_t fsize = fi.fsize;
+                    memcpy((TCHAR*)send_buffer[send_buffer_index] + bytesSent, &fsize, sizeof(fsize));
+                    bytesSent += sizeof(fsize);
+                }
                 strcpy((TCHAR*)send_buffer[send_buffer_index] + bytesSent, (TCHAR*)name);
                 bytesSent += nameLen + 1;
-            } 
+            }
             else {
                 send_buffer[send_buffer_index][bytesSent++] = 2;
                 fiCont = 1;
