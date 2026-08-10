@@ -126,7 +126,7 @@ CSTANDARD = -std=gnu99
 CDEFS = -DF_OSC=$(CONFIG_MCU_FOSC)UL
 
 # Place -I options here
-CINCS = -Iinclude
+CINCS = -Iinclude -Iinclude/arm
 
 # CPU-specific flags
 ifndef CPUFLAGS

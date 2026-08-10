@@ -144,3 +144,4 @@ verilog/*/incremental_db
 obj/
 snes/menu.rtc
 snes/menu.srm
+*.sample
