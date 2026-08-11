@@ -324,7 +324,7 @@ int cfg_validity_check_listed_games(const uint8_t *listfilename) {
 }
 
 int cfg_add_listed_game(const uint8_t *listfilename, uint8_t *fn, bool evict_oldest) {
-  int err = 0, index, index2, found = 0, foundindex = 0, written = 0;
+  int err = 0, index, index2, found = 0, foundindex = 0;
   TCHAR fqfn[256];
   TCHAR fntmp[10][256];
   file_open(listfilename, FA_READ);
@@ -357,7 +357,6 @@ int cfg_add_listed_game(const uint8_t *listfilename, uint8_t *fn, bool evict_old
   /* always put new entry on top of list */
   err = f_puts((const TCHAR*)fqfn, &file_handle);
   err = f_putc(0, &file_handle);
-  written++;
   if(index > 9 + found) index = 9 + found; /* truncate oldest entry */
   /* allow number of destination entries to be the same as source in case
    * we're only moving a previous entry to top */
@@ -367,14 +366,13 @@ int cfg_add_listed_game(const uint8_t *listfilename, uint8_t *fn, bool evict_old
     }
     err = f_puts(fntmp[index2], &file_handle);
     err = f_putc(0, &file_handle);
-    written++;
   }
   file_close();
   return err;
 }
 
 int cfg_remove_listed_game(const uint8_t *listfilename, uint8_t index_to_remove) {
-  int err = 0, index, index2, written = 0;
+  int err = 0, index, index2;
   TCHAR fntmp[10][256];
 
   // Load current file list into memory
@@ -395,7 +393,6 @@ int cfg_remove_listed_game(const uint8_t *listfilename, uint8_t index_to_remove)
     }
     err = f_puts(fntmp[index2], &file_handle);
     err = f_putc(0, &file_handle);
-    written++;
   }
   file_close();
   return err;
