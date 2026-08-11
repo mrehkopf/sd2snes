@@ -124,8 +124,7 @@ enum usbint_server_stream_state_e { FOREACH_SERVER_STREAM_STATE(GENERATE_ENUM) }
   OP(USBINT_SERVER_OPCODE_STREAM)               \
   OP(USBINT_SERVER_OPCODE_TIME)                 \
                                                 \
-  OP(USBINT_SERVER_OPCODE_RESPONSE)             \
-  OP(USBINT_SERVER_OPCODE_LS2)
+  OP(USBINT_SERVER_OPCODE_RESPONSE)             
 enum usbint_server_opcode_e { FOREACH_SERVER_OPCODE(GENERATE_ENUM) };
 #ifdef DEBUG_USB
 static const char *usbint_server_opcode_s[] = { FOREACH_SERVER_OPCODE(GENERATE_STRING) };
@@ -156,9 +155,12 @@ static const char *usbint_server_space_s[] = { FOREACH_SERVER_SPACE(GENERATE_STR
 enum usbint_server_flags_e { FOREACH_SERVER_FLAGS(GENERATE_ENUM) };
 //static const char *usbint_server_flags_s[] = { FOREACH_SERVER_FLAGS(GENERATE_STRING) };
 
-#define FOREACH_FI_FLAGS(OP)       \
-  OP(USBINT_FI_FLAGS_NONE=0)       \
-  OP(USBINT_FI_FLAGS_FILESIZE=1)
+#define FOREACH_FI_FLAGS(OP)        \
+  OP(USBINT_FI_FLAGS_NONE=0)        \
+  OP(USBINT_FI_FLAGS_FILESIZE=1)    \
+  OP(USBINT_FI_FLAGS_FILEDATE=2)    \
+  OP(USBINT_FI_FLAGS_FILETIME=4)    \
+  OP(USBINT_FI_FLAGS_ATTRIBUTE=8)   
 enum usbint_fi_flags_e { FOREACH_FI_FLAGS(GENERATE_ENUM) };
 
 volatile enum usbint_server_state_e server_state = USBINT_SERVER_STATE_IDLE;
@@ -474,7 +476,7 @@ int usbint_handler_cmd(void) {
     server_info.offset = 0;
     server_info.error = 0;
 
-    fiFlags = USBINT_FI_FLAGS_NONE;
+    fiFlags = cmd_buffer[7];
 
     memset((unsigned char *)send_buffer[send_buffer_index], 0, USB_BLOCK_SIZE);
 
@@ -557,8 +559,6 @@ int usbint_handler_cmd(void) {
 
         break;
     }
-    case USBINT_SERVER_OPCODE_LS2:
-        fiFlags |= USBINT_FI_FLAGS_FILESIZE;
     case USBINT_SERVER_OPCODE_LS: {
         fiCont = 0;
         fi.lfname = fbuf;
@@ -671,7 +671,7 @@ int usbint_handler_cmd(void) {
     PRINT_STATE(server_state);
 
     // decide next state
-    if (server_info.opcode == USBINT_SERVER_OPCODE_GET || server_info.opcode == USBINT_SERVER_OPCODE_VGET || server_info.opcode == USBINT_SERVER_OPCODE_LS || server_info.opcode == USBINT_SERVER_OPCODE_LS2) {
+    if (server_info.opcode == USBINT_SERVER_OPCODE_GET || server_info.opcode == USBINT_SERVER_OPCODE_VGET || server_info.opcode == USBINT_SERVER_OPCODE_LS) {
         // we lock on data transfers so use interrupt for everything
         server_state = USBINT_SERVER_STATE_HANDLE_DAT;
     }
@@ -863,8 +863,7 @@ int usbint_handler_dat(void) {
 
         break;
     }
-    case USBINT_SERVER_OPCODE_LS:
-    case USBINT_SERVER_OPCODE_LS2: {
+    case USBINT_SERVER_OPCODE_LS: {
         uint8_t *name = NULL;
         do {
             int fiContPrev = fiCont;
@@ -902,16 +901,40 @@ int usbint_handler_dat(void) {
             size_t nameLen = strlen((TCHAR*)name);
             size_t needed = 1 + nameLen + 1;
             if(fiFlags & USBINT_FI_FLAGS_FILESIZE) {
-                needed += sizeof(uint32_t);
+                needed += sizeof(DWORD);
+            }
+            if(fiFlags & USBINT_FI_FLAGS_FILEDATE) {
+                needed += sizeof(WORD);
+            }
+            if(fiFlags & USBINT_FI_FLAGS_FILETIME) {
+                needed += sizeof(WORD);
+            }
+            if(fiFlags & USBINT_FI_FLAGS_ATTRIBUTE) {
+                needed += sizeof(BYTE);
             }
 
             if (bytesSent + needed <= server_info.block_size) {
                 send_buffer[send_buffer_index][bytesSent++] = (fi.fattrib & AM_DIR) ? 0 : 1;
 
                 if(fiFlags & USBINT_FI_FLAGS_FILESIZE) {
-                    uint32_t fsize = fi.fsize;
+                    DWORD fsize = fi.fsize;
                     memcpy((TCHAR*)send_buffer[send_buffer_index] + bytesSent, &fsize, sizeof(fsize));
                     bytesSent += sizeof(fsize);
+                }
+                if(fiFlags & USBINT_FI_FLAGS_FILEDATE) {
+                    WORD fdate = fi.fdate;
+                    memcpy((TCHAR*)send_buffer[send_buffer_index] + bytesSent, &fdate, sizeof(fdate));
+                    bytesSent += sizeof(fdate);
+                }
+                if(fiFlags & USBINT_FI_FLAGS_FILETIME) {
+                    WORD ftime = fi.ftime;
+                    memcpy((TCHAR*)send_buffer[send_buffer_index] + bytesSent, &ftime, sizeof(ftime));
+                    bytesSent += sizeof(ftime);
+                }
+                if(fiFlags & USBINT_FI_FLAGS_ATTRIBUTE) {
+                    BYTE fattrib = fi.fattrib;
+                    memcpy((TCHAR*)send_buffer[send_buffer_index] + bytesSent, &fattrib, sizeof(fattrib));
+                    bytesSent += sizeof(fattrib);
                 }
                 strcpy((TCHAR*)send_buffer[send_buffer_index] + bytesSent, (TCHAR*)name);
                 bytesSent += nameLen + 1;
