@@ -29,6 +29,8 @@ module address(
   output IS_SAVERAM,        // address/CS mapped as SRAM?
   output IS_ROM,            // address mapped as ROM?
   output IS_WRITABLE,       // address somehow mapped as writable area?
+  output IS_PATCH,          // hook identity window active ($C0-FF while unlocked)
+  output gsu_ss_enable,     // savestate scan window ($E8:00xx while unlocked; active on mk2 AND mk3)
   input [23:0] SAVERAM_MASK,
   input [23:0] ROM_MASK,
   output msu_enable,
@@ -40,7 +42,8 @@ module address(
   output branch1_enable,
   output branch2_enable,
   output branch3_enable,
-  output gsu_enable
+  output gsu_enable,
+  input  snescmd_unlock     // snescmd region unlocked (gates the hook window)
 );
 
 parameter [2:0]
@@ -56,7 +59,20 @@ wire [23:0] SRAM_SNES_ADDR;
 
 assign IS_ROM = ~SNES_ROMSEL;
 
-assign IS_SAVERAM = SAVERAM_MASK[0]
+// In-game hook identity window: while the snescmd region is unlocked, map all of
+// $C0-$FF 1:1 to PSRAM (handler code at $C0xxxx, scratch/shadows in $F2-$FF).
+assign IS_PATCH = snescmd_unlock & &SNES_ADDR[23:22];
+
+// Savestate scan window: $E8:0000-00FF while unlocked (inside IS_PATCH; the
+// main.v data mux gives the window priority over the PSRAM serve, mirroring
+// the SA-1 core's sa1_ss_enable).
+// MEASUREMENT: scan window active on mk2 too (fit probe for full savestate)
+assign gsu_ss_enable = snescmd_unlock & (SNES_ADDR[23:16] == 8'hE8) & ~|SNES_ADDR[15:8];
+
+// ~IS_PATCH: the GSU map places SAVERAM at 60-7D/E0-FF -- banks $E0-$FF overlap the
+// hook window, and without the gate the handler's PSRAM scratch reads/writes would
+// hit the GSU cart RAM instead (the identity window must win while unlocked).
+assign IS_SAVERAM = ~IS_PATCH & SAVERAM_MASK[0]
                     & ( // 60-7D/E0-FF:0000-FFFF
                         ( &SNES_ADDR[22:21]
                         & ~SNES_ROMSEL
@@ -68,11 +84,14 @@ assign IS_SAVERAM = SAVERAM_MASK[0]
                         )
                       );
 
-assign IS_WRITABLE = IS_SAVERAM;
+assign IS_WRITABLE = IS_SAVERAM | IS_PATCH;
 
 // GSU has a weird hybrid of Lo and Hi ROM formats.
 // TODO: add programmable address map
-assign SRAM_SNES_ADDR = (IS_SAVERAM
+assign SRAM_SNES_ADDR = IS_PATCH
+                        // hook window: identity-map $C0-$FF (handler code + scratch)
+                        ? SNES_ADDR
+                        : (IS_SAVERAM
                          // 60-7D/E0-FF:0000-FFFF or 00-3F/80-BF:6000-7FFF (first 8K mirror)
                          ? (24'hE00000 + ((SNES_ADDR[22] ? SNES_ADDR[16:0] : SNES_ADDR[12:0]) & SAVERAM_MASK))
                          // 40-5F/C0-DF:0000-FFFF or 00-3F/80-BF:8000-FFFF

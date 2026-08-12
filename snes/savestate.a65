@@ -21,11 +21,58 @@ savestate_handler:
 
 ; print "Savestate Bank Starting at: ", pc
 	php : rep #$30 : .al : .xl : pha
+	; With the IRQ hook active every IRQ lands here, including per-scanline raster
+	; IRQs; running the full handler in those delays the game's own ISR every frame.
+	; Only the once-per-frame vblank entry is needed, so mid-frame entries take the
+	; short path below.
+	sep #$20 : .as
+	lda @$004212
+	bpl ss_midframe_entry
+	rep #$20 : .al
 	; nmihook already handled button input
 	lda @NMI_PAD
 	sta @CS_INPUT_NEXT
 savestate_start:
 	jmp ss_init
+
+ss_midframe_entry:
+	.as : .xl                    ; reached with A still 8-bit from the $4212 read
+	; A savestate in flight must never fast-exit: the resume wait needs the next
+	; hook entry to bump CS_STATE, and in IRQ-driven scenes that entry is a
+	; mid-frame IRQ.  Exiting through the stub would drop snescmd_unlock and the
+	; FPGA's savestate_force_entry with it.
+	lda @CS_STATE
+	bne ss_precheck_pass8
+	; Pre-check the pad the nmihook stub stored in NMI_PAD: only a held save/load/
+	; slot combo goes on to the full path.  Masked match, extra bits ignored;
+	; "all mask bits held" is (~NMI_PAD & mask) == 0.
+	rep #$20 : .al
+	lda @CS_SAVE_INPUT
+	beq +
+	lda @NMI_PAD : eor #$FFFF : and @CS_SAVE_INPUT
+	beq ss_precheck_pass
++	lda @CS_LOAD_INPUT
+	beq +
+	lda @NMI_PAD : eor #$FFFF : and @CS_LOAD_INPUT
+	beq ss_precheck_pass
++	lda @CS_SLOT_INPUT           ; slot = Select + d-pad; require a d-pad bit too,
+	beq ss_precheck_fail         ; so Select alone cannot keep the handler alive
+	lda @NMI_PAD : eor #$FFFF : and @CS_SLOT_INPUT
+	bne ss_precheck_fail
+	lda @NMI_PAD
+	and #$0F00                   ; up/down/left/right present?
+	bne ss_precheck_pass
+ss_precheck_fail:
+	.al : .xl
+	jmp ss_exit
+ss_precheck_pass8:
+	.as : .xl
+	rep #$20 : .al
+ss_precheck_pass:
+	.al : .xl
+	lda @NMI_PAD
+	sta @CS_INPUT_NEXT
+	jmp savestate_start
 
 save_write_table
 	; Disable DMA
@@ -144,20 +191,60 @@ return_align
 	cmp #$EA  ; entered via NMI?
 	beq return_enable_nmi
 return_enable_irq
-	cli
-	lda @$004211 ; ack IRQ
+	; Direct resume for IRQ entries: no CLI, no nested re-entry wait.  Where the
+	; frame tick itself is a coprocessor IRQ the redirect never re-fires with the
+	; buttons released, so that wait would park forever.  It is also unnecessary:
+	; we entered at the vector fetch, so the game's interrupt context is still on
+	; the stack and exiting through the stub hands the IRQ to the game's own ISR.
+	lda @$004211 ; ack any pending PPU timer IRQ (a cart IRQ is level, unaffected)
 	lda #$31     ; mask off NMI enable
-	bra +
+	and @SRAM_OTH_BANK
+	sta @$4200
+	lda #$02     ; post-save/load cooldown: ss_start_skip drains 2..15,0
+	sta @CS_STATE
+	jsr ss_release_chips
+	; reset picture + re-enable the game's interrupt mask
+	lda @SRAM_PPU_BANK
+	sta @$2100
+	lda @SRAM_OTH_BANK
+	sta @$4200
+	; re-arm HDMA with the pre-freeze $420C (see the NMI path below)
+	lda @SRAM_OTH_BANK|$C
+	sta @$00420C
+	jmp ss_exit
 return_enable_nmi
 	lda @$004210 ; ack NMI
 	lda #$81     ; mask off IRQ enables
-+
 	and @SRAM_OTH_BANK ; stored $4200 flags
+	; The wait below is fed by the next NMI, but SRAM_OTH_BANK is the $4200 of the
+	; state being RESTORED: a state taken with NMI off would leave the bit clear
+	; and the wait could never complete.  Force it here; the saved value is written
+	; back before the game gets control.  The NMI it lets through is redirected
+	; into this handler and RTIs straight back into the loop.
+	ora #$80
 	sta @$4200
 return_wait_irq:
--	lda @CS_STATE
+	; Bounded wait for the nested entry that bumps CS_STATE to 2.  Only the FPGA can
+	; deliver it, and every way that can fail ends with the PPU force-blanked and
+	; the coprocessor frozen, so the spin is capped: the re-entry is at most one
+	; frame away, ~65535 iterations is ~0.25 s of margin.  X belongs to the game
+	; here, hence the push/pull.
+	phx
+	ldx #$ffff
+ss_wait_loop:
+	lda @CS_STATE
 	cmp #$2
-	bne -
+	beq ss_wait_done
+	dex
+	bne ss_wait_loop
+	; Timed out: ss_wait_bail puts the machine in the state the successful path
+	; would have left it in, then we fall into the same release/restore tail.
+	jsl @ss_wait_bail
+	.as : .xl
+ss_wait_done:
+	plx
+
+	jsr ss_release_chips
 
 	; reset picture
 	lda @SRAM_PPU_BANK
@@ -166,13 +253,36 @@ return_wait_irq:
 	; re-enable all interrupts
 	lda @SRAM_OTH_BANK
 	sta @$4200
-	;lda !SRAM_OTH_BANK|$C
-	;stz $420C
-	
+	; Re-arm HDMA with the pre-freeze $420C.  The write tables cleared it and
+	; register_restore_return skips it, so a scene that only arms HDMA on scene
+	; events would come back with its window registers stuck at the last scanline
+	; values and the screen fully masked.  Armed here, on the vblank edge: arming
+	; mid-frame would run the rest of the frame off the game's stale A2A.
+	lda @SRAM_OTH_BANK|$C
+	sta @$00420C
+
 ; Code to run before returning back to the game
 ss_exit
   rep #$30 : .al : .xl : pla : plp
 	rtl ; go back to in-game hook
+
+; Release the coprocessor halts at the real game resume, so the chip wakes in
+; lockstep with the SNES.  Released any earlier it would free-run while the SNES is
+; still frozen, and on the SA-1 its ROM fetches also starve the MCU of PSRAM slots
+; while the .state is being written.  A is 8-bit, X/Y untouched.
+ss_release_chips
+	.as : .xl
+	lda @SS_SA1_GATE
+	beq +
+	lda #$00
+	sta @SS_SA1_WINDOW|$07FF
++	lda @SS_GSU_GATE
+	beq +
+	lda #$00
+	sta @SS_GSU_WINDOW|$00FE
++	jsl @ss_cx4_release
+	.as : .xl
+	rts
 
 ; SMC (Self Modifying Code) to init on first pass
 ss_init
@@ -197,6 +307,10 @@ ss_init
 
 	lda #$0000
 	sta @CS_SAVE_REQ
+	; clear the resume-watchdog breadcrumb (PSRAM survives game loads)
+	sep #$20 : .as
+	sta @SS_DIAG_BAIL
+	rep #$20 : .al
 	ply
 	plx
 	pla
@@ -337,6 +451,30 @@ save_state
 	inc
 	sta @CS_STATE
 
+	; --- freeze the coprocessor at the same instant the SNES CPU is cut ---
+	; Halted any later it drifts while the SNES stands still and the handshake
+	; desyncs on resume.  Each core stops at a clean boundary of its own with an
+	; FPGA-side timeout, so none of these can hang; save_return waits for the ack.
+	lda @SS_DSP_GATE
+	beq ss_dsp_early_done
+	lda #$01
+	sta @SS_DSP_WINDOW|$07FF
+ss_dsp_early_done:
+	lda @SS_SA1_GATE
+	beq ss_sa1_early_done
+	; the halt request lives behind the window probe (see ss_sa1_probe_halt)
+	jsr ss_sa1_probe_halt
+ss_sa1_early_done:
+	lda @SS_GSU_GATE
+	beq ss_gsu_early_done
+	lda #$01
+	sta @SS_GSU_WINDOW|$00FE
+ss_gsu_early_done:
+	jsl @ss_cx4_early
+	.as : .xl
+	lda #$00
+	sta @CS_SA1_LOAD                   ; SAVE path: the restore blocks are no-ops
+
 	; disable interrupts
 	lda @$F90700|$0000
 	sta @SRAM_OTH_BANK
@@ -421,8 +559,29 @@ run_vm
 save_return
 	rep #$30 : .al : .xl
 
-	; copy region
+	; copy region -- WRAM mirrors F5-F6 -> state buffer F0-F1 only.  Split from the
+	; original single F5..F9:04FF op: VRAM, CGRAM, OAM and WRAM are captured by real
+	; readback below (the bus-snoop mirror drops writes under load), so no copier op
+	; may land in those buffer ranges afterwards.
 	lda #$F5F0    ; srcBank:dstBank
+	sta @$002020
+	lda #$0000    ; srcOffset
+	sta @$002022
+	lda #$0000    ; dstOffset
+	sta @$002024
+	lda #$0000    ; length[15:0]
+	sta @$002026
+	sep #$20 : .as
+	lda #$02  ; length[23:16] -> $020000 = WRAM mirrors only
+	sta @$002028
+	; opcode[4:0], loop, dir, enable
+	lda #$05
+	sta @$002029
+	; second op: APU RAM mirror F8 + shadows F9:0000-04FF -> F3 + F4:0000-04FF.  It
+	; queues behind the first one (the copier trigger queue is one deep) and drains
+	; during the VRAM readback below, which then overwrites F4:0000-041F.
+	rep #$20 : .al
+	lda #$F8F3    ; srcBank:dstBank
 	sta @$002020
 	lda #$0000    ; srcOffset
 	sta @$002022
@@ -431,12 +590,214 @@ save_return
 	lda #$0500    ; length[15:0]
 	sta @$002026
 	sep #$20 : .as
-	lda #$04  ; length[23:16]
+	lda #$01  ; length[23:16] -> $010500
 	sta @$002028
-	; opcode[4:0], loop, dir, enable
 	lda #$05
 	sta @$002029
-	
+
+	; --- DSP1-4 capture: wait for the freeze ack, then copy the window out ---
+	lda @SS_DSP_GATE
+	beq ss_dsp_cap_done
+	lda #$01
+	sta @SS_DSP_WINDOW|$07FF        ; ensure halt requested
+	ldx #$0000
+ss_dsp_cap_wait:
+	lda @SS_DSP_WINDOW|$07FF        ; bit0 = frozen
+	and #$01
+	bne ss_dsp_cap_go
+	inx
+	cpx #$2000
+	bne ss_dsp_cap_wait
+ss_dsp_cap_go:
+	ldx #$0000
+ss_dsp_cap_loop:
+	lda @SS_DSP_WINDOW, x           ; $000-$1FF data RAM, $600-$6FF registers
+	sta @SS_DSP_SCRATCH, x
+	inx
+	cpx #$0700
+	bne ss_dsp_cap_loop
+	lda #$00
+	sta @SS_DSP_WINDOW|$07FF        ; release halt -> DSP resumes
+ss_dsp_cap_done:
+
+	; --- VRAM + CGRAM + OAM readback -> F2 / F4:0000-041F -------------------
+	; Runs in forced blank with GP-DMA/HDMA off.  VMAIN/VMADD/CGADD/OAMADD are
+	; clobbered and restored from the register shadow on resume like every other
+	; PPU register.
+	;   $2139 prefetch only advances on reads, so the first read after setting
+	; VMADD is a dummy -- and VMADD must not be re-set afterwards, or every
+	; following word is shifted by one.  $213B and $2138 have no such quirk.
+	sep #$20 : .as
+	lda #$80 : sta @$002115               ; VMAIN: word step after $213A read
+	rep #$30 : .al : .xl
+	lda #$0000 : sta @$002116             ; VMADD = 0
+	lda @$002139                          ; dummy read (loads word 0, VMADD -> 1)
+	ldx #$0000
+ss_save_vramrb:
+	lda @$002139                          ; 16-bit read = $2139+$213A (word)
+	sta @$F20000, x                       ; VRAM -> state buffer
+	inx : inx
+	bne ss_save_vramrb                    ; 32768 words = full 64KB
+	sep #$20 : .as
+	lda #$00 : sta @$002121               ; CGADD = 0
+	ldx #$0000
+ss_save_cgrb:
+	lda @$00213B
+	sta @$F40000, x
+	inx
+	cpx #$0200
+	bne ss_save_cgrb
+	lda #$00 : sta @$002102               ; OAMADDL = 0
+	lda #$00 : sta @$002103               ; OAMADDH = 0 (word addr 0, no rotation)
+	ldx #$0000
+ss_save_oamrb:
+	lda @$002138                          ; low table (512 B) then high table (32 B)
+	sta @$F40200, x
+	inx
+	cpx #$0220
+	bne ss_save_oamrb
+
+	; --- WRAM via CPU reads of $7E/$7F -> F0/F1 -----------------------------
+	; The copier staged the mirror, which drops writes under load; the SNES reads
+	; its own WRAM directly, so overwrite the buffer with an exact copy.  Runs last,
+	; after the copier has drained.  F0/F1 sit in the IS_PATCH window, so the stores
+	; land in PSRAM.  ~440 ms for 128 KB.
+	rep #$30 : .al : .xl
+	ldx #$0000
+ss_save_wram_lo:
+	lda @$7E0000, x
+	sta @$F00000, x
+	inx : inx
+	bne ss_save_wram_lo                   ; 32768 words = 64KB ($7E -> F0)
+	ldx #$0000
+ss_save_wram_hi:
+	lda @$7F0000, x
+	sta @$F10000, x
+	inx : inx
+	bne ss_save_wram_hi                   ; 32768 words = 64KB ($7F -> F1)
+
+	; --- SA-1 capture: IRAM $00:3000 (2 KB), BW-RAM $40:0000 (32 KB) and the
+	;     256-byte window, all into the F4 scratch.  IRAM and BW-RAM are read over
+	;     the SNES bus; BW-RAM is always taken as the full 32 KB, which SAVERAM_MASK
+	;     mirroring makes safe for smaller carts.
+	sep #$20 : .as
+	lda @SS_SA1_GATE
+	bne +                                  ; block > 127 bytes: short branch is out of range
+	jmp ss_sa1_cap_done
++	lda #$01
+	sta @SS_SA1_WINDOW|$07FF               ; ensure halt requested
+	ldx #$0000
+ss_sa1_cap_wait:
+	lda @SS_SA1_WINDOW|$07FF               ; bit0 = frozen
+	and #$01
+	bne ss_sa1_cap_go
+	inx
+	cpx #$2000
+	bne ss_sa1_cap_wait
+ss_sa1_cap_go:
+	rep #$20 : .al
+	ldx #$0000
+ss_sa1_cap_iram:
+	lda @$003000, x
+	sta @SS_SA1_IRAM_SCRATCH, x
+	inx : inx
+	cpx #$0800
+	bne ss_sa1_cap_iram
+	ldx #$0000
+ss_sa1_cap_bwram:
+	lda @$400000, x
+	sta @SS_SA1_BWRAM_SCRATCH, x
+	inx : inx
+	cpx #$8000
+	bne ss_sa1_cap_bwram
+	sep #$20 : .as
+	ldx #$0000
+ss_sa1_cap_regs:
+	lda @SS_SA1_WINDOW, x
+	sta @SS_SA1_REGS_SCRATCH, x
+	inx
+	cpx #$0100
+	bne ss_sa1_cap_regs
+ss_sa1_cap_done:
+
+	; --- GSU capture: state block, instruction cache through its native $00:3100
+	;     image and the 32 KB of cart RAM.  The freeze is run-to-stop, so the ack
+	;     only comes once an in-flight GSU program has finished.
+	sep #$20 : .as
+	lda @SS_GSU_GATE
+	bne +                                  ; long block: short branch out of range
+	jmp ss_gsu_cap_done
++	ldx #$0000
+ss_gsu_cap_wait:
+	lda @SS_GSU_WINDOW|$00FE               ; bit0 = frozen
+	and #$01
+	bne ss_gsu_cap_go
+	inx
+	cpx #$4000
+	bne ss_gsu_cap_wait
+ss_gsu_cap_go:
+	ldx #$0000
+ss_gsu_cap_regs:
+	lda @SS_GSU_WINDOW, x
+	sta @SS_GSU_REGS_SCRATCH, x
+	inx
+	cpx #$0100
+	bne ss_gsu_cap_regs
+	ldx #$0000
+ss_gsu_cap_cache:
+	lda @$003100, x
+	sta @SS_GSU_CACHE_SCRATCH, x
+	inx
+	cpx #$0200
+	bne ss_gsu_cap_cache
+	rep #$20 : .al
+	ldx #$0000
+ss_gsu_cap_ram:
+	lda @$700000, x
+	sta @SS_GSU_RAM_SCRATCH, x
+	inx : inx
+	cpx #$8000
+	bne ss_gsu_cap_ram
+	sep #$20 : .as
+ss_gsu_cap_done:
+
+	; --- CX4 capture (savestate_cx4.a65) ---
+	jsl @ss_cx4_capture
+	.as : .xl
+
+	; --- S-DD1 capture: the six config bytes that carry state, $4800/$4801 and the
+	;     four bank maps ($4802/$4803 read $00).  The decompressor is never
+	;     mid-transfer at an NMI boundary, so there is nothing else to take.
+	lda @SS_SDD1_GATE
+	beq ss_sdd1_cap_done
+	lda @$004800
+	sta @SS_SDD1_SCRATCH
+	lda @$004801
+	sta @SS_SDD1_SCRATCH+1
+	lda @$004804
+	sta @SS_SDD1_SCRATCH+2
+	lda @$004805
+	sta @SS_SDD1_SCRATCH+3
+	lda @$004806
+	sta @SS_SDD1_SCRATCH+4
+	lda @$004807
+	sta @SS_SDD1_SCRATCH+5
+ss_sdd1_cap_done:
+
+	; --- OBC1 capture: no FSM to halt, just the SNES-visible $7800-$7FFF window ---
+	lda @SS_OBC1_GATE
+	beq ss_obc1_cap_done
+	rep #$20 : .al
+	ldx #$0000
+ss_obc1_cap:
+	lda @$007800, x
+	sta @SS_OBC1_SCRATCH, x
+	inx : inx
+	cpx #$0800
+	bne ss_obc1_cap
+	.as                                    ; fall through: the rep below re-enters .al
+ss_obc1_cap_done:
+
 	rep #$20 : .al
 	tsc
 	sta @SRAM_SAVED_SP
@@ -502,7 +863,23 @@ load_state
 	bne load_state_jump_exit
 	inc
 	sta @CS_STATE
-	
+
+	; --- freeze the coprocessor, as on the save path: the restore blocks below
+	;     need a quiesced core.  Released at the game resume, never here.
+	lda @SS_SA1_GATE
+	beq ss_sa1_ld_early_done
+	jsr ss_sa1_probe_halt              ; probes the $E8 window before halting
+ss_sa1_ld_early_done:
+	lda @SS_GSU_GATE
+	beq ss_gsu_ld_early_done
+	lda #$01
+	sta @SS_GSU_WINDOW|$00FE
+ss_gsu_ld_early_done:
+	jsl @ss_cx4_early
+	.as : .xl
+	lda #$01
+	sta @CS_SA1_LOAD                   ; LOAD path: run the restore blocks
+
 	; disable interrupts
 	lda @$F90700|$0000
 	and #$01
@@ -533,7 +910,7 @@ load_return
 	
 	; wait delay frames
 	sep #$20 : .as
-	lda CS_DELAY
+	lda @CS_DELAY                  ; @: an absolute read would hit game WRAM $00:100E
 ss_frameloop
 	- bit $4212 : bpl -
 	- bit $4212 : bmi -
@@ -561,8 +938,188 @@ load_dma_regs_start
 	ldy #$0000
 	bra -
 	
+	; --- DSP1-4 restore: halt, wait for the ack, write the snapshot back through
+	;     the window, unhalt LAST (any earlier and the core runs over the restored
+	;     registers).
++	lda @SS_DSP_GATE
+	beq ss_dsp_rst_done
+	lda #$01
+	sta @SS_DSP_WINDOW|$07FF        ; request halt
+	ldx #$0000
+ss_dsp_rst_wait:
+	lda @SS_DSP_WINDOW|$07FF        ; bit0 = frozen
+	and #$01
+	bne ss_dsp_rst_go
+	inx
+	cpx #$2000
+	bne ss_dsp_rst_wait
+ss_dsp_rst_go:
+	ldx #$0000
+ss_dsp_rst_loop:
+	lda @SS_DSP_SCRATCH, x
+	sta @SS_DSP_WINDOW, x
+	inx
+	cpx #$0700
+	bne ss_dsp_rst_loop
+	lda #$00
+	sta @SS_DSP_WINDOW|$07FF        ; release halt -> DSP resumes restored state
+ss_dsp_rst_done:
+
+	; --- SA-1 restore: BW-RAM and IRAM first, then the state block ascending so
+	;     the $F0 normalize byte lands near the end.  Left frozen for the resume.
+	sep #$20 : .as
+	lda @SS_SA1_GATE
+	bne +                           ; block > 127 bytes: short branch is out of range
+	jmp ss_sa1_rst_done
++	lda @CS_SA1_LOAD
+	bne +
+	jmp ss_sa1_rst_done             ; SAVE path: the chip never left the frozen
+	                                ; capture state, so there is nothing to undo
+	; Stale-scratch guard: a .state written without an SA-1 capture still carries
+	; whatever sat in the F4 scratch, and the file persists F0-F4 wholesale.  A real
+	; capture copies offset $FF, the read-only $5A magic, so the snapshot proves its
+	; own provenance.  On failure skip the write-back but leave the gate alone --
+	; the release is gated on it, and zeroing it would strand the SA-1 frozen.
++	lda @SS_SA1_REGS_SCRATCH+$FF
+	cmp #$5A
+	beq +
+	jmp ss_sa1_rst_done
++	lda #$01
+	sta @SS_SA1_WINDOW|$07FF        ; request halt
+	ldx #$0000
+ss_sa1_rst_wait:
+	lda @SS_SA1_WINDOW|$07FF        ; bit0 = frozen
+	and #$01
+	bne ss_sa1_rst_go
+	inx
+	cpx #$2000
+	bne ss_sa1_rst_wait
+ss_sa1_rst_go:
+	rep #$20 : .al
+	ldx #$0000
+ss_sa1_rst_bwram:
+	lda @SS_SA1_BWRAM_SCRATCH, x
+	sta @$400000, x
+	inx : inx
+	cpx #$8000
+	bne ss_sa1_rst_bwram
+	ldx #$0000
+ss_sa1_rst_iram:
+	lda @SS_SA1_IRAM_SCRATCH, x
+	sta @$003000, x
+	inx : inx
+	cpx #$0800
+	bne ss_sa1_rst_iram
+	sep #$20 : .as
+	ldx #$0000
+ss_sa1_rst_regs:
+	lda @SS_SA1_REGS_SCRATCH, x
+	sta @SS_SA1_WINDOW, x
+	inx
+	cpx #$0100
+	bne ss_sa1_rst_regs
+ss_sa1_rst_done:
+
+	; --- GSU restore: cache image and cart RAM first, then the state block
+	;     ascending, so the cache-valid mask lands after the cache image's
+	;     line-valid side effects and the $F0 normalize near the end.
+	sep #$20 : .as
+	lda @SS_GSU_GATE
+	bne +                           ; long block: short branch out of range
+	jmp ss_gsu_rst_done
++	lda @CS_SA1_LOAD
+	bne +
+	jmp ss_gsu_rst_done             ; SAVE path: no write-back
++	lda #$01
+	sta @SS_GSU_WINDOW|$00FE        ; ensure halt requested
+	ldx #$0000
+ss_gsu_rst_wait:
+	lda @SS_GSU_WINDOW|$00FE        ; bit0 = frozen
+	and #$01
+	bne ss_gsu_rst_go
+	inx
+	cpx #$4000
+	bne ss_gsu_rst_wait
+ss_gsu_rst_go:
+	ldx #$0000
+ss_gsu_rst_cache:
+	lda @SS_GSU_CACHE_SCRATCH, x
+	sta @$003100, x
+	inx
+	cpx #$0200
+	bne ss_gsu_rst_cache
+	rep #$20 : .al
+	ldx #$0000
+ss_gsu_rst_ram:
+	lda @SS_GSU_RAM_SCRATCH, x
+	sta @$700000, x
+	inx : inx
+	cpx #$8000
+	bne ss_gsu_rst_ram
+	sep #$20 : .as
+	ldx #$0000
+ss_gsu_rst_regs:
+	lda @SS_GSU_REGS_SCRATCH, x
+	sta @SS_GSU_WINDOW, x
+	inx
+	cpx #$0100
+	bne ss_gsu_rst_regs
+ss_gsu_rst_done:
+
+	; --- CX4 restore (savestate_cx4.a65; LOAD path only, tested inside) ---
+	jsl @ss_cx4_restore
+	.as : .xl
+
+	; --- OBC1 restore: no halt, but order matters.  Writing $7FF0-$7FF4 also
+	;     scribbles obc_lower/obc_upper at the OLD register indices, so write the 8
+	;     registers first and then rewrite the linear window, whose writes address
+	;     both arrays directly and overwrite the scribble.
+	sep #$20 : .as
+	lda @SS_OBC1_GATE
+	beq ss_obc1_rst_done
+	lda @CS_SA1_LOAD
+	beq ss_obc1_rst_done            ; SAVE path: no write-back
+	ldx #$07F0
+ss_obc1_rst_regs:
+	lda @SS_OBC1_SCRATCH, x
+	sta @$007800, x
+	inx
+	cpx #$07F8
+	bne ss_obc1_rst_regs
+	rep #$20 : .al
+	ldx #$0000
+ss_obc1_rst_win:
+	lda @SS_OBC1_SCRATCH, x
+	sta @$007800, x
+	inx : inx
+	cpx #$07F0
+	bne ss_obc1_rst_win
+	.as                             ; register_restore_return does its own sep
+ss_obc1_rst_done:
+
+	; --- S-DD1 restore: the four bank maps and the channel-enable mask only.
+	;     $4801 is deliberately NOT rewritten: a write there arms the decompressor
+	;     and would inject a phantom decompression on the next $420B.  The game's
+	;     next real $4801 reloads everything anyway.
+	sep #$20 : .as
+	lda @SS_SDD1_GATE
+	beq ss_sdd1_rst_done
+	lda @CS_SA1_LOAD
+	beq ss_sdd1_rst_done            ; SAVE path: no write-back
+	lda @SS_SDD1_SCRATCH+2
+	sta @$004804
+	lda @SS_SDD1_SCRATCH+3
+	sta @$004805
+	lda @SS_SDD1_SCRATCH+4
+	sta @$004806
+	lda @SS_SDD1_SCRATCH+5
+	sta @$004807
+	lda @SS_SDD1_SCRATCH
+	sta @$004800
+ss_sdd1_rst_done:
+
 	; Restore registers and return.
-+	jmp register_restore_return
+	jmp register_restore_return
 	
 vm
 	; Data format: xx xx yy yy
@@ -608,6 +1165,30 @@ vm_done
 	; code address to return to.
 	tyx
 	jmp ($0002,x)
+
+; ---- ss_sa1_probe_halt: prove the window, then request the halt --------------
+;      SS_SA1_GATE only says the firmware saw an SA-1 core, not that the core on
+;      the card implements the $E8 window.  Against a stale one $E8 falls through
+;      to the IS_PATCH identity window (plain PSRAM), the halt request reads back,
+;      the frozen spin passes immediately and the handler would capture garbage.
+;      Discriminate by writing: offset $FF is the read-only $5A magic, so on a real
+;      core the $A5 is swallowed and the read still yields $5A.
+;      On failure zero the gate: every SA-1 touchpoint tests it first, including
+;      the release, so nothing is left frozen.  A 8-bit in and out.
+ss_sa1_probe_halt:
+	.as
+	lda #$A5
+	sta @SS_SA1_WINDOW|$00FF           ; inert on a real core (read-only, not frozen yet)
+	lda @SS_SA1_WINDOW|$00FF
+	cmp #$5A                           ; magic intact -> window present
+	bne ss_sa1_probe_bad
+	lda #$01
+	sta @SS_SA1_WINDOW|$07FF           ; window present -> request the early halt
+	rts
+ss_sa1_probe_bad:
+	lda #$00
+	sta @SS_SA1_GATE                   ; stale/absent core -> degrade, never guess
+	rts
 .byt "SAVESTATE_END"
 
 ; print "Savestate Bank Ending at: ", pc

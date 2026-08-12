@@ -563,6 +563,8 @@ void init(uint8_t *filename) {
 }
 
 void deassert_reset() {
+  /* after every image mutation and before the SNES runs; no-op on most cores */
+  cheat_rom_psram_apply();
   snes_reset(0);
   fpga_dspx_reset(0);
   // handle reset loop from hook

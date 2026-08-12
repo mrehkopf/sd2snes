@@ -522,6 +522,7 @@ set_global_assignment -name VERILOG_FILE cx4.v
 set_global_assignment -name VERILOG_FILE clk_test.v
 set_global_assignment -name VERILOG_FILE cheat.v
 set_global_assignment -name VERILOG_FILE address.v
+set_global_assignment -name VERILOG_FILE regshadow.v
 set_global_assignment -name QIP_FILE ip/mk3/dac_buf.qip
 set_global_assignment -name QIP_FILE ip/mk3/msu_databuf.qip
 set_global_assignment -name QIP_FILE ip/mk3/cx4_datrom.qip

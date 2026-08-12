@@ -15,8 +15,19 @@
 #define SS_DELAY_ADDR       0xFE100EL
 #define SS_SLOTS_ADDR       0xFE100FL
 #define SS_SLOTS_INPUT_ADDR 0xFE1010L
+#define SS_SA1_LOAD_ADDR    0xFE1013L
 #define SS_CTRL_ADDR        0xFE1012L
 #define SS_FIXES_ADDR       0xFE1014L
+
+/* Per-coprocessor "this core can capture/restore its chip" flags, armed on every
+   game load and read by the handler (lockstep with snes/savestate.i65).  0 makes
+   the handler skip that chip entirely. */
+#define SS_DSP_GATE_ADDR    0xFF0712L
+#define SS_SA1_GATE_ADDR    0xFF0713L
+#define SS_GSU_GATE_ADDR    0xFF0714L
+#define SS_OBC1_GATE_ADDR   0xFF0718L
+#define SS_SDD1_GATE_ADDR   0xFF0719L
+#define SS_CX4_GATE_ADDR    0xFF071FL
 
 typedef enum {
   SS_OP_NONE = 0,

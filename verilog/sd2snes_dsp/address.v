@@ -204,9 +204,12 @@ assign dspx_enable =
   ?(SNES_ADDR[22] & SNES_ADDR[21] & ~SNES_ADDR[20] & &(~SNES_ADDR[19:16]) & ~SNES_ADDR[15])
   :1'b0;
 
-assign dspx_dp_enable = featurebits[FEAT_ST0010]
-                      &(SNES_ADDR[22:19] == 4'b1101
-                     && SNES_ADDR[15:11] == 5'b00000);
+// Data-RAM / savestate-scan window, offset $0000-$07FF.  ST0010: always, at banks
+// $68-$6F/$E8-$EF.  DSP1-4: only the $E8 window, and only while the handler holds
+// the unlock, so it can never alias the game-readable LoROM band.
+assign dspx_dp_enable = (SNES_ADDR[15:11] == 5'b00000)
+                      & ( (featurebits[FEAT_ST0010] & (SNES_ADDR[22:19] == 4'b1101))
+                        | (featurebits[FEAT_DSPX] & (map_unlock | snescmd_unlock) & (SNES_ADDR[23:16] == 8'hE8)) );
 
 assign dspx_a0 = featurebits[FEAT_DSPX]
                  ?((MAPPER_DEC[3'b001]) ? SNES_ADDR[14]

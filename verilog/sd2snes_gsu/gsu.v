@@ -21,6 +21,10 @@
 module gsu(
   input         RST,
   input         CLK,
+  // freeze the GSU execution (clock enable); the ROM/RAM fetch FSMs free-run and
+  // drain any in-flight access.
+  input        pause,
+  input        SS_EN,     // savestate scan window ($E8:00xx while unlocked; mk3)
 
   input  [23:0] SAVERAM_MASK,
   input  [23:0] ROM_MASK,
@@ -91,10 +95,13 @@ reg [9:0]  addr_in_r;
 reg        enable_r;
 reg [9:0]  pgm_addr_r;
 
+reg        ss_en_r; initial ss_en_r = 0;
+
 always @(posedge CLK) begin
   data_in_r  <= DATA_IN;
   addr_in_r  <= SNES_ADDR;
   enable_r   <= ENABLE;
+  ss_en_r    <= SS_EN;
   pgm_addr_r <= PGM_ADDR;
 end
 
@@ -335,6 +342,12 @@ reg [31:0] gsu_plot_read_r; initial gsu_plot_read_r = 0;
 reg [31:0] gsu_plot_writ_r; initial gsu_plot_writ_r = 0;
 reg [31:0] gsu_plot_dump_r; initial gsu_plot_dump_r = 0;
 
+reg ss_halt_r;         initial ss_halt_r   = 0;
+reg ss_frozen_r;       initial ss_frozen_r = 0;
+reg ss_dirty_r;        initial ss_dirty_r  = 0;
+reg [21:0] ss_wait_r;  initial ss_wait_r   = 0;
+reg [3:0]  ss_settle_r; initial ss_settle_r = 0;
+
 reg [1:0]  gsu_cycle_r; initial gsu_cycle_r = 0;
 reg        gsu_clock_en; initial gsu_clock_en = 0;
 
@@ -349,9 +362,17 @@ always @(posedge CLK) begin
   end
   else begin
     gsu_cycle_r  <= gsu_cycle_r + 1;
-    gsu_clock_en <= (gsu_cycle_r == 2'b10);
+    // pause: hold the execution clock-enable low.  The divider keeps counting so
+    // the GSU resumes in phase, and the memory FSMs are not gated, so in-flight
+    // fetches drain.  Driven by the $202C pause only; the hook window yields the
+    // ROM arbiter but leaves the GSU running.
+    // While a halt is requested but not yet frozen, override the pause so a
+    // mid-program GSU can run to completion; once frozen, hold unconditionally.
+    gsu_clock_en <= ~((pause & ~(ss_halt_r & ~ss_frozen_r)) | ss_frozen_r)
+                    & (gsu_cycle_r == 2'b10);
   end
 end
+
 
 // Assert clock enable every 4 FPGA clocks.  Delays are calculated in
 // terms of GSU clocks so this is used to align transitions and
@@ -553,9 +574,11 @@ wire [8:0] debug_cache_addr;
 wire [7:0] debug_cache_wrdata;
 wire [7:0] debug_cache_rddata;
 
-assign cache_wren   = SFR_GO ? cache_gsu_wren_r   : cache_mmio_wren_r;
-assign cache_addr   = SFR_GO ? cache_gsu_addr_r   : cache_mmio_addr_r;
-assign cache_wrdata = SFR_GO ? cache_gsu_wrdata_r : cache_mmio_wrdata_r;
+// While frozen the GSU issues nothing, so the cache port goes to the MMIO path even
+// after a dirty freeze: $3100 is how the handler captures/restores the cache.
+assign cache_wren   = (SFR_GO & ~ss_frozen_r) ? cache_gsu_wren_r   : cache_mmio_wren_r;
+assign cache_addr   = (SFR_GO & ~ss_frozen_r) ? cache_gsu_addr_r   : cache_mmio_addr_r;
+assign cache_wrdata = (SFR_GO & ~ss_frozen_r) ? cache_gsu_wrdata_r : cache_mmio_wrdata_r;
 
 assign debug_cache_wren = 0;
 assign debug_cache_addr = {~pgm_addr_r[8],pgm_addr_r[7:0]};
@@ -619,12 +642,66 @@ reg        snes_writereg_r; initial snes_writereg_r = 0;
 reg        snes_writebuf_val_r; initial snes_writebuf_val_r = 0;
 reg        snes_writebuf_reg_r;
 reg        snes_writebuf_gpr_r;
+reg        snes_writebuf_ss_r; initial snes_writebuf_ss_r = 0;
 reg [8:0]  snes_writebuf_addr_r;
 reg [7:0]  snes_writebuf_data_r;
 
 reg        snes_readbuf_val_r; initial snes_readbuf_val_r = 0;
 
 reg        idle_r; initial idle_r = 0;
+
+// --- relocated for XST (mk2): decls/logic must precede first use ---
+reg [7:0]  PIXBUF_VALID_r[1:0];
+reg [15:0] PIXBUF_OFFSET_r[1:0];
+reg [7:0]  PIXBUF_r[1:0][7:0];
+reg        PIXBUF_OBJ_r[1:0];
+reg [1:0]  PIXBUF_HT_r[1:0];
+reg [1:0]  PIXBUF_MD_r[1:0];
+reg        PIXBUF_HEAD_r;
+
+//-------------------------------------------------------------------
+// SAVESTATE FREEZE
+//-------------------------------------------------------------------
+// Halt protocol (window $FE bit0, same semantics as the SA-1 $7FF): on a request,
+// wait until the GSU program ends (GO==0, exe FSM idle, 16-cycle settle so the
+// memory pipes drain).  Games run GSU programs in sub-frame bursts, so this
+// converges even while the S-CPU spins in the hook.  A ~44ms saturating timeout
+// freezes anyway and latches ss_dirty_r: such a capture may lose an in-flight
+// program on load.
+always @(posedge CLK) begin
+  if (RST) begin
+    ss_halt_r <= 0; ss_frozen_r <= 0; ss_dirty_r <= 0;
+    ss_wait_r <= 0; ss_settle_r <= 0;
+  end
+  else begin
+    // halt control write (window $FE): committed on the raw clock so the
+    // request works while the GSU still runs
+    if (snes_writebuf_val_r & snes_writebuf_ss_r & ~gsu_clock_en
+        & (snes_writebuf_addr_r[7:0] == 8'hFE)) begin
+      ss_halt_r <= snes_writebuf_data_r[0];
+      if (snes_writebuf_data_r[0]) begin
+        ss_dirty_r <= 0; ss_wait_r <= 0; ss_settle_r <= 0;
+      end
+    end
+    if (~ss_halt_r) begin
+      ss_frozen_r <= 0; ss_wait_r <= 0; ss_settle_r <= 0;
+    end
+    else if (~ss_frozen_r) begin
+      if (~SFR_GO & exe_idle) begin
+        if (&ss_settle_r) ss_frozen_r <= 1;
+        else              ss_settle_r <= ss_settle_r + 1;
+      end
+      else begin
+        ss_settle_r <= 0;
+        if (&ss_wait_r) begin
+          ss_frozen_r <= 1;
+          ss_dirty_r  <= 1;
+        end
+        else ss_wait_r <= ss_wait_r + 1;
+      end
+    end
+  end
+end
 
 always @(posedge CLK) begin
   if (RST) begin
@@ -666,21 +743,50 @@ always @(posedge CLK) begin
   else begin
     // True data enable.  This assumes we need unmapped read addresses to be openbus.
     // Register Read
-    if (enable_r) begin
+    if (enable_r | ss_en_r) begin
       if (SNES_RD_start) begin
         if (~|addr_in_r[9:8]) begin
           casex (addr_in_r[7:0])
-            ADDR_GPRL : begin data_out_r <= REG_r[addr_in_r[4:1]][7:0];  if (~SFR_GO) data_enable_r <= 1; end
-            ADDR_GPRH : begin data_out_r <= REG_r[addr_in_r[4:1]][15:8]; if (~SFR_GO) data_enable_r <= 1; end
+            ADDR_GPRL : begin data_out_r <= REG_r[addr_in_r[4:1]][7:0];  if (~SFR_GO | ss_frozen_r) data_enable_r <= 1; end
+            ADDR_GPRH : begin data_out_r <= REG_r[addr_in_r[4:1]][15:8]; if (~SFR_GO | ss_frozen_r) data_enable_r <= 1; end
 
             ADDR_SFR  : begin data_out_r <= SFR_r[7:0];  data_enable_r <= 1; end
             ADDR_SFR+1: begin data_out_r <= SFR_r[15:8]; data_enable_r <= 1; end
-            ADDR_PBR  : begin data_out_r <= PBR_r;       if (~SFR_GO) data_enable_r <= 1; end
-            ADDR_ROMBR: begin data_out_r <= ROMBR_r;     if (~SFR_GO) data_enable_r <= 1; end
+            ADDR_PBR  : begin data_out_r <= PBR_r;       if (~SFR_GO | ss_frozen_r) data_enable_r <= 1; end
+            ADDR_ROMBR: begin data_out_r <= ROMBR_r;     if (~SFR_GO | ss_frozen_r) data_enable_r <= 1; end
             ADDR_VCR  : begin data_out_r <= VCR_r;       data_enable_r <= 1; end
-            ADDR_RAMBR: begin data_out_r <= RAMBR_r;     if (~SFR_GO) data_enable_r <= 1; end
-            ADDR_CBR+0: begin data_out_r <= CBR_r[7:0];  if (~SFR_GO) data_enable_r <= 1; end
-            ADDR_CBR+1: begin data_out_r <= CBR_r[15:8]; if (~SFR_GO) data_enable_r <= 1; end
+            ADDR_RAMBR: begin data_out_r <= RAMBR_r;     if (~SFR_GO | ss_frozen_r) data_enable_r <= 1; end
+            ADDR_CBR+0: begin data_out_r <= CBR_r[7:0];  if (~SFR_GO | ss_frozen_r) data_enable_r <= 1; end
+            ADDR_CBR+1: begin data_out_r <= CBR_r[15:8]; if (~SFR_GO | ss_frozen_r) data_enable_r <= 1; end
+            // window extras: expose the write-only config regs and the internal
+            // plot/pixel state for capture, gated so native MMIO is unchanged.
+            ADDR_BRAMR: if (ss_en_r) begin data_out_r <= BRAMR_r;               data_enable_r <= 1; end
+            ADDR_CFGR : if (ss_en_r) begin data_out_r <= CFGR_r;                data_enable_r <= 1; end
+            ADDR_SCBR : if (ss_en_r) begin data_out_r <= SCBR_r;                data_enable_r <= 1; end
+            ADDR_CLSR : if (ss_en_r) begin data_out_r <= CLSR_r;                data_enable_r <= 1; end
+            ADDR_SCMR : if (ss_en_r) begin data_out_r <= SCMR_r;                data_enable_r <= 1; end
+            8'h40     : if (ss_en_r) begin data_out_r <= COLR_r;                data_enable_r <= 1; end
+            8'h41     : if (ss_en_r) begin data_out_r <= POR_r;                 data_enable_r <= 1; end
+            8'h42     : if (ss_en_r) begin data_out_r <= {4'h0,SREG_r};         data_enable_r <= 1; end
+            8'h43     : if (ss_en_r) begin data_out_r <= {4'h0,DREG_r};         data_enable_r <= 1; end
+            8'h44     : if (ss_en_r) begin data_out_r <= cache_val_r[7:0];      data_enable_r <= 1; end
+            8'h45     : if (ss_en_r) begin data_out_r <= cache_val_r[15:8];     data_enable_r <= 1; end
+            8'h46     : if (ss_en_r) begin data_out_r <= cache_val_r[23:16];    data_enable_r <= 1; end
+            8'h47     : if (ss_en_r) begin data_out_r <= cache_val_r[31:24];    data_enable_r <= 1; end
+            8'h48     : if (ss_en_r) begin data_out_r <= {5'h0,ss_dirty_r,SFR_GO,ss_frozen_r}; data_enable_r <= 1; end
+            8'h50     : if (ss_en_r) begin data_out_r <= PIXBUF_VALID_r[0];         data_enable_r <= 1; end
+            8'h51     : if (ss_en_r) begin data_out_r <= PIXBUF_OFFSET_r[0][7:0];   data_enable_r <= 1; end
+            8'h52     : if (ss_en_r) begin data_out_r <= PIXBUF_OFFSET_r[0][15:8];  data_enable_r <= 1; end
+            8'h53     : if (ss_en_r) begin data_out_r <= {3'h0,PIXBUF_MD_r[0],PIXBUF_HT_r[0],PIXBUF_OBJ_r[0]}; data_enable_r <= 1; end
+            8'b01011xxx: if (ss_en_r) begin data_out_r <= PIXBUF_r[0][addr_in_r[2:0]]; data_enable_r <= 1; end // $58-$5F
+            8'h60     : if (ss_en_r) begin data_out_r <= PIXBUF_VALID_r[1];         data_enable_r <= 1; end
+            8'h61     : if (ss_en_r) begin data_out_r <= PIXBUF_OFFSET_r[1][7:0];   data_enable_r <= 1; end
+            8'h62     : if (ss_en_r) begin data_out_r <= PIXBUF_OFFSET_r[1][15:8];  data_enable_r <= 1; end
+            8'h63     : if (ss_en_r) begin data_out_r <= {3'h0,PIXBUF_MD_r[1],PIXBUF_HT_r[1],PIXBUF_OBJ_r[1]}; data_enable_r <= 1; end
+            8'b01101xxx: if (ss_en_r) begin data_out_r <= PIXBUF_r[1][addr_in_r[2:0]]; data_enable_r <= 1; end // $68-$6F
+            8'h70     : if (ss_en_r) begin data_out_r <= {7'h0,PIXBUF_HEAD_r};      data_enable_r <= 1; end
+            8'hFE     : if (ss_en_r) begin data_out_r <= {7'h0,ss_frozen_r};        data_enable_r <= 1; end
+            8'hFF     : if (ss_en_r) begin data_out_r <= 8'h5B;                     data_enable_r <= 1; end // magic
           endcase
         end
         else begin
@@ -688,7 +794,7 @@ always @(posedge CLK) begin
           cache_mmio_addr_r <= {~addr_in_r[8],addr_in_r[7:0]};
         end
       end
-      else if (|addr_in_r[9:8]) begin
+      else if (|addr_in_r[9:8] & ~ss_en_r) begin
         data_out_r <= cache_rddata;
       end
     end
@@ -697,9 +803,13 @@ always @(posedge CLK) begin
     end
 
     // Register Write Buffer.  snes writes are sent on non-GSU clocks
-    if (SNES_WR_end & enable_r) begin
+    if (SNES_WR_end & (enable_r | ss_en_r)) begin
       snes_writebuf_val_r  <= 1;
-      snes_writebuf_reg_r  <= ~|addr_in_r[9:8];
+      snes_writebuf_ss_r   <= ss_en_r;
+      // $00-$3F of the savestate window reuses the native register write
+      // semantics wholesale (the restore writes SFR last, so the R15-high
+      // GO side effect is overwritten by the saved GO bit)
+      snes_writebuf_reg_r  <= ~|addr_in_r[9:8] & (~ss_en_r | ~|addr_in_r[7:6]);
       snes_writebuf_gpr_r  <= ~|addr_in_r[9:5];
       snes_writebuf_addr_r <= addr_in_r[8:0];
       snes_writebuf_data_r <= data_in_r;
@@ -708,6 +818,7 @@ always @(posedge CLK) begin
       snes_writebuf_val_r <= 0;
       snes_writebuf_reg_r <= 0;
       snes_writebuf_gpr_r <= 0;
+      snes_writebuf_ss_r  <= 0;
     end
 
     if (SNES_RD_start && enable_r && addr_in_r[9:0] == {2'h0,ADDR_SFR+1}) begin
@@ -737,6 +848,16 @@ always @(posedge CLK) begin
       r2i_clear_r <= 0;
     end
 
+    // savestate normalize ($F0): kill any cache flush pended by the restore's
+    // native PBR/SFR writes -- on a dirty freeze idle_r may never fire while
+    // frozen, and the pended flush would zap the restored cache_val/CBR after
+    // the unfreeze.  Runs last in this block so it overrides the chain above.
+    if (snes_writebuf_val_r & snes_writebuf_ss_r & ~gsu_clock_en
+        & (snes_writebuf_addr_r[7:0] == 8'hF0)) begin
+      r2i_flush_r <= 0;
+      r2i_clear_r <= 0;
+    end
+
     // Registers that can be modifed by both
     if (snes_writebuf_val_r & ~gsu_clock_en) begin
       if (snes_writebuf_reg_r) begin
@@ -751,6 +872,15 @@ always @(posedge CLK) begin
           ADDR_SCBR : SCBR_r <= snes_writebuf_data_r;
           ADDR_CLSR : CLSR_r[0] <= snes_writebuf_data_r[0];
           ADDR_SCMR : SCMR_r[5:0] <= snes_writebuf_data_r[5:0];
+        endcase
+      end
+      else if (snes_writebuf_ss_r) begin
+        // savestate window-only registers (restore path, mk3)
+        case (snes_writebuf_addr_r[7:0])
+          8'h40: COLR_r <= snes_writebuf_data_r;
+          8'h41: POR_r  <= snes_writebuf_data_r;
+          8'h42: SREG_r <= snes_writebuf_data_r[3:0];
+          8'h43: DREG_r <= snes_writebuf_data_r[3:0];
         endcase
       end
       else begin
@@ -1074,13 +1204,6 @@ assign RAM_BUS_WRDATA = ram_bus_data_r[7:0];
 //-------------------------------------------------------------------
 
 // WriteBuffers
-reg [7:0]  PIXBUF_VALID_r[1:0];
-reg [15:0] PIXBUF_OFFSET_r[1:0];
-reg [7:0]  PIXBUF_r[1:0][7:0];
-reg        PIXBUF_OBJ_r[1:0];
-reg [1:0]  PIXBUF_HT_r[1:0];
-reg [1:0]  PIXBUF_MD_r[1:0];
-reg        PIXBUF_HEAD_r;
 
 reg        bmp_mode_r;
 reg [3:0]  bmp_bppm1_r;
@@ -1201,6 +1324,15 @@ always @(posedge CLK) begin
       // swap the buffers
       PIXBUF_HEAD_r <= ~PIXBUF_HEAD_r;
     end
+
+    // savestate window restore (mk3): pixel cache valid masks + head
+    if (snes_writebuf_val_r & snes_writebuf_ss_r & ~gsu_clock_en) begin
+      case (snes_writebuf_addr_r[7:0])
+        8'h50: PIXBUF_VALID_r[0] <= snes_writebuf_data_r;
+        8'h60: PIXBUF_VALID_r[1] <= snes_writebuf_data_r;
+        8'h70: PIXBUF_HEAD_r     <= snes_writebuf_data_r[0];
+      endcase
+    end
   end
 end
 
@@ -1274,17 +1406,53 @@ always @(posedge CLK) begin
       ST_BMP_END: begin
         // this state signals completion to EXE
         //if (bmp_waitcnt_r == 0) begin
+`ifndef MK2
           if (bmp_mode_r == BMP_MODE_PLOT) begin
             // write offset and color.  valid handled in that pipe
             PIXBUF_OFFSET_r[PIXBUF_HEAD_r]       <= bmp_offset_r;
             PIXBUF_r[PIXBUF_HEAD_r][bmp_index_r] <= bmp_colr_r;
           end
+`endif
           // RPIX gets the data directly from the local color register
 
           BMP_STATE <= ST_BMP_IDLE;
         //end
       end
     endcase
+
+`ifdef MK3
+    // savestate window restore (mk3): pixel cache contents
+    if (snes_writebuf_val_r & snes_writebuf_ss_r & ~gsu_clock_en) begin
+      casex (snes_writebuf_addr_r[7:0])
+        8'h51: PIXBUF_OFFSET_r[0][7:0]  <= snes_writebuf_data_r;
+        8'h52: PIXBUF_OFFSET_r[0][15:8] <= snes_writebuf_data_r;
+        8'h61: PIXBUF_OFFSET_r[1][7:0]  <= snes_writebuf_data_r;
+        8'h62: PIXBUF_OFFSET_r[1][15:8] <= snes_writebuf_data_r;
+        8'b01011xxx: PIXBUF_r[0][snes_writebuf_addr_r[2:0]] <= snes_writebuf_data_r; // $58-$5F
+        8'b01101xxx: PIXBUF_r[1][snes_writebuf_addr_r[2:0]] <= snes_writebuf_data_r; // $68-$6F
+      endcase
+    end
+`endif
+`ifdef MK2
+    // mk2: the plot pipeline and the savestate window-restore share ONE write
+    // driver for PIXBUF_r / PIXBUF_OFFSET_r (XST rejects two drivers on a reg
+    // array).  Restore (frozen) has priority over the plot commit (running);
+    // the two never coincide.  Same decode/writes as the mk3 paths above/plot.
+    if (snes_writebuf_val_r & snes_writebuf_ss_r & ~gsu_clock_en) begin
+      casex (snes_writebuf_addr_r[7:0])
+        8'h51: PIXBUF_OFFSET_r[0][7:0]  <= snes_writebuf_data_r;
+        8'h52: PIXBUF_OFFSET_r[0][15:8] <= snes_writebuf_data_r;
+        8'h61: PIXBUF_OFFSET_r[1][7:0]  <= snes_writebuf_data_r;
+        8'h62: PIXBUF_OFFSET_r[1][15:8] <= snes_writebuf_data_r;
+        8'b01011xxx: PIXBUF_r[0][snes_writebuf_addr_r[2:0]] <= snes_writebuf_data_r; // $58-$5F
+        8'b01101xxx: PIXBUF_r[1][snes_writebuf_addr_r[2:0]] <= snes_writebuf_data_r; // $68-$6F
+      endcase
+    end
+    else if (BMP_STATE == ST_BMP_END & bmp_mode_r == BMP_MODE_PLOT) begin
+      PIXBUF_OFFSET_r[PIXBUF_HEAD_r]       <= bmp_offset_r;
+      PIXBUF_r[PIXBUF_HEAD_r][bmp_index_r] <= bmp_colr_r;
+    end
+`endif
   end
 end
 
@@ -1546,6 +1714,22 @@ always @(posedge CLK) begin
       cache_val_r[cache_mmio_addr_r[8:4]] <= 1;
     end
 
+`ifdef MK3
+    // savestate window restore (mk3): CBR + exact cache valid mask (written
+    // AFTER the $3100 cache image, whose line injections set spurious bits)
+    if (snes_writebuf_val_r & snes_writebuf_ss_r & ~gsu_clock_en) begin
+      case (snes_writebuf_addr_r[7:0])
+        8'h3E: CBR_r[7:4]   <= snes_writebuf_data_r[7:4];
+        8'h3F: CBR_r[15:8]  <= snes_writebuf_data_r;
+        8'h44: cache_val_r[7:0]   <= snes_writebuf_data_r;
+        8'h45: cache_val_r[15:8]  <= snes_writebuf_data_r;
+        8'h46: cache_val_r[23:16] <= snes_writebuf_data_r;
+        8'h47: cache_val_r[31:24] <= snes_writebuf_data_r;
+      endcase
+    end
+`endif
+
+`ifndef MK2
     if (r2i_flush_r & r2i_clear_r & idle_r) begin
       CBR_r[15:4] <= 0;
     end
@@ -1555,6 +1739,33 @@ always @(posedge CLK) begin
         gsu_cache_cbr_r <= gsu_cache_cbr_r + 1;
       end
     end
+`else
+    // mk2: CBR restore ($3E/$3F) shares ONE write driver with the internal
+    // cache logic (XST:528).  cache_val restore ($44-$47) is a separate driver
+    // (it did not multi-source).  Restore only fires while frozen; the internal
+    // paths only while running -- mutually exclusive.
+    if (snes_writebuf_val_r & snes_writebuf_ss_r & ~gsu_clock_en
+        & (snes_writebuf_addr_r[7:0] == 8'h3E))
+      CBR_r[7:4]  <= snes_writebuf_data_r[7:4];
+    else if (snes_writebuf_val_r & snes_writebuf_ss_r & ~gsu_clock_en
+        & (snes_writebuf_addr_r[7:0] == 8'h3F))
+      CBR_r[15:8] <= snes_writebuf_data_r;
+    else if (r2i_flush_r & r2i_clear_r & idle_r)
+      CBR_r[15:4] <= 0;
+    else if (pipeline_advance & op_complete & e2r_wcbr_r) begin
+      CBR_r[15:4] <= e2r_cbr_r[15:4];
+      gsu_cache_cbr_r <= gsu_cache_cbr_r + 1;
+    end
+
+    if (snes_writebuf_val_r & snes_writebuf_ss_r & ~gsu_clock_en) begin
+      case (snes_writebuf_addr_r[7:0])
+        8'h44: cache_val_r[7:0]   <= snes_writebuf_data_r;
+        8'h45: cache_val_r[15:8]  <= snes_writebuf_data_r;
+        8'h46: cache_val_r[23:16] <= snes_writebuf_data_r;
+        8'h47: cache_val_r[31:24] <= snes_writebuf_data_r;
+      endcase
+    end
+`endif
 
     // PBR is updated by SNES or JMP instructions.
     fetch_rom_r <= (PBR_r < 8'h60);
@@ -2630,6 +2841,26 @@ always @(posedge CLK) begin
       end
 
     endcase
+
+    // savestate window restore + normalize (mk3).  ROMBR/RAMBR live in this
+    // block (native writes only happen via the ROMB/RAMB instructions); the
+    // $F0 normalize re-idles the exe pipeline so the restored GSU refetches
+    // cleanly at the restored R15/CBR when the game next kicks it.  Placed
+    // last so it overrides the FSM case.
+    if (snes_writebuf_val_r & snes_writebuf_ss_r & ~gsu_clock_en) begin
+      case (snes_writebuf_addr_r[7:0])
+        8'h36: ROMBR_r <= snes_writebuf_data_r;
+        8'h3C: RAMBR_r <= snes_writebuf_data_r[0];
+        8'hF0: begin
+          EXE_STATE           <= ST_EXE_IDLE;
+          exe_opsize_r        <= 0;
+          exe_operand_valid_r <= 0;
+          exe_branch_r        <= 0;
+          e2r_val_r           <= 0;
+          e2i_flush_r         <= 0;
+        end
+      endcase
+    end
   end
 end
 

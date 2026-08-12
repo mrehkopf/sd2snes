@@ -508,6 +508,7 @@ set_global_assignment -name VERILOG_FILE main.v
 set_global_assignment -name VERILOG_FILE dac.v
 set_global_assignment -name VERILOG_FILE cheat.v
 set_global_assignment -name VERILOG_FILE address.v
+set_global_assignment -name VERILOG_FILE regshadow.v
 set_global_assignment -name QIP_FILE ip/mk3/snescmd_buf.qip
 set_global_assignment -name QIP_FILE ip/mk3/msu_databuf.qip
 set_global_assignment -name QIP_FILE ip/mk3/dac_buf.qip

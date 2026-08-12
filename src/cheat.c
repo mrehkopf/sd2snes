@@ -2,6 +2,7 @@
 #include "fileops.h"
 #include "uart.h"
 #include "memory.h"
+#include "fpga.h"
 #include "fpga_spi.h"
 #include "snes.h"
 #include "cheat.h"
@@ -76,6 +77,8 @@ void cheat_program_single(cheat_patch_record_t *cheat) {
   /* apply cheat to FPGA / NMI hook */
   if(is_wram_cheat) {
     cheat_program_ram_cheat(wram_index++, cheat);
+  } else if(cheat_rom_psram_mode()) {
+    /* no comparator slots here: written into the image at deassert_reset() */
   } else if(rom_index < 6) {
     enable_mask |= (1 << rom_index);
     cheat_program_rom_cheat(rom_index++, cheat);
@@ -99,6 +102,82 @@ void cheat_program_ram_cheat(int index, cheat_patch_record_t *cheat) {
   fpga_write_snescmd(cheat->fields.patchbank);
   fpga_write_snescmd(ASM_RTS);
   printf("RAM cheat #%d: %02x%04x %02x\n", index, cheat->fields.patchbank, cheat->fields.patchaddr, cheat->fields.patchvalue);
+}
+
+/* ROM cheats without FPGA comparators: the Mk.II GSU and CX4 cores had to drop
+   theirs to fit the savestate machinery, so there a ROM code is written straight
+   into the image in PSRAM, with the original byte kept in the record's spare tail.
+   On a coprocessor core that also covers address mirrors and the chip's own
+   fetches, which never went through the comparators.  The translation below uses
+   each core's static map, so a game that rebanks a patched region at runtime would
+   diverge; neither CX4 game does and the GSU map is static. */
+
+uint8_t cheat_rom_psram_mode(void) {
+#ifdef CONFIG_MK2
+  return romprops.fpga_conf == FPGA_GSU
+      || romprops.fpga_conf == FPGA_CX4;
+#else
+  return 0;
+#endif
+}
+
+/* Bus address -> offset in the loaded image, or -1 when not ROM-backed.  Mirrors
+   collapse through the ROM size mask, as they do in the FPGA. */
+static int32_t cheat_rom_code_offset(uint32_t addr) {
+  uint32_t bank = (addr >> 16) & 0xff;
+  uint32_t ofs  = addr & 0xffff;
+  uint32_t off;
+  uint32_t mask = romprops.romsize_bytes ? (romprops.romsize_bytes - 1) : 0x3fffff;
+  if(romprops.fpga_conf == FPGA_GSU) {          /* GSU hybrid Lo/Hi map (address.v) */
+    if(bank & 0x40) {
+      /* $40-5F/$C0-DF:0000-FFFF -> SNES_ADDR[21:0]; $60-7D/$E0-FF are SAVERAM */
+      if((bank & 0x60) == 0x60) return -1;
+      off = addr & 0x3fffff;
+    } else {
+      /* $00-3F/$80-BF -> SNES_ADDR[14:0] (both halves); $6000-7FFF is SAVERAM */
+      if((ofs & 0xe000) == 0x6000) return -1;
+      off = ((bank & 0x7f) << 15) | (ofs & 0x7fff);
+    }
+  } else if(romprops.fpga_conf == FPGA_CX4) {   /* CX4: plain LoROM (cx4/address.v) */
+    /* offsets < $8000 are never ROM here: CX4 MMIO and SAVERAM live there */
+    if(!(ofs & 0x8000)) return -1;
+    off = ((bank & 0x7f) << 15) | (ofs & 0x7fff);
+  } else return -1;
+  return (int32_t)(off & mask);
+}
+
+/* With the codes in the image rather than in comparators, the in-game cheat toggle
+   no longer affects ROM codes: they follow CFG.enable_cheats as of game load.
+   WRAM codes are unaffected. */
+void cheat_rom_psram_apply(void) {
+  if(!cheat_rom_psram_mode()) return;
+  int count = sram_readshort(SRAM_NUM_CHEATS);
+  if(count < 0) count = 0;
+  if(count > 2048) count = 2048;   /* records live in banks D0-DF: 2048 slots */
+  for(int i = 0; i < count; i++) {
+    uint32_t rec = SRAM_CHEAT_ADDR + 512u * (uint32_t)i;
+    uint8_t flags = sram_readbyte(rec);
+    uint8_t np = sram_readbyte(rec + 255);
+    if(np > CHEAT_NUM_CODES_PER_CHEAT) np = CHEAT_NUM_CODES_PER_CHEAT;
+    uint8_t want = CFG.enable_cheats && (flags & CHEAT_FLAG_ENABLE);
+    for(uint8_t c = 0; c < np; c++) {
+      uint32_t code;
+      sram_readblock(&code, rec + 256 + 4u * c, 4);
+      if(cheat_is_wram_cheat(code)) continue;   /* WRAM codes stay hook-based */
+      int32_t off = cheat_rom_code_offset(code >> 8);
+      if(off < 0) continue;
+      uint32_t tgt = (uint32_t)off;             /* the image loads at PSRAM 0 */
+      uint8_t applied = sram_readbyte(rec + CHEAT_REC_APPLIED_OFS + c);
+      if(want && applied != 1) {
+        sram_writebyte(sram_readbyte(tgt), rec + CHEAT_REC_ORIG_OFS + c);
+        sram_writebyte(code & 0xff, tgt);
+        sram_writebyte(1, rec + CHEAT_REC_APPLIED_OFS + c);
+      } else if(!want && applied == 1) {
+        sram_writebyte(sram_readbyte(rec + CHEAT_REC_ORIG_OFS + c), tgt);
+        sram_writebyte(0, rec + CHEAT_REC_APPLIED_OFS + c);
+      }
+    }
+  }
 }
 
 void cheat_load_to_menu(int index, cheat_record_t *cheat) {
@@ -204,6 +283,15 @@ void cheat_yaml_load(uint8_t* romfilename) {
     }
     /* a single cheat + codes have been read, put in RAM */
     cheat_load_to_menu(cheat_idx, &cheat);
+    /* The image was just (re)streamed, so nothing in it is patched: clear the
+       per-code "applied" flags or the apply pass would skip the write and later
+       restore a stale original over live data. */
+    if(cheat_rom_psram_mode()) {
+      uint8_t zeroes[CHEAT_NUM_CODES_PER_CHEAT];
+      memset(zeroes, 0, sizeof(zeroes));
+      sram_writeblock(zeroes, SRAM_CHEAT_ADDR + 512u * (uint32_t)cheat_idx
+                              + CHEAT_REC_APPLIED_OFS, sizeof(zeroes));
+    }
     cheat_idx++;
   }
   sram_writeshort((uint16_t)cheat_idx, SRAM_NUM_CHEATS);

@@ -41,11 +41,13 @@ module pll (
 	areset,
 	inclk0,
 	c0,
+	c1,
 	locked);
 
 	input	  areset;
 	input	  inclk0;
 	output	  c0;
+	output	  c1;
 	output	  locked;
 `ifndef ALTERA_RESERVED_QIS
 // synopsys translate_off
@@ -62,6 +64,7 @@ module pll (
 	wire [1:0] sub_wire1 = {sub_wire2, sub_wire0};
 	wire [0:0] sub_wire4 = sub_wire3[0:0];
 	wire  c0 = sub_wire4;
+	wire  c1 = sub_wire3[1];
 	wire  locked = sub_wire5;
 
 	altpll	altpll_component (
@@ -108,6 +111,10 @@ module pll (
 		altpll_component.clk0_duty_cycle = 50,
 		altpll_component.clk0_multiply_by = 10,
 		altpll_component.clk0_phase_shift = "0",
+		altpll_component.clk1_divide_by = 1,
+		altpll_component.clk1_duty_cycle = 50,
+		altpll_component.clk1_multiply_by = 12,
+		altpll_component.clk1_phase_shift = "0",
 		altpll_component.compensate_clock = "CLK0",
 		altpll_component.inclk0_input_frequency = 125000,
 		altpll_component.intended_device_family = "Cyclone IV E",
@@ -141,7 +148,7 @@ module pll (
 		altpll_component.port_scanread = "PORT_UNUSED",
 		altpll_component.port_scanwrite = "PORT_UNUSED",
 		altpll_component.port_clk0 = "PORT_USED",
-		altpll_component.port_clk1 = "PORT_UNUSED",
+		altpll_component.port_clk1 = "PORT_USED",
 		altpll_component.port_clk2 = "PORT_UNUSED",
 		altpll_component.port_clk3 = "PORT_UNUSED",
 		altpll_component.port_clk4 = "PORT_UNUSED",

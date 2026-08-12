@@ -51,6 +51,24 @@ reg irq_enable = 0;
 reg holdoff_enable = 0; // temp disable hooks after reset
 reg buttons_enable = 0;
 reg wram_present = 0;
+// In-game save/load states run on this core.  savestate_force_entry keeps the
+// nmi_savestate branch routed while a savestate is in flight with the buttons
+// RELEASED, which the resume protocol needs: the next hook entry has to bump
+// CS_STATE after the handler forced a release, and without it the stub branches to
+// nmi_exit instead.  Pulse-latched: set at a branch1 fetch with buttons held,
+// cleared at the unlock-drop.
+reg savestate_enable = 0;
+reg savestate_force_entry_enable_strobe = 0;
+reg savestate_force_entry_disable_strobe = 0;
+reg savestate_force_entry = 0;
+
+always @(posedge clk) begin
+  if(savestate_force_entry_enable_strobe) begin
+    savestate_force_entry <= 1'b1;
+  end else if(savestate_force_entry_disable_strobe) begin
+    savestate_force_entry <= 1'b0;
+  end
+end
 wire branch_wram = cheat_enable & wram_present;
 
 reg auto_nmi_enable = 1;
@@ -196,6 +214,8 @@ always @(posedge clk) begin
     snescmd_unlock_r <= 0;
     snescmd_unlock_disable <= 0;
   end else begin
+    savestate_force_entry_enable_strobe <= 0;
+    savestate_force_entry_disable_strobe <= 0;
     if(SNES_rd_strobe) begin
       // *** GAME -> INGAME HOOK ***
       if(hook_enable_sync
@@ -209,6 +229,11 @@ always @(posedge clk) begin
       if(rst_match_bits[1] & |reset_unlock_r) begin
         snescmd_unlock_r <= 1;
       end
+      // arm the savestate force-entry latch when the hook redirect is taken with
+      // buttons held; it holds the nmi_savestate route through the button release.
+      if(branch1_enable & savestate_enable & |pad_data) begin
+        savestate_force_entry_enable_strobe <= 1;
+      end
     end
     // give some time to exit snescmd memory and jump to original vector
     // sta @NMI_VECT_DISABLE    1-2 (after effective write)
@@ -221,6 +246,8 @@ always @(posedge clk) begin
         end else if(snescmd_unlock_disable_countdown == 0) begin
           snescmd_unlock_r <= 0;
           snescmd_unlock_disable <= 0;
+          // drop the force-entry latch at the same unlock-drop point
+          savestate_force_entry_disable_strobe <= 1;
         end
       end
     end
@@ -302,12 +329,12 @@ always @(posedge clk) begin
       end else if(pgm_idx == 6) begin // set rom patch enable
         cheat_enable_mask <= pgm_in[5:0];
       end else if(pgm_idx == 7) begin // set/reset global enable / hooks
-      // pgm_in[13:8] are reset bit flags
-      // pgm_in[5:0] are set bit flags
-        {wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
-         <= ({wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
-          & ~pgm_in[13:8])
-          | pgm_in[5:0];
+      // pgm_in[14:8] are reset bit flags
+      // pgm_in[6:0] are set bit flags
+        {savestate_enable, wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
+         <= ({savestate_enable, wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
+          & ~pgm_in[14:8])
+          | pgm_in[6:0];
       end
     end
   end
@@ -352,7 +379,11 @@ always @* begin
         if(branch_wram) begin
           branch1_offset = 8'h3a; // nmi_patches
         end else begin
-          branch1_offset = 8'h43; // nmi_exit
+          if(savestate_enable & (savestate_force_entry | |pad_data)) begin
+            branch1_offset = 8'h3f; // nmi_savestate
+          end else begin
+            branch1_offset = 8'h43; // nmi_exit
+          end
         end
       end
     end else begin
@@ -370,7 +401,11 @@ always @* begin
     if(branch_wram) begin
       branch1_offset = 8'h3a;     // nmi_patches
     end else begin
-      branch1_offset = 8'h43;     // nmi_exit
+      if(savestate_enable & |pad_data) begin
+        branch1_offset = 8'h3f;   // nmi_savestate
+      end else begin
+        branch1_offset = 8'h43;   // nmi_exit
+      end
     end
   end
 end
@@ -381,7 +416,19 @@ always @* begin
   end else if(branch_wram) begin
     branch2_offset = 8'h00;       // nmi_patches
   end else begin
-    branch2_offset = 8'h09;       // nmi_exit
+    if(savestate_enable) begin
+      branch2_offset = 8'h05;     // nmi_savestate
+    end else begin
+      branch2_offset = 8'h09;     // nmi_exit
+    end
+  end
+end
+
+always @* begin
+  if(savestate_enable) begin
+    branch3_offset = 8'h00;       // nmi_savestate
+  end else begin
+    branch3_offset = 8'h04;       // nmi_exit
   end
 end
 

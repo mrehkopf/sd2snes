@@ -977,6 +977,8 @@ set_global_assignment -name VERILOG_FILE dac.v
 set_global_assignment -name VERILOG_FILE cheat.v
 set_global_assignment -name SDC_FILE main.sdc
 set_global_assignment -name VERILOG_FILE address.v
+set_global_assignment -name VERILOG_FILE ctx.v
+set_global_assignment -name VERILOG_FILE dma.v
 set_global_assignment -name QIP_FILE ip/mk3/sa1_div.qip
 set_global_assignment -name QIP_FILE ip/mk3/sa1_mult.qip
 set_global_assignment -name QIP_FILE ip/mk3/sa1_iram.qip

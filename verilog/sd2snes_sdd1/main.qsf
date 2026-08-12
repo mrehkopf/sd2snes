@@ -514,6 +514,7 @@ set_global_assignment -name VERILOG_FILE dac.v
 set_global_assignment -name VERILOG_FILE clk_test.v
 set_global_assignment -name VERILOG_FILE cheat.v
 set_global_assignment -name VERILOG_FILE address.v
+set_global_assignment -name VERILOG_FILE regshadow.v
 set_global_assignment -name SDC_FILE main.sdc
 set_global_assignment -name VHDL_FILE Serializer.vhd
 set_global_assignment -name VHDL_FILE SDD1_Core.vhd

@@ -18,6 +18,14 @@
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
+
+// SA-1 savestate machinery gate; Mk.III only (see address.v).
+`ifdef MK3
+`define SA1_SS_ACTIVE
+`elsif SA1_SS_MK2
+`define SA1_SS_ACTIVE
+`endif
+
 module cheat(
   input clk,
   input [7:0] SNES_PA,
@@ -34,6 +42,7 @@ module cheat(
   input branch3_enable,
   input pad_latch,
   input snes_ajr,
+  input ss_combo,        // FPGA-detected savestate gesture (from the ctx JOY1 capture)
   input SNES_cycle_start,
   input [2:0] pgm_idx,
   input pgm_we,
@@ -43,7 +52,13 @@ module cheat(
   output snescmd_unlock
 );
 
-//`define IRQ_HOOK_ENABLE
+// IRQ hook: games that run their vblank logic on IRQ with NMI disabled are
+// otherwise unreachable.  The auto_nmi/auto_irq heuristic picks the vector per
+// scene, as on the base core.  Enabled only together with the savestate
+// machinery, which brings the rate limit and gesture gate below.
+`ifdef SA1_SS_ACTIVE
+`define IRQ_HOOK_ENABLE
+`endif
 
 wire snescmd_wr_strobe = snescmd_enable & SNES_wr_strobe;
 
@@ -53,6 +68,29 @@ reg irq_enable = 0;
 reg holdoff_enable = 0; // temp disable hooks after reset
 reg buttons_enable = 0;
 reg wram_present = 0;
+// Savestate handler enable (bit 6 of pgm reg 7): routes the hook's branch offsets
+// into nmi_savestate.  Present on the base core, stripped from this one.
+reg savestate_enable = 0;
+// Keeps the nmi_savestate branch routed until the handler returns: after a
+// save/load it waits for the next hook entry with the buttons already released,
+// which |pad_data alone would never deliver.  Pulsed rather than latched as on the
+// base core, because here it also arms the IRQ redirect below.
+`ifdef SA1_SS_ACTIVE
+reg savestate_force_entry_enable_strobe = 0;
+reg savestate_force_entry_disable_strobe = 0;
+reg savestate_force_entry = 0;
+
+always @(posedge clk) begin
+  if(savestate_force_entry_enable_strobe) begin
+    savestate_force_entry <= 1'b1;
+  end else if(savestate_force_entry_disable_strobe) begin
+    savestate_force_entry <= 1'b0;
+  end
+end
+`else
+wire savestate_force_entry = 1'b0;
+`endif
+
 wire branch_wram = cheat_enable & wram_present;
 
 reg auto_nmi_enable = 1;
@@ -174,6 +212,31 @@ always @(posedge clk) begin
   end
 end
 
+// IRQ hook rate limit and gesture gate.  A raster effect fires an H-IRQ every
+// scanline, and the handler is far longer than the ~63us gap between them, so
+// hooking each one piles up handlers and the game hangs on its own delayed ISR.
+// Two defences: after hooking one IRQ, suppress the redirect for ~12ms so a raster
+// burst runs unhooked (the game's IRQ still vectors at full speed, only ours is
+// skipped), and arm it only while a savestate gesture is physically held, so
+// normal play sees no IRQ redirect at all.
+//   savestate_force_entry keeps it armed while a savestate is in flight and
+// bypasses the auto_nmi/auto_irq heuristic: the frozen save has no vector fetches,
+// so the usage window would roll over and unarm the very IRQ the resume waits for.
+`ifdef IRQ_HOOK_ENABLE
+reg [19:0] irq_hold = 0;
+wire irq_hold_ok = ~|irq_hold;
+wire irq_arm = irq_enable & irq_match_bits[1] & irq_hold_ok
+             & ((auto_irq_enable_sync & ss_combo) | savestate_force_entry);
+always @(posedge clk) begin
+  if(SNES_reset_strobe) irq_hold <= 0;
+  else if(SNES_rd_strobe & hook_enable_sync & irq_arm & (cpu_push_cnt == 4))
+    irq_hold <= 20'hfffff;
+  else if(|irq_hold) irq_hold <= irq_hold - 1'b1;
+end
+`else
+wire irq_arm = 1'b0;
+`endif
+
 // make patched vectors visible for last cycles of NMI/IRQ handling only
 always @(posedge clk) begin
   if(SNES_reset_strobe) begin
@@ -182,7 +245,7 @@ always @(posedge clk) begin
     if(hook_enable_sync
       & ((auto_nmi_enable_sync & nmi_enable & nmi_match_bits[1])
 `ifdef IRQ_HOOK_ENABLE
-        |(auto_irq_enable_sync & irq_enable & irq_match_bits[1])
+        | irq_arm
 `endif
         )
       & cpu_push_cnt == 4) begin
@@ -210,6 +273,10 @@ reg [6:0] snescmd_unlock_disable_countdown = 0;
 reg snescmd_unlock_disable = 0;
 
 always @(posedge clk) begin
+`ifdef SA1_SS_ACTIVE
+  savestate_force_entry_enable_strobe <= 0;
+  savestate_force_entry_disable_strobe <= 0;
+`endif
   if(SNES_reset_strobe) begin
     snescmd_unlock_r <= 0;
     snescmd_unlock_disable <= 0;
@@ -219,7 +286,7 @@ always @(posedge clk) begin
       if(hook_enable_sync
         & ((auto_nmi_enable_sync & nmi_enable & nmi_match_bits[1])
 `ifdef IRQ_HOOK_ENABLE
-          |(auto_irq_enable_sync & irq_enable & irq_match_bits[1])
+          | irq_arm
 `endif
           )
         & cpu_push_cnt == 4) begin
@@ -230,6 +297,13 @@ always @(posedge clk) begin
       if(rst_match_bits[1] & |reset_unlock_r) begin
         snescmd_unlock_r <= 1;
       end
+`ifdef SA1_SS_ACTIVE
+      // arm the savestate force-entry latch when the hook redirect is taken with
+      // buttons held; it holds the nmi_savestate route through the button release.
+      if(branch1_enable & savestate_enable & |pad_data) begin
+        savestate_force_entry_enable_strobe <= 1;
+      end
+`endif
     end
     // give some time to exit snescmd memory and jump to original vector
     // sta @NMI_VECT_DISABLE    1-2 (after effective write)
@@ -242,6 +316,10 @@ always @(posedge clk) begin
         end else if(snescmd_unlock_disable_countdown == 0) begin
           snescmd_unlock_r <= 0;
           snescmd_unlock_disable <= 0;
+`ifdef SA1_SS_ACTIVE
+          // drop the force-entry latch at the same unlock-drop point
+          savestate_force_entry_disable_strobe <= 1;
+`endif
         end
       end
     end
@@ -338,12 +416,12 @@ always @(posedge clk) begin
       end else if(pgm_idx == 6) begin // set rom patch enable
         cheat_enable_mask <= pgm_in[5:0];
       end else if(pgm_idx == 7) begin // set/reset global enable / hooks
-      // pgm_in[13:8] are reset bit flags
-      // pgm_in[5:0] are set bit flags
-        {wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
-         <= ({wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
-          & ~pgm_in[13:8])
-          | pgm_in[5:0];
+      // pgm_in[14:8] are reset bit flags
+      // pgm_in[6:0] are set bit flags
+        {savestate_enable, wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
+         <= ({savestate_enable, wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
+          & ~pgm_in[14:8])
+          | pgm_in[6:0];
       end
     end
   end
@@ -388,7 +466,11 @@ always @* begin
         if(branch_wram) begin
           branch1_offset = 8'h3a; // nmi_patches
         end else begin
-          branch1_offset = 8'h43; // nmi_exit
+          if(savestate_enable & (savestate_force_entry | |pad_data)) begin
+            branch1_offset = 8'h3f; // nmi_savestate
+          end else begin
+            branch1_offset = 8'h43; // nmi_exit
+          end
         end
       end
     end else begin
@@ -406,7 +488,11 @@ always @* begin
     if(branch_wram) begin
       branch1_offset = 8'h3a;     // nmi_patches
     end else begin
-      branch1_offset = 8'h43;     // nmi_exit
+      if(savestate_enable & |pad_data) begin
+        branch1_offset = 8'h3f;   // nmi_savestate
+      end else begin
+        branch1_offset = 8'h43;   // nmi_exit
+      end
     end
   end
 end
@@ -417,7 +503,19 @@ always @* begin
   end else if(branch_wram) begin
     branch2_offset = 8'h00;       // nmi_patches
   end else begin
-    branch2_offset = 8'h09;       // nmi_exit
+    if(savestate_enable) begin
+      branch2_offset = 8'h05;     // nmi_savestate
+    end else begin
+      branch2_offset = 8'h09;     // nmi_exit
+    end
+  end
+end
+
+always @* begin
+  if(savestate_enable) begin
+    branch3_offset = 8'h00;       // nmi_savestate
+  end else begin
+    branch3_offset = 8'h04;       // nmi_exit
   end
 end
 

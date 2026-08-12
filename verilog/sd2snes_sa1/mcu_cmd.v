@@ -18,6 +18,14 @@
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
+
+// SA-1 savestate machinery gate -- see the note in address.v.
+`ifdef MK3
+`define SA1_SS_ACTIVE
+`elsif SA1_SS_MK2
+`define SA1_SS_ACTIVE
+`endif
+
 module mcu_cmd(
   input clk,
   input cmd_ready,
@@ -91,6 +99,10 @@ module mcu_cmd(
   output reg [15:0] featurebits_out,
 
   output reg region_out,
+
+  // savestate halt (MCU-side debug handle; the SNES side uses the $E8:07FF
+  // scan-window control byte).  Never written on mk2, so it folds away there.
+  output reg sa1_ss_halt_out = 1'b0,
   // SNES sync/clk
   input snes_sysclk,
 
@@ -345,6 +357,10 @@ always @(posedge clk) begin
         endcase
       8'hee:
         region_out <= param_data[0];
+`ifdef SA1_SS_ACTIVE
+      8'hfb: // control SA-1 savestate halt (MCU debug; SNES side uses $E8:07FF)
+        sa1_ss_halt_out <= param_data[0];
+`endif
 `ifdef DEBUG
       8'hfa: // handles all group, index, value, invmask writes.  unit is responsible for decoding group for match
         case (spi_byte_cnt)

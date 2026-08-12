@@ -38,7 +38,6 @@ module cheat(
   input [2:0] pgm_idx,
   input pgm_we,
   input [31:0] pgm_in,
-  input gsu_vec_enable,
   output [7:0] data_out,
   output cheat_hit,
   output snescmd_unlock
@@ -55,6 +54,27 @@ reg irq_enable = 0;
 reg holdoff_enable = 0; // temp disable hooks after reset
 reg buttons_enable = 0;
 reg wram_present = 0;
+// In-game hooks: route the NMI/IRQ hook to the savestate handler (nmi_savestate).
+// The GSU supports full save/load states (mk2 and mk3), so the complete
+// force-entry latch machinery is required here (see below), same as the base core.
+reg savestate_enable = 0;
+// savestate_force_entry keeps the nmi_savestate branch routed while a savestate
+// is in flight with the buttons RELEASED (the resume-wait protocol requires the
+// NEXT hook entry to bump CS_STATE after the saveinputloop forced a release --
+// without it the stub branches to nmi_exit and the game parks black forever;
+// same lesson as the SA-1 port).  Pulse-latched: set at a branch1 fetch with
+// buttons held, cleared at the unlock-drop.
+reg savestate_force_entry_enable_strobe = 0;
+reg savestate_force_entry_disable_strobe = 0;
+reg savestate_force_entry = 0;
+
+always @(posedge clk) begin
+  if(savestate_force_entry_enable_strobe) begin
+    savestate_force_entry <= 1'b1;
+  end else if(savestate_force_entry_disable_strobe) begin
+    savestate_force_entry <= 1'b0;
+  end
+end
 wire branch_wram = cheat_enable & wram_present;
 
 reg auto_nmi_enable = 1;
@@ -78,8 +98,16 @@ wire vector_unlock = |vector_unlock_r;
 reg [1:0] reset_unlock_r = 2'b10;
 wire reset_unlock = |reset_unlock_r;
 
+// ROM-cheat comparators: Mk.III only.  On the Mk.II Spartan-3 the savestate
+// machinery does not fit next to them, so they are dropped there and ROM cheats
+// are instead patched straight into the PSRAM image by the MCU
+// (cheat_rom_psram_apply, src/cheat.c) -- which on this core is strictly better
+// anyway: it covers address mirrors and the coprocessor's own fetches, neither
+// of which ever went through the comparators.
+`ifndef MK2
 reg [23:0] cheat_addr[5:0];
 reg [7:0] cheat_data[5:0];
+`endif
 reg [5:0] cheat_enable_mask;
 
 reg snescmd_unlock_r = 0;
@@ -90,16 +118,20 @@ reg [7:0] return_vector = 8'hea;
 
 reg [7:0] branch1_offset = 8'h00;
 reg [7:0] branch2_offset = 8'h00;
-reg [7:0] branch3_offset = 8'h04;
+reg [7:0] branch3_offset;
 
 reg [15:0] pad_data = 0;
 
+`ifndef MK2
 wire [5:0] cheat_match_bits ={(cheat_enable_mask[5] & (SNES_ADDR == cheat_addr[5])),
                               (cheat_enable_mask[4] & (SNES_ADDR == cheat_addr[4])),
                               (cheat_enable_mask[3] & (SNES_ADDR == cheat_addr[3])),
                               (cheat_enable_mask[2] & (SNES_ADDR == cheat_addr[2])),
                               (cheat_enable_mask[1] & (SNES_ADDR == cheat_addr[1])),
                               (cheat_enable_mask[0] & (SNES_ADDR == cheat_addr[0]))};
+`else
+wire [5:0] cheat_match_bits = 6'h00;   // mk2: comparators dropped -> folds away
+`endif
 wire cheat_addr_match = |cheat_match_bits;
 
 wire [1:0] nmi_match_bits = {SNES_ADDR == 24'h00FFEA, SNES_ADDR == 24'h00FFEB};
@@ -112,13 +144,17 @@ wire rst_addr_match = |rst_match_bits;
 
 wire hook_enable = ~|hook_enable_count;
 
-assign data_out = cheat_match_bits[0] ? cheat_data[0]
+assign data_out =
+`ifndef MK2
+                  cheat_match_bits[0] ? cheat_data[0]
                 : cheat_match_bits[1] ? cheat_data[1]
                 : cheat_match_bits[2] ? cheat_data[2]
                 : cheat_match_bits[3] ? cheat_data[3]
                 : cheat_match_bits[4] ? cheat_data[4]
                 : cheat_match_bits[5] ? cheat_data[5]
-                : nmi_match_bits[1] ? 8'h10
+                :
+`endif
+                  nmi_match_bits[1] ? 8'h10
                 : irq_match_bits[1] ? 8'h10
                 : rst_match_bits[1] ? 8'h7D
                 : nmicmd_enable ? nmicmd
@@ -200,6 +236,8 @@ always @(posedge clk) begin
     snescmd_unlock_r <= 0;
     snescmd_unlock_disable <= 0;
   end else begin
+    savestate_force_entry_enable_strobe <= 0;
+    savestate_force_entry_disable_strobe <= 0;
     if(SNES_rd_strobe) begin
       // *** GAME -> INGAME HOOK ***
       if(hook_enable_sync
@@ -219,6 +257,9 @@ always @(posedge clk) begin
         snescmd_unlock_disable <= 0;
         snescmd_unlock_disable_countdown <= 0;
       end
+      if(branch1_enable & savestate_enable & |pad_data) begin
+        savestate_force_entry_enable_strobe <= 1;
+      end
     end
     // give some time to exit snescmd memory and jump to original vector
     // sta @NMI_VECT_DISABLE    1-2 (after effective write)
@@ -234,6 +275,7 @@ always @(posedge clk) begin
         end else if(snescmd_unlock_disable_countdown == 0) begin
           snescmd_unlock_r <= 0;
           snescmd_unlock_disable <= 0;
+          savestate_force_entry_disable_strobe <= 1;
         end
       end
     end
@@ -309,18 +351,21 @@ always @(posedge clk) begin
         snescmd_unlock_disable_strobe <= 1'b1;
       end
     end else if(pgm_we) begin
+`ifndef MK2
       if(pgm_idx < 6) begin
         cheat_addr[pgm_idx] <= pgm_in[31:8];
         cheat_data[pgm_idx] <= pgm_in[7:0];
-      end else if(pgm_idx == 6) begin // set rom patch enable
+      end else
+`endif
+      if(pgm_idx == 6) begin // set rom patch enable
         cheat_enable_mask <= pgm_in[5:0];
       end else if(pgm_idx == 7) begin // set/reset global enable / hooks
-      // pgm_in[13:8] are reset bit flags
-      // pgm_in[5:0] are set bit flags
-        {wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
-         <= ({wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
-          & ~pgm_in[13:8])
-          | pgm_in[5:0];
+      // pgm_in[14:8] are reset bit flags
+      // pgm_in[6:0] are set bit flags
+        {savestate_enable, wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
+         <= ({savestate_enable, wram_present, buttons_enable, holdoff_enable, irq_enable, nmi_enable, cheat_enable}
+          & ~pgm_in[14:8])
+          | pgm_in[6:0];
       end
     end
   end
@@ -344,7 +389,11 @@ always @(posedge clk) begin
   end
 end
 
-always @* begin
+// registered (was comb): the branch-offset byte feeds the SNES_DATA serve path
+// combinationally; the savestate additions (16-bit |pad_data + mux) made that
+// unconstrained I/O path too deep at 85.9 MHz (hook redirect died in HW with
+// timing formally met).  The offsets are stable long before the fetch.
+always @(posedge clk) begin
   case(pad_data)
     16'h3030: nmicmd = 8'h80;
     16'h2070: nmicmd = 8'h81;
@@ -356,7 +405,11 @@ always @* begin
   endcase
 end
 
-always @* begin
+// registered (was comb): the branch-offset byte feeds the SNES_DATA serve path
+// combinationally; the savestate additions (16-bit |pad_data + mux) made that
+// unconstrained I/O path too deep at 85.9 MHz (hook redirect died in HW with
+// timing formally met).  The offsets are stable long before the fetch.
+always @(posedge clk) begin
   if(buttons_enable) begin
     if(snes_ajr) begin
       if(nmicmd) begin
@@ -365,7 +418,11 @@ always @* begin
         if(branch_wram) begin
           branch1_offset = 8'h3a; // nmi_patches
         end else begin
-          branch1_offset = 8'h43; // nmi_exit
+          if(savestate_enable & (savestate_force_entry | |pad_data)) begin
+            branch1_offset = 8'h3f; // nmi_savestate
+          end else begin
+            branch1_offset = 8'h43; // nmi_exit
+          end
         end
       end
     end else begin
@@ -383,18 +440,42 @@ always @* begin
     if(branch_wram) begin
       branch1_offset = 8'h3a;     // nmi_patches
     end else begin
-      branch1_offset = 8'h43;     // nmi_exit
+      if(savestate_enable & |pad_data) begin
+        branch1_offset = 8'h3f;   // nmi_savestate
+      end else begin
+        branch1_offset = 8'h43;   // nmi_exit
+      end
     end
   end
 end
 
-always @* begin
+// registered (was comb): the branch-offset byte feeds the SNES_DATA serve path
+// combinationally; the savestate additions (16-bit |pad_data + mux) made that
+// unconstrained I/O path too deep at 85.9 MHz (hook redirect died in HW with
+// timing formally met).  The offsets are stable long before the fetch.
+always @(posedge clk) begin
   if(nmicmd == 8'h81) begin
     branch2_offset = 8'h14;       // nmi_stop
   end else if(branch_wram) begin
     branch2_offset = 8'h00;       // nmi_patches
   end else begin
-    branch2_offset = 8'h09;       // nmi_exit
+    if(savestate_enable) begin
+      branch2_offset = 8'h05;     // nmi_savestate
+    end else begin
+      branch2_offset = 8'h09;     // nmi_exit
+    end
+  end
+end
+
+// registered (was comb): the branch-offset byte feeds the SNES_DATA serve path
+// combinationally; the savestate additions (16-bit |pad_data + mux) made that
+// unconstrained I/O path too deep at 85.9 MHz (hook redirect died in HW with
+// timing formally met).  The offsets are stable long before the fetch.
+always @(posedge clk) begin
+  if(savestate_enable) begin
+    branch3_offset = 8'h00;       // nmi_savestate
+  end else begin
+    branch3_offset = 8'h04;       // nmi_exit
   end
 end
 

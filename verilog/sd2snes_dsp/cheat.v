@@ -143,6 +143,7 @@ assign data_out = cheat_match_bits[0] ? cheat_data[0]
 /// BUT MUST NOT apply actual ROM cheat patches during snescmd menu bank
 /// execution to prevent ROM cheats from patching nonsense into the savestate
 /// handler.
+/// this is caused by C0-FF bank overlay. Probably not a good idea.
 assign cheat_hit = (snescmd_unlock & hook_enable_sync & (nmicmd_enable | return_vector_enable | branch1_enable | branch2_enable | branch3_enable))
                    | (reset_unlock & rst_addr_match)
                    | (cheat_enable & cheat_addr_match & ~snescmd_unlock)
@@ -211,13 +212,31 @@ reg snescmd_unlock_disable_strobe = 1'b0;
 reg [6:0] snescmd_unlock_disable_countdown = 0;
 reg snescmd_unlock_disable = 0;
 
+// force savestate handler entry until savestate handler returns on its own
+// (in-game hook must keep jumping to savestate handler until its logic has finished)
+reg savestate_force_entry_enable_strobe = 0;
+reg savestate_force_entry_disable_strobe = 0;
+reg savestate_force_entry = 0;
+
 always @(posedge clk) begin
+  if(savestate_force_entry_enable_strobe) begin
+    savestate_force_entry <= 1'b1;
+  end else if(savestate_force_entry_disable_strobe) begin
+    savestate_force_entry <= 1'b0;
+  end
+end
+
+always @(posedge clk) begin
+  savestate_force_entry_disable_strobe <= 0;
   if(SNES_reset_strobe) begin
     snescmd_unlock_r <= 0;
     snescmd_unlock_disable <= 0;
     map_unlock_r <= 0;
     exe_to_hook_transition_r <= 0;
   end else begin
+    if (~nmi_addr_match)   exe_to_hook_transition_r <= 0;
+    else if (map_unlock_r) exe_to_hook_transition_r <= 1;
+
     if(SNES_rd_strobe) begin
       // *** GAME -> USB HOOK ***
       if(hook_enable_sync
@@ -229,7 +248,7 @@ always @(posedge clk) begin
         // remember where we came from (IRQ/NMI) for hook exit
         return_vector <= SNES_ADDR[7:0];
         // unlock the address map
-		    map_unlock_r <= 1;
+        map_unlock_r <= 1;
         // unlock exe code
         exe_unlock_r <= 1;
       end
@@ -245,7 +264,7 @@ always @(posedge clk) begin
         // lock the address map
         map_unlock_r <= 0;
         // no longer in exe region
-        exe_unlock_r <= 0;
+        exe_unlock_r <= 0;        
       end
       // *** USB HOOK -> GAME ***
       else if (exe_unlock & nmi_match_bits[1]
@@ -272,7 +291,30 @@ always @(posedge clk) begin
       if(rst_match_bits[1] & |reset_unlock_r) begin
         snescmd_unlock_r <= 1;
       end
+      if(branch1_enable & savestate_enable & |pad_data) begin
+        savestate_force_entry_enable_strobe <= 1;
+      end
     end
+    
+/// TODO unlock disable on hook exit needs rework, there are potential issues:
+///
+/// 1. Countdown needs to be short because jumping back to ROM would
+///    otherwise yield wrong data (because of bank C0 overlay)
+///
+/// 2. HDMA can interrupt the IRQ hook after writing the unlock trigger
+///    so the number of countdown cycles needed may be much bigger but can't
+///    be predicted, so countdown might be too short and disable nmi hook
+///    unlock before the CPU can exit. (this happens on Star Fox (2))
+///
+/// 3. HDMA might access bank $C0 expecting ROM data during unlock but reads
+///    menu bank data instead ((( CANNOT FIX --- REVERT C0-FF UNLOCK? )))
+///
+/// Possible solution:
+/// 1. arm disable detection after disable trigger has been written
+/// 2. wait for CPU to read 2 vector addresses (FFEA, FFEE, FFFC) and capture
+///    the data read from those addresses
+/// 3. disarm detection and disable unlock when CPU starts reading the address
+///    captured in 2.
 
     // give some time to exit snescmd memory and jump to original vector
     // sta @NMI_VECT_DISABLE    1-2 (after effective write)
@@ -285,6 +327,7 @@ always @(posedge clk) begin
         end else if(snescmd_unlock_disable_countdown == 0) begin
           snescmd_unlock_r <= 0;
           snescmd_unlock_disable <= 0;
+          savestate_force_entry_disable_strobe <= 1;
         end
       end
     end
@@ -294,6 +337,7 @@ always @(posedge clk) begin
     end
   end
 end
+
 
 // Only clock the usage timeout when outside of in-game hook
 // to prevent nested IRQs from jumping to game
@@ -418,13 +462,13 @@ end
 always @* begin
   if(buttons_enable) begin
     if(snes_ajr) begin
-      if(nmicmd) begin
+      if(|nmicmd) begin
         branch1_offset = 8'h30;   // nmi_echocmd
       end else begin
         if(branch_wram) begin
           branch1_offset = 8'h3a; // nmi_patches
         end else begin
-          if(savestate_enable) begin
+          if(savestate_enable & (savestate_force_entry | |pad_data)) begin
             branch1_offset = 8'h3f; // nmi_savestate
           end else begin
             branch1_offset = 8'h43; // nmi_exit
@@ -449,7 +493,7 @@ always @* begin
     if(branch_wram) begin
       branch1_offset = 8'h3a;     // nmi_patches
     end else begin
-      if(savestate_enable) begin
+      if(savestate_enable & |pad_data) begin
         branch1_offset = 8'h3f;   // nmi_savestate
       end else begin
         branch1_offset = 8'h43;   // nmi_exit
