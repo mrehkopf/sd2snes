@@ -121,6 +121,7 @@ cic/supercic/supercic-key.hex
 cic/supercic/supercic-lock.hex
 contrib/*
 docs/*
+!docs/usb-protocol.md
 utils/bin2asm
 utils/bin2c
 utils/chili2chr
@@ -129,6 +130,7 @@ utils/gentilemap
 utils/mem2lorom
 utils/palremap
 utils/palreorder
+utils/sd2snes-ls-test
 release
 src/obj-mk2
 src/obj-mk3
