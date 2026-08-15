@@ -597,6 +597,7 @@ int usbint_handler_cmd(void) {
         time.tm_wday = (uint8_t) cmd_buffer[11+4];
 
         set_rtc(&time);
+        break;
     }
     case USBINT_SERVER_OPCODE_MV: {
         // copy string name
