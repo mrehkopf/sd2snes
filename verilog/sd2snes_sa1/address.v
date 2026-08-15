@@ -17,6 +17,17 @@
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
+
+// SA-1 savestate machinery gate.  Mk.III only: on the Mk.II Spartan-3 the
+// machinery overmaps the device by ~2,200 LUTs, so it is compiled out there and
+// that netlist is unchanged.  SA1_SS_MK2 is an opt-in escape for a larger target.
+// Derived in every file that needs it: the repo uses no include files.
+`ifdef MK3
+`define SA1_SS_ACTIVE
+`elsif SA1_SS_MK2
+`define SA1_SS_ACTIVE
+`endif
+
 module address(
   input CLK,
   input [15:0] featurebits,  // peripheral enable/disable
@@ -29,9 +40,13 @@ module address(
   output IS_SAVERAM,        // address/CS mapped as SRAM?
   output IS_ROM,            // address mapped as ROM?
   output IS_WRITABLE,       // address somehow mapped as writable area?
+  output IS_PATCH,          // hook identity window active ($C0-FF while unlocked)
+  output sa1_ss_enable,     // savestate scan window ($E8:0000-07FF while unlocked; 0 on mk2)
   input [23:0] SAVERAM_MASK,
   input [23:0] ROM_MASK,
+  input  snescmd_unlock,    // snescmd region unlocked (gates the hook window)
   output msu_enable,
+  output dma_enable,        // SNES-side $2020-$202F copier reg window
   input [4:0] sa1_bmaps_sbm,
   input  sa1_dma_cc1_en,
   input [11:0] sa1_xxb,
@@ -99,10 +114,33 @@ assign IS_SAVERAM = SAVERAM_MASK_r[0]
                         )
                       );
 
-assign IS_WRITABLE = IS_SAVERAM;
+// Hook identity window (as in sd2snes_base): while the hook holds the snescmd
+// region unlocked, banks $C0-$FF are identity-mapped so the handler runs from menu
+// PSRAM with its scratch in $F2-$FF.  Without it the handler fetches the game's
+// SuperMMC-mapped ROM instead of its own code.
+`ifdef SA1_SS_ACTIVE
+assign IS_PATCH = snescmd_unlock & &SNES_ADDR[23:22];
+`else
+assign IS_PATCH = 1'b0;
+`endif
+
+assign IS_WRITABLE = IS_SAVERAM | IS_PATCH;
+
+// Savestate scan window: $E8:0000-$07FF while unlocked; $000-$0FF is the state
+// block, $7FF the halt control byte.  $E8 also falls inside the identity window, so
+// main.v gives this window priority in the read mux; the parallel PSRAM write lands
+// in unused save-region space.
+`ifdef SA1_SS_ACTIVE
+assign sa1_ss_enable = snescmd_unlock & (SNES_ADDR[23:16] == 8'hE8) & (SNES_ADDR[15:11] == 5'b00000);
+`else
+assign sa1_ss_enable = 1'b0;
+`endif
 
 // TODO: add programmable address map
-assign SRAM_SNES_ADDR = (IS_SAVERAM
+assign SRAM_SNES_ADDR = (IS_PATCH
+                         // hook window: identity map $C0-$FF (handler code + scratch)
+                         ? SNES_ADDR
+                         : IS_SAVERAM
                          // 40-4F:0000-FFFF or 00-3F/80-BF:6000-7FFF (first 8K mirror).  Mask handles mirroring.  60 is sa1-only
                          ? (24'hE00000 + (iram_battery_r ? SNES_ADDR[10:0] : ((SNES_ADDR[22] ? SNES_ADDR[19:0] : {sa1_bmaps_sbm,SNES_ADDR[12:0]}) & SAVERAM_MASK_r)))
                          // C0-FF:0000-FFFF or 00-3F/80-BF:8000-FFFF
@@ -114,6 +152,13 @@ assign ROM_ADDR = SRAM_SNES_ADDR;
 assign ROM_HIT = IS_ROM | IS_WRITABLE;
 
 assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
+// Copier reg window $2020-$202F (as in sd2snes_base).  No map_unlock on this core,
+// so gate on the snescmd unlock: the handler is the only user.
+`ifdef SA1_SS_ACTIVE
+assign dma_enable = snescmd_unlock & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff0) == 16'h2020));
+`else
+assign dma_enable = 1'b0;
+`endif
 assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 assign r2100_hit = (SNES_PA == 8'h00);
 assign snescmd_enable = ({SNES_ADDR[22], SNES_ADDR[15:9]} == 8'b0_0010101);

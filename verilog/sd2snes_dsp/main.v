@@ -147,6 +147,10 @@ wire dspx_dat_we;
 wire [15:0] featurebits;
 wire feat_cmd_unlock = featurebits[5];
 
+wire dspx_ss_halt;
+wire dspx_ss_halted;
+wire dspx_ss_window_en = featurebits[0]; // FEAT_DSPX: 1 = DSP1-4 (sca handler), 0 = ST0010
+
 wire r213f_enable;
 
 wire [23:0] MAPPED_SNES_ADDR;
@@ -544,7 +548,9 @@ upd77c25 snes_dspx (
   .DI(DSPX_SNES_DATA_IN),
   .DO(DSPX_SNES_DATA_OUT),
   .A0(DSPX_A0),
-  .enable(dspx_enable),
+  // The $E8 window must not clock the live DR/SR side effects: the LoROM MMIO
+  // decode also matches $E0-$EF for <=1MB ROMs.
+  .enable(dspx_enable & ~dspx_dp_enable),
   .reg_oe_falling(SNES_RD_start),
   .reg_oe_rising(SNES_RD_end),
   .reg_we_rising(SNES_WR_end),
@@ -558,6 +564,9 @@ upd77c25 snes_dspx (
   .DAT_WR_ADDR(dspx_dat_addr),
   .DP_enable(dspx_dp_enable),
   .DP_ADDR(SNES_ADDR[10:0]),
+  .ss_halt(dspx_ss_halt),
+  .ss_window_en(dspx_ss_window_en),
+  .ss_halted(dspx_ss_halted),
   .dsp_feat(dsp_feat)
 );
 `endif
@@ -628,6 +637,7 @@ mcu_cmd snes_mcu_cmd(
   .dspx_dat_addr_out(dspx_dat_addr),
   .dspx_dat_we_out(dspx_dat_we),
   .dspx_reset_out(dspx_reset),
+  .dspx_ss_halt_out(dspx_ss_halt),
   .featurebits_out(featurebits),
   .mcu_rrq(MCU_RRQ),
   .mcu_wrq(MCU_WRQ),

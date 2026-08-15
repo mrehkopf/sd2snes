@@ -73,8 +73,34 @@ This file contains a few fixes for some games that has problems with APU. Exampl
 64E9: 7E174B,2142;05C10D,A1 # This updates $7E174B with the latest $2142 state, it also patches 1 byte at the rom 0x05C10D (pc address)
 ```
 
+### Special chips
+Savestates originally only worked with games without a special chip, because the
+firmware loads a different FPGA core for those and it had no in-game hook to run
+custom code from. The coprocessor cores now carry that machinery, so savestates
+also work on:
+
+|Chip|Core|Notes|
+---|---|---
+|**DSP1-4** (uPD7725)|`fpga_dsp`|ST0010 (uPD96050) is not covered|
+|**SA-1**|`fpga_sa1`|Mk.III only (does not fit the Mk.II FPGA)|
+|**Super FX / GSU**|`fpga_gsu`||
+|**CX4**|`fpga_cx4`||
+|**OBC1**|`fpga_obc1`||
+|**S-DD1**|`fpga_sdd1`||
+
+SPC7110 and Super Game Boy are still not supported. As always, both the firmware
+and the FPGA core files on the SD card have to be up to date — a stale
+`fpga_<chip>` file makes the firmware fall back to a save without the chip state
+instead of capturing garbage.
+
+On the **Mk.II** the GSU and CX4 cores had no room left on the FPGA for both the
+savestate machinery and the six hardware ROM-cheat comparators, so on those two
+cores (Mk.II only) ROM cheats are applied by patching the loaded ROM image
+instead. They work as before with one difference: the in-game cheat toggle no
+longer switches ROM codes on and off — those follow the setting as it was when the
+game was loaded. WRAM cheats are unaffected, and the Mk.III is unchanged.
+
 ### Known Savestates Issues
-Savestates will only work with games that don't have special chips like SuperFX/SA-1/CX4, this is because the firmware loads another FPGA file for those games and it doesn't have necessary configuration to run custom code.
 
 Flashcart savestates aren't perfect, the code runs on NMI to save a bunch of addresses to another place. You'll notice the song in some games will keep playing after you load state, others will just crash.
 

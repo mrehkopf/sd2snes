@@ -220,6 +220,10 @@ wire SD_DMA_TO_ROM;
 wire free_slot = (SNES_PULSE_end | free_strobe) & ~SD_DMA_TO_ROM;
 
 wire ROM_HIT;
+wire IS_PATCH;
+wire gsu_ss_enable;
+wire gsu_exec_pause;   // GSU execution freeze ($202C snapshot pause only)
+wire gsu_hook_yield;   // ROM-arbiter yield while the hook may fetch from PSRAM
 
 assign DCM_RST=0;
 
@@ -243,7 +247,7 @@ end
 
 // Provide full bandwidth if snes is not accessing the bus.
 always @(posedge CLK2) begin
-  if(GSU_RONr) free_strobe <= 1;
+  if(GSU_RONr & ~gsu_hook_yield) free_strobe <= 1;  // yield to SNES while the hook runs from PSRAM
   else if (SNES_cycle_start) free_strobe <= ~ROM_HIT | IS_SAVERAM;
   else free_strobe <= 1'b0;
 end
@@ -404,10 +408,12 @@ wire        GSU_RAM_WORD;
 gsu snes_gsu (
   .RST(SNES_reset_strobe),
   .CLK(CLK2),
-  
+  .pause(gsu_exec_pause),
+  .SS_EN(gsu_ss_enable),
+
   .SAVERAM_MASK(SAVERAM_MASK),
   .ROM_MASK(ROM_MASK),
-  
+
   // MMIO interface
   .ENABLE(gsu_enable),
   .SNES_RD_start(SNES_RD_start),
@@ -551,6 +557,9 @@ address snes_addr(
   .IS_SAVERAM(IS_SAVERAM),
   .IS_ROM(IS_ROM),
   .IS_WRITABLE(IS_WRITABLE),
+  .IS_PATCH(IS_PATCH),
+  .gsu_ss_enable(gsu_ss_enable),
+  .snescmd_unlock(snescmd_unlock),
   .SAVERAM_MASK(SAVERAM_MASK),
   .ROM_MASK(ROM_MASK),
   //MSU-1
@@ -592,7 +601,6 @@ cheat snes_cheat(
   .pgm_idx(cheat_pgm_idx),
   .pgm_we(cheat_pgm_we),
   .pgm_in(cheat_pgm_data),
-  .gsu_vec_enable(ROM_HIT & ~IS_SAVERAM & GSU_RONr),
   .data_out(cheat_data_out),
   .cheat_hit(cheat_hit),
   .snescmd_unlock(snescmd_unlock)
@@ -623,6 +631,39 @@ wire r2100_patch = featurebits[6];
 wire r2100_enable = r2100_hit & (r2100_patch | ~(&r2100_limit));
 
 wire snoop_4200_enable = {SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h04200;
+// regshadow write-snoop windows (see SNES_DATABUS_OE/DIR)
+wire snoop_42xx_enable = ~SNES_ADDR[22] & (SNES_ADDR[15:5] == 11'b01000010000);
+wire rs_snoop_pawr_oe  = ~SNES_PAWR & (SNES_PA < 8'h40);
+
+// Hook-side coprocessor pause register ($202C bit0, same protocol as the SA-1 and
+// CX4 cores): freezes the GSU execution clock-enable while memory FSMs drain
+// (gsu.v).  The savestate handler does not use it (it freezes the GSU through the
+// $E8 window, run-to-stop); the in-game hook itself yields the bus but leaves the
+// GSU running (see gsu_hook_yield below).
+reg snapshot_pause; initial snapshot_pause = 1'b0;
+always @(posedge CLK2) begin
+  if(SNES_reset_strobe)
+    snapshot_pause <= 1'b0;
+  else if(SNES_WR_end & ~SNES_ADDR[22] & (SNES_ADDR[15:0] == 16'h202C))
+    snapshot_pause <= SNES_DATA[0];
+end
+
+// While the hook executes (snescmd_unlock) the CPU may fetch the handler from the
+// IS_PATCH window, i.e. from PSRAM.  With the GSU running under RON the ROM arbiter
+// gives it every slot, so an SNES-side PSRAM fetch is never serviced and the handler
+// executes garbage.  The arbiter is therefore yielded back to the SNES for as long
+// as the hook may execute from PSRAM.
+//
+// The yield is bus priority only: it does NOT stop the GSU, which keeps running
+// through our handler exactly as it does through the game's own ISR.  Execution is
+// frozen separately, by the $202C pause and by the savestate freeze in gsu.v.
+reg gsu_hook_psram_r; initial gsu_hook_psram_r = 1'b0;
+always @(posedge CLK2) begin
+  if(~snescmd_unlock) gsu_hook_psram_r <= 1'b0;
+  else if(IS_PATCH)   gsu_hook_psram_r <= 1'b1;
+end
+assign gsu_hook_yield = snapshot_pause | IS_PATCH | gsu_hook_psram_r;
+assign gsu_exec_pause = snapshot_pause;
 wire r4016_enable = {SNES_ADDR[22], SNES_ADDR[15:0]} == 17'h04016;
 
 always @(posedge CLK2) begin
@@ -648,6 +689,48 @@ always @(posedge CLK2) begin
   end
 end
 
+// PPU-register capture via the base ctx.v counter scheme (fire at count==4 from the
+// write start).  CLK2 here is 85.9 MHz, close enough to the base core's 96 MHz for
+// the base-calibrated shift patterns to apply.  Requires the snoop OE/DIR terms below: without them the data-bus level
+// shifter stays disabled for B-bus writes to non-cart addresses and every capture
+// design reads bus float (the CX4/OBC1/S-DD1 audit lesson).
+wire rs_pawr_start_early = ((SNES_PAWRr[4:1] | SNES_PAWRr[5:2]) == 4'b1110);
+reg [3:0] rs_pawr_cnt;   initial rs_pawr_cnt   = 0;
+reg       rs_pawr_end;   initial rs_pawr_end   = 0;
+reg       rs_pawr_end_r; initial rs_pawr_end_r = 0;
+reg [7:0] rs_data_r;     initial rs_data_r     = 0;
+always @(posedge CLK2) begin
+  if (rs_pawr_end)               rs_pawr_cnt <= 0;
+  else if (rs_pawr_start_early)  rs_pawr_cnt <= 1;
+  else if (|rs_pawr_cnt)         rs_pawr_cnt <= rs_pawr_cnt + 1'b1;
+  rs_pawr_end   <= (rs_pawr_cnt == 4'd4);
+  rs_pawr_end_r <= rs_pawr_end;      // ctx.v registers the strobe once more...
+  rs_data_r     <= SNES_DATAr[0];    // ...and the data tap with it (2-cyc align)
+end
+wire [7:0] rs_data = rs_pawr_end_r ? rs_data_r : SNES_DATA;
+
+// In-game cheat-savestate register shadow (regshadow.v): $F90500 (PPU, stride-2 words
+// = the (1st write, 2nd write) pair) / $F90700 (CPU $42xx), read through the hook
+// identity window only.
+wire shadow_ppu_hit = IS_PATCH & (SNES_ADDR[23:8] == 16'hF905) & ~SNES_ADDR[7];
+wire shadow_cpu_hit = IS_PATCH & (SNES_ADDR[23:8] == 16'hF907) & (SNES_ADDR[7:5] == 3'b000);
+wire [7:0] regshadow_dout;
+// PPU pair = mem[0x00-0x7F] indexed straight by SNES_ADDR[6:0]: the even byte of a
+// stride-2 entry is the 1st write, the odd byte the 2nd (double-write regs are
+// reconstructed ctx.v-style inside regshadow.v).  CPU reg = mem[0x80-0x9F].
+wire [8:0] regshadow_raddr = shadow_cpu_hit ? {4'b0100, SNES_ADDR[4:0]}
+                                            : {2'b00,  SNES_ADDR[6:0]};
+regshadow snes_regshadow(
+  .clk(CLK2),
+  .pawr_end(rs_pawr_end_r),
+  .wr_end(SNES_WR_end),
+  .snes_addr(SNES_ADDR),
+  .snes_pa(SNES_PA),
+  .snes_data(rs_data),
+  .rd_addr(regshadow_raddr),
+  .rd_data(regshadow_dout)
+);
+
 assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
                    :(r2100_enable & ~SNES_PAWR & r2100_forcewrite) ? r2100r
                    :((~SNES_READ ^ (r213f_forceread & r213f_enable & ~SNES_PARD))
@@ -656,8 +739,19 @@ assign SNES_DATA = (r213f_enable & ~SNES_PARD & ~r213f_forceread) ? r213fr
                                   : gsu_data_enable ? GSU_SNES_DATA_OUT  // GSU MMIO read
                                   : (cheat_hit & ~feat_cmd_unlock) ? cheat_data_out
                                   : ((snescmd_unlock | feat_cmd_unlock) & snescmd_enable) ? snescmd_dout
+                                  // in-game savestate register shadow read-backs: a
+                                  // stride-2 entry is a PAIR, not a duplicate -- even
+                                  // byte = 1st write (prev), odd byte = 2nd write
+                                  // (current), reconstructed ctx.v-style in
+                                  // regshadow.v.  Single-write regs store (value,
+                                  // value), so the high byte is never $00.
+                                  : shadow_ppu_hit ? regshadow_dout
+                                  : shadow_cpu_hit ? regshadow_dout
                                   : (ROM_HIT & IS_SAVERAM) ? RAM_DATA
-                                  : (ROM_HIT & ~IS_SAVERAM & GSU_RONr) ? (SNES_ADDR[0] ? 8'h01 : {4'h0, (SNES_ADDR[3] & SNES_ADDR[1]), (SNES_ADDR[2] & ~^{SNES_ADDR[3],SNES_ADDR[1]}), 1'b0, SNES_ADDR[0]}) // used for interrupt vectors
+                                  // ~IS_PATCH: with RON=1 plain ROM reads serve the
+                                  // stub vector, so the hook window has to win or the
+                                  // handler's own fetches return the stub.
+                                  : (ROM_HIT & ~IS_SAVERAM & GSU_RONr & ~IS_PATCH) ? (SNES_ADDR[0] ? 8'h01 : {4'h0, (SNES_ADDR[3] & SNES_ADDR[1]), (SNES_ADDR[2] & ~^{SNES_ADDR[3],SNES_ADDR[1]}), 1'b0, SNES_ADDR[0]}) // used for interrupt vectors
                                   : (ROM_ADDR0 ? ROM_DATA[7:0] : ROM_DATA[15:8])
                                   ) : 8'bZ;
 
@@ -913,9 +1007,14 @@ reg MCU_WRITE_1;
 always @(posedge CLK2) MCU_WRITE_1<= MCU_WRITE;
 
 // odd addresses xxx1
+// SNES->PSRAM writes were dropped whenever the GSU held RON, which also dropped the
+// handler's own writes through the IS_PATCH window (CS_STATE/CS_INPUT_* and its
+// scratches) in GSU-heavy scenes.  Drive SNES_DATA for IS_PATCH writes only: stray
+// game writes to ROM stay high-Z, and the arbiter yield above keeps the GSU off the
+// bus on those cycles, so the write cannot fight an active GSU access.
 assign ROM_DATA[7:0] = (ROM_ADDR0)
                        ?(SD_DMA_TO_ROM ? (!MCU_WRITE_1 ? MCU_DOUT : 8'bZ)
-                                       : (ROM_HIT & ~IS_SAVERAM & ~SNES_WRITE & ~GSU_RONr) ? SNES_DATA
+                                       : (IS_PATCH & ~SNES_WRITE) ? SNES_DATA
                                        : MCU_WR_HIT ? MCU_DOUT : 8'bZ
                         )
                        :8'bZ;
@@ -924,14 +1023,14 @@ assign ROM_DATA[7:0] = (ROM_ADDR0)
 assign ROM_DATA[15:8] = (ROM_ADDR0)
                         ? 8'bZ
                         :(SD_DMA_TO_ROM ? (!MCU_WRITE_1 ? MCU_DOUT : 8'bZ)
-                                        : (ROM_HIT & ~IS_SAVERAM & ~SNES_WRITE & ~GSU_RONr) ? SNES_DATA
+                                        : (IS_PATCH & ~SNES_WRITE) ? SNES_DATA
                                         : MCU_WR_HIT ? MCU_DOUT
                                         : 8'bZ
                          );
 
 assign ROM_WE = SD_DMA_TO_ROM
                 ?MCU_WRITE
-                : (ROM_HIT & IS_WRITABLE & ~IS_SAVERAM & SNES_CPU_CLK & ~GSU_RONr) ? SNES_WRITE
+                : (ROM_HIT & IS_WRITABLE & ~IS_SAVERAM & SNES_CPU_CLK & (~GSU_RONr | IS_PATCH)) ? SNES_WRITE
                 : MCU_WE_HIT ? 1'b0
                 : 1'b1;
 
@@ -1114,6 +1213,11 @@ assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
                          snescmd_enable & ~(SNES_READ & SNES_WRITE) ? ~(snescmd_unlock | feat_cmd_unlock) :
                          (r213f_enable & !SNES_PARD) ? 1'b0 :
                          (r2100_enable & ~SNES_PAWR) ? 1'b0 :
+                         // regshadow write snoop: enable the shifter (receive) during
+                         // PPU B-bus writes and $42xx A-bus writes, else the snoop
+                         // reads float (base does this via SNES_SNOOPPAWR_DATA_OE).
+                         rs_snoop_pawr_oe ? 1'b0 :
+                         (snoop_42xx_enable & ~SNES_WRITE) ? 1'b0 :
                          snoop_4200_enable ? SNES_WRITE :
                          ( (IS_ROM & SNES_ROMSEL)
                          | (!IS_ROM & !IS_SAVERAM & !IS_WRITABLE)
@@ -1125,7 +1229,11 @@ assign SNES_DATABUS_OE = msu_enable ? 1'b0 :
  *  a) the SNES wants to read
  *  b) we want to force a value on the bus
  */
-assign SNES_DATABUS_DIR = (~SNES_READ | (~SNES_PARD & (r213f_enable)))
+// During a snooped B-bus write the concurrent A-bus read (/RD low on DMA/HDMA) must
+// not flip the shifter to drive, unless the FPGA serves that source itself: ROM, RAM
+// and the stub via ROM_HIT, the GSU MMIO via gsu_data_enable.  A GSU-RAM framebuffer
+// DMA to VRAM is exactly that case.
+assign SNES_DATABUS_DIR = ((~SNES_READ & (~rs_snoop_pawr_oe | ROM_HIT | gsu_data_enable)) | (~SNES_PARD & (r213f_enable)))
                            ? (1'b1 ^ (r213f_forceread & r213f_enable & ~SNES_PARD)
                                    ^ (r2100_enable & ~SNES_PAWR & ~r2100_forcewrite & ~IS_ROM & ~IS_WRITABLE))
                            : ((~SNES_PAWR & r2100_enable) ? r2100_forcewrite

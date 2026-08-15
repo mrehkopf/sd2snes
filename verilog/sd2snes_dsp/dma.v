@@ -31,7 +31,7 @@ module dma(
   input reg_we_rising,
   
   output loop_enable,
-  
+
   input  BUS_RDY,
   output BUS_RRQ,
   output BUS_WRQ,
@@ -42,10 +42,10 @@ module dma(
   input  [15:0] ROM_DATA_IN
 );
 
-parameter ST_IDLE  = 0;
-parameter ST_READ  = 1;
-parameter ST_WRITE = 2;
-parameter ST_DONE  = 3;
+parameter ST_IDLE   = 0;
+parameter ST_READ   = 1;
+parameter ST_WRITE  = 2;
+parameter ST_DONE   = 3;
 
 parameter OP_COPY  = 0;
 parameter OP_RESET = 1;
@@ -53,7 +53,7 @@ parameter OP_SET   = 2;
 parameter OP_DEBUG = 3;
 
 // Register bank
-reg [7:0] dma_r[15:0];
+reg [7:0] dma_r[9:0];
 
 reg [2:0]  state; initial state = ST_IDLE;
 
@@ -97,7 +97,7 @@ always @(posedge clkin) begin
     dma_r[reg_addr] <= reg_data_in;
   end
   else if (state == ST_DONE) begin
-    dma_r[9][0] <= 0;
+    dma_r[9][0] <= 0;   // clear single-op trigger
   end
 end
 
@@ -123,6 +123,16 @@ reg        trig_r;      initial trig_r = 0;
 reg        word_mode_r;
 reg [23:0] src_addr_r, dst_addr_r, length_r, mod_r;
 
+// 1-trigger queue: the savestate handler fires its second op without polling, so a
+// trigger arriving while the copier is busy is latched with the op snapshotted and
+// started in ST_IDLE.  One slot is all it needs; a further trigger while one is
+// already pending is dropped, as every trigger during a busy copier was before.
+reg        pending;     initial pending = 0;
+reg [23:0] shadow_src, shadow_dst, shadow_len;
+reg        shadow_word, shadow_dir;
+reg [4:0]  shadow_op;
+wire op_kick = reg_we_rising & enable & (reg_addr == 4'd9) & reg_data_in[0];
+
 assign BUS_RRQ = BUS_RDY && (state == ST_READ);
 assign BUS_WRQ = BUS_RDY && (state == ST_WRITE);
 assign ROM_ADDR = (state == ST_READ) ? src_addr_r : dst_addr_r;
@@ -133,32 +143,60 @@ assign ROM_DATA_OUT =   (opcode_r == OP_COPY)  ? (dst_addr_r[0] ? {ROM_DATA_IN[7
                       : 0;
 assign ROM_WORD_ENABLE = word_mode_r;
 assign loop_enable = loop_r;
-
 wire [23:0] length_next = length_r - (word_mode_r ? 2 : 1);
 
 always @(posedge clkin) begin
   if (reset) begin
-    loop_r <= 0;
-    state <= ST_IDLE;
-    trig_r <= 0;
+    loop_r    <= 0;
+    state     <= ST_IDLE;
+    trig_r    <= 0;
+    pending   <= 0;
   end
   else begin
-    trig_r <= TRIG;
-  
+    trig_r  <= TRIG;
+
+    // when idle the fresh trigger is handled by the op_kick path below
+    if (op_kick && (state != ST_IDLE) && !pending) begin
+      pending     <= 1'b1;
+      shadow_src  <= SRC_ADDR;
+      shadow_dst  <= DST_ADDR;
+      shadow_len  <= LEN;
+      shadow_word <= WORD_MODE;
+      shadow_op   <= reg_data_in[7:3];  // dma_r[9] being written this cycle
+      shadow_dir  <= reg_data_in[1];
+    end
+
     case (state)
       ST_IDLE: begin
-        if (TRIG && (trig_r ^ TRIG)) begin
-          src_addr_r <= SRC_ADDR;
-          dst_addr_r <= DST_ADDR;
-          length_r <= LEN;
-          mod_r <= WORD_MODE ? (DIR ? -2 : 2) : (DIR ? -1 : 1);
-          opcode_r <= OPCODE;
-          loop_r <= LOOP;
-          dir_r <= DIR;
+        if (pending) begin
+          // start the op snapshotted while the previous one ran
+          src_addr_r  <= shadow_src;
+          dst_addr_r  <= shadow_dst;
+          length_r    <= shadow_len;
+          mod_r       <= shadow_word ? (shadow_dir ? -2 : 2) : (shadow_dir ? -1 : 1);
+          opcode_r    <= shadow_op;
+          word_mode_r <= shadow_word;
+          dir_r       <= shadow_dir;
+          loop_r      <= 0;
+          pending     <= 0;
+          if (shadow_op == OP_COPY) state <= ST_READ;
+          else                      state <= ST_WRITE;
+        end
+        else if (op_kick) begin
+          // Single-op start, detected by the dma_r[9] write rather than a TRIG
+          // edge: robust to the bit already being 1, which happens when a colliding
+          // register write skips the ST_DONE clear.
+          src_addr_r  <= SRC_ADDR;
+          dst_addr_r  <= DST_ADDR;
+          length_r    <= LEN;
+          mod_r       <= WORD_MODE ? (reg_data_in[1] ? -2 : 2) : (reg_data_in[1] ? -1 : 1);
+          opcode_r    <= reg_data_in[7:3];
+          loop_r      <= reg_data_in[2];
+          dir_r       <= reg_data_in[1];
           word_mode_r <= WORD_MODE;
-          
-          if (OPCODE == OP_COPY) state <= ST_READ;
-          else                   state <= ST_WRITE;
+
+          if (reg_data_in[7:3] == OP_COPY) state <= ST_READ;
+          else                             state <= ST_WRITE;
         end
       end
       ST_READ: begin
@@ -179,7 +217,7 @@ always @(posedge clkin) begin
       end
       ST_DONE: begin
         loop_r <= 0;
-        state <= ST_IDLE;
+        state  <= ST_IDLE;
       end
     endcase
   end

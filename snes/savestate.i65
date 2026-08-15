@@ -16,7 +16,55 @@
 #define CS_SLOT       $FE100F
 #define CS_SLOT_INPUT $FE1010
 #define CS_CTRL       $FE1012
+// Nonzero = run the coprocessor restore blocks (LOAD path only).  Uses the free
+// byte after CS_CTRL: the fix code from savestate_fixes.yml is emitted from
+// CS_FIXES upward, so nothing may be allocated at or above that.
+#define CS_SA1_LOAD   $FE1013
 #define CS_FIXES      $FE1014
+
+//  Coprocessor savestate support.  Each SS_*_GATE byte is armed by the firmware on
+//  every game load: 0 means the running core has no capture/restore for that chip
+//  and the handler skips it, so an old core on the card degrades to a save without
+//  chip state instead of capturing garbage.  Lockstep with src/savestate.h.
+#define SS_DSP_GATE   $FF0712
+#define SS_SA1_GATE   $FF0713
+#define SS_GSU_GATE   $FF0714
+#define SS_OBC1_GATE  $FF0718
+#define SS_SDD1_GATE  $FF0719
+#define SS_CX4_GATE   $FF071F
+//  Nonzero = the NMI resume wait timed out (ss_wait_bail); bit7 mirrors the NMI
+//  enable of the restored $4200.  Cleared by ss_init on every game load.
+#define SS_DIAG_BAIL  $FF0C00
+
+//  Scan windows.  All four live at bank $E8 and are decoded only while the handler
+//  holds the snescmd unlock, so they are invisible to the running game.
+#define SS_DSP_WINDOW $E80000 // uPD7725: $000-$1FF data RAM, $600-$6FF register
+                              // file, $7FF halt ctl (w bit0=halt, r bit0=halted)
+#define SS_SA1_WINDOW $E80000 // SA-1: $00-$FF state block ($F0 = normalize,
+                              // $FF = magic $5A), $7FF halt ctl
+#define SS_GSU_WINDOW $E80000 // GSU: $00-$3F native MMIO semantics, $40+ internal
+                              // state, $F0 normalize, $FE halt ctl, $FF magic $5B
+#define SS_CX4_WINDOW $E80000 // CX4: $00-$27 state block, $E0-$E2 idb staging,
+                              // $E3 commit, $E4 readback index, $F0 normalize,
+                              // $FE halt ctl, $FF magic $5C
+
+//  PSRAM scratches, all inside the F0..F4 region the .state file persists, so the
+//  chip state travels with the save.  They overlap on purpose: a cartridge never
+//  carries two of these coprocessors.
+#define SS_DSP_SCRATCH        $F47000 // 0x700 B: data RAM + register file
+#define SS_SA1_IRAM_SCRATCH   $F47000 // 2 KB   : SA-1 IRAM   ($00:3000)
+#define SS_SA1_REGS_SCRATCH   $F47800 // 256 B  : SA-1 state block
+#define SS_SA1_BWRAM_SCRATCH  $F48000 // 32 KB  : SA-1 BW-RAM ($40:0000)
+#define SS_GSU_CACHE_SCRATCH  $F47000 // 512 B  : GSU instruction cache ($00:3100)
+#define SS_GSU_REGS_SCRATCH   $F47800 // 256 B  : GSU state block
+#define SS_GSU_RAM_SCRATCH    $F48000 // 32 KB  : GSU cart RAM ($70:0000)
+#define SS_OBC1_SCRATCH       $F47000 // 2 KB   : OBC1 window ($00:7800-$7FFF)
+#define SS_SDD1_SCRATCH       $F47000 // 6 B    : S-DD1 config ($4800/01/04-07)
+#define SS_CX4_DATRAM_SCRATCH $F47000 // 3 KB   : CX4 data RAM ($00:6000-$6BFF)
+#define SS_CX4_NAT_SCRATCH    $F47C00 // 112 B  : CX4 native page, indexed by the
+                                      //          low byte of $00:7Fxx ($40..$AF)
+#define SS_CX4_WIN_SCRATCH    $F47CC0 // 64 B   : mirror of CX4 window $00-$3F
+#define SS_CX4_CORE_SCRATCH   $F47D00 // 16 B   : CX4 24-bit core registers
 
 #define SS_CODE       $FC0000 ; should be unused
 #define SS_DATA       $FC2000 ; should be unused

@@ -90,6 +90,7 @@ module mcu_cmd(
   output reg dspx_dat_we_out,
 
   output reg dspx_reset_out,
+  output reg dspx_ss_halt_out = 1'b0, // savestate halt (MCU debug)
 
   // feature enable
   output reg [15:0] featurebits_out,
@@ -362,6 +363,8 @@ always @(posedge clk) begin
         endcase
       8'heb: // control DSPx reset
         dspx_reset_out <= param_data[0];
+      8'hfb: // control DSPx savestate halt (MCU debug; SNES side uses the $E8:07FF scan-window control byte)
+        dspx_ss_halt_out <= param_data[0];
       8'hec:
         begin // set DAC properties
           dac_vol_select_out <= param_data[2:0];

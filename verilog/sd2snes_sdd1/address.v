@@ -27,8 +27,10 @@ module address(
   output IS_SAVERAM,        // address/CS mapped as SRAM?
   output IS_ROM,            // address mapped as ROM?
   output IS_WRITABLE,       // address somehow mapped as writable area?
+  output IS_PATCH,          // hook identity window active ($C0-FF while unlocked)
   input [23:0] SAVERAM_MASK,
   input [23:0] ROM_MASK,
+  input  snescmd_unlock,    // snescmd region unlocked (gates the hook window)
   output msu_enable,
   output r213f_enable,
   output r2100_hit,
@@ -89,10 +91,18 @@ wire [12:0] SAVERAM_OFFSET_SMALL = SNES_ADDR[12:0];
 
 assign IS_SAVERAM = IS_SAVERAM_BIGBANKS | IS_SAVERAM_SMALLBANKS;
 
-// '1' to signal access to cartrigde writable range (Backup RAM or BS-X RAM)
-assign IS_WRITABLE = IS_SAVERAM;
+// Hook identity window (as in sd2snes_base): while the hook holds the snescmd
+// region unlocked, banks $C0-$FF are identity-mapped so the savestate handler runs
+// from menu PSRAM with its scratch in $F2-$FF.  0 outside the hook window.
+assign IS_PATCH = snescmd_unlock & &SNES_ADDR[23:22];
 
-assign SRAM_SNES_ADDR = IS_SAVERAM_BIGBANKS ? 24'hE00000 + ({SAVERAM_BANK_BIG, SAVERAM_OFFSET_BIG} & SAVERAM_MASK)
+// '1' to signal access to cartrigde writable range (Backup RAM or BS-X RAM)
+assign IS_WRITABLE = IS_SAVERAM | IS_PATCH;
+
+assign SRAM_SNES_ADDR = IS_PATCH
+                      // hook window: identity-map $C0-$FF (handler code + scratch)
+                      ? SNES_ADDR
+                      : IS_SAVERAM_BIGBANKS ? 24'hE00000 + ({SAVERAM_BANK_BIG, SAVERAM_OFFSET_BIG} & SAVERAM_MASK)
                       : IS_SAVERAM_SMALLBANKS ? 24'hE00000 + ({SAVERAM_BANK_SMALL, SAVERAM_OFFSET_SMALL} & SAVERAM_MASK)
                       : ({1'b0, !SNES_ADDR[23], SNES_ADDR[21:0]} & ROM_MASK);
 

@@ -17,9 +17,23 @@ extern cfg_t CFG;
 extern snes_romprops_t romprops;
 
 void savestate_program() {
-  if(romprops.fpga_conf != NULL
-     && romprops.fpga_conf != FPGA_BASE
-     /* && romprops.fpga_conf != FPGA_DSP */) {
+  /* Clear the handler's CS_STATE on every game load: it lives in PSRAM, which
+     survives resets, and a stale value swallows every save/load combo. */
+  sram_writebyte(0, SRAM_SAVESTATE_HANDLER_ADDR + 0x0C);
+
+  /* Cores carrying the machinery the handler needs: the NMI/IRQ hook, the $C0-$FF
+     identity window it executes from, and a shadow of the write-only $21xx/$42xx
+     registers at $F90500/$F90700 (from ctx.v on base/DSP/SA-1, from regshadow.v on
+     the others).  SPC7110 and SGB have no hook at all. */
+  int core_has_hook = (romprops.fpga_conf == NULL)
+                   || (romprops.fpga_conf == FPGA_BASE)
+                   || (romprops.fpga_conf == FPGA_DSP)
+                   || (romprops.fpga_conf == FPGA_SA1)
+                   || (romprops.fpga_conf == FPGA_OBC1)
+                   || (romprops.fpga_conf == FPGA_SDD1)
+                   || (romprops.fpga_conf == FPGA_CX4)
+                   || (romprops.fpga_conf == FPGA_GSU);
+  if(!core_has_hook) {
     savestate_enable_handler(0);
     return;
   }
@@ -29,12 +43,48 @@ void savestate_program() {
  * 2C00 "EXE" hook is now left alone so it doesn't clash with USB hook features
  */
 
-  savestate_enable_handler(CFG.enable_ingame_savestate);
-  if(CFG.enable_ingame_savestate) {
+  /* Per-coprocessor capture/restore, each gated on the core implementing it:
+       DSP1-4  halt + $E8 scan window over data RAM and the register file.  The
+               ST0010 shares this core but its 2 KB data RAM collides with the
+               window's register-file gap, so it is not covered.
+       SA-1    halt at an instruction boundary + $E8 state block; IRAM and BW-RAM
+               are read back over the bus.  Mk.III only: the machinery overmaps
+               the Mk.II Spartan-3 (see verilog/sd2snes_sa1).
+       GSU     run-to-stop freeze + $E8 window; cache and cart RAM come from their
+               native SNES-visible images.
+       CX4     run-to-stop freeze + $E8 window for the CPU core; data RAM, MMIO,
+               vectors and GPRs are already bus-visible and the program cache is
+               replayed through the native MMIO on restore.
+       OBC1    purely reactive: snapshot/restore its $7800-$7FFF window over the bus.
+       S-DD1   never mid-transfer at an NMI boundary, so only the bus-visible
+               config block $4800-$4807 has to be captured. */
+  int dsp_ok  = (romprops.fpga_conf == FPGA_DSP) && !romprops.has_st0010;
+#ifndef CONFIG_MK2
+  int sa1_ok  = (romprops.fpga_conf == FPGA_SA1);
+#else
+  int sa1_ok  = 0;
+#endif
+  int gsu_ok  = (romprops.fpga_conf == FPGA_GSU);
+  int obc1_ok = (romprops.fpga_conf == FPGA_OBC1);
+  int sdd1_ok = (romprops.fpga_conf == FPGA_SDD1);
+  int cx4_ok  = (romprops.fpga_conf == FPGA_CX4);
+
+  int savestate_ok = CFG.enable_ingame_savestate
+                  && (romprops.fpga_conf == NULL || romprops.fpga_conf == FPGA_BASE
+                      || dsp_ok || sa1_ok || gsu_ok || obc1_ok || sdd1_ok || cx4_ok);
+
+  savestate_enable_handler(savestate_ok);
+  if(savestate_ok) {
     sram_writeshort(0x0101, SS_REQ_ADDR);
     sram_writebyte(CFG.loadstate_delay, SS_DELAY_ADDR);
     sram_writebyte(CFG.enable_savestate_slots, SS_SLOTS_ADDR);
     sram_writebyte(CFG.enable_ingame_savestate, SS_CTRL_ADDR);
+    sram_writebyte(dsp_ok  ? 1 : 0, SS_DSP_GATE_ADDR);
+    sram_writebyte(sa1_ok  ? 1 : 0, SS_SA1_GATE_ADDR);
+    sram_writebyte(gsu_ok  ? 1 : 0, SS_GSU_GATE_ADDR);
+    sram_writebyte(obc1_ok ? 1 : 0, SS_OBC1_GATE_ADDR);
+    sram_writebyte(sdd1_ok ? 1 : 0, SS_SDD1_GATE_ADDR);
+    sram_writebyte(cx4_ok  ? 1 : 0, SS_CX4_GATE_ADDR);
     savestate_set_inputs();
     savestate_set_fixes();
     load_backup_state();

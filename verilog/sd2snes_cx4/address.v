@@ -29,11 +29,14 @@ module address(
   output IS_SAVERAM,        // address/CS mapped as SRAM?
   output IS_ROM,            // address mapped as ROM?
   output IS_WRITABLE,       // address somehow mapped as writable area?
+  output IS_PATCH,          // hook identity window active ($C0-FF while unlocked)
   input [23:0] SAVERAM_MASK,
   input [23:0] ROM_MASK,
+  input  snescmd_unlock,    // snescmd region unlocked (gates the hook window)
   output msu_enable,
   output cx4_enable,
   output cx4_vect_enable,
+  output cx4_ss_enable,     // savestate scan window ($E8:00xx while unlocked; mk2 AND mk3)
   output r213f_enable,
   output r2100_hit,
   output snescmd_enable,
@@ -62,7 +65,15 @@ assign IS_ROM = ~SNES_ROMSEL;
 
 assign IS_SAVERAM = |SAVERAM_MASK & (~SNES_ADDR[23] & &SNES_ADDR[22:20] & ~SNES_ADDR[19] & ~SNES_ADDR[15]);
 
-assign SRAM_SNES_ADDR = IS_SAVERAM
+// Hook identity window (as in sd2snes_base): while the hook holds the snescmd
+// region unlocked, banks $C0-$FF are identity-mapped so the savestate handler runs
+// from menu PSRAM with its scratch in $F2-$FF.  0 outside the hook window.
+assign IS_PATCH = snescmd_unlock & &SNES_ADDR[23:22];
+
+assign SRAM_SNES_ADDR = IS_PATCH
+                        // hook window: identity-map $C0-$FF (handler code + scratch)
+                        ? SNES_ADDR
+                        : IS_SAVERAM
                         ? (24'hE00000 | ({SNES_ADDR[19:16], SNES_ADDR[14:0]}
                          & SAVERAM_MASK))
                         : ({2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]}
@@ -70,7 +81,7 @@ assign SRAM_SNES_ADDR = IS_SAVERAM
 
 assign ROM_ADDR = SRAM_SNES_ADDR;
 
-assign IS_WRITABLE = IS_SAVERAM;
+assign IS_WRITABLE = IS_SAVERAM | IS_PATCH;
 
 assign ROM_HIT = IS_ROM | IS_WRITABLE;
 
@@ -81,6 +92,13 @@ wire cx4_enable_w = (!SNES_ADDR[22] && (SNES_ADDR[15:13] == 3'b011));
 assign cx4_enable = cx4_enable_w;
 
 assign cx4_vect_enable = &SNES_ADDR[15:5];
+
+// Savestate scan window: $E8:0000-$00FF while unlocked (inside IS_PATCH; the main.v
+// data mux gives the window priority over the PSRAM serve, mirroring the GSU core's
+// gsu_ss_enable).  Collides with nothing: cx4_enable needs ~SNES_ADDR[22] and $E8 has
+// bit22=1; cx4_vect_enable needs &SNES_ADDR[15:5] and the window has SNES_ADDR[15:8]==0;
+// IS_SAVERAM is $70-$77.  Inside cx4.v the window offset is therefore ADDR[7:0].
+assign cx4_ss_enable = snescmd_unlock & (SNES_ADDR[23:16] == 8'hE8) & ~|SNES_ADDR[15:8];
 
 assign r213f_enable = featurebits[FEAT_213F] & (SNES_PA == 8'h3f);
 assign r2100_hit = (SNES_PA == 8'h00);

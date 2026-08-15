@@ -28,6 +28,18 @@
 #define CHEAT_FLAG_ENABLE (0x80)
 #define CHEAT_NUM_CODES_PER_CHEAT (40)
 
+/* PSRAM-patched ROM cheats: per-record spare tail.  A record slot is
+   flags(1) + desc(254) + numpatches(1) + patches(40*4) = 416 bytes, so the rest of
+   the 512-byte slot holds, per code, the original ROM byte and an "applied" flag. */
+#define CHEAT_REC_ORIG_OFS    (416)
+#define CHEAT_REC_APPLIED_OFS (456)
+
+/* Apply/restore ROM codes in the loaded image.  Only on cores whose comparators
+   had to be dropped (Mk.II GSU and CX4), a no-op elsewhere.  Idempotent; called
+   from deassert_reset(), after every image mutation and before the SNES runs. */
+void cheat_rom_psram_apply(void);
+uint8_t cheat_rom_psram_mode(void);
+
 typedef union _cheat_patch_record {
   struct __attribute__ ((__packed__)) _patch_fields {
     uint8_t  patchvalue;

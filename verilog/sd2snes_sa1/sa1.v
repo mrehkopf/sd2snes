@@ -19,6 +19,14 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
+// SA-1 savestate machinery gate; Mk.III only (see address.v).  Derived per file:
+// the repo uses no include files.
+`ifdef MK3
+`define SA1_SS_ACTIVE
+`elsif SA1_SS_MK2
+`define SA1_SS_ACTIVE
+`endif
+
 module sa1(
   input         RST,
   input         CLK,
@@ -76,9 +84,20 @@ module sa1(
 
   input         SPEED,
 
+  // Transparent halt: the CPU stops advancing, CCNT_r and the registers are kept,
+  // so it resumes where it paused when the bit clears.  0 on mk2.
+  input         snapshot_pause,
+
   // State debug read interface
   input  [11:0] PGM_ADDR, // [11:0]
   output [7:0]  PGM_DATA, // [7:0]
+
+  // Savestate scan window (mk3; tied off on mk2).  ss_window_en from address.v,
+  // ss_halt from mcu_cmd 0xfb, ss_dout served to SNES_DATA.
+  input         ss_window_en,
+  input         ss_halt,
+  output [7:0]  ss_dout,
+  output [15:0] ss_iram_pad,  // pad word snooped from the game's IRAM $3010 forwarding (mk3)
 
   // config interface
   input  [7:0]  reg_group_in,
@@ -150,6 +169,24 @@ module sa1(
 integer i;
 wire pipeline_advance;
 
+`ifdef SA1_SS_MK2
+// XST rejects the data-dependent loop bound below (Xst:2634).  Same algorithm with
+// a static bound: 32 iterations guarded by the original condition, so the result is
+// identical.  Quartus accepts the original, kept in the `else arm.
+function integer clog2;
+  input integer value;
+  integer i;
+  begin
+    value = value-1;
+    clog2 = 0;
+    for (i=0; i<32; i=i+1)
+      if (value>0) begin
+        clog2 = clog2+1;
+        value = value>>1;
+      end
+  end
+endfunction
+`else
 function integer clog2;
   input integer value;
   begin
@@ -158,6 +195,7 @@ function integer clog2;
       value = value>>1;
   end
 endfunction
+`endif
 
 `define BCD_A_CARRY(m,c,s) (~m & (c | (s[3] & (s[2] | s[1])))) // add 6
 `define BCD_S_CARRY(m,c,s) (m & ~c)										// sub 6
@@ -608,6 +646,36 @@ always @(*) begin
 end
 assign xxb_en = {FXB_r[`FXB_FBMODE], EXB_r[`EXB_EBMODE], DXB_r[`DXB_DBMODE], CXB_r[`CXB_CBMODE]};
 
+// Savestate freeze control, declared early so the guards below bind; the FSM that
+// drives them is in the SAVESTATE SCAN WINDOW section at the end of the file.
+// Constant 0 on mk2, so every guard folds back to the original logic.
+`ifdef SA1_SS_ACTIVE
+reg         ss_halt_snes;   initial ss_halt_snes   = 1'b0;
+reg         ss_frozen;      initial ss_frozen      = 1'b0;
+reg  [19:0] ss_wait;        initial ss_wait        = 20'h0;   // ~12 ms saturating timeout
+reg         ss_window_en_r; initial ss_window_en_r = 1'b0;
+reg  [7:0]  ss_dout_r;      initial ss_dout_r      = 8'h00;
+
+wire        ss_halt_req_eff = ss_halt | ss_halt_snes;
+// Window write strobe, aligned with addr_in_r/data_in_r like the MMIO write path.
+wire        ss_win_wr   = ss_window_en_r & SNES_WR_end;
+wire [10:0] ss_off      = addr_in_r[10:0];
+wire [7:0]  ss_wr_data  = data_in_r;
+// State-block restore write ($000-$0FF); $7FF (control) is handled by the halt flop.
+wire        ss_block_wr = ss_frozen & ss_win_wr & (ss_off[10:8] == 3'b000);
+// A restored WAI parks in IDLE until the interrupt block clears WAI_r.
+wire        ss_idle_wai_park = WAI_r;
+assign      ss_dout     = ss_dout_r;
+`else
+wire        ss_frozen        = 1'b0;
+wire        ss_halt_req_eff  = 1'b0;
+wire        ss_idle_wai_park = 1'b0;
+wire        ss_block_wr      = 1'b0;
+wire [10:0] ss_off           = 11'h000;
+wire [7:0]  ss_wr_data       = 8'h00;
+assign      ss_dout          = 8'h00;
+`endif
+
 //-------------------------------------------------------------------
 // PIPELINE IO
 //-------------------------------------------------------------------
@@ -934,6 +1002,27 @@ always @(posedge CLK) begin
         ADDR_DTC   : DTC_r[7:0]          <= snes_writebuf_data_r;  // 8'h38, // $2
         ADDR_DTC+1 : DTC_r[15:8]         <= snes_writebuf_data_r;  // 8'h38, // $2
         ADDR_BBF   : BBF_r[`BBF_BBF]     <= snes_writebuf_data_r[`BBF_BBF];  // 8'h3F,
+`ifdef SA1_SS_MK2
+        // Same assignment as the `else arm, minus the part-select: mixing that form
+        // with the whole-element writes of the savestate restore below makes XST
+        // split the memory and call every bit multi-driven (Xst:528).
+        ADDR_BRF+0 : BRF_r[0]            <= snes_writebuf_data_r;  // 8'h40,
+        ADDR_BRF+1 : BRF_r[1]            <= snes_writebuf_data_r;  // 8'h41,
+        ADDR_BRF+2 : BRF_r[2]            <= snes_writebuf_data_r;  // 8'h42,
+        ADDR_BRF+3 : BRF_r[3]            <= snes_writebuf_data_r;  // 8'h43,
+        ADDR_BRF+4 : BRF_r[4]            <= snes_writebuf_data_r;  // 8'h44,
+        ADDR_BRF+5 : BRF_r[5]            <= snes_writebuf_data_r;  // 8'h45,
+        ADDR_BRF+6 : BRF_r[6]            <= snes_writebuf_data_r;  // 8'h46,
+        ADDR_BRF+7 : BRF_r[7]            <= snes_writebuf_data_r;  // 8'h47,
+        ADDR_BRF+8 : BRF_r[8]            <= snes_writebuf_data_r;  // 8'h48,
+        ADDR_BRF+9 : BRF_r[9]            <= snes_writebuf_data_r;  // 8'h49,
+        ADDR_BRF+10: BRF_r[10]           <= snes_writebuf_data_r;  // 8'h4A,
+        ADDR_BRF+11: BRF_r[11]           <= snes_writebuf_data_r;  // 8'h4B,
+        ADDR_BRF+12: BRF_r[12]           <= snes_writebuf_data_r;  // 8'h4C,
+        ADDR_BRF+13: BRF_r[13]           <= snes_writebuf_data_r;  // 8'h4D,
+        ADDR_BRF+14: BRF_r[14]           <= snes_writebuf_data_r;  // 8'h4E,
+        ADDR_BRF+15: BRF_r[15]           <= snes_writebuf_data_r;  // 8'h4F,
+`else
         ADDR_BRF+0 : BRF_r[0][7:0]       <= snes_writebuf_data_r;  // 8'h40,
         ADDR_BRF+1 : BRF_r[1][7:0]       <= snes_writebuf_data_r;  // 8'h41,
         ADDR_BRF+2 : BRF_r[2][7:0]       <= snes_writebuf_data_r;  // 8'h42,
@@ -950,6 +1039,7 @@ always @(posedge CLK) begin
         ADDR_BRF+13: BRF_r[13][7:0]      <= snes_writebuf_data_r;  // 8'h4D,
         ADDR_BRF+14: BRF_r[14][7:0]      <= snes_writebuf_data_r;  // 8'h4E,
         ADDR_BRF+15: BRF_r[15][7:0]      <= snes_writebuf_data_r;  // 8'h4F,
+`endif
         ADDR_MCNT  : {MCNT_r[`MCNT_ACM],MCNT_r[`MCNT_MD]} <= {snes_writebuf_data_r[`MCNT_ACM],snes_writebuf_data_r[`MCNT_MD]}; // 8'h50,
         ADDR_MA    : MA_r[7:0]           <= snes_writebuf_data_r;  // 8'h51, // $2
         ADDR_MA+1  : MA_r[15:8]          <= snes_writebuf_data_r;  // 8'h51, // $2
@@ -962,6 +1052,80 @@ always @(posedge CLK) begin
         default: begin end
       endcase
     end
+
+    // ---- Savestate restore: MMIO config regs plus this block's interrupt-flag
+    // bits (SFR_r[7]/CFR_r[7,6,4]); VDA, MR/OF and SFR[5]/CFR[5] belong to the VBD,
+    // math and DMA blocks.  Frozen only, so it cannot collide with a normal write.
+`ifdef SA1_SS_ACTIVE
+    if (ss_block_wr) begin
+      case (ss_off[7:0])
+        8'h10: SFR_r[`SFR_CPU_IRQFL] <= ss_wr_data[7];
+        8'h11: begin CFR_r[`CFR_SA1_IRQFL] <= ss_wr_data[7]; CFR_r[`CFR_TMR_IRQFL] <= ss_wr_data[6]; CFR_r[`CFR_SA1_NMIFL] <= ss_wr_data[4]; end
+        8'h20: CCNT_r  <= ss_wr_data;
+        8'h21: SIE_r   <= ss_wr_data;
+        8'h22: SIC_r   <= ss_wr_data;
+        8'h23: CRV_r[7:0]  <= ss_wr_data;
+        8'h24: CRV_r[15:8] <= ss_wr_data;
+        8'h25: CNV_r[7:0]  <= ss_wr_data;
+        8'h26: CNV_r[15:8] <= ss_wr_data;
+        8'h27: CIV_r[7:0]  <= ss_wr_data;
+        8'h28: CIV_r[15:8] <= ss_wr_data;
+        8'h29: SCNT_r  <= ss_wr_data;
+        8'h2A: CIE_r   <= ss_wr_data;
+        8'h2B: CIC_r   <= ss_wr_data;
+        8'h2C: SNV_r[7:0]  <= ss_wr_data;
+        8'h2D: SNV_r[15:8] <= ss_wr_data;
+        8'h2E: SIV_r[7:0]  <= ss_wr_data;
+        8'h2F: SIV_r[15:8] <= ss_wr_data;
+        8'h30: TMC_r   <= ss_wr_data;
+        8'h36: CXB_r   <= ss_wr_data;
+        8'h37: DXB_r   <= ss_wr_data;
+        8'h38: EXB_r   <= ss_wr_data;
+        8'h39: FXB_r   <= ss_wr_data;
+        8'h3A: BMAPS_r <= ss_wr_data;
+        8'h3B: BMAP_r  <= ss_wr_data;
+        8'h3C: SWBE_r  <= ss_wr_data;
+        8'h3D: CWBE_r  <= ss_wr_data;
+        8'h3E: BWPA_r  <= ss_wr_data;
+        8'h3F: SIWP_r  <= ss_wr_data;
+        8'h40: CIWP_r  <= ss_wr_data;
+        8'h41: DCNT_r  <= ss_wr_data;
+        8'h42: CDMA_r  <= ss_wr_data;
+        8'h43: DSA_r[7:0]   <= ss_wr_data;
+        8'h44: DSA_r[15:8]  <= ss_wr_data;
+        8'h45: DSA_r[23:16] <= ss_wr_data;
+        8'h46: DDA_r[7:0]   <= ss_wr_data;
+        8'h47: DDA_r[15:8]  <= ss_wr_data;
+        8'h48: DDA_r[23:16] <= ss_wr_data;
+        8'h49: DTC_r[7:0]   <= ss_wr_data;
+        8'h4A: DTC_r[15:8]  <= ss_wr_data;
+        8'h4B: BBF_r   <= ss_wr_data;
+        8'h4C: BRF_r[0]  <= ss_wr_data;
+        8'h4D: BRF_r[1]  <= ss_wr_data;
+        8'h4E: BRF_r[2]  <= ss_wr_data;
+        8'h4F: BRF_r[3]  <= ss_wr_data;
+        8'h50: BRF_r[4]  <= ss_wr_data;
+        8'h51: BRF_r[5]  <= ss_wr_data;
+        8'h52: BRF_r[6]  <= ss_wr_data;
+        8'h53: BRF_r[7]  <= ss_wr_data;
+        8'h54: BRF_r[8]  <= ss_wr_data;
+        8'h55: BRF_r[9]  <= ss_wr_data;
+        8'h56: BRF_r[10] <= ss_wr_data;
+        8'h57: BRF_r[11] <= ss_wr_data;
+        8'h58: BRF_r[12] <= ss_wr_data;
+        8'h59: BRF_r[13] <= ss_wr_data;
+        8'h5A: BRF_r[14] <= ss_wr_data;
+        8'h5B: BRF_r[15] <= ss_wr_data;
+        8'h5C: MCNT_r  <= ss_wr_data;
+        8'h5D: MA_r[7:0]   <= ss_wr_data;
+        8'h5E: MA_r[15:8]  <= ss_wr_data;
+        8'h5F: MB_r[7:0]   <= ss_wr_data;
+        8'h60: MB_r[15:8]  <= ss_wr_data;
+        8'h61: VBD_r   <= ss_wr_data;
+        default: ;
+      endcase
+    end
+`endif
   end
 end
 
@@ -1029,6 +1193,34 @@ always @(posedge CLK) begin
     MR_r      <= 0;
     OF_r      <= 0;
   end
+  // Savestate freeze: hold MR_r (otherwise recomputed every clock) and restore
+  // MR/OF plus the flopped operands, handshake forced idle for the release.
+`ifdef SA1_SS_ACTIVE
+  else if (ss_frozen) begin
+    // Pure hold while frozen; the $F0 write forces the handshake idle on a load.
+    if (ss_block_wr) begin
+      case (ss_off[7:0])
+        8'h68: MR_r[7:0]    <= ss_wr_data;
+        8'h69: MR_r[15:8]   <= ss_wr_data;
+        8'h6A: MR_r[23:16]  <= ss_wr_data;
+        8'h6B: MR_r[31:24]  <= ss_wr_data;
+        8'h6C: MR_r[39:32]  <= ss_wr_data;
+        8'h6D: OF_r         <= ss_wr_data;
+        8'h78: math_md_r    <= ss_wr_data[1:0];
+        8'h79: math_ma_r[7:0]  <= ss_wr_data;
+        8'h7A: math_ma_r[15:8] <= ss_wr_data;
+        8'h7B: math_mb_r[7:0]  <= ss_wr_data;
+        8'h7C: math_mb_r[15:8] <= ss_wr_data;
+        8'hF0: begin
+          math_val_r  <= 0;
+          math_acm_r  <= 0;
+          math_init_r <= 0;
+        end
+        default: ;
+      endcase
+    end
+  end
+`endif
   else begin
     if (snes_writebuf_val_r) begin
       if (snes_writebuf_addr_r[8:0] == ADDR_MB+1) begin
@@ -1723,7 +1915,8 @@ assign RAM_BUS_WORD = 1'b0;
 assign RAM_BUS_ADDR = {4'h0,ram_bus_addr_r};
 assign RAM_BUS_WRDATA = ram_bus_data_r;
 
-assign iram_wren = MMC_STATE[clog2(ST_MMC_IRAM)] & mmc_wr_r;
+// Keep the SA-1-side IRAM write off while frozen so it cannot race the restore.
+assign iram_wren = MMC_STATE[clog2(ST_MMC_IRAM)] & mmc_wr_r & ~ss_frozen;
 assign iram_addr = mmc_addr_r[10:0];
 assign iram_din  = mmc_wrdata_r[7:0];
 
@@ -1844,6 +2037,69 @@ always @(posedge CLK) begin
     SFR_r[`SFR_DMA_IRQFL] <= 0;
     CFR_r[`CFR_DMA_IRQFL] <= 0;
   end
+  // Savestate freeze: hold the DMA state, force the transients to a clean idle so
+  // the release resumes from ST_DMA_IDLE, and restore the persistent CC1 config and
+  // the DMA interrupt flags.  The derived CC1 config recomputes from CDMA_r.
+`ifdef SA1_SS_ACTIVE
+  else if (ss_frozen) begin
+    // Pure HOLD while frozen (DSP-core semantics): the normal logic is suspended,
+    // so the handler's own bus activity (e.g. the BW-RAM capture reads at
+    // $40:xxxx) cannot pulse the CC1 trigger, and a timeout-forced freeze parks
+    // any in-flight CC1/DMA state exactly.  Unconditionally zeroing the
+    // transients here corrupted a LIVE CC1 session on a plain SAVE (seen in
+    // hardware: the SMRPG menu loses its CC1-converted digits and the game hangs
+    // on the SA-1 interlock).  The LOAD path normalizes the FSM/transients
+    // explicitly via the $F0 resume-shape write below.
+    if (ss_block_wr) begin
+      case (ss_off[7:0])
+        8'h10: SFR_r[`SFR_DMA_IRQFL] <= ss_wr_data[5];
+        8'h11: CFR_r[`CFR_DMA_IRQFL] <= ss_wr_data[5];
+        8'h80: dma_cc1_en_r        <= ss_wr_data[0];
+        8'h81: dma_cc1_active_r    <= ss_wr_data[0];
+        8'h82: dma_cc1_char_num_r  <= ss_wr_data[4:0];
+        8'h83: dma_cc1_addr_char_base_r[7:0]   <= ss_wr_data;
+        8'h84: dma_cc1_addr_char_base_r[15:8]  <= ss_wr_data;
+        8'h85: dma_cc1_addr_char_base_r[23:16] <= ss_wr_data;
+        8'h86: dma_cc1_addr_row_base_r[7:0]    <= ss_wr_data;
+        8'h87: dma_cc1_addr_row_base_r[15:8]   <= ss_wr_data;
+        8'h88: dma_cc1_addr_row_base_r[23:16]  <= ss_wr_data;
+        8'h89: dma_cc1_addr_rd_r[7:0]          <= ss_wr_data;
+        8'h8A: dma_cc1_addr_rd_r[15:8]         <= ss_wr_data;
+        8'h8B: dma_cc1_addr_rd_r[23:16]        <= ss_wr_data;
+        8'h8C: dma_cc1_addr_wr_r[7:0]          <= ss_wr_data;
+        8'h8D: dma_cc1_addr_wr_r[10:8]         <= ss_wr_data[2:0];
+        8'h8E: dma_cc1_data_r[0] <= ss_wr_data;
+        8'h8F: dma_cc1_data_r[1] <= ss_wr_data;
+        8'h90: dma_cc1_data_r[2] <= ss_wr_data;
+        8'h91: dma_cc1_data_r[3] <= ss_wr_data;
+        8'h92: dma_cc1_data_r[4] <= ss_wr_data;
+        8'h93: dma_cc1_data_r[5] <= ss_wr_data;
+        8'h94: dma_cc1_data_r[6] <= ss_wr_data;
+        8'h95: dma_cc1_data_r[7] <= ss_wr_data;
+        8'h96: dma_cc2_line_r    <= ss_wr_data[3:0];
+        8'hF0: begin
+          // resume-shape write (LOAD): normalize the engine for a clean restart
+          DMA_STATE                 <= ST_DMA_IDLE;
+          dma_mmc_rd_rom_r          <= 0;
+          dma_mmc_rd_bram_r         <= 0;
+          dma_mmc_wr_bram_r         <= 0;
+          dma_mmc_rd_iram_r         <= 0;
+          dma_mmc_wr_iram_r         <= 0;
+          dma_trigger_normal_r      <= 0;
+          dma_start_type1_r         <= 0;
+          dma_trigger_type1_r       <= 0;
+          dma_trigger_type2_r       <= 0;
+          dma_cc1_int_r             <= 0;
+          dma_normal_int_r          <= 0;
+          dma_normal_pri_active_r   <= 0;
+          dma_normal_prefetch_val_r <= 0;
+          dma_normal_state_r        <= 0;
+        end
+        default: ;
+      endcase
+    end
+  end
+`endif
   else begin
     // watch for triggers
     dma_trigger_normal_r <= (   dma_dcnt_r[`DCNT_DMAEN]
@@ -2207,6 +2463,38 @@ always @(posedge CLK) begin
 
     VBD_STATE <= ST_VBD_IDLE;
   end
+  // Savestate freeze: hold the VBD engine idle and restore VDA/VDP/vbit/data.  VDA_r
+  // is owned by this block (not the MMIO block), so it is restored here.  The FSM is
+  // forced idle (the freeze boundary already requires VBD idle).  Constant-folds on
+  // mk2 (ss_frozen == 0).
+`ifdef SA1_SS_ACTIVE
+  else if (ss_frozen) begin
+    // Pure HOLD while frozen (see the DMA block note); the $F0 resume-shape
+    // write normalizes the engine on the LOAD path.
+    if (ss_block_wr) begin
+      case (ss_off[7:0])
+        8'h62: VDA_r[7:0]        <= ss_wr_data;
+        8'h63: VDA_r[15:8]       <= ss_wr_data;
+        8'h64: VDA_r[23:16]      <= ss_wr_data;
+        8'h6E: VDP_r[7:0]        <= ss_wr_data;
+        8'h6F: VDP_r[15:8]       <= ss_wr_data;
+        8'h70: vbd_vbit_r        <= ss_wr_data[3:0];
+        8'h71: vbd_data_r[7:0]   <= ss_wr_data;
+        8'h72: vbd_data_r[15:8]  <= ss_wr_data;
+        8'h73: vbd_data_r[23:16] <= ss_wr_data;
+        8'h74: vbd_data_r[31:24] <= ss_wr_data;
+        8'hF0: begin
+          vbd_mmc_rd_r  <= 0;
+          vbd_trigger_r <= 0;
+          vbd_update_r  <= 0;
+          vbd_active_r  <= 0;
+          VBD_STATE     <= ST_VBD_IDLE;
+        end
+        default: ;
+      endcase
+    end
+  end
+`endif
   else begin
     // watch for triggers
     // HL=0 trigger on VBA+2 and every VBD write.  HL=1 trigger on VDP+1 data read and every VBD write.
@@ -2330,15 +2618,34 @@ wire       int_wai;
 // - WAI write from execute and clear from interrupt edge (while in WAI state).  Should have common support in mmc for interrupt active.
 // - Set/Clear interrupt flag in register state.
 always @(posedge CLK) begin
-  int_rti_r <= exe_dec_grp == `GRP_SPC && exe_dec_add_stk && !exe_dec_store;
-
   if (RST) begin
     int_pending_r <= 0;
     int_nmi_r     <= 0;
 
     WAI_r         <= 0;
+    int_rti_r     <= 0;
   end
+  // Savestate freeze: hold the interrupt state and restore it from the window.
+  // WAI_r is restored via the $F0 resume-shape byte so it lands after the FSMs are
+  // normalized.  Constant-folds on mk2 (ss_frozen == 0).
+`ifdef SA1_SS_ACTIVE
+  else if (ss_frozen) begin
+    if (ss_block_wr) begin
+      case (ss_off[7:0])
+        8'h12: int_pending_r      <= ss_wr_data[0];
+        8'h13: int_nmi_r          <= ss_wr_data[0];
+        8'h14: int_vector_r[7:0]  <= ss_wr_data;
+        8'h15: int_vector_r[15:8] <= ss_wr_data;
+        8'h16: int_rti_r          <= ss_wr_data[0];
+        8'hF0: WAI_r              <= ss_wr_data[0];
+        default: ;
+      endcase
+    end
+  end
+`endif
   else begin
+    int_rti_r <= exe_dec_grp == `GRP_SPC && exe_dec_add_stk && !exe_dec_store;
+
     // WAI_r can only be set in EXE_WAIT for WAI
     if (EXE_STATE[clog2(ST_EXE_WAIT)] & pipeline_advance) begin
       // check current pending.  taking an interrupt will block nmi and avoid duplicate irq.
@@ -2561,6 +2868,42 @@ always @(posedge CLK) begin
 
     e2c_waitcnt_r <= 0;
   end
+  // Savestate freeze: hold the execution pipeline and restore the committed
+  // architectural registers.  The $F0 resume-shape write normalizes the pipeline
+  // to a clean IDLE boundary and reloads the fetch pointer from the restored
+  // {PBR,PC} (offsets $0A-$0C, written earlier in the ascending block copy).  On
+  // release the IDLE fetch reloads the exe_* working copies from *_r (FETCH_END),
+  // so only the committed regs need restoring.  Constant-folds on mk2.
+`ifdef SA1_SS_ACTIVE
+  else if (ss_frozen) begin
+    if (ss_block_wr) begin
+      case (ss_off[7:0])
+        8'h00: A_r[7:0]   <= ss_wr_data;
+        8'h01: A_r[15:8]  <= ss_wr_data;
+        8'h02: X_r[7:0]   <= ss_wr_data;
+        8'h03: X_r[15:8]  <= ss_wr_data;
+        8'h04: Y_r[7:0]   <= ss_wr_data;
+        8'h05: Y_r[15:8]  <= ss_wr_data;
+        8'h06: S_r[7:0]   <= ss_wr_data;
+        8'h07: S_r[15:8]  <= ss_wr_data;
+        8'h08: D_r[7:0]   <= ss_wr_data;
+        8'h09: D_r[15:8]  <= ss_wr_data;
+        8'h0A: PC_r[7:0]  <= ss_wr_data;
+        8'h0B: PC_r[15:8] <= ss_wr_data;
+        8'h0C: PBR_r      <= ss_wr_data;
+        8'h0D: DBR_r      <= ss_wr_data;
+        8'h0E: P_r        <= ss_wr_data;
+        8'h0F: E_r        <= ss_wr_data[0];
+        8'hF0: begin
+          EXE_STATE        <= ST_EXE_IDLE;
+          exe_active_r     <= 1'b0;
+          exe_fetch_addr_r <= {PBR_r, PC_r};
+        end
+        default: ;
+      endcase
+    end
+  end
+`endif
   else begin
     case (EXE_STATE)
       ST_EXE_IDLE: begin
@@ -2569,7 +2912,12 @@ always @(posedge CLK) begin
           exe_fetch_addr_r <= {8'h00,CRV_r};
         end
 
-        if (~(CCNT_r[`CCNT_SA1_RESB] | CCNT_r[`CCNT_SA1_RDYB]) & sa1_clock_en) begin
+        // Savestate halt: ss_halt_req_eff parks the CPU here at an IDLE
+        // instruction boundary (both 0 on mk2).  ss_idle_wai_park (=WAI_r on mk3)
+        // keeps a RESTORED WAI parked in IDLE until the interrupt block clears
+        // WAI_r on a pending interrupt; in normal operation IDLE never coexists
+        // with WAI_r=1 so it is a no-op.
+        if (~(CCNT_r[`CCNT_SA1_RESB] | CCNT_r[`CCNT_SA1_RDYB] | snapshot_pause | ss_halt_req_eff | ss_idle_wai_park) & sa1_clock_en) begin
           exe_fetch_size_r <= 0;
           exe_mmc_byte_total_r <= 1;
           exe_data_word_r <= 0;
@@ -3229,7 +3577,7 @@ always @(posedge CLK) begin
           // reset internal PCs to help with debugging
           exe_nextpc_r   <= 0;
 
-          EXE_STATE <= (exe_active_r & ~(CCNT_r[`CCNT_SA1_RESB] | CCNT_r[`CCNT_SA1_RDYB])) ? ST_EXE_FETCH : ST_EXE_IDLE;
+          EXE_STATE <= (exe_active_r & ~(CCNT_r[`CCNT_SA1_RESB] | CCNT_r[`CCNT_SA1_RDYB] | snapshot_pause | ss_halt_req_eff)) ? ST_EXE_FETCH : ST_EXE_IDLE;
         end
       end
     endcase
@@ -3242,6 +3590,229 @@ assign     exe_fetch_byte_val = exe_prefetch_val_r;
 assign     exe_fetch_move     = exe_move_val_r;
 assign     exe_fetch_byte     = exe_prefetch_r;
 assign     exe_fetch_data     = exe_fetch_data_r[7:0];
+
+//-------------------------------------------------------------------
+// SAVESTATE SCAN WINDOW (mk3 only)
+//-------------------------------------------------------------------
+// A flat 256-byte state block plus a halt-control byte are exposed to the SNES at
+// $E8:0000-$E8:07FF while the handler holds the snescmd region unlocked
+// (ss_window_en from address.v).  The handler halts the SA-1 at an instruction
+// boundary, DMAs the block out (save) or in (load), then releases the halt.
+//
+//   $7FF  control : WRITE bit0=1 request halt / bit0=0 release.
+//                   READ  bit0 = frozen, bit1 = frozen-at-WAI (debug), rest 0.
+//   $000-$0FF state block (RESTORE writes are applied ascending, so $F0 lands late):
+//     $00-$0F  arch: A X Y S D (16b lo/hi), PC(16), PBR, DBR, P, E{b0}.
+//              At the WAI boundary the committed *_r may not hold post-WAI values,
+//              so the READ returns the EFFECTIVE next-instruction values (the exe_*
+//              working copies + next PC).  RESTORE writes the committed *_r; the
+//              IDLE fetch reloads exe_* from *_r on release, so that is sufficient.
+//     $10 SFR  $11 CFR  $12 int_pending{b0}  $13 int_nmi{b0}
+//     $14-$15  int_vector(16)   $16 int_rti{b0}
+//     $20 CCNT $21 SIE $22 SIC $23-$24 CRV $25-$26 CNV $27-$28 CIV
+//     $29 SCNT $2A CIE $2B CIC $2C-$2D SNV $2E-$2F SIV
+//     $30 TMC  $31 CTR $32-$33 HCNT $34-$35 VCNT (last three read-only/static)
+//     $36 CXB $37 DXB $38 EXB $39 FXB $3A BMAPS $3B BMAP $3C SWBE $3D CWBE
+//     $3E BWPA $3F SIWP $40 CIWP $41 DCNT $42 CDMA
+//     $43-$45 DSA(24) $46-$48 DDA(24) $49-$4A DTC(16) $4B BBF
+//     $4C-$5B BRF[0..15]  $5C MCNT $5D-$5E MA $5F-$60 MB $61 VBD $62-$64 VDA(24)
+//     $68-$6C MR(40) $6D OF $6E-$6F VDP(16)
+//     $70 vbd_vbit{[3:0]} $71-$74 vbd_data(32)
+//     $78 math_md{[1:0]} $79-$7A math_ma $7B-$7C math_mb $7D math flags (read-only)
+//     $80 cc1_en{b0} $81 cc1_active{b0} $82 cc1_char_num{[4:0]}
+//     $83-$85 cc1_addr_char_base(24) $86-$88 cc1_addr_row_base(24)
+//     $89-$8B cc1_addr_rd(24) $8C-$8D cc1_addr_wr(11) $8E-$95 cc1_line_buf[0..7]
+//     $96 cc2_line{[3:0]}
+//     $97 cc1_bpp $98-$99 cc1_bpl $9A cc1_size_mask $9B cc1_mask $9C cc1_imask
+//         (the last six are derived and read-only: they recompute from CDMA_r)
+//     $F0 resume-shape: READ bit0=WAI_r; WRITE bit0->WAI_r + normalize FSMs to idle
+//     $FF magic, READ-only, returns $5A
+// The restore demux lives inside each owning always block (search "Savestate
+// freeze" / "Savestate RESTORE"); this section holds the freeze FSM + read mux.
+// The freeze CONTROL signals (ss_frozen, ss_block_wr, ss_off, ss_wr_data,
+// ss_halt_req_eff, ss_idle_wai_park) are declared EARLY (near the state flops) so
+// the guards above bind cleanly; the FSM + capture that produce them live here.
+// Everything here is gated on SA1_SS_ACTIVE (mk3 always; mk2 only with the
+// experimental SA1_SS_MK2): without it those control signals are constant 0
+// (tied off early) and this whole section is compiled out, so the guards fold to
+// the original SA-1 logic.
+`ifdef SA1_SS_ACTIVE
+// Frozen at the WAI boundary: exposes the effective (post-WAI) arch state on READ.
+wire        ss_at_wai   = (EXE_STATE == ST_EXE_WAIT) & WAI_r;
+
+// Freeze boundary: an IDLE (or a parked WAI) instruction boundary with every
+// SA-1-side engine quiesced, OR the saturating timeout (never hangs).
+wire        ss_boundary = (EXE_STATE[clog2(ST_EXE_IDLE)] | ss_at_wai)
+                        & DMA_STATE[clog2(ST_DMA_IDLE)]
+                        & MMC_STATE[clog2(ST_MMC_IDLE)]
+                        & (MMC_RAM_STATE == ST_MMC_RAM_IDLE)
+                        & VBD_STATE[clog2(ST_VBD_IDLE)]
+                        & ~math_val_r & ~math_acm_r & ~math_init_r
+                        // pending 1-cycle pulses: freezing on the cycle one is
+                        // latched would discard it.  They can only delay the freeze
+                        // by a cycle or two, never starve it.
+                        & ~vbd_trigger_r & ~vbd_update_r
+                        & ~dma_trigger_normal_r & ~dma_start_type1_r
+                        & ~dma_trigger_type1_r & ~dma_trigger_type2_r;
+
+// Effective (post-WAI) architectural values for the capture mux.
+wire [15:0] ss_eff_pc  = exe_control_r ? exe_target_r[15:0]  : exe_nextpc_r;
+wire [7:0]  ss_eff_pbr = exe_control_r ? exe_target_r[23:16] : exe_pbr_r;
+wire [15:0] ss_a   = ss_at_wai ? exe_a_r    : A_r;
+wire [15:0] ss_x   = ss_at_wai ? exe_x_r    : X_r;
+wire [15:0] ss_y   = ss_at_wai ? exe_y_r    : Y_r;
+wire [15:0] ss_s   = ss_at_wai ? exe_s_r    : S_r;
+wire [15:0] ss_d   = ss_at_wai ? exe_d_r    : D_r;
+wire [15:0] ss_pc  = ss_at_wai ? ss_eff_pc  : PC_r;
+wire [7:0]  ss_pbr = ss_at_wai ? ss_eff_pbr : PBR_r;
+wire [7:0]  ss_dbr = ss_at_wai ? exe_dbr_r  : DBR_r;
+wire [7:0]  ss_p   = ss_at_wai ? exe_p_r    : P_r;
+wire        ss_e   = ss_at_wai ? exe_e_r    : E_r;
+
+// Halt-request flop: settable/clearable even while everything else is frozen.
+always @(posedge CLK) begin
+  if (RST) ss_halt_snes <= 1'b0;
+  else if (ss_win_wr & (ss_off == 11'h7ff)) ss_halt_snes <= ss_wr_data[0];
+end
+
+// Boundary-gated freeze with saturating timeout.  ss_dbg_froze_to_r is sticky for
+// the halt session: set when the freeze came from the timeout, not a boundary.
+reg ss_dbg_froze_to_r; initial ss_dbg_froze_to_r = 1'b0;
+always @(posedge CLK) begin
+  if (RST | ~ss_halt_req_eff) begin
+    ss_frozen <= 1'b0;
+    ss_wait   <= 20'h0;
+  end else if (~ss_frozen) begin
+    ss_wait <= ss_wait + 1'b1;
+    if (ss_boundary | (&ss_wait)) begin
+      ss_frozen <= 1'b1;
+      if (~ss_boundary) ss_dbg_froze_to_r <= 1'b1;
+    end
+  end
+end
+
+// Align the window-enable with addr_in_r for the write path.
+always @(posedge CLK) ss_window_en_r <= ss_window_en;
+
+// Registered read serve (GSU lesson: never an unregistered deep mux).
+`ifdef SA1_SS_MK2
+// XST refuses an unpacked-array element in the implicit sensitivity list of an
+// always @(*) (Xst:902).  Tap the words into nets outside the block so the mux
+// reads nets only; Quartus accepts the array read, kept in the `else arm.
+wire [7:0] ss_brf00 = BRF_r[0];   wire [7:0] ss_brf01 = BRF_r[1];
+wire [7:0] ss_brf02 = BRF_r[2];   wire [7:0] ss_brf03 = BRF_r[3];
+wire [7:0] ss_brf04 = BRF_r[4];   wire [7:0] ss_brf05 = BRF_r[5];
+wire [7:0] ss_brf06 = BRF_r[6];   wire [7:0] ss_brf07 = BRF_r[7];
+wire [7:0] ss_brf08 = BRF_r[8];   wire [7:0] ss_brf09 = BRF_r[9];
+wire [7:0] ss_brf10 = BRF_r[10];  wire [7:0] ss_brf11 = BRF_r[11];
+wire [7:0] ss_brf12 = BRF_r[12];  wire [7:0] ss_brf13 = BRF_r[13];
+wire [7:0] ss_brf14 = BRF_r[14];  wire [7:0] ss_brf15 = BRF_r[15];
+// Same treatment for the other unpacked array the mux reads.
+wire [7:0] ss_cc1d0 = dma_cc1_data_r[0];  wire [7:0] ss_cc1d1 = dma_cc1_data_r[1];
+wire [7:0] ss_cc1d2 = dma_cc1_data_r[2];  wire [7:0] ss_cc1d3 = dma_cc1_data_r[3];
+wire [7:0] ss_cc1d4 = dma_cc1_data_r[4];  wire [7:0] ss_cc1d5 = dma_cc1_data_r[5];
+wire [7:0] ss_cc1d6 = dma_cc1_data_r[6];  wire [7:0] ss_cc1d7 = dma_cc1_data_r[7];
+`endif
+reg [7:0] ss_cap;
+always @(*) begin
+  ss_cap = 8'h00;
+  if (SNES_ADDR[10:0] == 11'h7ff)
+    ss_cap = {6'h0, (ss_at_wai & ss_frozen), ss_frozen};
+  else if (SNES_ADDR[10:8] == 3'b000) begin
+    case (SNES_ADDR[7:0])
+      8'h00: ss_cap = ss_a[7:0];    8'h01: ss_cap = ss_a[15:8];
+      8'h02: ss_cap = ss_x[7:0];    8'h03: ss_cap = ss_x[15:8];
+      8'h04: ss_cap = ss_y[7:0];    8'h05: ss_cap = ss_y[15:8];
+      8'h06: ss_cap = ss_s[7:0];    8'h07: ss_cap = ss_s[15:8];
+      8'h08: ss_cap = ss_d[7:0];    8'h09: ss_cap = ss_d[15:8];
+      8'h0A: ss_cap = ss_pc[7:0];   8'h0B: ss_cap = ss_pc[15:8];
+      8'h0C: ss_cap = ss_pbr;       8'h0D: ss_cap = ss_dbr;
+      8'h0E: ss_cap = ss_p;         8'h0F: ss_cap = {7'h0, ss_e};
+      8'h10: ss_cap = SFR_r;        8'h11: ss_cap = CFR_r;
+      8'h12: ss_cap = {7'h0, int_pending_r};
+      8'h13: ss_cap = {7'h0, int_nmi_r};
+      8'h14: ss_cap = int_vector_r[7:0];  8'h15: ss_cap = int_vector_r[15:8];
+      8'h16: ss_cap = {7'h0, int_rti_r};
+      8'h20: ss_cap = CCNT_r;       8'h21: ss_cap = SIE_r;    8'h22: ss_cap = SIC_r;
+      8'h23: ss_cap = CRV_r[7:0];   8'h24: ss_cap = CRV_r[15:8];
+      8'h25: ss_cap = CNV_r[7:0];   8'h26: ss_cap = CNV_r[15:8];
+      8'h27: ss_cap = CIV_r[7:0];   8'h28: ss_cap = CIV_r[15:8];
+      8'h29: ss_cap = SCNT_r;       8'h2A: ss_cap = CIE_r;    8'h2B: ss_cap = CIC_r;
+      8'h2C: ss_cap = SNV_r[7:0];   8'h2D: ss_cap = SNV_r[15:8];
+      8'h2E: ss_cap = SIV_r[7:0];   8'h2F: ss_cap = SIV_r[15:8];
+      8'h30: ss_cap = TMC_r;        8'h31: ss_cap = CTR_r;
+      8'h32: ss_cap = HCNT_r[7:0];  8'h33: ss_cap = HCNT_r[15:8];
+      8'h34: ss_cap = VCNT_r[7:0];  8'h35: ss_cap = VCNT_r[15:8];
+      8'h36: ss_cap = CXB_r;        8'h37: ss_cap = DXB_r;
+      8'h38: ss_cap = EXB_r;        8'h39: ss_cap = FXB_r;
+      8'h3A: ss_cap = BMAPS_r;      8'h3B: ss_cap = BMAP_r;
+      8'h3C: ss_cap = SWBE_r;       8'h3D: ss_cap = CWBE_r;
+      8'h3E: ss_cap = BWPA_r;       8'h3F: ss_cap = SIWP_r;   8'h40: ss_cap = CIWP_r;
+      8'h41: ss_cap = DCNT_r;       8'h42: ss_cap = CDMA_r;
+      8'h43: ss_cap = DSA_r[7:0];   8'h44: ss_cap = DSA_r[15:8];  8'h45: ss_cap = DSA_r[23:16];
+      8'h46: ss_cap = DDA_r[7:0];   8'h47: ss_cap = DDA_r[15:8];  8'h48: ss_cap = DDA_r[23:16];
+      8'h49: ss_cap = DTC_r[7:0];   8'h4A: ss_cap = DTC_r[15:8];
+      8'h4B: ss_cap = BBF_r;
+`ifdef SA1_SS_MK2
+      8'h4C: ss_cap = ss_brf00;   8'h4D: ss_cap = ss_brf01;   8'h4E: ss_cap = ss_brf02;   8'h4F: ss_cap = ss_brf03;
+      8'h50: ss_cap = ss_brf04;   8'h51: ss_cap = ss_brf05;   8'h52: ss_cap = ss_brf06;   8'h53: ss_cap = ss_brf07;
+      8'h54: ss_cap = ss_brf08;   8'h55: ss_cap = ss_brf09;   8'h56: ss_cap = ss_brf10;   8'h57: ss_cap = ss_brf11;
+      8'h58: ss_cap = ss_brf12;   8'h59: ss_cap = ss_brf13;   8'h5A: ss_cap = ss_brf14;   8'h5B: ss_cap = ss_brf15;
+`else
+      8'h4C: ss_cap = BRF_r[0];   8'h4D: ss_cap = BRF_r[1];   8'h4E: ss_cap = BRF_r[2];   8'h4F: ss_cap = BRF_r[3];
+      8'h50: ss_cap = BRF_r[4];   8'h51: ss_cap = BRF_r[5];   8'h52: ss_cap = BRF_r[6];   8'h53: ss_cap = BRF_r[7];
+      8'h54: ss_cap = BRF_r[8];   8'h55: ss_cap = BRF_r[9];   8'h56: ss_cap = BRF_r[10];  8'h57: ss_cap = BRF_r[11];
+      8'h58: ss_cap = BRF_r[12];  8'h59: ss_cap = BRF_r[13];  8'h5A: ss_cap = BRF_r[14];  8'h5B: ss_cap = BRF_r[15];
+`endif
+      8'h5C: ss_cap = MCNT_r;
+      8'h5D: ss_cap = MA_r[7:0];  8'h5E: ss_cap = MA_r[15:8];
+      8'h5F: ss_cap = MB_r[7:0];  8'h60: ss_cap = MB_r[15:8];
+      8'h61: ss_cap = VBD_r;
+      8'h62: ss_cap = VDA_r[7:0]; 8'h63: ss_cap = VDA_r[15:8]; 8'h64: ss_cap = VDA_r[23:16];
+      8'h68: ss_cap = MR_r[7:0];  8'h69: ss_cap = MR_r[15:8];  8'h6A: ss_cap = MR_r[23:16];
+      8'h6B: ss_cap = MR_r[31:24];8'h6C: ss_cap = MR_r[39:32];
+      8'h6D: ss_cap = OF_r;
+      8'h6E: ss_cap = VDP_r[7:0]; 8'h6F: ss_cap = VDP_r[15:8];
+      8'h70: ss_cap = {4'h0, vbd_vbit_r};
+      8'h71: ss_cap = vbd_data_r[7:0];   8'h72: ss_cap = vbd_data_r[15:8];
+      8'h73: ss_cap = vbd_data_r[23:16]; 8'h74: ss_cap = vbd_data_r[31:24];
+      8'h78: ss_cap = {6'h0, math_md_r};
+      8'h79: ss_cap = math_ma_r[7:0];  8'h7A: ss_cap = math_ma_r[15:8];
+      8'h7B: ss_cap = math_mb_r[7:0];  8'h7C: ss_cap = math_mb_r[15:8];
+      8'h7D: ss_cap = {5'h0, math_init_r, math_acm_r, math_val_r};
+      8'h80: ss_cap = {7'h0, dma_cc1_en_r};
+      8'h81: ss_cap = {7'h0, dma_cc1_active_r};
+      8'h82: ss_cap = {3'h0, dma_cc1_char_num_r};
+      8'h83: ss_cap = dma_cc1_addr_char_base_r[7:0];  8'h84: ss_cap = dma_cc1_addr_char_base_r[15:8];  8'h85: ss_cap = dma_cc1_addr_char_base_r[23:16];
+      8'h86: ss_cap = dma_cc1_addr_row_base_r[7:0];   8'h87: ss_cap = dma_cc1_addr_row_base_r[15:8];   8'h88: ss_cap = dma_cc1_addr_row_base_r[23:16];
+      8'h89: ss_cap = dma_cc1_addr_rd_r[7:0];         8'h8A: ss_cap = dma_cc1_addr_rd_r[15:8];         8'h8B: ss_cap = dma_cc1_addr_rd_r[23:16];
+      8'h8C: ss_cap = dma_cc1_addr_wr_r[7:0];         8'h8D: ss_cap = {5'h0, dma_cc1_addr_wr_r[10:8]};
+`ifdef SA1_SS_MK2
+      8'h8E: ss_cap = ss_cc1d0;  8'h8F: ss_cap = ss_cc1d1;  8'h90: ss_cap = ss_cc1d2;  8'h91: ss_cap = ss_cc1d3;
+      8'h92: ss_cap = ss_cc1d4;  8'h93: ss_cap = ss_cc1d5;  8'h94: ss_cap = ss_cc1d6;  8'h95: ss_cap = ss_cc1d7;
+`else
+      8'h8E: ss_cap = dma_cc1_data_r[0];  8'h8F: ss_cap = dma_cc1_data_r[1];  8'h90: ss_cap = dma_cc1_data_r[2];  8'h91: ss_cap = dma_cc1_data_r[3];
+      8'h92: ss_cap = dma_cc1_data_r[4];  8'h93: ss_cap = dma_cc1_data_r[5];  8'h94: ss_cap = dma_cc1_data_r[6];  8'h95: ss_cap = dma_cc1_data_r[7];
+`endif
+      8'h96: ss_cap = {4'h0, dma_cc2_line_r};
+      8'h97: ss_cap = {4'h0, dma_cc1_bpp_r};
+      8'h98: ss_cap = dma_cc1_bpl_r[7:0];  8'h99: ss_cap = {7'h0, dma_cc1_bpl_r[8]};
+      8'h9A: ss_cap = {3'h0, dma_cc1_size_mask_r};
+      8'h9B: ss_cap = {2'h0, dma_cc1_mask_r};
+      8'h9C: ss_cap = {1'h0, dma_cc1_imask_r};
+      8'hF0: ss_cap = {7'h0, WAI_r};
+      // $FF must stay read-only and serve $5A unconditionally, NOT gated on
+      // ss_frozen: the handler probes it before the freeze to tell a core with
+      // this window from one without, and the captured copy is what proves a
+      // .state really holds SA-1 state.
+      8'hFF: ss_cap = 8'h5A;
+      default: ss_cap = 8'h00;
+    endcase
+  end
+end
+
+always @(posedge CLK) ss_dout_r <= ss_cap;
+`endif
 
 `ifdef DEBUG
 // breakpoints
@@ -3607,7 +4178,31 @@ assign DBG         = 0;
 `ifdef DEBUG
 assign PGM_DATA    = pgmdata_out;
 `else
+`ifdef SA1_SS_ACTIVE
+// Joypad capture from the game's own IRAM forwarding ($3010/$3011): those writes
+// are bus-visible, so this sees the pad in scenes where the ctx $4218 store-sniff
+// does not fire.  main.v ORs both to arm the IRQ hook only while a gesture is
+// held; the ~33ms expiry drops stale values across scene changes.
+reg [15:0] ss_iram_pad_r;    initial ss_iram_pad_r    = 0;
+reg [21:0] ss_iram_pad_to_r; initial ss_iram_pad_to_r = 0;
+always @(posedge CLK) begin
+  if (snes_writebuf_iram_r & (snes_iram_addr_r == 11'h010)) begin
+    ss_iram_pad_r[7:0] <= snes_writebuf_iram_data_r;
+    ss_iram_pad_to_r   <= 22'h2FFFFF;
+  end
+  else if (snes_writebuf_iram_r & (snes_iram_addr_r == 11'h011)) begin
+    ss_iram_pad_r[15:8] <= snes_writebuf_iram_data_r;
+    ss_iram_pad_to_r    <= 22'h2FFFFF;
+  end
+  else if (|ss_iram_pad_to_r) ss_iram_pad_to_r <= ss_iram_pad_to_r - 1'b1;
+  else ss_iram_pad_r <= 16'h0000;
+end
 assign PGM_DATA    = 0;
+assign ss_iram_pad = ss_iram_pad_r;
+`else
+assign PGM_DATA    = 0;
+assign ss_iram_pad = 16'h0000;
+`endif
 `endif
 
 assign DATA_ENABLE = snes_data_enable_r;

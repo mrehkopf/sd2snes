@@ -42,6 +42,11 @@ module upd77c25(
 
   input [15:0] dsp_feat,
 
+  // savestate scan port (Phase 1: read-only)
+  input ss_halt,        // MCU debug halt request
+  input ss_window_en,   // 1 = DSP1-4 (sca handler active); 0 = ST0010 (plain RAM)
+  output ss_halted,     // 1 = freeze in effect, safe to snapshot/restore
+
   // debug
   output [15:0] updDR,
   output [15:0] updSR,
@@ -160,7 +165,12 @@ reg [7:0] DP_DOr;
 wire [7:0] DP_DO;
 wire [7:0] UPD_DO;
 
-wire ram_web = reg_we_rising & DP_enable;
+// suppress RAM write when the access targets the scan register-file / control
+// Declared before first use: XST rejects use-before-declaration, Quartus does not.
+wire ss_ctrl;
+wire ss_regwin;
+reg  ss_frozen; initial ss_frozen = 1'b0;
+wire ram_web = reg_we_rising & DP_enable & ~ss_regwin & ~ss_ctrl;
 
 `ifdef MK2
 `ifndef DEBUG
@@ -191,7 +201,9 @@ upd77c25_datram datram (
   .q_b(DP_DO) // output [7 : 0] doutb
 );
 `endif
-assign ram_wea = ((op != I_JP) && op_dst == 4'b1111 && insn_state == STATE_NEXT);
+// Gate the core's port-A RAM write while halted so it cannot race the port-B
+// restore; a pending write replays on unhalt, since insn_state is preserved.
+assign ram_wea = ((op != I_JP) && op_dst == 4'b1111 && insn_state == STATE_NEXT) & ~ss_frozen;
 assign ram_addra = {regs_dpb,
                     regs_dph | ((|(insn_state & (STATE_ALU1 | STATE_ALU2)) && op_dst == 4'b1100)
                                 ? 4'b0100
@@ -240,6 +252,129 @@ assign updB = regs_ab[1];
 assign updFL_A = {flags_s1[0],flags_s0[0],flags_c[0],flags_z[0],flags_ov1[0],flags_ov0[0]};
 assign updFL_B = {flags_s1[1],flags_s0[1],flags_c[1],flags_z[1],flags_ov1[1],flags_ov0[1]};
 
+// ---- savestate scan port -------------------------------------------------
+// While halted every always block below holds.  The architectural and pipeline
+// state is exposed as a flat byte window at DP_ADDR $600-$6FF (a port-B gap DSP1
+// never touches); $7FF is the halt control byte.  Offset map below.
+// ss_window_en separates DSP1-4 from the ST0010, which shares this core and uses
+// the full 2 KB RAM window for the game; there it is 0 and the window stays RAM.
+// Two halt sources: ss_halt (MCU) and ss_halt_snes (handler, via $7FF).  The
+// latter lives in its own block so it stays writable while everything else holds.
+reg ss_halt_snes;
+initial ss_halt_snes = 1'b0;
+wire ss_halt_eff = ss_halt | ss_halt_snes;
+assign ss_ctrl = ss_window_en & DP_enable & (DP_ADDR == 11'h7ff);
+always @(posedge CLK) begin
+  if(~RST) ss_halt_snes <= 1'b0;
+  else if(ss_ctrl & reg_we_rising) ss_halt_snes <= DI[0];
+end
+
+// Boundary-gated freeze: on a halt request let the DSP finish the current
+// transaction and stop at an idle instruction boundary, so the cut stays
+// consistent with the SNES CPU and the handshake re-syncs on resume.  A counter
+// forces the freeze after 256 cycles, so it can never hang.
+reg [7:0] ss_wait; initial ss_wait = 8'h00;
+wire ss_boundary = (insn_state == STATE_FETCH) & regs_sr[SR_RQM];
+always @(posedge CLK) begin
+  if(~RST | ~ss_halt_eff) begin
+    ss_frozen <= 1'b0;
+    ss_wait   <= 8'h00;
+  end else if(~ss_frozen) begin
+    ss_wait <= ss_wait + 1'b1;
+    if(ss_boundary | (&ss_wait)) ss_frozen <= 1'b1;
+  end
+end
+assign ss_halted = ss_frozen;
+
+// $600-$6FF register-file window (live only once actually frozen)
+assign ss_regwin = ss_window_en & DP_enable & ss_frozen & (DP_ADDR[10:8] == 3'b110);
+
+// Window writes are pipelined one cycle through local flops.  DP_enable comes from
+// address.v, which ANDs the hook unlock (a flop in cheat.v, far away on the die)
+// with the address decode; feeding that straight into the register-file write
+// demux builds a 7-level path that misses timing on the Mk.II.  Latching the
+// request first makes those writes flop-to-flop out of local registers, and the
+// extra cycle is invisible: the write strobe comes from a SNES bus cycle that
+// lasts tens of clocks.
+reg       ss_wr_r;   initial ss_wr_r  = 1'b0;
+reg [7:0] ss_off_r;  initial ss_off_r = 8'h00;
+reg [7:0] ss_di_r;   initial ss_di_r  = 8'h00;
+always @(posedge CLK) begin
+  ss_wr_r  <= ss_regwin & reg_we_rising;
+  ss_off_r <= DP_ADDR[7:0];
+  ss_di_r  <= DI;
+end
+wire [3:0] ss_stk_idx_r = (ss_off_r - 8'h34) >> 1;
+wire [3:0] ss_stk_idx = (DP_ADDR[7:0] - 8'h34) >> 1;
+reg [7:0] ss_reg_do;
+// Read the arrays through scalar wires so the combinational readback mux below reads
+// scalars, not 2D arrays -- XST (mk2) rejects a memory array in an @(*) sensitivity list
+// (Xst:902 "Unexpected ... event"); Quartus (mk3) tolerates it.  Behavior-neutral.
+wire [15:0] ss_rab0 = regs_ab[0];
+wire [15:0] ss_rab1 = regs_ab[1];
+wire [10:0] ss_stk  = stack[ss_stk_idx];
+always @(*) begin
+  if (DP_ADDR[7:0] >= 8'h34 && DP_ADDR[7:0] <= 8'h53)
+    ss_reg_do = DP_ADDR[0] ? {5'b0, ss_stk[10:8]}
+                           : ss_stk[7:0];
+  else case (DP_ADDR[7:0])
+    8'h00: ss_reg_do = pc[7:0];
+    8'h01: ss_reg_do = {5'b0, pc[10:8]};
+    8'h02: ss_reg_do = ss_rab0[7:0];
+    8'h03: ss_reg_do = ss_rab0[15:8];
+    8'h04: ss_reg_do = ss_rab1[7:0];
+    8'h05: ss_reg_do = ss_rab1[15:8];
+    8'h06: ss_reg_do = regs_tr[7:0];
+    8'h07: ss_reg_do = regs_tr[15:8];
+    8'h08: ss_reg_do = regs_trb[7:0];
+    8'h09: ss_reg_do = regs_trb[15:8];
+    8'h0a: ss_reg_do = regs_dr[7:0];
+    8'h0b: ss_reg_do = regs_dr[15:8];
+    8'h0c: ss_reg_do = regs_sr[7:0];
+    8'h0d: ss_reg_do = regs_sr[15:8];
+    8'h0e: ss_reg_do = regs_rp[7:0];
+    8'h0f: ss_reg_do = {5'b0, regs_rp[10:8]};
+    8'h10: ss_reg_do = regs_k[7:0];
+    8'h11: ss_reg_do = regs_k[15:8];
+    8'h12: ss_reg_do = regs_l[7:0];
+    8'h13: ss_reg_do = regs_l[15:8];
+    8'h14: ss_reg_do = regs_m[7:0];
+    8'h15: ss_reg_do = regs_m[15:8];
+    8'h16: ss_reg_do = regs_n[7:0];
+    8'h17: ss_reg_do = regs_n[15:8];
+    8'h18: ss_reg_do = {regs_dph, regs_dpl};
+    8'h19: ss_reg_do = {6'b0, regs_dpb};
+    8'h1a: ss_reg_do = {4'b0, regs_sp};
+    8'h1b: ss_reg_do = insn_state;
+    8'h1c: ss_reg_do = {2'b0, updFL_A};
+    8'h1d: ss_reg_do = {2'b0, updFL_B};
+    8'h1e: ss_reg_do = idb[7:0];
+    8'h1f: ss_reg_do = idb[15:8];
+    8'h20: ss_reg_do = alu_p[7:0];
+    8'h21: ss_reg_do = alu_p[15:8];
+    8'h22: ss_reg_do = alu_q[7:0];
+    8'h23: ss_reg_do = alu_q[15:8];
+    8'h24: ss_reg_do = alu_r[7:0];
+    8'h25: ss_reg_do = alu_r[15:8];
+    8'h26: ss_reg_do = ram_dina_r[7:0];
+    8'h27: ss_reg_do = ram_dina_r[15:8];
+    8'h28: ss_reg_do = ld_id[7:0];
+    8'h29: ss_reg_do = ld_id[15:8];
+    8'h2a: ss_reg_do = {op, op_pselect, op_alu};
+    8'h2b: ss_reg_do = {op_asl, op_dpl, op_dphm, op_rpdcr};
+    8'h2c: ss_reg_do = {op_src, op_dst};
+    8'h2d: ss_reg_do = {ld_dst, 1'b0, alu_store, cond_true};
+    8'h2e: ss_reg_do = jp_brch[7:0];
+    8'h2f: ss_reg_do = {7'b0, jp_brch[8]};
+    8'h30: ss_reg_do = jp_na[7:0];
+    8'h31: ss_reg_do = {5'b0, jp_na[10:8]};
+    8'h32: ss_reg_do = {4'b0, cpu_wait};
+    8'h33: ss_reg_do = 8'hd1; // magic, sanity-check on restore
+    default: ss_reg_do = 8'h00;
+  endcase
+end
+// --------------------------------------------------------------------------
+
 initial begin
   alu_store = 2'b11;
   insn_state = STATE_IDLE1;
@@ -266,7 +401,7 @@ initial begin
 end
 
 always @(posedge CLK) begin
-  if(RST) begin
+  if(RST & ~ss_frozen) begin
     if(enable & reg_we_rising & (A0 == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b1) begin
@@ -288,13 +423,16 @@ always @(posedge CLK) begin
              || (op_dst == 4'b0110 && op != 2'b10 && insn_state == STATE_STORE)) begin
       regs_sr[SR_RQM] <= 1'b1;
     end
+  end else if(RST & ss_frozen) begin
+    if(ss_wr_r & (ss_off_r == 8'h0d))
+      regs_sr[SR_RQM] <= ss_di_r[7]; // restore bit 15 (offset $0d high byte)
   end else begin
     regs_sr[SR_RQM] <= 1'b0;
   end
 end
 
 always @(posedge CLK) begin
-  if(RST) begin
+  if(RST & ~ss_frozen) begin
     if(enable & reg_we_rising & (A0 == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b0) begin
@@ -316,13 +454,16 @@ always @(posedge CLK) begin
         end
       endcase
     end
+  end else if(RST & ss_frozen) begin
+    if(ss_wr_r & (ss_off_r == 8'h0d))
+      regs_sr[SR_DRS] <= ss_di_r[4]; // restore bit 12 (offset $0d high byte)
   end else begin
     regs_sr[SR_DRS] <= 1'b0;
   end
 end
 
 always @(posedge CLK) begin
-  if(RST) begin
+  if(RST & ~ss_frozen) begin
     if(enable & reg_we_rising & (A0 == 1'b0)) begin
       if(!regs_sr[SR_DRC]) begin
         if(regs_sr[SR_DRS] == 1'b0) begin
@@ -337,16 +478,23 @@ always @(posedge CLK) begin
       if (op == I_OP || op == I_RT) regs_dr <= idb;
       else if (op == I_LD) regs_dr <= ld_id;
     end
+  end else if(RST & ss_frozen) begin
+    if(ss_wr_r) begin
+      if(ss_off_r == 8'h0a) regs_dr[7:0]  <= ss_di_r; // restore low byte
+      if(ss_off_r == 8'h0b) regs_dr[15:8] <= ss_di_r; // restore high byte
+    end
   end else begin
     regs_dr <= 16'h0000;
   end
 end
 
 assign UPD_DO = (A0 ? regs_sr[15:8] : (regs_sr[SR_DRC] ? regs_dr[7:0] : (regs_sr[SR_DRS] ? regs_dr[15:8] : regs_dr[7:0])));
-assign DO = DP_enable ? DP_DO : UPD_DO;
+assign DO = ss_ctrl ? {7'b0, ss_halted}
+          : ss_regwin ? ss_reg_do
+          : (DP_enable ? DP_DO : UPD_DO);
 
 always @(posedge CLK) begin
-  if(RST) begin
+  if(RST & ~ss_frozen) begin
     case(insn_state)
       STATE_FETCH: begin
         insn_state <= STATE_LOAD;
@@ -636,6 +784,71 @@ always @(posedge CLK) begin
         endcase
       end
     endcase
+  end else if(RST & ss_frozen) begin
+    // savestate RESTORE (Phase 2): load FSM-owned state from the scan window.
+    // regs_dr and regs_sr bits 15/12 are restored in their own blocks below;
+    // everything else is here. Mirrors the read mux offset map exactly.
+    if(ss_wr_r) begin
+      if(ss_off_r >= 8'h34 && ss_off_r <= 8'h53) begin
+        if(ss_off_r[0]) stack[ss_stk_idx_r][10:8] <= ss_di_r[2:0];
+        else            stack[ss_stk_idx_r][7:0]  <= ss_di_r;
+      end else case(ss_off_r)
+        8'h00: pc[7:0]          <= ss_di_r;
+        8'h01: pc[10:8]         <= ss_di_r[2:0];
+        8'h02: regs_ab[0][7:0]  <= ss_di_r;
+        8'h03: regs_ab[0][15:8] <= ss_di_r;
+        8'h04: regs_ab[1][7:0]  <= ss_di_r;
+        8'h05: regs_ab[1][15:8] <= ss_di_r;
+        8'h06: regs_tr[7:0]     <= ss_di_r;
+        8'h07: regs_tr[15:8]    <= ss_di_r;
+        8'h08: regs_trb[7:0]    <= ss_di_r;
+        8'h09: regs_trb[15:8]   <= ss_di_r;
+        // $0a/$0b regs_dr restored in its own block
+        8'h0c: begin regs_sr[7] <= ss_di_r[7]; regs_sr[1] <= ss_di_r[1]; regs_sr[0] <= ss_di_r[0]; end
+        8'h0d: begin regs_sr[14] <= ss_di_r[6]; regs_sr[13] <= ss_di_r[5]; regs_sr[11] <= ss_di_r[3];
+                     regs_sr[SR_DRC] <= ss_di_r[2]; regs_sr[9] <= ss_di_r[1]; regs_sr[8] <= ss_di_r[0]; end
+        8'h0e: regs_rp[7:0]     <= ss_di_r;
+        8'h0f: regs_rp[10:8]    <= ss_di_r[2:0];
+        8'h10: regs_k[7:0]      <= ss_di_r;
+        8'h11: regs_k[15:8]     <= ss_di_r;
+        8'h12: regs_l[7:0]      <= ss_di_r;
+        8'h13: regs_l[15:8]     <= ss_di_r;
+        8'h14: regs_m[7:0]      <= ss_di_r;
+        8'h15: regs_m[15:8]     <= ss_di_r;
+        8'h16: regs_n[7:0]      <= ss_di_r;
+        8'h17: regs_n[15:8]     <= ss_di_r;
+        8'h18: begin regs_dph <= ss_di_r[7:4]; regs_dpl <= ss_di_r[3:0]; end
+        8'h19: regs_dpb <= ss_di_r[1:0];
+        8'h1a: regs_sp  <= ss_di_r[3:0];
+        8'h1b: insn_state <= ss_di_r;
+        8'h1c: begin flags_s1[0] <= ss_di_r[5]; flags_s0[0] <= ss_di_r[4]; flags_c[0] <= ss_di_r[3];
+                     flags_z[0] <= ss_di_r[2]; flags_ov1[0] <= ss_di_r[1]; flags_ov0[0] <= ss_di_r[0]; end
+        8'h1d: begin flags_s1[1] <= ss_di_r[5]; flags_s0[1] <= ss_di_r[4]; flags_c[1] <= ss_di_r[3];
+                     flags_z[1] <= ss_di_r[2]; flags_ov1[1] <= ss_di_r[1]; flags_ov0[1] <= ss_di_r[0]; end
+        8'h1e: idb[7:0]    <= ss_di_r;
+        8'h1f: idb[15:8]   <= ss_di_r;
+        8'h20: alu_p[7:0]  <= ss_di_r;
+        8'h21: alu_p[15:8] <= ss_di_r;
+        8'h22: alu_q[7:0]  <= ss_di_r;
+        8'h23: alu_q[15:8] <= ss_di_r;
+        8'h24: alu_r[7:0]  <= ss_di_r;
+        8'h25: alu_r[15:8] <= ss_di_r;
+        8'h26: ram_dina_r[7:0]  <= ss_di_r;
+        8'h27: ram_dina_r[15:8] <= ss_di_r;
+        8'h28: ld_id[7:0]  <= ss_di_r;
+        8'h29: ld_id[15:8] <= ss_di_r;
+        8'h2a: begin op <= ss_di_r[7:6]; op_pselect <= ss_di_r[5:4]; op_alu <= ss_di_r[3:0]; end
+        8'h2b: begin op_asl <= ss_di_r[7]; op_dpl <= ss_di_r[6:5]; op_dphm <= ss_di_r[4:1]; op_rpdcr <= ss_di_r[0]; end
+        8'h2c: begin op_src <= ss_di_r[7:4]; op_dst <= ss_di_r[3:0]; end
+        8'h2d: begin ld_dst <= ss_di_r[7:4]; alu_store <= ss_di_r[2:1]; cond_true <= ss_di_r[0]; end
+        8'h2e: jp_brch[7:0] <= ss_di_r;
+        8'h2f: jp_brch[8]   <= ss_di_r[0];
+        8'h30: jp_na[7:0]   <= ss_di_r;
+        8'h31: jp_na[10:8]  <= ss_di_r[2:0];
+        8'h32: cpu_wait     <= ss_di_r[3:0];
+        default: ; // $33 magic (read-only)
+      endcase
+    end
   end else begin
     insn_state <= STATE_IDLE1;
     pc <= 11'b0;
