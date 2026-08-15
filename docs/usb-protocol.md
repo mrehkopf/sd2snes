@@ -11,7 +11,7 @@ to the protocol.
 This document describes the direct USB protocol implemented by this firmware.
 It is intended for authors of native clients, device libraries, and bridge
 programs. It describes the implementation in this repository at commit
-`0817206` (2026-08-14), including implementation quirks that are part of the
+`cf7e21d` (2026-08-15), including implementation quirks that are part of the
 observable wire behavior.
 
 This is the low-level binary protocol spoken by the cartridge. It is not the
@@ -27,8 +27,6 @@ from the request how many bytes to read next.
 Several combinations accepted by the parser are unsafe or surprising. In
 particular:
 
-- `TIME` (`0x0e`) falls through into the `MV` implementation in this revision
-  and can attempt an unintended rename. Do not use it.
 - `PUT` to `MSU`, `CONFIG`, or `CFG` is a configuration-register operation,
   not a write to those address spaces.
 - File `GET`/`CFG GET` setup errors can leave the firmware waiting in a data
@@ -261,7 +259,7 @@ vector.
 | `0x0b` | `INFO` | 512 | Return firmware and runtime information |
 | `0x0c` | `MENU_RESET` | 512 | Return to the cartridge menu |
 | `0x0d` | `STREAM` | 512 | Experimental MSU/snapshot stream |
-| `0x0e` | `TIME` | 512 | Set RTC, but broken/unsafe in this revision |
+| `0x0e` | `TIME` | 512 | Set RTC |
 | `0x0f` | `RESPONSE` | — | Device-to-host response opcode |
 
 An unknown opcode produces error 1. A block with invalid magic is silently
@@ -759,9 +757,10 @@ hardware could load. Very long current-ROM paths are truncated at the end by
 the current implementation despite a stray calculation suggesting the author
 intended front truncation.
 
-### `TIME` (`0x0e`) — do not use in this revision
+### `TIME` (`0x0e`)
 
-The intended request fields are:
+The MCU's internal RTC is programmed with the received time. The expected
+format is as follows:
 
 | Offset | Meaning |
 | ---: | --- |
@@ -773,12 +772,6 @@ The intended request fields are:
 | `0x00d` | year high byte |
 | `0x00e` | year low byte |
 | `0x00f` | weekday (the RTC routine recalculates it) |
-
-The switch statement is missing a terminating `break`, so after setting the
-RTC it falls through into `MV`. Bytes at `0x008` are interpreted as a new
-basename and the string at `0x100` as an old path, then `f_rename` is called.
-It usually returns error 1, but crafted or accidental strings could rename a
-file. This is a firmware bug, not a client framing requirement.
 
 ### `STREAM` (`0x0d`) — experimental
 
@@ -908,7 +901,7 @@ packet. For `VGET`/`VPUT`, construct a 64-byte request and place descriptors at
 - Read and discard device padding based on the command's actual logical size.
 - Give `BOOT` and filesystem commands longer timeouts than memory operations.
 - Resynchronize on an error from a data-producing command.
-- Do not use `TIME`, zero-length data operations, vector `FILE`, `PUT MSU`, or
+- Do not use zero-length data operations, vector `FILE`, `PUT MSU`, or
   unsafe `STREAM` flag combinations.
 - Decode filenames as CP1252 unless a future firmware build changes FatFs
   configuration.
