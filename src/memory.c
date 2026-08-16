@@ -436,7 +436,9 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
   set_rom_mask(rommask);
   readled(0);
 
-  printf("gsu=%x sa1=%x srambase=%lx sramsize=%lx\n", romprops.has_gsu, romprops.has_sa1, romprops.srambase, romprops.sramsize_bytes);
+  printf("gsu=%x sa1=%x mapper=%d srambase=%lx sramsize=%lx\n",
+         romprops.has_gsu, romprops.has_sa1, romprops.mapper_id,
+         romprops.srambase, romprops.sramsize_bytes);
   if(flags & LOADROM_WITH_SRAM) {
     if(romprops.ramsize_bytes) {
       // powerslide relies on the init value to be 00.

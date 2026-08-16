@@ -209,7 +209,15 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
         props->has_gsu = 1;
         props->fpga_conf = FPGA_GSU;
         props->fpga_dspfeat = CFG.gsu_speed;
-        header->ramsize = header->expramsize & 0x7;
+        if(header->expramsize <= 10) {
+          header->ramsize = header->expramsize;
+        } else {
+          header->ramsize = 7;
+        }
+        if(header->romsize >= 0x0E) {
+          props->mapper_id = 5;
+          printf("SuperFX 11MB map enabled (romsize=%02x)\n", header->romsize);
+        }
       }
       break;
 
@@ -299,7 +307,8 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
     props->fpga_features |= FEAT_COMBO;
   }
   
-  if(header->romsize == 0 || header->romsize > 13) {
+  // allow 0x0E (16MB mask) for 11mb superfx
+  if(header->romsize == 0 || header->romsize > 14) {
     props->romsize_bytes = 1024;
     header->romsize = 0;
     if(file_handle.fsize >= 1024) {
@@ -312,6 +321,9 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
   props->ramsize_bytes = (uint32_t)1024 << header->ramsize;
   props->romsize_bytes = (uint32_t)1024 << header->romsize;
   props->expramsize_bytes = (uint32_t)1024 << header->expramsize;
+  if(props->has_gsu && header->romsize >= 0x0E) {
+    props->mapper_id = 5;
+  }
 /*dprintf("ramsize_bytes: %ld\n", props->ramsize_bytes); */
   if(props->ramsize_bytes < 2048) {
     props->ramsize_bytes = 0;

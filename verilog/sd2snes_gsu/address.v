@@ -52,31 +52,49 @@ parameter [2:0]
   FEAT_2100 = 6
 ;
 
+wire map_gsu_11mb = ROM_MASK[23] | (MAPPER == 3'b101);
+
 wire [23:0] SRAM_SNES_ADDR;
+
+wire is_gsu_ram_mirror = ~SNES_ADDR[22]
+                       & ~SNES_ADDR[15]
+                       & &SNES_ADDR[14:13];
+
+wire is_gsu_ram_classic = &SNES_ADDR[22:21]
+                        & ~SNES_ROMSEL;
+
+wire is_gsu_ram_11mb = ~SNES_ADDR[23]
+                     & &SNES_ADDR[22:20]
+                     & ~SNES_ROMSEL;
 
 assign IS_ROM = ~SNES_ROMSEL;
 
 assign IS_SAVERAM = SAVERAM_MASK[0]
-                    & ( // 60-7D/E0-FF:0000-FFFF
-                        ( &SNES_ADDR[22:21]
-                        & ~SNES_ROMSEL
-                        )
-                        // 00-3F/80-BF:6000-7FFF
-                      | ( ~SNES_ADDR[22]
-                        & ~SNES_ADDR[15]
-                        & &SNES_ADDR[14:13]
-                        )
+                    & ( is_gsu_ram_mirror
+                      | (map_gsu_11mb ? is_gsu_ram_11mb : is_gsu_ram_classic)
                       );
 
 assign IS_WRITABLE = IS_SAVERAM;
 
 // GSU has a weird hybrid of Lo and Hi ROM formats.
-// TODO: add programmable address map
+wire [23:0] rom_addr_classic =
+  (SNES_ADDR[22] ? {2'b00, SNES_ADDR[21:0]}
+                 : {2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]}) & ROM_MASK;
+
+wire [23:0] rom_addr_11mb_lorom =
+  {2'b00, SNES_ADDR[23], SNES_ADDR[21:16], SNES_ADDR[14:0]};
+
+wire [23:0] rom_addr_11mb_hi =
+  SNES_ADDR[23] ? {2'b01, SNES_ADDR[21:0]}
+                : {2'b10, SNES_ADDR[21:0]};
+
+wire [23:0] rom_addr_11mb =
+  (SNES_ADDR[22] ? rom_addr_11mb_hi : rom_addr_11mb_lorom) & ROM_MASK;
+
 assign SRAM_SNES_ADDR = (IS_SAVERAM
-                         // 60-7D/E0-FF:0000-FFFF or 00-3F/80-BF:6000-7FFF (first 8K mirror)
-                         ? (24'hE00000 + ((SNES_ADDR[22] ? SNES_ADDR[16:0] : SNES_ADDR[12:0]) & SAVERAM_MASK))
-                         // 40-5F/C0-DF:0000-FFFF or 00-3F/80-BF:8000-FFFF
-                         : ((SNES_ADDR[22] ? {2'b00, SNES_ADDR[21:0]} : {2'b00, SNES_ADDR[22:16], SNES_ADDR[14:0]}) & ROM_MASK)
+                         ? (24'hE00000 + ((SNES_ADDR[22] ? SNES_ADDR[19:0]
+                                                         : {7'b0, SNES_ADDR[12:0]}) & SAVERAM_MASK))
+                         : (map_gsu_11mb ? rom_addr_11mb : rom_addr_classic)
                          );
 
 assign ROM_ADDR = SRAM_SNES_ADDR;
@@ -92,7 +110,6 @@ assign return_vector_enable = (SNES_ADDR == 24'h002A6C);
 assign branch1_enable = (SNES_ADDR == 24'h002A1F);
 assign branch2_enable = (SNES_ADDR == 24'h002A59);
 assign branch3_enable = (SNES_ADDR == 24'h002A5E);
-// 00-3F/80-BF:3000-32FF gsu registers.  TODO: some emulators go to $34FF???
-assign gsu_enable = (!SNES_ADDR[22] && ({SNES_ADDR[15:10],2'h0} == 8'h30)) && (SNES_ADDR[9:8] != 2'h3);
+assign gsu_enable = (!SNES_ADDR[22] && (SNES_ADDR[15:8] >= 8'h30) && (SNES_ADDR[15:8] <= 8'h34));
 
 endmodule
