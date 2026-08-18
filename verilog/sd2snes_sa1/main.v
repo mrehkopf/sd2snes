@@ -285,7 +285,7 @@ parameter ROM_CYCLE_LEN = 4'd7; // Increased from 6 due to tight timing on some 
 `ifdef MK3
 // Cyclone IV PLL allows us to get a bit closer to original speed
 parameter SNES_DEAD_TIMEOUT = 17'd85867; // 1ms
-parameter ROM_CYCLE_LEN = 4'd6;
+parameter ROM_CYCLE_LEN = 4'd7;
 `endif
 
 reg [10:0] STATE;
@@ -739,14 +739,26 @@ pll snes_pll(
   .areset(DCM_RST)
 );
 
-wire ROM_ADDR22;
-assign ROM_ADDR22 = (SD_DMA_TO_ROM) ? MCU_ADDR[1]    : SA1_ROM_HIT ? SA1_ROM_ADDRr[1]    : MCU_HIT ? ROM_ADDRr[1]    : MAPPED_SNES_ADDR[1];
-assign ROM_ADDR   = (SD_DMA_TO_ROM) ? MCU_ADDR[23:2] : SA1_ROM_HIT ? SA1_ROM_ADDRr[23:2] : MCU_HIT ? ROM_ADDRr[23:2] : MAPPED_SNES_ADDR[23:2];
+wire ROM_CHIP;
+assign ROM_CHIP   = (SD_DMA_TO_ROM) ? MCU_ADDR[23]   : SA1_ROM_HIT ? SA1_ROM_ADDRr[23]   : MCU_HIT ? ROM_ADDRr[23]   : MAPPED_SNES_ADDR[23];
+assign ROM_ADDR   = (SD_DMA_TO_ROM) ? MCU_ADDR[22:1] : SA1_ROM_HIT ? SA1_ROM_ADDRr[22:1] : MCU_HIT ? ROM_ADDRr[22:1] : MAPPED_SNES_ADDR[22:1];
 assign ROM_ADDR0  = (SD_DMA_TO_ROM) ? MCU_ADDR[0]    : SA1_ROM_HIT ? SA1_ROM_ADDRr[0]    : MCU_HIT ? ROM_ADDRr[0]    : MAPPED_SNES_ADDR[0];
 
 assign ROM_ZZ = 1'b1;
-assign ROM_1CE = ROM_ADDR22;
-assign ROM_2CE = ~ROM_ADDR22;
+psram_ce psram_ce(
+  .CLK(CLK2),
+  .ROM_CHIP(ROM_CHIP),
+  .SNES_REQUEST(ROM_HIT & ~IS_SAVERAM),
+  .SNES_CYCLE_START(SNES_cycle_start),
+  .SNES_CYCLE_END(SNES_cycle_end),
+  .SNES_DEAD(SNES_DEADr),
+  .OTHER_ACTIVE(SA1_ROM_HIT | MCU_HIT),
+  .SD_DMA_TO_ROM(SD_DMA_TO_ROM),
+  .SD_DMA_NEXTADDR(SD_DMA_NEXTADDR),
+  .SD_WRITE_N(SD_DMA_SRAM_WE),
+  .ROM_1CE(ROM_1CE),
+  .ROM_2CE(ROM_2CE)
+);
 
 snescmd_buf snescmd (
   .clock(CLK2), // input clka

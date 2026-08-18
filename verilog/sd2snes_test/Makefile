@@ -1,6 +1,6 @@
 CORE = test
 
-VSRC = address.v clk_test.v dac.v dcm.v main.v mcu_cmd.v sd_dma.v spi.v
+VSRC = ../common/psram_ce.v address.v clk_test.v dac.v dcm.v main.v mcu_cmd.v sd_dma.v spi.v
 VHSRC =
 
 COMMON_IP = dac_buf PA bram

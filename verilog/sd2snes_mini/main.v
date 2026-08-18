@@ -271,14 +271,26 @@ pll snes_pll(
   .areset(DCM_RST)
 );
 
-wire ROM_ADDR22;
-assign ROM_ADDR22 = MCU_HIT ? ROM_ADDRr[1]    : MAPPED_SNES_ADDR[1];
-assign ROM_ADDR   = MCU_HIT ? ROM_ADDRr[23:2] : MAPPED_SNES_ADDR[23:2];
+wire ROM_CHIP;
+assign ROM_CHIP   = MCU_HIT ? ROM_ADDRr[23]   : MAPPED_SNES_ADDR[23];
+assign ROM_ADDR   = MCU_HIT ? ROM_ADDRr[22:1] : MAPPED_SNES_ADDR[22:1];
 assign ROM_ADDR0  = MCU_HIT ? ROM_ADDRr[0]    : MAPPED_SNES_ADDR[0];
 
 assign ROM_ZZ = 1'b1;
-assign ROM_1CE = ROM_ADDR22;
-assign ROM_2CE = ~ROM_ADDR22;
+psram_ce psram_ce(
+  .CLK(CLK2),
+  .ROM_CHIP(ROM_CHIP),
+  .SNES_REQUEST(ROM_HIT),
+  .SNES_CYCLE_START(SNES_cycle_start),
+  .SNES_CYCLE_END(SNES_cycle_end),
+  .SNES_DEAD(SNES_DEADr),
+  .OTHER_ACTIVE(MCU_HIT),
+  .SD_DMA_TO_ROM(1'b0),
+  .SD_DMA_NEXTADDR(1'b0),
+  .SD_WRITE_N(1'b1),
+  .ROM_1CE(ROM_1CE),
+  .ROM_2CE(ROM_2CE)
+);
 `endif
 
 // OE always active. Overridden by WE when needed.

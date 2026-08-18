@@ -140,9 +140,11 @@ always @(posedge CLK) begin
         SD_DMA_NEXTADDRr <= 1'b0;
       end
       3'h2: if(cyclecnt>=SD_DMA_STARTr && cyclecnt < SD_DMA_ENDr) SD_DMA_SRAM_WEr <= 1'b0;
-//  3'h3:
-      3'h4:
+      // low nibble moved up from 3'h4 (4th tick coincides with SD_CLK and data
+      // was sometimes invalid)
+      3'h3:
         SD_DMA_SRAM_DATAr[3:0] <= SD_DAT;
+//  3'h4:
 //  3'h5:
 //  3'h6:
       3'h7:

@@ -1,6 +1,6 @@
 CORE = sgb
 
-VSRC = address.v cheat.v clk_test.v dac.v dcm.v main.v mcu_cmd.v msu.v sd_dma.v spi.v sgb.v sgb_cpu.v sgb_icd2.v
+VSRC = ../common/psram_ce.v address.v cheat.v clk_test.v dac.v dcm.v main.v mcu_cmd.v msu.v sd_dma.v spi.v sgb.v sgb_cpu.v sgb_icd2.v
 VHSRC =
 
 HEADER = config.vh

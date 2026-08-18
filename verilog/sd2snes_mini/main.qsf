@@ -547,6 +547,7 @@ set_global_assignment -name SDC_FILE main.sdc
 set_global_assignment -name VERILOG_FILE spi.v
 set_global_assignment -name VERILOG_FILE mcu_cmd.v
 set_global_assignment -name VERILOG_FILE main.v
+set_global_assignment -name VERILOG_FILE ../common/psram_ce.v
 set_global_assignment -name VERILOG_FILE dcm.v
 set_global_assignment -name VERILOG_FILE data.v
 set_global_assignment -name VERILOG_FILE address.v

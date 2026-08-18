@@ -1,6 +1,6 @@
 CORE = mini
 
-VSRC = address.v dcm.v main.v mcu_cmd.v spi.v
+VSRC = ../common/psram_ce.v address.v dcm.v main.v mcu_cmd.v spi.v
 VHSRC =
 
 COMMON_IP =

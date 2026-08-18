@@ -664,21 +664,35 @@ pll snes_pll(
   .areset(DCM_RST)
 );
 
-assign ROM_ADDR22 = (SD_DMA_TO_ROM) ? MCU_ADDR[1]
-            : MCU_HIT ? ROM_ADDRr[1] // keep MCU above sdd1 to allow it to use the free slot during normal SNES accesses
-            : (sdd1_enable & ~SDD1_ROM_CE)?SDD1_ROM_ADDR[0] // SDD1_ROM_ADDR is a word address!
-            : (sdd1_enable & ~SDD1_RAM_CE)?SDD1_RAM_ADDR[1]
-            : MAPPED_SNES_ADDR[1];
+wire ROM_CHIP;
+assign ROM_CHIP = (SD_DMA_TO_ROM) ? MCU_ADDR[23]
+            : MCU_HIT ? ROM_ADDRr[23] // keep MCU above sdd1 to allow it to use the free slot during normal SNES accesses
+            : (sdd1_enable & ~SDD1_ROM_CE) ? 1'b0 // SDD1_ROM_ADDR is a 22-bit word address
+            : (sdd1_enable & ~SDD1_RAM_CE) ? SDD1_RAM_ADDR[23]
+            : MAPPED_SNES_ADDR[23];
 
-assign ROM_ADDR  = (SD_DMA_TO_ROM) ? MCU_ADDR[23:2]
-            : MCU_HIT ? ROM_ADDRr[23:2] // keep MCU above sdd1 to allow it to use the free slot during normal SNES accesses
-            : (sdd1_enable & ~SDD1_ROM_CE)?({1'b0, SDD1_ROM_ADDR[21:1] & ROM_MASK[22:2]})
-            : (sdd1_enable & ~SDD1_RAM_CE)?SDD1_RAM_ADDR[23:2]
-            : MAPPED_SNES_ADDR[23:2];
+assign ROM_ADDR = (SD_DMA_TO_ROM) ? MCU_ADDR[22:1]
+            : MCU_HIT ? ROM_ADDRr[22:1] // keep MCU above sdd1 to allow it to use the free slot during normal SNES accesses
+            : (sdd1_enable & ~SDD1_ROM_CE) ? (SDD1_ROM_ADDR & ROM_MASK[22:1])
+            : (sdd1_enable & ~SDD1_RAM_CE) ? SDD1_RAM_ADDR[22:1]
+            : MAPPED_SNES_ADDR[22:1];
 
 assign ROM_ZZ = 1'b1;
-assign ROM_1CE = ROM_ADDR22;
-assign ROM_2CE = ~ROM_ADDR22;
+psram_ce psram_ce(
+  .CLK(CLK2),
+  .ROM_CHIP(ROM_CHIP),
+  .SNES_REQUEST(ROM_HIT),
+  .SNES_CYCLE_START(SNES_cycle_start),
+  .SNES_CYCLE_END(SNES_cycle_end),
+  .SNES_DEAD(SNES_DEADr),
+  .OTHER_ACTIVE(MCU_HIT
+              | (sdd1_enable & (~SDD1_ROM_CE | ~SDD1_RAM_CE))),
+  .SD_DMA_TO_ROM(SD_DMA_TO_ROM),
+  .SD_DMA_NEXTADDR(SD_DMA_NEXTADDR),
+  .SD_WRITE_N(SD_DMA_SRAM_WE),
+  .ROM_1CE(ROM_1CE),
+  .ROM_2CE(ROM_2CE)
+);
 
 snescmd_buf snescmd (
   .clock(CLK2), // input clka
