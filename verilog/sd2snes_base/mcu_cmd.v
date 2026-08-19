@@ -64,6 +64,9 @@ module mcu_cmd(
   // MSU data
   output [13:0] msu_addr_out,
   input [7:0] MSU_STATUS,
+  // BS Memory Pack flash-erase request (surfaced in the GETSTATUS word)
+  input [1:0] bs_erase_seq,
+  input [3:0] bs_erase_blk,
   output [5:0] msu_status_reset_out,
   output [5:0] msu_status_set_out,
   output msu_status_reset_we,
@@ -170,10 +173,14 @@ wire mcu_nextaddr;
 reg DAC_STATUSr;
 reg SD_DMA_STATUSr;
 reg [7:0] MSU_STATUSr;
+reg [1:0] bs_erase_seqr;
+reg [3:0] bs_erase_blkr;
 always @(posedge clk) begin
   DAC_STATUSr <= DAC_STATUS;
   SD_DMA_STATUSr <= SD_DMA_STATUS;
   MSU_STATUSr <= MSU_STATUS;
+  bs_erase_seqr <= bs_erase_seq;
+  bs_erase_blkr <= bs_erase_blk;
 end
 
 reg SD_DMA_PARTIALr;
@@ -475,10 +482,10 @@ always @(posedge clk) begin
       MCU_DATA_IN_BUF <= 8'hA5;
     else if (cmd_data[7:0] == 8'hF1)
       case (spi_byte_cnt[0])
-        1'b1: // buffer status (1st byte)
-          MCU_DATA_IN_BUF <= {SD_DMA_STATUSr, DAC_STATUSr, MSU_STATUSr[7], 5'b0};
-        1'b0: // control status (2nd byte)
-          MCU_DATA_IN_BUF <= {1'b0, MSU_STATUSr[6:0]};
+        1'b1: // buffer status (1st byte): bits4-3 = erase seq, bits2-0 = block[2:0]
+          MCU_DATA_IN_BUF <= {SD_DMA_STATUSr, DAC_STATUSr, MSU_STATUSr[7], bs_erase_seqr, bs_erase_blkr[2:0]};
+        1'b0: // control status (2nd byte): bit7 = erase block[3]
+          MCU_DATA_IN_BUF <= {bs_erase_blkr[3], MSU_STATUSr[6:0]};
       endcase
     else if (cmd_data[7:0] == 8'hF2)
       case (spi_byte_cnt)

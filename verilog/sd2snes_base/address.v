@@ -68,12 +68,25 @@ parameter [3:0]
   FEAT_213F = 4,
   FEAT_SNESUNLOCK = 5,
   FEAT_2100 = 6,
-  FEAT_DMA1 = 11
+  FEAT_DMA1 = 11,
+  FEAT_BSSLOT = 14,
+  FEAT_BSLOROM = 15
 ;
 
 integer i;
 reg [7:0] MAPPER_DEC; always @(posedge CLK) for (i = 0; i < 8; i = i + 1) MAPPER_DEC[i] <= (MAPPER == i);
 reg [23:0] SNES_ADDR; always @(posedge CLK) SNES_ADDR <= SNES_ADDR_early;
+
+// BS Memory Pack: 8M pack at PSRAM 0x900000 (FEAT_BSSLOT)
+wire BS_SLOT = featurebits[FEAT_BSSLOT];
+wire [19:0] LOROM_OFF = {SNES_ADDR[20:16], SNES_ADDR[14:0]};
+wire BS_PACK_HIT    = BS_SLOT & (SNES_ADDR[23:21] == 3'b110); // LoROM pack $C0-$DF
+wire BS_PACK_HIT_HI = BS_SLOT & (SNES_ADDR[23:20] == 4'he);   // HiROM pack $E0-$EF
+
+// BS-LOROM (Derby): $80-$9F map to the upper 1MB (file $200000+), not $00-$1F
+wire BSLOROM = featurebits[FEAT_BSLOROM];
+wire BSLOROM_HI = BSLOROM & (SNES_ADDR[23:21] == 3'b100); // $80-$9F only
+wire [23:0] BSLOROM_ADDR = 24'h200000 + {4'b0, LOROM_OFF};
 
 wire [23:0] SRAM_SNES_ADDR;
 wire [23:0] SAVERAM_ADDR = {4'hE,1'b0,SAVERAM_BASE,11'h0};
@@ -186,12 +199,18 @@ assign SRAM_SNES_ADDR = IS_PATCH
                           ?(IS_SAVERAM
                             ? SAVERAM_ADDR + ({SNES_ADDR[20:16], SNES_ADDR[12:0]}
                                             & SAVERAM_MASK)
+                            : BS_PACK_HIT_HI                        /* HiROM pack: $En:0000 -> bank*$10000 */
+                            ? (24'h900000 + {4'h0, SNES_ADDR[19:0]})
                             : ({1'b0, SNES_ADDR[22:0]} & ROM_MASK))
 
                           :(MAPPER_DEC[3'b001])
                           ?(IS_SAVERAM
                             ? SAVERAM_ADDR + ({SNES_ADDR[20:16], SNES_ADDR[14:0]}
                                             & SAVERAM_MASK)
+                            : BS_PACK_HIT                          /* LoROM pack: $Cn:8000 -> bank*$8000 */
+                            ? (24'h900000 + {4'h0, LOROM_OFF})
+                            : BSLOROM_HI
+                            ? (BSLOROM_ADDR & ROM_MASK)
                             : ({1'b0, ~SNES_ADDR[23], SNES_ADDR[22:16], SNES_ADDR[14:0]}
                                & ROM_MASK))
 
@@ -239,7 +258,9 @@ assign ROM_HIT = IS_ROM | IS_WRITABLE | bs_page_enable;
 
 assign msu_enable = featurebits[FEAT_MSU1] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff8) == 16'h2000));
 assign dma_enable = (featurebits[FEAT_DMA1] | map_unlock | snescmd_unlock) & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfff0) == 16'h2020));
-assign use_bsx = (MAPPER_DEC[3'b011]);
+/* bsx.v flash FSM: on for the BS-X base cart (mapper 3) or a slot with a pack
+   (FEAT_BSSLOT, set only when a .mpk exists).  No pack -> off -> empty slot. */
+assign use_bsx = (MAPPER_DEC[3'b011]) | featurebits[FEAT_BSSLOT];
 assign srtc_enable = featurebits[FEAT_SRTC] & (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hfffe) == 16'h2800));
 assign exe_enable =                           (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hffff) == 16'h2C00));
 assign map_enable =                           (!SNES_ADDR[22] && ((SNES_ADDR[15:0] & 16'hffff) == 16'h2BB2));

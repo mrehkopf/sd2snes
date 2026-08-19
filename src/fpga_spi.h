@@ -43,6 +43,8 @@
 #define FPGA_TX_BLOCK(x,y) spi_tx_block(x,y)
 #define FPGA_RX_BLOCK(x,y) spi_rx_block(x,y)
 
+#define FEAT_BSLOROM       (1 << 15)
+#define FEAT_BSSLOT        (1 << 14)
 #define FEAT_COMBO         (1 << 13)
 #define FEAT_SATELLABASE   (1 << 12)
 #define FEAT_DMA1          (1 << 11)

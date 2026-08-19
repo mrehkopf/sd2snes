@@ -108,4 +108,12 @@ uint16_t calc_sram_sum(uint32_t base_addr, uint32_t size);
 uint8_t sram_reliable(void);
 void sram_memset(uint32_t base_addr, uint32_t len, uint8_t val);
 
+/* BS 8M Memory Pack: 1MB in PSRAM at 0x900000, mapped LoROM $C0-$DF / HiROM $E0-$EF
+   when FEAT_BSSLOT is set (0x900000 must match BS_PACK_HIT in address.v).  SD: .mpk */
+#define BS_PACK_ADDR  0x900000
+#define BS_PACK_SIZE  0x100000
+uint8_t load_bs_pack(uint8_t* filename);  /* returns 1 if a real pack was loaded */
+void save_bs_pack(uint8_t* filename);
+uint32_t calc_pack_crc_inreset(void);     /* reset-tolerant pack CRC for prepare_reset */
+
 #endif

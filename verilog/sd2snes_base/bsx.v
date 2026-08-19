@@ -31,13 +31,20 @@ module bsx(
   output [14:0] regs_out,
   input pgm_we,
   input use_bsx,
+  input bs_slot,    // slotted cart: pack only, no MCC.  LoROM slot -> flash $C0-$DF
+  input bs_hirom,   // HiROM slot -> window $E0-$EF
   output data_ovr,
   output flash_writable,
   input [59:0] rtc_data_in,
   output [9:0] bs_page_out, // support only page 0000-03ff
   output bs_page_enable,
   output [8:0] bs_page_offset,
-  input feat_bs_base_enable
+  input feat_bs_base_enable,
+  // Flash erase request to the MCU (the FPGA can't fill 64KB; the MCU does the
+  // sram_memset(0xFF)).  bs_erase_seq increments on each erase; the MCU compares it
+  // to its last-seen value and erases bs_erase_blk (0xF = whole pack).
+  output [1:0] bs_erase_seq,
+  output [3:0] bs_erase_blk
 );
 
 `define BSX_ENABLE
@@ -63,22 +70,45 @@ reg flash_we_r;
 reg flash_status_r = 0;
 reg [7:0] flash_cmd0;
 
-wire cart_enable = (use_bsx) && ((snes_addr[23:12] & 12'hf0f) == 12'h005);
+// MCC registers (00-0f:5xxx) exist only on the BS-X base cart, never on a
+// slotted cart -> gate them off in slot mode so the game's low banks are free.
+wire cart_enable = (use_bsx) && ~bs_slot && ((snes_addr[23:12] & 12'hf0f) == 12'h005);
 
 wire base_enable = feat_bs_base_enable
                    & (use_bsx) && (!snes_addr[22] && (snes_addr[15:0] >= 16'h2188)
                                  && (snes_addr[15:0] <= 16'h219f));
 
-wire flash_enable = (snes_addr[23:16] == 8'hc0);
+// flash window: base $C0, LoROM slot $C0-$DF, HiROM slot $E0-$EF
+wire flash_enable = bs_hirom
+                    ? (snes_addr[23:20] == 4'he)
+                    : ((snes_addr[23:16] == 8'hc0)
+                       | (bs_slot & (snes_addr[23:21] == 3'b110)));
 
-wire flash_ovr = (use_bsx)
-                 && (flash_enable & flash_ovr_r);
+// command/vendor mode returns the register; array mode ($FF) reads PSRAM
+wire flash_ovr = (use_bsx) && (flash_enable & flash_ovr_r);
 
+// program data phase; main.v does the write (skips $FF) via the copier path
 assign flash_writable = (use_bsx)
                         && flash_enable
                         && flash_we_r;
 
 assign data_ovr = (cart_enable | base_enable | flash_ovr) & ~bs_page_enable;
+
+// --- Flash block-erase tracking -------------------------------------------
+// block-erase = $20 (setup) then $D0 (confirm) at the block address.
+// 64KB blocks: HiROM bank $E0+blk, LoROM 2 banks/block ($C0+2*blk).
+reg erase_setup_r = 0;      // saw $20 (block erase setup)
+reg erase_all_setup_r = 0;  // saw $A7 (chip/all erase setup)
+// a delete can fire several erases, so a 1-bit toggle would alias -> 2-bit seq the
+// MCU compares (any change = erase).  bs_erase_blk = last block, 0xF = whole pack.
+reg [1:0] bs_erase_seq_r = 0;
+reg [3:0] bs_erase_blk_r = 0;
+assign bs_erase_seq = bs_erase_seq_r;
+assign bs_erase_blk = bs_erase_blk_r;
+wire [3:0] erase_blk_of_addr = bs_hirom ? snes_addr[19:16] : snes_addr[20:17];
+// busy timer held after a $D0 so the game waits while the MCU erases the block (~0.4s)
+reg [24:0] erase_busy_cnt = 0;
+wire erase_busy = (erase_busy_cnt != 0);
 
 
 reg [9:0] bs_page0;
@@ -228,6 +258,7 @@ initial begin
 end
 
 always @(posedge clkin) begin
+  if(erase_busy_cnt != 0) erase_busy_cnt <= erase_busy_cnt - 1'b1;  // WSM busy timer (a $D0 reloads it below)
   if(reg_oe_rising && base_enable) begin
     case(base_addr)
       5'h0b: begin
@@ -270,14 +301,16 @@ always @(posedge clkin) begin
           reg_data_outr <= base_regs[base_addr];
       endcase
     end else if (flash_enable) begin
+      // CSR ready = $80, busy = $00 (bit7); the game polls this after a $D0 and waits
+      // while erase_busy so the MCU can fill the block before the next erase.
       casex (flash_addr)
         16'b1111111100000xxx:
-          reg_data_outr <= flash_status_r ? 8'h80 : flash_vendor_data[flash_addr&16'h0007];
+          reg_data_outr <= flash_status_r ? (erase_busy ? 8'h00 : 8'h80) : flash_vendor_data[flash_addr&16'h0007];
         16'b1111111100001xxx,
         16'b11111111000100xx:
-          reg_data_outr <= flash_status_r ? 8'h80 : 8'h00;
+          reg_data_outr <= flash_status_r ? (erase_busy ? 8'h00 : 8'h80) : 8'h00;
         default:
-          reg_data_outr <= 8'h80;
+          reg_data_outr <= (erase_busy ? 8'h00 : 8'h80);
       endcase
     end
   end else if(pgm_we_rising) begin
@@ -317,27 +350,47 @@ always @(posedge clkin) begin
       default:
         base_regs[base_addr] <= reg_data_in;
     endcase
-  end else if(reg_we_rising && flash_enable && regs_outr[4'hc]) begin
-    flash_we_r <= 0;
-    case(flash_addr)
-      16'h0000: begin
+  end else if(reg_we_rising && flash_enable && (regs_outr[4'hc] | bs_slot)) begin
+    if(flash_we_r) begin
+      flash_we_r <= 0;  // this write is the program byte, not a command
+    end else begin
+      // program/erase are issued at the target/block address (tracked here regardless
+      // of address); program only arms the write byte and leaves the read mode alone.
+      case(reg_data_in)
+        8'h10, 8'h40: begin flash_we_r <= 1'b1; erase_setup_r <= 1'b0; erase_all_setup_r <= 1'b0; end
+        8'h20: begin erase_setup_r <= 1'b1; erase_all_setup_r <= 1'b0; end
+        8'ha7: begin erase_all_setup_r <= 1'b1; erase_setup_r <= 1'b0; end
+        8'hd0: begin
+          // block = the $D0 (confirm) address, not $20 (setup): $20 is at the command
+          // port, $D0 at the block address ($C4:8000 -> block 2).
+          if(erase_setup_r) begin
+            bs_erase_seq_r <= bs_erase_seq_r + 1'b1; bs_erase_blk_r <= erase_blk_of_addr;
+            erase_busy_cnt <= {25{1'b1}};
+            flash_ovr_r <= 1'b1; flash_status_r <= 1'b1;
+          end else if(erase_all_setup_r) begin
+            bs_erase_seq_r <= bs_erase_seq_r + 1'b1; bs_erase_blk_r <= 4'hf;
+            erase_busy_cnt <= {25{1'b1}};
+            flash_ovr_r <= 1'b1; flash_status_r <= 1'b1;
+          end
+          erase_setup_r <= 1'b0; erase_all_setup_r <= 1'b0;
+        end
+        default: begin erase_setup_r <= 1'b0; erase_all_setup_r <= 1'b0; end
+      endcase
+      // mode commands ($FF/$70/$72/$75) only at the command port, so a stray pack
+      // write can't flip the read mode (HiROM $E0:0000 / LoROM $C0:0000)
+      if(bs_hirom ? ((snes_addr[23:16] == 8'he0) && (flash_addr[14:0] == 15'h0000))
+         : bs_slot ? ((snes_addr[23:16] == 8'hc0) && (flash_addr[14:0] == 15'h0000))
+         : (flash_addr == 16'h0000)) begin
         flash_cmd0 <= reg_data_in;
-        if((flash_cmd0 == 8'h72 && reg_data_in == 8'h75) & ~flash_we_r) begin
-          flash_ovr_r <= 1;
-          flash_status_r <= 0;
-        end else if((reg_data_in == 8'hff) & ~flash_we_r) begin
-          flash_ovr_r <= 0;
-          flash_we_r <= 0;
-        end else if(reg_data_in[7:1] == 7'b0111000 || ((flash_cmd0 == 8'h38 && reg_data_in == 8'hd0) & ~flash_we_r)) begin
-          flash_ovr_r <= 1;
-          flash_status_r <= 1;
-        end else if((reg_data_in == 8'h10) & ~flash_we_r) begin
-          flash_ovr_r <= 1;
-          flash_status_r <= 1;
-          flash_we_r <= 1;
+        if(flash_cmd0 == 8'h72 && reg_data_in == 8'h75) begin
+          flash_ovr_r <= 1'b1; flash_status_r <= 1'b0;
+        end else if(reg_data_in == 8'hff) begin
+          flash_ovr_r <= 1'b0;
+        end else if(reg_data_in[7:1] == 7'b0111000 || (flash_cmd0 == 8'h38 && reg_data_in == 8'hd0)) begin
+          flash_ovr_r <= 1'b1; flash_status_r <= 1'b1;
         end
       end
-    endcase
+    end
   end
 end
 `endif
