@@ -126,6 +126,23 @@ main.ngc: main.xst main.prj $(UCF)
 	rm -f $@
 	mkdir -p $(XILINX_XST_TMPDIR)
 	$(XILINX_ENV) $(XILINX_BIN)/xst -ifn main.xst -ofn main.syr
+# Opt-in guard (set XST_ABSORB_WHITELIST in the core Makefile, `|`-separated):
+# when XST implements a RAM as BLOCK RAM it may silently absorb the read
+# address register (INFO:Xst:3226 "... absorbing ... <reg>"), turning an
+# asynchronous-read array into a synchronous one -- the simulated RTL no
+# longer matches the netlist, and on Spartan-3 such a RAM has been measured
+# serving entry 0 forever.  Fail the build on any absorption not whitelisted.
+ifdef XST_ABSORB_WHITELIST
+	@bad=$$(grep -o 'absorbing the following register(s):.*' main.syr \
+	        | sed 's/^[^:]*: *//' | tr ' ' '\n' | tr -d '<>' \
+	        | sed '/^$$/d' | grep -v -x -E '$(XST_ABSORB_WHITELIST)' || true); \
+	if [ -n "$$bad" ]; then \
+	  echo "ERROR: XST absorbed non-whitelisted register(s) into BLOCK RAM: $$bad"; \
+	  echo "       (async-read array turned sync -- see XST_ABSORB_WHITELIST)"; \
+	  rm -f main.ngc; \
+	  exit 1; \
+	fi
+endif
 
 main.ngd: main.ngc $(XIL_IP)
 	$(call T,[mk2] fpga_$(CORE) - Translate)
