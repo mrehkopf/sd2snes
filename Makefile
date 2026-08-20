@@ -19,8 +19,8 @@ MK3MENU := m3nu.bin
 FPGAPATH := verilog
 MK2EXT := bit
 MK3EXT := bi3
-MK2CORES := base cx4 gsu obc1 sdd1 sa1 dsp sgb sgb_msu
-MK3CORES := base cx4 gsu obc1 sdd1 sa1 dsp sgb
+MK2CORES := base cx4 gsu obc1 sdd1 sa1 dsp sgb sgb_msu spc7110
+MK3CORES := base cx4 gsu obc1 sdd1 sa1 dsp sgb spc7110
 
 MK2FPGA := $(foreach C,$(MK2CORES),$(FPGAPATH)/sd2snes_$C/fpga_$C.$(MK2EXT))
 MK3FPGA := $(foreach C,$(MK3CORES),$(FPGAPATH)/sd2snes_$C/fpga_$C.$(MK3EXT))
