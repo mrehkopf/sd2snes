@@ -50,6 +50,7 @@ memory.c: RAM operations
 #include "rtc.h"
 #include "savestate.h"
 #include "sgb.h"
+#include "spc7110rtc.h"
 
 #include <string.h>
 char* hex = "0123456789ABCDEF";
@@ -434,6 +435,39 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       set_saveram_base(ramslot);
   }
   set_rom_mask(rommask);
+  if(romprops.has_spc7110) {
+    /* SPC7110: the ROM image is the program ROM followed by the data ROM.
+       Hand the core the DROM window over PSRAM as base + power-of-two mask
+       (the core masks the linear offset first, then adds the base).  The
+       power-up defaults are neutral, so this MUST run before the SNES is
+       released.
+       Image-shape premise, deliberate: a headerless .sfc does not carry the
+       PROM size (emulators take it from an external manifest), so the PROM is
+       assumed 1 MB and the DROM a power of two -- true for every released
+       SPC7110 cart (Tengai Makyou Zero 1+4 MB, Momotarou Dentetsu Happy
+       1+2 MB, Super Power League 4 1+1 MB).  A hypothetical 2 MB-PROM cart
+       (the r4834 bit2 mode) or a non-power-of-two data ROM is out of scope
+       and would map incorrectly. */
+    uint32_t drombase = 0x100000;
+    uint32_t dromspan = (romprops.romsize_bytes > drombase)
+                      ? (romprops.romsize_bytes - drombase) : drombase;
+    uint32_t dromsize = 1;
+    while(dromsize < dromspan) dromsize <<= 1;
+    set_drom_base(drombase);
+    set_drom_mask(dromsize - 1);
+    /* The RTC-4513 powers up with an invalid BCD calendar (month/day 00) and
+       games retry forever on it, so the clock is always programmed before boot.
+       With a .rtc sidecar next to the save this restores what the cartridge
+       battery would have kept - including a clock the game stopped - and
+       without one it falls back to the console's own time. */
+#ifndef CONFIG_MK2
+    spc7110_rtc_load(filename);
+#else
+    /* the Mk.II core carries no virtual battery (see verilog `ifndef MK2);
+       wall clock only */
+    set_fpga_time(get_bcdtime());
+#endif
+  }
   readled(0);
 
   printf("gsu=%x sa1=%x srambase=%lx sramsize=%lx\n", romprops.has_gsu, romprops.has_sa1, romprops.srambase, romprops.sramsize_bytes);
@@ -444,6 +478,28 @@ uint32_t load_rom(uint8_t* filename, uint32_t base_addr, uint8_t flags) {
       if (romprops.sramsize_bytes) migrate_and_load_srm(filename, SRAM_SAVE_ADDR);
       /* file not found error is ok (SRM file might not exist yet) */
       if(file_res == FR_NO_FILE) file_res = 0;
+#ifdef CONFIG_MK2
+      /* SPC7110 on Mk.II has no virtual battery, so the factory check
+         program's RTC BACKUP test can never pass there.  Plant the retail
+         signature that the check program itself writes on success ("SPC7110
+         CHECK OK", last 16 bytes of SRAM) whenever it is absent, so a fresh
+         cart boots retail instead of looping the factory ritual.  Only the RTC
+         cart (carttype 0xf9, Tengai Makyou Zero) carries the check program --
+         on the plain SPC7110 carts those 16 bytes are ordinary save data and
+         must not be touched.  A save that already carries the signature is
+         untouched; the seed lands in the initial CRC, so it reaches the card
+         only together with a real save. */
+      if(romprops.has_spc7110_rtc && romprops.sramsize_bytes >= 16) {
+        static const uint8_t spc7110_sig[16] = { 'S','P','C','7','1','1','0',' ',
+                                                 'C','H','E','C','K',' ','O','K' };
+        uint8_t sigcur[16];
+        uint32_t sigaddr = SRAM_SAVE_ADDR + romprops.sramsize_bytes - 16;
+        sram_readblock(sigcur, sigaddr, 16);
+        if(memcmp(sigcur, spc7110_sig, 16)) {
+          sram_writeblock((void*)spc7110_sig, sigaddr, 16);
+        }
+      }
+#endif
       saveram_crc_old = calc_sram_crc(SRAM_SAVE_ADDR + romprops.srambase, romprops.sramsize_bytes, 0);
       saveram_crc = 0;
       saveram_offset = 0;

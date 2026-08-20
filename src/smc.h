@@ -89,6 +89,7 @@ typedef struct __attribute__ ((__packed__)) {
   uint8_t has_sa1;            /* SA-1 presence flag */
   uint8_t has_sdd1;           /* S-DD1 presence flag */
   uint8_t has_spc7110;        /* SPC7110 presence flag */
+  uint8_t has_spc7110_rtc;    /* SPC7110 + RTC-4513 (carttype 0xf9) */
   uint8_t has_combo;          /* Multi game presence flag */
   uint32_t srambase;          /* saveram base address */
   uint32_t sramsize_bytes;    /* saveram size in bytes */
