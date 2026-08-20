@@ -79,7 +79,12 @@
                                          nibbles packed)
                                 eg 0x20111210094816 is 2011-12-10, 9:48:16
         E6        ssrr          set/reset BS-X status register [7:0]
+        E6        -{8}          read SPC7110 RTC-4513 battery backup
+                                (SPC7110 core only: status byte + the seven
+                                 time bytes of E5)
         E7        -             reset SRTC state
+        E7        ff tt{7}      restore SPC7110 RTC-4513 battery backup
+                                (SPC7110 core only)
         E8        -             reset DSP program and data ROM write pointers
         E9        hhmmllxxxx    write+incr. DSP program ROM (xxxx=dummy writes)
         EA        hhllxxxx      write+incr. DSP data ROM (xxxx=dummy writes)
@@ -216,6 +221,28 @@ void set_saveram_mask(uint32_t mask) {
 void set_rom_mask(uint32_t mask) {
   FPGA_SELECT();
   FPGA_TX_BYTE(FPGA_CMD_SETROMMASK);
+  FPGA_TX_BYTE((mask >> 16) & 0xff);
+  FPGA_TX_BYTE((mask >> 8) & 0xff);
+  FPGA_TX_BYTE((mask) & 0xff);
+  FPGA_DESELECT();
+}
+
+/* SPC7110: the data ROM window in PSRAM.  The core computes
+   psram_addr = base + (offset & mask), so the mask must span only the DROM
+   (power of two); the firmware programs both before the SNES is released.
+   Every other core ignores $d7/$d8. */
+void set_drom_base(uint32_t base) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_SETDROMBASE);
+  FPGA_TX_BYTE((base >> 16) & 0xff);
+  FPGA_TX_BYTE((base >> 8) & 0xff);
+  FPGA_TX_BYTE((base) & 0xff);
+  FPGA_DESELECT();
+}
+
+void set_drom_mask(uint32_t mask) {
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_SETDROMMASK);
   FPGA_TX_BYTE((mask >> 16) & 0xff);
   FPGA_TX_BYTE((mask >> 8) & 0xff);
   FPGA_TX_BYTE((mask) & 0xff);
@@ -377,6 +404,28 @@ uint64_t get_fpga_time() {
   result |= ((uint64_t)FPGA_RX_BYTE());
   FPGA_DESELECT();
   return result;
+}
+
+/* SPC7110 RTC-4513 battery backup, FPGA_SPC7110_RTC_LEN bytes: the status byte
+   followed by the seven packed BCD time bytes.  Only the SPC7110 core answers;
+   the shadow the core hands out is taken in one clock, so the eight bytes can
+   never straddle a tick. */
+void get_spc7110_rtc(uint8_t *state) {
+  int i;
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_SPC7110RTCGET);
+  FPGA_TX_BYTE(0x00); /* dummy (latch the current state into the shadow) */
+  for(i = 0; i < FPGA_SPC7110_RTC_LEN; i++) state[i] = FPGA_RX_BYTE();
+  FPGA_DESELECT();
+}
+
+void set_spc7110_rtc(const uint8_t *state) {
+  int i;
+  FPGA_SELECT();
+  FPGA_TX_BYTE(FPGA_CMD_SPC7110RTCSET);
+  for(i = 0; i < FPGA_SPC7110_RTC_LEN; i++) FPGA_TX_BYTE(state[i]);
+  FPGA_TX_BYTE(0x00); /* latch */
+  FPGA_DESELECT();
 }
 
 void set_fpga_time(uint64_t time) {
