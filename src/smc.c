@@ -72,6 +72,7 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
   props->has_st0018 = 0;
   props->has_msu1 = 0;
   props->has_spc7110 = 0;
+  props->has_spc7110_rtc = 0;
   props->has_cx4 = 0;
   props->has_obc1 = 0;
   props->has_gsu = 0;
@@ -263,8 +264,7 @@ void smc_id(snes_romprops_t* props, uint32_t file_offset) {
     case 0x2a: /* SPC7110 */
       if(header->carttype == 0xf5 || header->carttype == 0xf9) {
         props->has_spc7110 = 1;
-        props->error = MENU_ERR_NOIMPL;
-        props->error_param = (uint8_t*)"SPC7110";
+        props->has_spc7110_rtc = (header->carttype == 0xf9);
         props->fpga_conf = FPGA_SPC7110;
         props->mapper_id = 5;
       }

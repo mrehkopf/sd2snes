@@ -17,6 +17,7 @@
 #include "usbinterface.h"
 #include "savestate.h"
 #include "cfg.h"
+#include "spc7110rtc.h"
 
 FIL msudata;
 FIL msuaudio;
@@ -71,6 +72,15 @@ int is_msu_free_to_save() {
  */
 void msu_savecheck(int immediate) {
   uint32_t currentcrc;
+#ifndef CONFIG_MK2
+  /* Keep the SPC7110 RTC-4513 backup in step here too.  msu1_loop is the second
+     game loop and the switch(cmd) of the normal one never runs for an MSU-1
+     title, so anything that only lives there is silently dead in these games.
+     Deliberately ABOVE the autosave gate: the RTC backup is not SRAM autosave
+     and must not be switched off with it.  Costs one branch when the cartridge
+     is not an SPC7110, and writes the card only on a real change. */
+  spc7110_rtc_save(file_lfn);
+#endif
   if(!cfg_is_msu1_autosave_enabled()) {
     return;
   }

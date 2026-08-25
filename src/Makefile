@@ -81,6 +81,9 @@ SRC += printf.c fileops.c fpga.c fpga_spi.c snes.c smc.c
 SRC += memory.c filetypes.c faulthandler.c sort.c crc32.c cic.c
 SRC += cli.c ymodem.c rle.c msu1.c crc16.c sysinfo.c
 SRC += cfg.c cheat.c yaml.c savestate.c sgb.c hwinfo.c
+# SPC7110 RTC-4513 battery backup.  mk3 only in practice: the call sites are
+# gated on CONFIG_MK2, so --gc-sections drops the whole object on mk2.
+SRC += spc7110rtc.c
 
 SRC += usbdesc.c usbcore.c usbuser.c cdcuser.c usbinterface.c
 

@@ -1,0 +1,472 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company:
+// Engineer:
+//
+// Create Date:    23:32:12 01/08/2011
+// Design Name:
+// Module Name:    rtc_srtc
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
+//
+// Dependencies:
+//
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+//
+//////////////////////////////////////////////////////////////////////////////////
+`ifdef MK2
+  `define SECOND_PERIOD 24000000
+`else
+  `define SECOND_PERIOD 8000000
+`endif
+module rtc (
+  input clkin,
+  input pgm_we,
+  input [55:0] rtc_data_in,
+  input we1,
+  input [59:0] rtc_data_in1,
+  output [59:0] rtc_data
+);
+
+reg [59:0] rtc_data_r;
+reg [59:0] rtc_data_out_r;
+
+reg [1:0] pgm_we_sreg;
+always @(posedge clkin) pgm_we_sreg <= {pgm_we_sreg[0], pgm_we};
+wire pgm_we_rising = (pgm_we_sreg[1:0] == 2'b01);
+
+reg [2:0] we1_sreg;
+always @(posedge clkin) we1_sreg <= {we1_sreg[1:0], we1};
+wire we1_rising = (we1_sreg[2:1] == 2'b01);
+
+reg [31:0] tick_cnt;
+
+always @(posedge clkin) begin
+  tick_cnt <= tick_cnt + 1;
+  if((tick_cnt == `SECOND_PERIOD) || pgm_we_rising) tick_cnt <= 0;
+end
+
+assign rtc_data = rtc_data_out_r;
+
+reg [31:0] rtc_state;
+/* Carry between the digits of one per-second pass.  It has to be cleared
+   whenever the counter is loaded from outside: the load takes priority for that
+   clock but the REST of the pass still runs, and every state after STATE_SEC1
+   increments on carry alone.  A load that landed mid pass therefore used to
+   apply the leftover carry to the digits it had just been handed - a write of
+   23:59:59 arriving after the seconds had rolled came out as 00:10:02 - which
+   is a fraction of a percent of loads, i.e. exactly the kind of thing that only
+   ever shows up on somebody else's console. */
+reg carry;
+
+reg [3:0] dom1[11:0];
+reg [3:0] dom10[11:0];
+// month / year are derived combinationally from rtc_data_r.  They used to be
+// registers loaded in STATE_YEAR1, i.e. one full scan AFTER the STATE_DAY1 that
+// consumes them: right after an SNES side write that changes the month
+// (rtc_data_in1 / we1) the day rollover of the very next scan still used the
+// PREVIOUS month's length, so writing 31 Dec while the clock stood in a 28 or
+// 30 day month produced day 32.
+wire [7:0] year_bin = {rtc_data_r[47:44], 3'b000} + {rtc_data_r[47:44], 1'b0}
+                      + rtc_data_r[43:40];
+wire [3:0] month = rtc_data_r[35:32] + (rtc_data_r[36] ? 4'd10 : 4'd0) - 4'd1;
+wire [1:0] year  = year_bin[1:0];
+
+reg [4:0] dow_day;
+reg [3:0] dow_month;
+reg [13:0] dow_year;
+reg [6:0] dow_year1;
+reg [6:0] dow_year100;
+reg [15:0] dow_tmp;
+reg [15:0] dow_year_tmp;
+
+parameter [31:0]
+  STATE_SEC1     = 32'b00000000000000000000000000000001,
+  STATE_SEC10    = 32'b00000000000000000000000000000010,
+  STATE_MIN1     = 32'b00000000000000000000000000000100,
+  STATE_MIN10    = 32'b00000000000000000000000000001000,
+  STATE_HOUR1    = 32'b00000000000000000000000000010000,
+  STATE_HOUR10   = 32'b00000000000000000000000000100000,
+  STATE_DAY1     = 32'b00000000000000000000000001000000,
+  STATE_DAY10    = 32'b00000000000000000000000010000000,
+  STATE_MON1     = 32'b00000000000000000000000100000000,
+  STATE_MON10    = 32'b00000000000000000000001000000000,
+  STATE_YEAR1    = 32'b00000000000000000000010000000000,
+  STATE_YEAR10   = 32'b00000000000000000000100000000000,
+  STATE_YEAR100  = 32'b00000000000000000001000000000000,
+  STATE_YEAR1000 = 32'b00000000000000000010000000000000,
+  STATE_DOW0_0   = 32'b00000000000000000100000000000000,
+  STATE_DOW0_1   = 32'b00000000000000001000000000000000,
+  STATE_DOW0_2   = 32'b00000000000000010000000000000000,
+  STATE_DOW1_0_0 = 32'b00000000000000100000000000000000,
+  STATE_DOW1_0_1 = 32'b00000000000001000000000000000000,
+  STATE_DOW1_0_2 = 32'b00000000000010000000000000000000,
+  STATE_DOW1_0_3 = 32'b00000000000100000000000000000000,
+  STATE_DOW1_0_4 = 32'b00000000001000000000000000000000,
+  STATE_DOW1_1_0 = 32'b00000000010000000000000000000000,
+  STATE_DOW1_1_1 = 32'b00000000100000000000000000000000,
+  STATE_DOW1_1_2 = 32'b00000001000000000000000000000000,
+  STATE_DOW1_1_3 = 32'b00000010000000000000000000000000,
+  STATE_DOW2     = 32'b00000100000000000000000000000000,
+  STATE_DOW3     = 32'b00001000000000000000000000000000,
+  STATE_DOW4     = 32'b00010000000000000000000000000000,
+  STATE_DOW5     = 32'b00100000000000000000000000000000,
+  STATE_LATCH    = 32'b01000000000000000000000000000000,
+  STATE_IDLE     = 32'b10000000000000000000000000000000;
+
+initial begin
+  rtc_state = STATE_IDLE;
+  dom1[0] = 1; dom10[0] = 3;
+  dom1[1] = 8; dom10[1] = 2;
+  dom1[2] = 1; dom10[2] = 3;
+  dom1[3] = 0; dom10[3] = 3;
+  dom1[4] = 1; dom10[4] = 3;
+  dom1[5] = 0; dom10[5] = 3;
+  dom1[6] = 1; dom10[6] = 3;
+  dom1[7] = 1; dom10[7] = 3;
+  dom1[8] = 0; dom10[8] = 3;
+  dom1[9] = 1; dom10[9] = 3;
+  dom1[10] = 0; dom10[10] = 3;
+  dom1[11] = 1; dom10[11] = 3;
+  rtc_data_r = 60'h220110301000000;
+  tick_cnt = 0;
+  dow_year_tmp = 0;
+end
+
+wire is_leapyear_feb = (month == 1) && (year[1:0] == 2'b00);
+
+always @(posedge clkin) begin
+  if(!tick_cnt) begin
+    rtc_state <= STATE_SEC1;
+  end else begin
+    case (rtc_state)
+      STATE_SEC1:
+        rtc_state <= STATE_SEC10;
+      STATE_SEC10:
+        rtc_state <= STATE_MIN1;
+      STATE_MIN1:
+        rtc_state <= STATE_MIN10;
+      STATE_MIN10:
+        rtc_state <= STATE_HOUR1;
+      STATE_HOUR1:
+        rtc_state <= STATE_HOUR10;
+      STATE_HOUR10:
+        rtc_state <= STATE_DAY1;
+      STATE_DAY1:
+        rtc_state <= STATE_DAY10;
+      STATE_DAY10:
+        rtc_state <= STATE_MON1;
+      STATE_MON1:
+        rtc_state <= STATE_MON10;
+      STATE_MON10:
+        rtc_state <= STATE_YEAR1;
+      STATE_YEAR1:
+        rtc_state <= STATE_YEAR10;
+      STATE_YEAR10:
+        rtc_state <= STATE_YEAR100;
+      STATE_YEAR100:
+        rtc_state <= STATE_YEAR1000;
+      STATE_YEAR1000:
+        rtc_state <= STATE_DOW0_0;
+      STATE_DOW0_0:
+        rtc_state <= STATE_DOW0_1;
+      STATE_DOW0_1:
+        rtc_state <= STATE_DOW0_2;
+      STATE_DOW0_2:
+        if(dow_month <= 2)
+          rtc_state <= STATE_DOW1_0_0;
+        else
+          rtc_state <= STATE_DOW1_1_0;
+      STATE_DOW1_0_0:
+          rtc_state <= STATE_DOW1_0_1;
+      STATE_DOW1_0_1:
+          rtc_state <= STATE_DOW1_0_2;
+      STATE_DOW1_0_2:
+          rtc_state <= STATE_DOW1_0_3;
+      STATE_DOW1_0_3:
+          rtc_state <= STATE_DOW1_0_4;
+      STATE_DOW1_1_0:
+          rtc_state <= STATE_DOW1_1_1;
+      STATE_DOW1_1_1:
+          rtc_state <= STATE_DOW1_1_2;
+      STATE_DOW1_1_2:
+          rtc_state <= STATE_DOW1_1_3;
+      STATE_DOW1_0_4,
+      STATE_DOW1_1_3:
+        rtc_state <= STATE_DOW2;
+      STATE_DOW2:
+        rtc_state <= STATE_DOW3;
+      STATE_DOW3:
+        rtc_state <= STATE_DOW4;
+      STATE_DOW4:
+        if(dow_tmp > 13)
+          rtc_state <= STATE_DOW4;
+        else
+          rtc_state <= STATE_DOW5;
+      STATE_DOW5:
+        rtc_state <= STATE_LATCH;
+      STATE_LATCH:
+        rtc_state <= STATE_IDLE;
+      default:
+        rtc_state <= STATE_IDLE;
+    endcase
+  end
+end
+
+always @(posedge clkin) begin
+  if(pgm_we_rising) begin
+    rtc_data_r[55:0] <= rtc_data_in;
+    carry <= 0;
+  end else if (we1_rising) begin
+    rtc_data_r <= rtc_data_in1;
+    carry <= 0;
+  end else begin
+    case(rtc_state)
+      STATE_SEC1: begin
+        if(rtc_data_r[3:0] == 9) begin
+          rtc_data_r[3:0] <= 0;
+          carry <= 1;
+        end else begin
+          rtc_data_r[3:0] <= rtc_data_r[3:0] + 1;
+          carry <= 0;
+        end
+      end
+      STATE_SEC10: begin
+        if(carry) begin
+          if(rtc_data_r[7:4] == 5) begin
+            rtc_data_r[7:4] <= 0;
+            carry <= 1;
+          end else begin
+            rtc_data_r[7:4] <= rtc_data_r[7:4] + 1;
+            carry <= 0;
+          end
+        end
+      end
+      STATE_MIN1: begin
+        if(carry) begin
+          if(rtc_data_r[11:8] == 9) begin
+            rtc_data_r[11:8] <= 0;
+            carry <= 1;
+          end else begin
+            rtc_data_r[11:8] <= rtc_data_r[11:8] + 1;
+            carry <= 0;
+          end
+        end
+      end
+      STATE_MIN10: begin
+        if(carry) begin
+          if(rtc_data_r[15:12] == 5) begin
+            rtc_data_r[15:12] <= 0;
+            carry <= 1;
+          end else begin
+            rtc_data_r[15:12] <= rtc_data_r[15:12] + 1;
+            carry <= 0;
+          end
+        end
+      end
+      STATE_HOUR1: begin
+        if(carry) begin
+          if(rtc_data_r[23:20] == 2 && rtc_data_r[19:16] == 3) begin
+            rtc_data_r[19:16] <= 0;
+            carry <= 1;
+          end else if (rtc_data_r[19:16] == 9) begin
+            rtc_data_r[19:16] <= 0;
+            carry <= 1;
+         end else begin
+            rtc_data_r[19:16] <= rtc_data_r[19:16] + 1;
+            carry <= 0;
+          end
+        end
+      end
+      STATE_HOUR10: begin
+        if(carry) begin
+          if(rtc_data_r[23:20] == 2) begin
+            rtc_data_r[23:20] <= 0;
+            carry <= 1;
+          end else begin
+            rtc_data_r[23:20] <= rtc_data_r[23:20] + 1;
+            carry <= 0;
+          end
+        end
+      end
+      STATE_DAY1: begin
+        if(carry) begin
+          if(rtc_data_r[31:28] == dom10[month]
+             && rtc_data_r[27:24] == dom1[month] + is_leapyear_feb) begin
+            rtc_data_r[27:24] <= 0;
+            carry <= 1;
+          end else if (rtc_data_r[27:24] == 9) begin
+            rtc_data_r[27:24] <= 0;
+            carry <= 1;
+          end else begin
+            rtc_data_r[27:24] <= rtc_data_r[27:24] + 1;
+            carry <= 0;
+          end
+        end
+      end
+      STATE_DAY10: begin
+        if(carry) begin
+          if(rtc_data_r[31:28] == dom10[month]) begin
+            rtc_data_r[31:28] <= 0;
+            rtc_data_r[27:24] <= 1;
+            carry <= 1;
+          end else begin
+            rtc_data_r[31:28] <= rtc_data_r[31:28] + 1;
+            carry <= 0;
+          end
+        end
+      end
+      STATE_MON1: begin
+        if(carry) begin
+          if(rtc_data_r[39:36] == 1 && rtc_data_r[35:32] == 2) begin
+            rtc_data_r[35:32] <= 1;
+            carry <= 1;
+          end else if (rtc_data_r[35:32] == 9) begin
+            rtc_data_r[35:32] <= 0;
+            carry <= 1;
+          end else begin
+            rtc_data_r[35:32] <= rtc_data_r[35:32] + 1;
+            carry <= 0;
+          end
+        end
+      end
+      STATE_MON10: begin
+        if(carry) begin
+          if(rtc_data_r[39:36] == 1) begin
+            rtc_data_r[39:36] <= 0;
+            carry <= 1;
+          end else begin
+            rtc_data_r[39:36] <= rtc_data_r[39:36] + 1;
+            carry <= 0;
+          end
+        end
+      end
+      STATE_YEAR1: begin
+        if(carry) begin
+          if(rtc_data_r[43:40] == 9) begin
+            rtc_data_r[43:40] <= 0;
+            carry <= 1;
+          end else begin
+            rtc_data_r[43:40] <= rtc_data_r[43:40] + 1;
+            carry <= 0;
+          end
+        end
+      end
+      STATE_YEAR10: begin
+        if(carry) begin
+          if(rtc_data_r[47:44] == 9) begin
+            rtc_data_r[47:44] <= 0;
+            carry <= 1;
+          end else begin
+            rtc_data_r[47:44] <= rtc_data_r[47:44] + 1;
+            carry <= 0;
+          end
+        end
+      end
+      STATE_YEAR100: begin
+        if(carry) begin
+          if(rtc_data_r[51:48] == 9) begin
+            rtc_data_r[51:48] <= 0;
+            carry <= 1;
+          end else begin
+            rtc_data_r[51:48] <= rtc_data_r[51:48] + 1;
+            carry <= 0;
+          end
+        end
+      end
+      STATE_YEAR1000: begin
+        if(carry) begin
+          if(rtc_data_r[55:52] == 9) begin
+            rtc_data_r[55:52] <= 0;
+            carry <= 1;
+          end else begin
+            rtc_data_r[55:52] <= rtc_data_r[55:52] + 1;
+            carry <= 0;
+          end
+        end
+      end
+      STATE_DOW0_0: begin
+        dow_year1 <= rtc_data_r[43:40];
+        dow_year100 <= rtc_data_r[51:48];
+        dow_month <= month + 1;
+        dow_day <= rtc_data_r[27:24];
+      end
+      STATE_DOW0_1: begin
+        dow_year1 <= dow_year1 + (rtc_data_r[47:44] << 1);
+        dow_year100 <= dow_year100 + (rtc_data_r[55:52] << 1);
+        dow_day <= dow_day + (rtc_data_r[31:28] << 1); // parens: + binds tighter than << in Verilog; without them the accumulator itself was doubled (day-of-week wrong for 84% of dates)
+      end
+      STATE_DOW0_2: begin
+        dow_year1 <= dow_year1 + (rtc_data_r[47:44] << 3);
+        dow_year100 <= dow_year100 + (rtc_data_r[55:52] << 3);
+        dow_day <= dow_day + (rtc_data_r[31:28] << 3);
+      end
+      STATE_DOW1_0_0: begin
+        dow_month <= dow_month + 10;
+        dow_year <= dow_year1;
+      end
+      STATE_DOW1_0_1: begin
+        dow_year <= dow_year + (dow_year100 << 2);
+      end
+      STATE_DOW1_0_2: begin
+        dow_year <= dow_year + (dow_year100 << 5);
+      end
+      STATE_DOW1_0_3: begin
+        dow_year <= dow_year + (dow_year100 << 6) - 1;
+      end
+      STATE_DOW1_0_4: begin
+        if(dow_year1)
+          dow_year1 <= dow_year1 - 1;
+        else begin
+          dow_year1 <= 99;
+          dow_year100 <= dow_year100 - 1;
+        end
+      end
+      STATE_DOW1_1_0: begin
+        dow_month <= dow_month - 2;
+        dow_year <= dow_year1;
+      end
+      STATE_DOW1_1_1: begin
+        dow_year <= dow_year + (dow_year100 << 2);
+      end
+      STATE_DOW1_1_2: begin
+        dow_year <= dow_year + (dow_year100 << 5);
+      end
+      STATE_DOW1_1_3: begin
+        dow_year <= dow_year + (dow_year100 << 6);
+      end
+
+      STATE_DOW2: begin
+        dow_tmp <= (83 * dow_month);
+        dow_year_tmp <= dow_year
+                        + (dow_year >> 2)
+                        - (dow_year100)
+                        + (dow_year100 >> 2);
+      end
+      STATE_DOW3: begin
+        dow_tmp <= (dow_tmp >> 5)
+                   + dow_day
+                   + dow_year_tmp;
+                   //+ dow_year
+                   //+ (dow_year >> 2)
+                   //- (dow_year100)
+                   //+ (dow_year100 >> 2);
+      end
+      STATE_DOW4: begin
+        dow_tmp <= dow_tmp - 7;
+      end
+      STATE_DOW5: begin
+        rtc_data_r[59:56] <= {1'b0, dow_tmp[2:0]};
+      end
+      STATE_LATCH: begin
+        rtc_data_out_r <= rtc_data_r;
+      end
+    endcase
+  end
+end
+
+endmodule
