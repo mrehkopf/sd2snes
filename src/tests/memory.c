@@ -352,7 +352,6 @@ void save_srm(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
     save_sram((uint8_t*)srmfile, sram_size, base_addr);
 }
 void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
-  uint32_t count = 0;
   uint32_t remain = sram_size;
   size_t copy;
   FPGA_DESELECT();
@@ -368,7 +367,6 @@ void save_sram(uint8_t* filename, uint32_t sram_size, uint32_t base_addr) {
     for(int j=0; j<copy; j++) {
       FPGA_WAIT_RDY();
       file_buf[j] = FPGA_RX_BYTE();
-      count++;
     }
     FPGA_DESELECT();
     file_write(copy);

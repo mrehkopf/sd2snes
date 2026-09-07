@@ -220,7 +220,6 @@ void fpga_set_sddma_range(uint16_t start, uint16_t end) {
 }
 
 void fpga_sddma(uint8_t tgt, uint8_t partial) {
-  uint32_t test = 0;
   uint8_t status = 0;
   GPIO_MODE_IN(SD_CLKREG, SD_CLKBIT);
   FPGA_SELECT();
@@ -233,7 +232,6 @@ void fpga_sddma(uint8_t tgt, uint8_t partial) {
   DBG_SD printf("FPGA DMA request sent, wait for completion...");
   while((status=FPGA_RX_BYTE()) & 0x80) {
     FPGA_RX_BYTE(); /* eat the 2nd status byte */
-    test++;
   }
   DBG_SD printf("...complete\n");
   FPGA_DESELECT();
