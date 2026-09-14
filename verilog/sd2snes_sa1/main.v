@@ -199,6 +199,8 @@ wire SNES_PAWR_end = (SNES_PAWRr[6:1] == 6'b000001);
 wire SNES_RD_start = (SNES_READr[6:1] == 6'b111110);
 wire SNES_RD_end = (SNES_READr[6:1] == 6'b000001);
 wire SNES_WR_end = (SNES_WRITEr[6:1] == 6'b000001);
+// Start PSRAM selection as early as possible
+wire SNES_cycle_start_early = (SNES_CPU_CLKr[1:0] == 2'b01);
 wire SNES_cycle_start = (SNES_CPU_CLKr[6:1] == 6'b000001);
 wire SNES_cycle_end = (SNES_CPU_CLKr[6:1] == 6'b111110);
 wire SNES_cycle_end_early = (SNES_CPU_CLKr[6:1] == 6'b111110);
@@ -228,6 +230,19 @@ wire IS_SAVERAM;
 wire SD_DMA_TO_ROM;
 // wire free_slot = (SNES_PULSE_end | free_strobe) & ~SD_DMA_TO_ROM;
 wire free_slot = SNES_cycle_end | ~IS_ROM;
+
+`ifdef MK2
+wire MCU_ROM_WRITE_SLOT = 1'b1;
+`endif
+`ifdef MK3
+// constrain Mk3 MCU access to non-ROM SNES cycles; the current time sharing
+// does not leave enough time for the /CE recovery pulse and a second PSRAM cycle
+// between SNES cycles
+// TODO: fully synchronized time sharing that does not acquire PSRAM for the entire
+// SNES cycle.
+wire MCU_ROM_WRITE_SLOT = SNES_DEADr
+                         | (SNES_cycle_start_early & ~IS_ROM);
+`endif
 
 //wire free_slot = (SNES_PULSEr[0] | ~IS_ROM) & ~SD_DMA_TO_ROM;
 
@@ -705,6 +720,37 @@ wire SA1_ROM_RD_HIT = |(STATE & ST_SA1_ROM_RD_ADDR);
 wire SA1_ROM_HIT    = SA1_ROM_RD_HIT;
 
 `ifdef MK2
+wire SNES_PSRAM_READ_PREEMPT_START = 1'b0;
+wire SNES_PSRAM_READ_PREEMPT = 1'b0;
+wire SA1_ROM_BUS_HIT = SA1_ROM_HIT;
+wire MCU_ROM_BUS_HIT = MCU_HIT;
+`endif
+
+`ifdef MK3
+// A 70 ns MCU/SA-1 PSRAM read which is already in progress when the SNES
+// starts a ROM cycle can postpone valid cartridge data beyond the S-CPU's
+// sampling point.  Reads are restartable, so give the SNES immediate physical
+// ownership and leave the interrupted request pending for a later retry.
+wire SNES_PSRAM_REQUEST = ROM_HIT & ~IS_SAVERAM;
+wire SNES_PSRAM_READ_PREEMPT_START = SNES_cycle_start_early
+                                    & SNES_PSRAM_REQUEST
+                                    & (SA1_ROM_HIT | MCU_RD_HIT)
+                                    & ~SD_DMA_TO_ROM;
+reg SNES_PSRAM_READ_PREEMPTr = 1'b0;
+always @(posedge CLK2) begin
+  if(SNES_DEADr | SNES_cycle_end)
+    SNES_PSRAM_READ_PREEMPTr <= 1'b0;
+  else if(SNES_PSRAM_READ_PREEMPT_START)
+    SNES_PSRAM_READ_PREEMPTr <= 1'b1;
+end
+
+wire SNES_PSRAM_READ_PREEMPT = SNES_PSRAM_READ_PREEMPT_START
+                              | SNES_PSRAM_READ_PREEMPTr;
+wire SA1_ROM_BUS_HIT = SA1_ROM_HIT & ~SNES_PSRAM_READ_PREEMPT;
+wire MCU_ROM_BUS_HIT = MCU_HIT & ~SNES_PSRAM_READ_PREEMPT;
+`endif
+
+`ifdef MK2
 my_dcm snes_dcm(
   .CLKIN(CLKIN),
   .CLKFX(CLK2),
@@ -712,8 +758,8 @@ my_dcm snes_dcm(
   .RST(DCM_RST)
 );
 
-assign ROM_ADDR  = (SD_DMA_TO_ROM) ? MCU_ADDR[23:1] : SA1_ROM_HIT ? SA1_ROM_ADDRr[23:1] : MCU_HIT ? ROM_ADDRr[23:1] : MAPPED_SNES_ADDR[23:1];
-assign ROM_ADDR0 = (SD_DMA_TO_ROM) ? MCU_ADDR[0]    : SA1_ROM_HIT ? SA1_ROM_ADDRr[0]    : MCU_HIT ? ROM_ADDRr[0]    : MAPPED_SNES_ADDR[0];
+assign ROM_ADDR  = (SD_DMA_TO_ROM) ? MCU_ADDR[23:1] : SA1_ROM_BUS_HIT ? SA1_ROM_ADDRr[23:1] : MCU_ROM_BUS_HIT ? ROM_ADDRr[23:1] : MAPPED_SNES_ADDR[23:1];
+assign ROM_ADDR0 = (SD_DMA_TO_ROM) ? MCU_ADDR[0]    : SA1_ROM_BUS_HIT ? SA1_ROM_ADDRr[0]    : MCU_ROM_BUS_HIT ? ROM_ADDRr[0]    : MAPPED_SNES_ADDR[0];
 
 assign ROM_CE = 1'b0;
 
@@ -742,25 +788,40 @@ pll snes_pll(
 );
 
 wire ROM_CHIP;
-assign ROM_CHIP   = (SD_DMA_TO_ROM) ? MCU_ADDR[23]   : SA1_ROM_HIT ? SA1_ROM_ADDRr[23]   : MCU_HIT ? ROM_ADDRr[23]   : MAPPED_SNES_ADDR[23];
-assign ROM_ADDR   = (SD_DMA_TO_ROM) ? MCU_ADDR[22:1] : SA1_ROM_HIT ? SA1_ROM_ADDRr[22:1] : MCU_HIT ? ROM_ADDRr[22:1] : MAPPED_SNES_ADDR[22:1];
-assign ROM_ADDR0  = (SD_DMA_TO_ROM) ? MCU_ADDR[0]    : SA1_ROM_HIT ? SA1_ROM_ADDRr[0]    : MCU_HIT ? ROM_ADDRr[0]    : MAPPED_SNES_ADDR[0];
+assign ROM_CHIP   = (SD_DMA_TO_ROM) ? MCU_ADDR[23]   : SA1_ROM_BUS_HIT ? SA1_ROM_ADDRr[23]   : MCU_ROM_BUS_HIT ? ROM_ADDRr[23]   : MAPPED_SNES_ADDR[23];
+assign ROM_ADDR   = (SD_DMA_TO_ROM) ? MCU_ADDR[22:1] : SA1_ROM_BUS_HIT ? SA1_ROM_ADDRr[22:1] : MCU_ROM_BUS_HIT ? ROM_ADDRr[22:1] : MAPPED_SNES_ADDR[22:1];
+assign ROM_ADDR0  = (SD_DMA_TO_ROM) ? MCU_ADDR[0]    : SA1_ROM_BUS_HIT ? SA1_ROM_ADDRr[0]    : MCU_ROM_BUS_HIT ? ROM_ADDRr[0]    : MAPPED_SNES_ADDR[0];
 
 assign ROM_ZZ = 1'b1;
+wire PSRAM_1CE;
+wire PSRAM_2CE;
 psram_ce psram_ce(
   .CLK(CLK2),
   .ROM_CHIP(ROM_CHIP),
   .SNES_REQUEST(ROM_HIT & ~IS_SAVERAM),
+  .SNES_CYCLE_START_EARLY(SNES_cycle_start_early),
   .SNES_CYCLE_START(SNES_cycle_start),
   .SNES_CYCLE_END(SNES_cycle_end),
   .SNES_DEAD(SNES_DEADr),
-  .OTHER_ACTIVE(SA1_ROM_HIT | MCU_HIT),
+  .OTHER_ACTIVE(SA1_ROM_BUS_HIT | MCU_ROM_BUS_HIT),
   .SD_DMA_TO_ROM(SD_DMA_TO_ROM),
   .SD_DMA_SRAM_ACTIVE(SD_DMA_SRAM_ACTIVE),
   .SD_WRITE_N(SD_DMA_SRAM_WE),
-  .ROM_1CE(ROM_1CE),
-  .ROM_2CE(ROM_2CE)
+  .ROM_1CE(PSRAM_1CE),
+  .ROM_2CE(PSRAM_2CE)
 );
+
+// During a read preemption the address mux already points at the SNES ROM
+// address.  Keep the selected chip active directly instead of inserting the
+// normal owner-to-owner recovery interval; this preserves the full SNES data
+// setup window.  /CE is released normally at the end of the SNES cycle.
+assign ROM_1CE = SNES_PSRAM_READ_PREEMPT
+               ?  MAPPED_SNES_ADDR[23] : PSRAM_1CE;
+assign ROM_2CE = SNES_PSRAM_READ_PREEMPT
+               ? ~MAPPED_SNES_ADDR[23] : PSRAM_2CE;
+
+assign PM6_out = 1'b0;
+assign PN6_out = 1'b0;
 
 snescmd_buf snescmd (
   .clock(CLK2), // input clka
@@ -815,7 +876,8 @@ always @(posedge CLK2) begin
     SA1_ROM_ADDRr <= SA1_ROM_ADDR;
     SA1_ROM_WORDr <= SA1_ROM_WORD;
     SA1_ROM_DATAr <= SA1_ROM_DATA;
-  end else if(|(STATE & (ST_SA1_ROM_RD_ADDR)) & ~|ST_MEM_DELAYr) begin
+  end else if(|(STATE & (ST_SA1_ROM_RD_ADDR)) & ~|ST_MEM_DELAYr
+              & ~SNES_PSRAM_READ_PREEMPT) begin
     // enable rdy/response 1 cycle earlier
     RQ_SA1_ROM_RDYr <= 1'b1;
   end else if(STATE & (ST_SA1_ROM_RD_END)) begin
@@ -841,6 +903,9 @@ end
 
 always @(posedge CLK2) begin
   if(SNES_DEADr & SNES_CPU_CLKr[1]) STATE <= ST_IDLE; // interrupt+restart an ongoing MCU access when the SNES comes alive
+  // Leave an interrupted read pending and retry it after the SNES ROM cycle.
+  // The bus-qualified hit signals above keep it away from the PSRAM pins.
+  else if(SNES_PSRAM_READ_PREEMPT) STATE <= ST_IDLE;
   else
   case(STATE)
     ST_IDLE: begin
@@ -856,7 +921,9 @@ always @(posedge CLK2) begin
         else if(MCU_RD_PENDr | (MCU_RRQ && MCU_ADDR[23:19] != 5'b11100)) begin
           STATE <= ST_MCU_RD_ADDR;
           ST_MEM_DELAYr <= ROM_CYCLE_LEN;
-        end else if(MCU_WR_PENDr | (MCU_WRQ && MCU_ADDR[23:19] != 5'b11100)) begin
+        end else if((MCU_WR_PENDr
+                     | (MCU_WRQ && MCU_ADDR[23:19] != 5'b11100))
+                    && MCU_ROM_WRITE_SLOT) begin
           STATE <= ST_MCU_WR_ADDR;
           ST_MEM_DELAYr <= ROM_CYCLE_LEN;
         end
@@ -985,8 +1052,8 @@ assign ROM_WE = SD_DMA_TO_ROM
                 : 1'b1;
 
 // force word enable for SA1
-assign ROM_BHE =  ROM_ADDR0 && !(!SD_DMA_TO_ROM && SA1_ROM_HIT && SA1_ROM_WORDr);
-assign ROM_BLE = !ROM_ADDR0 && !(!SD_DMA_TO_ROM && SA1_ROM_HIT && SA1_ROM_WORDr);
+assign ROM_BHE =  ROM_ADDR0 && !(!SD_DMA_TO_ROM && SA1_ROM_BUS_HIT && SA1_ROM_WORDr);
+assign ROM_BLE = !ROM_ADDR0 && !(!SD_DMA_TO_ROM && SA1_ROM_BUS_HIT && SA1_ROM_WORDr);
 
 //--------------
 // RAM Pipeline

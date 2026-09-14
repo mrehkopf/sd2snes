@@ -210,6 +210,8 @@ wire SNES_PAWR_end = (SNES_PAWRr[6:1] == 6'b000001);
 wire SNES_RD_start = (SNES_READr[6:1] == 6'b111110);
 wire SNES_RD_end = (SNES_READr[6:1] == 6'b000001);
 wire SNES_WR_end = (SNES_WRITEr[6:1] == 6'b000001);
+// Start PSRAM selection as early as possible
+wire SNES_cycle_start_early = (SNES_CPU_CLKr[1:0] == 2'b01);
 wire SNES_cycle_start = (SNES_CPU_CLKr[6:1] == 6'b000001);
 wire SNES_cycle_end = (SNES_CPU_CLKr[6:1] == 6'b111110);
 wire SNES_WRITE = SNES_WRITEr[2] & SNES_WRITEr[1];
@@ -906,7 +908,10 @@ assign ROM_ZZ = 1'b1;
 psram_ce psram_ce(
   .CLK(CLK2),
   .ROM_CHIP(ROM_CHIP),
-  .SNES_REQUEST(ROM_HIT & ~IS_SAVERAM),
+  // The SGB's SNES firmware is served by the separate SRAM, and this core
+  // hardwires IS_SAVERAM low. SNES cycles therefore never request PSRAM.
+  .SNES_REQUEST(1'b0),
+  .SNES_CYCLE_START_EARLY(SNES_cycle_start_early),
   .SNES_CYCLE_START(SNES_cycle_start),
   .SNES_CYCLE_END(SNES_cycle_end),
   .SNES_DEAD(SNES_DEADr),

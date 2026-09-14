@@ -167,6 +167,8 @@ wire SNES_PAWR_end = (SNES_PAWRr[6:1] == 6'b000001);
 wire SNES_RD_start = (SNES_READr[6:1] == 6'b111110);
 wire SNES_RD_end = (SNES_READr[6:1] == 6'b000001);
 wire SNES_WR_end = (SNES_WRITEr[6:1] == 6'b000001);
+// Start PSRAM selection as early as possible
+wire SNES_cycle_start_early = (SNES_CPU_CLKr[1:0] == 2'b01);
 wire SNES_cycle_start = (SNES_CPU_CLKr[6:1] == 6'b000001);
 wire SNES_cycle_end = (SNES_CPU_CLKr[6:1] == 6'b111110);
 // active low write signal from SNES delayed 2 cycles (96MHz clock)
@@ -193,6 +195,17 @@ end
 
 wire SD_DMA_TO_ROM;
 wire free_slot = (SNES_PULSE_end | free_strobe) & ~SD_DMA_TO_ROM;
+`ifdef MK2
+wire MCU_ROM_ACCESS_SLOT = 1'b1;
+`endif
+`ifdef MK3
+// constrain Mk3 MCU access to non-ROM SNES cycles; the current time sharing
+// does not leave enough time for the /CE recovery pulse and a second PSRAM cycle
+// between SNES cycles
+// TODO: fully synchronized time sharing that does not acquire PSRAM for the entire
+// SNES cycle.
+wire MCU_ROM_ACCESS_SLOT = SNES_DEADr | free_strobe;
+`endif
 
 wire ROM_HIT;
 
@@ -684,6 +697,7 @@ psram_ce psram_ce(
   .CLK(CLK2),
   .ROM_CHIP(ROM_CHIP),
   .SNES_REQUEST(ROM_HIT),
+  .SNES_CYCLE_START_EARLY(SNES_cycle_start_early),
   .SNES_CYCLE_START(SNES_cycle_start),
   .SNES_CYCLE_END(SNES_cycle_end),
   .SNES_DEAD(SNES_DEADr),
@@ -760,7 +774,7 @@ always @(posedge CLK2) begin
     ST_IDLE: begin
       STATE <= ST_IDLE;
   // RG make sure the MCU doesn't touch the PSRAM when SDD1 may be accessing it
-      if((free_slot & FSM_Idle) | SNES_DEADr) begin
+      if(((free_slot & FSM_Idle) | SNES_DEADr) & MCU_ROM_ACCESS_SLOT) begin
         if(MCU_RD_PENDr) begin
           STATE <= ST_MCU_RD_ADDR;
           ST_MEM_DELAYr <= ROM_CYCLE_LEN;

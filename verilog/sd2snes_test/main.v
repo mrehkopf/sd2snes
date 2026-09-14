@@ -254,6 +254,8 @@ wire SNES_RD_start_fast = (SNES_READr[7:1] == 7'b1111110);
 wire SNES_RD_end = ((SNES_READr[6:1] & SNES_READr[7:2]) == 6'b000001);
 wire SNES_WR_start = ((SNES_WRITEr[6:1] & SNES_WRITEr[7:2]) == 6'b111110);
 wire SNES_WR_end = ((SNES_WRITEr[6:1] & SNES_WRITEr[7:2]) == 6'b000011);
+// Start PSRAM selection as early as possible
+wire SNES_cycle_start_early = (SNES_CPU_CLKr[1:0] == 2'b01);
 wire SNES_cycle_start = (SNES_CPU_CLKr[7:1] == 7'b0000001);
 wire SNES_cycle_end = ((SNES_CPU_CLKr[7:2] | SNES_CPU_CLKr[6:1]) == 6'b111000);
 wire SNES_WRITE = SNES_WRITEr[2] & SNES_WRITEr[1];
@@ -509,6 +511,7 @@ psram_ce psram_ce(
   .CLK(CLK2),
   .ROM_CHIP(ROM_CHIP),
   .SNES_REQUEST(ASSERT_SNES_ADDR),
+  .SNES_CYCLE_START_EARLY(SNES_cycle_start_early),
   .SNES_CYCLE_START(SNES_cycle_start),
   .SNES_CYCLE_END(SNES_cycle_end),
   .SNES_DEAD(1'b0),
