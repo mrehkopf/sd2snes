@@ -131,6 +131,14 @@ set_clock_uncertainty -fall_from [get_clocks {CLKIN}] -fall_to [get_clocks {CLKI
 # Set Maximum Delay
 #**************************************************************
 
+# I/O constrain the (asynchronous) PSRAM bus
+set snes_psram_ctl_regs [get_registers -nowarn {*SNES_CPU_CLKr* *psram_ce|snes_active*}]
+if {[get_collection_size $snes_psram_ctl_regs] > 0} {
+  set_max_delay 10.000 \
+    -from $snes_psram_ctl_regs -to [get_ports {ROM_1CE ROM_2CE}]
+}
+set_max_delay 22.000 \
+  -from [get_ports {ROM_DATA[*]}] -to [get_ports {SNES_DATA[*]}]
 
 
 #**************************************************************
