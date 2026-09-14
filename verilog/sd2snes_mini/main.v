@@ -286,7 +286,7 @@ psram_ce psram_ce(
   .SNES_DEAD(SNES_DEADr),
   .OTHER_ACTIVE(MCU_HIT),
   .SD_DMA_TO_ROM(1'b0),
-  .SD_DMA_NEXTADDR(1'b0),
+  .SD_DMA_SRAM_ACTIVE(1'b0),
   .SD_WRITE_N(1'b1),
   .ROM_1CE(ROM_1CE),
   .ROM_2CE(ROM_2CE)
