@@ -49,6 +49,8 @@ module mcu_cmd(
   output SD_DMA_PARTIAL,
   output [10:0] SD_DMA_PARTIAL_START,
   output [10:0] SD_DMA_PARTIAL_END,
+  output reg SD_DMA_START_MID_BLOCK,
+  output reg SD_DMA_END_MID_BLOCK,
 
   // DAC
   output [10:0] dac_addr_out,
@@ -184,6 +186,8 @@ initial begin
   DAC_ADDR_OUT_BUF = 0;
   MSU_ADDR_OUT_BUF = 0;
   SD_DMA_ENr = 0;
+  SD_DMA_START_MID_BLOCK = 0;
+  SD_DMA_END_MID_BLOCK = 0;
   MAPPER_BUF = 1;
 end
 
@@ -225,12 +229,16 @@ always @(posedge clk) begin
         SD_DMA_ENr <= 1'b0;
       8'h6x:
         case (spi_byte_cnt)
-          32'h2:
+          32'h2: begin
+            SD_DMA_START_MID_BLOCK <= param_data[7];
             SD_DMA_PARTIAL_STARTr[10:9] <= param_data[1:0];
+          end
           32'h3:
             SD_DMA_PARTIAL_STARTr[8:0] <= {param_data, 1'b0};
-          32'h4:
+          32'h4: begin
+            SD_DMA_END_MID_BLOCK <= param_data[7];
             SD_DMA_PARTIAL_ENDr[10:9] <= param_data[1:0];
+          end
           32'h5:
             SD_DMA_PARTIAL_ENDr[8:0] <= {param_data, 1'b0};
         endcase

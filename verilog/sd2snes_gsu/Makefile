@@ -1,6 +1,6 @@
 CORE = gsu
 
-VSRC = ../common/psram_ce.v address.v cheat.v dac.v dcm.v gsu.v main.v mcu_cmd.v msu.v sd_dma.v spi.v
+VSRC = ../common/sd_dma.v ../common/psram_ce.v address.v cheat.v dac.v dcm.v gsu.v main.v mcu_cmd.v msu.v spi.v
 VHSRC =
 
 HEADER = config.vh

@@ -512,7 +512,7 @@ set_global_assignment -name VERILOG_INCLUDE_FILE config.vh
 set_global_assignment -name VERILOG_FILE sgb_icd2.v
 set_global_assignment -name VERILOG_FILE sgb.v
 set_global_assignment -name VERILOG_FILE spi.v
-set_global_assignment -name VERILOG_FILE sd_dma.v
+set_global_assignment -name VERILOG_FILE ../common/sd_dma.v
 set_global_assignment -name VERILOG_FILE msu.v
 set_global_assignment -name VERILOG_FILE mcu_cmd.v
 set_global_assignment -name VERILOG_FILE main.v

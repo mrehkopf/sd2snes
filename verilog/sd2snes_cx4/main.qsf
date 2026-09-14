@@ -513,7 +513,7 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to ROM_ZZ
 set_location_assignment PIN_G15 -to ROM_ZZ
 set_global_assignment -name SDC_FILE main.sdc
 set_global_assignment -name VERILOG_FILE spi.v
-set_global_assignment -name VERILOG_FILE sd_dma.v
+set_global_assignment -name VERILOG_FILE ../common/sd_dma.v
 set_global_assignment -name VERILOG_FILE msu.v
 set_global_assignment -name VERILOG_FILE mcu_cmd.v
 set_global_assignment -name VERILOG_FILE main.v

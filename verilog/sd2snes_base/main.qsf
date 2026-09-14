@@ -512,7 +512,7 @@ set_location_assignment PIN_M6 -to trigtrog
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to trigtrog
 set_global_assignment -name VERILOG_FILE srtc.v
 set_global_assignment -name VERILOG_FILE spi.v
-set_global_assignment -name VERILOG_FILE sd_dma.v
+set_global_assignment -name VERILOG_FILE ../common/sd_dma.v
 set_global_assignment -name VERILOG_FILE rtc.v
 set_global_assignment -name VERILOG_FILE msu.v
 set_global_assignment -name VERILOG_FILE mcu_cmd.v

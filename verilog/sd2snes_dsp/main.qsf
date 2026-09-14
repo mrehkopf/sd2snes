@@ -511,7 +511,7 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to PT5_in
 set_global_assignment -name VERILOG_MACRO "MK3=<None>"
 set_global_assignment -name VERILOG_FILE upd77c25.v
 set_global_assignment -name VERILOG_FILE spi.v
-set_global_assignment -name VERILOG_FILE sd_dma.v
+set_global_assignment -name VERILOG_FILE ../common/sd_dma.v
 set_global_assignment -name VERILOG_FILE msu.v
 set_global_assignment -name VERILOG_FILE mcu_cmd.v
 set_global_assignment -name VERILOG_FILE main.v

@@ -25,6 +25,7 @@ module sd_dma(
   input SD_DMA_EN,
   output SD_DMA_STATUS,
   output SD_DMA_SRAM_WE,
+  output SD_DMA_SRAM_ACTIVE,
   output SD_DMA_NEXTADDR,
   output [7:0] SD_DMA_SRAM_DATA,
   input SD_DMA_PARTIAL,
@@ -68,6 +69,9 @@ initial cyclecnt = 11'd0;
 reg SD_DMA_SRAM_WEr;
 initial SD_DMA_SRAM_WEr = 1'b1;
 assign SD_DMA_SRAM_WE = (cyclecnt < 1025 && SD_DMA_STATUSr) ? SD_DMA_SRAM_WEr : 1'b1;
+
+reg SD_DMA_SRAM_ACTIVEr = 1'b0;
+assign SD_DMA_SRAM_ACTIVE = SD_DMA_STATUSr && SD_DMA_SRAM_ACTIVEr;
 
 reg SD_DMA_NEXTADDRr;
 assign SD_DMA_NEXTADDR = (cyclecnt < 1025 && SD_DMA_STATUSr) ? SD_DMA_NEXTADDRr : 1'b0;
@@ -125,6 +129,19 @@ always @(posedge CLK) begin
     cyclecnt <= (SD_DMA_PARTIALr && SD_DMA_START_MID_BLOCK) ? SD_DMA_PARTIAL_START : 0;
   else if(!SD_DMA_STATUSr) cyclecnt <= 0;
   else if(clkcnt[1:0] == 2'b10) cyclecnt <= cyclecnt + 1;
+end
+
+// Select memory when the address advances at phase 1, one clock before
+// WE falls at phase 2. Hold through WE rising at phase 7, then leave
+// phase 0 deselected. Qualify at phase 1 so the nibble counter reaching
+// the end of a partial transfer cannot cut short its final write.
+always @(posedge CLK) begin
+  if(SD_DMA_EN_rising || !SD_DMA_STATUSr || clkcnt == 3'h0)
+    SD_DMA_SRAM_ACTIVEr <= 1'b0;
+  else if(clkcnt == 3'h1)
+    SD_DMA_SRAM_ACTIVEr <= (cyclecnt >= SD_DMA_STARTr)
+                        && (cyclecnt < SD_DMA_ENDr)
+                        && (cyclecnt < 11'd1025);
 end
 
 // we have 8 clk cycles to complete one RAM write

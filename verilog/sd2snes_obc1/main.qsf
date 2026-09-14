@@ -501,7 +501,7 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SNES_CIC_CLK
 set_global_assignment -name NOMINAL_CORE_SUPPLY_VOLTAGE 1.2V
 set_global_assignment -name VERILOG_MACRO "MK3=<None>"
 set_global_assignment -name VERILOG_FILE spi.v
-set_global_assignment -name VERILOG_FILE sd_dma.v
+set_global_assignment -name VERILOG_FILE ../common/sd_dma.v
 set_global_assignment -name VERILOG_FILE msu.v
 set_global_assignment -name VERILOG_FILE mcu_cmd.v
 set_global_assignment -name VERILOG_FILE main.v

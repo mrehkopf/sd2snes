@@ -522,7 +522,7 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SNES_CIC_CLK
 set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SNES_CIC_CLK
 set_global_assignment -name VERILOG_MACRO "MK3=<None>"
 set_global_assignment -name VERILOG_FILE spi.v
-set_global_assignment -name VERILOG_FILE sd_dma.v
+set_global_assignment -name VERILOG_FILE ../common/sd_dma.v
 set_global_assignment -name VERILOG_FILE mcu_cmd.v
 set_global_assignment -name VERILOG_FILE main.v
 set_global_assignment -name VERILOG_FILE ../common/psram_ce.v
