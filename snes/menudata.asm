@@ -142,19 +142,9 @@ menu_enttab_filesel_favorites_context:
   .menu_func_close text_filesel_set_as_autoboot, set_favorite_as_autoboot_rom, mdesc_filesel_set_as_autoboot
   .menu_end
 
-mfunc_set_bsx_time:
-  php
-  sep #$20
+; menu hook functions are called with 8-bit accumulator by
+; menu_check_disabled_func and menu_check_change_hook (menu.asm)
   .as
-  lda #`CFG_BSX_TIME
-  pha
-  pea <>CFG_BSX_TIME
-    jsr time_init
-  pla
-  pla
-  pla
-  plp
-  rtl
 
 mfunc_isenabled_always:
   sec
