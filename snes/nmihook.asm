@@ -8,6 +8,7 @@ nmihook:
   sta @l NMI_PAD
   sep #$20
   .as
+nmi_branch1:
 - bra -        ; branch1: filled in by FPGA
 ; rules for branch tgt:
 ;        if (buttons disabled OR manual read in progress) AND wram patching enabled: nmi_patches
@@ -64,9 +65,11 @@ nmi_echocmd: ; echo cmd to MCU for misc handling
   sta @l MCU_CMD
 ; 2nd branch point to determine whether to jump to WRAM cheats,
 ; halt system (for reset), or continue
+nmi_branch2:
 - bra - ; branch2: nmi_patches, nmi_savestate, nmi_stop, or nmi_exit
 nmi_patches:
   jsr NMI_WRAM_CHEATS,k
+nmi_branch3:
 - bra - ; branch3: nmi_savestate or nmi_exit
 nmi_savestate:
   jsl savestate_handler
@@ -152,4 +155,26 @@ resethook_loop:
   stz NMI_VECT_DISABLE
   jmp ($fffc)
 
+nmihook_end:
 .text "bram_end"
+
+.cerror resethook - nmihook != BRAM_RESET_HOOK - BRAM_PAYLOAD, format("resethook must be at BRAM_RESET_HOOK (offset $%02x), but is at offset $%02x", BRAM_RESET_HOOK - BRAM_PAYLOAD, resethook - nmihook)
+.cerror nmihook_end - nmihook > NMI_WRAM_CHEATS - BRAM_PAYLOAD, format("nmihook overlaps NMI_WRAM_CHEATS: $%02x bytes, $%02x available", nmihook_end - nmihook, NMI_WRAM_CHEATS - BRAM_PAYLOAD)
+
+; The FPGA's in-game hook logic (cheat.v) patches the offsets of the three
+; infinite loop branches above (nmi_branch1..3) with fixed values.
+; Raise an error if they change.
+; TODO automate this somehow?
+fpga_branch .macro site, target, offset
+  .cerror \target - (\site + 2) != \offset, format("FPGA branch offset changed (see cheat.v): %s -> %s is $%02x, expected $%02x", str(.\site), str(.\target), \target - (\site + 2), \offset)
+.endm
+.fpga_branch nmi_branch1, nmi_manual_read, $00
+.fpga_branch nmi_branch1, nmi_echocmd,     $30
+.fpga_branch nmi_branch1, nmi_patches,     $3a
+.fpga_branch nmi_branch1, nmi_savestate,   $3f
+.fpga_branch nmi_branch1, nmi_exit,        $43
+.fpga_branch nmi_branch2, nmi_patches,     $00
+.fpga_branch nmi_branch2, nmi_savestate,   $05
+.fpga_branch nmi_branch2, nmi_exit,        $09
+.fpga_branch nmi_branch2, nmi_stop,        $14
+.fpga_branch nmi_branch3, nmi_savestate,   $00
