@@ -30,7 +30,6 @@ menu_enttab_cfg:
 ; HEADER
   .menu_header 1, mtext_mm_cfg
 ; ENTRIES
-;  .menu_submenu test_mtext_title, menu_enttab_test, 0   ; test menu (still in an old entry layout)
   .menu_func mtext_cfg_time, rtc_init, mdesc_cfg_time
   .menu_submenu mtext_cfg_bsx, menu_enttab_bsx, mdesc_cfg_bsx
   .menu_submenu mtext_cfg_browser, menu_enttab_browser, mdesc_cfg_browser
@@ -317,97 +316,3 @@ kv_led_bright:
   .kv $000e, text_14
   .kv $000f, text_15_max
   .kv_end
-
-menu_enttab_test:
-; HEADER
- .byte 1
- .word <>test_mtext_title
- .byte `test_mtext_title
-; ENTRIES
- .byte MTYPE_VALUE
- .word <>test_mtext_entry_byte
- .byte `test_mtext_entry_byte
- .word <>test_mtext_entry_byte_ptab
- .byte `test_mtext_entry_byte_ptab
- .byte OPTTYPE_BYTE
- .word $F000
- .byte $7F
- .byte MTYPE_VALUE
- .word <>test_mtext_entry_word
- .byte `test_mtext_entry_word
- .word <>test_mtext_entry_word_ptab
- .byte `test_mtext_entry_word_ptab
- .byte OPTTYPE_WORD
- .word $F001
- .byte $7F
- .byte MTYPE_VALUE
- .word <>test_mtext_entry_string
- .byte `test_mtext_entry_string
- .word $0008
- .byte 0
- .byte OPTTYPE_STRING
- .word $F003
- .byte $7F
- .byte MTYPE_VALUE
- .word <>test_mtext_entry_kvbyte
- .byte `test_mtext_entry_kvbyte
- .word <>test_mtext_entry_kvbyte_ptab
- .byte `test_mtext_entry_kvbyte_ptab
- .byte OPTTYPE_KVBYTE
- .word $F00B
- .byte $7F
- .byte MTYPE_VALUE
- .word <>test_mtext_entry_kvword
- .byte `test_mtext_entry_kvword
- .word <>test_mtext_entry_kvword_ptab
- .byte `test_mtext_entry_kvword_ptab
- .byte OPTTYPE_KVWORD
- .word $F00C
- .byte $7F
- .byte MTYPE_VALUE
- .word <>test_mtext_entry_file
- .byte `test_mtext_entry_file
- .word <>test_mtext_entry_file_path
- .byte `test_mtext_entry_file_path
- .byte OPTTYPE_FILESEL
- .word $F00E
- .byte $7F
-
- .byte 0
-
-test_mtext_title:             .text "Test Menu", 0
-test_mtext_entry_byte:        .text "Byte Select", 0
-test_mtext_entry_word:        .text "Word Select", 0
-test_mtext_entry_string:      .text "String Select", 0
-test_mtext_entry_kvbyte:      .text "8bit Key-Value Select", 0
-test_mtext_entry_kvword:      .text "16bit Key-Value Select", 0
-test_mtext_entry_file:        .text "File Select", 0
-test_mtext_entry_byte_ptab:   .word $000e, $00e9
-test_mtext_entry_word_ptab:   .word $0052, $fecd
-test_mtext_entry_kvbyte_ptab: .word $0000, <>text_on
-                              .byte `text_on
-                              .word $0003, <>text_off
-                              .byte `text_off
-                              .word $0001, <>text_yes
-                              .byte `text_yes
-                              .word $000e, <>text_no
-                              .byte `text_no
-                              .word $0004, <>text_fast
-                              .byte `text_fast
-                              .word $ffff
-
-test_mtext_entry_kvword_ptab: .word $10f0, <>text_50Hz
-                              .byte `text_50Hz
-                              .word $20e3, <>text_60Hz
-                              .byte `text_60Hz
-                              .word $0008, <>text_normal
-                              .byte `text_normal
-                              .word $0133, <>text_rtc
-                              .byte `text_rtc
-                              .word $010a, <>text_auto
-                              .byte `text_auto
-                              .word $ffff
-
-test_mtext_entry_file_path:   .byte TYPE_IPS
-                              .word <>rootdir
-                              .byte `rootdir

@@ -414,7 +414,6 @@ cheat_detail_line: .byte 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
                   .byte 24, 0
 
 text_spcid:     .text "SNES-SPC700"
-rootdir:        .text "/", 0
 gfxptr_info:    .text "_GFXPTR_"
                 .word <>font
                 .word <>logo

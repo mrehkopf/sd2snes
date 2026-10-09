@@ -34,9 +34,9 @@ filesel_init:
   .as
   lda #`wram(dirlog)
   sta dirlog_idx+2
-  lda #$2f
+  lda #$2f ; '/'
   sta @l FILESEL_CWD
-  lda #$00
+  lda #$00 ; '\0'
   sta @l FILESEL_CWD+1
   jsr filesel_request_filelist
   rts
