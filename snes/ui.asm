@@ -632,7 +632,7 @@ Frame .block
   _             .dstruct SaveJSR
 .endblock
   .endvirtual
-  #enter
+  .enter
   phb
     sep #$20
     .as
@@ -692,7 +692,7 @@ greyout_next:
     bra greyout_start
 greyout_out:
   plb
-  #leave
+  .leave
   rts
 .endblock
 

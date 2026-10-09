@@ -14,10 +14,10 @@ GAME_MAIN:
   stz dbg_ptr
   lda WARM_SIGNATURE ; Was CMD_RESET issued before reset?
   cmp #$fa50    ; If yes, then perform warm boot procedure
-  #jne coldboot
+  .jne coldboot
   eor WARM_COMPLEMENT
   inc a
-  #jne coldboot
+  .jne coldboot
   sta WARM_SIGNATURE
   sta WARM_COMPLEMENT
   lda SAVED_SP ; Restore previous stack pointer
@@ -132,7 +132,7 @@ setup_gfx:
   stx $2181
   lda #$00
   sta $2183
-  #DMA7 #$08, #$8000, #`zero, #<>zero, #$80
+  .DMA7 #$08, #$8000, #`zero, #<>zero, #$80
 
 ; generate fonts
   jsr genfonts
@@ -140,22 +140,22 @@ setup_gfx:
 ; clear BG1 tilemap
   ldx #BG1_TILE_BASE
   stx $2116
-  #DMA7 #$09, #$1000, #`zero, #<>zero, #$18
+  .DMA7 #$09, #$1000, #`zero, #<>zero, #$18
 
 ; clear BG2 tilemap
   ldx #BG2_TILE_BASE
   stx $2116
-  #DMA7 #$09, #$1000, #`zero, #<>zero, #$18
+  .DMA7 #$09, #$1000, #`zero, #<>zero, #$18
 
 ; clear OAM tables
   ldx #$0000
   stx $2102
-  #DMA7 #$08, #$220, #`zero, #<>zero, #$04
+  .DMA7 #$08, #$220, #`zero, #<>zero, #$04
 
 ; copy logo tiles
   ldx #$2000
   stx $2116
-  #DMA7 #$01, #$4000, #`logo, #<>logo, #$18
+  .DMA7 #$01, #$4000, #`logo, #<>logo, #$18
 
 ; generate logo tilemap
   ldx #BG1_TILE_BASE
@@ -170,19 +170,19 @@ setup_gfx:
 ; copy sprites tiles
   ldx #OAM_TILE_BASE
   stx $2116
-  #DMA7 #$01, #$500, #`logospr, #<>logospr, #$18
+  .DMA7 #$01, #$500, #`logospr, #<>logospr, #$18
 
 ; set OAM tables
   ldx #$0000
   stx $2102
-  #DMA7 #$00, #$60, #`oam_data_l, #<>oam_data_l, #$04
+  .DMA7 #$00, #$60, #`oam_data_l, #<>oam_data_l, #$04
   ldx #$0100
   stx $2102
-  #DMA7 #$00, #$09, #`oam_data_h, #<>oam_data_h, #$04
+  .DMA7 #$00, #$09, #`oam_data_h, #<>oam_data_h, #$04
 
 ; set palette
   stz $2121
-  #DMA7 #$00, #$200, #`palette, #<>palette, #$22
+  .DMA7 #$00, #$200, #`palette, #<>palette, #$22
   stz $2121
 
 ; copy hdma tables so we can work "without" the cartridge
@@ -191,41 +191,41 @@ setup_gfx:
   ldx #hdma_pal
   stx $2181
   sta $2183
-  #DMA7 #$00, #55, #`hdma_pal_src, #<>hdma_pal_src, #$80
+  .DMA7 #$00, #55, #`hdma_pal_src, #<>hdma_pal_src, #$80
 
 ; CG addr for palette
   lda #`wram(hdma_cg_addr)
   ldx #hdma_cg_addr
   stx $2181
   sta $2183
-  #DMA7 #$00, #227, #`hdma_cg_addr_src, #<>hdma_cg_addr_src, #$80
+  .DMA7 #$00, #227, #`hdma_cg_addr_src, #<>hdma_cg_addr_src, #$80
 
 ; screen mode
   lda #`wram(hdma_mode)
   ldx #hdma_mode
   stx $2181
   sta $2183
-  #DMA7 #$00, #5, #`hdma_mode_src, #<>hdma_mode_src, #$80
+  .DMA7 #$00, #5, #`hdma_mode_src, #<>hdma_mode_src, #$80
 
 ; bg scroll
   lda #`wram(hdma_bg1scroll)
   ldx #hdma_bg1scroll
   stx $2181
   sta $2183
-  #DMA7 #$00, #21, #`hdma_bg1scroll_src, #<>hdma_bg1scroll_src, #$80 ;
+  .DMA7 #$00, #21, #`hdma_bg1scroll_src, #<>hdma_bg1scroll_src, #$80 ;
 
   lda #`wram(hdma_bg2scroll)
   ldx #hdma_bg2scroll
   stx $2181
   sta $2183
-  #DMA7 #$00, #13, #`hdma_bg2scroll_src, #<>hdma_bg2scroll_src, #$80 ;
+  .DMA7 #$00, #13, #`hdma_bg2scroll_src, #<>hdma_bg2scroll_src, #$80 ;
 
 ; color math
   lda #`wram(hdma_math)
   ldx #hdma_math
   stx $2181
   sta $2183
-  #DMA7 #$00, #19, #`hdma_math_src, #<>hdma_math_src, #$80 ;
+  .DMA7 #$00, #19, #`hdma_math_src, #<>hdma_math_src, #$80 ;
 
 ; initialize window stack
   ldx #$ffff
@@ -242,11 +242,11 @@ genfonts:
 ; clear VRAM font areas
   ldx #$0000
   stx $2116
-  #DMA7 #$09, #$4000, #`zero, #<>zero, #$18
+  .DMA7 #$09, #$4000, #`zero, #<>zero, #$18
 
   ldx #$4000
   stx $2116
-  #DMA7 #$09, #$2000, #`zero, #<>zero, #$18
+  .DMA7 #$09, #$2000, #`zero, #<>zero, #$18
 
   sep #$10
   .xs
@@ -759,7 +759,7 @@ backup_wram:
   ldx #$0000
   stx $2181
   stz $2183
-  #DMA7 #$80, #$2000, #`WRAM_BAK, #<>WRAM_BAK, #$80
+  .DMA7 #$80, #$2000, #`WRAM_BAK, #<>WRAM_BAK, #$80
   plp
   rts
 

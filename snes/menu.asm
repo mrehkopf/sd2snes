@@ -243,7 +243,7 @@ FrameT .struct
   .virtual #0,d
 Frame .dstruct FrameT
   .endvirtual
-  #enter
+  .enter
 ; backup params
   sep #$20
   .as
@@ -251,7 +251,7 @@ Frame .dstruct FrameT
   pla
   sta Frame.menu_bank
   stx Frame.menu_addr
-  jsr menu_measure      ; determine required window dimensions
+  jsr menu_measure        ; determine required window dimensions
   sep #$20
   .as
   lda #$80
@@ -331,9 +331,9 @@ show_menu_loop:
     cmp #MTYPE_SUBMENU
     beq show_menu_submenu
     cmp #MTYPE_FUNC
-    #jeq show_menu_func
+    .jeq show_menu_func
     cmp #MTYPE_FUNC_CLOSE
-    #jeq show_menu_func_close
+    .jeq show_menu_func_close
     cmp #MTYPE_VALUE
     bne show_menu_cont
     jmp show_menu_editvalue
@@ -348,7 +348,7 @@ show_menu_out:
     .as
     jsr pop_window
   plb
-  #leave
+  .leave
   rts
 
 show_menu_entries:
@@ -496,7 +496,7 @@ Frame .block
   up            .dstruct show_menu.FrameT
 .endblock
   .endvirtual
-  #enter                 ; implies PHP : PHD : .al
+  .enter                 ; implies PHP : PHD : .al
   stz Frame.up.max_lbl_len ; initialize variable
   stz Frame.up.max_opt_len ; initialize variable
   stz Frame.up.numentries
@@ -554,7 +554,7 @@ menu_measure_line_loop:
   tax
   bra menu_measure_line_loop
 menu_measure_out:
-  #leave
+  .leave
   rts
 .endblock
 
@@ -670,7 +670,7 @@ Frame .block
   p_max_lbl_len .byte ?         ; pushed first
 .endblock
   .endvirtual
-  #enter
+  .enter
   sep #$20
   .as
   lda wram(window_y)
@@ -745,7 +745,7 @@ menu_print_ent_loop:
   sta wram(print_y)
   jmp menu_print_ent_loop
 menu_print_ent_out:
-  #leave
+  .leave
   rts
 .endblock
 
@@ -766,7 +766,7 @@ Frame .block
   _             .dstruct SaveJSR
 .endblock
   .endvirtual
-  #enter
+  .enter
   rep #$20
   .al
   lda @w $8,x
@@ -790,7 +790,7 @@ Frame .block
 ;  cmp #MTYPE_VALUE
 ;  jne menu_print_opt_string_out
   lda @w $7,x
-  #jeq menu_print_opt_string_out
+  .jeq menu_print_opt_string_out
   cmp #$01
   bne menu_print_opt_string_02
   rep #$20
@@ -991,7 +991,7 @@ menu_print_opt_string_07:
     jsr hiprint
   plx
 menu_print_opt_string_out:
-  #leave
+  .leave
   rts
 .endblock
 
@@ -1057,7 +1057,7 @@ Frame .block
   .endvirtual
 ; returns:
 ; carry flag: 1=value set, 0=cancelled
-  #enter
+  .enter
   ; prepare work variables for sub routines
   jsr menu_meas_opt
   sta Frame.value_len
@@ -1120,7 +1120,7 @@ menu_edit_value_skip_reset_chghook:
     jsr set_bar_color
   plx
 menu_edit_value_out:
-  #leave
+  .leave
   rts
 
 
@@ -1158,9 +1158,9 @@ menu_value_dialog_u8:
       lda wram(pad_right)
       bne menu_value_dialog_u8_right
       lda wram(pad_b)
-      #jne menu_value_dialog_u8_cancel
+      .jne menu_value_dialog_u8_cancel
       lda wram(pad_a)
-      #jne menu_value_dialog_u8_set
+      .jne menu_value_dialog_u8_set
       lda wram(pad_l)
       bne menu_value_dialog_u8_l
       lda wram(pad_r)
@@ -1291,10 +1291,10 @@ menu_value_dialog_u16:
       bcs menu_value_dialog_u16_right
       lda wram(pad_b)
       ror
-      #jcs menu_value_dialog_u16_cancel
+      .jcs menu_value_dialog_u16_cancel
       lda wram(pad_a)
       ror
-      #jcs menu_value_dialog_u16_set
+      .jcs menu_value_dialog_u16_set
       lda wram(pad_l)
       ror
       bcs menu_value_dialog_u16_l

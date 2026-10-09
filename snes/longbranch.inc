@@ -15,26 +15,26 @@ lbranch .macro bshort, binverse, target
 .endm
 
 jeq .macro target
-  #lbranch beq, bne, \target
+  .lbranch beq, bne, \target
 .endm
 jne .macro target
-  #lbranch bne, beq, \target
+  .lbranch bne, beq, \target
 .endm
 jcc .macro target
-  #lbranch bcc, bcs, \target
+  .lbranch bcc, bcs, \target
 .endm
 jcs .macro target
-  #lbranch bcs, bcc, \target
+  .lbranch bcs, bcc, \target
 .endm
 jmi .macro target
-  #lbranch bmi, bpl, \target
+  .lbranch bmi, bpl, \target
 .endm
 jpl .macro target
-  #lbranch bpl, bmi, \target
+  .lbranch bpl, bmi, \target
 .endm
 jvc .macro target
-  #lbranch bvc, bvs, \target
+  .lbranch bvc, bvs, \target
 .endm
 jvs .macro target
-  #lbranch bvs, bvc, \target
+  .lbranch bvs, bvc, \target
 .endm

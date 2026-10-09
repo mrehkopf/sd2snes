@@ -27,16 +27,16 @@ near_screen:
 ; copy logo tiles
   ldx #$0000
   stx $2116
-  #DMA7 #$01, #$2800, #`near_chr, #<>near_chr, #$18
+  .DMA7 #$01, #$2800, #`near_chr, #<>near_chr, #$18
 
 ; generate logo tilemap
   ldx #$1400
   stx $2116
-  #DMA7 #$01, #$800, #`near_map, #<>near_map, #$18
+  .DMA7 #$01, #$800, #`near_map, #<>near_map, #$18
 
 ; set palette
   stz $2121
-  #DMA7 #$00, #$20, #`near_pal, #<>near_pal, #$22
+  .DMA7 #$00, #$20, #`near_pal, #<>near_pal, #$22
   stz $2121
 
   stz cur_bright

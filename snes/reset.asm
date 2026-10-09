@@ -13,15 +13,15 @@ NMI_ROUTINE:
 do_screen_dma:
   ldx #BG1_TILE_BASE+32*9
   stx $2116
-  #DMA7 #$01, #40*64, #`BG1_TILE_BUF, #<>BG1_TILE_BUF+64*9, #$18
+  .DMA7 #$01, #40*64, #`BG1_TILE_BUF, #<>BG1_TILE_BUF+64*9, #$18
 
   ldx #BG2_TILE_BASE+32*9
   stx $2116
-  #DMA7 #$01, #40*64, #`BG2_TILE_BUF, #<>BG2_TILE_BUF+64*9, #$18
+  .DMA7 #$01, #40*64, #`BG2_TILE_BUF, #<>BG2_TILE_BUF+64*9, #$18
 
   ldx #BG2_TILE_BASE
   stx $2116
-  #DMA7 #$01, #64*9, #`BG2_TILE_BUF, #<>BG2_TILE_BUF, #$18
+  .DMA7 #$01, #64*9, #`BG2_TILE_BUF, #<>BG2_TILE_BUF, #$18
 skip_screen_dma:
   lda bar_yl
   dec a

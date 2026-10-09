@@ -11,10 +11,10 @@
 ;     <parameters>                ; pushed by the caller, last pushed first
 ;   .endblock
 ;     .endvirtual
-;     #enter
+;     .enter
 ;     lda Frame.x                 ; always direct page (D+offset)
 ;     ...
-;     #leave
+;     .leave
 ;     rts
 ;   .endblock
 ;
@@ -29,7 +29,7 @@
 ; done.
 ; That way each call of the same code automatically references its own working
 ; set, enabling re-entrancy.
-; The function body must start with "#enter" and end with "#leave" to maintain
+; The function body must start with ".enter" and end with ".leave" to maintain
 ; the direct page and status registers for stack frame handling.
 ;
 ; Helper functions that run in the frame of their caller (D unchanged) are

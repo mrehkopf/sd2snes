@@ -39,7 +39,7 @@ Frame .block
   p_time_x      .byte ?          ; pushed first
 .endblock
   .endvirtual
-  #enter
+  .enter
   sep #$20
   .as
   phb
@@ -128,13 +128,13 @@ timeloop1:
 timesave:
     jsr time_save_working_copy
   plb
-  #leave
+  .leave
   .as
   sec
   rts
 timenosave:
   plb
-  #leave
+  .leave
   .as
   clc
   rts
@@ -614,7 +614,7 @@ Frame .block
   p_time_bank   .byte ?         ; pushed first
 .endblock
   .endvirtual
-  #enter
+  .enter
   sep #$20
   .as
   ldx #stringbuf
@@ -735,7 +735,7 @@ mon_skip2:
   adc #$30
   sta @w 0,x
   stz @w 1,x
-  #leave
+  .leave
   .as
   rts
 .endblock
