@@ -18,6 +18,14 @@ wram    .sfunction _a, _a | $7e0000
         .include "longbranch.inc"
         .include "menu.inc"
 
+; code that runs from WRAM is copied to its run address by store_wram_routines
+WRAMCODE_START  = $7ef000       ; run address of wramcode
+WRAMCODE_MAX    = $100
+; WRAM staging area for bramcode, right after wramcode
+; some code is copied further from WRAM to BRAM (after potential FPGA reconfig)
+BRAMSTAGE_START = WRAMCODE_START + WRAMCODE_MAX
+BRAMCODE_MAX    = $f0           ; snescmd block RAM from BRAM_PAYLOAD (and BRAMSTAGE size)
+
         * = $0000               ; file offset of $0000 => SNES $c00000
         .logical $c00000
         .include "reset.asm"
@@ -42,8 +50,24 @@ wram    .sfunction _a, _a | $7e0000
         .include "common.asm"
         .include "savestate.asm"
         .include "near.asm"
+
+; code that runs from RAM, at its load address
+WRAMCODE_LOAD:
+        .logical WRAMCODE_START
+WRAMCODE_RUN:
+        .dsection wramcode
+WRAMCODE_SIZE = * - WRAMCODE_RUN
+        .endlogical
+BRAMCODE_LOAD:
+        .logical BRAM_PAYLOAD
+BRAMCODE_RUN:
+        .dsection bramcode
+BRAMCODE_SIZE = * - BRAMCODE_RUN
+        .endlogical
         .cerror * > $c0ff00, "code overlaps header at $C0FF00"
         .endlogical
+        .cerror WRAMCODE_SIZE > WRAMCODE_MAX, format("wramcode too big: $%x bytes (max: $%x)", WRAMCODE_SIZE, WRAMCODE_MAX)
+        .cerror BRAMCODE_SIZE > BRAMCODE_MAX, format("bramcode too big: $%x bytes (max: $%x)", BRAMCODE_SIZE, BRAMCODE_MAX)
 
         * = $ff00
         .logical $c0ff00

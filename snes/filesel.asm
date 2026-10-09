@@ -1488,7 +1488,7 @@ filesel_request_filelist:
   jsr hide_cursor
   jsr draw_loading_window
 filesel_request_filelist_wait_mcu:
-  jsl WRAM_WAIT_MCU
+  jsl wram_wait_mcu
   jsr pop_window
   ldy #$0002
 - lda [<dirstart_addr,d],y

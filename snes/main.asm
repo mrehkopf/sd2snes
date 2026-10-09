@@ -464,13 +464,14 @@ clear_vram:
   plp
   rts
 
-.text "fadeloop"
-; *=$002a10
-; via $7ef100
+; fadeloop runs from block RAM while the FPGA is reconfigured (no ROM).
+; It is copied ROM -> WRAM (store_wram_routines) -> block RAM
+; (store_blockram_routine).
 ; acknowledge ready for ROM load
 ; wait for ACK
 ; fade screen
 ; acknowledge WRAM init done (send RESET)
+.section bramcode
 fadeloop:
   sep #$30
   .as
@@ -537,44 +538,32 @@ fadeloop_start:
   sta MCU_CMD
   jml $7fffe0
 - bra -
-.text "fadeloop_end"
+.send bramcode
+.cerror fadeloop != BRAM_PAYLOAD, format("fadeloop is at $%04x, not at BRAM_PAYLOAD ($%04x): it must be the first bramcode fragment", fadeloop, BRAM_PAYLOAD)
 
-; stores routines in WRAM (including payload for block ram copy)
+; copy the wramcode routines to WRAM, and the bramcode payload (fadeloop) to
+; its staging area in WRAM (from where store_blockram_routine copies it on)
 store_wram_routines:
-; copy wram_routine_src
-; copy store_blockram_routine
-; copy fadeloop
   php
   rep #$30
   .xl
   .al
-  lda #$007f
-  ldx #<>wram_routine_src
-  ldy #<>WRAM_ROUTINE
   phb
-  mvn #$c0, #$7e
-  lda #$007f
-  ldx #<>store_blockram_routine_src
-  ldy #<>WRAM_STORE_BLOCKRAM_ROUTINE
-  mvn #$c0, #$7e
-  lda #$00ee
-  ldx #<>fadeloop
-  ldy #<>WRAM_FADELOOP
-  mvn #$c0, #$7e
-  lda #$000a
-  ldx #<>wram_wait_mcu_src
-  ldy #<>WRAM_WAIT_MCU
-  mvn #$c0, #$7e
-  lda #$007f
-  ldx #<>wram_load_ultra16_cfg_src
-  ldy #<>WRAM_LOAD_ULTRA16_CFG
-  mvn #$c0, #$7e
+  lda #WRAMCODE_SIZE-1
+  ldx #<>WRAMCODE_LOAD
+  ldy #<>WRAMCODE_RUN
+  mvn #`WRAMCODE_LOAD, #`WRAMCODE_RUN
+  lda #BRAMCODE_SIZE-1
+  ldx #<>BRAMCODE_LOAD
+  ldy #<>BRAMSTAGE_START
+  mvn #`BRAMCODE_LOAD, #`BRAMSTAGE_START
   plb
   plp
   rts
 
-; *=$7ef080
-store_blockram_routine_src:
+; routines that run from WRAM (copied there by store_wram_routines)
+.section wramcode
+store_blockram_routine:
   php
   sep #$20
   .as
@@ -586,17 +575,16 @@ store_blockram_routine_src:
   sta infloop+1
   rep #$20
   .al
-  lda #$00ee
-  ldx #<>WRAM_FADELOOP
-  ldy #<>BRAM_ROUTINE
+  lda #BRAMCODE_SIZE-1
+  ldx #<>BRAMSTAGE_START
+  ldy #<>BRAMCODE_RUN
   phb
-  mvn #$7e, #$00
+  mvn #`BRAMSTAGE_START, #`BRAMCODE_RUN
   plb
   plp
   rtl
 
-; *=$7ef000
-wram_routine_src:
+wram_routine:
   php
   sep #$20
   .as
@@ -611,21 +599,19 @@ wram_routine_src:
   bne -
 ; install fade loop in block RAM after FPGA reconf
 ; must reside in WRAM prior to copying! ROM not available
-  jsl WRAM_STORE_BLOCKRAM_ROUTINE
-  jsl BRAM_ROUTINE
+  jsl store_blockram_routine
+  jsl fadeloop
   plp
   rtl
 
-; *=$7ef200
-wram_wait_mcu_src:
+wram_wait_mcu:
   .as
 - lda @l SNES_CMD
   cmp #$55
   bne -
   rtl
 
-; *=$7ef210
-wram_load_ultra16_cfg_src:
+wram_load_ultra16_cfg:
   .as
   lda @l $0021c1
   and #$fe
@@ -638,6 +624,8 @@ wram_load_ultra16_cfg_src:
   pla
   sta @l ST_U16_CFG
   rtl
+
+.send wramcode
 
 game_handshake:
   php
@@ -664,7 +652,7 @@ game_handshake:
   lda #$55
   sta @l MCU_CMD
 ; jump to WRAM
-  jsl WRAM_ROUTINE
+  jsl wram_routine
   plp
   rts
 
@@ -778,7 +766,7 @@ detect_ultra16:
 detect_ultra16_found:
   lda @l $0021c2
   sta @l ST_IS_U16
-  jsl WRAM_LOAD_ULTRA16_CFG
+  jsl wram_load_ultra16_cfg
   lda @l $0021c1
   and #$fb
   sta @l $0021c1

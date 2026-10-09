@@ -11,7 +11,6 @@ OAM_TILE_BASE               = $6000
 MCU_CMD                     = $002A00
 SNES_CMD                    = $002A02
 MCU_PARAM                   = $002A04
-BRAM_ROUTINE                = $002A10
 WARM_SIGNATURE              = $002AFD
 WARM_COMPLEMENT             = $002AF9
 SAVED_SP                    = $002AFB
@@ -34,12 +33,6 @@ WINDOW_STACK_BASE           = $7E2000
 
 BG2_TILE_BUF                = $7EA000
 BG1_TILE_BUF                = $7EB000
-
-WRAM_ROUTINE                = $7EF000
-WRAM_STORE_BLOCKRAM_ROUTINE = $7EF080
-WRAM_FADELOOP               = $7EF100
-WRAM_WAIT_MCU               = $7EF200
-WRAM_LOAD_ULTRA16_CFG       = $7EF210
 
 ROOT_DIR                    = $C10000
 

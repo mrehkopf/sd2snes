@@ -248,4 +248,5 @@ fade_speed:     .byte 0
 fade_count:     .byte 0
 idle_count:     .word 0
 _END:           .byte 0
+.cerror * > $2000, format("WRAM variables end at $%04x: they must fit the low WRAM mirror ($0000-$1fff)", *)
 .endvirtual
