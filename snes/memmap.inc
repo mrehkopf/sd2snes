@@ -155,8 +155,6 @@ BCDTime .struct
   y100                           .byte ?
 .ends
 
-MENU_ENTRY_SIZE             = 23
-
 ST_RTC_VALID                = ST_MCU_ADDR+$0000
 ST_NUM_RECENT_GAMES         = ST_MCU_ADDR+$0001
 ST_PAIRMODE                 = ST_MCU_ADDR+$0002

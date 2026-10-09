@@ -16,6 +16,7 @@ wram    .sfunction _a, _a | $7e0000
         .include "stack.inc"
         .include "dma.inc"
         .include "longbranch.inc"
+        .include "menu.inc"
 
         * = $0000               ; file offset of $0000 => SNES $c00000
         .logical $c00000

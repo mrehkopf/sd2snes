@@ -292,7 +292,7 @@ Frame .dstruct FrameT
     lda [Frame.menu_addr]
     sta listsel_step
     stz listsel_sel
-    ldy #$0001
+    ldy #MenuHeader.title
     rep #$20
     .al
     lda [Frame.menu_addr],y
@@ -314,17 +314,17 @@ show_menu_loop:
     beq show_menu_out
     sta $211b
     stz $211b
-    lda #MENU_ENTRY_SIZE
+    lda #size(MenuEntry)
     sta $211c
     rep #$20
     .al
     lda $2134
     clc
-    adc #$04
+    adc #size(MenuHeader)
     tay
     lda [Frame.menu_addr],y
     and #$00ff
-    iny
+    iny                         ; Y -> MenuEntry.target
     iny
     iny
     iny
@@ -360,7 +360,7 @@ show_menu_entries:
     pha
     plb
     ldx Frame.menu_addr
-    inx
+    inx                         ; skip MenuHeader
     inx
     inx
     inx
@@ -464,7 +464,7 @@ show_menu_editvalue:
         clc
         adc Frame.menu_addr
         sec
-        sbc #$0004 ; subtract previous Y displacement
+        sbc #MenuEntry.target ; Y pointed to the target field
         tax
         sep #$20
         .as
@@ -505,8 +505,8 @@ Frame .block
 ; include window title in calculation
   sep #$20
   .as
-  ldy @w $1,x
-  lda @w $3,x
+  ldy @w MenuHeader.title,x
+  lda @w MenuHeader.title+2,x
   phb
     pha
     plb
@@ -520,20 +520,20 @@ Frame .block
   rep #$20
   .al
 menu_measure_line_loop:
-  lda @w $0,x          ; read menu entry type
-  and #$00ff           ; (mask)
-  beq menu_measure_out ; termination -> exit
+  lda @w MenuEntry.type,x ; read menu entry type
+  and #$00ff              ; (mask)
+  beq menu_measure_out    ; termination -> exit
   inc Frame.up.numentries ; entry counter
   phb
     sep #$20
     .as
-    ldy @w $1,x        ; resolve pointer to menu entry text
-    lda @w $3,x
+    ldy @w MenuEntry.text,x ; resolve pointer to menu entry text
+    lda @w MenuEntry.text+2,x
     pha
     plb
     jsr strlen
   plb
-  lda @w $0,x
+  lda @w MenuEntry.type,x
   cmp #MTYPE_SUBMENU    ; add 2 chars for '...' on sub menu entries
   bne +
   iny
@@ -550,7 +550,7 @@ menu_measure_line_loop:
   sta Frame.up.max_opt_len
 + txa
   clc
-  adc #MENU_ENTRY_SIZE
+  adc #size(MenuEntry)
   tax
   bra menu_measure_line_loop
 menu_measure_out:
@@ -579,38 +579,38 @@ menu_meas_opt:
   ;  lda !$4, x         ; calculate space needed to show options
   ;  cmp #MTYPE_VALUE   ; only for "value set" entry types
   ;  bne menu_meas_no_set
-    lda @w $7,x
+    lda @w MenuEntry.dtype,x
     beq menu_meas_no_set ; no option
-    cmp #$01           ; uint8
+    cmp #OPTTYPE_BYTE         ; uint8
     bne menu_meas_opt_02
-    lda #$03           ; "0"-"255" - 3 chars
+    lda #$03                  ; "0"-"255" - 3 chars
     bra menu_meas_opt_set
 menu_meas_opt_02:
-    cmp #$02           ; uint16
+    cmp #OPTTYPE_WORD         ; uint16
     bne menu_meas_opt_03
-    lda #$05           ; "0"-"65535" - 5 chars
+    lda #$05                  ; "0"-"65535" - 5 chars
     bra menu_meas_opt_set
 menu_meas_opt_03:
-    cmp #$03           ; string (free entry)
+    cmp #OPTTYPE_STRING       ; string (free entry)
     bne menu_meas_opt_04
-    lda @w $4,x        ; load length constraint
+    lda @w MenuEntry.target,x ; load length constraint
     bra menu_meas_opt_set
 menu_meas_opt_04:
-    cmp #$04           ; key-value (8bit)
+    cmp #OPTTYPE_KVBYTE       ; key-value (8bit)
     beq menu_meas_opt_keyval
-    cmp #$05           ; key-value (16bit)
+    cmp #OPTTYPE_KVWORD       ; key-value (16bit)
     bne menu_meas_opt_06
 menu_meas_opt_keyval: ; count max value length
     pea $0000
     phb
-      ldy @w $4,x      ; get pointer to
-      lda @w $6,x      ; key-value table
+      ldy @w MenuEntry.target,x   ; get pointer to
+      lda @w MenuEntry.target+2,x ; key-value table
       pha
       plb
       rep #$20
       .al
 menu_meas_opt_nextkey:
-      lda @w $0,y       ; get key
+      lda @w KVEntry.key,y ; get key
       cmp #$ffff
       beq +
       iny
@@ -644,7 +644,7 @@ menu_meas_opt_keyval_skip:
     bra menu_meas_opt_set
 menu_meas_opt_06:     ; file select (16 characters)
     .as
-    cmp #$06
+    cmp #OPTTYPE_FILESEL
     bne menu_meas_opt_07
     lda #$10
     bra menu_meas_opt_set
@@ -683,14 +683,14 @@ menu_print_ent_loop:
   inc a
   inc a
   sta wram(print_x)
-  lda @w 0,x ; entry type. 0 = termination
+  lda @w MenuEntry.type,x ; entry type. 0 = termination
   bne +
   jmp menu_print_ent_out
-+ lda @w 1,x ; address of option name string
++ lda @w MenuEntry.text,x ; address of option name string
   sta wram(print_src)
-  lda @w 2,x ; (address cont'd)
+  lda @w MenuEntry.text+1,x ; (address cont'd)
   sta wram(print_src+1)
-  lda @w 3,x ; bank of option name string
+  lda @w MenuEntry.text+2,x ; bank of option name string
   sta wram(print_bank)
   jsr menu_check_disabled_func
   lda #$00
@@ -700,7 +700,7 @@ menu_print_ent_loop:
   phx
   jsr hiprint
   plx
-  lda @w 0,x
+  lda @w MenuEntry.type,x
   cmp #MTYPE_SUBMENU
   bne +
   lda wram(print_done)
@@ -735,7 +735,7 @@ menu_print_ent_loop:
   jsr menu_print_opt_string
   txa
   clc
-  adc #MENU_ENTRY_SIZE
+  adc #size(MenuEntry)
   tax
   sep #$20
   .as
@@ -769,7 +769,7 @@ Frame .block
   .enter
   rep #$20
   .al
-  lda @w $8,x
+  lda @w MenuEntry.param,x
   sta Frame.entry_addr
   lda #stringbuf
   sta wram(print_src)
@@ -784,14 +784,14 @@ Frame .block
   sta wram(print_count)
   lda #`wram(stringbuf)
   sta wram(print_bank)
-  lda @w $a,x
+  lda @w MenuEntry.param+2,x
   sta Frame.entry_bank
 ;  lda !$0, x
 ;  cmp #MTYPE_VALUE
 ;  jne menu_print_opt_string_out
-  lda @w $7,x
+  lda @w MenuEntry.dtype,x
   .jeq menu_print_opt_string_out
-  cmp #$01
+  cmp #OPTTYPE_BYTE
   bne menu_print_opt_string_02
   rep #$20
   .al
@@ -814,7 +814,7 @@ Frame .block
   jmp menu_print_opt_string_out
 menu_print_opt_string_02:
   .as
-  cmp #$02
+  cmp #OPTTYPE_WORD
   bne menu_print_opt_string_03
   rep #$20
   .al
@@ -836,18 +836,18 @@ menu_print_opt_string_02:
   jmp menu_print_opt_string_out
 menu_print_opt_string_03:
   .as
-  cmp #$03
+  cmp #OPTTYPE_STRING
   bne menu_print_opt_string_04
   rep #$20
   .al
-  lda @w $8,x
+  lda @w MenuEntry.param,x
   sta wram(print_src)
   tay
   sep #$20
   .as
-  lda @w $4,x
+  lda @w MenuEntry.target,x
   sta wram(print_count)
-  lda @w $a,x
+  lda @w MenuEntry.param+2,x
   sta wram(print_bank)
   phx
     phb
@@ -862,35 +862,35 @@ menu_print_opt_string_03:
   jmp menu_print_opt_string_out
 menu_print_opt_string_04:
   .as
-  cmp #$04
+  cmp #OPTTYPE_KVBYTE
   beq menu_print_opt_string_keyval
-  cmp #$05
+  cmp #OPTTYPE_KVWORD
   bne menu_print_opt_string_06
 menu_print_opt_string_keyval:
-  lda @w $a,x             ; load address
-  ldy @w $8,x             ; of current setting
+  lda @w MenuEntry.param+2,x ; load address
+  ldy @w MenuEntry.param,x   ; of current setting
   sta Frame.kvpar_bank
   sty Frame.kvpar_addr
   rep #$20
   .al
-  lda [Frame.kvpar_addr]  ; load currently set value
+  lda [Frame.kvpar_addr]     ; load currently set value
   ; mask for 8-bit key!
   phx
-    ldy @w $7,x
+    ldy @w MenuEntry.dtype,x
     sep #$10
     .xs
-    cpy #$05
+    cpy #OPTTYPE_KVWORD
     beq +
     and #$00ff
 +   rep #$10
     .xl
   plx
   sta Frame.kvpar_data
-  lda @w $4,x             ; load pointer to kvtable
+  lda @w MenuEntry.target,x  ; load pointer to kvtable
   sta Frame.kvtab_addr
   sep #$20
   .as
-  lda @w $6,x
+  lda @w MenuEntry.target+2,x
   sta Frame.kvtab_bank
   phb
     pha
@@ -903,13 +903,13 @@ menu_print_opt_string_keyval:
 ; sanitize invalid option setting
     cpy #$ffff
     bne +
-    ldy Frame.kvtab_addr  ; invalid setting -> default to first entry
-+   lda @w $2,y
-    pha                   ; save offset for right-align
+    ldy Frame.kvtab_addr     ; invalid setting -> default to first entry
++   lda @w KVEntry.text,y
+    pha                      ; save offset for right-align
       sta wram(print_src)
       sep #$20
       .as
-      lda @w $4,y
+      lda @w KVEntry.text+2,y
       sta wram(print_bank)
       pha
       plb
@@ -923,7 +923,7 @@ menu_print_opt_string_keyval:
 menu_print_opt_string_06:
   sep #$20
   .as
-  cmp #$06
+  cmp #OPTTYPE_FILESEL
   bne menu_print_opt_string_07
   lda #$41
   sta wram(stringbuf)
@@ -1011,8 +1011,8 @@ menu_kv_lookup:
     .xl
     .al
     pha
--   lda @w $0,y         ; compare with table key
-    cmp #$ffff          ; termination
+-   lda @w KVEntry.key,y ; compare with table key
+    cmp #$ffff           ; termination
     beq +
     cmp $1,s           ; compare with search value
     beq menu_kv_lookup_out
@@ -1061,11 +1061,11 @@ Frame .block
   ; prepare work variables for sub routines
   jsr menu_meas_opt
   sta Frame.value_len
-  lda @w $4,x
+  lda @w MenuEntry.target,x
   sta Frame.preset_addr
-  lda @w $8,x
+  lda @w MenuEntry.param,x
   sta Frame.value_addr
-  lda @w 14,x
+  lda @w MenuEntry.chg_func,x
   sta Frame.chgfunc_addr
   lda #$0000 ; cleanup B for jump table offset
   sep #$20
@@ -1073,11 +1073,11 @@ Frame .block
   jsr menu_check_disabled_func
   ror
   sta Frame.text_grey
-  lda @w $6,x
+  lda @w MenuEntry.target+2,x
   sta Frame.preset_bank
-  lda @w $a,x
+  lda @w MenuEntry.param+2,x
   sta Frame.value_bank
-  lda @w 16,x
+  lda @w MenuEntry.chg_func+2,x
   sta Frame.chgfunc_bank
 ; adjust selection bar to highlight parameter area
   lda wram(bar_xl)
@@ -1088,7 +1088,7 @@ Frame .block
   sta wram(bar_xl)
   lda Frame.value_len
   sta wram(bar_wl)
-  lda @w $7,x ; load data type
+  lda @w MenuEntry.dtype,x ; load data type
   cmp #MENU_NUM_DATA_TYPES+1
   bcs menu_edit_value_out ; do not jump to undefined
   asl ; prepare jump table pointer
@@ -1168,7 +1168,7 @@ menu_value_dialog_u8:
       bra -
 menu_value_dialog_u8_up:
       lda Frame.work_value
-      ldy #$0002
+      ldy #ValueRange.max
       cmp [Frame.preset_addr],y
       bcc menu_value_dialog_u8_up_ok
 menu_value_dialog_u8_up_nok:
@@ -1210,7 +1210,7 @@ menu_value_dialog_u8_right:
       lda #$ff
 menu_value_dialog_u8_right_noclip:
       sta Frame.work_value
-      ldy #$0002
+      ldy #ValueRange.max
       cmp [Frame.preset_addr],y
       beq +
       bcc menu_value_dialog_u8_up_ok
@@ -1220,7 +1220,7 @@ menu_value_dialog_u8_l:
       sta Frame.work_value
       bra +
 menu_value_dialog_u8_r:
-      ldy #$0002
+      ldy #ValueRange.max
       lda [Frame.preset_addr],y
       sta Frame.work_value
       bra +
@@ -1304,7 +1304,7 @@ menu_value_dialog_u16:
       bra -
 menu_value_dialog_u16_up:
       lda Frame.work_value
-      ldy #$0002
+      ldy #ValueRange.max
       cmp [Frame.preset_addr],y
       bcc menu_value_dialog_u16_up_ok
 menu_value_dialog_u16_up_nok:
@@ -1346,7 +1346,7 @@ menu_value_dialog_u16_right:
       lda #$ffff
 menu_value_dialog_u16_right_noclip:
       sta Frame.work_value
-      ldy #$0002
+      ldy #ValueRange.max
       cmp [Frame.preset_addr],y
       beq +
       bcc menu_value_dialog_u16_up_ok
@@ -1356,7 +1356,7 @@ menu_value_dialog_u16_l:
       sta Frame.work_value
       bra +
 menu_value_dialog_u16_r:
-      ldy #$0002
+      ldy #ValueRange.max
       lda [Frame.preset_addr],y
       sta Frame.work_value
       bra +
@@ -1440,7 +1440,7 @@ menu_value_dialog_kv8_loop:
       bne menu_value_dialog_kv8_cancel
       bra menu_value_dialog_kv8_loop
 menu_value_dialog_kv8_up:
-      ldx @w $5,y
+      ldx @w size(KVEntry)+KVEntry.key,y     ; key of the next entry
       cpx #$ffff
       beq +
       iny
@@ -1459,7 +1459,7 @@ menu_value_dialog_kv8_down:
       dey
       bra +
 menu_value_dialog_kv8_set:
-      lda @w $0,y
+      lda @w KVEntry.key,y
       sta [Frame.value_addr]
       brl menu_value_dialog_kv8_cont
 menu_value_dialog_kv8_cancel:
@@ -1492,15 +1492,15 @@ menu_value_dialog_kv8_cancel:
       ply
       rep #$20
       .al
-      lda @w $0,y
+      lda @w KVEntry.key,y
       and #$00ff
       sta Frame.work_value
-      lda @w $2,y
+      lda @w KVEntry.text,y
       sta wram(print_src)
       sta Frame.label_addr
       sep #$20
       .as
-      lda @w $4,y
+      lda @w KVEntry.text+2,y
       sta wram(print_bank)
       lda #$01
       bit Frame.text_grey
@@ -1594,20 +1594,20 @@ menu_check_change_hook_exit:
 menu_check_disabled_func:
   .as
 ; call function, if defined, to determine whether menu entry should be drawn as active or inactive
-  lda @w 20,x
-  ora @w 21,x
-  ora @w 22,x
+  lda @w MenuEntry.isenabled_func,x
+  ora @w MenuEntry.isenabled_func+1,x
+  ora @w MenuEntry.isenabled_func+2,x
   clc
   beq menu_check_disabled_func_exit
 ; push long return address for after function call
   phk
   per menu_check_disabled_func_exit-1
 ; push long address of isDisabled function
-  lda @w 22,x
+  lda @w MenuEntry.isenabled_func+2,x
   pha
-  lda @w 21,x
+  lda @w MenuEntry.isenabled_func+1,x
   pha
-  lda @w 20,x
+  lda @w MenuEntry.isenabled_func,x
   pha
   rtl ; call the isDisabled function
 menu_check_disabled_func_exit:
