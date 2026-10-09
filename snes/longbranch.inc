@@ -1,12 +1,10 @@
 ; long conditional branches (jeq, jne, jcc, jcs, jmi, jpl, jvc, jvs)
 ; with BRL instead of JMP so they stay relocatable
-; Backward target within reach gives a plain short branch,
-; Forward target currently always gives the 5-byte form
-; "b<inverse> *+5 : brl target"
-; TODO implement short forward branch
+; A target within reach (backward or forward) gives a plain short branch,
+; otherwise the 5-byte form "b<inverse> *+5 : brl target"
 
 lbranch .macro bshort, binverse, target
-  .if (\target) <= * && (* + 2) - (\target) <= 127
+  .if (\target) - (* + 2) >= -128 && (\target) - (* + 2) <= 127
     \bshort \target
   .else
     \binverse * + 5

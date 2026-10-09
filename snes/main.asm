@@ -14,10 +14,10 @@ GAME_MAIN:
   stz dbg_ptr
   lda WARM_SIGNATURE ; Was CMD_RESET issued before reset?
   cmp #$fa50    ; If yes, then perform warm boot procedure
-  .jne coldboot
+  bne coldboot
   eor WARM_COMPLEMENT
   inc a
-  .jne coldboot
+  bne coldboot
   sta WARM_SIGNATURE
   sta WARM_COMPLEMENT
   lda SAVED_SP ; Restore previous stack pointer
