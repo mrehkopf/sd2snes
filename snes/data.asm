@@ -76,6 +76,8 @@ time_mon:       .byte 0
 time_y1:        .byte 0
 time_y10:       .byte 0
 time_y100:      .byte 0
+; time_s1..time_y100 are passed to time_init/rendertime as a single BCDTime record
+.cerror time_y100 - time_s1 != BCDTime.y100, "time_* variables do not match BCDTime layout"
 time_sel:       .byte 0
 time_exit:      .byte 0
 time_cancel:    .byte 0

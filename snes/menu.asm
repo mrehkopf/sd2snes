@@ -224,26 +224,33 @@ menu_select_exit:
 
 
 .text "SHOW_MENU"
-show_menu:
+show_menu .block
 ; params:
 ; x: offset of menu structure
 ; db: bank of menu structure
-; local vars:
-locals_         := $0c
-w_numentries    = $00
-w_max_lbl_len   = $02
-w_max_opt_len   = $04
-w_title_len     = $06
-w_menu_addr     = $08
-w_menu_bank     = $0a
-  #AllocStack
+FrameT .struct
+  numentries    .word ?
+  max_lbl_len   .word ?
+  max_opt_len   .word ?
+  title_len     .word ?
+  menu_addr     .word ?
+  menu_bank     .byte ?
+  unused        .byte ?
+  _             .dstruct SaveJSR
+.ends
+; FrameT is a type definition because menu_measure needs to reference it
+; Frame below is its instantiation
+  .virtual #0,d
+Frame .dstruct FrameT
+  .endvirtual
+  #enter
 ; backup params
   sep #$20
   .as
   phb
   pla
-  sta w_menu_bank,d
-  stx w_menu_addr,d
+  sta Frame.menu_bank
+  stx Frame.menu_addr
   jsr menu_measure      ; determine required window dimensions
   sep #$20
   .as
@@ -251,54 +258,54 @@ w_menu_bank     = $0a
   phb
     pha
     plb
-    lda w_numentries,d
+    lda Frame.numentries
     sta $211b
     stz $211b
-    lda [w_menu_addr,d] ; listsel_step from menu structure
+    lda [Frame.menu_addr] ; listsel_step from menu structure
     sta $211c
     lda $2134
     sec
-    sbc [w_menu_addr,d] ; listsel_step from menu structure
+    sbc [Frame.menu_addr] ; listsel_step from menu structure
     inc a
     inc a
     inc a
     sta window_h
-    lda w_max_lbl_len,d
+    lda Frame.max_lbl_len
     clc
-    adc w_max_opt_len,d
+    adc Frame.max_opt_len
 ; check whether window width is limited by label+option
 ; or by window title text
-    cmp w_title_len,d
+    cmp Frame.title_len
     bcs +
-    lda w_title_len,d
+    lda Frame.title_len
     inc a
     inc a
 +   clc
     adc #$04
-    ldx w_max_opt_len,d
+    ldx Frame.max_opt_len
     beq +
     inc a
     inc a
     inc a
 +   sta window_w
     jsr push_window
-    lda [w_menu_addr,d]
+    lda [Frame.menu_addr]
     sta listsel_step
     stz listsel_sel
     ldy #$0001
     rep #$20
     .al
-    lda [w_menu_addr,d],y
+    lda [Frame.menu_addr],y
     sta window_taddr
     sep #$20
     .as
     iny
     iny
-    lda [w_menu_addr,d],y
+    lda [Frame.menu_addr],y
     sta window_tbank
     jsr draw_window
     jsr show_menu_entries
-    lda w_numentries,d
+    lda Frame.numentries
     sta listsel_max
 show_menu_loop:
     stz listsel_pickbutton
@@ -315,7 +322,7 @@ show_menu_loop:
     clc
     adc #$04
     tay
-    lda [w_menu_addr,d],y
+    lda [Frame.menu_addr],y
     and #$00ff
     iny
     iny
@@ -343,7 +350,7 @@ show_menu_out:
     .as
     jsr pop_window
   plb
-  #FreeStack
+  #leave
   rts
 
 show_menu_entries:
@@ -351,17 +358,17 @@ show_menu_entries:
   sep #$20
   .as
   phb
-    lda w_menu_bank,d
+    lda Frame.menu_bank
     pha
     plb
-    ldx w_menu_addr,d
+    ldx Frame.menu_addr
     inx
     inx
     inx
     inx
-    lda w_max_lbl_len,d
+    lda Frame.max_lbl_len
     pha
-    lda w_max_opt_len,d
+    lda Frame.max_opt_len
     pha
     jsr menu_print_entries
     pla
@@ -376,7 +383,7 @@ show_menu_submenu:
       jsr push_window
       jsr window_greyout
     ply
-    lda [w_menu_addr,d],y
+    lda [Frame.menu_addr],y
     tax
     sep #$20
     .as
@@ -389,7 +396,7 @@ show_menu_submenu:
     sta wram(window_y)
     iny
     iny
-    lda [w_menu_addr,d],y
+    lda [Frame.menu_addr],y
     phb
       pha
       plb
@@ -409,13 +416,13 @@ show_menu_func:
     per show_menu_func_cont-1
     rep #$20
     .al
-    lda [w_menu_addr,d],y
+    lda [Frame.menu_addr],y
     tax
     sep #$20
     .as
     iny
     iny
-    lda [w_menu_addr,d],y
+    lda [Frame.menu_addr],y
     pha
     phx
     rtl
@@ -434,13 +441,13 @@ show_menu_func_close:
     per show_menu_func_close_cont-1
     rep #$20
     .al
-    lda [w_menu_addr,d],y
+    lda [Frame.menu_addr],y
     tax
     sep #$20
     .as
     iny
     iny
-    lda [w_menu_addr,d],y
+    lda [Frame.menu_addr],y
     pha
     phx
     rtl
@@ -457,19 +464,20 @@ show_menu_editvalue:
         .al
         tya
         clc
-        adc w_menu_addr,d
+        adc Frame.menu_addr
         sec
         sbc #$0004 ; subtract previous Y displacement
         tax
         sep #$20
         .as
-        lda w_menu_bank,d
+        lda Frame.menu_bank
         pha
         plb
         jsr menu_edit_value
       plb
     ply
     jmp show_menu_cont
+.endblock
 
 ; params:
 ; x: offset of menu structure
@@ -479,21 +487,22 @@ show_menu_editvalue:
 ; maximum menu label string length
 ; maximum menu option string length
 .text "MENU_MEASURE"
-menu_measure:
-; local variables
-locals_         := $02
-w_max_kv_len    = $00
-; ==== return variables (same as parameter variables at the caller)
-r_numentries    = $00
-r_max_lbl_len   = $02
-r_max_opt_len   = $04
-r_title_len     = $06
-; ==== WORKING VARIABLES ON STACK ====
-  #AllocStack            ; implies PHP : PHD : .al
-  stz locals_+r_max_lbl_len+5,d ; initialize variable
-  stz locals_+r_max_opt_len+5,d ; initialize variable
-  stz locals_+r_numentries+5,d
-  stz w_max_kv_len,d
+menu_measure .block
+  .virtual #0,d
+Frame .block
+  max_kv_len    .word ?
+  _             .dstruct SaveJSR
+; Return values are written directly into the locals of the caller.
+; show_menu must not alter the stack pointer between "enter" and
+; "jsr menu_measure"!
+  up            .dstruct show_menu.FrameT
+.endblock
+  .endvirtual
+  #enter                 ; implies PHP : PHD : .al
+  stz Frame.up.max_lbl_len ; initialize variable
+  stz Frame.up.max_opt_len ; initialize variable
+  stz Frame.up.numentries
+  stz Frame.max_kv_len
 ; ====================================
 ; include window title in calculation
   sep #$20
@@ -504,7 +513,7 @@ r_title_len     = $06
     pha
     plb
     jsr strlen
-    sty locals_+r_title_len+5,d
+    sty Frame.up.title_len
   plb
   inx
   inx
@@ -516,7 +525,7 @@ menu_measure_line_loop:
   lda @w $0,x          ; read menu entry type
   and #$00ff           ; (mask)
   beq menu_measure_out ; termination -> exit
-  inc locals_+r_numentries+5,d ; entry counter
+  inc Frame.up.numentries ; entry counter
   phb
     sep #$20
     .as
@@ -533,22 +542,23 @@ menu_measure_line_loop:
   iny
 + rep #$20
   .al
-  cpy locals_+r_max_lbl_len+5,d ; replace max value with
+  cpy Frame.up.max_lbl_len      ; replace max value with
   bmi +                         ; new length
-  sty locals_+r_max_lbl_len+5,d ; if bigger or equal.
+  sty Frame.up.max_lbl_len      ; if bigger or equal.
 + jsr menu_meas_opt             ; calculate max option string length
                                ; move to next entry.
-  cmp locals_+r_max_opt_len+5,d
+  cmp Frame.up.max_opt_len
   bmi +
-  sta locals_+r_max_opt_len+5,d
+  sta Frame.up.max_opt_len
 + txa
   clc
   adc #MENU_ENTRY_SIZE
   tax
   bra menu_measure_line_loop
 menu_measure_out:
-  #FreeStack
+  #leave
   rts
+.endblock
 
 
 ; **** menu_meas_opt ****
@@ -651,14 +661,18 @@ menu_meas_opt_set:
   rts
 
 .text "MENU_PRINT_ENTRIES"
-menu_print_entries:
-locals_         := $00
+menu_print_entries .block
 ; params
 ; x: address of menu entry structure
 ; db: bank of menu entry structure
-p_max_lbl_len   = $01
-p_max_opt_len   = $00
-  #AllocStack
+  .virtual #0,d
+Frame .block
+  _             .dstruct SaveJSR
+  p_max_opt_len .byte ?         ; pushed last
+  p_max_lbl_len .byte ?         ; pushed first
+.endblock
+  .endvirtual
+  #enter
   sep #$20
   .as
   lda wram(window_y)
@@ -704,12 +718,12 @@ menu_print_ent_loop:
   phx
     jsr hiprint
   plx
-+ lda locals_+p_max_lbl_len+5,d
++ lda Frame.p_max_lbl_len
   clc
   adc wram(window_x)
   adc #$05
   sta wram(print_x)
-  lda locals_+p_max_opt_len+5,d
+  lda Frame.p_max_opt_len
   sta wram(print_count)
   lda #`space64
   sta wram(print_bank)
@@ -733,29 +747,34 @@ menu_print_ent_loop:
   sta wram(print_y)
   jmp menu_print_ent_loop
 menu_print_ent_out:
-  #FreeStack
+  #leave
   rts
+.endblock
 
 .text "MENU_PRINT_OPT_STRING"
 menu_print_opt_string_none:
-  jmp menu_print_opt_string_out
-menu_print_opt_string:
+  jmp menu_print_opt_string.menu_print_opt_string_out
+menu_print_opt_string .block
 ; params
 ; x: address of menu entry structure
 ; db: bank of menu entry structure
-locals_      := $0b
-w_entry_addr = $00
-w_entry_bank = $02
-w_kvpar_addr = $03
-w_kvpar_bank = $05
-w_kvpar_data = $06
-w_kvtab_addr = $08
-w_kvtab_bank = $0a
-  #AllocStack
+  .virtual #0,d
+Frame .block
+  entry_addr    .word ?
+  entry_bank    .byte ?
+  kvpar_addr    .word ?
+  kvpar_bank    .byte ?
+  kvpar_data    .word ?
+  kvtab_addr    .word ?
+  kvtab_bank    .byte ?
+  _             .dstruct SaveJSR
+.endblock
+  .endvirtual
+  #enter
   rep #$20
   .al
   lda @w $8,x
-  sta w_entry_addr,d
+  sta Frame.entry_addr
   lda #stringbuf
   sta wram(print_src)
   sep #$20
@@ -770,7 +789,7 @@ w_kvtab_bank = $0a
   lda #`wram(stringbuf)
   sta wram(print_bank)
   lda @w $a,x
-  sta w_entry_bank,d
+  sta Frame.entry_bank
 ;  lda !$0, x
 ;  cmp #MTYPE_VALUE
 ;  bne menu_print_opt_string_none
@@ -780,7 +799,7 @@ w_kvtab_bank = $0a
   bne menu_print_opt_string_02
   rep #$20
   .al
-  lda [w_entry_addr,d]
+  lda [Frame.entry_addr]
   and #$00ff
   phx
     jsr bin2dec16
@@ -803,7 +822,7 @@ menu_print_opt_string_02:
   bne menu_print_opt_string_03
   rep #$20
   .al
-  lda [w_entry_addr,d]
+  lda [Frame.entry_addr]
   phx
     jsr bin2dec16
     lda wram(print_src)
@@ -854,11 +873,11 @@ menu_print_opt_string_04:
 menu_print_opt_string_keyval:
   lda @w $a,x             ; load address
   ldy @w $8,x             ; of current setting
-  sta w_kvpar_bank,d
-  sty w_kvpar_addr,d
+  sta Frame.kvpar_bank
+  sty Frame.kvpar_addr
   rep #$20
   .al
-  lda [w_kvpar_addr,d]    ; load currently set value
+  lda [Frame.kvpar_addr]  ; load currently set value
   ; mask for 8-bit key!
   phx
     ldy @w $7,x
@@ -870,25 +889,25 @@ menu_print_opt_string_keyval:
 +   rep #$10
     .xl
   plx
-  sta w_kvpar_data,d
+  sta Frame.kvpar_data
   lda @w $4,x             ; load pointer to kvtable
-  sta w_kvtab_addr,d
+  sta Frame.kvtab_addr
   sep #$20
   .as
   lda @w $6,x
-  sta w_kvtab_bank,d
+  sta Frame.kvtab_bank
   phb
     pha
     plb
     rep #$20
     .al
-    ldy w_kvtab_addr,d
-    lda w_kvpar_data,d
+    ldy Frame.kvtab_addr
+    lda Frame.kvpar_data
     jsr menu_kv_lookup
 ; sanitize invalid option setting
     cpy #$ffff
     bne +
-    ldy w_kvtab_addr,d    ; invalid setting -> default to first entry
+    ldy Frame.kvtab_addr  ; invalid setting -> default to first entry
 +   lda @w $2,y
     pha                   ; save offset for right-align
       sta wram(print_src)
@@ -963,8 +982,8 @@ menu_print_opt_string_07:
       pha
       plb
       phy
-        lda w_entry_bank,d
-        ldx w_entry_addr,d
+        lda Frame.entry_bank
+        ldx Frame.entry_addr
         pha
         phx
           jsr rendertime
@@ -976,8 +995,9 @@ menu_print_opt_string_07:
     jsr hiprint
   plx
 menu_print_opt_string_out:
-  #FreeStack
+  #leave
   rts
+.endblock
 
 ; menu_kv_lookup
 ; look for key in a kv table
@@ -1020,52 +1040,57 @@ menu_kv_lookup_out:
 ; db: bank of menu entry
 ; x: address of menu entry
 .text "MENU_EDIT_VALUE"
-menu_edit_value:
-; local variables (also available to callees above "#undef _locals")
-locals_         := $11
-w_preset_addr   = $00
-w_preset_bank   = $02
-w_value_addr    = $03
-w_value_bank    = $05
-w_work_value    = $06
-w_label_addr    = $08
-w_label_bank    = $0a
-w_value_len     = $0b
-w_text_grey     = $0d
-w_chgfunc_addr  = $0e
-w_chgfunc_bank  = $10
+menu_edit_value .block
+; local variables (also used by the value dialogs and menu_check_change_hook,
+; which run inside this frame and are therefore part of this block)
+  .virtual #0,d
+Frame .block
+  preset_addr   .word ?
+  preset_bank   .byte ?
+  value_addr    .word ?
+  value_bank    .byte ?
+  work_value    .word ?
+  label_addr    .word ?
+  label_bank    .byte ?
+  value_len     .word ?
+  text_grey     .byte ?
+  chgfunc_addr  .word ?
+  chgfunc_bank  .byte ?
+  _             .dstruct SaveJSR
+.endblock
+  .endvirtual
 ; returns:
 ; carry flag: 1=value set, 0=cancelled
-  #AllocStack
+  #enter
   ; prepare work variables for sub routines
   jsr menu_meas_opt
-  sta w_value_len,d
+  sta Frame.value_len
   lda @w $4,x
-  sta w_preset_addr,d
+  sta Frame.preset_addr
   lda @w $8,x
-  sta w_value_addr,d
+  sta Frame.value_addr
   lda @w 14,x
-  sta w_chgfunc_addr,d
+  sta Frame.chgfunc_addr
   lda #$0000 ; cleanup B for jump table offset
   sep #$20
   .as
   jsr menu_check_disabled_func
   ror
-  sta w_text_grey,d
+  sta Frame.text_grey
   lda @w $6,x
-  sta w_preset_bank,d
+  sta Frame.preset_bank
   lda @w $a,x
-  sta w_value_bank,d
+  sta Frame.value_bank
   lda @w 16,x
-  sta w_chgfunc_bank,d
+  sta Frame.chgfunc_bank
 ; adjust selection bar to highlight parameter area
   lda wram(bar_xl)
   clc
   adc wram(bar_wl)
   sec
-  sbc w_value_len,d
+  sbc Frame.value_len
   sta wram(bar_xl)
-  lda w_value_len,d
+  lda Frame.value_len
   sta wram(bar_wl)
   lda @w $7,x ; load data type
   cmp #MENU_NUM_DATA_TYPES+1
@@ -1079,8 +1104,8 @@ w_chgfunc_bank  = $10
   plx
   rep #$20
   .al
-  lda [w_value_addr,d]
-  sta w_work_value,d
+  lda [Frame.value_addr]
+  sta Frame.work_value
   jsr (menu_tab_edit_value_dialogs,x)
   bcc +
   lda #CMD_SAVE_CFG
@@ -1090,8 +1115,8 @@ w_chgfunc_bank  = $10
   lda #$0000
   sta @l MCU_CMD
   bra menu_edit_value_skip_reset_chghook
-+ lda [w_value_addr,d]
-  sta w_work_value,d
++ lda [Frame.value_addr]
+  sta Frame.work_value
   jsr menu_check_change_hook
 menu_edit_value_skip_reset_chghook:
   phx
@@ -1099,7 +1124,7 @@ menu_edit_value_skip_reset_chghook:
     jsr set_bar_color
   plx
 menu_edit_value_out:
-  #FreeStack
+  #leave
   rts
 
 
@@ -1148,62 +1173,62 @@ menu_value_dialog_u8:
       bne menu_value_dialog_u8_r
       bra -
 menu_value_dialog_u8_up:
-      lda w_work_value,d
+      lda Frame.work_value
       ldy #$0002
-      cmp [w_preset_addr,d],y
+      cmp [Frame.preset_addr],y
       bcc menu_value_dialog_u8_up_ok
 menu_value_dialog_u8_up_nok:
-      lda [w_preset_addr,d],y
-      sta w_work_value,d
+      lda [Frame.preset_addr],y
+      sta Frame.work_value
       bra +
 menu_value_dialog_u8_up_ok:
-      inc w_work_value,d
+      inc Frame.work_value
       bra +
 menu_value_dialog_u8_down:
-      lda w_work_value,d
-      cmp [w_preset_addr,d]
+      lda Frame.work_value
+      cmp [Frame.preset_addr]
       beq +
       bcs menu_value_dialog_u8_down_ok
 menu_value_dialog_u8_down_nok:
-      lda [w_preset_addr,d]
-      sta w_work_value,d
+      lda [Frame.preset_addr]
+      sta Frame.work_value
       bra +
 menu_value_dialog_u8_down_ok:
-      dec w_work_value,d
+      dec Frame.work_value
       bra +
 menu_value_dialog_u8_left:
-      lda w_work_value,d
+      lda Frame.work_value
       sec
       sbc #9
       bcs menu_value_dialog_u8_left_noclip
       lda #$00
 menu_value_dialog_u8_left_noclip:
-      sta w_work_value,d
-      cmp [w_preset_addr,d]
+      sta Frame.work_value
+      cmp [Frame.preset_addr]
       beq +
       bcs menu_value_dialog_u8_down_ok
       bra menu_value_dialog_u8_down_nok
 menu_value_dialog_u8_right:
-      lda w_work_value,d
+      lda Frame.work_value
       clc
       adc #9
       bcc menu_value_dialog_u8_right_noclip
       lda #$ff
 menu_value_dialog_u8_right_noclip:
-      sta w_work_value,d
+      sta Frame.work_value
       ldy #$0002
-      cmp [w_preset_addr,d],y
+      cmp [Frame.preset_addr],y
       beq +
       bcc menu_value_dialog_u8_up_ok
       bra menu_value_dialog_u8_up_nok
 menu_value_dialog_u8_l:
-      lda [w_preset_addr,d]
-      sta w_work_value,d
+      lda [Frame.preset_addr]
+      sta Frame.work_value
       bra +
 menu_value_dialog_u8_r:
       ldy #$0002
-      lda [w_preset_addr,d],y
-      sta w_work_value,d
+      lda [Frame.preset_addr],y
+      sta Frame.work_value
       bra +
 menu_value_dialog_u8_cancel:
     plb
@@ -1211,13 +1236,13 @@ menu_value_dialog_u8_cancel:
   clc
   rts
 menu_value_dialog_u8_set:
-      lda w_work_value,d
-      sta [w_value_addr,d]
+      lda Frame.work_value
+      sta [Frame.value_addr]
       bra menu_value_dialog_u8_cont
 menu_value_dialog_u8_print:
 +     rep #$20
       .al
-      lda w_work_value,d
+      lda Frame.work_value
       and #$00ff
       jsr bin2dec16
       phb
@@ -1232,7 +1257,7 @@ menu_value_dialog_u8_print:
         inc a
         sta print_y
         lda #$01
-        bit w_text_grey,d
+        bit Frame.text_grey
         bpl +
         lda #$06
 +       sta print_pal
@@ -1286,62 +1311,62 @@ menu_value_dialog_u16:
       bcs menu_value_dialog_u16_r
       bra -
 menu_value_dialog_u16_up:
-      lda w_work_value,d
+      lda Frame.work_value
       ldy #$0002
-      cmp [w_preset_addr,d],y
+      cmp [Frame.preset_addr],y
       bcc menu_value_dialog_u16_up_ok
 menu_value_dialog_u16_up_nok:
-      lda [w_preset_addr,d],y
-      sta w_work_value,d
+      lda [Frame.preset_addr],y
+      sta Frame.work_value
       bra +
 menu_value_dialog_u16_up_ok:
-      inc w_work_value,d
+      inc Frame.work_value
       bra +
 menu_value_dialog_u16_down:
-      lda w_work_value,d
-      cmp [w_preset_addr,d]
+      lda Frame.work_value
+      cmp [Frame.preset_addr]
       beq +
       bcs menu_value_dialog_u16_down_ok
 menu_value_dialog_u16_down_nok:
-      lda [w_preset_addr,d]
-      sta w_work_value,d
+      lda [Frame.preset_addr]
+      sta Frame.work_value
       bra +
 menu_value_dialog_u16_down_ok:
-      dec w_work_value,d
+      dec Frame.work_value
       bra +
 menu_value_dialog_u16_left:
-      lda w_work_value,d
+      lda Frame.work_value
       sec
       sbc #99
       bcs menu_value_dialog_u16_left_noclip
       lda #$0000
 menu_value_dialog_u16_left_noclip:
-      sta w_work_value,d
-      cmp [w_preset_addr,d]
+      sta Frame.work_value
+      cmp [Frame.preset_addr]
       beq +
       bcs menu_value_dialog_u16_down_ok
       bra menu_value_dialog_u16_down_nok
 menu_value_dialog_u16_right:
-      lda w_work_value,d
+      lda Frame.work_value
       clc
       adc #99
       bcc menu_value_dialog_u16_right_noclip
       lda #$ffff
 menu_value_dialog_u16_right_noclip:
-      sta w_work_value,d
+      sta Frame.work_value
       ldy #$0002
-      cmp [w_preset_addr,d],y
+      cmp [Frame.preset_addr],y
       beq +
       bcc menu_value_dialog_u16_up_ok
       bra menu_value_dialog_u16_up_nok
 menu_value_dialog_u16_l:
-      lda [w_preset_addr,d]
-      sta w_work_value,d
+      lda [Frame.preset_addr]
+      sta Frame.work_value
       bra +
 menu_value_dialog_u16_r:
       ldy #$0002
-      lda [w_preset_addr,d],y
-      sta w_work_value,d
+      lda [Frame.preset_addr],y
+      sta Frame.work_value
       bra +
 menu_value_dialog_u16_cancel:
     plb
@@ -1349,13 +1374,13 @@ menu_value_dialog_u16_cancel:
   clc
   rts
 menu_value_dialog_u16_set:
-      lda w_work_value,d
-      sta [w_value_addr,d]
+      lda Frame.work_value
+      sta [Frame.value_addr]
       bra menu_value_dialog_u16_cont
 menu_value_dialog_u16_print:
 +     rep #$20
       .al
-      lda w_work_value,d
+      lda Frame.work_value
       jsr bin2dec16
       phb
         sep #$20
@@ -1369,7 +1394,7 @@ menu_value_dialog_u16_print:
         inc a
         sta print_y
         lda #$01
-        bit w_text_grey,d
+        bit Frame.text_grey
         bpl +
         lda #$06
 +       sta print_pal
@@ -1392,13 +1417,13 @@ menu_value_dialog_kv8:
     phb
       sep #$20
       .as
-      lda w_preset_bank,d
+      lda Frame.preset_bank
       pha
       plb
-      ldy w_preset_addr,d
+      ldy Frame.preset_addr
       rep #$20
       .al
-      lda w_work_value,d
+      lda Frame.work_value
       and #$00ff
       jsr menu_kv_lookup
 ; sanitize invalid option setting
@@ -1406,7 +1431,7 @@ menu_value_dialog_kv8:
       .as
       cpy #$ffff
       bne menu_value_dialog_kv8_loop
-      ldy w_preset_addr,d
+      ldy Frame.preset_addr
 menu_value_dialog_kv8_loop:
       phy
         jsr waitblank
@@ -1433,7 +1458,7 @@ menu_value_dialog_kv8_up:
       iny
       bra +
 menu_value_dialog_kv8_down:
-      cpy w_preset_addr,d
+      cpy Frame.preset_addr
       beq +
       dey
       dey
@@ -1443,7 +1468,7 @@ menu_value_dialog_kv8_down:
       bra +
 menu_value_dialog_kv8_set:
       lda @w $0,y
-      sta [w_value_addr,d]
+      sta [Frame.value_addr]
       brl menu_value_dialog_kv8_cont
 menu_value_dialog_kv8_cancel:
     plb
@@ -1465,10 +1490,10 @@ menu_value_dialog_kv8_cancel:
       clc
       adc wram(window_w)
       clc
-      sbc w_value_len,d
+      sbc Frame.value_len
       dec a
       sta wram(print_x)
-      lda w_value_len,d
+      lda Frame.value_len
       sta wram(print_count)
       phy
         jsr hiprint
@@ -1477,21 +1502,21 @@ menu_value_dialog_kv8_cancel:
       .al
       lda @w $0,y
       and #$00ff
-      sta w_work_value,d
+      sta Frame.work_value
       lda @w $2,y
       sta wram(print_src)
-      sta w_label_addr,d
+      sta Frame.label_addr
       sep #$20
       .as
       lda @w $4,y
       sta wram(print_bank)
       lda #$01
-      bit w_text_grey,d
+      bit Frame.text_grey
       bpl +
       lda #$06
 +     sta wram(print_pal)
       phy
-        ldy w_label_addr,d
+        ldy Frame.label_addr
         lda wram(print_bank)
         phb
           pha
@@ -1522,15 +1547,15 @@ menu_value_dialog_time:
     clc
     adc wram(window_w)
     clc
-    sbc w_value_len,d
+    sbc Frame.value_len
     dec a
     pha ; p_time_x
     lda wram(bar_yl)
     inc a
     pha ; p_time_y
-    lda w_value_bank,d
+    lda Frame.value_bank
     pha
-    ldx w_value_addr,d
+    ldx Frame.value_addr
     phx
     jsr time_init
     plx
@@ -1550,26 +1575,27 @@ menu_check_change_hook:
   sep #$20
   .as
   ; call function, if defined, to perform some action during value selection
-    lda w_chgfunc_addr,d
-    ora w_chgfunc_addr + 1,d
-    ora w_chgfunc_bank,d
+    lda Frame.chgfunc_addr
+    ora Frame.chgfunc_addr + 1
+    ora Frame.chgfunc_bank
     clc
     beq menu_check_change_hook_exit
   ; push long return address for after function call
     phk
     per menu_check_change_hook_exit-1
   ; push long address of changeHook function
-    lda w_chgfunc_bank,d
+    lda Frame.chgfunc_bank
     pha
-    lda w_chgfunc_addr + 1,d
+    lda Frame.chgfunc_addr + 1
     pha
-    lda w_chgfunc_addr,d
+    lda Frame.chgfunc_addr
     pha
-    lda w_work_value,d
+    lda Frame.work_value
     rtl ; call the changeHook function
 menu_check_change_hook_exit:
   plp
   rts
+.endblock
 
 
 
@@ -1597,11 +1623,11 @@ menu_check_disabled_func_exit:
 
 ; jump table to different data type edit dialogs
 menu_tab_edit_value_dialogs:
-.word <>menu_value_dialog_dummy
-.word <>menu_value_dialog_u8
-.word <>menu_value_dialog_u16
-.word <>menu_value_dialog_string
-.word <>menu_value_dialog_kv8
-.word <>menu_value_dialog_kv16
-.word <>menu_value_dialog_file
-.word <>menu_value_dialog_time
+.word <>menu_edit_value.menu_value_dialog_dummy
+.word <>menu_edit_value.menu_value_dialog_u8
+.word <>menu_edit_value.menu_value_dialog_u16
+.word <>menu_edit_value.menu_value_dialog_string
+.word <>menu_edit_value.menu_value_dialog_kv8
+.word <>menu_edit_value.menu_value_dialog_kv16
+.word <>menu_edit_value.menu_value_dialog_file
+.word <>menu_edit_value.menu_value_dialog_time

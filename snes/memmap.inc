@@ -140,6 +140,21 @@ CFG_SGB_BIOS_VERSION            = CFG_ADDR+$00B2
 CFG_ENABLE_AUTOSAVE             = CFG_ADDR+$00B3
 CFG_ENABLE_AUTOSAVE_MSU1        = CFG_ADDR+$00B4
 
+BCDTime .struct
+  s1                             .byte ?
+  s10                            .byte ?
+  m1                             .byte ?
+  m10                            .byte ?
+  h1                             .byte ?
+  h10                            .byte ?
+  d1                             .byte ?
+  d10                            .byte ?
+  mon                            .byte ?
+  y1                             .byte ?
+  y10                            .byte ?
+  y100                           .byte ?
+.ends
+
 MENU_ENTRY_SIZE             = 23
 
 ST_RTC_VALID                = ST_MCU_ADDR+$0000

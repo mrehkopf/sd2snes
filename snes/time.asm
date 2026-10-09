@@ -1,11 +1,11 @@
 timebox_data:
-; string offset, selection width, bcdtime offset
-  .byte 0, 4, 9
-  .byte 5, 2, 8
-  .byte 8, 2, 6
-  .byte 11, 2, 4
-  .byte 14, 2, 2
-  .byte 17, 2, 0
+; string offset, selection width, BCDTime offset
+  .byte 0, 4, BCDTime.y1
+  .byte 5, 2, BCDTime.mon
+  .byte 8, 2, BCDTime.d1
+  .byte 11, 2, BCDTime.h1
+  .byte 14, 2, BCDTime.m1
+  .byte 17, 2, BCDTime.s1
 
 time_month:
   .byte 3, 1
@@ -23,39 +23,33 @@ time_month:
 
 .xl ; expected by routines in this file
 
-time_init:
-p_time_x    = $04
-p_time_y    = $03
-p_time_bank := $02
-p_time_addr := $00
-locals_     := $10
-w_time_addr = $00
-w_time_bank = $02
-w_time_work = $03
-w_time_s1   = $03
-w_time_s10  = $04
-w_time_m1   = $05
-w_time_m10  = $06
-w_time_h1   = $07
-w_time_h10  = $08
-w_time_d1   = $09
-w_time_d10  = $0a
-w_time_mon  = $0b
-w_time_y1   = $0c
-w_time_y10  = $0d
-w_time_y100 = $0e
-w_time_tmp  = $0f
-  #AllocStack
+time_init .block
+; Edit date/time in place. Button handlers and working copy routines used
+; below run in the same frame as a part of this block.
+  .virtual #0,d
+Frame .block
+  time_addr     .word ?          ; long pointer to the BCDTime being edited
+  time_bank     .byte ?
+  work          .dstruct BCDTime ; working copy
+  tmp           .byte ?
+  _             .dstruct SaveJSR
+  p_time_addr   .word ?          ; pushed last
+  p_time_bank   .byte ?
+  p_time_y      .byte ?
+  p_time_x      .byte ?          ; pushed first
+.endblock
+  .endvirtual
+  #enter
   sep #$20
   .as
   phb
     lda #$80
     pha
     plb
-    lda locals_+p_time_bank+5,d
-    ldy locals_+p_time_addr+5,d
-    sta w_time_bank,d
-    sty w_time_addr,d
+    lda Frame.p_time_bank
+    ldy Frame.p_time_addr
+    sta Frame.time_bank
+    sty Frame.time_addr
     jsr gettime
     jsr time_make_working_copy
     stz time_sel
@@ -68,7 +62,7 @@ time_update:
     .al
     tdc
     clc
-    adc #w_time_work
+    adc #Frame.work - Frame
     pha
     sep #$20
     .as
@@ -79,9 +73,9 @@ time_update:
     sta print_bank
     ldx #stringbuf
     stx print_src
-    lda locals_+p_time_x+5,d
+    lda Frame.p_time_x
     sta print_x
-    lda locals_+p_time_y+5,d
+    lda Frame.p_time_y
     sta print_y
     stz print_pal
     jsr hiprint
@@ -95,9 +89,9 @@ time_update:
     tax
     lda @l timebox_data,x
     clc
-    adc locals_+p_time_x+5,d
+    adc Frame.p_time_x
     sta bar_xl
-    lda locals_+p_time_y+5,d
+    lda Frame.p_time_y
     dec a
     sta bar_yl
     inx
@@ -134,13 +128,13 @@ timeloop1:
 timesave:
     jsr time_save_working_copy
   plb
-  #FreeStack
+  #leave
   .as
   sec
   rts
 timenosave:
   plb
-  #FreeStack
+  #leave
   .as
   clc
   rts
@@ -186,34 +180,34 @@ time_key_right:
 
 time_key_up:
   lda time_ptr
-  cmp #4
+  cmp #BCDTime.h1
   beq time_inc_hour_jmp
-  cmp #6
+  cmp #BCDTime.d1
   beq time_inc_day_jmp
-  cmp #8
+  cmp #BCDTime.mon
   beq time_inc_mon_jmp
-  cmp #9
+  cmp #BCDTime.y1
   beq time_inc_year_jmp
   xba
   lda #$00
   xba
   tax
-  lda w_time_s1,d,x
+  lda Frame.work.s1,x
   inc a
   cmp #$0a
   bmi time_inc_minsec1_normal
-  stz w_time_s1,d,x
-  lda w_time_s10,d,x
+  stz Frame.work.s1,x
+  lda Frame.work.s10,x
   inc a
   cmp #$06
   bmi time_inc_minsec10_normal
-  stz w_time_s10,d,x
+  stz Frame.work.s10,x
   bra +
 time_inc_minsec10_normal:
-  sta w_time_s10,d,x
+  sta Frame.work.s10,x
   bra +
 time_inc_minsec1_normal:
-  sta w_time_s1,d,x
+  sta Frame.work.s1,x
 +
   rts
 
@@ -231,38 +225,38 @@ time_inc_mon_jmp:
 
 time_inc_year_jmp:
   jsr time_inc_year
-  lda w_time_mon,d
+  lda Frame.work.mon
   jsr time_adjust_mon
   rts
 
 time_inc_hour:
-  lda w_time_h10,d
+  lda Frame.work.h10
   cmp #$02
   bne time_inc_hour_normal
-  lda w_time_h1,d
+  lda Frame.work.h1
   inc a
   cmp #$04
   bmi +
-  stz w_time_h1,d
-  stz w_time_h10,d
+  stz Frame.work.h1
+  stz Frame.work.h10
   rts
 +
-  sta w_time_h1,d
+  sta Frame.work.h1
   rts
 time_inc_hour_normal:
-  lda w_time_h1,d
+  lda Frame.work.h1
   inc a
   cmp #$0a
   bmi +
-  stz w_time_h1,d
-  inc w_time_h10,d
+  stz Frame.work.h1
+  inc Frame.work.h10
   rts
 +
-  sta w_time_h1,d
+  sta Frame.work.h1
   rts
 
 time_inc_day:
-  lda w_time_mon,d
+  lda Frame.work.mon
   dec a
   asl
   xba
@@ -270,34 +264,34 @@ time_inc_day:
   xba
   tax
   lda @l time_month,x
-  cmp w_time_d10,d
+  cmp Frame.work.d10
   bne time_inc_day_normal
   inx
   jsr is_leapyear_feb
   lda @l time_month,x
   dec a
   adc #$00
-  cmp w_time_d1,d
+  cmp Frame.work.d1
   bpl +
-  stz w_time_d1,d
-  stz w_time_d10,d
+  stz Frame.work.d1
+  stz Frame.work.d10
 +
-  inc w_time_d1,d
+  inc Frame.work.d1
   rts
 time_inc_day_normal:
-  lda w_time_d1,d
+  lda Frame.work.d1
   inc a
   cmp #$0a
   bmi +
-  stz w_time_d1,d
-  inc w_time_d10,d
+  stz Frame.work.d1
+  inc Frame.work.d10
   rts
 +
-  sta w_time_d1,d
+  sta Frame.work.d1
   rts
 
 time_inc_mon:
-  lda w_time_mon,d
+  lda Frame.work.mon
   inc a
   cmp #13
   bmi +
@@ -307,14 +301,14 @@ time_inc_mon:
   rts
 
 time_adjust_mon:
-  sta w_time_mon,d
+  sta Frame.work.mon
   dec a
   asl
   xba
   lda #$00
   xba
   tax
-  lda w_time_d10,d
+  lda Frame.work.d10
   cmp @l time_month,x
   bcs time_mon_adjust
   rts
@@ -328,69 +322,69 @@ time_mon_adjust:
   adc #$00
   plp
   bne time_mon_doadjust
-  cmp w_time_d1,d
+  cmp Frame.work.d1
   bcs +
 time_mon_doadjust:
-  sta w_time_d1,d
+  sta Frame.work.d1
   dex
   lda @l time_month,x
-  sta w_time_d10,d
+  sta Frame.work.d10
 +
   rts
 
 time_inc_year:
-  lda w_time_y1,d
+  lda Frame.work.y1
   inc a
   cmp #$0a
   bmi time_inc_y1_normal
-  stz w_time_y1,d
-  lda w_time_y10,d
+  stz Frame.work.y1
+  lda Frame.work.y10
   inc a
   cmp #$0a
   bmi time_inc_y10_normal
-  stz w_time_y10,d
-  inc w_time_y100,d
+  stz Frame.work.y10
+  inc Frame.work.y100
   rts
 time_inc_y10_normal:
-  sta w_time_y10,d
+  sta Frame.work.y10
   rts
 time_inc_y1_normal:
-  sta w_time_y1,d
+  sta Frame.work.y1
   rts
 
 
 time_key_down:
   lda time_ptr
-  cmp #4
+  cmp #BCDTime.h1
   beq time_dec_hour_jmp
-  cmp #6
+  cmp #BCDTime.d1
   beq time_dec_day_jmp
-  cmp #8
+  cmp #BCDTime.mon
   beq time_dec_mon_jmp
-  cmp #9
+  cmp #BCDTime.y1
   beq time_dec_year_jmp
   xba
   lda #$00
   xba
   tax
-  lda w_time_s1,d,x
+  lda Frame.work.s1,x
   dec a
   cmp #$ff
   bne time_dec_minsec1_normal
   lda #$09
-  sta w_time_s1,d,x
-  lda w_time_s10,d,x
+  sta Frame.work.s1,x
+  lda Frame.work.s10,x
   dec a
   cmp #$ff
   bne time_dec_minsec10_normal
   lda #$05
-  sta w_time_s10,d,x
+  sta Frame.work.s10,x
   bra +
 time_dec_minsec10_normal:
-  sta w_time_s10,d,x
+  sta Frame.work.s10,x
   bra +
 time_dec_minsec1_normal:
-  sta w_time_s1,d,x
+  sta Frame.work.s1,x
 +
   rts
 
@@ -408,46 +402,46 @@ time_dec_mon_jmp:
 
 time_dec_year_jmp:
   jsr time_dec_year
-  lda w_time_mon,d
+  lda Frame.work.mon
   jsr time_adjust_mon
   rts
 
 time_dec_hour:
-  lda w_time_h1,d
+  lda Frame.work.h1
   dec a
   cmp #$ff
   bne time_dec_h1_normal
-  lda w_time_h10,d
+  lda Frame.work.h10
   bne time_dec_h10_normal
   lda #$02
-  sta w_time_h10,d
+  sta Frame.work.h10
   lda #$03
-  sta w_time_h1,d
+  sta Frame.work.h1
   rts
 time_dec_h10_normal:
   lda #$09
-  sta w_time_h1,d
-  dec w_time_h10,d
+  sta Frame.work.h1
+  dec Frame.work.h10
   rts
 time_dec_h1_normal:
-  sta w_time_h1,d
+  sta Frame.work.h1
   rts
 
 time_dec_day:
-  lda w_time_d10,d
+  lda Frame.work.d10
   beq +
-  lda w_time_d1,d
+  lda Frame.work.d1
   dec a
   cmp #$ff
   bne time_dec_d1_normal
   bra time_dec_cont
-+ lda w_time_d1,d
++ lda Frame.work.d1
   dec a
   bne time_dec_d1_normal
 time_dec_cont:
-  lda w_time_d10,d
+  lda Frame.work.d10
   bne time_dec_d10_normal
-  lda w_time_mon,d
+  lda Frame.work.mon
   dec a
   asl
   xba
@@ -455,26 +449,26 @@ time_dec_cont:
   xba
   tax
   lda @l time_month,x
-  sta w_time_d10,d
+  sta Frame.work.d10
   inx
   lda @l time_month,x
   pha
   jsr is_leapyear_feb
   pla
   adc #$00
-  sta w_time_d1,d
+  sta Frame.work.d1
   rts
 time_dec_d10_normal:
   lda #$09
-  sta w_time_d1,d
-  dec w_time_d10,d
+  sta Frame.work.d1
+  dec Frame.work.d10
   rts
 time_dec_d1_normal:
-  sta w_time_d1,d
+  sta Frame.work.d1
   rts
 
 time_dec_mon:
-  lda w_time_mon,d
+  lda Frame.work.mon
   dec a
   bne +
   lda #12
@@ -483,41 +477,41 @@ time_dec_mon:
   rts
 
 time_dec_year:
-  lda w_time_y1,d
+  lda Frame.work.y1
   dec a
   cmp #$ff
   bne time_dec_y1_normal
   lda #$09
-  sta w_time_y1,d
-  lda w_time_y10,d
+  sta Frame.work.y1
+  lda Frame.work.y10
   dec a
   cmp #$ff
   bne time_dec_y10_normal
   lda #$09
-  sta w_time_y10,d
-  dec w_time_y100,d
+  sta Frame.work.y10
+  dec Frame.work.y100
   rts
 time_dec_y10_normal:
-  sta w_time_y10,d
+  sta Frame.work.y10
   rts
 time_dec_y1_normal:
-  sta w_time_y1,d
+  sta Frame.work.y1
   rts
 
 is_leapyear_feb:
-  lda w_time_mon,d
+  lda Frame.work.mon
   cmp #$02
   bne is_leapyear_feb_no
-  lda w_time_y10,d
+  lda Frame.work.y10
   asl
-  sta w_time_tmp,d
+  sta Frame.tmp
   asl
   asl
   clc
-  adc w_time_tmp,d
+  adc Frame.tmp
   clc
-  adc w_time_y1,d
-  sta w_time_tmp,d
+  adc Frame.work.y1
+  sta Frame.tmp
   and #$03
   beq is_leapyear_4th ; every 4th year
 is_leapyear_feb_no:
@@ -525,12 +519,12 @@ is_leapyear_feb_no:
   rts
 
 is_leapyear_4th:      ; leapyear candidate
-  lda w_time_tmp,d    ; year=00?
+  lda Frame.tmp       ; year=00?
   beq +               ; then check century
   sec                 ; else it's always a leapyear
   rts
 +
-  lda w_time_y100,d   ; century divisible by 4?
+  lda Frame.work.y100 ; century divisible by 4?
   clc
   adc #10
   and #$03
@@ -548,13 +542,13 @@ time_make_working_copy:
   .al
   ldy #$0000
   ldx #$0000
-- lda [w_time_addr,d],y
-  sta w_time_work,d,x
+- lda [Frame.time_addr],y
+  sta Frame.work,x
   inx
   inx
   iny
   iny
-  cpy #$000c
+  cpy #size(BCDTime)
   bne -
   plp
   rts
@@ -565,16 +559,17 @@ time_save_working_copy:
   .al
   ldy #$0000
   ldx #$0000
-- lda w_time_work,d,x
-  sta [w_time_addr,d],y
+- lda Frame.work,x
+  sta [Frame.time_addr],y
   inx
   inx
   iny
   iny
-  cpy #$000c
+  cpy #size(BCDTime)
   bne -
   plp
   rts
+.endblock
 
 gettime:
   php
@@ -610,18 +605,21 @@ gettime:
   plp
   rts
 
-rendertime:
-; local variables
-locals_     := $00
-; caller variables
-p_time_addr := $00
-p_time_bank := $02
-  #AllocStack
+rendertime .block
+; render the BCDTime pointed to by the params into stringbuf
+  .virtual #0,d
+Frame .block
+  _             .dstruct SaveJSR
+  p_time_addr   .word ?         ; long pointer to a BCDTime, pushed last
+  p_time_bank   .byte ?         ; pushed first
+.endblock
+  .endvirtual
+  #enter
   sep #$20
   .as
   ldx #stringbuf
-  ldy #$000b
-  lda [locals_+p_time_addr+5,d],y   ; y100
+  ldy #BCDTime.y100
+  lda [Frame.p_time_addr],y         ; y100
   and #$0f
   cmp #$0a
   bpl y_skip1
@@ -641,14 +639,14 @@ y_skip2:
   inx
   inx
   dey
-  lda [locals_+p_time_addr+5,d],y   ; y10
+  lda [Frame.p_time_addr],y         ; y10
   and #$0f
   clc
   adc #$30
   sta @w 0,x
   inx
   dey
-  lda [locals_+p_time_addr+5,d],y   ; y1
+  lda [Frame.p_time_addr],y         ; y1
   and #$0f
   clc
   adc #$30
@@ -658,7 +656,7 @@ y_skip2:
   sta @w 0,x
   inx
   dey
-  lda [locals_+p_time_addr+5,d],y   ; mon
+  lda [Frame.p_time_addr],y         ; mon
   and #$0f
   cmp #$0a
   bpl mon_skip1
@@ -681,13 +679,13 @@ mon_skip2:
   sta @w 0,x
   inx
   dey
-  lda [locals_+p_time_addr+5,d],y   ; d10
+  lda [Frame.p_time_addr],y         ; d10
   clc
   adc #$30
   sta @w 0,x
   inx
   dey
-  lda [locals_+p_time_addr+5,d],y   ; d1
+  lda [Frame.p_time_addr],y         ; d1
   clc
   adc #$30
   sta @w 0,x
@@ -696,28 +694,13 @@ mon_skip2:
   sta @w 0,x
   inx
   dey
-  lda [locals_+p_time_addr+5,d],y   ; h10
+  lda [Frame.p_time_addr],y         ; h10
   clc
   adc #$30
   sta @w 0,x
   inx
   dey
-  lda [locals_+p_time_addr+5,d],y   ; h1
-  clc
-  adc #$30
-  sta @w 0,x
-  inx
-  lda #$3a
-  sta @w 0,x
-  inx
-  dey
-  lda [locals_+p_time_addr+5,d],y   ; m10
-  clc
-  adc #$30
-  sta @w 0,x
-  inx
-  dey
-  lda [locals_+p_time_addr+5,d],y   ; m1
+  lda [Frame.p_time_addr],y         ; h1
   clc
   adc #$30
   sta @w 0,x
@@ -726,20 +709,36 @@ mon_skip2:
   sta @w 0,x
   inx
   dey
-  lda [locals_+p_time_addr+5,d],y   ; s10
+  lda [Frame.p_time_addr],y         ; m10
   clc
   adc #$30
   sta @w 0,x
   inx
   dey
-  lda [locals_+p_time_addr+5,d],y   ; s1
+  lda [Frame.p_time_addr],y         ; m1
+  clc
+  adc #$30
+  sta @w 0,x
+  inx
+  lda #$3a
+  sta @w 0,x
+  inx
+  dey
+  lda [Frame.p_time_addr],y         ; s10
+  clc
+  adc #$30
+  sta @w 0,x
+  inx
+  dey
+  lda [Frame.p_time_addr],y         ; s1
   clc
   adc #$30
   sta @w 0,x
   stz @w 1,x
-  #FreeStack
+  #leave
   .as
   rts
+.endblock
 
 settime:
   lda time_y100

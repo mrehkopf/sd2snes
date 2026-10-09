@@ -624,11 +624,15 @@ hide_cursor:
   plp
   rts
 
-window_greyout:
-locals_      := $04
-w_vcount        = $00
-w_start_offset  = $02
-  #AllocStack
+window_greyout .block
+  .virtual #0,d
+Frame .block
+  vcount        .word ?
+  start_offset  .word ?
+  _             .dstruct SaveJSR
+.endblock
+  .endvirtual
+  #enter
   phb
     sep #$20
     .as
@@ -639,7 +643,7 @@ w_start_offset  = $02
     .al
     lda @w window_h
     and #$00ff
-    sta w_vcount,d
+    sta Frame.vcount
     lda @w window_y
     and #$00ff
     xba
@@ -651,7 +655,7 @@ w_start_offset  = $02
       clc
       adc $1,s
       and #$fffe
-      sta w_start_offset,d
+      sta Frame.start_offset
       tax
     pla
 greyout_start:
@@ -678,18 +682,19 @@ greyout_bg1:
     dey
     bne greyout_bg2
 greyout_next:
-    dec w_vcount,d
+    dec Frame.vcount
     beq greyout_out
-    lda w_start_offset,d
+    lda Frame.start_offset
     clc
     adc #$0040
-    sta w_start_offset,d
+    sta Frame.start_offset
     tax
     bra greyout_start
 greyout_out:
   plb
-  #FreeStack
+  #leave
   rts
+.endblock
 
 ; right-align: calculate print X position based on string length and
 ;              window dimensions
