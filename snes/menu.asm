@@ -228,7 +228,8 @@ show_menu .block
 ; params:
 ; x: offset of menu structure
 ; db: bank of menu structure
-FrameT .struct
+  .virtual #0,d
+Frame .block
   numentries    .word ?
   max_lbl_len   .word ?
   max_opt_len   .word ?
@@ -237,11 +238,7 @@ FrameT .struct
   menu_bank     .byte ?
   unused        .byte ?
   _             .dstruct SaveJSR
-.ends
-; FrameT is a type definition because menu_measure needs to reference it
-; Frame below is its instantiation
-  .virtual #0,d
-Frame .dstruct FrameT
+.endblock
   .endvirtual
   .enter
 ; backup params
@@ -475,33 +472,19 @@ show_menu_editvalue:
       plb
     ply
     jmp show_menu_cont
-.endblock
 
+; helper for show_menu (no frame of its own)
 ; params:
 ; x: offset of menu structure
 ; db: bank of menu structure
-; returns:
-; number of menu entries
-; maximum menu label string length
-; maximum menu option string length
 .text "MENU_MEASURE"
-menu_measure .block
-  .virtual #0,d
-Frame .block
-  max_kv_len    .word ?
-  _             .dstruct SaveJSR
-; Return values are written directly into the locals of the caller.
-; show_menu must not alter the stack pointer between "enter" and
-; "jsr menu_measure"!
-  up            .dstruct show_menu.FrameT
-.endblock
-  .endvirtual
-  .enter                 ; implies PHP : PHD : .al
-  stz Frame.up.max_lbl_len ; initialize variable
-  stz Frame.up.max_opt_len ; initialize variable
-  stz Frame.up.numentries
-  stz Frame.max_kv_len
-; ====================================
+menu_measure:
+  php
+  rep #$20
+  .al
+  stz Frame.max_lbl_len ; initialize variable
+  stz Frame.max_opt_len ; initialize variable
+  stz Frame.numentries
 ; include window title in calculation
   sep #$20
   .as
@@ -511,7 +494,7 @@ Frame .block
     pha
     plb
     jsr strlen
-    sty Frame.up.title_len
+    sty Frame.title_len
   plb
   inx
   inx
@@ -523,7 +506,7 @@ menu_measure_line_loop:
   lda @w MenuEntry.type,x ; read menu entry type
   and #$00ff              ; (mask)
   beq menu_measure_out    ; termination -> exit
-  inc Frame.up.numentries ; entry counter
+  inc Frame.numentries    ; entry counter
   phb
     sep #$20
     .as
@@ -540,21 +523,21 @@ menu_measure_line_loop:
   iny
 + rep #$20
   .al
-  cpy Frame.up.max_lbl_len      ; replace max value with
+  cpy Frame.max_lbl_len         ; replace max value with
   bmi +                         ; new length
-  sty Frame.up.max_lbl_len      ; if bigger or equal.
+  sty Frame.max_lbl_len         ; if bigger or equal.
 + jsr menu_meas_opt             ; calculate max option string length
                                ; move to next entry.
-  cmp Frame.up.max_opt_len
+  cmp Frame.max_opt_len
   bmi +
-  sta Frame.up.max_opt_len
+  sta Frame.max_opt_len
 + txa
   clc
   adc #size(MenuEntry)
   tax
   bra menu_measure_line_loop
 menu_measure_out:
-  .leave
+  plp
   rts
 .endblock
 
@@ -568,19 +551,22 @@ menu_measure_out:
 ; returns:
 ; ========
 ; a: calculated max parameter length for values of this entry
-menu_meas_no_set:
-  .as
-  lda #$00
-  jmp menu_meas_opt_set
-menu_meas_opt:
-  php
+; Y IS CLOBBERED
+menu_meas_opt .block
+  .virtual #0,d
+Frame .block
+  max_len       .word ?         ; longest key-value text so far
+  _             .dstruct SaveJSR
+.endblock
+  .endvirtual
+  .enter
     sep #$20
     .as
   ;  lda !$4, x         ; calculate space needed to show options
   ;  cmp #MTYPE_VALUE   ; only for "value set" entry types
-  ;  bne menu_meas_no_set
+  ;  bne menu_meas_opt_none
     lda @w MenuEntry.dtype,x
-    beq menu_meas_no_set ; no option
+    beq menu_meas_opt_none ; no option
     cmp #OPTTYPE_BYTE         ; uint8
     bne menu_meas_opt_02
     lda #$03                  ; "0"-"255" - 3 chars
@@ -601,7 +587,6 @@ menu_meas_opt_04:
     cmp #OPTTYPE_KVWORD       ; key-value (16bit)
     bne menu_meas_opt_06
 menu_meas_opt_keyval: ; count max value length
-    pea $0000
     phb
       ldy @w MenuEntry.target,x   ; get pointer to
       lda @w MenuEntry.target+2,x ; key-value table
@@ -609,6 +594,7 @@ menu_meas_opt_keyval: ; count max value length
       plb
       rep #$20
       .al
+      stz Frame.max_len
 menu_meas_opt_nextkey:
       lda @w KVEntry.key,y ; get key
       cmp #$ffff
@@ -629,9 +615,9 @@ menu_meas_opt_nextkey:
           jsr strlen     ; get length
         plb
         tya
-        cmp 4,s  ; compare-replace
+        cmp Frame.max_len ; compare-replace
         bmi menu_meas_opt_keyval_skip
-        sta 4,s
+        sta Frame.max_len
 menu_meas_opt_keyval_skip:
       ply
       iny              ; move to next key
@@ -640,7 +626,7 @@ menu_meas_opt_keyval_skip:
       bra menu_meas_opt_nextkey
 +
     plb
-    pla
+    lda Frame.max_len
     bra menu_meas_opt_set
 menu_meas_opt_06:     ; file select (16 characters)
     .as
@@ -651,12 +637,18 @@ menu_meas_opt_06:     ; file select (16 characters)
 menu_meas_opt_07:     ; date/time select (19 characters)
     lda #$13
     bra menu_meas_opt_set
+menu_meas_opt_none:
+    .as
+    lda #$00
 menu_meas_opt_set:
   rep #$20
   .al
   and #$00ff
-  plp
+  tay                           ; leave destroys A
+  .leave
+  tya
   rts
+.endblock
 
 .text "MENU_PRINT_ENTRIES"
 menu_print_entries .block
