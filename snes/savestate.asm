@@ -1,4 +1,3 @@
-
 ; Savestate handler based on practice ROM save state code by acmlm, total, Myria
 ; adapted for usb2snes / sd2snes hardware support by RedGuy
 ; modified for standalone operation from USB EXE (2C00) + dedicated PSRAM
@@ -12,22 +11,23 @@
 ; TODO do not execute from Bank C0 anymore; HDMA can fetch while handler is mapped,
 ; causing glitches or crashes (Notably Star Fox)
 
-.link page $c0
-#include "memmap.i65"
-#include "savestate.i65"
-.byt "SAVESTATE_START"
+.text "SAVESTATE_START"
 savestate_handler:
 ; * = $FE1000
 
 ; print "Savestate Bank Starting at: ", pc
-	php : rep #$30 : .al : .xl : pha
+	php
+	rep #$30
+	.al
+	.xl
+	pha
 	; nmihook already handled button input
-	lda @NMI_PAD
-	sta @CS_INPUT_NEXT
+	lda @l NMI_PAD
+	sta @l CS_INPUT_NEXT
 savestate_start:
 	jmp ss_init
 
-save_write_table
+save_write_table:
 	; Disable DMA
 	.word $1000|$420B, $0000
 	.word $1000|$420C, $0000
@@ -37,9 +37,9 @@ save_write_table
 	.word $0000|$2116, $0000  ; VRAM address >> 1.
 	.word $8000|$2139, $0000  ; VRAM dummy read.
 	; Done
-	.word $0000, save_return
+	.word $0000, <>save_return
 
-load_write_table
+load_write_table:
 	; Disable DMA
 	.word $1000|$420B, $00
 	.word $1000|$420C, $00
@@ -86,125 +86,153 @@ load_write_table
 	.word $0000|$4316, $0002  ; size = $02xx ($0220), unused bank reg = $00.
 	.word $1000|$420B, $02    ; Trigger DMA on channel 1
 	; Done
-	.word $0000, load_return
+	.word $0000, <>load_return
 
 ; general register restore
-register_restore_return
-	sep #$20 : .as
-	rep #$10 : .xl
+register_restore_return:
+	sep #$20
+	.as
+	rep #$10
+	.xl
 
 ; restore $21XX
 	ldx #$0002
 	ldy #$0001
 
--	cpy #$0002 : beq +
-	cpy #$0003 : beq +
-	cpy #$0004 : beq +
-	cpy #$0018 : beq +
-	cpy #$0019 : beq +
-	cpy #$0022 : beq +
+- cpy #$0002
+  beq +
+	cpy #$0003
+	beq +
+	cpy #$0004
+	beq +
+	cpy #$0018
+	beq +
+	cpy #$0019
+	beq +
+	cpy #$0022
+	beq +
 
-	lda @SRAM_PPU_BANK, x : sta $2100, y : inx
-	lda @SRAM_PPU_BANK, x : sta $2100, y : dex
+	lda @l SRAM_PPU_BANK,x
+	sta $2100,y
+	inx
+	lda @l SRAM_PPU_BANK,x
+	sta $2100,y
+	dex
 
-+	inx : inx
++ inx
+  inx
 	iny
 	cpy #$0034
 	beq +
 	bra -
 
 ; restore $420X
-+	ldx #$0001
++ ldx #$0001
 
--	cpx #$0001 : beq +
-	cpx #$000B : beq +
-	cpx #$000C : beq +
-	lda @SRAM_OTH_BANK, x
-	sta $4200, x
+- cpx #$0001
+  beq +
+	cpx #$000B
+	beq +
+	cpx #$000C
+	beq +
+	lda @l SRAM_OTH_BANK,x
+	sta $4200,x
 
-+	inx
++ inx
 	cpx #$000E
 	bne -
-	
-	rep #$30 : .al : .xl
+
+	rep #$30
+	.al
+	.xl
 	ply
 	plx
 	pla
 	pld
 	plb
 
-	sep #$20 : .as
+	sep #$20
+	.as
 
-return_align
+return_align:
 	; align back with the NMI/IRQ
 ; TODO persistent entry flag ("entered hook via NMI or IRQ when saving the state?")
 ;      when saving state, then restore when loading and align with correct
 ;      type of interrupt when resuming game.
-	lda @BRAM_RETURN_VECTOR ; HACK read back FPGA injected return vector low byte
+	lda @l BRAM_RETURN_VECTOR ; HACK read back FPGA injected return vector low byte
 	cmp #$EA  ; entered via NMI?
 	beq return_enable_nmi
-return_enable_irq
+return_enable_irq:
 	cli
-	lda @$004211 ; ack IRQ
-	lda #$31     ; mask off NMI enable
+	lda @l $004211 ; ack IRQ
+	lda #$31       ; mask off NMI enable
 	bra +
-return_enable_nmi
-	lda @$004210 ; ack NMI
-	lda #$81     ; mask off IRQ enables
+return_enable_nmi:
+	lda @l $004210 ; ack NMI
+	lda #$81       ; mask off IRQ enables
 +
-	and @SRAM_OTH_BANK ; stored $4200 flags
-	sta @$4200
+	and @l SRAM_OTH_BANK ; stored $4200 flags
+	sta @l $4200
 return_wait_irq:
--	lda @CS_STATE
+- lda @l CS_STATE
 	cmp #$2
 	bne -
 
 	; reset picture
-	lda @SRAM_PPU_BANK
-	sta @$2100
+	lda @l SRAM_PPU_BANK
+	sta @l $2100
 
 	; re-enable all interrupts
-	lda @SRAM_OTH_BANK
-	sta @$4200
+	lda @l SRAM_OTH_BANK
+	sta @l $4200
 	;lda !SRAM_OTH_BANK|$C
 	;stz $420C
-	
+
 ; Code to run before returning back to the game
-ss_exit
-  rep #$30 : .al : .xl : pla : plp
+ss_exit:
+  rep #$30
+  .al
+  .xl
+  pla
+  plp
 	rtl ; go back to in-game hook
 
 ; SMC (Self Modifying Code) to init on first pass
-ss_init
-	rep #$30 : .al : .xl
+ss_init:
+	rep #$30
+	.al
+	.xl
 	pha
 	phx
 	phy
 
-	lda #ss_start
-	sta @savestate_start+1
+	lda #<>ss_start
+	sta @l savestate_start+1
 
-	sep #$20 : .as
+	sep #$20
+	.as
 	; save/load state machine
 	lda #$00
-	sta @CS_STATE
-	
-	rep #$20 : .al
+	sta @l CS_STATE
+
+	rep #$20
+	.al
 
 ; removed game specific controller RAM location injection here:
 ; 1. with IRQ support it now works OOTB without specific workarounds
 ; 2. should a workaround be required it will be prepared by firmware before runtime
 
 	lda #$0000
-	sta @CS_SAVE_REQ
+	sta @l CS_SAVE_REQ
 	ply
 	plx
 	pla
-	
-ss_start:
-	sep #$20 : .as  
 
-	lda @CS_STATE
+ss_start:
+	sep #$20
+	.as
+
+	lda @l CS_STATE
 	beq +
 	cmp #$01
 	bne ss_start_skip
@@ -213,10 +241,10 @@ ss_start:
 	; It expects to RTI to the calling handler, NEVER to the game!
 ss_irq_inc:
 	;signal flag
-	lda @CS_STATE
-	inc
-	sta @CS_STATE
-	
+	lda @l CS_STATE
+	inc a
+	sta @l CS_STATE
+
 	; remove 9 bytes from stack to return from this nested NMI/IRQ
 	; and rti to wait loop in function register_restore_return
 	; 3 from 'pha : php'             in savestate_handler
@@ -225,100 +253,122 @@ ss_irq_inc:
 	; this puts us back in the wait loop for CS_STATE to become #$02
 	; after load/save.
 	; the fpga needs to be careful and not treat the nested NMI as an exit.
-	rep #$21 : .al ; and clear carry
+	rep #$21       ; and clear carry
+	.al
 	tsc
 	adc #$0009
 	tcs
-	sep #$20 : .as
-	lda @$4210 ; load $4210 and $4211 to ack NMI+IRQ
-	lda @$4211
+	sep #$20
+	.as
+	lda @l $4210 ; load $4210 and $4211 to ack NMI+IRQ
+	lda @l $4211
 	; TODO this isn't optimal because the nested IRQ architecture makes it
 	;      impossible to align with IRQ without altering the IRQ pending flag
 	;      in $4211. ISRs that depend on the $4211 result will have altered
 	;      behaviour. Ideally get rid of the nested interrupts entirely
 	;      and wait for IRQ+NMI by WAI+polling the VBlank flag respectively.
-ss_rti
+ss_rti:
 	rti
-	
-ss_start_skip
-	inc
+
+ss_start_skip:
+	inc a
 	; skip 16 additional frames after last save to avoid blowing out the stack on nested handlers
 	; FIXME: get controls working where we don't repeat when holding buttons
 	and #$0F
-	sta @CS_STATE
-	
-; input handling
-+	rep #$30 : .al : .xl
-	;%cgram()
-	
-	lda @CS_INPUT_CUR
-	sta @CS_INPUT_PREV
-controller_reg
-	lda @CS_INPUT_NEXT
-	sta @CS_INPUT_CUR
+	sta @l CS_STATE
 
-	sep #$20 : .as
-	lda @CS_SLOT
-	rep #$30 : .al : .xl
+; input handling
++ rep #$30
+  .al
+  .xl
+	;%cgram()
+
+	lda @l CS_INPUT_CUR
+	sta @l CS_INPUT_PREV
+controller_reg:
+	lda @l CS_INPUT_NEXT
+	sta @l CS_INPUT_CUR
+
+	sep #$20
+	.as
+	lda @l CS_SLOT
+	rep #$30
+	.al
+	.xl
 	beq skipslot
 	bpl checkslot
 	jmp ss_exit
 
-checkslot
+checkslot:
 ; loadstate input check
-	lda @CS_INPUT_CUR
-	and @CS_SLOT_INPUT
-	cmp @CS_SLOT_INPUT
+	lda @l CS_INPUT_CUR
+	and @l CS_SLOT_INPUT
+	cmp @l CS_SLOT_INPUT
 	bne skipslot
-	sep #$20 : .as
-	lda @CS_INPUT_CUR+1
-	bit #$08 : beq + : lda #$01 : bra loadslot
-+	bit #$04 : beq + : lda #$03 : bra loadslot
-+	bit #$02 : beq + : lda #$04 : bra loadslot
-+	bit #$01 : beq skipslot : lda #$02
-loadslot
+	sep #$20
+	.as
+	lda @l CS_INPUT_CUR+1
+	bit #$08
+	beq +
+	lda #$01
+	bra loadslot
++ bit #$04
+  beq +
+  lda #$03
+  bra loadslot
++ bit #$02
+  beq +
+  lda #$04
+  bra loadslot
++ bit #$01
+  beq skipslot
+  lda #$02
+loadslot:
 	; load last savestate slot
-	sta @MCU_PARAM
+	sta @l MCU_PARAM
 	ora #$80
-	sta @CS_SLOT
+	sta @l CS_SLOT
 	lda #CMD_LOADSTATE
-	sta @MCU_CMD
-skipslot
-	rep #$30 : .al : .xl
+	sta @l MCU_CMD
+skipslot:
+	rep #$30
+	.al
+	.xl
 
 ; savestate input check
-	lda @CS_INPUT_CUR
-	and @CS_SAVE_INPUT
-	cmp @CS_SAVE_INPUT
+	lda @l CS_INPUT_CUR
+	and @l CS_SAVE_INPUT
+	cmp @l CS_SAVE_INPUT
 	beq save_state
 
 ; loadstate input check
-	lda @CS_INPUT_CUR
-	and @CS_LOAD_INPUT
-	cmp @CS_LOAD_INPUT
+	lda @l CS_INPUT_CUR
+	and @l CS_LOAD_INPUT
+	cmp @l CS_LOAD_INPUT
 	bne +
 	jmp load_state
-	
+
 	; check programmable trigger
-+	lda @CS_SAVE_REQ ; loads both
++ lda @l CS_SAVE_REQ     ; loads both
 	beq save_state_jump_exit
 	phx
 	tax
 	lda #$0000
-	sta @CS_SAVE_REQ
+	sta @l CS_SAVE_REQ
 	txa
 	plx
 	and #$00FF
 	bne save_state
 	jmp load_state
 
-save_state_jump_exit
+save_state_jump_exit:
 	jmp ss_exit
-	
-save_state
+
+save_state:
 	; check if this is SM
-	rep #$20 : .al
-	lda @$00FFDE
+	rep #$20
+	.al
+	lda @l $00FFDE
 	cmp #$F8DF
 	bne +
 	; if SM, check return address and make sure it's not in the sound loading code $808059-$808110
@@ -327,30 +377,35 @@ save_state
 	bcc +
 	cmp #$8111
 	bcs +
-	sep #$20 : .as
+	sep #$20
+	.as
 	bra save_state_jump_exit
-	
-+	sep #$20 : .as
-	
-	lda @CS_STATE
+
++ sep #$20
+  .as
+
+	lda @l CS_STATE
 	bne save_state_jump_exit
-	inc
-	sta @CS_STATE
+	inc a
+	sta @l CS_STATE
 
 	; disable interrupts
-	lda @$F90700|$0000
-	sta @SRAM_OTH_BANK
+	lda @l $F90700|$0000
+	sta @l SRAM_OTH_BANK
 	and #$01
-	sta @$004200
-	
+	sta @l $004200
+
 	phb
 	phd
-	rep #$30 : .al : .xl
+	rep #$30
+	.al
+	.xl
 	pha
 	phx
 	phy
-	
-	sep #$20 : .as
+
+	sep #$20
+	.as
 	; wait until release save input
 	;--
 	;- bit $4212 : bpl -
@@ -359,109 +414,129 @@ save_state
 	;and @CS_INPUT_CUR
 	;cmp @CS_INPUT_CUR
 	;beq --
-	
+
 	; disable DMA
-	lda @$F90700|$000C
-	sta @SRAM_OTH_BANK|$C
+	lda @l $F90700|$000C
+	sta @l SRAM_OTH_BANK|$C
 	lda #$00
-	sta @$00420B
-	sta @$00420C
-	
+	sta @l $00420B
+	sta @l $00420C
+
 	; save $21XX
-	sep #$20 : .as
+	sep #$20
+	.as
 	ldy #$0000
 	tyx
 
--	lda @$F90500|$0000, x : sta @SRAM_PPU_BANK, x : inx
-	lda @$F90500|$0000, x : sta @SRAM_PPU_BANK, x : inx
+- lda @l $F90500|$0000,x
+  sta @l SRAM_PPU_BANK,x
+  inx
+	lda @l $F90500|$0000,x
+	sta @l SRAM_PPU_BANK,x
+	inx
 	iny
 	cpy #$0040
 	bne -
-	 
-	; save $420X
-	sep #$20 : .as
-	ldx #$0001  
 
--	lda @$F90700|$0000, x
-	sta @SRAM_OTH_BANK, x
-ss_skip420c
+	; save $420X
+	sep #$20
+	.as
+	ldx #$0001
+
+- lda @l $F90700|$0000,x
+	sta @l SRAM_OTH_BANK,x
+ss_skip420c:
 	inx
 	cpx #$000C
 	beq ss_skip420c
 	cpx #$0010
 	bne -
-	
+
 	; save DMA registers
-	sep #$20 : .as
+	sep #$20
+	.as
 	ldy #$0000
 	tyx
-	
--	lda @$004300, x
-	sta SRAM_DMA_BANK, x
+
+- lda @l $004300,x
+	sta SRAM_DMA_BANK,x
 	inx
 	iny
 	cpy #$000B
 	bne -
 	cpx #$007B
 	beq +
-	inx : inx : inx : inx : inx
+	inx
+	inx
+	inx
+	inx
+	inx
 	ldy #$0000
 	bra -
-	
-+	rep #$30 : .al : .xl
-	ldy #save_write_table
+
++ rep #$30
+  .al
+  .xl
+	ldy #<>save_write_table
 
 	; run the unified VM. This covers save/load and all ROM mode types
-run_vm
+run_vm:
 	pea SS_BANK
 	plb
 	plb
 	jmp vm
-	
-save_return
-	rep #$30 : .al : .xl
+
+save_return:
+	rep #$30
+	.al
+	.xl
 
 	; copy region
 	lda #$F5F0    ; srcBank:dstBank
-	sta @$002020
+	sta @l $002020
 	lda #$0000    ; srcOffset
-	sta @$002022
+	sta @l $002022
 	lda #$0000    ; dstOffset
-	sta @$002024
+	sta @l $002024
 	lda #$0500    ; length[15:0]
-	sta @$002026
-	sep #$20 : .as
+	sta @l $002026
+	sep #$20
+	.as
 	lda #$04  ; length[23:16]
-	sta @$002028
+	sta @l $002028
 	; opcode[4:0], loop, dir, enable
 	lda #$05
-	sta @$002029
-	
-	rep #$20 : .al
+	sta @l $002029
+
+	rep #$20
+	.al
 	tsc
-	sta @SRAM_SAVED_SP
-	
+	sta @l SRAM_SAVED_SP
+
 	;%cgram()
-	
-	sep #$20 : .as
+
+	sep #$20
+	.as
 	pea $0000
 	plb
 	plb
 
 	; wait until release save input
-saveinputloop
-	- bit $4212 : bpl -
-	- bit $4212 : bmi -
-	lda @$4218
-	and @CS_SAVE_INPUT
-	cmp @CS_SAVE_INPUT
+saveinputloop:
+- bit $4212
+	bpl -
+- bit $4212
+	bmi -
+	lda @l $4218
+	and @l CS_SAVE_INPUT
+	cmp @l CS_SAVE_INPUT
 	beq saveinputloop
- 
+
 	; send cmd to write the state inside the sd
-	lda @CS_SLOT
+	lda @l CS_SLOT
 	bne +
 	lda #$01
-+	sta @MCU_PARAM
++ sta @l MCU_PARAM
 	; there is a race with saving twice and then changing the slot
 	; before the second save writes to SD, but it seems unlikely to hit.
 	; the following commented code protects against it, however, it
@@ -469,22 +544,23 @@ saveinputloop
 ;	ora #$80
 ;	sta @CS_SLOT
 	lda #CMD_SAVESTATE
-	sta @MCU_CMD
+	sta @l MCU_CMD
 
 	;rep #$20 : .al
-	
+
 	;lda $2B00|$004E
 	;sta @SRAM_SAVED_40
 
 	jmp audio_fix
 
-load_state_jump_exit
+load_state_jump_exit:
 	jmp ss_exit
 
-load_state
+load_state:
 	; check if this is SM
-	rep #$20 : .al
-	lda @$00FFDE
+	rep #$20
+	.al
+	lda @l $00FFDE
 	cmp #$F8DF
 	bne +
 	; if SM, check return address and make sure it's not in the sound loading code $808159-$808110
@@ -493,24 +569,28 @@ load_state
 	bcc +
 	cmp #$8111
 	bcs +
-	sep #$20 : .as
+	sep #$20
+	.as
 	bra load_state_jump_exit
 
-+ sep #$20 : .as
++ sep #$20
+  .as
 
-	lda @CS_STATE
+	lda @l CS_STATE
 	bne load_state_jump_exit
-	inc
-	sta @CS_STATE
-	
+	inc a
+	sta @l CS_STATE
+
 	; disable interrupts
-	lda @$F90700|$0000
+	lda @l $F90700|$0000
 	and #$01
-	sta @$4200
-	
+	sta @l $4200
+
 	phb
 	phd
-	rep #$30 : .al : .xl
+	rep #$30
+	.al
+	.xl
 	pha
 	phx
 	phy
@@ -519,62 +599,73 @@ load_state
 	plb
 	plb
 
-+	ldy #load_write_table
++ ldy #<>load_write_table
 	jmp run_vm
 
-load_return
-	rep #$30 : .al : .xl
-	lda @SRAM_SAVED_SP
+load_return:
+	rep #$30
+	.al
+	.xl
+	lda @l SRAM_SAVED_SP
 	tcs
-	
+
 	pea $0000
 	plb
 	plb
-	
+
 	; wait delay frames
-	sep #$20 : .as
+	sep #$20
+	.as
 	lda CS_DELAY
-ss_frameloop
-	- bit $4212 : bpl -
-	- bit $4212 : bmi -
-	dec
+ss_frameloop:
+- bit $4212
+	bpl -
+- bit $4212
+	bmi -
+	dec a
 	bpl ss_frameloop
 
-audio_fix
-	jsl @CS_FIXES
+audio_fix:
+	jsl CS_FIXES
 	jmp load_dma_regs_start
-	
-load_dma_regs_start
-	sep #$20 : .as
+
+load_dma_regs_start:
+	sep #$20
+	.as
 	ldx #$0000
 	txy
-	
--	lda @SRAM_DMA_BANK, x
-	sta $4300, x
+
+- lda @l SRAM_DMA_BANK,x
+	sta $4300,x
 	inx
 	iny
 	cpy #$000B
 	bne -
 	cpx #$007B
 	beq +
-	inx : inx : inx : inx : inx
+	inx
+	inx
+	inx
+	inx
+	inx
 	ldy #$0000
 	bra -
-	
+
 	; Restore registers and return.
-+	jmp register_restore_return
-	
-vm
++ jmp register_restore_return
+
+vm:
 	; Data format: xx xx yy yy
 	; xxxx = little-endian address to write to .vm's bank
 	; yyyy = little-endian value to write
 	; If xxxx has high bit set, read and discard instead of write.
 	; If xxxx has bit 12 set ($1000), byte instead of word.
 	; If xxxx is $0000, end the VM.
-	
-	rep #$20 : .al;
+
+	rep #$20      ;
+	.al
 	; Read address to write to
-	lda $0000, y
+	lda $0000,y
 	beq vm_done
 	iny
 	iny
@@ -588,26 +679,27 @@ vm
 	beq vm_word_mode
 	and #$EFFF
 	tax
-	sep #$20 : .as
-vm_word_mode
+	sep #$20
+	.as
+vm_word_mode:
 	; Read value
-	lda $0000, y
+	lda $0000,y
 	iny
 	iny
-vm_write
+vm_write:
 	bcs vm_read
-	sta @$000000, x
+	sta @l $000000,x
 	bra vm
-vm_read
-	lda @$000000, x
+vm_read:
+	lda @l $000000,x
 	bra vm
 
-vm_done
+vm_done:
 	; A, X and Y are 16-bit at exit.
 	; Return to caller.  The word in the table after the terminator is the
 	; code address to return to.
 	tyx
-	jmp ($0002,x)
-.byt "SAVESTATE_END"
+	jmp ($0002,k,x)
+.text "SAVESTATE_END"
 
 ; print "Savestate Bank Ending at: ", pc

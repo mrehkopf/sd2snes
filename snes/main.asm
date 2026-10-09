@@ -1,37 +1,40 @@
-.link page $c0
-#include "memmap.i65"
-#include "dma.i65"
-.word nmihook
+.word <>nmihook
 GAME_MAIN:
-  sep #$20 : .as
+  sep #$20
+  .as
   stz $4200     ; inhibit VBlank NMI
   lda #$01
   sta $420d
-  rep #$20 : .al
+  rep #$20
+  .al
   lda #$0000
-  sta @MCU_CMD  ; clear MCU command register
-  sta @MCU_PARAM ; clear MCU command parameters
-  sta @MCU_PARAM+2
+  sta @l MCU_CMD ; clear MCU command register
+  sta @l MCU_PARAM ; clear MCU command parameters
+  sta @l MCU_PARAM+2
   stz dbg_ptr
   lda WARM_SIGNATURE ; Was CMD_RESET issued before reset?
   cmp #$fa50    ; If yes, then perform warm boot procedure
-  bne coldboot
+  beq *+5
+  brl coldboot
   eor WARM_COMPLEMENT
-  inc
-  bne coldboot
+  inc a
+  beq *+5
+  brl coldboot
   sta WARM_SIGNATURE
   sta WARM_COMPLEMENT
   lda SAVED_SP ; Restore previous stack pointer
   tcs
   ; restore menu state that might have been destroyed
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
   stz $2183
   ldx #$0000
   stx $2181
   stz $4370
-  ldx #!WRAM_BAK
-  lda #^WRAM_BAK
+  ldx #<>WRAM_BAK
+  lda #`WRAM_BAK
   stx $4372
   sta $4374
   ldx #$2000
@@ -53,18 +56,19 @@ GAME_MAIN:
   jsr setup_hdma
   jsr detect_ultra16
   jsr detect_satellaview
-  lda @CFG_BRIGHTNESS_LIMIT
+  lda @l CFG_BRIGHTNESS_LIMIT
   sta cur_bright
   sta tgt_bright
   sta menu_brightness
   sta $2100
-  jmp @set_bank ; Set bios bank, just to be sure
+  jml set_bank  ; Set bios bank, just to be sure
 set_bank:
   plp           ; Restore processor state
   rts           ; Jump to the routine which called the sub-routine issuing CMD_RESET
 
 coldboot:       ; Regular, cold-start init
-  sep #$20 : .as
+  sep #$20
+  .as
   jsr killdma
   jsr clear_wram
   jsr apu_ram_init
@@ -83,7 +87,7 @@ coldboot:       ; Regular, cold-start init
   ; Screen is still black (tgt_bright set in video_init)
   ; If autoboot is inactive, START is held, or the ROM can't be loaded:
   ; fall through to normal menu startup
-  lda @ST_AUTOBOOT_ENABLED
+  lda @l ST_AUTOBOOT_ENABLED
   beq coldboot_autoboot_out       ; no autoboot configured
 autoboot_start_poll:
   jsr waitblank         ; sync to VBlank boundary
@@ -98,25 +102,30 @@ coldboot_bypass_autoboot:         ; clear autoboot flag, continue to menu
 coldboot_autoboot_out:
   jsr screen_on
   jsr filesel_init
-  sep #$20 : .as
-  lda @ST_RTC_VALID
+  sep #$20
+  .as
+  lda @l ST_RTC_VALID
   beq +
   jsl rtc_init
 +
   jsr fileselloop
   sei
   stz $4200
-  jmp @infloop  ; infinite loop in WRAM
+  jml wram(infloop) ; infinite loop in WRAM
 
 colortest:
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
   stz $2130
   rts
 
 setup_gfx:
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
   stz $4200
   stz $420b
   stz $420c
@@ -125,7 +134,7 @@ setup_gfx:
   stx $2181
   lda #$00
   sta $2183
-  DMA7(#$08, #$8000, #^zero, #!zero, #$80)
+  #DMA7 #$08, #$8000, #`zero, #<>zero, #$80
 
 ; generate fonts
   jsr genfonts
@@ -133,22 +142,22 @@ setup_gfx:
 ; clear BG1 tilemap
   ldx #BG1_TILE_BASE
   stx $2116
-  DMA7(#$09, #$1000, #^zero, #!zero, #$18)
+  #DMA7 #$09, #$1000, #`zero, #<>zero, #$18
 
 ; clear BG2 tilemap
   ldx #BG2_TILE_BASE
   stx $2116
-  DMA7(#$09, #$1000, #^zero, #!zero, #$18)
+  #DMA7 #$09, #$1000, #`zero, #<>zero, #$18
 
 ; clear OAM tables
   ldx #$0000
   stx $2102
-  DMA7(#$08, #$220, #^zero, #!zero, #$04)
+  #DMA7 #$08, #$220, #`zero, #<>zero, #$04
 
 ; copy logo tiles
   ldx #$2000
   stx $2116
-  DMA7(#$01, #$4000, #^logo, #!logo, #$18)
+  #DMA7 #$01, #$4000, #`logo, #<>logo, #$18
 
 ; generate logo tilemap
   ldx #BG1_TILE_BASE
@@ -163,62 +172,62 @@ setup_gfx:
 ; copy sprites tiles
   ldx #OAM_TILE_BASE
   stx $2116
-  DMA7(#$01, #$500, #^logospr, #!logospr, #$18)
+  #DMA7 #$01, #$500, #`logospr, #<>logospr, #$18
 
 ; set OAM tables
   ldx #$0000
   stx $2102
-  DMA7(#$00, #$60, #^oam_data_l, #!oam_data_l, #$04)
+  #DMA7 #$00, #$60, #`oam_data_l, #<>oam_data_l, #$04
   ldx #$0100
   stx $2102
-  DMA7(#$00, #$09, #^oam_data_h, #!oam_data_h, #$04)
+  #DMA7 #$00, #$09, #`oam_data_h, #<>oam_data_h, #$04
 
 ; set palette
   stz $2121
-  DMA7(#$00, #$200, #^palette, #!palette, #$22)
+  #DMA7 #$00, #$200, #`palette, #<>palette, #$22
   stz $2121
 
 ; copy hdma tables so we can work "without" the cartridge
 ; palette
-  lda #^hdma_pal
-  ldx #!hdma_pal
+  lda #`wram(hdma_pal)
+  ldx #hdma_pal
   stx $2181
   sta $2183
-  DMA7(#$00, #55, #^hdma_pal_src, #!hdma_pal_src, #$80)
+  #DMA7 #$00, #55, #`hdma_pal_src, #<>hdma_pal_src, #$80
 
 ; CG addr for palette
-  lda #^hdma_cg_addr
-  ldx #!hdma_cg_addr
+  lda #`wram(hdma_cg_addr)
+  ldx #hdma_cg_addr
   stx $2181
   sta $2183
-  DMA7(#$00, #227, #^hdma_cg_addr_src, #!hdma_cg_addr_src, #$80)
+  #DMA7 #$00, #227, #`hdma_cg_addr_src, #<>hdma_cg_addr_src, #$80
 
 ; screen mode
-  lda #^hdma_mode
-  ldx #!hdma_mode
+  lda #`wram(hdma_mode)
+  ldx #hdma_mode
   stx $2181
   sta $2183
-  DMA7(#$00, #5, #^hdma_mode_src, #!hdma_mode_src, #$80)
+  #DMA7 #$00, #5, #`hdma_mode_src, #<>hdma_mode_src, #$80
 
 ; bg scroll
-  lda #^hdma_bg1scroll
-  ldx #!hdma_bg1scroll
+  lda #`wram(hdma_bg1scroll)
+  ldx #hdma_bg1scroll
   stx $2181
   sta $2183
-  DMA7(#$00, #21, #^hdma_bg1scroll_src, #!hdma_bg1scroll_src, #$80);
+  #DMA7 #$00, #21, #`hdma_bg1scroll_src, #<>hdma_bg1scroll_src, #$80 ;
 
-  lda #^hdma_bg2scroll
-  ldx #!hdma_bg2scroll
+  lda #`wram(hdma_bg2scroll)
+  ldx #hdma_bg2scroll
   stx $2181
   sta $2183
-  DMA7(#$00, #13, #^hdma_bg2scroll_src, #!hdma_bg2scroll_src, #$80);
+  #DMA7 #$00, #13, #`hdma_bg2scroll_src, #<>hdma_bg2scroll_src, #$80 ;
 
 ; color math
-  lda #^hdma_math
-  ldx #!hdma_math
+  lda #`wram(hdma_math)
+  ldx #hdma_math
   stx $2181
   sta $2183
-  DMA7(#$00, #19, #^hdma_math_src, #!hdma_math_src, #$80);
+  #DMA7 #$00, #19, #`hdma_math_src, #<>hdma_math_src, #$80 ;
 
 ; initialize window stack
   ldx #$ffff
@@ -227,28 +236,32 @@ setup_gfx:
 
 genfonts:
   php
-  rep #$10 : .xl
-  sep #$20 : .as
+  rep #$10
+  .xl
+  sep #$20
+  .as
 
 ; clear VRAM font areas
   ldx #$0000
   stx $2116
-  DMA7(#$09, #$4000, #^zero, #!zero, #$18)
+  #DMA7 #$09, #$4000, #`zero, #<>zero, #$18
 
   ldx #$4000
   stx $2116
-  DMA7(#$09, #$2000, #^zero, #!zero, #$18)
+  #DMA7 #$09, #$2000, #`zero, #<>zero, #$18
 
-  sep #$10 : .xs
-  rep #$20 : .al
+  sep #$10
+  .xs
+  rep #$20
+  .al
 
   stz $2116
   stz $2117
   ldx #$01
   stx $4370
-  ldx #^font
+  ldx #`font
   stx $4374
-  lda #!font
+  lda #<>font
   sta $4372
   lda #$0010
   sta $4375
@@ -264,9 +277,9 @@ genfonts:
   adc #$20
   cmp #$2000
   bne -
-  ldx #^font
+  ldx #`font
   stx $4374
-  lda #!font
+  lda #<>font
   sta $4372
   lda #$4000
 - sta $2116
@@ -283,8 +296,10 @@ genfonts:
 
 
 video_init:
-  sep #$20 : .as ; 8-bit accumulator
-  rep #$10 : .xl ; 16-bit index
+  sep #$20       ; 8-bit accumulator
+  .as
+  rep #$10       ; 16-bit index
+  .xl
   lda #$03      ; mode 3, mode 5 via HDMA
   sta $2105
   lda #$58      ; Tilemap addr 0xB000
@@ -328,14 +343,16 @@ video_init:
 
 screen_on:
   stz $2100     ; screen on, 0% brightness
-  lda @CFG_BRIGHTNESS_LIMIT
+  lda @l CFG_BRIGHTNESS_LIMIT
   sta tgt_bright
   sta menu_brightness
   rts
 
 snes_init:
-  sep #$20 : .as ; 8-bit accumulator
-  rep #$10 : .xl ; 16-bit index
+  sep #$20       ; 8-bit accumulator
+  .as
+  rep #$10       ; 16-bit index
+  .xl
   stz $4200
   lda #$ff
   sta $4201
@@ -429,8 +446,10 @@ snes_init:
 
 clear_vram:
   php
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
   lda $2100
   pha
   lda #$80
@@ -447,7 +466,7 @@ clear_vram:
   plp
   rts
 
-.byt "fadeloop"
+.text "fadeloop"
 ; *=$002a10
 ; via $7ef100
 ; acknowledge ready for ROM load
@@ -455,14 +474,16 @@ clear_vram:
 ; fade screen
 ; acknowledge WRAM init done (send RESET)
 fadeloop:
-  sep #$30 : .as : .xs
+  sep #$30
+  .as
+  .xs
   phk
   plb
   stz $4200
   sei
   sta MCU_CMD
   ldx cur_bright
-fadeloop_start
+fadeloop_start:
   lda $4212
   asl
   bcs fadeloop_start
@@ -483,7 +504,8 @@ fadeloop_start
   stz $420c
 ; DMA fill WRAM banks
   ldx #$00
-  rep #$10 : .xl
+  rep #$10
+  .xl
   stz $2183
   stx $2181
   stx $4375
@@ -503,20 +525,21 @@ fadeloop_start
 ; (fix for uninitialized $213c/$213d reads)
   lda $213f
 ; fix for uninitialized DMA transfers
-  rep #$20 : .al
+  rep #$20
+  .al
   lda #$ffff
   ldy #$007c
 - dey
   dey
-  sta $4300, y
+  sta $4300,y
   bne -
   lda #$fe80 ; - bra -
-  sta @$7fffe0
+  sta @l $7fffe0
   lda #CMD_RESET
   sta MCU_CMD
-  jmp @$7fffe0
+  jml $7fffe0
 - bra -
-.byt "fadeloop_end"
+.text "fadeloop_end"
 
 ; stores routines in WRAM (including payload for block ram copy)
 store_wram_routines:
@@ -524,28 +547,30 @@ store_wram_routines:
 ; copy store_blockram_routine
 ; copy fadeloop
   php
-  rep #$30 : .xl : .al
+  rep #$30
+  .xl
+  .al
   lda #$007f
-  ldx #!wram_routine_src
-  ldy #!WRAM_ROUTINE
+  ldx #<>wram_routine_src
+  ldy #<>WRAM_ROUTINE
   phb
-  mvn $7e, $c0
+  mvn #$c0, #$7e
   lda #$007f
-  ldx #!store_blockram_routine_src
-  ldy #!WRAM_STORE_BLOCKRAM_ROUTINE
-  mvn $7e, $c0
+  ldx #<>store_blockram_routine_src
+  ldy #<>WRAM_STORE_BLOCKRAM_ROUTINE
+  mvn #$c0, #$7e
   lda #$00ee
-  ldx #!fadeloop
-  ldy #!WRAM_FADELOOP
-  mvn $7e, $c0
+  ldx #<>fadeloop
+  ldy #<>WRAM_FADELOOP
+  mvn #$c0, #$7e
   lda #$000a
-  ldx #!wram_wait_mcu_src
-  ldy #!WRAM_WAIT_MCU
-  mvn $7e, $c0
+  ldx #<>wram_wait_mcu_src
+  ldy #<>WRAM_WAIT_MCU
+  mvn #$c0, #$7e
   lda #$007f
-  ldx #!wram_load_ultra16_cfg_src
-  ldy #!WRAM_LOAD_ULTRA16_CFG
-  mvn $7e, $c0
+  ldx #<>wram_load_ultra16_cfg_src
+  ldy #<>WRAM_LOAD_ULTRA16_CFG
+  mvn #$c0, #$7e
   plb
   plp
   rts
@@ -553,18 +578,21 @@ store_wram_routines:
 ; *=$7ef080
 store_blockram_routine_src:
   php
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
   lda #$80
   sta infloop
   lda #$fe
   sta infloop+1
-  rep #$20 : .al
+  rep #$20
+  .al
   lda #$00ee
-  ldx #!WRAM_FADELOOP
-  ldy #!BRAM_ROUTINE
+  ldx #<>WRAM_FADELOOP
+  ldy #<>BRAM_ROUTINE
   phb
-  mvn $00, $7e
+  mvn #$7e, #$00
   plb
   plp
   rtl
@@ -572,26 +600,28 @@ store_blockram_routine_src:
 ; *=$7ef000
 wram_routine_src:
   php
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
 ; acknowledge ready for FPGA reconf
   lda #CMD_FPGA_RECONF
-  sta @MCU_CMD
+  sta @l MCU_CMD
 ; wait for ACK (reconf done or not necessary)
-- lda @SNES_CMD
+- lda @l SNES_CMD
   cmp #$77
   bne -
 ; install fade loop in block RAM after FPGA reconf
 ; must reside in WRAM prior to copying! ROM not available
-  jsl @WRAM_STORE_BLOCKRAM_ROUTINE
-  jsl @BRAM_ROUTINE
+  jsl WRAM_STORE_BLOCKRAM_ROUTINE
+  jsl BRAM_ROUTINE
   plp
   rtl
 
 ; *=$7ef200
 wram_wait_mcu_src:
   .as
-- lda @SNES_CMD
+- lda @l SNES_CMD
   cmp #$55
   bne -
   rtl
@@ -599,32 +629,33 @@ wram_wait_mcu_src:
 ; *=$7ef210
 wram_load_ultra16_cfg_src:
   .as
-  lda @$0021c1
+  lda @l $0021c1
   and #$fe
-  sta @$0021c1
-  lda @$c70000
+  sta @l $0021c1
+  lda @l $c70000
   pha
-  lda @$0021c1
+  lda @l $0021c1
   ora #$01
-  sta @$0021c1
+  sta @l $0021c1
   pla
-  sta @ST_U16_CFG
+  sta @l ST_U16_CFG
   rtl
 
 game_handshake:
   php
-  sep #$20 : .as
+  sep #$20
+  .as
   pha
   jsr hide_cursor
   jsr draw_loading_window
   jsr waitblank
 ; send initial request to MCU
   lda #$00
-  sta @SNES_CMD
+  sta @l SNES_CMD
   pla
-  sta @MCU_CMD
+  sta @l MCU_CMD
 ; wait for ACK/NACK with error (noimpl warning etc.)
-- lda @SNES_CMD
+- lda @l SNES_CMD
   cmp #$55
   beq +
   cmp #$aa
@@ -633,9 +664,9 @@ game_handshake:
 + stz $4200
   sei
   lda #$55
-  sta @MCU_CMD
+  sta @l MCU_CMD
 ; jump to WRAM
-  jsl @WRAM_ROUTINE
+  jsl WRAM_ROUTINE
   plp
   rts
 
@@ -647,10 +678,11 @@ game_handshake_error:
 
 wait_mcu_ready:
   php
-  sep #$20 : .as
+  sep #$20
+  .as
   lda #$00
-  sta @MCU_CMD
-- lda @SNES_CMD
+  sta @l MCU_CMD
+- lda @l SNES_CMD
   cmp #$55
   bne -
   plp
@@ -659,7 +691,8 @@ wait_mcu_ready:
 ; autoboot_cmd_handshake: run game_handshake with CMD_LOAD_AUTOBOOT
 autoboot_cmd_handshake:
   php
-  sep #$20 : .as
+  sep #$20
+  .as
   lda #CMD_LOAD_AUTOBOOT
   jsr game_handshake
   plp
@@ -670,25 +703,27 @@ autoboot_cmd_handshake:
 ; Does NOT load a ROM; returns so the normal menu loop can proceed.
 clr_autoboot_at_boot:
   php
-  sep #$20 : .as
+  sep #$20
+  .as
   lda #$00
-  sta @SNES_CMD
+  sta @l SNES_CMD
   lda #CMD_CLR_AUTOBOOT_ROM
-  sta @MCU_CMD
-- lda @SNES_CMD
+  sta @l MCU_CMD
+- lda @l SNES_CMD
   cmp #$55
   beq +
   cmp #$aa
   beq +
   bra -
 + lda #$55
-  sta @MCU_CMD
+  sta @l MCU_CMD
   plp
   rts
 
 clear_wram:
   php
-  rep #$10 : .xl
+  rep #$10
+  .xl
   ldx #$0000
   stz $2183
   stx $2181
@@ -719,42 +754,46 @@ clear_wram:
 
 backup_wram:
   php
-  rep #$10 : .xl
-  sep #$20 : .as
+  rep #$10
+  .xl
+  sep #$20
+  .as
   ldx #$0000
   stx $2181
   stz $2183
-  DMA7(#$80, #$2000, #^WRAM_BAK, #!WRAM_BAK, #$80)
+  #DMA7 #$80, #$2000, #`WRAM_BAK, #<>WRAM_BAK, #$80
   plp
   rts
 
 detect_ultra16:
   php
-  sep #$20 : .as
+  sep #$20
+  .as
   lda #$aa
-  sta @$0021c0
-  lda @$0021c0
+  sta @l $0021c0
+  lda @l $0021c0
   cmp #$55
   beq detect_ultra16_found
   lda #$00
-  sta @ST_IS_U16
+  sta @l ST_IS_U16
   bra detect_ultra16_out
 detect_ultra16_found:
-  lda @$0021c2
-  sta @ST_IS_U16
-  jsl @WRAM_LOAD_ULTRA16_CFG
-  lda @$0021c1
+  lda @l $0021c2
+  sta @l ST_IS_U16
+  jsl WRAM_LOAD_ULTRA16_CFG
+  lda @l $0021c1
   and #$fb
-  sta @$0021c1
+  sta @l $0021c1
 detect_ultra16_out:
   lda #$55
-  sta @$0021c0
+  sta @l $0021c0
   plp
   rts
 
 detect_satellaview:
   php
-  sep #$20 : .as
+  sep #$20
+  .as
   lda #$aa
   sta $2188
   cmp $2188
@@ -769,11 +808,11 @@ detect_satellaview_found:
   stz $218e
   stz $218f
   lda #$01
-  sta @ST_HAS_SATELLAVIEW
+  sta @l ST_HAS_SATELLAVIEW
   plp
   rts
 detect_satellaview_out:
   lda #$00
-  sta @ST_HAS_SATELLAVIEW
+  sta @l ST_HAS_SATELLAVIEW
   plp
   rts

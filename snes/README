@@ -1,14 +1,18 @@
-SNES Menu Compilation
+Compiling the SNES menu portion
 
 This directory contains all code for the SD2SNES menu navigation.
 
-snescom (Version 1.8.1.1) is required to build the menu. The source can be downloaded 
-here: https://bisqwit.iki.fi/source/snescom.html
+64tass (version 1.60.3243 tested) is required to build the menu.
+It is available as a package on many distributions, or from https://sourceforge.net/projects/tass64/
 
+The header checksum is written by utils/sneschksum; build it with `make -C ../utils`.
+
+Afterwards call make in this directory to build the SD2SNES menu.
+
+The subdirectories `boot/`, `tests/` and `msu1/` are separate ROMs that are still built with snescom (Version 1.8.1.1), available here:
+https://bisqwit.iki.fi/source/snescom.html
 To compile snescom/sneslink install libboot-dev-all, then make & make install in the
 snescom directory.
-
-After installing snescom, call make in this directory to build the SD2SNES menu.
 
 Copy the resulting file "menu.bin" to <sdcard>/sd2snes/menu.bin.
 
@@ -22,7 +26,7 @@ libqt4-dev libqt4-dev-bin libxv-dev libsdl1.2-dev libao-dev libopenal-dev g++ ar
 
 After installing the dependencies, run the following commands in the bsnes directory to use Qt4 to build bsnes.
 
-export QT_SELECT=4 
+export QT_SELECT=4
 make
 make install
 

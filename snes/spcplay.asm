@@ -1,25 +1,25 @@
-.link page $c0
-#include "memmap.i65"
-
 ; SPC Player
 ; SPC700 transfer and IO routines by Shay Green <gblargg@gmail.com>
 ; minor corrections by Maximilian Rehkopf <otakon@gmx.net>
 
 spcplayer:
   php
-  sep #$30 : .as : .xs
+  sep #$30
+  .as
+  .xs
 
   ldx #$0a            ; Check if SPC header is present
 -
-  lda @SPC_HEADER,x
-  cmp @text_spcid,x
+  lda @l SPC_HEADER,x
+  cmp @l text_spcid,x
   beq +
   jmp spc_exit
 +
   dex
   bne -
 
-  rep #$10 : .xl      ; Now draw lots of stuff
+  rep #$10            ; Now draw lots of stuff
+  .xl
 
   lda #$02
   sta window_x
@@ -39,22 +39,22 @@ spcplayer:
   stz bar_yl
   dec bar_yl
 
-  lda #^text_spcplay  ; Loading window
+  lda #`text_spcplay  ; Loading window
   sta window_tbank
-  ldx #!text_spcplay
+  ldx #<>text_spcplay
   stx window_taddr
-  lda @spcplay_win_x
+  lda @l spcplay_win_x
   sta window_x
-  lda @spcplay_win_y
+  lda @l spcplay_win_y
   sta window_y
-  lda @spcplay_win_w
+  lda @l spcplay_win_w
   sta window_w
-  lda @spcplay_win_h
+  lda @l spcplay_win_h
   sta window_h
   jsr draw_window
 
-  lda #^text_spcload  ; Loading text
-  ldx #!text_spcload
+  lda #`text_spcload  ; Loading text
+  ldx #<>text_spcload
   sta print_bank
   stx print_src
   stz print_pal
@@ -73,22 +73,22 @@ spcplayer:
 
   jsr spc700_load     ; Load SPC into SPC700
 
-  lda #^text_spcplay
+  lda #`text_spcplay
   sta window_tbank
-  ldx #!text_spcplay
+  ldx #<>text_spcplay
   stx window_taddr
-  lda @spcstart_win_x
+  lda @l spcstart_win_x
   sta window_x
-  lda @spcstart_win_y
+  lda @l spcstart_win_y
   sta window_y
-  lda @spcstart_win_w
+  lda @l spcstart_win_w
   sta window_w
-  lda @spcstart_win_h
+  lda @l spcstart_win_h
   sta window_h
   jsr draw_window
 
-  lda #^text_spcstarta
-  ldx #!text_spcstarta
+  lda #`text_spcstarta
+  ldx #<>text_spcstarta
   sta print_bank
   stx print_src
   lda #$01
@@ -101,8 +101,8 @@ spcplayer:
   sta print_x
   jsr hiprint
 
-  lda #^text_spcstartb
-  ldx #!text_spcstartb
+  lda #`text_spcstartb
+  ldx #<>text_spcstartb
   sta print_bank
   stx print_src
   lda #$01
@@ -128,8 +128,8 @@ spcplayer:
   sta print_x
   jsr hiprint
 
-  lda #^text_spcstartc
-  ldx #!text_spcstartc
+  lda #`text_spcstartc
+  ldx #<>text_spcstartc
   sta print_bank
   stx print_src
   lda #$01
@@ -155,8 +155,8 @@ spcplayer:
   sta print_x
   jsr hiprint
 
-  lda #^text_spcstartd
-  ldx #!text_spcstartd
+  lda #`text_spcstartd
+  ldx #<>text_spcstartd
   sta print_bank
   stx print_src
   lda #$01
@@ -175,7 +175,7 @@ spcplayer:
   sta print_bank
   stx longptr
   ldy #$00
-  lda [longptr], y
+  lda [<longptr,d],y
   cmp #$41
   bpl +
   inx
@@ -202,14 +202,16 @@ spc_playloop:
   bra spc_playloop
 
 spc_key_b:
-  rep #$20 : .al
+  rep #$20
+  .al
   tsc
-  sta @SAVED_SP        ; Save SP for later re-entry
+  sta @l SAVED_SP      ; Save SP for later re-entry
   lda #$fa50           ; Write reset signature
-  sta @WARM_SIGNATURE
+  sta @l WARM_SIGNATURE
   eor #$ffff
-  sta @WARM_COMPLEMENT
-  sep #$20 : .as
+  sta @l WARM_COMPLEMENT
+  sep #$20
+  .as
 
 ; Blank screen & issue CMD_RESET command to Microcontroller...
 ; ...this is required because there is no other way to stop S-SMP & S-DSP
@@ -219,7 +221,7 @@ spc_key_b:
   jsr backup_wram     ; Save menu state in case it gets overwritten by Ultra16
                       ; or other malware :P
   lda #CMD_RESET
-  sta @MCU_CMD
+  sta @l MCU_CMD
 -
 ; At this point, the SNES waits for an external reset from the Microcontroller
   bra -
@@ -231,8 +233,10 @@ spc_exit:             ; Return from player in case of wrong SPC file data
 ;---------------------------------------
 spc700_load:
   php
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
 
   sei                 ; Disable NMI & IRQ
   stz $4200           ; The SPC player code is really timing sensitive ;)
@@ -258,7 +262,7 @@ upload_dsp_regs:
 
   ldx #$0000
 -
-  lda @spc_loader,x
+  lda @l spc_loader,x
   jsr spc_upload_byte
   inx
   cpy #31             ; size of loader
@@ -266,13 +270,13 @@ upload_dsp_regs:
 
 ; ---- Upload SP, PC & PSW
 
-  lda @SPC_HEADER+43
+  lda @l SPC_HEADER+43
   jsr spc_upload_byte
-  lda @SPC_HEADER+38
+  lda @l SPC_HEADER+38
   jsr spc_upload_byte
-  lda @SPC_HEADER+37
+  lda @l SPC_HEADER+37
   jsr spc_upload_byte
-  lda @SPC_HEADER+42
+  lda @l SPC_HEADER+42
   jsr spc_upload_byte
 
 ; ---- Upload DSP registers
@@ -291,8 +295,8 @@ upload_dsp_regs:
   lda #$e0
   bra upload_skip_load
 +
-  lda @SPC_DSP_REGS,x
-upload_skip_load
+  lda @l SPC_DSP_REGS,x
+upload_skip_load:
   jsr spc_upload_byte
   inx
   cpx #128
@@ -317,7 +321,7 @@ upload_skip_load
 
   ldx #$00f8
 -
-  lda @SPC_DATA,x
+  lda @l SPC_DATA,x
   jsr spc_upload_byte
   inx
   cpx #$200
@@ -338,7 +342,7 @@ upload_high_ram:
 
   ldx #$0000
 -
-  lda @spc_transfer,x
+  lda @l spc_transfer,x
   jsr spc_upload_byte
   inx
   cpy #44             ; size of transfer routine
@@ -352,8 +356,8 @@ upload_high_ram:
   sty APUIO2
   stz APUIO1
   lda APUIO0
-  inc
-  inc
+  inc a
+  inc a
   sta APUIO0
 ; Wait for acknowledgement
 -
@@ -365,15 +369,15 @@ upload_high_ram:
 outer_transfer_loop:
   ldy #$003f          ; 3
 inner_transfer_loop:
-  lda @SPC_DATA,x     ; 5 |
-  sta APUIO0          ; 4 |
-  lda @SPC_DATA+$40,x ; 5 |
-  sta APUIO1          ; 4 |
-  lda @SPC_DATA+$80,x ; 5 |
-  sta APUIO2          ; 4 |
-  lda @SPC_DATA+$c0,x ; 5 |
-  sta APUIO3          ; 4 |
-  tya                 ; 2 >> 38 cycles
+  lda @l SPC_DATA,x     ; 5 |
+  sta APUIO0            ; 4 |
+  lda @l SPC_DATA+$40,x ; 5 |
+  sta APUIO1            ; 4 |
+  lda @l SPC_DATA+$80,x ; 5 |
+  sta APUIO2            ; 4 |
+  lda @l SPC_DATA+$c0,x ; 5 |
+  sta APUIO3            ; 4 |
+  tya                   ; 2 >> 38 cycles
 -
   cmp APUIO3          ; 4 |
   bne -               ; 3 |
@@ -381,11 +385,13 @@ inner_transfer_loop:
   dey                 ; 2 |
   bpl inner_transfer_loop ; 3 >> 14 cycles
 
-  rep #$21 : .al      ; 3 |
+  rep #$21            ; 3 |
+  .al
   txa                 ; 2 |
   adc #$140           ; 3 |
   tax                 ; 2 |
-  sep #$20 : .as      ; 3 |
+  sep #$20            ; 3 |
+  .as
   cpx #$003f          ; 3 |
   bne outer_transfer_loop ; 3 >> 19 cycles
 
@@ -401,7 +407,7 @@ upload_low_ram:
 
   ldx #$0002
 -
-  lda @SPC_DATA,x
+  lda @l SPC_DATA,x
   jsr spc_upload_byte
   inx
   cpx #$00f0
@@ -416,7 +422,7 @@ restore_final:
 
 ; ---- Restore first two bytes of RAM
 
-  lda @SPC_DATA
+  lda @l SPC_DATA
   xba
   lda #$e8            ; MOV A,#@SPC_DATA
   tax
@@ -424,7 +430,7 @@ restore_final:
   ldx #$00c4          ; MOV $00,A
   jsr exec_instr
 
-  lda @SPC_DATA+1
+  lda @l SPC_DATA+1
   xba
   lda #$e8            ; MOV A,#@SPC_DATA+1
   tax
@@ -434,7 +440,7 @@ restore_final:
 
 ; ---- Restore SP
 
-  lda @SPC_HEADER+43
+  lda @l SPC_HEADER+43
   sec
   sbc #3
   xba
@@ -446,7 +452,7 @@ restore_final:
 
 ; ---- Restore X
 
-  lda @SPC_HEADER+40
+  lda @l SPC_HEADER+40
   xba
   lda #$cd            ; MOV X,#@SPC_HEADER+40
   tax
@@ -454,7 +460,7 @@ restore_final:
 
 ; ---- Restore Y
 
-  lda @SPC_HEADER+41
+  lda @l SPC_HEADER+41
   xba
   lda #$8d            ; MOV Y,#@SPC_HEADER+41
   tax
@@ -462,7 +468,7 @@ restore_final:
 
 ; ---- Restore DSP FLG register
 
-  lda @SPC_DSP_REGS+$6c
+  lda @l SPC_DSP_REGS+$6c
   xba
   lda #$e8            ; MOV A,#@SPC_DSP_REGS+$6c
   tax
@@ -476,7 +482,7 @@ restore_final:
 - pha
   jsr waitblank
   pla
-  dec
+  dec a
   bne -
 
 ; ---- Restore DSP KON register
@@ -488,7 +494,7 @@ restore_final:
   jsr exec_instr
   ldx #$f2c4          ; MOV $f2,A
   jsr exec_instr
-  lda @SPC_DSP_REGS+$4c
+  lda @l SPC_DSP_REGS+$4c
   xba
   lda #$e8            ; MOV A,#@SPC_DSP_REGS+$4c
   tax
@@ -498,7 +504,7 @@ restore_final:
 
 ; ---- Restore DSP register address
 
-  lda @SPC_DATA+$f2
+  lda @l SPC_DATA+$f2
   xba
   lda #$e8            ; MOV A,#@SPC_DATA+$F2
   tax
@@ -508,7 +514,7 @@ restore_final:
 
 ; ---- Restore CONTROL register
 
-  lda @SPC_DATA+$f1
+  lda @l SPC_DATA+$f1
   and #$cf            ; don't clear input ports
   xba
   lda #$e8            ; MOV A,#@SPC_DATA+$F1
@@ -519,7 +525,7 @@ restore_final:
 
 ;---- Restore A
 
-  lda @SPC_HEADER+39
+  lda @l SPC_HEADER+39
   xba
   lda #$e8            ; MOV A,#@SPC_HEADER+39
   tax
@@ -534,13 +540,15 @@ restore_final:
 
 ;---- restore IO ports $f4 - $f7
 
-  rep #$20 : .al
-  lda @SPC_DATA+$f4
+  rep #$20
+  .al
+  lda @l SPC_DATA+$f4
   tax
-  lda @SPC_DATA+$f6
+  lda @l SPC_DATA+$f6
   sta APUIO2
   stx APUIO0          ; last to avoid overwriting RETI before run
-  sep #$20 : .as
+  sep #$20
+  .as
 
   lda #$01
   sta $420d           ; restore FAST CPU operation
@@ -576,10 +584,10 @@ spc_next_upload:
 ; Send command
 ; Special case operation has been fully tested.
   lda APUIO0
-  inc
-  inc
+  inc a
+  inc a
   bne +
-  inc
+  inc a
 +
   sta APUIO1
   sta APUIO0
@@ -595,8 +603,8 @@ spc_execute:
   sty APUIO2
   stz APUIO1
   lda APUIO0
-  inc
-  inc
+  inc a
+  inc a
   sta APUIO0
 
 ; Wait for acknowledgement
@@ -616,8 +624,8 @@ start_exec_io:
 
 ; Signal to SPC that we're ready
   lda APUIO0
-  inc
-  inc
+  inc a
+  inc a
   sta APUIO0
 
 ; Wait for acknowledgement

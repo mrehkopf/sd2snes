@@ -1,28 +1,31 @@
-.link page $c0
 killdma:
   php
-  rep #$20 : .al
-  sep #$10 : .xs
+  rep #$20
+  .al
+  sep #$10
+  .xs
   stz $420b
   lda #$ffff
   ldy #$7c
 - dey
   dey
-  sta $4300, y
+  sta $4300,y
   bne -
   plp
   rts
 
 setup_hdma:
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
 
   lda #$02      ;A to B; direct; 2x single reg
   sta $4300     ;ch. 0 for y scroll
   lda #$10      ;2110 = BG2VOFS
   sta $4301
-  lda #^hdma_bg2scroll
-  ldy #!hdma_bg2scroll
+  lda #`wram(hdma_bg2scroll)
+  ldy #hdma_bg2scroll
   sty $4302
   sta $4304
 
@@ -30,8 +33,8 @@ setup_hdma:
   sta $4310     ;ch. 1 for color address
   lda #$21      ;2121 = CG addr
   sta $4311     ;dest: CG Address
-  lda #^hdma_cg_addr
-  ldy #!hdma_cg_addr
+  lda #`wram(hdma_cg_addr)
+  ldy #hdma_cg_addr
   sty $4312
   sta $4314
 
@@ -39,8 +42,8 @@ setup_hdma:
   sta $4320     ;ch. 2 for color data
   lda #$22      ;2122 = CG RAM
   sta $4321     ;dest: CG RAM
-  lda #^hdma_pal
-  ldy #!hdma_pal
+  lda #`wram(hdma_pal)
+  ldy #hdma_pal
   sty $4322
   sta $4324
 
@@ -48,8 +51,8 @@ setup_hdma:
   sta $4330     ;ch. 3 for mode switch
   lda #$05      ;2105 = BG mode
   sta $4331
-  lda #^hdma_mode
-  ldy #!hdma_mode
+  lda #`wram(hdma_mode)
+  ldy #hdma_mode
   sty $4332
   sta $4334
 
@@ -57,8 +60,8 @@ setup_hdma:
   sta $4340     ;ch. 4 for scroll
   lda #$0d      ;210d = BG1HOFS
   sta $4341
-  lda #^hdma_bg1scroll
-  ldy #!hdma_bg1scroll
+  lda #`wram(hdma_bg1scroll)
+  ldy #hdma_bg1scroll
   sty $4342
   sta $4344
 
@@ -66,8 +69,8 @@ setup_hdma:
   sta $4350     ;ch. 5 for color math
   lda #$31      ;2131 + 2132 = math, color constant
   sta $4351
-  lda #^hdma_math
-  ldy #!hdma_math
+  lda #`wram(hdma_math)
+  ldy #hdma_math
   sty $4352
   sta $4354
 

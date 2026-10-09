@@ -117,6 +117,8 @@ verilog/*/xlnx_auto_0_xdb/
 .cproject
 snes/.settings/org.eclipse.cdt.core.prefs
 snes/.settings/org.eclipse.linuxtools.tools.launch.core.prefs
+snes/.dep
+snes/menu.lbl
 cic/supercic/supercic-key.hex
 cic/supercic/supercic-lock.hex
 contrib/*
@@ -129,6 +131,7 @@ utils/gentilemap
 utils/mem2lorom
 utils/palremap
 utils/palreorder
+utils/sneschksum
 release
 src/obj-mk2
 src/obj-mk3

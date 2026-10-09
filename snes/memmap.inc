@@ -1,185 +1,184 @@
-.link page $c0
-#define APUIO0                      $2140
-#define APUIO1                      $2141
-#define APUIO2                      $2142
-#define APUIO3                      $2143
+APUIO0                      = $2140
+APUIO1                      = $2141
+APUIO2                      = $2142
+APUIO3                      = $2143
 
-#define BG1_TILE_BASE               $5800
-#define BG2_TILE_BASE               $5000
+BG1_TILE_BASE               = $5800
+BG2_TILE_BASE               = $5000
 
-#define OAM_TILE_BASE               $6000
+OAM_TILE_BASE               = $6000
 
-#define MCU_CMD                     $002A00
-#define SNES_CMD                    $002A02
-#define MCU_PARAM                   $002A04
-#define BRAM_ROUTINE                $002A10
-#define WARM_SIGNATURE              $002AFD
-#define WARM_COMPLEMENT             $002AF9
-#define SAVED_SP                    $002AFB
+MCU_CMD                     = $002A00
+SNES_CMD                    = $002A02
+MCU_PARAM                   = $002A04
+BRAM_ROUTINE                = $002A10
+WARM_SIGNATURE              = $002AFD
+WARM_COMPLEMENT             = $002AF9
+SAVED_SP                    = $002AFB
 
-#define BRAM_PAYLOAD                $002A10
-#define BRAM_RETURN_VECTOR          $002A6C
-#define BRAM_RESET_HOOK             $002A7D
-#define NMI_WRAM_CHEATS             $002AD8
-#define NMI_PAD                     $002BF0
-#define NMI_CMD                     $002BF2
-#define BRAM_UNLOCK                 $002BF4
-#define MIRROR_4200                 $002BFA
-#define PAD_LATCH                   $002BFB
-#define NMI_BUTTONS_ENABLE          $002BFC
-#define NMI_VECT_DISABLE            $002BFD
-#define NMI_WRAM_PATCH_DISABLE      $002BFE
-#define NMI_WRAM_PATCH_COUNT        $002BFF
-#define NMI_EXEC                    $002C00
-#define WINDOW_STACK_BASE           $7E2000
+BRAM_PAYLOAD                = $002A10
+BRAM_RETURN_VECTOR          = $002A6C
+BRAM_RESET_HOOK             = $002A7D
+NMI_WRAM_CHEATS             = $002AD8
+NMI_PAD                     = $002BF0
+NMI_CMD                     = $002BF2
+BRAM_UNLOCK                 = $002BF4
+MIRROR_4200                 = $002BFA
+PAD_LATCH                   = $002BFB
+NMI_BUTTONS_ENABLE          = $002BFC
+NMI_VECT_DISABLE            = $002BFD
+NMI_WRAM_PATCH_DISABLE      = $002BFE
+NMI_WRAM_PATCH_COUNT        = $002BFF
+NMI_EXEC                    = $002C00
+WINDOW_STACK_BASE           = $7E2000
 
-#define BG2_TILE_BUF                $7EA000
-#define BG1_TILE_BUF                $7EB000
+BG2_TILE_BUF                = $7EA000
+BG1_TILE_BUF                = $7EB000
 
-#define WRAM_ROUTINE                $7EF000
-#define WRAM_STORE_BLOCKRAM_ROUTINE $7EF080
-#define WRAM_FADELOOP               $7EF100
-#define WRAM_WAIT_MCU               $7EF200
-#define WRAM_LOAD_ULTRA16_CFG       $7EF210
+WRAM_ROUTINE                = $7EF000
+WRAM_STORE_BLOCKRAM_ROUTINE = $7EF080
+WRAM_FADELOOP               = $7EF100
+WRAM_WAIT_MCU               = $7EF200
+WRAM_LOAD_ULTRA16_CFG       = $7EF210
 
-#define ROOT_DIR                    $C10000
+ROOT_DIR                    = $C10000
 
-#define NUM_CHEATS                  $CFFFFE
-#define CHEAT_ADDR                  $D00000
+NUM_CHEATS                  = $CFFFFE
+CHEAT_ADDR                  = $D00000
 
-#define SPC_DATA                    $FD0000
-#define SPC_HEADER                  $FE0000
-#define SPC_DSP_REGS                $FE0100
+SPC_DATA                    = $FD0000
+SPC_HEADER                  = $FE0000
+SPC_DSP_REGS                = $FE0100
 
-#define FILESEL_CWD                 $FF0000
-#define CFG_ADDR                    $FF0100
-#define ST_MCU_ADDR                 $FF1100
-#define ST_SNES_ADDR                $FF1110
-#define SYSINFO_BLK                 $FF1200
-#define LAST_GAME                   $FF1420
-#define WRAM_BAK                    $FF2000
-#define FAVORITE_GAMES              $FF4000
+FILESEL_CWD                 = $FF0000
+CFG_ADDR                    = $FF0100
+ST_MCU_ADDR                 = $FF1100
+ST_SNES_ADDR                = $FF1110
+SYSINFO_BLK                 = $FF1200
+LAST_GAME                   = $FF1420
+WRAM_BAK                    = $FF2000
+FAVORITE_GAMES              = $FF4000
 
-#define CMD_LOADROM                 $01 /* shortcut - load ROM with default settings */
-#define CMD_SETRTC                  $02
-#define CMD_SYSINFO                 $03
-#define CMD_LOADLAST                $04
-#define CMD_LOADSPC                 $05
-#define CMD_LOADFAVORITE            $06
-#define CMD_SET_ALLOW_PAIR          $07
-#define CMD_SET_VIDMODE_GAME        $08
-#define CMD_SET_VIDMODE_MENU        $09
-#define CMD_READDIR                 $0A
-#define CMD_FPGA_RECONF             $0B
-#define CMD_LOAD_CHT                $0C
-#define CMD_SAVE_CHT                $0D
-#define CMD_SAVE_CFG                $0E
-#define CMD_SET_CFG                 $0F
-#define CMD_SELECTROM               $10 /* TODO WIP */
-#define CMD_RUNROM                  $11 /* TODO WIP - ROM must first be selected by SELECTROM */
-#define CMD_LED_BRIGHTNESS          $12
-#define CMD_ADD_FAVORITE_ROM        $13
-#define CMD_ADD_FAVORITE_RECENT     $14
-#define CMD_REMOVE_FAVORITE_ROM     $15
-#define CMD_REMOVE_RECENT_ROM       $16
-#define CMD_SET_AUTOBOOT_ROM        $17 /* set autoboot from file browser */
-#define CMD_SET_AUTOBOOT_FAV        $18 /* set autoboot from favorites (index in MCU_PARAM) */
-#define CMD_SET_AUTOBOOT_RECENT     $19
-#define CMD_CLR_AUTOBOOT_ROM        $1a /* clear autoboot ROM setting */
-#define CMD_LOAD_AUTOBOOT           $1b /* trigger autoboot at cold boot */
-#define CMD_SAVESTATE               $40
-#define CMD_LOADSTATE               $41
-#define CMD_MCU_RDY                 $55
-#define CMD_RESET                   $80
-#define CMD_RESET_TO_MENU           $81
-#define CMD_ENABLE_CHEATS           $82
-#define CMD_DISABLE_CHEATS          $83
-#define CMD_KILL_NMIHOOK            $84
-#define CMD_TEMP_KILL_NMIHOOK       $85
-#define CMD_RESET_LOOP_FAIL         $88
-#define CMD_RESET_LOOP_PASS         $89
-#define CMD_RESET_LOOP_TIMEOUT      $8A
-#define CMD_COMBO_TRANSITION        $90
+CMD_LOADROM                 = $01       ; shortcut - load ROM with default settings
+CMD_SETRTC                  = $02
+CMD_SYSINFO                 = $03
+CMD_LOADLAST                = $04
+CMD_LOADSPC                 = $05
+CMD_LOADFAVORITE            = $06
+CMD_SET_ALLOW_PAIR          = $07
+CMD_SET_VIDMODE_GAME        = $08
+CMD_SET_VIDMODE_MENU        = $09
+CMD_READDIR                 = $0A
+CMD_FPGA_RECONF             = $0B
+CMD_LOAD_CHT                = $0C
+CMD_SAVE_CHT                = $0D
+CMD_SAVE_CFG                = $0E
+CMD_SET_CFG                 = $0F
+CMD_SELECTROM               = $10       ; TODO WIP
+CMD_RUNROM                  = $11       ; TODO WIP - ROM must first be selected by SELECTROM
+CMD_LED_BRIGHTNESS          = $12
+CMD_ADD_FAVORITE_ROM        = $13
+CMD_ADD_FAVORITE_RECENT     = $14
+CMD_REMOVE_FAVORITE_ROM     = $15
+CMD_REMOVE_RECENT_ROM       = $16
+CMD_SET_AUTOBOOT_ROM        = $17       ; set autoboot from file browser
+CMD_SET_AUTOBOOT_FAV        = $18       ; set autoboot from favorites (index in MCU_PARAM)
+CMD_SET_AUTOBOOT_RECENT     = $19
+CMD_CLR_AUTOBOOT_ROM        = $1a       ; clear autoboot ROM setting
+CMD_LOAD_AUTOBOOT           = $1b       ; trigger autoboot at cold boot
+CMD_SAVESTATE               = $40
+CMD_LOADSTATE               = $41
+CMD_MCU_RDY                 = $55
+CMD_RESET                   = $80
+CMD_RESET_TO_MENU           = $81
+CMD_ENABLE_CHEATS           = $82
+CMD_DISABLE_CHEATS          = $83
+CMD_KILL_NMIHOOK            = $84
+CMD_TEMP_KILL_NMIHOOK       = $85
+CMD_RESET_LOOP_FAIL         = $88
+CMD_RESET_LOOP_PASS         = $89
+CMD_RESET_LOOP_TIMEOUT      = $8A
+CMD_COMBO_TRANSITION        = $90
 
-#define CFG_VIDMODE_MENU                CFG_ADDR+$0000
-#define CFG_VIDMODE_GAME                CFG_ADDR+$0001
-#define CFG_PAIR_MODE_ALLOWED           CFG_ADDR+$0002
-#define CFG_BSX_USE_USERTIME            CFG_ADDR+$0003
-#define CFG_BSX_TIME                    CFG_ADDR+$0004
-#define CFG_R213F_OVERRIDE              CFG_ADDR+$0010
-#define CFG_ENABLE_INGAME_HOOK          CFG_ADDR+$0011
-#define CFG_ENABLE_INGAME_BUTTONS       CFG_ADDR+$0012
-#define CFG_ENABLE_HOOK_HOLDOFF         CFG_ADDR+$0013
-#define CFG_ENABLE_SCREENSAVER          CFG_ADDR+$0014
-#define CFG_SCREENSAVER_TIMEOUT         CFG_ADDR+$0015
-#define CFG_SORT_DIRECTORIES            CFG_ADDR+$0017
-#define CFG_HIDE_EXTENSIONS             CFG_ADDR+$0018
-#define CFG_CX4_SPEED                   CFG_ADDR+$0019
-#define CFG_SKIN_NAME                   CFG_ADDR+$001A
-#define CFG_CONTROL_TYPE                CFG_ADDR+$009A
-#define CFG_MSU_VOLUME_BOOST            CFG_ADDR+$009B
-#define CFG_1CHIP_TRANSIENT_FIXES       CFG_ADDR+$009C
-#define CFG_BRIGHTNESS_LIMIT            CFG_ADDR+$009D
-#define CFG_GSU_SPEED                   CFG_ADDR+$009E
-#define CFG_ENABLE_RST_TO_MENU          CFG_ADDR+$009F
-#define CFG_LED_BRIGHTNESS              CFG_ADDR+$00A0
-#define CFG_ENABLE_CHEATS               CFG_ADDR+$00A1
-#define CFG_RESET_PATCH                 CFG_ADDR+$00A2
-#define CFG_ENABLE_INGAME_SAVESTATE     CFG_ADDR+$00A3
-#define CFG_LOADSTATE_DELAY             CFG_ADDR+$00A4
-#define CFG_ENABLE_SAVESTATE_SLOTS      CFG_ADDR+$00A5
-#define CFG_INGAME_BUTTONS_SAVE_STATE   CFG_ADDR+$00A6
-#define CFG_INGAME_BUTTONS_LOAD_STATE   CFG_ADDR+$00A8
-#define CFG_INGAME_BUTTONS_CHANGE_STATE CFG_ADDR+$00AA
-#define CFG_SGB_ENABLE_INGAMEHOOK       CFG_ADDR+$00AC
-#define CFG_SGB_ENABLE_STATE            CFG_ADDR+$00AD
-#define CFG_SGB_VOLUME_BOOST            CFG_ADDR+$00AE
-#define CFG_SGB_ENH_OVERRIDE            CFG_ADDR+$00AF
-#define CFG_SGB_SPR_INCREASE            CFG_ADDR+$00B0
-#define CFG_SGB_CLOCK_FIX               CFG_ADDR+$00B1
-#define CFG_SGB_BIOS_VERSION            CFG_ADDR+$00B2
-#define CFG_ENABLE_AUTOSAVE             CFG_ADDR+$00B3
-#define CFG_ENABLE_AUTOSAVE_MSU1        CFG_ADDR+$00B4
+CFG_VIDMODE_MENU                = CFG_ADDR+$0000
+CFG_VIDMODE_GAME                = CFG_ADDR+$0001
+CFG_PAIR_MODE_ALLOWED           = CFG_ADDR+$0002
+CFG_BSX_USE_USERTIME            = CFG_ADDR+$0003
+CFG_BSX_TIME                    = CFG_ADDR+$0004
+CFG_R213F_OVERRIDE              = CFG_ADDR+$0010
+CFG_ENABLE_INGAME_HOOK          = CFG_ADDR+$0011
+CFG_ENABLE_INGAME_BUTTONS       = CFG_ADDR+$0012
+CFG_ENABLE_HOOK_HOLDOFF         = CFG_ADDR+$0013
+CFG_ENABLE_SCREENSAVER          = CFG_ADDR+$0014
+CFG_SCREENSAVER_TIMEOUT         = CFG_ADDR+$0015
+CFG_SORT_DIRECTORIES            = CFG_ADDR+$0017
+CFG_HIDE_EXTENSIONS             = CFG_ADDR+$0018
+CFG_CX4_SPEED                   = CFG_ADDR+$0019
+CFG_SKIN_NAME                   = CFG_ADDR+$001A
+CFG_CONTROL_TYPE                = CFG_ADDR+$009A
+CFG_MSU_VOLUME_BOOST            = CFG_ADDR+$009B
+CFG_1CHIP_TRANSIENT_FIXES       = CFG_ADDR+$009C
+CFG_BRIGHTNESS_LIMIT            = CFG_ADDR+$009D
+CFG_GSU_SPEED                   = CFG_ADDR+$009E
+CFG_ENABLE_RST_TO_MENU          = CFG_ADDR+$009F
+CFG_LED_BRIGHTNESS              = CFG_ADDR+$00A0
+CFG_ENABLE_CHEATS               = CFG_ADDR+$00A1
+CFG_RESET_PATCH                 = CFG_ADDR+$00A2
+CFG_ENABLE_INGAME_SAVESTATE     = CFG_ADDR+$00A3
+CFG_LOADSTATE_DELAY             = CFG_ADDR+$00A4
+CFG_ENABLE_SAVESTATE_SLOTS      = CFG_ADDR+$00A5
+CFG_INGAME_BUTTONS_SAVE_STATE   = CFG_ADDR+$00A6
+CFG_INGAME_BUTTONS_LOAD_STATE   = CFG_ADDR+$00A8
+CFG_INGAME_BUTTONS_CHANGE_STATE = CFG_ADDR+$00AA
+CFG_SGB_ENABLE_INGAMEHOOK       = CFG_ADDR+$00AC
+CFG_SGB_ENABLE_STATE            = CFG_ADDR+$00AD
+CFG_SGB_VOLUME_BOOST            = CFG_ADDR+$00AE
+CFG_SGB_ENH_OVERRIDE            = CFG_ADDR+$00AF
+CFG_SGB_SPR_INCREASE            = CFG_ADDR+$00B0
+CFG_SGB_CLOCK_FIX               = CFG_ADDR+$00B1
+CFG_SGB_BIOS_VERSION            = CFG_ADDR+$00B2
+CFG_ENABLE_AUTOSAVE             = CFG_ADDR+$00B3
+CFG_ENABLE_AUTOSAVE_MSU1        = CFG_ADDR+$00B4
 
-#define MENU_ENTRY_SIZE             23
+MENU_ENTRY_SIZE             = 23
 
-#define ST_RTC_VALID                ST_MCU_ADDR+$0000
-#define ST_NUM_RECENT_GAMES         ST_MCU_ADDR+$0001
-#define ST_PAIRMODE                 ST_MCU_ADDR+$0002
-#define ST_NUM_FAVORITE_GAMES       ST_MCU_ADDR+$0003
-#define ST_AUTOBOOT_ENABLED         ST_MCU_ADDR+$0004
+ST_RTC_VALID                = ST_MCU_ADDR+$0000
+ST_NUM_RECENT_GAMES         = ST_MCU_ADDR+$0001
+ST_PAIRMODE                 = ST_MCU_ADDR+$0002
+ST_NUM_FAVORITE_GAMES       = ST_MCU_ADDR+$0003
+ST_AUTOBOOT_ENABLED         = ST_MCU_ADDR+$0004
 
-#define ST_IS_U16                   ST_SNES_ADDR+$0000
-#define ST_U16_CFG                  ST_SNES_ADDR+$0001
-#define ST_HAS_SATELLAVIEW          ST_SNES_ADDR+$0002
+ST_IS_U16                   = ST_SNES_ADDR+$0000
+ST_U16_CFG                  = ST_SNES_ADDR+$0001
+ST_HAS_SATELLAVIEW          = ST_SNES_ADDR+$0002
 
-#define MTYPE_FUNC                  $01
-#define MTYPE_SUBMENU               $02
-#define MTYPE_VALUE                 $03
-#define MTYPE_FUNC_CLOSE            $04
+MTYPE_FUNC                  = $01
+MTYPE_SUBMENU               = $02
+MTYPE_VALUE                 = $03
+MTYPE_FUNC_CLOSE            = $04
 
-#define OPTTYPE_NONE                $00
-#define OPTTYPE_BYTE                $01
-#define OPTTYPE_WORD                $02
-#define OPTTYPE_STRING              $03
-#define OPTTYPE_KVBYTE              $04
-#define OPTTYPE_KVWORD              $05
-#define OPTTYPE_FILESEL             $06
-#define OPTTYPE_TIME                $07
+OPTTYPE_NONE                = $00
+OPTTYPE_BYTE                = $01
+OPTTYPE_WORD                = $02
+OPTTYPE_STRING              = $03
+OPTTYPE_KVBYTE              = $04
+OPTTYPE_KVWORD              = $05
+OPTTYPE_FILESEL             = $06
+OPTTYPE_TIME                = $07
 
-#define VIDMODE_NTSC                $00
-#define VIDMODE_PAL                 $01
-#define VIDMODE_AUTO                $02
+VIDMODE_NTSC                = $00
+VIDMODE_PAL                 = $01
+VIDMODE_AUTO                = $02
 
-#define IDLE_THRES                  33000
+IDLE_THRES                  = 33000
 
-#define TYPE_ROM                    $01
-#define TYPE_SRM                    $02
-#define TYPE_SPC                    $03
-#define TYPE_IPS                    $04
-#define TYPE_CHT                    $05
-#define TYPE_SKIN                   $06
-#define TYPE_SUBDIR                 $40
-#define TYPE_PARENT                 $80
+TYPE_ROM                    = $01
+TYPE_SRM                    = $02
+TYPE_SPC                    = $03
+TYPE_IPS                    = $04
+TYPE_CHT                    = $05
+TYPE_SKIN                   = $06
+TYPE_SUBDIR                 = $40
+TYPE_PARENT                 = $80
 
-#define DIM_BRIGHTNESS              $03
+DIM_BRIGHTNESS              = $03

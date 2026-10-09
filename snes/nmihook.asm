@@ -1,14 +1,13 @@
-.link page $c0
-#include "memmap.i65"
-
 ; *=$2A10
 nmihook:
   php
-  rep #$20 : .al
+  rep #$20
+  .al
   pha
-  lda @$004218 ; initial backup as early as possible
-  sta @NMI_PAD
-  sep #$20 : .as
+  lda @l $004218 ; initial backup as early as possible
+  sta @l NMI_PAD
+  sep #$20
+  .as
 - bra -        ; branch1: filled in by FPGA
 ; rules for branch tgt:
 ;        if (buttons disabled OR manual read in progress) AND wram patching enabled: nmi_patches
@@ -41,18 +40,19 @@ nmi_manual_read:
   lda #$01
   sta $4016
   stz $4016
-  rep #$10 : .xl
+  rep #$10
+  .xl
   phx
   ldx #$0008
 - lda $4016
   ror
-  rol <NMI_PAD+1
+  rol <NMI_PAD+1,d
   dex
   bne -
   ldx #$0008
 - lda $4016
   ror
-  rol <NMI_PAD
+  rol <NMI_PAD,d
   dex
   bne -
   plx
@@ -60,27 +60,29 @@ nmi_manual_read:
   plb
 ; button combination -> command is mapped by FPGA
 nmi_echocmd: ; echo cmd to MCU for misc handling
-  lda @NMI_CMD
-  sta @MCU_CMD
+  lda @l NMI_CMD
+  sta @l MCU_CMD
 ; 2nd branch point to determine whether to jump to WRAM cheats,
 ; halt system (for reset), or continue
 - bra - ; branch2: nmi_patches, nmi_savestate, nmi_stop, or nmi_exit
 nmi_patches:
-  jsr NMI_WRAM_CHEATS
+  jsr NMI_WRAM_CHEATS,k
 - bra - ; branch3: nmi_savestate or nmi_exit
 nmi_savestate:
-  jsl @savestate_handler
+  jsl savestate_handler
 nmi_exit:
 ; clean up
-  rep #$20 : .al
+  rep #$20
+  .al
   pla
   plp
-  sta @NMI_VECT_DISABLE
+  sta @l NMI_VECT_DISABLE
   jmp ($ff77) ; '77' is replaced by FPGA depending on hook entry
 
 nmi_stop:
   sei
-  sep #$20 : .as
+  sep #$20
+  .as
   phk
   plb
   stz $4200
@@ -89,7 +91,8 @@ nmi_stop:
 - bra -
 
 resethook: ; EMULATION MODE
-  .as : .xs
+  .as
+  .xs
   bra resethook_skip
   ; mask interrupt handler call
   sei
@@ -99,7 +102,7 @@ resethook: ; EMULATION MODE
   ; setup irq on h-position $100.  this value was acquired via manual training
   lda #$00
   sta $4207
-  inc
+  inc a
   sta $4208
   lda #$10
   sta $4200
@@ -130,14 +133,14 @@ resethook: ; EMULATION MODE
   bmi +
   ; perform reset
   lda #CMD_RESET_LOOP_FAIL
-  sta @MCU_CMD
+  sta @l MCU_CMD
 - bra -
   ; clean up state
 + inx
   iny
 resethook_skip:
   lda #CMD_RESET_LOOP_PASS
-  sta @MCU_CMD
+  sta @l MCU_CMD
 
 resethook_loop:
 - lda $4212
@@ -149,4 +152,4 @@ resethook_loop:
   stz NMI_VECT_DISABLE
   jmp ($fffc)
 
-.byt "bram_end"
+.text "bram_end"

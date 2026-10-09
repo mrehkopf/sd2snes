@@ -1,11 +1,9 @@
-.link page $c0
-#include "memmap.i65"
-#include "dma.i65"
-
 ; NMI - called on VBlank
 NMI_ROUTINE:
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
   lda #$00
   pha
   plb
@@ -15,18 +13,18 @@ NMI_ROUTINE:
 do_screen_dma:
   ldx #BG1_TILE_BASE+32*9
   stx $2116
-  DMA7(#$01, #40*64, #^BG1_TILE_BUF, #!BG1_TILE_BUF+64*9, #$18)
+  #DMA7 #$01, #40*64, #`BG1_TILE_BUF, #<>BG1_TILE_BUF+64*9, #$18
 
   ldx #BG2_TILE_BASE+32*9
   stx $2116
-  DMA7(#$01, #40*64, #^BG2_TILE_BUF, #!BG2_TILE_BUF+64*9, #$18)
+  #DMA7 #$01, #40*64, #`BG2_TILE_BUF, #<>BG2_TILE_BUF+64*9, #$18
 
   ldx #BG2_TILE_BASE
   stx $2116
-  DMA7(#$01, #64*9, #^BG2_TILE_BUF, #!BG2_TILE_BUF, #$18)
+  #DMA7 #$01, #64*9, #`BG2_TILE_BUF, #<>BG2_TILE_BUF, #$18
 skip_screen_dma:
   lda bar_yl
-  dec
+  dec a
   asl
   asl
   asl
@@ -42,35 +40,37 @@ skip_screen_dma:
   lda #$01
   sta hdma_math+3
   bra math_cont
-lower_half
+lower_half:
   sbc #111
   sta hdma_math+3
   lda #112
   sta hdma_math
-math_cont
+math_cont:
   lda bar_xl    ; get logical cursor X pos
   asl
-  dec
+  dec a
   asl
   sta bar_x     ; physical pos = logical pos * 4 - 2
   sta $2126     ; window 1 left
   lda bar_wl    ; get logical cursor width
   asl
   asl           ; pixel width = logical width * 4 + 1
-  inc
+  inc a
   sta bar_w     ; = physical width
   clc
   adc bar_x     ; + X start coord
   sta $2127     ; window 1 right
 
-  lda @CFG_ENABLE_SCREENSAVER
+  lda @l CFG_ENABLE_SCREENSAVER
   beq +
-  rep #$20 : .al
-  sep #$10 : .xs
+  rep #$20
+  .al
+  sep #$10
+  .xs
   lda pad1mem
   and #$fff0
   beq nobuttonspressed
-buttonspressed
+buttonspressed:
   stz idle_count
   lda menu_brightness ; restore normal brightness when button pressed
   tax
@@ -78,11 +78,12 @@ buttonspressed
   ldx #$01
   stx fade_speed
   stx fade_count
-nobuttonspressed
+nobuttonspressed:
   inc idle_count
   lda idle_count
   cmp #IDLE_THRES
-  sep #$20 : .as
+  sep #$20
+  .as
   bne +
 ; no input for a long time
   ldx #DIM_BRIGHTNESS
@@ -99,13 +100,13 @@ nobuttonspressed
   cmp tgt_bright
   beq +
   bpl bright_down
-bright_up
-  inc
+bright_up:
+  inc a
   sta cur_bright
   sta $2100
   bra +
-bright_down
-  dec
+bright_down:
+  dec a
   sta cur_bright
   sta $2100
 + lda #$01
@@ -115,6 +116,7 @@ bright_down
 
 ; IRQ_ROUTINE - called when IRQ triggered
 IRQ_ROUTINE:
-  sep #$20 : .as
+  sep #$20
+  .as
   lda $4211     ; Acknowledge IRQ
   rtl

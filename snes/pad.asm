@@ -1,8 +1,8 @@
-.link page $c0
-
 pad_init:
   php
-  rep #$30 : .xl : .al
+  rep #$30
+  .xl
+  .al
   stz pad1mem
   stz pad1trig
   plp
@@ -11,11 +11,14 @@ pad_init:
 read_pad:
   php
   phb
-    sep #$20 : .as
+    sep #$20
+    .as
     lda #$80
     pha
     plb
-    rep #$30 : .xl : .al
+    rep #$30
+    .xl
+    .al
     stz pad_b      ; (including y)
     stz pad_select ; (including start)
     stz pad_up     ; (including down)
@@ -23,7 +26,7 @@ read_pad:
     stz pad_a      ; (including x)
     stz pad_l      ; (including r)
 
-read_pad1         ; byetUDLRaxlriiii
+read_pad1:        ; byetUDLRaxlriiii
     ldx pad1mem   ; save previous state of the buttons for later
     lda $4218     ; Controller 1
     and #$000f    ; ignore non-standard controllers (ID != 0)
@@ -39,7 +42,7 @@ read_pad1         ; byetUDLRaxlriiii
     and #$0f00    ; UDLR = directional buttons support auto-repeat
     bne read_pad1_count
     stz pad1delay
-read_pad1_cont1
+read_pad1_cont1:
     txa           ; restore previous state of the buttons in A for comparison (for button press event detection)
     eor pad1mem
     and pad1mem
@@ -50,9 +53,10 @@ read_pad1_cont1
     stz pad1mem
     lda #$000d
     sta pad1delay
-read_pad1_cont2
+read_pad1_cont2:
     lda pad1trig
-    sep #$20 : .as
+    sep #$20
+    .as
     rol
     rol pad_a
     rol
@@ -82,8 +86,8 @@ read_pad1_cont2
   plp
   rts
 
-read_pad1_count
+read_pad1_count:
     lda pad1delay
-    inc
+    inc a
     sta pad1delay
     bra read_pad1_cont1

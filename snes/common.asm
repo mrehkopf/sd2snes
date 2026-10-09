@@ -1,13 +1,11 @@
-.link page $c0
-#include "memmap.i65"
-#include "stack.i65"
-
 waitblank:
   php
-  sep #$30 : .as : .xs
-- lda @$004212
+  sep #$30
+  .as
+  .xs
+- lda @l $004212
   bmi -
-- lda @$004212
+- lda @l $004212
   bpl -
   plp
   rts
@@ -18,11 +16,13 @@ waitblank:
 ; return: Y=strlen
 strlen:
   php
-  rep #$10 : .xl
-  sep #$20 : .as
+  rep #$10
+  .xl
+  sep #$20
+  .as
   phx
   ldx #$0000
-- lda !$0, y
+- lda @w $0,y
   lsr
   beq +
   iny
@@ -42,8 +42,10 @@ bin2dec16:
     pea $0000
     pld
     php
-    rep #$20 : .al
-    sep #$10 : .xs
+    rep #$20
+    .al
+    sep #$10
+    .xs
     pha
       ldx #$80
       phx
@@ -57,13 +59,14 @@ bin2dec16:
     pla
 -   sta $4204
     lda #$000a
-    sta $4206    ; now burn 16 cycles
-    pha : pla    ; 9
-    xba          ; 3
-    lda @$004216 ; 4 - load remainder
+    sta $4206      ; now burn 16 cycles
+    pha            ; 9
+    pla
+    xba            ; 3
+    lda @l $004216 ; 4 - load remainder
     ora #$30
     tay
-    sty stringbuf, x
+    sty <stringbuf,d,x
     dex
     lda $4214 ; load quotient
     beq +

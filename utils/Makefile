@@ -2,7 +2,7 @@ CC := gcc
 
 CFLAGS = -Wall -Wstrict-prototypes -Werror
 
-BIN = bin2asm bin2c bin2coe chili2chr derle gentilemap mem2lorom palremap palreorder rle genbsxpage
+BIN = bin2asm bin2c bin2coe chili2chr derle gentilemap mem2lorom palremap palreorder rle genbsxpage sneschksum
 
 all: $(BIN)
 
@@ -37,6 +37,9 @@ rle: rle.o
 	$(CC) $(CFLAGS) $^ --output $@
 
 genbsxpage: genbsxpage.o
+	$(CC) $(CFLAGS) $^ --output $@
+
+sneschksum: sneschksum.o
 	$(CC) $(CFLAGS) $^ --output $@
 
 %.o: %.c

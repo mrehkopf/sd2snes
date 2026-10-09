@@ -1,429 +1,427 @@
-.link page $c0
+version:        .text "                            v0.1", 0
+zero:           .word 0
+bg2tile:        .byte $20
+hdma_pal_src:
+  .byte 44
+  .byte $60, $2d
+  .byte 10
+  .byte $00, $00
+  .byte 2
+  .byte $60, $2d
+  .byte 11
+  .byte $00, $00
+  .byte 11
+  .byte $20, $04
+  .byte 11
+  .byte $40, $08
+  .byte 11
+  .byte $60, $0c
+  .byte 11
+  .byte $80, $10
+  .byte 11
+  .byte $a0, $14
+  .byte 11
+  .byte $c0, $18
+  .byte 11
+  .byte $e0, $1c
+  .byte 11
+  .byte $00, $21
+  .byte 11
+  .byte $20, $25
+  .byte 11
+  .byte $40, $29
+  .byte 27
+  .byte $60, $2d
+  .byte 2
+  .byte $20, $04
+  .byte 11
+  .byte $60, $2d
+  .byte 1
+  .byte $20, $04
+  .byte $00
 
-version         .byt "                            v0.1",0
-zero            .word  0
-bg2tile         .byt $20
-hdma_pal_src
-  .byt 44
-  .byt $60, $2d
-  .byt 10
-  .byt $00, $00
-  .byt 2
-  .byt $60, $2d
-  .byt 11
-  .byt $00, $00
-  .byt 11
-  .byt $20, $04
-  .byt 11
-  .byt $40, $08
-  .byt 11
-  .byt $60, $0c
-  .byt 11
-  .byt $80, $10
-  .byt 11
-  .byt $a0, $14
-  .byt 11
-  .byt $c0, $18
-  .byt 11
-  .byt $e0, $1c
-  .byt 11
-  .byt $00, $21
-  .byt 11
-  .byt $20, $25
-  .byt 11
-  .byt $40, $29
-  .byt 27
-  .byt $60, $2d
-  .byt 2
-  .byt $20, $04
-  .byt 11
-  .byt $60, $2d
-  .byt 1
-  .byt $20, $04
-  .byt $00
-
-hdma_cg_addr_src
-  .byt $f0
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $f0
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00, $00, $00, $00, $00, $00, $00, $00
-  .byt $00
-hdma_mode_src   .byt 56, $03, $01, $05, $00
-hdma_bg1scroll_src
-  .byt 56
-  .byt $00, $00, $ff, $03
-  .byt 127
-  .byt $fc, $00, $0d, $00
-  .byt 24
-  .byt $fc, $00, $0d, $00
-  .byt 1
-  .byt $fc, $00, $0f, $00
-  .byt $00
-hdma_bg2scroll_src
-  .byt 56
-  .byt $ff, $03
-  .byt 127
-  .byt $0d, $00
-  .byt 24
-  .byt $0d, $00
-  .byt 1
-  .byt $0f, $00
-  .byt 0
+hdma_cg_addr_src:
+  .byte $f0
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $f0
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  .byte $00
+hdma_mode_src:  .byte 56, $03, $01, $05, $00
+hdma_bg1scroll_src:
+  .byte 56
+  .byte $00, $00, $ff, $03
+  .byte 127
+  .byte $fc, $00, $0d, $00
+  .byte 24
+  .byte $fc, $00, $0d, $00
+  .byte 1
+  .byte $fc, $00, $0f, $00
+  .byte $00
+hdma_bg2scroll_src:
+  .byte 56
+  .byte $ff, $03
+  .byte 127
+  .byte $0d, $00
+  .byte 24
+  .byte $0d, $00
+  .byte 1
+  .byte $0f, $00
+  .byte 0
 
 ; colors:
 ; upper border: + #547fff -> 10,15,31
 ; selection bar:+ #5400ff -> 10,0,31
 ; lower border: 1/2 #5400ff
-hdma_math_src
-  .byt 1 ; these are filled in...
-  .byt $00, $2a
-  .byt 1 ; ...to move the color bar
-  .byt $00, $4f
-  .byt 1
-  .byt $33, $9f
-  .byt 7
-  .byt $33, $40
-  .byt 1
-  .byt $73, $00
-  .byt 1
-  .byt $00, $e0
-  .byt 0
+hdma_math_src:
+  .byte 1 ; these are filled in...
+  .byte $00, $2a
+  .byte 1 ; ...to move the color bar
+  .byte $00, $4f
+  .byte 1
+  .byte $33, $9f
+  .byte 7
+  .byte $33, $40
+  .byte 1
+  .byte $73, $00
+  .byte 1
+  .byte $00, $e0
+  .byte 0
 
-hdma_bar_color_src
-  .byt $2a, $4f, $9f, $40 ; normal color
-  .byt $36, $4f, $8a, $40 ; highlight color (active editing)
+hdma_bar_color_src:
+  .byte $2a, $4f, $9f, $40 ; normal color
+  .byte $36, $4f, $8a, $40 ; highlight color (active editing)
 
-oam_data_l
-  .byt 88, 56, 0, $08
-  .byt 96, 56, 1, $08
-  .byt 104, 56, 2, $08
-  .byt 112, 56, 3, $08
-  .byt 120, 56, 4, $08
-  .byt 128, 56, 5, $08
-  .byt 136, 56, 6, $08
-  .byt 88, 64, 7, $08
-  .byt 96, 64, 8, $08
-  .byt 104, 64, 9, $08
-  .byt 112, 64, 10, $08
-  .byt 88, 72, 14, $08
-  .byt 96, 72, 15, $08
-  .byt 157, 56, 21, $0a
-  .byt 172, 56, 22, $0c
-  .byt 180, 56, 23, $0c
-  .byt 172, 64, 24, $0c
-  .byt 172, 72, 26, $0c
-  .byt 172, 80, 28, $0c
-  .byt 172, 88, 30, $0c
-  .byt 172, 96, 32, $0c
-  .byt 194, 56, 34, $0e
-  .byt 194, 64, 35, $0e
-  .byt 194, 72, 36, $0e
-oam_data_h
-  .byt 0, 0, 0, 0, 0, 0, 0, 0, 0
+oam_data_l:
+  .byte 88, 56, 0, $08
+  .byte 96, 56, 1, $08
+  .byte 104, 56, 2, $08
+  .byte 112, 56, 3, $08
+  .byte 120, 56, 4, $08
+  .byte 128, 56, 5, $08
+  .byte 136, 56, 6, $08
+  .byte 88, 64, 7, $08
+  .byte 96, 64, 8, $08
+  .byte 104, 64, 9, $08
+  .byte 112, 64, 10, $08
+  .byte 88, 72, 14, $08
+  .byte 96, 72, 15, $08
+  .byte 157, 56, 21, $0a
+  .byte 172, 56, 22, $0c
+  .byte 180, 56, 23, $0c
+  .byte 172, 64, 24, $0c
+  .byte 172, 72, 26, $0c
+  .byte 172, 80, 28, $0c
+  .byte 172, 88, 30, $0c
+  .byte 172, 96, 32, $0c
+  .byte 194, 56, 34, $0e
+  .byte 194, 64, 35, $0e
+  .byte 194, 72, 36, $0e
+oam_data_h:
+  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0
 
-space64
-  .byt $20, $20, $20, $20, $20, $20, $20, $20
-  .byt $20, $20, $20, $20, $20, $20, $20, $20
-  .byt $20, $20, $20, $20, $20, $20, $20, $20
-  .byt $20, $20, $20, $20, $20, $20, $20, $20
-  .byt $20, $20, $20, $20, $20, $20, $20, $20
-  .byt $20, $20, $20, $20, $20, $20, $20, $20
-  .byt $20, $20, $20, $20, $20, $20, $20, $20
-  .byt $20, $20, $20, $20, $20, $20, $20, $20
-  .byt $00
+space64:
+  .byte $20, $20, $20, $20, $20, $20, $20, $20
+  .byte $20, $20, $20, $20, $20, $20, $20, $20
+  .byte $20, $20, $20, $20, $20, $20, $20, $20
+  .byte $20, $20, $20, $20, $20, $20, $20, $20
+  .byte $20, $20, $20, $20, $20, $20, $20, $20
+  .byte $20, $20, $20, $20, $20, $20, $20, $20
+  .byte $20, $20, $20, $20, $20, $20, $20, $20
+  .byte $20, $20, $20, $20, $20, $20, $20, $20
+  .byte $00
 
-text_dirmark    .byt " <dir>", 0
-window_nw       .byt 20
-window_ne       .byt 21
-window_sw       .byt 22
-window_se       .byt 23
-window_nh       .byt 24
-window_sh       .byt 25
-window_wv       .byt 26
-window_ev       .byt 27
-window_tl       .byt 28
-window_tr       .byt 29
-text_clkset     .byt "Please set the time", 0
-time_win_x      .byt 20
-time_win_y      .byt 17
-time_win_w      .byt 25
-time_win_h      .byt 3
-main_win_x      .byt 18
-main_win_y      .byt 11
-main_win_w      .byt 27
-main_win_h      .byt 13
-text_mainmenu   .byt "Main Menu", 0
-sysinfo_win_x   .byt 10
-sysinfo_win_y   .byt 9
-sysinfo_win_w   .byt 43
-sysinfo_win_h   .byt 17
-last_win_x      .byt 2
-last_win_y      .byt 12
-last_win_w      .byt 60
+text_dirmark:   .text " <dir>", 0
+window_nw:      .byte 20
+window_ne:      .byte 21
+window_sw:      .byte 22
+window_se:      .byte 23
+window_nh:      .byte 24
+window_sh:      .byte 25
+window_wv:      .byte 26
+window_ev:      .byte 27
+window_tl:      .byte 28
+window_tr:      .byte 29
+text_clkset:    .text "Please set the time", 0
+time_win_x:     .byte 20
+time_win_y:     .byte 17
+time_win_w:     .byte 25
+time_win_h:     .byte 3
+main_win_x:     .byte 18
+main_win_y:     .byte 11
+main_win_w:     .byte 27
+main_win_h:     .byte 13
+text_mainmenu:  .text "Main Menu", 0
+sysinfo_win_x:  .byte 10
+sysinfo_win_y:  .byte 9
+sysinfo_win_w:  .byte 43
+sysinfo_win_h:  .byte 17
+last_win_x:     .byte 2
+last_win_y:     .byte 12
+last_win_w:     .byte 60
 
-text_ellipse                      .byt 127, 128, 0
-text_mm_file                      .byt "File Browser", 0
-text_mm_last                      .byt "Recent Games", 0
-text_mm_favorites                 .byt "Favorite Games", 0
-mtext_mm_cfg                      .byt "Configuration", 0
-mtext_mm_sysinfo                  .byt "System Information", 0
-mtext_cfg_time                    .byt "Set Clock", 0
-mtext_cfg_bsx                     .byt "BS-X Settings", 0
-mtext_cfg_browser                 .byt "Browser Settings", 0
-mtext_cfg_chip                    .byt "Chip Options", 0
-mtext_cfg_sgb                     .byt "SGB Settings", 0
-mtext_cfg_ingame                  .byt "In-game Settings", 0
-mtext_cfg_savestates              .byt "Savestates Settings", 0
-mtext_cfg_scic                    .byt "SuperCIC Settings", 0
-mtext_bsx_timesource              .byt "BS-X clock", 0
-mtext_bsx_time                    .byt "Custom time", 0
-mtext_scic_enable                 .byt "Enable SuperCIC", 0
-mtext_scic_vmode_menu             .byt " ",129,"Menu video mode", 0
-mtext_scic_vmode_game             .byt " ",129,"Game video mode", 0
-mtext_browser_sort                .byt "Sort directories", 0
-mtext_browser_hide_ext            .byt "Hide file extensions", 0
-mtext_browser_screensaver         .byt "Screensaver", 0
-mtext_browser_screensaver_timeout .byt "Fade screen after", 0
-mtext_browser_ledbright           .byt "LED brightness", 0
-mtext_ingame_cheats               .byt "Start with cheats enabled", 0
-mtext_ingame_shortreset           .byt "Reset to menu", 0
-mtext_ingame_enable               .byt "In-game hook", 0
-mtext_ingame_buttons              .byt " ",129,"In-game buttons", 0
-mtext_ingame_holdoff              .byt " ",129,"Initial holdoff", 0
-mtext_ingame_savestate            .byt "In-game savestates", 0
-mtext_savestate_slots             .byt " ",129,"Savestate slots", 0
-mtext_loadstate_delay             .byt " ",129,"Load delay (frames)", 0
-mtext_sgb_enable_hooks            .byt "In-game hooks", 0
-mtext_sgb_enable_state            .byt "Savestates (XR, XL)", 0
-mtext_sgb_enh_override            .byt "SGB features", 0
-mtext_sgb_spr_increase            .byt "Maximum sprites limit (40)", 0
-mtext_sgb_volume_boost            .byt "Volume boost", 0
-mtext_sgb_clock                   .byt "Clock (Timing)", 0
-mtext_sgb_bios                    .byt "BIOS version", 0
-mtext_ingame_regionpatch          .byt "Auto region patch", 0
-mtext_ingame_1chiptransientfixes  .byt "1CHIP transient fixes", 0
-mtext_ingame_brightlimit          .byt "Brightness limit", 0
-mtext_ingame_resetpatch           .byt "Reset patch for clock phase", 0
-mtext_ingame_autosave             .byt "Autosave", 0
-mtext_ingame_autosave_msu1        .byt " ",129,"MSU-1 Autosave", 0
-mtext_chip_cx4_speed              .byt "Cx4 speed", 0
-mtext_chip_gsu_speed              .byt "SuperFX speed", 0
-mtext_chip_msu1_volume_boost      .byt "MSU-1 volume boost", 0
+text_ellipse:                     .byte 127, 128, 0
+text_mm_file:                     .text "File Browser", 0
+text_mm_last:                     .text "Recent Games", 0
+text_mm_favorites:                .text "Favorite Games", 0
+mtext_mm_cfg:                     .text "Configuration", 0
+mtext_mm_sysinfo:                 .text "System Information", 0
+mtext_cfg_time:                   .text "Set Clock", 0
+mtext_cfg_bsx:                    .text "BS-X Settings", 0
+mtext_cfg_browser:                .text "Browser Settings", 0
+mtext_cfg_chip:                   .text "Chip Options", 0
+mtext_cfg_sgb:                    .text "SGB Settings", 0
+mtext_cfg_ingame:                 .text "In-game Settings", 0
+mtext_cfg_savestates:             .text "Savestates Settings", 0
+mtext_cfg_scic:                   .text "SuperCIC Settings", 0
+mtext_bsx_timesource:             .text "BS-X clock", 0
+mtext_bsx_time:                   .text "Custom time", 0
+mtext_scic_enable:                .text "Enable SuperCIC", 0
+mtext_scic_vmode_menu:            .text " ", 129, "Menu video mode", 0
+mtext_scic_vmode_game:            .text " ", 129, "Game video mode", 0
+mtext_browser_sort:               .text "Sort directories", 0
+mtext_browser_hide_ext:           .text "Hide file extensions", 0
+mtext_browser_screensaver:        .text "Screensaver", 0
+mtext_browser_screensaver_timeout: .text "Fade screen after", 0
+mtext_browser_ledbright:          .text "LED brightness", 0
+mtext_ingame_cheats:              .text "Start with cheats enabled", 0
+mtext_ingame_shortreset:          .text "Reset to menu", 0
+mtext_ingame_enable:              .text "In-game hook", 0
+mtext_ingame_buttons:             .text " ", 129, "In-game buttons", 0
+mtext_ingame_holdoff:             .text " ", 129, "Initial holdoff", 0
+mtext_ingame_savestate:           .text "In-game savestates", 0
+mtext_savestate_slots:            .text " ", 129, "Savestate slots", 0
+mtext_loadstate_delay:            .text " ", 129, "Load delay (frames)", 0
+mtext_sgb_enable_hooks:           .text "In-game hooks", 0
+mtext_sgb_enable_state:           .text "Savestates (XR, XL)", 0
+mtext_sgb_enh_override:           .text "SGB features", 0
+mtext_sgb_spr_increase:           .text "Maximum sprites limit (40)", 0
+mtext_sgb_volume_boost:           .text "Volume boost", 0
+mtext_sgb_clock:                  .text "Clock (Timing)", 0
+mtext_sgb_bios:                   .text "BIOS version", 0
+mtext_ingame_regionpatch:         .text "Auto region patch", 0
+mtext_ingame_1chiptransientfixes: .text "1CHIP transient fixes", 0
+mtext_ingame_brightlimit:         .text "Brightness limit", 0
+mtext_ingame_resetpatch:          .text "Reset patch for clock phase", 0
+mtext_ingame_autosave:            .text "Autosave", 0
+mtext_ingame_autosave_msu1:       .text " ", 129, "MSU-1 Autosave", 0
+mtext_chip_cx4_speed:             .text "Cx4 speed", 0
+mtext_chip_gsu_speed:             .text "SuperFX speed", 0
+mtext_chip_msu1_volume_boost:     .text "MSU-1 volume boost", 0
 
-mdesc_mm_last                     .byt "Show up to 10 most recently played games", 0
-mdesc_mm_favorites                .byt "Show up to 10 favorite games", 0
-mdesc_mm_cfg                      .byt "Configure the sd2snes", 0
-mdesc_mm_sysinfo                  .byt "Info about FW version, SD Card, SNES, CIC", 127, 128, 0
-mdesc_cfg_time                    .byt "Set the date and time", 0
-mdesc_cfg_bsx                     .byt "BS-X/Satellaview specific settings", 0
-mdesc_cfg_browser                 .byt "Change file browser settings", 0
-mdesc_cfg_chip                    .byt "Set special chip features", 0
-mdesc_cfg_ingame                  .byt "Set in-game features", 0
-mdesc_cfg_sgb                     .byt "Set Super Game Boy features", 0
-mdesc_cfg_savestates              .byt "Set savestates features", 0
-mdesc_cfg_scic                    .byt "Enable/Disable SuperCIC and set video modes", 0
-mdesc_bsx_timesource              .byt "Choose what date and time BS-X games see", 0
-mdesc_bsx_time                    .byt "Set custom time and date for BS-X games", 0
-mdesc_scic_enable                 .byt "Required for SuperCIC enhanced features", 0
-mdesc_scic_vmode_menu             .byt "Set video mode for menu", 0
-mdesc_scic_vmode_game             .byt "Set video mode for games", 0
-mdesc_browser_sort                .byt "Choose whether to sort file lists", 0
-mdesc_browser_hide_ext            .byt "Choose whether to hide file extensions", 0
-mdesc_browser_screensaver         .byt "Fade-out the screen after some time", 0
-mdesc_browser_screensaver_timeout .byt "Set time after which to fade the screen", 0
-mdesc_browser_ledbright           .byt "Change brightness of LEDs", 0
-mdesc_ingame_cheats               .byt "Whether to start out with cheats enabled. Can be changed using in-game buttons", 0
-mdesc_ingame_shortreset           .byt "Go back to menu on short reset if enabled", 0
-mdesc_ingame_enable               .byt "Required for in-game buttons and 7E/7F cheats", 0
-mdesc_ingame_buttons              .byt "Enable in-game buttons (reset, en/disable cheats", 127, 128, "). Requires in-game hook to be enabled.", 0
-mdesc_ingame_holdoff              .byt "Wait 10 seconds before enabling hook (helps some games boot with hook enabled)", 0
-mdesc_ingame_savestate            .byt "Enable in-game savestates and choose controller. Default: Save - Start+L / Load - Start+R", 0
-mdesc_savestate_slots             .byt "Enable savestate slots. Select+Dpad: Each direction is a slot to choose", 0
-mdesc_loadstate_delay             .byt "Adjust the load state delay (frames)", 0
-mdesc_sgb_enable_hooks            .byt "Required for in-game buttons", 0
-mdesc_sgb_enable_state            .byt "Enable built-in savestates on SGB2 (XR, XL)", 0
-mdesc_sgb_enh_override            .byt "Disable/enable the SGB enhancements", 0
-mdesc_sgb_spr_increase            .byt "Increase number of supported visible sprites", 0
-mdesc_sgb_volume_boost            .byt "Set volume boost for SGB audio if its too quiet", 0
-mdesc_sgb_clock                   .byt "Adjusts the SGB clock (timing)", 0
-mdesc_sgb_bios                    .byt "Select a SGB firmware/BIOS version", 0
-mdesc_ingame_regionpatch          .byt "Bypass simple region protection by games", 0
-mdesc_ingame_1chiptransientfixes  .byt "Patch brightness changes to fix sync glitches, fading scanlines and missing shadow on 1CHIP/Jr. consoles", 0
-mdesc_ingame_brightlimit          .byt "Limit overall brightness (e.g. on 1CHIP consoles to meet RGB line levels)", 0
-mdesc_ingame_resetpatch           .byt "Enable reset patch to align clocks.  Fixes graphical issues in some games", 0
-mdesc_ingame_autosave             .byt "Automatically save SRM file when Save RAM contents change", 0
-mdesc_ingame_autosave_msu1        .byt "MSU-1: Take some opportunities to auto-save SRM file. May cause brief stuttering.", 0
-mdesc_chip_cx4_speed              .byt "Set speed of Cx4 soft core", 0
-mdesc_chip_gsu_speed              .byt "Set speed of SuperFX soft core", 0
-mdesc_chip_msu1_volume_boost      .byt "Set volume boost for MSU1 audio if your sd2snes is too quiet (Rev. E-G)", 0
-mdesc_cx4_speed_fast              .byt "Run as fast as possible", 0
-mdesc_cx4_speed_normal            .byt "Run at approx. original speed", 0
-mdesc_gsu_speed_fast              .byt "Run as fast as possible", 0
-mdesc_gsu_speed_normal            .byt "Run at approx. original speed", 0
+mdesc_mm_last:                    .text "Show up to 10 most recently played games", 0
+mdesc_mm_favorites:               .text "Show up to 10 favorite games", 0
+mdesc_mm_cfg:                     .text "Configure the sd2snes", 0
+mdesc_mm_sysinfo:                 .text "Info about FW version, SD Card, SNES, CIC", 127, 128, 0
+mdesc_cfg_time:                   .text "Set the date and time", 0
+mdesc_cfg_bsx:                    .text "BS-X/Satellaview specific settings", 0
+mdesc_cfg_browser:                .text "Change file browser settings", 0
+mdesc_cfg_chip:                   .text "Set special chip features", 0
+mdesc_cfg_ingame:                 .text "Set in-game features", 0
+mdesc_cfg_sgb:                    .text "Set Super Game Boy features", 0
+mdesc_cfg_savestates:             .text "Set savestates features", 0
+mdesc_cfg_scic:                   .text "Enable/Disable SuperCIC and set video modes", 0
+mdesc_bsx_timesource:             .text "Choose what date and time BS-X games see", 0
+mdesc_bsx_time:                   .text "Set custom time and date for BS-X games", 0
+mdesc_scic_enable:                .text "Required for SuperCIC enhanced features", 0
+mdesc_scic_vmode_menu:            .text "Set video mode for menu", 0
+mdesc_scic_vmode_game:            .text "Set video mode for games", 0
+mdesc_browser_sort:               .text "Choose whether to sort file lists", 0
+mdesc_browser_hide_ext:           .text "Choose whether to hide file extensions", 0
+mdesc_browser_screensaver:        .text "Fade-out the screen after some time", 0
+mdesc_browser_screensaver_timeout: .text "Set time after which to fade the screen", 0
+mdesc_browser_ledbright:          .text "Change brightness of LEDs", 0
+mdesc_ingame_cheats:              .text "Whether to start out with cheats enabled. Can be changed using in-game buttons", 0
+mdesc_ingame_shortreset:          .text "Go back to menu on short reset if enabled", 0
+mdesc_ingame_enable:              .text "Required for in-game buttons and 7E/7F cheats", 0
+mdesc_ingame_buttons:             .text "Enable in-game buttons (reset, en/disable cheats", 127, 128, "). Requires in-game hook to be enabled.", 0
+mdesc_ingame_holdoff:             .text "Wait 10 seconds before enabling hook (helps some games boot with hook enabled)", 0
+mdesc_ingame_savestate:           .text "Enable in-game savestates and choose controller. Default: Save - Start+L / Load - Start+R", 0
+mdesc_savestate_slots:            .text "Enable savestate slots. Select+Dpad: Each direction is a slot to choose", 0
+mdesc_loadstate_delay:            .text "Adjust the load state delay (frames)", 0
+mdesc_sgb_enable_hooks:           .text "Required for in-game buttons", 0
+mdesc_sgb_enable_state:           .text "Enable built-in savestates on SGB2 (XR, XL)", 0
+mdesc_sgb_enh_override:           .text "Disable/enable the SGB enhancements", 0
+mdesc_sgb_spr_increase:           .text "Increase number of supported visible sprites", 0
+mdesc_sgb_volume_boost:           .text "Set volume boost for SGB audio if its too quiet", 0
+mdesc_sgb_clock:                  .text "Adjusts the SGB clock (timing)", 0
+mdesc_sgb_bios:                   .text "Select a SGB firmware/BIOS version", 0
+mdesc_ingame_regionpatch:         .text "Bypass simple region protection by games", 0
+mdesc_ingame_1chiptransientfixes: .text "Patch brightness changes to fix sync glitches, fading scanlines and missing shadow on 1CHIP/Jr. consoles", 0
+mdesc_ingame_brightlimit:         .text "Limit overall brightness (e.g. on 1CHIP consoles to meet RGB line levels)", 0
+mdesc_ingame_resetpatch:          .text "Enable reset patch to align clocks.  Fixes graphical issues in some games", 0
+mdesc_ingame_autosave:            .text "Automatically save SRM file when Save RAM contents change", 0
+mdesc_ingame_autosave_msu1:       .text "MSU-1: Take some opportunities to auto-save SRM file. May cause brief stuttering.", 0
+mdesc_chip_cx4_speed:             .text "Set speed of Cx4 soft core", 0
+mdesc_chip_gsu_speed:             .text "Set speed of SuperFX soft core", 0
+mdesc_chip_msu1_volume_boost:     .text "Set volume boost for MSU1 audio if your sd2snes is too quiet (Rev. E-G)", 0
+mdesc_cx4_speed_fast:             .text "Run as fast as possible", 0
+mdesc_cx4_speed_normal:           .text "Run at approx. original speed", 0
+mdesc_gsu_speed_fast:             .text "Run as fast as possible", 0
+mdesc_gsu_speed_normal:           .text "Run at approx. original speed", 0
 
-text_filesel_selected_file .byt "Selected file", 0
-text_filesel_context_add_to_favorites .byt "Add to favorites", 0
-mdesc_filesel_context_add_to_favorites .byt "Add the selected file to favorites", 0
+text_filesel_selected_file: .text "Selected file", 0
+text_filesel_context_add_to_favorites: .text "Add to favorites", 0
+mdesc_filesel_context_add_to_favorites: .text "Add the selected file to favorites", 0
 
-text_filesel_context_remove_from_favorites .byt "Remove from favorites", 0
-mdesc_filesel_context_remove_from_favorites .byt "Remove the selected file from favorites", 0
+text_filesel_context_remove_from_favorites: .text "Remove from favorites", 0
+mdesc_filesel_context_remove_from_favorites: .text "Remove the selected file from favorites", 0
 
-text_recent_context_remove_from_recent .byt "Remove from recent games", 0
-mdesc_recent_context_remove_from_recent .byt "Remove selected file from the recent games list", 0
+text_recent_context_remove_from_recent: .text "Remove from recent games", 0
+mdesc_recent_context_remove_from_recent: .text "Remove selected file from the recent games list", 0
 
-text_filesel_set_as_autoboot .byt "Set as autoboot", 0
-mdesc_filesel_set_as_autoboot .byt "Boot this ROM automatically on next power-on (hold START during powerup/reset to cancel)", 0
+text_filesel_set_as_autoboot: .text "Set as autoboot", 0
+mdesc_filesel_set_as_autoboot: .text "Boot this ROM automatically on next power-on (hold START during powerup/reset to cancel)", 0
 
-text_statusbar_play .byt "A:Play B:Back X:Menu", 0
-text_statusbar_keys .byt "A:Select B:Back X:Menu Y:Context", 0
-text_statusbar_spc  .byt "B:Back", 0
-text_statusbar_menu .byt "A:Select B:Back", 0
-text_last           .byt "Recent games", 0
-text_favorite       .byt "Favorite games", 0
-text_system         .byt "CPU/PPU1/PPU2: a/b/c        VMode: x0Hz",0
+text_statusbar_play: .text "A:Play B:Back X:Menu", 0
+text_statusbar_keys: .text "A:Select B:Back X:Menu Y:Context", 0
+text_statusbar_spc: .text "B:Back", 0
+text_statusbar_menu: .text "A:Select B:Back", 0
+text_last:          .text "Recent games", 0
+text_favorite:      .text "Favorite games", 0
+text_system:        .text "CPU/PPU1/PPU2: a/b/c        VMode: x0Hz", 0
 
-text_on_p1      .byt "On: P1", 0
-text_on_p2      .byt "On: P2", 0
-text_on         .byt "On", 0
-text_off        .byt "Off", 0
-text_enabled    .byt "Enabled", 0
-text_disabled   .byt "Disabled", 0
-text_normal     .byt "Normal", 0
-text_fast       .byt "Fast", 0
-text_rtc        .byt "Real-time", 0
-text_custom     .byt "Custom", 0
-text_yes        .byt "Yes", 0
-text_no         .byt "No", 0
-text_50Hz       .byt "50Hz", 0
-text_60Hz       .byt "60Hz", 0
-text_auto       .byt "Auto", 0
-text_pal        .byt "PAL", 0
-text_ntsc       .byt "NTSC", 0
-text_add        .byt "Add", 0
-text_remove     .byt "Remove", 0
-text_edit       .byt "Edit", 0
-text_save       .byt "Save", 0
+text_on_p1:     .text "On: P1", 0
+text_on_p2:     .text "On: P2", 0
+text_on:        .text "On", 0
+text_off:       .text "Off", 0
+text_enabled:   .text "Enabled", 0
+text_disabled:  .text "Disabled", 0
+text_normal:    .text "Normal", 0
+text_fast:      .text "Fast", 0
+text_rtc:       .text "Real-time", 0
+text_custom:    .text "Custom", 0
+text_yes:       .text "Yes", 0
+text_no:        .text "No", 0
+text_50Hz:      .text "50Hz", 0
+text_60Hz:      .text "60Hz", 0
+text_auto:      .text "Auto", 0
+text_pal:       .text "PAL", 0
+text_ntsc:      .text "NTSC", 0
+text_add:       .text "Add", 0
+text_remove:    .text "Remove", 0
+text_edit:      .text "Edit", 0
+text_save:      .text "Save", 0
 
-text_1min       .byt "1 min", 0
-text_2min       .byt "2 mins", 0
-text_3min       .byt "3 mins", 0
-text_4min       .byt "4 mins", 0
-text_5min       .byt "5 mins", 0
-text_10min      .byt "10 mins", 0
-text_15min      .byt "15 mins", 0
-text_20min      .byt "20 mins", 0
-text_30min      .byt "30 mins", 0
-text_45min      .byt "45 mins", 0
-text_60min      .byt "1 hour", 0
+text_1min:      .text "1 min", 0
+text_2min:      .text "2 mins", 0
+text_3min:      .text "3 mins", 0
+text_4min:      .text "4 mins", 0
+text_5min:      .text "5 mins", 0
+text_10min:     .text "10 mins", 0
+text_15min:     .text "15 mins", 0
+text_20min:     .text "20 mins", 0
+text_30min:     .text "30 mins", 0
+text_45min:     .text "45 mins", 0
+text_60min:     .text "1 hour", 0
 
-text_minus1     .byt "-1", 0
-text_minus2     .byt "-2", 0
-text_minus3     .byt "-3", 0
-text_minus4     .byt "-4", 0
-text_minus5     .byt "-5", 0
-text_minus6     .byt "-6", 0
-text_minus7     .byt "-7", 0
+text_minus1:    .text "-1", 0
+text_minus2:    .text "-2", 0
+text_minus3:    .text "-3", 0
+text_minus4:    .text "-4", 0
+text_minus5:    .text "-5", 0
+text_minus6:    .text "-6", 0
+text_minus7:    .text "-7", 0
 
-text_1          .byt "1", 0
-text_2          .byt "2", 0
-text_3          .byt "3", 0
-text_4          .byt "4", 0
-text_5          .byt "5", 0
-text_6          .byt "6", 0
-text_7          .byt "7", 0
-text_8          .byt "8", 0
-text_9          .byt "9", 0
-text_10         .byt "10", 0
-text_11         .byt "11", 0
-text_12         .byt "12", 0
-text_13         .byt "13", 0
-text_14         .byt "14", 0
-text_15_max     .byt "15 (max)", 0
+text_1:         .text "1", 0
+text_2:         .text "2", 0
+text_3:         .text "3", 0
+text_4:         .text "4", 0
+text_5:         .text "5", 0
+text_6:         .text "6", 0
+text_7:         .text "7", 0
+text_8:         .text "8", 0
+text_9:         .text "9", 0
+text_10:        .text "10", 0
+text_11:        .text "11", 0
+text_12:        .text "12", 0
+text_13:        .text "13", 0
+text_14:        .text "14", 0
+text_15_max:    .text "15 (max)", 0
 
-text_3_5db      .byt "+3.5dBFS", 0
-text_6db        .byt "+6dBFS", 0
-text_9_5db      .byt "+9.5dBFS", 0
-text_12db       .byt "+12dBFS", 0
+text_3_5db:     .text "+3.5dBFS", 0
+text_6db:       .text "+6dBFS", 0
+text_9_5db:     .text "+9.5dBFS", 0
+text_12db:      .text "+12dBFS", 0
 
-text_sgb_clock1 .byt "SGB1: 4.295 MHz", 0
-text_sgb_clock2 .byt "SGB2: 4.194 MHz", 0
+text_sgb_clock1: .text "SGB1: 4.295 MHz", 0
+text_sgb_clock2: .text "SGB2: 4.194 MHz", 0
 
-text_spcplay    .byt "SPC Music Player", 0
-spcplay_win_x   .byt 15
-spcplay_win_y   .byt 15
-spcplay_win_w   .byt 33
-spcplay_win_h   .byt 3
+text_spcplay:   .text "SPC Music Player", 0
+spcplay_win_x:  .byte 15
+spcplay_win_y:  .byte 15
+spcplay_win_w:  .byte 33
+spcplay_win_h:  .byte 3
 
-text_spcload    .byt "Loading SPC data to SPC700", 127, 128, 0
-text_spcstarta  .byt "**** Now playing SPC tune ****", 0
-text_spcstartb  .byt "Name:  ",0
-text_spcstartc  .byt "Song:  ",0
-text_spcstartd  .byt "Artist:",0
-text_spc_statusbar .byt "B:Back", 0
+text_spcload:   .text "Loading SPC data to SPC700", 127, 128, 0
+text_spcstarta: .text "**** Now playing SPC tune ****", 0
+text_spcstartb: .text "Name:  ", 0
+text_spcstartc: .text "Song:  ", 0
+text_spcstartd: .text "Artist:", 0
+text_spc_statusbar: .text "B:Back", 0
 
-spcstart_win_x  .byt 10
-spcstart_win_y  .byt 13
-spcstart_win_w  .byt 44
-spcstart_win_h  .byt 9
+spcstart_win_x: .byte 10
+spcstart_win_y: .byte 13
+spcstart_win_w: .byte 44
+spcstart_win_h: .byte 9
 
-text_loading    .byt "Loading", 127, 128, "                        ",0
-text_saving     .byt "Saving", 127, 128, "                         ",0
-loading_win_x   .byt 2
-loading_win_y   .byt 28
-loading_win_w   .byt 34
-loading_win_h   .byt 1
+text_loading:   .text "Loading", 127, 128, "                        ", 0
+text_saving:    .text "Saving", 127, 128, "                         ", 0
+loading_win_x:  .byte 2
+loading_win_y:  .byte 28
+loading_win_w:  .byte 34
+loading_win_h:  .byte 1
 
-text_cheat      .byt "Cheats for ", 0
-cheat_win_x     .byt 6
-cheat_win_y     .byt 11
-cheat_win_w     .byt 52
-cheat_win_h     .byt 15
+text_cheat:     .text "Cheats for ", 0
+cheat_win_x:    .byte 6
+cheat_win_y:    .byte 11
+cheat_win_w:    .byte 52
+cheat_win_h:    .byte 15
 
-cheat_tab_head  .byt "Name                         # of codes  Enabled", 0
-cheat_tab_line  .byt 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24
-                .byt 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24
-                .byt 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,0
+cheat_tab_head: .text "Name                         # of codes  Enabled", 0
+cheat_tab_line: .byte 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24
+                .byte 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24
+                .byte 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 0
 
-cheat_detail_head .byt "PAR       GG        Address Value", 0
-cheat_detail_line .byt 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24
-                  .byt 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24
-                  .byt 24,0
+cheat_detail_head: .text "PAR       GG        Address Value", 0
+cheat_detail_line: .byte 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24
+                  .byte 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24
+                  .byte 24, 0
 
-text_spcid      .byt "SNES-SPC700"
-rootdir         .byt "/", 0
-gfxptr_info     .byt "_GFXPTR_"
-                .word font
-                .word logo
-                .word logospr
-                .word hdma_math_src
-                .word hdma_bar_color_src
-                .word hdma_pal_src
-                .word oam_data_l
-                .word oam_data_h
-                .word palette
+text_spcid:     .text "SNES-SPC700"
+rootdir:        .text "/", 0
+gfxptr_info:    .text "_GFXPTR_"
+                .word <>font
+                .word <>logo
+                .word <>logospr
+                .word <>hdma_math_src
+                .word <>hdma_bar_color_src
+                .word <>hdma_pal_src
+                .word <>oam_data_l
+                .word <>oam_data_h
+                .word <>palette

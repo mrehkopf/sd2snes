@@ -1,48 +1,47 @@
-IPS = header.ips
-O65 = reset.o65 main.o65 font.o65 palette.o65 data.o65 const.o65 logo.o65 logospr.o65 dma.o65 filesel.o65 pad.o65 time.o65 sysinfo.o65 spc700.o65 spcplay.o65 menu.o65 menudata.o65 ui.o65 nmihook.o65 common.o65 savestate.o65 near.o65 # cheat.o65 # gfx.o65 # vars.o65
-
-OBJS = $(IPS) $(O65)
-# stopgap measure to create both files as long as they are identical...
+# rom.asm includes all other sources
+# TODO make Makefile sensitive to changes in all source files again
+SRC = rom.asm
 
 OUT = menu.bin m3nu.bin
 
-LOG = $(OBJS:=.log)
-MAP = $(IPS:.ips=.map) $(O65:.o65=.map)
+AS = 64tass
+AS_MIN_VERSION = 1.60.3243
+ASFLAGS = --m65816 -C -a -q
+CHKSUM = ../utils/sneschksum
 
 DEPDIR := .dep
-GENDEPFLAGS = -MM -MP -MF $(DEPDIR)/$(@F).d -MT $(@F)
 
-all: $(OUT) $(MAP)
+all: $(OUT)
+
+menu.bin: $(SRC) | $(DEPDIR)
+	@test -x $(CHKSUM) || { echo "$(CHKSUM) not found, run 'make -C ../utils' first"; exit 1; }
+	@v=$$($(AS) --version | sed -n 's/.* V\([0-9.]*\).*/\1/p'); \
+	  printf '%s\n%s\n' $(AS_MIN_VERSION) "$$v" | sort -V -C || \
+	  { echo "64tass $(AS_MIN_VERSION) or newer required (found: $$v)"; exit 1; }
+	$(AS) $(ASFLAGS) -b -o $@ -L menu.lst --line-numbers --vice-labels -l menu.lbl \
+	  --map menu.map -M $(DEPDIR)/menu.d --make-phony $(SRC)
+	$(CHKSUM) $@
+
+# stopgap measure to create both files as long as they are identical...
+m3nu.bin: menu.bin
+	cp $< $@
+
+$(DEPDIR):
+	mkdir -p $@
 
 smc: menu.bin
 	cat menu.bin sd2snes.rom > menu.smc
 
-map: $(MAP)
+# symbol list sorted by address ("C0xxxx label")
+map: menu.sym
 
-$(MAP) &: menu.bin $(LOG) link.log
-	utils/mkmap.sh $(OBJS)
-
-# generate menu.bin / m3nu.bin / link.log
-$(OUT): $(OBJS)
-	sneslink -fsmc -o $@ $^ 2>&1 | tee link.log
-
-# in case link.log has been deleted
-link.log: $(OBJS)
-	sneslink -fsmc -o /dev/null $^ 2>&1 | tee link.log
-
-# Generic rule to create .o65[.log] out from .a65
-%.o65 %.o65.log: %.a65
-	cpp $(GENDEPFLAGS) $<
-	snescom -J -Wall -o $(@:.log=) $< 2>&1 | tee $(@:.log=).log
-
-# Generic rule to create .ips out from .a65
-%.ips %.ips.log: %.a65
-	cpp $(GENDEPFLAGS) $<
-	snescom -I -J -Wall -o $(@:.log=) $< 2>&1 | tee $(@:.log=).log
+menu.sym: menu.bin
+	awk '{ sub(/^\./, "", $$3); a = toupper($$2); while (length(a) < 6) a = "0" a; print a, $$3 }' menu.lbl | sort -u > $@
 
 clean:
-	rm -f -- *~ *.ips *.o65 $(OUT) *.o65.log *.ips.log
+	rm -f -- *~ $(OUT) menu.lst menu.lbl menu.map menu.sym menu.smc
+	rm -rf -- $(DEPDIR)
 
--include $(info $(DEPDIR)) $(shell mkdir $(DEPDIR) 2>/dev/null) $(wildcard $(DEPDIR)/*)
+-include $(wildcard $(DEPDIR)/*.d)
 
 .PHONY: all smc map clean

@@ -1,37 +1,36 @@
-.link page $c0
-#include "memmap.i65"
-
 ; sysinfo.a65: display sysinfo text block
-.byt "===SHOW_SYSINFO==="
+.text "===SHOW_SYSINFO==="
 show_sysinfo:
   php
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
   stz bar_wl
   dec bar_wl
   stz bar_xl
   dec bar_xl
   stz bar_yl
   dec bar_yl
-  lda #^mtext_mm_sysinfo
+  lda #`mtext_mm_sysinfo
   sta window_tbank
-  ldx #!mtext_mm_sysinfo
+  ldx #<>mtext_mm_sysinfo
   stx window_taddr
-  lda @sysinfo_win_x
+  lda @l sysinfo_win_x
   sta window_x
-  inc
-  inc
+  inc a
+  inc a
   pha
   stz print_x+1
-  lda @sysinfo_win_y
+  lda @l sysinfo_win_y
   sta window_y
-  inc
-  inc
+  inc a
+  inc a
   pha
   stz print_y+1
-  lda @sysinfo_win_w
+  lda @l sysinfo_win_w
   sta window_w
-  lda @sysinfo_win_h
+  lda @l sysinfo_win_h
   sta window_h
   jsr push_window
   jsr draw_window
@@ -39,21 +38,23 @@ show_sysinfo:
 
   ldx #38
 copy_snes_system_text:
-  lda @text_system,x
-  sta @snes_system_config,x
+  lda @l text_system,x
+  sta wram(snes_system_config),x
   dex
   bpl copy_snes_system_text
 
 sysinfo_printloop:
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
   lda #CMD_SYSINFO
-  sta @MCU_CMD
-- lda @SNES_CMD
+  sta @l MCU_CMD
+- lda @l SNES_CMD
   cmp #CMD_SYSINFO
   bne -
-  lda #^SYSINFO_BLK
-  ldx #!SYSINFO_BLK
+  lda #`SYSINFO_BLK
+  ldx #<>SYSINFO_BLK
   sta print_bank
   stx print_src
   stz print_pal
@@ -67,14 +68,16 @@ sysinfo_printloop:
 - pha
   jsr hiprint
   inc print_y
-  rep #$20 : .al
+  rep #$20
+  .al
   lda print_src
   clc
   adc #40
   sta print_src
-  sep #$20 : .as
+  sep #$20
+  .as
   pla
-  dec
+  dec a
   bne -
 
   ldx #17
@@ -82,21 +85,21 @@ sysinfo_printloop:
   and #$0f
   clc
   adc #$30
-  sta @snes_system_config,x
+  sta wram(snes_system_config),x
 
   ldx #19
   lda $213f
   and #$0f
   clc
   adc #$30
-  sta @snes_system_config,x
+  sta wram(snes_system_config),x
 
   ldx #15
   lda $4210
   and #$0f
   clc
   adc #$30
-  sta @snes_system_config,x
+  sta wram(snes_system_config),x
 
   ldx #35
   lda $213f
@@ -105,10 +108,10 @@ sysinfo_printloop:
   adc #$f0
   lda #$35
   adc #$00
-  sta @snes_system_config, x
+  sta wram(snes_system_config),x
 
-  lda #^snes_system_config ; System text
-  ldx #!snes_system_config
+  lda #`wram(snes_system_config) ; System text
+  ldx #snes_system_config
   sta print_bank
   stx print_src
   stz print_pal
@@ -128,19 +131,19 @@ sysinfo_printloop:
   lda pad_b
   ora pad_a
   bne +
-  lda @sysinfo_win_x
-  inc
-  inc
+  lda @l sysinfo_win_x
+  inc a
+  inc a
   pha
-  lda @sysinfo_win_y
-  inc
-  inc
+  lda @l sysinfo_win_y
+  inc a
+  inc a
   pha
   jmp sysinfo_printloop
 + plp
   lda #CMD_MCU_RDY
-  sta @MCU_CMD
-- cmp @SNES_CMD
+  sta @l MCU_CMD
+- cmp @l SNES_CMD
   bne -
   jsr pop_window
   rtl

@@ -1,13 +1,10 @@
-.link page $c0
-
-#include "memmap.i65"
-#include "dma.i65"
-
 filesel_init:
-  sep #$20 : .as
-  rep #$10 : .xl
-  lda #^ROOT_DIR
-  ldx #!ROOT_DIR
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  lda #`ROOT_DIR
+  ldx #<>ROOT_DIR
   sta dirptr_bank
   stx dirptr_addr
   sta dirstart_bank
@@ -29,22 +26,26 @@ filesel_init:
   stx direntry_xscroll_state
   lda #$01
   sta filesel_dirty
-  rep #$20 : .al
-  lda #!dirlog
+  rep #$20
+  .al
+  lda #dirlog
   sta dirlog_idx
-  sep #$20 : .as
-  lda #^dirlog
+  sep #$20
+  .as
+  lda #`wram(dirlog)
   sta dirlog_idx+2
   lda #$2f
-  sta @FILESEL_CWD
+  sta @l FILESEL_CWD
   lda #$00
-  sta @FILESEL_CWD+1
+  sta @l FILESEL_CWD+1
   jsr filesel_request_filelist
   rts
 
 fileselloop:
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
   lda isr_done
   lsr
   bcc fileselloop
@@ -56,7 +57,7 @@ fileselloop:
   beq fileselloop_redraw ; then do
   jsr scroll_direntry
   bra fileselloop
-fileselloop_redraw
+fileselloop_redraw:
   stz filesel_dirty
   jsr filesel_statusbar
   jsr filesel_redraw
@@ -65,25 +66,27 @@ fileselloop_redraw
   rts
 
 filesel_cleanup:
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
   lda dirend_onscreen ; end of file list on screen?
   beq filesel_cleanup_out
   lda dirend_idx
   lsr
   lsr
   pha
-filesel_cleanup_loop  ; pad rest of screen with empty lines
+filesel_cleanup_loop: ; pad rest of screen with empty lines
   cmp listdisp        ; end of screen reached?
   beq +               ; then leave
   pha
   clc
   adc #$09            ; first line in text area
-  inc
+  inc a
   sta print_y
   stz print_x
-  lda #^space64
-  ldx #!space64
+  lda #`space64
+  ldx #<>space64
   sta print_bank
   stx print_src
   stz print_pal
@@ -91,7 +94,7 @@ filesel_cleanup_loop  ; pad rest of screen with empty lines
   sta print_count
   jsr hiprint
   pla
-  inc
+  inc a
   bra filesel_cleanup_loop
 +
   pla
@@ -99,7 +102,7 @@ filesel_cleanup_loop  ; pad rest of screen with empty lines
   beq filesel_cleanup_out
   bpl filesel_cleanup_out
   sta filesel_sel
-filesel_cleanup_out
+filesel_cleanup_out:
   rts
 
 filesel_updates:
@@ -143,44 +146,44 @@ filesel_updates:
   lda pad_r
   bne key_r
   bra fileselupd_out
-key_down
+key_down:
   jsr filesel_key_down
   bra fileselupd_out
-key_up
+key_up:
   jsr filesel_key_up
   bra fileselupd_out
-key_right
+key_right:
   jsr filesel_key_right
   bra fileselupd_out
-key_left
+key_left:
   jsr filesel_key_left
   bra fileselupd_out
-key_b
+key_b:
   jsr filesel_key_b
   bra fileselupd_out
-key_a
+key_a:
   jsr filesel_key_a
   bra fileselupd_out
-key_x
+key_x:
   jsr filesel_key_x
   bra fileselupd_out
-key_y
+key_y:
   jsr filesel_key_y
   bra fileselupd_out
-key_select
+key_select:
   jsr filesel_key_select
   bra fileselupd_out
-key_start
+key_start:
   jsr filesel_key_start
   bra fileselupd_out
-key_l
+key_l:
   jsr filesel_key_l
   bra fileselupd_out
-key_r
+key_r:
   jsr filesel_key_r
   bra fileselupd_out
 
-fileselupd_out
+fileselupd_out:
   lda #$09
   sta cursor_y
   rts
@@ -190,10 +193,10 @@ filesel_redraw:
   beq redraw_filelist
 ;  cmp 1
 ;  beq redraw_main
-filesel_redraw_out
+filesel_redraw_out:
   rts
 
-redraw_filelist
+redraw_filelist:
   ldy #$0000
   sty dirptr_idx
   sty direntry_fits_idx
@@ -201,34 +204,36 @@ redraw_filelist
   sty direntry_xscroll_state
   stz dirend_idx
   stz dirend_onscreen
-redraw_filelist_loop
+redraw_filelist_loop:
   ldy dirptr_idx
   tya
   lsr
   lsr
   cmp listdisp
   beq redraw_filelist_last
-  rep #$20 : .al
-  lda [dirptr_addr], y
-  sta @dirent_addr
+  rep #$20
+  .al
+  lda [<dirptr_addr,d],y
+  sta wram(dirent_addr)
   iny
   iny
-  sep #$20 : .as
-  lda [dirptr_addr], y  ; load fileinfo bank
+  sep #$20
+  .as
+  lda [<dirptr_addr,d],y ; load fileinfo bank
   clc
   adc #$c0              ; add $C0 for memory map
-  sta @dirent_bank      ; store as current bank
+  sta wram(dirent_bank) ; store as current bank
   cmp #$c0              ; if bank was 0 -> dirend entry in DB
   beq redraw_filelist_dirend ; handle dirend
   iny
-  lda [dirptr_addr], y
+  lda [<dirptr_addr,d],y
   iny
-  sta @dirent_type
+  sta wram(dirent_type)
   sty dirptr_idx
   jsr print_direntry
   inc direntry_fits_idx
   bra redraw_filelist_loop
-redraw_filelist_dirend
+redraw_filelist_dirend:
   dey                   ; recover last valid direntry number
   dey                   ; (we had 2x iny of the direntry pointer above,
   beq +
@@ -240,12 +245,12 @@ redraw_filelist_dirend
   lda #$01              ; encountered during redraw, so must be on screen
   sta dirend_onscreen
   bra redraw_filelist_out
-redraw_filelist_last    ; check if next offscreen item is end of dir
+redraw_filelist_last:   ; check if next offscreen item is end of dir
   iny
   iny
-  lda [dirptr_addr], y
+  lda [<dirptr_addr,d],y
   beq redraw_filelist_dirend
-redraw_filelist_out
+redraw_filelist_out:
   ldx #$0000
   stx dirptr_idx
   brl filesel_redraw_out
@@ -253,7 +258,7 @@ redraw_filelist_out
 print_direntry:
   lda cursor_y
   sta print_y
-  inc
+  inc a
   sta cursor_y
 
   lda dirent_bank
@@ -263,17 +268,18 @@ print_direntry:
   pha
   plb
 
-  rep #$20 : .al
+  rep #$20
+  .al
   lda #$06      ; skip size string
-  sta @fd_fnoff
-  lda @dirent_type
+  sta wram(fd_fnoff)
+  lda wram(dirent_type)
   and #TYPE_SUBDIR|TYPE_PARENT
   beq dirent_is_file
-dirent_is_dir
+dirent_is_dir:
   lda #$01      ; different color for dirs
   bra dirent_type_cont
-dirent_is_file
-  lda @dirent_type
+dirent_is_file:
+  lda wram(dirent_type)
   and #$00ff
   cmp #$0001    ; SMC -> palette 0 (white)
   bne +
@@ -290,21 +296,23 @@ dirent_is_file
   bra dirent_type_cont
 +
   lda #$0000    ; default -> palette 0
-dirent_type_cont
-  sta @print_pal
-  rep #$20 : .al
+dirent_type_cont:
+  sta wram(print_pal)
+  rep #$20
+  .al
   txa
   clc
-  adc @fd_fnoff
+  adc wram(fd_fnoff)
   clc
-  adc @direntry_xscroll
-  sta @fd_fnoff
+  adc wram(direntry_xscroll)
+  sta wram(fd_fnoff)
   plb
 
   lda cursor_x
   sta print_x
 
-  sep #$20 : .as
+  sep #$20
+  .as
   ldx fd_fnoff
   lda #54
   sta print_count
@@ -319,33 +327,34 @@ dirent_type_cont
 
   lda print_over
   ldy direntry_fits_idx
-  sta !direntry_fits, y
+  sta @w direntry_fits,y
   lda #54
   sec
   sbc print_done
   sta print_count
-  lda #^space64
-  ldx #!space64
+  lda #`space64
+  ldx #<>space64
   sta print_bank
   stx print_src
   jsr hiprint
 
-  sep #$20 : .as
+  sep #$20
+  .as
   lda dirent_type
   and #$f0
   cmp #$80
   bne dirent_is_file_2
-  lda #^text_dirmark
-  ldx #!text_dirmark
+  lda #`text_dirmark
+  ldx #<>text_dirmark
   sta print_bank
   stx print_src
   bra dirent_type_cont_2
-dirent_is_file_2
+dirent_is_file_2:
   lda dirent_bank
   ldx dirent_addr
   sta print_bank
   stx print_src
-dirent_type_cont_2
+dirent_type_cont_2:
   lda #56
   sta print_x
   lda #6
@@ -357,23 +366,25 @@ dirent_type_cont_2
 filesel_key_down:
   jsr scroll_direntry_clean
   lda listdisp
-  dec
+  dec a
   cmp filesel_sel
   bne down_noscroll
   lda #$01
   sta filesel_dirty
   lda dirend_onscreen
   bne down_out
-  rep #$20 : .al
+  rep #$20
+  .al
   lda dirptr_addr
   clc
   adc #$04
   bcc +
   inc dirptr_bank
 + sta dirptr_addr
-  sep #$20 : .as
+  sep #$20
+  .as
   rts
-down_noscroll
+down_noscroll:
   lda dirend_onscreen
   beq +
   lda dirend_idx
@@ -383,9 +394,9 @@ down_noscroll
   beq fileselupd_lastcursor
   bcc fileselupd_lastcursor
 + lda filesel_sel
-  inc
+  inc a
   sta filesel_sel
-down_out
+down_out:
   rts
 
 filesel_key_up:
@@ -394,7 +405,8 @@ filesel_key_up:
   bne up_noscroll
   lda #$01
   sta filesel_dirty
-  rep #$20 : .al
+  rep #$20
+  .al
   lda dirptr_addr
   cmp dirstart_addr
   beq up_out
@@ -404,14 +416,15 @@ filesel_key_up:
   dec dirptr_bank
 + sta dirptr_addr
   bra up_out
-up_noscroll
-  dec
+up_noscroll:
+  dec a
   sta filesel_sel
-up_out
-  sep #$20 : .as
+up_out:
+  sep #$20
+  .as
   rts
 
-fileselupd_lastcursor
+fileselupd_lastcursor:
   jsr scroll_direntry_clean
   lda dirend_idx
   lsr
@@ -425,7 +438,8 @@ filesel_key_left:
   stz direntry_xscroll_state
   lda #$01        ; must redraw afterwards
   sta filesel_dirty
-  rep #$20 : .al
+  rep #$20
+  .al
   lda dirptr_addr ; get current direntry pointer
   beq +           ; special case: if 0, we are at the first entry in memory
   lsr
@@ -440,7 +454,8 @@ filesel_key_left:
   cmp dirstart_addr ; check whether calculated offset is before...
   bcc +           ; ...start of directory
 - sta dirptr_addr ; store new selected entry
-  sep #$20 : .as
+  sep #$20
+  .as
   rts
 + lda dirstart_addr ; reset pointer to start of directory
   stz filesel_sel ; reset the selection cursor too
@@ -450,12 +465,14 @@ filesel_key_left:
 filesel_key_right:
   stz direntry_xscroll
   stz direntry_xscroll_state
-  sep #$20 : .as
+  sep #$20
+  .as
   lda dirend_onscreen
   bne fileselupd_lastcursor
   lda #$01
   sta filesel_dirty
-  rep #$20 : .al
+  rep #$20
+  .al
   lda listdisp
   asl
   asl
@@ -477,11 +494,13 @@ filesel_key_right:
   asl
   asl
   sta dirptr_addr
-  sep #$20 : .as
+  sep #$20
+  .as
   lda listdisp
-  dec
+  dec a
   sta filesel_sel
-+ sep #$20 : .as
++ sep #$20
+  .as
   rts
 
 filesel_key_a:
@@ -523,7 +542,8 @@ filesel_key_r:
 ; subtract listdisp from index to get first entry pos
 ; if less than one screen's worth, set to 0000, set cursor to last file
 ; else set cursor to listdisp
-  rep #$20 : .al
+  rep #$20
+  .al
   lda dirend_addr
   lsr
   lsr
@@ -536,33 +556,37 @@ filesel_key_r:
   tya
   lsr
   lsr
-  dec
-  sep #$20 : .as
+  dec a
+  sep #$20
+  .as
   sta filesel_sel
   bra filesel_key_r_out
 + sbc listdisp
   asl
   asl
   sta dirptr_addr
-  sep #$20 : .as
+  sep #$20
+  .as
   lda listdisp
-  dec
+  dec a
   sta filesel_sel
-filesel_key_r_out
+filesel_key_r_out:
   rts
 
 select_item:
-  rep #$20 : .al
+  rep #$20
+  .al
   lda filesel_sel
   and #$00ff
   asl
   asl
   tay
-  sep #$20 : .as
+  sep #$20
+  .as
   iny
   iny
   iny
-  lda [dirptr_addr], y
+  lda [<dirptr_addr,d],y
   cmp #TYPE_ROM
   beq sel_is_file
   cmp #TYPE_SPC
@@ -571,39 +595,41 @@ select_item:
   beq sel_is_dir
   cmp #TYPE_PARENT
   beq sel_is_parent
-select_item_cont
+select_item_cont:
   rts
-sel_is_file
+sel_is_file:
   jsr select_file
   bra select_item_cont
-sel_is_parent
+sel_is_parent:
   jsr select_parent
   bra select_item_cont
-sel_is_dir
+sel_is_dir:
   jsr select_dir
   bra select_item_cont
-sel_is_spc
+sel_is_spc:
   jsr select_spc
   bra select_item_cont
 
 select_file:
 ; have MCU load the rom
   dey
-  rep #$20 : .al
-  lda [dirptr_addr], y
+  rep #$20
+  .al
+  lda [<dirptr_addr,d],y
   and #$00ff
-  sta @MCU_PARAM+6
+  sta @l MCU_PARAM+6
   dey
   dey
-  lda [dirptr_addr], y
-  sta @MCU_PARAM+4
-  lda #!FILESEL_CWD
-  sta @MCU_PARAM
-  sep #$20 : .as
-  lda #^FILESEL_CWD
-  sta @MCU_PARAM+2
+  lda [<dirptr_addr,d],y
+  sta @l MCU_PARAM+4
+  lda #<>FILESEL_CWD
+  sta @l MCU_PARAM
+  sep #$20
+  .as
+  lda #`FILESEL_CWD
+  sta @l MCU_PARAM+2
   lda #$00
-  sta @MCU_PARAM+3
+  sta @l MCU_PARAM+3
   lda #CMD_LOADROM
   jsr game_handshake
   rts
@@ -611,68 +637,72 @@ select_file:
 select_dir:
   tyx
 ; save old dir position
-  rep #$20 : .al
+  rep #$20
+  .al
   ldy #$0000
-  lda @dirstart_addr
-  sta [dirlog_idx], y
+  lda wram(dirstart_addr)
+  sta [<dirlog_idx,d],y
   iny
   iny
-  lda @dirstart_bank
-  sta [dirlog_idx], y
+  lda wram(dirstart_bank)
+  sta [<dirlog_idx,d],y
   iny
-  lda @dirptr_addr
-  sta [dirlog_idx], y
+  lda wram(dirptr_addr)
+  sta [<dirlog_idx,d],y
   iny
   iny
-  lda @dirptr_bank
-  sta [dirlog_idx], y
+  lda wram(dirptr_bank)
+  sta [<dirlog_idx,d],y
   iny
-  lda @filesel_sel
-  sta [dirlog_idx], y
-  lda @dirlog_idx
+  lda wram(filesel_sel)
+  sta [<dirlog_idx,d],y
+  lda wram(dirlog_idx)
   clc
   adc #$0008
-  sta @dirlog_idx
-  sep #$20 : .as
+  sta wram(dirlog_idx)
+  sep #$20
+  .as
 ;---
 ; y = direntry ptr
   txy
   dey
-  lda [dirptr_addr], y
+  lda [<dirptr_addr,d],y
   clc
   adc #$c0
-  sta @dirent_bank
+  sta wram(dirent_bank)
   dey
   dey
-  rep #$20 : .al
-  lda [dirptr_addr], y
-  sta @dirent_addr
+  rep #$20
+  .al
+  lda [<dirptr_addr,d],y
+  sta wram(dirent_addr)
   tay
-  sep #$20 : .as
-  lda @dirent_bank
+  sep #$20
+  .as
+  lda wram(dirent_bank)
   phb
   pha
   plb
 ; append selected dir name to current working directory
   ldx #$0000
 find_path_end:
-  lda @FILESEL_CWD, x
+  lda @l FILESEL_CWD,x
   beq path_end_found
   inx
   bra find_path_end
-path_end_found
+path_end_found:
   dex
-  lda @FILESEL_CWD, x
+  lda @l FILESEL_CWD,x
   cmp #$2f
   beq copy_new_path
   inx
 copy_new_path:
   lda #$2f
-  sta @FILESEL_CWD, x
+  sta @l FILESEL_CWD,x
   inx
 copy_new_path_loop:
-  lda !6, y
-  sta @FILESEL_CWD, x
+  lda @w 6,y
+  sta @l FILESEL_CWD,x
   beq +
   inx
   iny
@@ -680,34 +710,37 @@ copy_new_path_loop:
 + lda #$00
 ; kill trailing /
   dex
-  sta @FILESEL_CWD, x
+  sta @l FILESEL_CWD,x
   plb
 ; request directory listing
   jsr filesel_request_filelist
-  rep #$20 : .al
+  rep #$20
+  .al
   lda #$0000
-  sta @dirptr_addr
-  sta @dirstart_addr
-  sep #$20 : .as
-  sta @filesel_sel
-  sta @direntry_xscroll
-  sta @direntry_xscroll_state
+  sta wram(dirptr_addr)
+  sta wram(dirstart_addr)
+  sep #$20
+  .as
+  sta wram(filesel_sel)
+  sta wram(direntry_xscroll)
+  sta wram(direntry_xscroll_state)
   lda #$01
-  sta @filesel_dirty
+  sta wram(filesel_dirty)
   rts
 
 select_parent:
 ; truncate last subdirectory
-  sep #$20 : .as
+  sep #$20
+  .as
   ldx #$0000
-- lda @FILESEL_CWD, x
+- lda @l FILESEL_CWD,x
   beq parent_end_found
   inx
   bra -
 parent_end_found:
   cpx #$0001
   beq cwd_is_root
-- lda @FILESEL_CWD, x
+- lda @l FILESEL_CWD,x
   cmp #$2f
   beq +
   dex
@@ -716,63 +749,70 @@ parent_end_found:
   bne +
   inx
 + lda #$00
-  sta @FILESEL_CWD, x
+  sta @l FILESEL_CWD,x
   bra parent_do_chdir
 cwd_is_root:
   rts
-parent_do_chdir
+parent_do_chdir:
   jsr filesel_request_filelist
-  lda @dirlog_idx
+  lda wram(dirlog_idx)
   sec
   sbc #$0008
-  sta @dirlog_idx
+  sta wram(dirlog_idx)
   ldy #$0000
-  lda [dirlog_idx], y ; load dirstart_addr
-  sta @dirstart_addr
+  lda [<dirlog_idx,d],y ; load dirstart_addr
+  sta wram(dirstart_addr)
   iny
   iny
-  sep #$20 : .as
-  lda [dirlog_idx], y ; load dirstart_bank
-  sta @dirstart_bank
+  sep #$20
+  .as
+  lda [<dirlog_idx,d],y ; load dirstart_bank
+  sta wram(dirstart_bank)
   iny
-  rep #$20 : .al
-  lda [dirlog_idx], y ; load dirptr_addr
-  sta @dirptr_addr
+  rep #$20
+  .al
+  lda [<dirlog_idx,d],y ; load dirptr_addr
+  sta wram(dirptr_addr)
   iny
   iny
-  sep #$20 : .as
-  lda [dirlog_idx], y ; load dirptr_bank
-  sta @dirptr_bank
+  sep #$20
+  .as
+  lda [<dirlog_idx,d],y ; load dirptr_bank
+  sta wram(dirptr_bank)
   iny
-  rep #$20 : .al
-  lda [dirlog_idx], y ; load filesel_sel
-  sta @filesel_sel
-  sep #$20 : .as
+  rep #$20
+  .al
+  lda [<dirlog_idx,d],y ; load filesel_sel
+  sta wram(filesel_sel)
+  sep #$20
+  .as
   lda #$01
-  sta @filesel_dirty
+  sta wram(filesel_dirty)
   rts
 
 select_spc:
   dey
-  rep #$20 : .al
-  lda [dirptr_addr], y
+  rep #$20
+  .al
+  lda [<dirptr_addr,d],y
   and #$00ff
-  sta @MCU_PARAM+6
+  sta @l MCU_PARAM+6
   dey
   dey
-  lda [dirptr_addr], y
-  sta @MCU_PARAM+4
-  lda #!FILESEL_CWD
-  sta @MCU_PARAM
-  sep #$20 : .as
-  lda #^FILESEL_CWD
-  sta @MCU_PARAM+2
+  lda [<dirptr_addr,d],y
+  sta @l MCU_PARAM+4
+  lda #<>FILESEL_CWD
+  sta @l MCU_PARAM
+  sep #$20
+  .as
+  lda #`FILESEL_CWD
+  sta @l MCU_PARAM+2
   lda #$00
-  sta @MCU_PARAM+3
+  sta @l MCU_PARAM+3
   lda #CMD_LOADSPC
-  sta @MCU_CMD
+  sta @l MCU_CMD
 wait_spc:
-  lda @MCU_CMD
+  lda @l MCU_CMD
   cmp #$00
   bne wait_spc
   jsr spcplayer
@@ -787,17 +827,19 @@ filesel_key_y:
   rts
 
 open_context_menu:
-  rep #$20 : .al
+  rep #$20
+  .al
   lda filesel_sel
   and #$00ff
   asl
   asl
   tay
-  sep #$20 : .as
+  sep #$20
+  .as
   iny
   iny
   iny
-  lda [dirptr_addr], y
+  lda [<dirptr_addr,d],y
   cmp #TYPE_ROM
   beq ctx_is_file
   cmp #TYPE_SPC
@@ -806,48 +848,53 @@ open_context_menu:
   beq ctx_is_dir
   cmp #TYPE_PARENT
   beq ctx_is_parent
-open_context_menu_cont
+open_context_menu_cont:
   rts
-ctx_is_file
+ctx_is_file:
 ; "save" selected file path to MCU_PARAM in case we need to send it there later
   dey
-  rep #$20 : .al
-  lda [dirptr_addr], y
+  rep #$20
+  .al
+  lda [<dirptr_addr,d],y
   and #$00ff
-  sta @MCU_PARAM+6
+  sta @l MCU_PARAM+6
   dey
   dey
-  lda [dirptr_addr], y
-  sta @MCU_PARAM+4
-  lda #!FILESEL_CWD
-  sta @MCU_PARAM
-  sep #$20 : .as
-  lda #^FILESEL_CWD
-  sta @MCU_PARAM+2
+  lda [<dirptr_addr,d],y
+  sta @l MCU_PARAM+4
+  lda #<>FILESEL_CWD
+  sta @l MCU_PARAM
+  sep #$20
+  .as
+  lda #`FILESEL_CWD
+  sta @l MCU_PARAM+2
   lda #$00
-  sta @MCU_PARAM+3
+  sta @l MCU_PARAM+3
   jsr filesel_contextmenu_file
   bra open_context_menu_cont
-ctx_is_parent
+ctx_is_parent:
   bra open_context_menu_cont
-ctx_is_dir
+ctx_is_dir:
   bra open_context_menu_cont
-ctx_is_spc
+ctx_is_spc:
   bra open_context_menu_cont
 
 setup_224:
   php
-  rep #$30 : .xl : .al
+  rep #$30
+  .xl
+  .al
   lda #18
   sta listdisp
-  dec
+  dec a
   cmp filesel_sel
   bmi setup_224_adjsel
   bra +
-setup_224_adjsel
+setup_224_adjsel:
   sta filesel_sel
 +
-  sep #$20 : .as
+  sep #$20
+  .as
   lda #$0b
   sta $2110
   lda #$00
@@ -856,8 +903,8 @@ setup_224_adjsel
   sta $2133
   lda #$01
   sta filesel_dirty
-  lda #^space64
-  ldx #!space64
+  lda #`space64
+  ldx #<>space64
   sta print_bank
   stx print_src
   stz print_pal
@@ -875,28 +922,32 @@ setup_224_adjsel
   plp
   rts
 
-filesel_statusbar
+filesel_statusbar:
   pha
   phx
   php
-  sep #$20 : .as
-  rep #$10 : .xl
-  lda #^text_statusbar_keys
-  sta @print_bank
-  rep #$20 : .al
-  lda #!text_statusbar_keys
-  sta @print_src
-  sep #$20 : .as
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  lda #`text_statusbar_keys
+  sta wram(print_bank)
+  rep #$20
+  .al
+  lda #<>text_statusbar_keys
+  sta wram(print_src)
+  sep #$20
+  .as
   lda #$00
-  sta @print_pal
+  sta wram(print_pal)
   lda #$02
-  sta @print_x
+  sta wram(print_x)
   lda #$40
-  sta @print_count
+  sta wram(print_count)
   lda listdisp
   clc
   adc #$0a
-  sta @print_y
+  sta wram(print_y)
   jsr hiprint
   plp
   plx
@@ -905,39 +956,41 @@ filesel_statusbar
 
 select_last_file:
   php
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
   lda #$00
   sta listsel_backup
 select_last_redraw:
-  lda @ST_NUM_RECENT_GAMES
+  lda @l ST_NUM_RECENT_GAMES
   sta num_recent_games
   stz recent_sel
   bne +
   jmp select_last_file_out
-+ lda #^text_last
++ lda #`text_last
   sta window_tbank
-  ldx #!text_last
+  ldx #<>text_last
   stx window_taddr
-  lda @last_win_x
+  lda @l last_win_x
   sta window_x
-  inc
-  inc
+  inc a
+  inc a
   pha
-  lda @last_win_y
+  lda @l last_win_y
   sta window_y
-  inc
+  inc a
   pha
-  lda @last_win_w
+  lda @l last_win_w
   sta window_w
-  lda @ST_NUM_RECENT_GAMES
-  inc
-  inc
+  lda @l ST_NUM_RECENT_GAMES
+  inc a
+  inc a
   sta window_h
   jsr push_window
   lda num_recent_games
   sta listsel_max
-  dec
+  dec a
   cmp listsel_backup
   bcs +
   sta listsel_backup
@@ -945,8 +998,8 @@ select_last_redraw:
   sta listsel_sel
   jsr draw_window
   stz print_pal
-  lda #^LAST_GAME
-  ldx #!LAST_GAME
+  lda #`LAST_GAME
+  ldx #<>LAST_GAME
   sta print_bank
   stx print_src
   stz print_pal
@@ -969,7 +1022,7 @@ select_last_choose:
   sta listsel_pickbutton ; allow button Y
   jsr menu_select_noinit
   sta listsel_backup
-  sta @MCU_PARAM
+  sta @l MCU_PARAM
   cmp #$ff
   beq select_last_file_done
   lda listsel_pickbutton
@@ -979,10 +1032,11 @@ select_last_choose:
   beq select_last_file_context_menu
   bra select_last_file_done
 select_last_file_play:
-  sep #$20 : .as
+  sep #$20
+  .as
   lda #CMD_LOADLAST
   jsr game_handshake
-  bra select_favorite_file_done
+  brl select_favorite_file_done
 select_last_file_context_menu:
   jsr filesel_recent_contextmenu
   lda listsel_dirty
@@ -1002,38 +1056,40 @@ select_last_file_out:
 select_favorite_file:
 ; shows a window with a list of favorite games
   php
-  sep #$20 : .as
-  rep #$10 : .xl
+  sep #$20
+  .as
+  rep #$10
+  .xl
   lda #$00
   sta listsel_backup
 select_favorite_redraw:
-  lda @ST_NUM_FAVORITE_GAMES
+  lda @l ST_NUM_FAVORITE_GAMES
   bne +
   jmp select_favorite_file_out
 + sta num_favorite_games
-  lda #^text_favorite
+  lda #`text_favorite
   sta window_tbank
-  ldx #!text_favorite
+  ldx #<>text_favorite
   stx window_taddr
-  lda @last_win_x
+  lda @l last_win_x
   sta window_x
-  inc
-  inc
+  inc a
+  inc a
   pha
-  lda @last_win_y
+  lda @l last_win_y
   sta window_y
-  inc
+  inc a
   pha
-  lda @last_win_w
+  lda @l last_win_w
   sta window_w
   lda num_favorite_games
-  inc
-  inc
+  inc a
+  inc a
   sta window_h
   jsr push_window
   lda num_favorite_games
   sta listsel_max
-  dec ; listsel_max is an element count but listsel_sel is 0..max-1
+  dec a ; listsel_max is an element count but listsel_sel is 0..max-1
   cmp listsel_backup
   bcs +
   sta listsel_backup
@@ -1041,8 +1097,8 @@ select_favorite_redraw:
   sta listsel_sel
   jsr draw_window
   stz print_pal
-  lda #^FAVORITE_GAMES
-  ldx #!FAVORITE_GAMES
+  lda #`FAVORITE_GAMES
+  ldx #<>FAVORITE_GAMES
   sta print_bank
   stx print_src
   stz print_pal
@@ -1065,7 +1121,7 @@ select_favorite_choose:
   sta listsel_pickbutton ; allow button Y
   jsr menu_select_noinit
   sta listsel_backup
-  sta @MCU_PARAM ; store selected item index in mcu param
+  sta @l MCU_PARAM ; store selected item index in mcu param
   cmp #$ff ; if no selected item, do nothing
   beq select_favorite_file_done
   lda listsel_pickbutton
@@ -1074,12 +1130,13 @@ select_favorite_choose:
   cmp #$01 ; if button Y was pressed
   beq select_favorite_file_context_menu
   bra select_favorite_file_done ; unknown button was pressed
-select_favorite_file_play
-  sep #$20 : .as
+select_favorite_file_play:
+  sep #$20
+  .as
   lda #CMD_LOADFAVORITE
   jsr game_handshake
   bra select_favorite_file_done
-select_favorite_file_context_menu
+select_favorite_file_context_menu:
   jsr filesel_favorites_contextmenu
   lda listsel_dirty          ; need redraw?
   bne +
@@ -1088,9 +1145,9 @@ select_favorite_file_context_menu
   jsr pop_window
   jsr disable_screen_update
   jmp select_favorite_redraw   ; redraw favorite list
-select_favorite_file_done
+select_favorite_file_done:
   jsr pop_window
-select_favorite_file_out
+select_favorite_file_out:
   jsr enable_screen_update
   plp
   rtl
@@ -1104,16 +1161,17 @@ add_selected_file_to_favorites:
 ; this routine
   php
   phb
-  sep #$20 : .as
+  sep #$20
+  .as
   jsr hide_cursor
   jsr draw_loading_window
   jsr waitblank
   lda #$00
-  sta @SNES_CMD
+  sta @l SNES_CMD
   lda #CMD_ADD_FAVORITE_ROM
-  sta @MCU_CMD
+  sta @l MCU_CMD
 ; wait for ACK/NACK
-- lda @SNES_CMD
+- lda @l SNES_CMD
   cmp #$55
 ; success
   beq +
@@ -1122,7 +1180,7 @@ add_selected_file_to_favorites:
   beq +
   bra -
 + lda #$55
-  sta @MCU_CMD
+  sta @l MCU_CMD
   jsr pop_window
   plb
   plp
@@ -1134,16 +1192,17 @@ add_recent_file_to_favorites:
 ; calling this routine
   php
   phb
-  sep #$20 : .as
+  sep #$20
+  .as
   jsr hide_cursor
   jsr draw_loading_window
   jsr waitblank
   lda #$00
-  sta @SNES_CMD
+  sta @l SNES_CMD
   lda #CMD_ADD_FAVORITE_RECENT
-  sta @MCU_CMD
+  sta @l MCU_CMD
   ; wait for ACK/NACK
-  - lda @SNES_CMD
+- lda @l SNES_CMD
   cmp #$55
   ; success
   beq +
@@ -1151,8 +1210,8 @@ add_recent_file_to_favorites:
   ; failure
   beq +
   bra -
-  + lda #$55
-  sta @MCU_CMD
++ lda #$55
+  sta @l MCU_CMD
 ;  sta listsel_dirty
   jsr pop_window
   plb
@@ -1165,16 +1224,17 @@ remove_selected_recent_file:
 ; calling this routine
   php
   phb
-  sep #$20 : .as
+  sep #$20
+  .as
   jsr hide_cursor
   jsr draw_loading_window
   jsr waitblank
   lda #$00
-  sta @SNES_CMD
+  sta @l SNES_CMD
   lda #CMD_REMOVE_RECENT_ROM
-  sta @MCU_CMD
+  sta @l MCU_CMD
   ; wait for ACK/NACK
-  - lda @SNES_CMD
+- lda @l SNES_CMD
   cmp #$55
   ; success
   beq +
@@ -1182,8 +1242,8 @@ remove_selected_recent_file:
   ; failure
   beq +
   bra -
-  + lda #$55
-  sta @MCU_CMD
++ lda #$55
+  sta @l MCU_CMD
   sta listsel_dirty
   jsr pop_window
   plb
@@ -1196,16 +1256,17 @@ remove_selected_favorite_file:
 ; calling this routine
   php
   phb
-  sep #$20 : .as
+  sep #$20
+  .as
   jsr hide_cursor
   jsr draw_loading_window
   jsr waitblank
   lda #$00
-  sta @SNES_CMD
+  sta @l SNES_CMD
   lda #CMD_REMOVE_FAVORITE_ROM
-  sta @MCU_CMD
+  sta @l MCU_CMD
   ; wait for ACK/NACK
-  - lda @SNES_CMD
+- lda @l SNES_CMD
   cmp #$55
   ; success
   beq +
@@ -1213,8 +1274,8 @@ remove_selected_favorite_file:
   ; failure
   beq +
   bra -
-  + lda #$55
-  sta @MCU_CMD
++ lda #$55
+  sta @l MCU_CMD
   sta listsel_dirty
   jsr pop_window
   plb
@@ -1227,16 +1288,17 @@ set_selected_as_autoboot_rom:
 ; this routine (done by open_context_menu / ctx_is_file)
   php
   phb
-  sep #$20 : .as
+  sep #$20
+  .as
   jsr hide_cursor
   jsr draw_loading_window
   jsr waitblank
   lda #$00
-  sta @SNES_CMD
+  sta @l SNES_CMD
   lda #CMD_SET_AUTOBOOT_ROM
-  sta @MCU_CMD
+  sta @l MCU_CMD
 ; wait for ACK/NACK
-- lda @SNES_CMD
+- lda @l SNES_CMD
   cmp #$55
 ; success
   beq +
@@ -1245,7 +1307,7 @@ set_selected_as_autoboot_rom:
   beq +
   bra -
 + lda #$55
-  sta @MCU_CMD
+  sta @l MCU_CMD
   jsr pop_window
   plb
   plp
@@ -1255,16 +1317,17 @@ set_recent_as_autoboot_rom:
 ; have MCU save the selected recent game as the autoboot ROM.
   php
   phb
-  sep #$20 : .as
+  sep #$20
+  .as
   jsr hide_cursor
   jsr draw_loading_window
   jsr waitblank
   lda #$00
-  sta @SNES_CMD
+  sta @l SNES_CMD
   lda #CMD_SET_AUTOBOOT_RECENT
-  sta @MCU_CMD
+  sta @l MCU_CMD
 ; wait for ACK/NACK
-- lda @SNES_CMD
+- lda @l SNES_CMD
   cmp #$55
 ; success
   beq +
@@ -1273,7 +1336,7 @@ set_recent_as_autoboot_rom:
   beq +
   bra -
 + lda #$55
-  sta @MCU_CMD
+  sta @l MCU_CMD
   jsr pop_window
   plb
   plp
@@ -1285,16 +1348,17 @@ set_favorite_as_autoboot_rom:
 ; before calling this routine (done by select_favorite_file)
   php
   phb
-  sep #$20 : .as
+  sep #$20
+  .as
   jsr hide_cursor
   jsr draw_loading_window
   jsr waitblank
   lda #$00
-  sta @SNES_CMD
+  sta @l SNES_CMD
   lda #CMD_SET_AUTOBOOT_FAV
-  sta @MCU_CMD
+  sta @l MCU_CMD
 ; wait for ACK/NACK
-- lda @SNES_CMD
+- lda @l SNES_CMD
   cmp #$55
 ; success
   beq +
@@ -1303,7 +1367,7 @@ set_favorite_as_autoboot_rom:
   beq +
   bra -
 + lda #$55
-  sta @MCU_CMD
+  sta @l MCU_CMD
   jsr pop_window
   plb
   plp
@@ -1323,11 +1387,11 @@ scroll_direntry:
   ldy filesel_sel
   lda direntry_xscroll_state
   bne +
-  lda direntry_fits, y
+  lda direntry_fits,y
   bne scroll_direntry_enter
 ;  stz direntry_xscroll_state
   rts
-scroll_direntry_enter
+scroll_direntry_enter:
   lda #$01
   sta direntry_xscroll_state
   stz direntry_xscroll_wait
@@ -1340,7 +1404,7 @@ scroll_direntry_enter
   bne scroll_direntry_scrollfast
   lda #$28
   bra +
-scroll_direntry_scrollfast
+scroll_direntry_scrollfast:
   lda #$10
 + sta direntry_xscroll_wait
   tya
@@ -1349,30 +1413,32 @@ scroll_direntry_scrollfast
   sta cursor_y
   lda #$02
   sta cursor_x
-  rep #$20 : .al
+  rep #$20
+  .al
   lda filesel_sel
   asl
   asl
   tay
-  lda [dirptr_addr], y
-  sta @dirent_addr
+  lda [<dirptr_addr,d],y
+  sta wram(dirent_addr)
   iny
   iny
-  sep #$20 : .as
-  lda [dirptr_addr], y ; load fileinfo bank
+  sep #$20
+  .as
+  lda [<dirptr_addr,d],y ; load fileinfo bank
   clc
-  adc #$c0             ; add $C0 for memory map
-  sta @dirent_bank     ; store as current bank
+  adc #$c0              ; add $C0 for memory map
+  sta wram(dirent_bank) ; store as current bank
   iny
-  lda [dirptr_addr], y
+  lda [<dirptr_addr,d],y
   iny
-  sta @dirent_type
+  sta wram(dirent_type)
   ldy filesel_sel
   sty direntry_fits_idx
   phy
   jsr print_direntry
   ply
-  lda direntry_fits, y
+  lda direntry_fits,y
   bne +
   lda #$ff
   sta direntry_xscroll_state
@@ -1390,46 +1456,50 @@ scroll_direntry_scrollfast
 filesel_request_filelist:
   php
   phb
-  rep #$30 : .al : .xl
-  lda #!FILESEL_CWD
-  sta @MCU_PARAM
-  lda #!ROOT_DIR
-  sta @MCU_PARAM+4
-  sep #$20 : .as
-  lda #^FILESEL_CWD
-  sta @MCU_PARAM+2
-  lda #^ROOT_DIR
-  sta @MCU_PARAM+6
+  rep #$30
+  .al
+  .xl
+  lda #<>FILESEL_CWD
+  sta @l MCU_PARAM
+  lda #<>ROOT_DIR
+  sta @l MCU_PARAM+4
+  sep #$20
+  .as
+  lda #`FILESEL_CWD
+  sta @l MCU_PARAM+2
+  lda #`ROOT_DIR
+  sta @l MCU_PARAM+6
   lda #TYPE_PARENT
-  sta @MCU_PARAM+8
+  sta @l MCU_PARAM+8
   lda #TYPE_SUBDIR
-  sta @MCU_PARAM+9
+  sta @l MCU_PARAM+9
   lda #TYPE_ROM
-  sta @MCU_PARAM+10
+  sta @l MCU_PARAM+10
   lda #TYPE_SPC
-  sta @MCU_PARAM+11
+  sta @l MCU_PARAM+11
   lda #$00
-  sta @MCU_PARAM+12
-  sta @SNES_CMD
+  sta @l MCU_PARAM+12
+  sta @l SNES_CMD
   lda #CMD_READDIR
-  sta @MCU_CMD
+  sta @l MCU_CMD
   lda #$00
   pha
   plb
   jsr hide_cursor
   jsr draw_loading_window
 filesel_request_filelist_wait_mcu:
-  jsl @WRAM_WAIT_MCU
+  jsl WRAM_WAIT_MCU
   jsr pop_window
   ldy #$0002
-- lda [dirstart_addr], y
+- lda [<dirstart_addr,d],y
   beq +
   iny
   iny
   iny
   iny
   bra -
-+ rep #$20 : .al
++ rep #$20
+  .al
   tya
   and #$fffc
   sta dirend_addr
