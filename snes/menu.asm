@@ -891,7 +891,9 @@ menu_print_opt_string_keyval:
     .al
     ldy Frame.kvtab_addr
     lda Frame.kvpar_data
-    jsr menu_kv_lookup
+    .param pha
+    .call menu_kv_lookup
+    pla
 ; sanitize invalid option setting
     cpy #$ffff
     bne +
@@ -993,20 +995,24 @@ menu_print_opt_string_out:
 ; params:
 ; y: address of entry table
 ; db: bank of entry table
-; a: search value
+; p_key: search value (word)
 ; returns:
 ; y: address of table entry if found,
 ;    $ffff if not found
-menu_kv_lookup:
-  php
-    rep #$30
+menu_kv_lookup .block
+  .virtual #0,d
+Frame .block
+  _             .dstruct SaveJSR
+  p_key         .word ?         ; search value
+.endblock
+  .endvirtual
+  .enter
+    rep #$10
     .xl
-    .al
-    pha
 -   lda @w KVEntry.key,y ; compare with table key
     cmp #$ffff           ; termination
     beq +
-    cmp $1,s           ; compare with search value
+    cmp Frame.p_key      ; compare with search value
     beq menu_kv_lookup_out
     iny
     iny
@@ -1016,9 +1022,9 @@ menu_kv_lookup:
     bra -
 +   ldy #$ffff
 menu_kv_lookup_out:
-    pla
-  plp
+  .leave
   rts
+.endblock
 
 ; menu_edit_value
 ; show a select/edit dialog depending on data type
@@ -1409,7 +1415,9 @@ menu_value_dialog_kv8:
       .al
       lda Frame.work_value
       and #$00ff
-      jsr menu_kv_lookup
+      .param pha
+      .call menu_kv_lookup
+      pla
 ; sanitize invalid option setting
       sep #$20
       .as
