@@ -330,21 +330,39 @@ draw_loading_window:
   rts
 
 
-; window stack
-; format:
-; prevptr   1 word
-; xpos      1 word
-; ypos      1 word
-; width     1 word
-; height    1 word
-; cursor    1 word
-; step      1 word
-; maxcursor 1 word
-; payload   width*height*2 bytes
+; window stack: entries at WINDOW_STACK_BASE + window_stack_head, each a
+; WindowStackEntry followed by the saved tile map rows of the window area
+; first BG1, then BG2 (2 * <height> rows of <width bytes rounded up to words>)
+WindowStackEntry .struct
+  prevptr       .word ?         ; offset of the previous entry, $ffff = none
+  xpos          .word ?         ; window_x
+  ypos          .word ?         ; window_y
+  width         .word ?         ; window_w
+  height        .word ?         ; window_h
+  cursor        .word ?         ; listsel_sel
+  step          .word ?         ; listsel_step
+  maxcursor     .word ?         ; listsel_max
+.ends
+; (listsel_* are kept with the window stack in case nested selection lists are
+;  invoked; in other cases they are unused but do no harm)
 
-push_window:
+; save_rows/restore_rows use one MVN bank operand for both tile buffers
+.cerror (`BG1_TILE_BUF) != `BG2_TILE_BUF, "BG1_TILE_BUF and BG2_TILE_BUF must share a bank"
+
+; save the area of the current window (window_x/y/w/h) on the window stack
+push_window .block
+  .virtual #0,d
+Frame .block
+  count         .word ?         ; bytes per row - 1, for MVN
+  height        .word ?         ; rows of the window
+  rows          .word ?         ; rows left in the current pass
+  buf_offset    .word ?         ; offset of the window in the tile buffers
+  buf_addr      .word ?         ; current row in the tile buffer
+  _             .dstruct SaveJSR
+.endblock
+  .endvirtual
   phb
-  php
+  .enter
   sep #$20
   .as
   lda #$80
@@ -366,7 +384,7 @@ pushw_skip_current_head:
 ; calculate address of next stack element
   tax
   phx                 ; save "previous" head
-  lda @l WINDOW_STACK_BASE+6,x
+  lda @l WINDOW_STACK_BASE+WindowStackEntry.width,x
   and #$00fe
   clc
   adc #$0002
@@ -374,119 +392,102 @@ pushw_skip_current_head:
   .as
   sta $211b
   stz $211b
-  lda @l WINDOW_STACK_BASE+8,x
+  lda @l WINDOW_STACK_BASE+WindowStackEntry.height,x
   sta $211c
   rep #$20
   .al
   lda $2134
   asl
   clc
-  adc #$0010
+  adc #size(WindowStackEntry)
   adc window_stack_head
   sta window_stack_head
   tax
   pla                 ; restore "previous" head
 pushw_write_element:
-  sta @l WINDOW_STACK_BASE,x
+  sta @l WINDOW_STACK_BASE+WindowStackEntry.prevptr,x
 ; write current window position and dimensions
   lda window_x
   and #$00ff
-  sta @l WINDOW_STACK_BASE+2,x
+  sta @l WINDOW_STACK_BASE+WindowStackEntry.xpos,x
   lda window_y
   and #$00ff
-  sta @l WINDOW_STACK_BASE+4,x
+  sta @l WINDOW_STACK_BASE+WindowStackEntry.ypos,x
   lda window_w
   and #$00ff
-  sta @l WINDOW_STACK_BASE+6,x
+  sta @l WINDOW_STACK_BASE+WindowStackEntry.width,x
   ora #$0001
-  pha                 ; save rounded window_w = count -1 for MVN
+  sta Frame.count
   lda window_h
   and #$00ff
-  pha                 ; save window_h
-  sta @l WINDOW_STACK_BASE+8,x
+  sta @l WINDOW_STACK_BASE+WindowStackEntry.height,x
+  sta Frame.height
   lda listsel_sel
   and #$00ff
-  sta @l WINDOW_STACK_BASE+10,x
+  sta @l WINDOW_STACK_BASE+WindowStackEntry.cursor,x
   lda listsel_step
   and #$00ff
-  sta @l WINDOW_STACK_BASE+12,x
+  sta @l WINDOW_STACK_BASE+WindowStackEntry.step,x
   lda listsel_max
   and #$00ff
-  sta @l WINDOW_STACK_BASE+14,x
-  lda @l WINDOW_STACK_BASE+4,x
-  rep #$20
-  .al
+  sta @l WINDOW_STACK_BASE+WindowStackEntry.maxcursor,x
+  lda @l WINDOW_STACK_BASE+WindowStackEntry.ypos,x
   xba                 ; calculate start offset (64*window_y + window_x)
   lsr
   lsr
   clc
-  adc @l WINDOW_STACK_BASE+2,x
+  adc @l WINDOW_STACK_BASE+WindowStackEntry.xpos,x
   and #$fffe          ; align to 16 bit
-  tax                 ; source offset
+  sta Frame.buf_offset
   lda window_stack_head
   clc
-  adc #$0010
+  adc #size(WindowStackEntry)
   adc #<>WINDOW_STACK_BASE
-  tay                 ; destination address
-  phx                 ; source offset
-  lda $1,s            ; source offset
-  clc
-  adc #<>BG1_TILE_BUF
-  tax
-  phx                 ; source address
-- lda $7,s            ; count
-  mvn #`BG1_TILE_BUF, #`WINDOW_STACK_BASE
-  lda $1,s            ; source address
-  clc
-  adc #$0040
-  sta $1,s            ; new source address
-  tax
-  sep #$20
-  .as
-  dec window_h
-  rep #$20
-  .al
-  bne -
-  sep #$20
-  .as
-  lda $5,s            ; restore window_h
-  sta window_h
-  rep #$20
-  .al
-  lda $3,s            ; source offset
-  clc
-  adc #<>BG2_TILE_BUF
-  sta $1,s            ; source address
-  tax
-- lda $7,s            ; count
-  mvn #`BG2_TILE_BUF, #`WINDOW_STACK_BASE
-  lda $1,s            ; source address
-  clc
-  adc #$0040
-  sta $1,s            ; new source address
-  tax
-  sep #$20
-  .as
-  dec window_h
-  rep #$20
-  .al
-  bne -
-  pla                 ; source address
-  pla                 ; source offset
-  pla                 ; window_h
-  sep #$20
-  .as
-  sta window_h
-  pla                 ; count
-  pla                 ; count
-  plp
+  tay                 ; destination address (incremented by MVN)
+  lda #<>BG1_TILE_BUF
+  jsr save_rows
+  lda #<>BG2_TILE_BUF
+  jsr save_rows
+  .leave
   plb
   rts
 
+; copy Frame.height rows of the window from the tile buffer at A to the
+; window stack at Y
+save_rows:
+  clc
+  adc Frame.buf_offset
+  sta Frame.buf_addr
+  lda Frame.height
+  sta Frame.rows
+- ldx Frame.buf_addr
+  lda Frame.count
+  mvn #`BG1_TILE_BUF, #`WINDOW_STACK_BASE
+  lda Frame.buf_addr
+  clc
+  adc #$0040
+  sta Frame.buf_addr
+  dec Frame.rows
+  bne -
+  rts
+.endblock
 
-pop_window:
+
+; restore the area of the topmost window stack entry and the window
+; dimensions of the entry below it (if any, otherwise of the restored one)
+pop_window .block
+  .virtual #0,d
+Frame .block
+  count         .word ?         ; bytes per row - 1, for MVN
+  height        .word ?         ; rows of the window
+  rows          .word ?         ; rows left in the current pass
+  buf_offset    .word ?         ; offset of the window in the tile buffers
+  buf_addr      .word ?         ; current row in the tile buffer
+  _             .dstruct SaveJSR
+.endblock
+  .endvirtual
   phb
-  php
+  .enter
   sep #$20
   .as
   lda #$80
@@ -501,115 +502,89 @@ pop_window:
   cmp #$ffff
   bne popw_rewind_head
 ; empty stack - do nothing
-  plp
+  .leave
   plb
   rts
 popw_rewind_head:
 ; restore data needed to recover from current window
-  lda #$0000
+  lda @l WINDOW_STACK_BASE+WindowStackEntry.width,x
+  ora #$0001
+  sta Frame.count
+  lda @l WINDOW_STACK_BASE+WindowStackEntry.height,x
+  sta Frame.height
   sep #$20
   .as
-  lda @l WINDOW_STACK_BASE+6,x
-  ora #$01
-  pha                 ; save rounded count for MVN
-  lda @l WINDOW_STACK_BASE+8,x
-  pha
-  lda @l WINDOW_STACK_BASE+10,x
+  lda @l WINDOW_STACK_BASE+WindowStackEntry.cursor,x
   sta listsel_sel
-  lda @l WINDOW_STACK_BASE+12,x
+  lda @l WINDOW_STACK_BASE+WindowStackEntry.step,x
   sta listsel_step
-  lda @l WINDOW_STACK_BASE+14,x
+  lda @l WINDOW_STACK_BASE+WindowStackEntry.maxcursor,x
   sta listsel_max
-
-  lda @l WINDOW_STACK_BASE+4,x
   rep #$20
   .al
+  lda @l WINDOW_STACK_BASE+WindowStackEntry.ypos,x
   xba                 ; calculate dest offset (64*window_y + window_x)
   lsr
   lsr
   clc
-  adc @l WINDOW_STACK_BASE+2,x
+  adc @l WINDOW_STACK_BASE+WindowStackEntry.xpos,x
   and #$fffe          ; align to 16 bit
-  tay                 ; dest offset
+  sta Frame.buf_offset
   lda window_stack_head
   clc
-  adc #$0010
+  adc #size(WindowStackEntry)
   adc #<>WINDOW_STACK_BASE
-  tax                 ; source address
-  phy                 ; dest offset
-  tya
-  clc
-  adc #<>BG1_TILE_BUF
-  tay
-  phy                 ; dest address
-- lda $6,s            ; count
-  and #$00ff
-  mvn #`WINDOW_STACK_BASE, #`BG1_TILE_BUF
-  lda $1,s            ; dest address
-  clc
-  adc #$0040
-  sta $1,s            ; new dest address
-  tay
-  sep #$20
-  .as
-  dec window_h
-  rep #$20
-  .al
-  bne -
-  sep #$20
-  .as
-  lda $5,s            ; restore window_h
-  sta window_h
-  rep #$20
-  .al
-  lda $3,s            ; dest offset
-  clc
-  adc #<>BG2_TILE_BUF
-  sta $1,s            ; dest address
-  tay
-- lda $6,s            ; count
-  and #$00ff
-  mvn #`WINDOW_STACK_BASE, #`BG2_TILE_BUF
-  lda $1,s            ; dest address
-  clc
-  adc #$0040
-  sta $1,s            ; new dest address
-  tay
-  sep #$20
-  .as
-  dec window_h
-  rep #$20
-  .al
-  bne -
-  pla                 ; dest address
-  pla                 ; dest offset
+  tax                 ; source address (incremented by MVN)
+  phb                 ; MVN sets DB to the tile buffer bank; keep DB=$80 for the code below
+    lda #<>BG1_TILE_BUF
+    jsr restore_rows
+    lda #<>BG2_TILE_BUF
+    jsr restore_rows
+  plb
 ; restore address of previous stack element
   ldx window_stack_head
   txy
-  lda @l WINDOW_STACK_BASE+0,x
+  lda @l WINDOW_STACK_BASE+WindowStackEntry.prevptr,x
   tax
   sta window_stack_head
   sep #$20
   .as
-  pla                 ; window_h
-  sta window_h
-  pla                 ; count
 ; peek into previous head (if any) to restore dimensions of previous window
 ; otherwise restore dimensions of current window
   cpx #$ffff
   bne +
   tyx
-+ lda @l WINDOW_STACK_BASE+2,x
++ lda @l WINDOW_STACK_BASE+WindowStackEntry.xpos,x
   sta window_x
-  lda @l WINDOW_STACK_BASE+4,x
+  lda @l WINDOW_STACK_BASE+WindowStackEntry.ypos,x
   sta window_y
-  lda @l WINDOW_STACK_BASE+6,x
+  lda @l WINDOW_STACK_BASE+WindowStackEntry.width,x
   sta window_w
-  lda @l WINDOW_STACK_BASE+8,x
+  lda @l WINDOW_STACK_BASE+WindowStackEntry.height,x
   sta window_h
-  plp
+  .leave
   plb
   rts
+
+; copy Frame.height rows of the window from the window stack at X to the
+; tile buffer at A
+restore_rows:
+  clc
+  adc Frame.buf_offset
+  sta Frame.buf_addr
+  lda Frame.height
+  sta Frame.rows
+- ldy Frame.buf_addr
+  lda Frame.count
+  mvn #`WINDOW_STACK_BASE, #`BG1_TILE_BUF
+  lda Frame.buf_addr
+  clc
+  adc #$0040
+  sta Frame.buf_addr
+  dec Frame.rows
+  bne -
+  rts
+.endblock
 
 hide_cursor:
   php
@@ -646,18 +621,17 @@ Frame .block
     sta Frame.vcount
     lda @w window_y
     and #$00ff
-    xba
-    lsr
-    lsr
-    pha
-      lda @w window_x
-      and #$00ff
-      clc
-      adc $1,s
-      and #$fffe
-      sta Frame.start_offset
-      tax
-    pla
+    xba                       ; * 256
+    lsr                       ; / 2
+    lsr                       ; / 2  => * 64
+    sta Frame.start_offset    ; 64 * window_y
+    lda @w window_x
+    and #$00ff
+    clc
+    adc Frame.start_offset
+    and #$fffe
+    sta Frame.start_offset
+    tax
 greyout_start:
     lda @w window_w
     and #$00ff
