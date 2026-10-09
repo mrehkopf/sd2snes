@@ -16,7 +16,7 @@
 ;            | STRING   | max length
 ;            | KVBYTE   | KVEntry**
 ;            | KVWORD   | KVEntry**
-;            | FILESEL  | FileselSpec*
+;            | FILESEL  | FileselSpec* [TODO]
 ;            | TIME     | (not used)
 ;
 
@@ -31,12 +31,12 @@ MenuHeader .struct step, title
   title           .long \title  ; window title
 .ends
 
-MenuEntry .struct type, text, target, dtype, param, desc, chg_func, post_func, isenabled_func
+MenuEntry .struct type, text, target, dtype, value, desc, chg_func, post_func, isenabled_func
   type            .byte \type             ; MTYPE_*
   text            .long \text             ; label
   target          .long \target           ; type specific, see above
   dtype           .byte \dtype            ; OPTTYPE_* (OPTTYPE_NONE: no value shown)
-  param           .long \param            ; pointer to the value
+  value           .long \value            ; pointer to the value
   desc            .long \desc             ; pointer to a description text (not yet shown)
   chg_func        .long \chg_func         ; called on each change during selection, address-1
   post_func       .long \post_func        ; called when the value is set, address-1
@@ -67,8 +67,8 @@ ValueRange .struct min, max
 ; .menu_func       text, routine, desc[, isenabled_func]
 ; .menu_func_close text, routine, desc[, isenabled_func]
 ; .menu_submenu    text, menu, desc[, isenabled_func]
-; .menu_value      text, preset, dtype, param, desc[, chg_func, post_func, isenabled_func]
-; .menu_entry      type, text, target, dtype, param, desc[, chg_func, post_func, isenabled_func]
+; .menu_value      text, preset, dtype, value, desc[, chg_func, post_func, isenabled_func]
+; .menu_entry      type, text, target, dtype, value, desc[, chg_func, post_func, isenabled_func]
 ; .menu_end
 ; hook functions and routines are referenced by name. (blank = none)
 
@@ -79,8 +79,8 @@ menu_header .macro step, title
   .dstruct MenuHeader, \step, \title
 .endm
 
-menu_entry .macro type, text, target, dtype, param, desc, chg_func=, post_func=, isenabled_func=
-  .dstruct MenuEntry, \type, \text, \target, \dtype, \param, \desc, menu_hook(\chg_func), menu_hook(\post_func), menu_hook(\isenabled_func)
+menu_entry .macro type, text, target, dtype, value, desc, chg_func=, post_func=, isenabled_func=
+  .dstruct MenuEntry, \type, \text, \target, \dtype, \value, \desc, menu_hook(\chg_func), menu_hook(\post_func), menu_hook(\isenabled_func)
 .endm
 
 menu_func .macro text, routine, desc, isenabled_func=
@@ -95,8 +95,8 @@ menu_submenu .macro text, menu, desc, isenabled_func=
   .menu_entry MTYPE_SUBMENU, \text, \menu, OPTTYPE_NONE, 0, \desc, , , \isenabled_func
 .endm
 
-menu_value .macro text, preset, dtype, param, desc, chg_func=, post_func=, isenabled_func=
-  .menu_entry MTYPE_VALUE, \text, \preset, \dtype, \param, \desc, \chg_func, \post_func, \isenabled_func
+menu_value .macro text, preset, dtype, value, desc, chg_func=, post_func=, isenabled_func=
+  .menu_entry MTYPE_VALUE, \text, \preset, \dtype, \value, \desc, \chg_func, \post_func, \isenabled_func
 .endm
 
 menu_end .macro

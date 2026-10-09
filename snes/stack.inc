@@ -81,3 +81,61 @@ leave .segment
   pld
   plp
 .endsegment
+
+; ---------------------------------------------------------------------------
+; Stack parameters, checked at assembly time
+;
+; The caller marks each parameter push with the "param" macro and calls the
+; routine with the "call" macro, e.g.
+;   .param pha                    ; size follows the current .as/.al state
+;   .param pea, time_s1
+;   .call time_init               ; checks pushed bytes = parameters in Frame
+; The expected size comes from the callee's Frame: everything after its
+; "_" member (SaveJSR/SaveJSL).
+; Pushes not marked with "param" (saving registers, calls in between) are
+; not counted.
+; After the call, it is currently the caller's responsibility to restore the
+; stack pointer (i.e. pull the parameters from stack again).
+
+; size of the parameters in a Frame (everything below _ (SaveJSR))
+frame_params .sfunction _f, size(_f) - (_f._ - _f) - size(_f._)
+
+; bytes pushed by each push instruction (-1: accumulator size, -2: index
+; register size); "param" with any other instruction fails with
+; "not defined symbol 'param_push_<insn>'"
+param_push_pha = -1
+param_push_phx = -2
+param_push_phy = -2
+param_push_pea = 2
+param_push_pei = 2
+param_push_per = 2
+param_push_phd = 2
+param_push_phb = 1
+param_push_phk = 1
+param_push_php = 1
+
+param_bytes := 0                ; parameter bytes pushed since the last call
+
+param .macro insn, arg=
+  \insn \arg
+  .proff
+  .virtual                      ; measure the current register sizes in bytes
+_a: lda #0                      ; by calculating the distance between the labels
+_x: ldx #0                      ; (_e-_x = 1+index, _x-_a = 1+accumulator)
+_e:
+  .endvirtual
+_n := param_push_\insn
+  .if _n == -1                  ; -1 = placeholder for accumulator size
+_n := _x - _a - 1
+  .elsif _n == -2               ; -2 = placeholder for index size
+_n := _e - _x - 1
+  .endif
+  .pron
+param_bytes ::= param_bytes + _n
+.endm
+
+call .macro target
+  .cerror param_bytes != frame_params(\target.Frame), format("call %s: %d parameter bytes pushed, %d expected", str(.\target), param_bytes, frame_params(\target.Frame))
+  jsr \target
+param_bytes ::= 0
+.endm

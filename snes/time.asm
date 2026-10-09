@@ -57,16 +57,16 @@ Frame .block
     stz time_cancel
 time_update:
     lda #$00
-    pha
+    .param pha
     rep #$20
     .al
     tdc
     clc
     adc #Frame.work - Frame
-    pha
+    .param pha
     sep #$20
     .as
-      jsr rendertime
+      .call rendertime
     plx
     pla
     lda #`wram(stringbuf)
@@ -804,9 +804,9 @@ render_rtc_time:
   sep #$20
   .as
   lda #`wram(time_s1)
-  pha
-  pea time_s1
-    jsr rendertime
+  .param pha
+  .param pea, time_s1
+    .call rendertime
   pla
   pla
   pla
@@ -828,21 +828,21 @@ rtc_init:
   inc a
   inc a
   inc a
-  pha ; p_time_x
+  .param pha ; p_time_x
   lda @l time_win_w
   sta window_w
   lda @l time_win_y
   sta window_y
   inc a
-  pha ; p_time_y
+  .param pha ; p_time_y
   lda @l time_win_h
   sta window_h
   jsr push_window
   jsr draw_window
   lda #`wram(time_s1)
-  pha
-  pea time_s1
-    jsr time_init
+  .param pha
+  .param pea, time_s1
+    .call time_init
   pla
   pla
   pla

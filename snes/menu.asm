@@ -362,10 +362,10 @@ show_menu_entries:
     inx
     inx
     lda Frame.max_lbl_len
-    pha
+    .param pha
     lda Frame.max_opt_len
-    pha
-    jsr menu_print_entries
+    .param pha
+    .call menu_print_entries
     pla
     pla
   plb
@@ -761,7 +761,7 @@ Frame .block
   .enter
   rep #$20
   .al
-  lda @w MenuEntry.param,x
+  lda @w MenuEntry.value,x
   sta Frame.entry_addr
   lda #stringbuf
   sta wram(print_src)
@@ -776,7 +776,7 @@ Frame .block
   sta wram(print_count)
   lda #`wram(stringbuf)
   sta wram(print_bank)
-  lda @w MenuEntry.param+2,x
+  lda @w MenuEntry.value+2,x
   sta Frame.entry_bank
 ;  lda !$0, x
 ;  cmp #MTYPE_VALUE
@@ -832,14 +832,14 @@ menu_print_opt_string_03:
   bne menu_print_opt_string_04
   rep #$20
   .al
-  lda @w MenuEntry.param,x
+  lda @w MenuEntry.value,x
   sta wram(print_src)
   tay
   sep #$20
   .as
   lda @w MenuEntry.target,x
   sta wram(print_count)
-  lda @w MenuEntry.param+2,x
+  lda @w MenuEntry.value+2,x
   sta wram(print_bank)
   phx
     phb
@@ -859,8 +859,8 @@ menu_print_opt_string_04:
   cmp #OPTTYPE_KVWORD
   bne menu_print_opt_string_06
 menu_print_opt_string_keyval:
-  lda @w MenuEntry.param+2,x ; load address
-  ldy @w MenuEntry.param,x   ; of current setting
+  lda @w MenuEntry.value+2,x ; load address
+  ldy @w MenuEntry.value,x   ; of current setting
   sta Frame.kvpar_bank
   sty Frame.kvpar_addr
   rep #$20
@@ -972,9 +972,9 @@ menu_print_opt_string_07:
       phy
         lda Frame.entry_bank
         ldx Frame.entry_addr
-        pha
-        phx
-          jsr rendertime
+        .param pha
+        .param phx
+          .call rendertime
         plx
         pla
       ply
@@ -1055,7 +1055,7 @@ Frame .block
   sta Frame.value_len
   lda @w MenuEntry.target,x
   sta Frame.preset_addr
-  lda @w MenuEntry.param,x
+  lda @w MenuEntry.value,x
   sta Frame.value_addr
   lda @w MenuEntry.chg_func,x
   sta Frame.chgfunc_addr
@@ -1067,7 +1067,7 @@ Frame .block
   sta Frame.text_grey
   lda @w MenuEntry.target+2,x
   sta Frame.preset_bank
-  lda @w MenuEntry.param+2,x
+  lda @w MenuEntry.value+2,x
   sta Frame.value_bank
   lda @w MenuEntry.chg_func+2,x
   sta Frame.chgfunc_bank
@@ -1533,15 +1533,15 @@ menu_value_dialog_time:
     clc
     sbc Frame.value_len
     dec a
-    pha ; p_time_x
+    .param pha ; p_time_x
     lda wram(bar_yl)
     inc a
-    pha ; p_time_y
+    .param pha ; p_time_y
     lda Frame.value_bank
-    pha
+    .param pha
     ldx Frame.value_addr
-    phx
-    jsr time_init
+    .param phx
+    .call time_init
     plx
     plx
     pla
