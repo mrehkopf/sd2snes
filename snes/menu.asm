@@ -750,8 +750,6 @@ menu_print_ent_out:
 .endblock
 
 .text "MENU_PRINT_OPT_STRING"
-menu_print_opt_string_none:
-  jmp menu_print_opt_string.menu_print_opt_string_out
 menu_print_opt_string .block
 ; params
 ; x: address of menu entry structure
@@ -790,9 +788,9 @@ Frame .block
   sta Frame.entry_bank
 ;  lda !$0, x
 ;  cmp #MTYPE_VALUE
-;  bne menu_print_opt_string_none
+;  jne menu_print_opt_string_out
   lda @w $7,x
-  beq menu_print_opt_string_none
+  #jeq menu_print_opt_string_out
   cmp #$01
   bne menu_print_opt_string_02
   rep #$20
