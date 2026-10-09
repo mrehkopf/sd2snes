@@ -331,11 +331,9 @@ show_menu_loop:
     cmp #MTYPE_SUBMENU
     beq show_menu_submenu
     cmp #MTYPE_FUNC
-    bne *+5
-    brl show_menu_func
+    #jeq show_menu_func
     cmp #MTYPE_FUNC_CLOSE
-    bne *+5
-    brl show_menu_func_close
+    #jeq show_menu_func_close
     cmp #MTYPE_VALUE
     bne show_menu_cont
     jmp show_menu_editvalue
@@ -1162,11 +1160,9 @@ menu_value_dialog_u8:
       lda wram(pad_right)
       bne menu_value_dialog_u8_right
       lda wram(pad_b)
-      beq *+5
-      brl menu_value_dialog_u8_cancel
+      #jne menu_value_dialog_u8_cancel
       lda wram(pad_a)
-      beq *+5
-      brl menu_value_dialog_u8_set
+      #jne menu_value_dialog_u8_set
       lda wram(pad_l)
       bne menu_value_dialog_u8_l
       lda wram(pad_r)
@@ -1297,12 +1293,10 @@ menu_value_dialog_u16:
       bcs menu_value_dialog_u16_right
       lda wram(pad_b)
       ror
-      bcc *+5
-      brl menu_value_dialog_u16_cancel
+      #jcs menu_value_dialog_u16_cancel
       lda wram(pad_a)
       ror
-      bcc *+5
-      brl menu_value_dialog_u16_set
+      #jcs menu_value_dialog_u16_set
       lda wram(pad_l)
       ror
       bcs menu_value_dialog_u16_l
