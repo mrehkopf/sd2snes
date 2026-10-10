@@ -179,6 +179,15 @@ SD_DAT_UNMASK() =
 SD_DAT_IN = ((SD_DAT0REG->IDR & 0xF00) >> 8)
 SD_DAT_OUT(x) = (SD_DAT0REG->BSRR = 0x0F000000 | ((x) << 8))
 
+CONFIG_SD_HWSDIO          = y
+CONFIG_SD_HWSDIO_WRITE    = y
+
+# keep CMD18/25 open during SDIO/bitbang/offload handover
+CONFIG_SD_HWSDIO_CONTINUE = y
+
+# SDIO_CK = 48 MHz / (CLKDIV + 2); 0 = 24 MHz
+CONFIG_SD_HWSDIO_CLKDIV   = 0
+
 USB_CONNREG   =
 USB_CONNBIT   =
 USB_VBUSREG   = GPIOA

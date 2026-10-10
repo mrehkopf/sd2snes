@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "config.h"
 #include "crc.h"
 #include "crc16.h"
@@ -67,7 +68,6 @@
 #define STATUS_ADDRESS_ERROR   32
 #define STATUS_PARAMETER_ERROR 64
 
-
 /* Card types - cardtype == 0 is MMC */
 #define CARD_SD   (1<<0)
 #define CARD_SDHC (1<<1)
@@ -127,6 +127,414 @@ uint32_t last_block = 0;
 uint16_t last_offset = 0;
 
 volatile int sd_changed;
+
+#if defined(CONFIG_SD_HWSDIO_WRITE) && !defined(CONFIG_SD_HWSDIO)
+#error "CONFIG_SD_HWSDIO_WRITE requires CONFIG_SD_HWSDIO"
+#endif
+
+#ifdef CONFIG_SD_HWSDIO
+/*
+   Hardware SDIO host:
+   ===================
+   Use dedicated SDIO controller for MCU-owned access (DMA2 stream 3 channel 4)
+   Card init and FPGA-side SD DMA (via sd_offload) stay bitbanged for now
+   to keep compatibility with current FPGA cores
+
+   SD pins are switched between GPIO and AF12 (SDIO host) on demand.
+   CMD18/25 may be handed over.
+
+   Use the PWRSAV flag to make sure the SDIO-host generated SD clock is
+   stopped to make hand-over to sd_offload / bitbanging possible.
+*/
+
+#define SD_HW_RETRIES       (3)
+#define SD_HW_DTIMER        (12000000)    /* data timeout in SDIO_CK cycles */
+#define SD_HW_LOOP_GUARD    (20000000)    /* polling loop limit */
+#define SD_R1_ERRORS        (0xfdffe008)  /* error bits of the R1 card status */
+
+#define SDIO_CMD_RESP_SHORT (SDIO_CMD_WAITRESP_0)
+
+#define SDIO_STA_CMD_DONE   (SDIO_STA_CMDREND | SDIO_STA_CCRCFAIL | SDIO_STA_CTIMEOUT)
+#define SDIO_STA_DATA_ERR   (SDIO_STA_DCRCFAIL | SDIO_STA_DTIMEOUT | SDIO_STA_RXOVERR \
+                             | SDIO_STA_TXUNDERR | SDIO_STA_STBITERR)
+#define SDIO_ICR_CMD_FLAGS  (SDIO_ICR_CCRCFAILC | SDIO_ICR_CTIMEOUTC | SDIO_ICR_CMDRENDC \
+                             | SDIO_ICR_CMDSENTC)
+#define SDIO_ICR_ALL_FLAGS  (SDIO_ICR_CMD_FLAGS | SDIO_ICR_DCRCFAILC | SDIO_ICR_DTIMEOUTC \
+                             | SDIO_ICR_TXUNDERRC | SDIO_ICR_RXOVERRC | SDIO_ICR_DATAENDC \
+                             | SDIO_ICR_STBITERRC | SDIO_ICR_DBCKENDC)
+
+enum sd_bus_mode { SD_BUS_GPIO = 0, SD_BUS_HOST };
+enum sd_stream_owner { SD_OWNER_BB = 0, SD_OWNER_HOST };
+
+sd_hw_stats_t sd_hw_stats;
+
+/* whether MCU-side (not offloaded) transfers go through the SDIO host */
+static inline int sd_use_host(void) {
+  return 1;
+}
+
+static uint8_t sd_bus_mode = SD_BUS_GPIO;
+static uint8_t sd_stream_owner = SD_OWNER_BB;
+static uint8_t sd_host_clk_idle = 0;   /* SDIO_CK level while gated */
+static uint32_t sd_hw_bounce[128];     /* word aligned block buffer for DMA */
+
+/* SDIO registers must not be written again within 3 SDIOCLK + 2 PCLK2 cycles */
+static inline void sdio_reg_delay(void) {
+  for(volatile int i = 0; i < 8; i++);
+}
+
+/* hand the SD pins to the bit-banging code */
+static void sd_bus_gpio(void) {
+  if(sd_bus_mode == SD_BUS_GPIO) return;
+  /* keep SD_CLK at its current level so the switch creates no clock edge */
+  OUT_BIT(SD_CLKREG, SD_CLKBIT, BITBAND(SD_CLKREG->GPIO_I, SD_CLKBIT));
+  SET_BIT(SD_CMDREG, SD_CMDBIT);
+  GPIO_MODE_OUT(SD_CLKREG, SD_CLKBIT);
+  GPIO_MODE_OUT(SD_CMDREG, SD_CMDBIT);
+  GPIO_MODE_IN(SD_DAT0REG, SD_DAT0BIT);
+  GPIO_MODE_IN(SD_DAT1REG, SD_DAT1BIT);
+  GPIO_MODE_IN(SD_DAT2REG, SD_DAT2BIT);
+  GPIO_MODE_IN(SD_DAT3REG, SD_DAT3BIT);
+  sd_bus_mode = SD_BUS_GPIO;
+}
+
+/* hand the SD pins to the SDIO host */
+static void sd_bus_host(void) {
+  if(sd_bus_mode == SD_BUS_HOST) return;
+  /* move SD_CLK to the host's idle level first */
+  OUT_BIT(SD_CLKREG, SD_CLKBIT, sd_host_clk_idle);
+  GPIO_MODE_AF(SD_CLKREG, SD_CLKBIT);
+  GPIO_MODE_AF(SD_CMDREG, SD_CMDBIT);
+  GPIO_MODE_AF(SD_DAT0REG, SD_DAT0BIT);
+  GPIO_MODE_AF(SD_DAT1REG, SD_DAT1BIT);
+  GPIO_MODE_AF(SD_DAT2REG, SD_DAT2BIT);
+  GPIO_MODE_AF(SD_DAT3REG, SD_DAT3BIT);
+  sd_bus_mode = SD_BUS_HOST;
+}
+
+static void sdio_dma_start(const void *buf, int to_card) {
+  uint32_t guard = 100000;
+  DMA2_Stream3->CR = 0;
+  while((DMA2_Stream3->CR & DMA_SxCR_EN) && --guard);
+  DMA2->LIFCR = DMA_LIFCR_CTCIF3
+              | DMA_LIFCR_CHTIF3
+              | DMA_LIFCR_CTEIF3
+              | DMA_LIFCR_CDMEIF3
+              | DMA_LIFCR_CFEIF3;
+  DMA2_Stream3->PAR  = (uint32_t)&SDIO->FIFO;
+  DMA2_Stream3->M0AR = (uint32_t)buf;
+  DMA2_Stream3->NDTR = 0;                               // ignored: SDIO is flow controller
+  DMA2_Stream3->FCR  = DMA_SxFCR_DMDIS | DMA_SxFCR_FTH; // FIFO mode, threshold full
+  DMA2_Stream3->CR   = (4 << DMA_SxCR_CHSEL_Pos)        // DMA channel 4 selects SDIO
+                     | (0 << DMA_SxCR_MBURST_Pos)       // single (memory): buffers are
+                                                        // only word aligned, a burst
+                                                        // could cross a 1KB boundary
+                     | (1 << DMA_SxCR_PBURST_Pos)       // INCR4 burst (peripheral)
+                     | (2 << DMA_SxCR_MSIZE_Pos)        // mem data size = word
+                     | (2 << DMA_SxCR_PSIZE_Pos)        // periph data size = word
+                     | (3 << DMA_SxCR_PL_Pos)           // very high priority
+                     | (1 << DMA_SxCR_MINC_Pos)         // increment memory address
+                     | ((to_card ? 1 : 0) << DMA_SxCR_DIR_Pos) // 01: memory to peripheral
+                     | (1 << DMA_SxCR_PFCTRL_Pos)       // flow governed by peripheral
+                     | (1 << DMA_SxCR_EN_Pos);          // enable stream
+}
+
+/* stop any data transfer of the host and its DMA */
+static void sdio_abort(void) {
+  uint32_t guard = 100000;
+  SDIO->DCTRL = 0;
+  DMA2_Stream3->CR &= ~DMA_SxCR_EN;
+  while((DMA2_Stream3->CR & DMA_SxCR_EN) && --guard);
+  SDIO->ICR = SDIO_ICR_ALL_FLAGS;
+}
+
+/* send a command through the host; resp = 0 (none) or SDIO_CMD_RESP_SHORT */
+static int sdio_cmd(uint8_t index, uint32_t arg, uint32_t resp, uint32_t *r1) {
+  uint32_t sta, guard = SD_HW_LOOP_GUARD;
+  uint32_t done = resp ? SDIO_STA_CMD_DONE : SDIO_STA_CMDSENT;
+  SDIO->ICR = SDIO_ICR_CMD_FLAGS;
+  SDIO->ARG = arg;
+  SDIO->CMD = (index & SDIO_CMD_CMDINDEX) | resp | SDIO_CMD_CPSMEN;
+  while(!((sta = SDIO->STA) & done) && --guard);
+  SDIO->ICR = SDIO_ICR_CMD_FLAGS;
+  if(!guard || (sta & SDIO_STA_CTIMEOUT)) {
+    sd_hw_stats.cmd_timeout++;
+    DBG_SD printf("SDIO: CMD%d timeout\n", index);
+    return -1;
+  }
+  if(sta & SDIO_STA_CCRCFAIL) {
+    sd_hw_stats.cmd_crcfail++;
+    DBG_SD printf("SDIO: CMD%d response CRC error\n", index);
+    return -1;
+  }
+  if(r1) {
+    *r1 = SDIO->RESP1;
+  }
+  return 0;
+}
+
+/* arm the data path for len bytes in 512 byte blocks */
+static void sdio_dpsm_start(uint32_t len, int to_card) {
+  SDIO->DTIMER = SD_HW_DTIMER;
+  SDIO->DLEN = len;
+  SDIO->DCTRL = (9 << SDIO_DCTRL_DBLOCKSIZE_Pos)   // 2^9 = 512 byte blocks
+              | SDIO_DCTRL_DMAEN
+              | (to_card ? 0 : SDIO_DCTRL_DTDIR)
+              | SDIO_DCTRL_DTEN;
+}
+
+/* wait for the end of a data transfer; returns 0 on success */
+static int sdio_data_wait(int to_card) {
+  uint32_t sta, guard = SD_HW_LOOP_GUARD;
+  while(!((sta = SDIO->STA) & (SDIO_STA_DATAEND | SDIO_STA_DATA_ERR)) && --guard);
+  if(guard && !(sta & SDIO_STA_DATA_ERR)) {
+    if(to_card) {
+      /* FIFO empty; release the stream if it has not stopped yet */
+      DMA2_Stream3->CR &= ~DMA_SxCR_EN;
+    }
+    /* reads: DMA drains its FIFO and then disables the stream */
+    guard = SD_HW_LOOP_GUARD;
+    while((DMA2_Stream3->CR & DMA_SxCR_EN) && --guard);
+    if(DMA2->LISR & (DMA_LISR_TEIF3 | DMA_LISR_DMEIF3)) {
+      sd_hw_stats.dma_error++;
+    } else if(guard) {
+      SDIO->ICR = SDIO_ICR_ALL_FLAGS;
+      return 0;
+    } else {
+      sd_hw_stats.dma_timeout++;
+    }
+  } else {
+    if(!guard)                  sd_hw_stats.data_timeout++;
+    if(sta & SDIO_STA_DCRCFAIL) sd_hw_stats.data_crcfail++;
+    if(sta & SDIO_STA_DTIMEOUT) sd_hw_stats.data_timeout++;
+    if(sta & SDIO_STA_RXOVERR)  sd_hw_stats.rx_overrun++;
+    if(sta & SDIO_STA_TXUNDERR) sd_hw_stats.tx_underrun++;
+    if(sta & SDIO_STA_STBITERR) sd_hw_stats.startbit_err++;
+  }
+  DBG_SD printf("SDIO: data error, STA=%08lx\n", sta);
+  sdio_abort();
+  return -1;
+}
+
+/* wait until the card releases DAT0 (busy); keep the clock running meanwhile.
+   Only call this with no read stream open, or the card would stream data. */
+static void sdio_wait_busy(void) {
+  tick_t timeout = getticks() + MS_TO_TICKS(1000);
+  SDIO->CLKCR &= ~SDIO_CLKCR_PWRSAV;
+  sdio_reg_delay();
+  while(!(BITBAND(SD_DAT0REG->GPIO_I, SD_DAT0BIT))) {
+    if(time_after(getticks(), timeout)) {
+      sd_hw_stats.busy_timeout++;
+      break;
+    }
+  }
+  SDIO->CLKCR |= SDIO_CLKCR_PWRSAV;
+  sdio_reg_delay();
+}
+
+/* end any open CMD18/CMD25 stream through the host */
+static void sdio_stop_transmission(void) {
+  sd_bus_host();
+  sdio_abort();
+  /* response ignored: card might set OUT_OF_RANGE after its last block */
+  sdio_cmd(STOP_TRANSMISSION, 0, SDIO_CMD_RESP_SHORT, NULL);
+  sdio_wait_busy();
+  sd_hw_stats.stream_stops++;
+  during_blocktrans = TRANS_NONE;
+}
+
+static int sdio_read_once(uint8_t *buf, uint32_t sector, uint32_t count) {
+  uint32_t r1;
+  int newstream = 1;
+  int aligned = !((uint32_t)buf & 3);
+  sd_bus_host();
+#ifdef CONFIG_SD_HWSDIO_CONTINUE
+  if(during_blocktrans == TRANS_READ && last_block == sector - 1) {
+    newstream = 0;
+    sd_hw_stats.stream_continues++;
+  }
+#endif
+  if(newstream && during_blocktrans) {
+    sdio_stop_transmission();
+  }
+  for(uint32_t blk = 0; blk < count; ) {
+    /* aligned buffers get all blocks in one go, others one by one */
+    uint32_t n = aligned ? count : 1;
+    sdio_dma_start(aligned ? (void*)buf : (void*)sd_hw_bounce, 0);
+    /* arm the data path first; data may start during the response */
+    sdio_dpsm_start(n * 512, 0);
+    if(newstream) {
+      /* from here on a stream may be open, even if the command fails */
+      during_blocktrans = TRANS_READ;
+      if(sdio_cmd(READ_MULTIPLE_BLOCK, ccs ? sector : sector << 9, SDIO_CMD_RESP_SHORT, &r1)) {
+        sdio_abort();
+        return -1;
+      }
+      if(r1 & SD_R1_ERRORS) {
+        sd_hw_stats.r1_error++;
+        DBG_SD printf("SDIO: CMD18 R1=%08lx\n", r1);
+        sdio_abort();
+        return -1;
+      }
+      newstream = 0;
+    }
+    if(sdio_data_wait(0)) {
+      return -1;
+    }
+    if(!aligned) {
+      memcpy(buf + blk * 512, sd_hw_bounce, 512);
+      sd_hw_stats.bounce_blocks++;
+    }
+    blk += n;
+  }
+  during_blocktrans = TRANS_READ;
+  sd_stream_owner = SD_OWNER_HOST;
+  last_block = sector + count - 1;
+  last_offset = 0;
+  sd_offload_partial = 0;
+#ifndef CONFIG_SD_HWSDIO_CONTINUE
+  sdio_stop_transmission();
+#endif
+  return 0;
+}
+
+static DRESULT sdio_read(uint8_t *buf, uint32_t sector, uint32_t count) {
+  sd_hw_stats.read_calls++;
+  for(int attempt = 0; attempt <= SD_HW_RETRIES; attempt++) {
+    if(attempt) {
+      sd_hw_stats.read_retries++;
+    }
+    if(!sdio_read_once(buf, sector, count)) {
+      return RES_OK;
+    }
+    sdio_stop_transmission();
+  }
+  sd_hw_stats.read_failures++;
+  printf("SDIO: reading sector %08lx (+%lu) failed\n", sector, count);
+  return RES_ERROR;
+}
+
+#ifdef CONFIG_SD_HWSDIO_WRITE
+static int sdio_write_once(const uint8_t *buf, uint32_t sector, uint32_t count) {
+  uint32_t r1;
+  int newstream = 1;
+  int aligned = !((uint32_t)buf & 3);
+  sd_bus_host();
+#ifdef CONFIG_SD_HWSDIO_CONTINUE
+  if(during_blocktrans == TRANS_WRITE && last_block == sector - 1) {
+    newstream = 0;
+    sd_hw_stats.stream_continues++;
+  }
+#endif
+  if(newstream && during_blocktrans) {
+    sdio_stop_transmission();
+  }
+  sdio_wait_busy();
+  if(newstream) {
+    /* from here on a stream may be open, even if the command fails */
+    during_blocktrans = TRANS_WRITE;
+    if(sdio_cmd(WRITE_MULTIPLE_BLOCK, ccs ? sector : sector << 9, SDIO_CMD_RESP_SHORT, &r1)) {
+      return -1;
+    }
+    if(r1 & SD_R1_ERRORS) {
+      sd_hw_stats.r1_error++;
+      DBG_SD printf("SDIO: CMD25 R1=%08lx\n", r1);
+      return -1;
+    }
+  }
+  sd_stream_owner = SD_OWNER_HOST;
+  for(uint32_t blk = 0; blk < count; ) {
+    /* aligned buffers go out in one go, others one by one */
+    uint32_t n = aligned ? count : 1;
+    if(!aligned) {
+      if(blk) {
+        sdio_wait_busy();
+      }
+      memcpy(sd_hw_bounce, buf + blk * 512, 512);
+      sd_hw_stats.bounce_blocks++;
+    }
+    sdio_dma_start(aligned ? (const void*)buf : (const void*)sd_hw_bounce, 1);
+    sdio_dpsm_start(n * 512, 1);
+    if(sdio_data_wait(1)) {
+      return -1;
+    }
+    blk += n;
+  }
+  last_block = sector + count - 1;
+#ifndef CONFIG_SD_HWSDIO_CONTINUE
+  sdio_stop_transmission();
+#endif
+  return 0;
+}
+
+static DRESULT sdio_write(const uint8_t *buf, uint32_t sector, uint32_t count) {
+  sd_hw_stats.write_calls++;
+  for(int attempt = 0; attempt <= SD_HW_RETRIES; attempt++) {
+    if(attempt) {
+      sd_hw_stats.write_retries++;
+    }
+    if(!sdio_write_once(buf, sector, count)) {
+      return RES_OK;
+    }
+    sdio_stop_transmission();
+  }
+  sd_hw_stats.write_failures++;
+  printf("SDIO: writing sector %08lx (+%lu) failed\n", sector, count);
+  return RES_ERROR;
+}
+#endif
+
+/* configure the host for the initialized card (4 bit bus, card selected) */
+static void sdio_host_setup(void) {
+  SDIO->CLKCR = (CONFIG_SD_HWSDIO_CLKDIV << SDIO_CLKCR_CLKDIV_Pos)
+              | SDIO_CLKCR_WIDBUS_0    // 4 bit bus
+              | SDIO_CLKCR_PWRSAV      // gate SDIO_CK while the host is idle
+              | SDIO_CLKCR_CLKEN;
+  sdio_reg_delay();
+  /* measure the gated clock level so later mode switches create no clock edge */
+  sd_bus_host();
+  sdio_reg_delay();
+  uint8_t samples = 0;
+  /* sample the clock 8 times */
+  for(int i = 0; i < 8; i++) {
+    samples = (samples << 1) | BITBAND(SD_CLKREG->GPIO_I, SD_CLKBIT);
+    sdio_reg_delay();
+  }
+  /* validate */
+  if(samples != 0x00 && samples != 0xff) {
+    printf("SDIO host: WARNING: SDIO_CK idle level unstable (samples %02x), assuming low\n", samples);
+    samples = 0;
+  }
+  sd_host_clk_idle = samples & 1;
+  sd_stream_owner = SD_OWNER_BB;
+  printf("SDIO host: SDIO_CK=%dkHz, idle level %d\n",
+         48000 / (CONFIG_SD_HWSDIO_CLKDIV + 2), sd_host_clk_idle);
+}
+
+void sdn_hw_printstats(void) {
+  printf("SDIO host: SDIO_CK=%dkHz idle=%d bus=%s stream=%d owner=%s\n",
+         48000 / (CONFIG_SD_HWSDIO_CLKDIV + 2), sd_host_clk_idle,
+         sd_bus_mode == SD_BUS_HOST ? "host" : "gpio", during_blocktrans,
+         sd_stream_owner == SD_OWNER_HOST ? "host" : "bb");
+  printf("calls: read %lu write %lu; retries: read %lu write %lu; failed: read %lu write %lu\n",
+         sd_hw_stats.read_calls, sd_hw_stats.write_calls,
+         sd_hw_stats.read_retries, sd_hw_stats.write_retries,
+         sd_hw_stats.read_failures, sd_hw_stats.write_failures);
+  printf("streams: continued %lu, stopped %lu; bounce blocks %lu\n",
+         sd_hw_stats.stream_continues, sd_hw_stats.stream_stops, sd_hw_stats.bounce_blocks);
+  printf("errors: cmd timeout %lu, cmd crc %lu, r1 %lu, data crc %lu, data timeout %lu,\n"
+         "        rx overrun %lu, tx underrun %lu, start bit %lu, dma %lu, busy %lu\n",
+         sd_hw_stats.cmd_timeout, sd_hw_stats.cmd_crcfail, sd_hw_stats.r1_error,
+         sd_hw_stats.data_crcfail, sd_hw_stats.data_timeout, sd_hw_stats.rx_overrun,
+         sd_hw_stats.tx_underrun, sd_hw_stats.startbit_err, sd_hw_stats.dma_timeout,
+         sd_hw_stats.busy_timeout);
+  printf("        dma error %lu\n", sd_hw_stats.dma_error);
+}
+
+#define SD_BB_ENTRY() sd_bus_gpio()
+#else
+#define SD_BB_ENTRY() do {} while(0)
+#endif
 
 /**
  * getbits - read value from bit buffer
@@ -270,6 +678,7 @@ int get_and_check_datacrc(uint8_t *buf) {
 }
 
 static inline void wait_busy(void) {
+  SD_BB_ENTRY();
   while(!(BITBAND(SD_DAT0REG->GPIO_I, SD_DAT0BIT))) {
     wiggle_fast_neg1();
   }
@@ -282,6 +691,7 @@ static inline void wait_busy(void) {
    returns length of response or 0 if there was no response
 */
 int send_command_slow(uint8_t* cmd, uint8_t* rsp){
+  SD_BB_ENTRY();
   uint8_t shift, i=6;
   int rsplen;
   uint8_t cmdno = *cmd & 0x3f;
@@ -346,13 +756,13 @@ int send_command_slow(uint8_t* cmd, uint8_t* rsp){
   return rsplen;
 }
 
-
 /*
    send_command_fast
    send SD command and put response in rsp.
    returns length of response or 0 if there was no response
 */
 int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
+  SD_BB_ENTRY();
   uint8_t datshift=8, cmdshift, i=6;
   uint8_t cmdno = *cmd & 0x3f;
   int rsplen, dat=0, waitbusy=0, datcnt=512, j=0;
@@ -567,7 +977,6 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
   return rsplen;
 }
 
-
 static inline void make_crc7(uint8_t* cmd) {
   cmd[5]=crc7update(0, cmd[0]);
   cmd[5]=crc7update(cmd[5], cmd[1]);
@@ -622,6 +1031,7 @@ int acmd_fast(uint8_t cmd, uint32_t param, uint8_t crc, uint8_t* dat, uint8_t* r
 }
 
 int stream_datablock(uint8_t *buf) {
+  SD_BB_ENTRY();
 //  uint8_t datshift=8;
   int j=512;
   uint8_t datdata=0;
@@ -673,6 +1083,7 @@ int stream_datablock(uint8_t *buf) {
 }
 
 void send_datablock(uint8_t *buf) {
+  SD_BB_ENTRY();
   uint16_t crc0=0, crc1=0, crc2=0, crc3=0, cnt=512;
   uint8_t dat0=0, dat1=0, dat2=0, dat3=0, crcshift, datshift;
 
@@ -755,6 +1166,14 @@ void send_datablock(uint8_t *buf) {
 }
 
 void read_block(uint32_t address, uint8_t *buf) {
+#ifdef CONFIG_SD_HWSDIO
+  /* never continue a read stream the host has opened (see above) */
+  if(during_blocktrans == TRANS_READ && sd_stream_owner == SD_OWNER_HOST) {
+    sdio_stop_transmission();
+  }
+  sd_bus_gpio();
+  sd_stream_owner = SD_OWNER_BB;
+#endif
   DBG_SD_OFFLOAD printf("read_block trans=%d addr=%08lx last_addr=%08lx  offld=%d/%d offst=%04x offed=%04x last_off=%04x\n", during_blocktrans, address, last_block, sd_offload, sd_offload_partial, sd_offload_partial_start, sd_offload_partial_end, last_offset);
   if(during_blocktrans == TRANS_READ && (last_block == address-1)) {
 //uart_putc('r');
@@ -810,6 +1229,10 @@ void read_block(uint32_t address, uint8_t *buf) {
 }
 
 void write_block(uint32_t address, uint8_t* buf) {
+#ifdef CONFIG_SD_HWSDIO
+  sd_bus_gpio();
+  sd_stream_owner = SD_OWNER_BB;
+#endif
   if(during_blocktrans == TRANS_WRITE && (last_block == address-1)) {
     wait_busy();
     send_datablock(buf);
@@ -837,9 +1260,17 @@ void write_block(uint32_t address, uint8_t* buf) {
  * and reset during_blocktrans status */
 
 void flush_write(void) {
+#ifdef CONFIG_SD_HWSDIO
+  /* the card does not care which side ends the stream */
+  if(during_blocktrans) {
+    sdio_stop_transmission();
+  }
+  during_blocktrans = TRANS_NONE;
+#else
   cmd_fast(STOP_TRANSMISSION, 0, 0x61, NULL, rsp);
   wait_busy();
   during_blocktrans = TRANS_NONE;
+#endif
 }
 
 //
@@ -870,6 +1301,15 @@ DRESULT sdn_read(BYTE drv, BYTE *buffer, DWORD sector, UINT count) {
   if(drv >= MAX_CARDS) {
     return RES_PARERR;
   }
+#ifdef CONFIG_SD_HWSDIO
+  if(!sd_offload && sd_use_host()) {
+    DRESULT res;
+    readled(1);
+    res = sdio_read(buffer, sector, count);
+    readled(0);
+    return res;
+  }
+#endif
   readled(1);
   for(sec=0; sec<count; sec++) {
     read_block(sector+sec, buffer);
@@ -893,6 +1333,12 @@ DSTATUS sdn_initialize(BYTE drv) {
   if(sdn_status(drv) & STA_NODISK) {
     return STA_NOINIT|STA_NODISK;
   }
+#ifdef CONFIG_SD_HWSDIO
+  /* card init stays bit-banged */
+  sdio_abort();
+  sd_bus_gpio();
+  sd_stream_owner = SD_OWNER_BB;
+#endif
   /* if the card is sending data from before a reset we try to deselect it
      prior to initialization
      In all likelihood this is always the case if the card was present on
@@ -958,6 +1404,9 @@ DSTATUS sdn_initialize(BYTE drv) {
   /* set block length */
   cmd_slow(SET_BLOCKLEN, 0x200, 0, NULL, rsp);
 
+#ifdef CONFIG_SD_HWSDIO
+  sdio_host_setup();
+#endif
   printf("SD init complete. SDHC/XC=%d\n", ccs);
   disk_state = DISK_OK;
   during_blocktrans = TRANS_NONE;
@@ -985,11 +1434,29 @@ void sdn_init(void) {
   GPIO_MODE_OUT(SD_CMDREG, SD_CMDBIT);
   SET_BIT(SD_CMDREG, SD_CMDBIT);
   GPIO_PULLUP(SD_CLKREG, SD_CLKBIT);
+  GPIO_PULLUP(SD_CMDREG, SD_CMDBIT);
+  GPIO_PULLUP(SD_DAT0REG, SD_DAT0BIT);
+  GPIO_PULLUP(SD_DAT1REG, SD_DAT1BIT);
+  GPIO_PULLUP(SD_DAT2REG, SD_DAT2BIT);
+  GPIO_PULLUP(SD_DAT3REG, SD_DAT3BIT);
   SD_DAT_OUT(0);
   SD_DAT_MASK();
+#ifdef CONFIG_SD_HWSDIO
+  /* SDIO host: AF12 on the SD pins (selected only when the host owns the bus) */
+  RCC->APB2ENR |= RCC_APB2ENR_SDIOEN;
+  GPIO_SEL_AF(SD_CLKREG, SD_CLKBIT, 12);
+  GPIO_SEL_AF(SD_CMDREG, SD_CMDBIT, 12);
+  GPIO_SEL_AF(SD_DAT0REG, SD_DAT0BIT, 12);
+  GPIO_SEL_AF(SD_DAT1REG, SD_DAT1BIT, 12);
+  GPIO_SEL_AF(SD_DAT2REG, SD_DAT2BIT, 12);
+  GPIO_SEL_AF(SD_DAT3REG, SD_DAT3BIT, 12);
+  SDIO->CLKCR = 0;
+  sdio_reg_delay();
+  SDIO->POWER = SDIO_POWER_PWRCTRL;  /* power on: the host may clock the card */
+  sdio_reg_delay();
+#endif
 }
 void disk_init(void) __attribute__ ((weak, alias("sdn_init")));
-
 
 DSTATUS sdn_status(BYTE drv) {
   DSTATUS status = 0;
@@ -1050,6 +1517,15 @@ DRESULT sdn_write(BYTE drv, const BYTE *buffer, DWORD sector, UINT count) {
   if (sdn_status(drv) & STA_NODISK) {
     return RES_NOTRDY;
   }
+#ifdef CONFIG_SD_HWSDIO_WRITE
+  if(sd_use_host()) {
+    DRESULT res;
+    writeled(1);
+    res = sdio_write(buf, sector, count);
+    writeled(0);
+    return res;
+  }
+#endif
   writeled(1);
   for(sec=0; sec<count; sec++) {
     write_block(sector+sec, buf);
