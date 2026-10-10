@@ -68,6 +68,7 @@
 #define STATUS_ADDRESS_ERROR   32
 #define STATUS_PARAMETER_ERROR 64
 
+
 /* Card types - cardtype == 0 is MMC */
 #define CARD_SD   (1<<0)
 #define CARD_SDHC (1<<1)
@@ -128,8 +129,10 @@ uint16_t last_offset = 0;
 
 volatile int sd_changed;
 
-#if defined(CONFIG_SD_HWSDIO_WRITE) && !defined(CONFIG_SD_HWSDIO)
-#error "CONFIG_SD_HWSDIO_WRITE requires CONFIG_SD_HWSDIO"
+#ifdef CONFIG_SD_HWSDIO_SELFTEST
+/* route MCU-side transfers through bit-banging (self tests);
+   without CONFIG_SD_HWSDIO everything is bit-banged anyway */
+uint8_t sd_force_bb = 0;
 #endif
 
 #ifdef CONFIG_SD_HWSDIO
@@ -170,7 +173,11 @@ sd_hw_stats_t sd_hw_stats;
 
 /* whether MCU-side (not offloaded) transfers go through the SDIO host */
 static inline int sd_use_host(void) {
+#ifdef CONFIG_SD_HWSDIO_SELFTEST
+  return !sd_force_bb;
+#else
   return 1;
+#endif
 }
 
 static uint8_t sd_bus_mode = SD_BUS_GPIO;
@@ -414,7 +421,7 @@ static DRESULT sdio_read(uint8_t *buf, uint32_t sector, uint32_t count) {
   return RES_ERROR;
 }
 
-#ifdef CONFIG_SD_HWSDIO_WRITE
+#if defined(CONFIG_SD_HWSDIO_WRITE)
 static int sdio_write_once(const uint8_t *buf, uint32_t sector, uint32_t count) {
   uint32_t r1;
   int newstream = 1;
@@ -756,6 +763,7 @@ int send_command_slow(uint8_t* cmd, uint8_t* rsp){
   return rsplen;
 }
 
+
 /*
    send_command_fast
    send SD command and put response in rsp.
@@ -976,6 +984,7 @@ int send_command_fast(uint8_t* cmd, uint8_t* rsp, uint8_t* buf){
   GPIO_MODE_OUT(SD_CMDREG, SD_CMDBIT);
   return rsplen;
 }
+
 
 static inline void make_crc7(uint8_t* cmd) {
   cmd[5]=crc7update(0, cmd[0]);
@@ -1458,6 +1467,7 @@ void sdn_init(void) {
 }
 void disk_init(void) __attribute__ ((weak, alias("sdn_init")));
 
+
 DSTATUS sdn_status(BYTE drv) {
   DSTATUS status = 0;
   if (SDCARD_DETECT) {
@@ -1517,7 +1527,7 @@ DRESULT sdn_write(BYTE drv, const BYTE *buffer, DWORD sector, UINT count) {
   if (sdn_status(drv) & STA_NODISK) {
     return RES_NOTRDY;
   }
-#ifdef CONFIG_SD_HWSDIO_WRITE
+#if defined(CONFIG_SD_HWSDIO) && defined(CONFIG_SD_HWSDIO_WRITE)
   if(sd_use_host()) {
     DRESULT res;
     writeled(1);

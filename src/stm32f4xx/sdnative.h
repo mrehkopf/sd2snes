@@ -52,6 +52,11 @@ extern sd_hw_stats_t sd_hw_stats;
 void sdn_hw_printstats(void);
 #endif
 
+#ifdef CONFIG_SD_HWSDIO_SELFTEST
+/* force bitbanging (for comparison tests) */
+extern uint8_t sd_force_bb;
+#endif
+
 /* These functions are weak-aliased to disk_... */
 void    sdn_init(void);
 DSTATUS sdn_status(BYTE drv);
