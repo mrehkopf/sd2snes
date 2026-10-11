@@ -55,11 +55,13 @@ end
 
 // CE recovery is generated on negative clock edges for a full clock period to
 // achieve earlier cycle end detection and ensure that the minimum tCPH of
-// 5ns is met, and steer clear of immediate takeover by the next owner
+// 5ns is met, and steer clear of immediate takeover by the next owner.
+// During SD DMA make sure that the SNES can't cut into SD DMA write cycles when
+// crashing and erratically accessing ROM addresses.
 always @(negedge CLK) begin
-  ce_recovery_r <= (snes_active_n & ~snes_active)
-                 | (other_active_n & ~OTHER_ACTIVE)
-                 | (SD_DMA_TO_ROM & ~sd_write_n_n & SD_WRITE_N);
+  ce_recovery_r <= SD_DMA_TO_ROM ? (~sd_write_n_n & SD_WRITE_N)
+                                 : (snes_active_n & ~snes_active)
+                                 | (other_active_n & ~OTHER_ACTIVE);
   snes_active_n <= snes_active;
   other_active_n <= OTHER_ACTIVE;
   sd_write_n_n <= SD_DMA_TO_ROM ? SD_WRITE_N : 1'b1;

@@ -883,12 +883,19 @@ wire MCU_WE_HIT = |(STATE & ST_MCU_WR_ADDR);
 wire MCU_WR_HIT = |(STATE & (ST_MCU_WR_ADDR | ST_MCU_WR_END));
 wire MCU_RD_HIT = |(STATE & (ST_MCU_RD_ADDR | ST_MCU_RD_END));
 wire MCU_HIT = MCU_WR_HIT | MCU_RD_HIT;
+`ifdef MK3
+// assert WE a clock later so it doesn't get asserted *before* the CE recovery
+// pulse
+wire CTX_DMA_WE_EN = (ST_MEM_DELAYr != ROM_CYCLE_LEN);
+`else
+wire CTX_DMA_WE_EN = 1'b1;
+`endif
 // CTX
-wire CTX_WE_HIT = |(STATE & ST_CTX_WR_ADDR);
+wire CTX_WE_HIT = |(STATE & ST_CTX_WR_ADDR) & CTX_DMA_WE_EN;
 wire CTX_WR_HIT = |(STATE & (ST_CTX_WR_ADDR | ST_CTX_WR_END));
 wire CTX_HIT = CTX_WR_HIT;
 // DMA
-wire DMA_WE_HIT = |(STATE & ST_DMA_WR_ADDR);
+wire DMA_WE_HIT = |(STATE & ST_DMA_WR_ADDR) & CTX_DMA_WE_EN;
 wire DMA_WR_HIT = |(STATE & (ST_DMA_WR_ADDR | ST_DMA_WR_END));
 wire DMA_RD_HIT = |(STATE & (ST_DMA_RD_ADDR | ST_DMA_RD_END));
 wire DMA_HIT = DMA_WR_HIT | DMA_RD_HIT;
