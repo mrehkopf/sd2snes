@@ -63,8 +63,22 @@ static char *curchar;
 
 /* Word lists */
 static char command_words[] =
-  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0cheat\0fpgaconf\0chipfeat\0bsregs\0gameloop\0dacboost\0cat\0mv\0sdstat\0sdtest\0sdwtest\0sdotest\0";
-enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_EXIT, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16, CMD_MEMSET, CMD_CHEAT, CMD_FPGACONF, CMD_CHIPFEAT, CMD_BSREGS, CMD_GAMELOOP, CMD_DACBOOST, CMD_CAT, CMD_MV, CMD_SDSTAT, CMD_SDTEST, CMD_SDWTEST, CMD_SDOTEST };
+  "cd\0reset\0sreset\0dir\0ls\0test\0exit\0loadrom\0loadraw\0saveraw\0put\0rm\0mkdir\0d4\0vmode\0mapper\0settime\0time\0setfeature\0hexdump\0w8\0w16\0memset\0cheat\0fpgaconf\0chipfeat\0bsregs\0gameloop\0dacboost\0cat\0mv\0"
+#ifdef CONFIG_SD_HWSDIO
+  "sdstat\0"
+#endif
+#ifdef CONFIG_SD_HWSDIO_SELFTEST
+  "sdtest\0sdwtest\0sdotest\0"
+#endif
+  ;
+enum { CMD_CD = 0, CMD_RESET, CMD_SRESET, CMD_DIR, CMD_LS, CMD_TEST, CMD_EXIT, CMD_LOADROM, CMD_LOADRAW, CMD_SAVERAW, CMD_PUT, CMD_RM, CMD_MKDIR, CMD_D4, CMD_VMODE, CMD_MAPPER, CMD_SETTIME, CMD_TIME, CMD_SETFEATURE, CMD_HEXDUMP, CMD_W8, CMD_W16, CMD_MEMSET, CMD_CHEAT, CMD_FPGACONF, CMD_CHIPFEAT, CMD_BSREGS, CMD_GAMELOOP, CMD_DACBOOST, CMD_CAT, CMD_MV,
+#ifdef CONFIG_SD_HWSDIO
+  CMD_SDSTAT,
+#endif
+#ifdef CONFIG_SD_HWSDIO_SELFTEST
+  CMD_SDTEST, CMD_SDWTEST, CMD_SDOTEST,
+#endif
+};
 
 /* ------------------------------------------------------------------------- */
 /*   Parse functions                                                         */
