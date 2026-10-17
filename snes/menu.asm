@@ -657,6 +657,10 @@ menu_print_entries .block
 ; db: bank of menu entry structure
   .virtual #0,d
 Frame .block
+  y             .byte ?         ; row of the entry
+  x             .byte ?         ; column of the label
+  pal           .byte ?         ; palette of the label
+  done          .byte ?         ; length of the label
   _             .dstruct SaveJSR
   p_max_opt_len .byte ?         ; pushed last
   p_max_lbl_len .byte ?         ; pushed first
@@ -667,74 +671,95 @@ Frame .block
   .as
   lda wram(window_y)
   inc a
-  sta wram(print_y)
+  sta Frame.y
 menu_print_ent_loop:
-  lda wram(window_w)
-  sta wram(print_count)
   lda wram(window_x)
   inc a
   inc a
-  sta wram(print_x)
+  sta Frame.x
   lda @w MenuEntry.type,x ; entry type. 0 = termination
   bne +
   jmp menu_print_ent_out
-+ lda @w MenuEntry.text,x ; address of option name string
-  sta wram(print_src)
-  lda @w MenuEntry.text+1,x ; (address cont'd)
-  sta wram(print_src+1)
-  lda @w MenuEntry.text+2,x ; bank of option name string
-  sta wram(print_bank)
-  jsr menu_check_disabled_func
++ jsr menu_check_disabled_func
   lda #$00
   bcc +
   lda #$06
-+ sta wram(print_pal)
++ sta Frame.pal
   phx
-  jsr hiprint
+  lda @w MenuEntry.text+2,x ; option name string
+  .param pha
+  rep #$20
+  .al
+  lda @w MenuEntry.text,x
+  .param pha
+  sep #$20
+  .as
+  lda Frame.x
+  .param pha
+  lda Frame.y
+  .param pha
+  lda Frame.pal
+  .param pha
+  lda wram(window_w)
+  .param pha
+  .call print_text
+  sta Frame.done
+  .unparam print_text
   plx
   lda @w MenuEntry.type,x
   cmp #MTYPE_SUBMENU
   bne +
-  lda wram(print_done)
-  adc wram(print_x)
-  dec a
-  sta wram(print_x)
-  lda #<text_ellipse
-  sta wram(print_src)
-  lda #>text_ellipse
-  sta wram(print_src+1)
-  lda #`text_ellipse
-  sta wram(print_bank)
   phx
-    jsr hiprint
+    lda #`text_ellipse          ; "..." right after sub menu names
+    .param pha
+    .param pea, <>text_ellipse
+    lda Frame.x
+    clc
+    adc Frame.done
+    .param pha
+    lda Frame.y
+    .param pha
+    lda Frame.pal
+    .param pha
+    lda wram(window_w)
+    .param pha
+    .call print_text
+    .unparam print_text
   plx
-+ lda Frame.p_max_lbl_len
-  clc
-  adc wram(window_x)
-  adc #$05
-  sta wram(print_x)
-  lda Frame.p_max_opt_len
-  sta wram(print_count)
-  lda #`space64
-  sta wram(print_bank)
++ phx
+    lda #`space64               ; clear the value
+    .param pha
+    .param pea, <>space64
+    lda Frame.p_max_lbl_len
+    clc
+    adc wram(window_x)
+    adc #$05
+    .param pha
+    lda Frame.y
+    .param pha
+    lda Frame.pal
+    .param pha
+    lda Frame.p_max_opt_len
+    .param pha
+    .call print_text
+    .unparam print_text
+  plx
+  lda Frame.y
+  .param pha
+  .call menu_print_opt_string
+  .unparam menu_print_opt_string
   rep #$20
   .al
-  lda #<>space64
-  sta wram(print_src)
-  phx
-    jsr hiprint
-  plx
-  jsr menu_print_opt_string
   txa
   clc
   adc #size(MenuEntry)
   tax
   sep #$20
   .as
-  lda wram(print_y)
+  lda Frame.y
   clc
   adc wram(listsel_step)
-  sta wram(print_y)
+  sta Frame.y
   jmp menu_print_ent_loop
 menu_print_ent_out:
   .leave
@@ -744,8 +769,9 @@ menu_print_ent_out:
 .text "MENU_PRINT_OPT_STRING"
 menu_print_opt_string .block
 ; params
-; x: address of menu entry structure
+; x: address of menu entry structure (preserved)
 ; db: bank of menu entry structure
+; p_y: row
   .virtual #0,d
 Frame .block
   entry_addr    .word ?
@@ -755,7 +781,12 @@ Frame .block
   kvpar_data    .word ?
   kvtab_addr    .word ?
   kvtab_bank    .byte ?
+  text          .fill 20        ; the value as text, if it isn't one already
+  pal           .byte ?         ; palette of the value
+  count         .byte ?         ; characters of the value to print at most
+  col           .byte ?
   _             .dstruct SaveJSR
+  p_y           .byte ?
 .endblock
   .endvirtual
   .enter
@@ -763,24 +794,17 @@ Frame .block
   .al
   lda @w MenuEntry.value,x
   sta Frame.entry_addr
-  lda #stringbuf
-  sta wram(print_src)
   sep #$20
   .as
   jsr menu_check_disabled_func
   lda #$01
   bcc +
   lda #$06
-+ sta wram(print_pal)
++ sta Frame.pal
   lda #$40
-  sta wram(print_count)
-  lda #`wram(stringbuf)
-  sta wram(print_bank)
+  sta Frame.count
   lda @w MenuEntry.value+2,x
   sta Frame.entry_bank
-;  lda !$0, x
-;  cmp #MTYPE_VALUE
-;  jne menu_print_opt_string_out
   lda @w MenuEntry.dtype,x
   .jeq menu_print_opt_string_out
   cmp #OPTTYPE_BYTE
@@ -789,21 +813,7 @@ Frame .block
   .al
   lda [Frame.entry_addr]
   and #$00ff
-  phx
-    jsr bin2dec16
-    lda wram(print_src)
-    tay
-    sep #$20
-    .as
-    lda wram(print_bank)
-    phb
-      pha
-      plb
-      jsr right_align
-    plb
-    jsr hiprint
-  plx
-  jmp menu_print_opt_string_out
+  bra menu_print_opt_string_number
 menu_print_opt_string_02:
   .as
   cmp #OPTTYPE_WORD
@@ -811,46 +821,46 @@ menu_print_opt_string_02:
   rep #$20
   .al
   lda [Frame.entry_addr]
+menu_print_opt_string_number:
+  .al
   phx
-    jsr bin2dec16
-    lda wram(print_src)
     tay
     sep #$20
     .as
-    lda wram(print_bank)
-    phb
-      pha
-      plb
-      jsr right_align
-    plb
-    jsr hiprint
+    lda #$00                    ; Frame.text, on the stack
+    .param pha
+    rep #$20
+    .al
+    tdc
+    clc
+    adc #Frame.text - Frame
+    .param pha
+    .param phy
+    .call bin2dec
+    .unparam bin2dec
+    sep #$20
+    .as
+    jsr print_text_value
   plx
   jmp menu_print_opt_string_out
 menu_print_opt_string_03:
   .as
   cmp #OPTTYPE_STRING
   bne menu_print_opt_string_04
-  rep #$20
-  .al
-  lda @w MenuEntry.value,x
-  sta wram(print_src)
-  tay
-  sep #$20
-  .as
   lda @w MenuEntry.target,x
-  sta wram(print_count)
-  lda @w MenuEntry.value+2,x
-  sta wram(print_bank)
+  sta Frame.count
   phx
-    phb
-      pha
-      plb
-      jsr right_align
-    plb
-    jsr hiprint
+    lda @w MenuEntry.value+2,x
+    pha
+    rep #$20
+    .al
+    lda @w MenuEntry.value,x
+    tax
+    sep #$20
+    .as
+    pla
+    jsr print_value
   plx
-  lda wram(window_w)
-  sta wram(print_count)
   jmp menu_print_opt_string_out
 menu_print_opt_string_04:
   .as
@@ -884,34 +894,27 @@ menu_print_opt_string_keyval:
   .as
   lda @w MenuEntry.target+2,x
   sta Frame.kvtab_bank
-  phb
-    pha
-    plb
-    rep #$20
-    .al
-    ldy Frame.kvtab_addr
-    lda Frame.kvpar_data
-    .param pha
-    .call menu_kv_lookup
-    pla
+  phx
+    phb
+      pha
+      plb
+      rep #$20
+      .al
+      ldy Frame.kvtab_addr
+      lda Frame.kvpar_data
+      .param pha
+      .call menu_kv_lookup
+      pla
 ; sanitize invalid option setting
-    cpy #$ffff
-    bne +
-    ldy Frame.kvtab_addr     ; invalid setting -> default to first entry
-+   lda @w KVEntry.text,y
-    pha                      ; save offset for right-align
-      sta wram(print_src)
+      cpy #$ffff
+      bne +
+      ldy Frame.kvtab_addr     ; invalid setting -> default to first entry
++     ldx @w KVEntry.text,y
       sep #$20
       .as
       lda @w KVEntry.text+2,y
-      sta wram(print_bank)
-      pha
-      plb
-    ply
-    jsr right_align
-  plb
-  phx
-    jsr hiprint
+    plb
+    jsr print_value
   plx
   jmp menu_print_opt_string_out
 menu_print_opt_string_06:
@@ -920,32 +923,18 @@ menu_print_opt_string_06:
   cmp #OPTTYPE_FILESEL
   bne menu_print_opt_string_07
   lda #$41
-  sta wram(stringbuf)
+  sta Frame.text
   lda #$00
-  sta wram(stringbuf+1)
+  sta Frame.text+1
   jsr menu_check_disabled_func
   lda #$02
   bcc +
   lda #$06
-+ sta wram(print_pal)
++ sta Frame.pal
   lda #$10
-  sta wram(print_count)
-  rep #$20
-  .al
-  lda #stringbuf
-  sta wram(print_src)
-  tay
-  sep #$20
-  .as
-  lda #`wram(stringbuf)
-  sta wram(print_bank)
+  sta Frame.count
   phx
-    phb
-      pha
-      plb
-      jsr right_align
-    plb
-    jsr hiprint
+    jsr print_text_value
   plx
   bra menu_print_opt_string_out
 menu_print_opt_string_07:
@@ -955,41 +944,78 @@ menu_print_opt_string_07:
   lda #$02
   bcc +
   lda #$06
-+ sta wram(print_pal)
++ sta Frame.pal
   lda #$13
-  sta wram(print_count)
-  rep #$20
-  .al
-  lda #stringbuf
-  sta wram(print_src)
-  tay
-  sep #$20
-  .as
-  lda #`wram(stringbuf)
-  sta wram(print_bank)
+  sta Frame.count
   phx
-    phb
-      pha
-      plb
-      phy
-        lda #`wram(stringbuf)
-        .param pha
-        .param pea, stringbuf
-        lda Frame.entry_bank
-        ldx Frame.entry_addr
-        .param pha
-        .param phx
-          .call rendertime
-        .unparam rendertime
-      ply
-      jsr right_align
-    plb
-    jsr hiprint
+    lda #$00                    ; Frame.text, on the stack
+    .param pha
+    rep #$20
+    .al
+    tdc
+    clc
+    adc #Frame.text - Frame
+    .param pha
+    sep #$20
+    .as
+    lda Frame.entry_bank
+    ldx Frame.entry_addr
+    .param pha
+    .param phx
+    .call rendertime
+    .unparam rendertime
+    jsr print_text_value
   plx
 menu_print_opt_string_out:
   .leave
   rts
+
+; helpers in the frame of menu_print_opt_string
+
+; print Frame.text as the value
+print_text_value:
+  .as
+  lda #$00
+  pha
+  rep #$20
+  .al
+  tdc
+  clc
+  adc #Frame.text - Frame
+  tax
+  sep #$20
+  .as
+  pla
+; print the string at A:X (bank:address) as the value: right-aligned in
+; the window, with Frame.pal, at most Frame.count characters
+print_value:
+  .as
+  pha
+  phx
+  phb
+    pha
+    plb
+    txy
+    jsr right_align
+    sta Frame.col
+  plb
+  plx
+  pla
+  .param pha
+  .param phx
+  lda Frame.col
+  .param pha
+  lda Frame.p_y
+  .param pha
+  lda Frame.pal
+  .param pha
+  lda Frame.count
+  .param pha
+  .call print_text
+  .unparam print_text
+  rts
 .endblock
+
 
 ; menu_kv_lookup
 ; look for key in a kv table
@@ -1052,6 +1078,9 @@ Frame .block
   text_grey     .byte ?
   chgfunc_addr  .word ?
   chgfunc_bank  .byte ?
+  text          .fill 6         ; the number being edited as text
+  count         .byte ?         ; characters print_at_bar prints at most
+  col           .byte ?
   _             .dstruct SaveJSR
 .endblock
   .endvirtual
@@ -1238,25 +1267,9 @@ menu_value_dialog_u8_print:
       .al
       lda Frame.work_value
       and #$00ff
-      jsr bin2dec16
-      phb
-        sep #$20
-        .as
-        lda #`wram(stringbuf)
-        pha
-        plb
-        ldy #stringbuf
-        jsr right_align
-        lda bar_yl
-        inc a
-        sta print_y
-        lda #$01
-        bit Frame.text_grey
-        bpl +
-        lda #$06
-+       sta print_pal
-        jsr hiprint
-      plb
+      jsr print_number
+      sep #$20
+      .as
       brl -
 menu_value_dialog_u8_cont:
     plb
@@ -1373,27 +1386,7 @@ menu_value_dialog_u16_print:
 +     rep #$20
       .al
       lda Frame.work_value
-      jsr bin2dec16
-      phb
-        sep #$20
-        .as
-        lda #`wram(stringbuf)
-        pha
-        plb
-        ldy #stringbuf
-        jsr right_align
-        lda bar_yl
-        inc a
-        sta print_y
-        lda #$01
-        bit Frame.text_grey
-        bpl +
-        lda #$06
-+       sta print_pal
-        jsr hiprint
-      plb
-      rep #$20
-      .al
+      jsr print_number
       brl -
 menu_value_dialog_u16_cont:
     plb
@@ -1469,28 +1462,21 @@ menu_value_dialog_kv8_cancel:
   plp
   clc
   rts
-+     lda #`space64
-      sta wram(print_bank)
-      rep #$20
-      .al
-      lda #<>space64
-      sta wram(print_src)
-      sep #$20
++     sep #$20
       .as
-      lda wram(bar_yl)
-      inc a
-      sta wram(print_y)
-      lda wram(window_x)
-      clc
-      adc wram(window_w)
-      clc
-      sbc Frame.value_len
-      dec a
-      sta wram(print_x)
       lda Frame.value_len
-      sta wram(print_count)
+      sta Frame.count
       phy
-        jsr hiprint
+        lda wram(window_x)      ; clear the value
+        clc
+        adc wram(window_w)
+        clc
+        sbc Frame.value_len
+        dec a
+        sta Frame.col
+        lda #`space64
+        ldx #<>space64
+        jsr print_at_col
       ply
       rep #$20
       .al
@@ -1498,26 +1484,13 @@ menu_value_dialog_kv8_cancel:
       and #$00ff
       sta Frame.work_value
       lda @w KVEntry.text,y
-      sta wram(print_src)
       sta Frame.label_addr
       sep #$20
       .as
-      lda @w KVEntry.text+2,y
-      sta wram(print_bank)
-      lda #$01
-      bit Frame.text_grey
-      bpl +
-      lda #$06
-+     sta wram(print_pal)
       phy
-        ldy Frame.label_addr
-        lda wram(print_bank)
-        phb
-          pha
-          plb
-          jsr right_align
-          jsr hiprint
-        plb
+        ldx Frame.label_addr
+        lda @w KVEntry.text+2,y
+        jsr print_at_bar
       ply
       jsr menu_check_change_hook
       brl menu_value_dialog_kv8_loop
@@ -1562,6 +1535,75 @@ menu_value_dialog_time:
 menu_value_dialog_time_cancel:
   plp
   clc
+  rts
+
+; helpers for the value dialogs, in the frame of menu_edit_value
+
+; print the number A (16-bit, A 16-bit) right-aligned at the bar
+print_number:
+  .al
+  php
+  tay
+  sep #$20
+  .as
+  lda #$00                      ; Frame.text, on the stack
+  .param pha
+  rep #$20
+  .al
+  tdc
+  clc
+  adc #Frame.text - Frame
+  .param pha
+  .param phy
+  .call bin2dec
+  .unparam bin2dec
+  tdc
+  clc
+  adc #Frame.text - Frame
+  tax
+  sep #$20
+  .as
+  lda #5
+  sta Frame.count
+  lda #$00
+  jsr print_at_bar
+  plp
+  rts
+
+; print the string at A:X (bank:address) right-aligned in the window
+; at the row of the bar, at most Frame.count characters
+print_at_bar:
+  .as
+  pha
+  phx
+  phb
+    pha
+    plb
+    txy
+    jsr right_align
+    sta Frame.col
+  plb
+  plx
+  pla
+; print the string at A:X at Frame.col in the row of the bar
+print_at_col:
+  .as
+  .param pha
+  .param phx
+  lda Frame.col
+  .param pha
+  lda wram(bar_yl)
+  inc a
+  .param pha
+  lda #$01
+  bit Frame.text_grey
+  bpl +
+  lda #$06
++ .param pha
+  lda Frame.count
+  .param pha
+  .call print_text
+  .unparam print_text
   rts
 
 menu_check_change_hook:

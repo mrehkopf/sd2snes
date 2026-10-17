@@ -690,11 +690,12 @@ greyout_out:
   rts
 .endblock
 
-; right-align: calculate print X position based on string length and
-;              window dimensions
+; right-align: calculate the column to print a string at so that it ends
+;              at the right edge of the window (window_x, window_w)
 ; params:
 ; db: bank of string to print
 ; y: address of string to print
+; returns: the column in the low byte of A
 right_align:
   php
     jsr strlen            ; right-align:
@@ -702,14 +703,13 @@ right_align:
     .as
     rep #$10
     .xl
-    tya                   ; print_x = window_x+window_w-2-strlen
+    tya                   ; column = window_x+window_w-2-strlen
     sec                   ; = ~(strlen-window_x)+1+window_w-2
     sbc wram(window_x)
     eor #$ff
     clc
     adc wram(window_w)
     dec a                 ; = ~(strlen-window_x)+window_w-1
-    sta wram(print_x)
   plp
   rts
 
