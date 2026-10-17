@@ -132,156 +132,189 @@ hiprint:
   rts
 
 
-draw_window:
+; draw the current window (window_x/y/w/h) with its title (window_taddr/
+; window_tbank, none if the string is empty)
+draw_window .block
+  .virtual #0,d
+Frame .block
+  row           .fill 64        ; text of one window row
+  title         .long ?         ; window title
+  x             .byte ?         ; where print_str prints
+  y             .byte ?
+  count         .byte ?         ; characters print_str prints at most
+  done          .byte ?         ; characters print_str printed
+  rows          .word ?         ; rows left to draw
+  _             .dstruct SaveJSR
+.endblock
+  .endvirtual
   phb
-  php
+  .enter
   sep #$20
   .as
+  rep #$10
+  .xl
   lda #$80
   pha
   plb
-; draw upper border
-; upper left corner
-  lda @l window_nw
-  sta stringbuf
-  lda window_w
-  sta window_tmp
-  stz window_tmp+1
-  ldy window_tmp
-  dey
-; upper right corner
-  lda @l window_ne
-  sta @w stringbuf,y
-  dey
-; upper edge
--
-  lda @l window_nh
-  sta @w stringbuf,y
-  dey
-  bne -
-; print to text buffer
-  lda #$03
-  sta print_pal
   lda window_x
-  sta print_x
+  sta Frame.x
   lda window_y
-  sta print_y
-  lda #`wram(stringbuf)
-  sta print_bank
-  ldx #stringbuf
-  stx print_src
+  sta Frame.y
   lda window_w
-  sta print_count
-  jsr hiprint
-
-; print window title if string not empty
-  lda window_tbank
+  sta Frame.count
+; upper border
+  lda @l window_nh
+  jsr fill_row
+  lda @l window_nw
+  sta Frame.row
+  lda @l window_ne
+  jsr set_last
+  jsr print_row
+; title, if not empty
   ldx window_taddr
-  phb
-  pha
-  plb
-  lda @w 0,x
-  xba
-  plb
-  xba
-  beq draw_window_notitle
-  lda print_x
-  pha
-  inc print_x
-  inc print_x
+  stx Frame.title
+  lda window_tbank
+  sta Frame.title+2
+  lda [Frame.title]
+  beq notitle
+  inc Frame.x
+  inc Frame.x
+  lda #$01
+  sta Frame.count
   lda #`window_tl
-  sta print_bank
   ldx #<>window_tl
-  stx print_src
-  lda #$01
-  sta print_count
-  jsr hiprint
-  inc print_x
+  jsr print_str
+  inc Frame.x
+  lda window_w
+  sta Frame.count
   lda window_tbank
-  sta print_bank
   ldx window_taddr
-  stx print_src
-  lda window_w
-  sta print_count
-  jsr hiprint
-  lda print_done
+  jsr print_str
+  lda Frame.done
   clc
-  adc print_x
-  sta print_x
-  lda #`window_tr
-  sta print_bank
-  ldx #<>window_tr
-  stx print_src
+  adc Frame.x
+  sta Frame.x
   lda #$01
-  sta print_count
-  jsr hiprint
+  sta Frame.count
+  lda #`window_tr
+  ldx #<>window_tr
+  jsr print_str
+  lda window_x
+  sta Frame.x
   lda window_w
-  sta print_count
-  pla
-  sta print_x
-; draw left+right borders + space inside window
-draw_window_notitle:
-  lda #`wram(stringbuf)
-  sta print_bank
-  ldx #stringbuf
-  stx print_src
-  lda window_w
-  sta window_tmp
-  stz window_tmp+1
-  ldy window_tmp
-  dey
-  lda @l window_ev
-  sta @w stringbuf,y
-  dey
--
+  sta Frame.count
+notitle:
+; left and right borders, space inside the window
   lda @l space64
-  sta @w stringbuf,y
-  dey
-  bne -
+  jsr fill_row
   lda @l window_wv
-  sta stringbuf
-
-; print to text buffer multiple times
+  sta Frame.row
+  lda @l window_ev
+  jsr set_last
+  rep #$20
+  .al
   lda window_h
-  sta window_tmp
-  stz window_tmp+1
-  ldy window_tmp
-  dey
-  dey
--
-  inc print_y
-  phy
-  jsr hiprint
-  ply
-  dey
+  and #$00ff
+  dec a
+  dec a
+  sta Frame.rows
+  sep #$20
+  .as
+- inc Frame.y
+  jsr print_row
+  rep #$20
+  .al
+  dec Frame.rows
+  sep #$20
+  .as
   bne -
-
-; draw lower window border
-; lower left corner
-  lda window_w
-  sta window_tmp
-  stz window_tmp+1
-  ldy window_tmp
-  dey
-; lower right corner
-  lda @l window_se
-  sta @w stringbuf,y
-  dey
-; lower edge
--
+; lower border
   lda @l window_sh
-  sta @w stringbuf,y
-  dey
-  bne -
-; lower left corner
+  jsr fill_row
   lda @l window_sw
-  sta stringbuf
-; print to text buffer
-  inc print_y
-  jsr hiprint
-  plp
+  sta Frame.row
+  lda @l window_se
+  jsr set_last
+  inc Frame.y
+  jsr print_row
+  .leave
   plb
   rts
+
+; helpers in the frame of draw_window
+
+; fill Frame.row with window_w times A
+fill_row:
+  .as
+  pha
+  rep #$20
+  .al
+  lda window_w
+  and #$00ff
+  tax
+  sep #$20
+  .as
+  pla
+- dex
+  bmi +
+  sta Frame.row,x
+  bra -
++ rts
+
+; put A at the last position of Frame.row
+set_last:
+  .as
+  pha
+  rep #$20
+  .al
+  lda window_w
+  and #$00ff
+  dec a
+  tax
+  sep #$20
+  .as
+  pla
+  sta Frame.row,x
+  rts
+
+; print Frame.row
+print_row:
+  .as
+  lda #$00                      ; on the stack: bank 0
+  pha
+  rep #$20
+  .al
+  tdc
+  clc
+  adc #Frame.row - Frame
+  tax
+  sep #$20
+  .as
+  pla
+; print the string at A:X (bank:address) at Frame.x/y in the window frame
+; palette, at most Frame.count characters; sets Frame.done
+print_str:
+  .as
+  .param pha
+  rep #$20
+  .al
+  txa
+  .param pha
+  sep #$20
+  .as
+  lda Frame.x
+  .param pha
+  lda Frame.y
+  .param pha
+  lda #$03
+  .param pha
+  lda Frame.count
+  .param pha
+  .call print_text
+  sta Frame.done
+  .unparam print_text
+  rts
+.endblock
 
 draw_loading_window:
   php
@@ -291,25 +324,28 @@ draw_loading_window:
   .xl
   lda @l loading_win_x
   sta window_x
-  sta print_x
   lda listdisp
   clc
   adc #$0a
   sta window_y
-  sta print_y
   lda @l loading_win_w
   sta window_w
   lda @l loading_win_h
   sta window_h
   jsr push_window
   lda #`text_loading
-  sta print_bank
-  ldx #<>text_loading
-  stx print_src
-  stz print_pal
+  .param pha
+  .param pea, <>text_loading
+  lda window_x
+  .param pha
+  lda window_y
+  .param pha
+  lda #$00
+  .param pha
   lda window_w
-  sta print_count
-  jsr hiprint
+  .param pha
+  .call print_text
+  .unparam print_text
   plp
   rts
 
