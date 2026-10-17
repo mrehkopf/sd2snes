@@ -185,3 +185,20 @@ _n := frame_params(\target.Frame)
   .endif
   .endif
 .endm
+
+; Push the long address of a direct page location, usually a buffer in the
+; caller's Frame, as a parameter: bank 0 (where the stack is), D + offset
+;   .param_dp Frame.line + 11
+; needs 8-bit A; destroys A and the flags
+param_dp .macro location
+  lda #$00
+  .param pha
+  rep #$20
+  .al
+  tdc
+  clc
+  adc #\location - Frame
+  .param pha
+  sep #$20
+  .as
+.endm
