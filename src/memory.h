@@ -52,6 +52,8 @@ extern char current_filename[];
 
 #define SRAM_MENU_FILEPATH_ADDR      (0xFF0000L)
 #define SRAM_MENU_CFG_ADDR           (0xFF0100L)
+#define SRAM_CHEAT_STATUS            (0xFF0F00L)
+#define SRAM_CHEAT_ROMNAME           (0xFF0F01L) /* up to 255 bytes */
 #define SRAM_CMD_ADDR                (0xFF1000L)
 #define SRAM_PARAM_ADDR              (0xFF1004L)
 #define SRAM_MCU_STATUS_ADDR         (0xFF1100L)

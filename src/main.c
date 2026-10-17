@@ -28,6 +28,7 @@
 #include "sysinfo.h"
 #include "cfg.h"
 #include "savestate.h"
+#include "cheat.h"
 
 //usb
 #include "usb.h"
@@ -449,12 +450,13 @@ int main(void) {
           cmd=0;
           break;
         case SNES_CMD_LOAD_CHT:
-          /* load cheats */
+          /* load cheats of the selected file for the cheat editor */
+          cheat_menu_load(snescmd_readbyte(SNESCMD_MCU_PARAM + 8));
           cmd=0; /* stay in menu loop */
           break;
         case SNES_CMD_SAVE_CHT:
-          /* save cheats */
-// XXX          cheat_save_from_menu()
+          /* write cheats back after editing */
+          cheat_menu_save(snescmd_readbyte(SNESCMD_MCU_PARAM + 8));
           cmd=0; /* stay in menu loop */
           break;
         default:

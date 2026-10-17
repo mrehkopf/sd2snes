@@ -45,6 +45,8 @@ SPC_DSP_REGS                = $FE0100
 
 FILESEL_CWD                 = $FF0000
 CFG_ADDR                    = $FF0100
+CHEAT_STATUS                = $FF0F00   ; result of CMD_LOAD_CHT/CMD_SAVE_CHT
+CHEAT_ROMNAME               = $FF0F01   ; file name for the cheat window title
 ST_MCU_ADDR                 = $FF1100
 ST_SNES_ADDR                = $FF1110
 SYSINFO_BLK                 = $FF1200
@@ -92,6 +94,14 @@ CMD_RESET_LOOP_FAIL         = $88
 CMD_RESET_LOOP_PASS         = $89
 CMD_RESET_LOOP_TIMEOUT      = $8A
 CMD_COMBO_TRANSITION        = $90
+
+; MCU_PARAM+8 of CMD_LOAD_CHT/CMD_SAVE_CHT: where the file was selected
+CHEAT_SRC_BROWSER           = $00       ; file pointers in MCU_PARAM+0..7
+CHEAT_SRC_RECENT            = $01       ; list index in MCU_PARAM
+CHEAT_SRC_FAVORITE          = $02       ; list index in MCU_PARAM
+; values of CHEAT_STATUS
+CHEAT_STATUS_OK             = $00
+CHEAT_STATUS_ERR            = $01
 
 CFG_VIDMODE_MENU                = CFG_ADDR+$0000
 CFG_VIDMODE_GAME                = CFG_ADDR+$0001
