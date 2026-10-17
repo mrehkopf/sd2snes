@@ -32,6 +32,7 @@ Frame .block
   time_bank     .byte ?
   work          .dstruct BCDTime ; working copy
   tmp           .byte ?
+  text          .fill 20        ; the time as text
   _             .dstruct SaveJSR
   p_time_addr   .word ?          ; pushed last
   p_time_bank   .byte ?
@@ -56,7 +57,18 @@ Frame .block
     stz time_exit
     stz time_cancel
 time_update:
-    lda #$00
+    lda #$00                    ; text: in the frame, bank 0
+    .param pha
+    rep #$20
+    .al
+    tdc
+    clc
+    adc #Frame.text - Frame
+    tax
+    .param phx
+    sep #$20
+    .as
+    lda #$00                    ; time: the working copy
     .param pha
     rep #$20
     .al
@@ -67,18 +79,27 @@ time_update:
     sep #$20
     .as
       .call rendertime
-    plx
-    pla
-    lda #`wram(stringbuf)
-    sta print_bank
-    ldx #stringbuf
-    stx print_src
+    .unparam rendertime
+    lda #$00
+    .param pha
+    rep #$20
+    .al
+    tdc
+    clc
+    adc #Frame.text - Frame
+    .param pha
+    sep #$20
+    .as
     lda Frame.p_time_x
-    sta print_x
+    .param pha
     lda Frame.p_time_y
-    sta print_y
-    stz print_pal
-    jsr hiprint
+    .param pha
+    lda #$00
+    .param pha
+    lda #19
+    .param pha
+    .call print_text
+    .unparam print_text
     lda time_sel
     asl
     clc
@@ -606,137 +627,99 @@ gettime:
   rts
 
 rendertime .block
-; render the BCDTime pointed to by the params into stringbuf
+; render the BCDTime pointed to by p_time as "YYYY-MM-DD hh:mm:ss" and a NUL
+; (20 bytes) into p_buf
   .virtual #0,d
 Frame .block
+  t             .dstruct BCDTime ; copy of the time
   _             .dstruct SaveJSR
   p_time_addr   .word ?         ; long pointer to a BCDTime, pushed last
-  p_time_bank   .byte ?         ; pushed first
+  p_time_bank   .byte ?
+  p_buf         .long ?         ; where the text goes, pushed first
 .endblock
   .endvirtual
   .enter
   sep #$20
   .as
-  ldx #stringbuf
-  ldy #BCDTime.y100
-  lda [Frame.p_time_addr],y         ; y100
+  rep #$10
+  .xl
+  ldy #size(BCDTime)-1
+- lda [Frame.p_time_addr],y
+  tyx
+  sta Frame.t,x
+  dey
+  bpl -
+  ldy #$0000
+  lda Frame.t.y100              ; century: 1x or 2x
   and #$0f
+  ldx #$31
   cmp #$0a
-  bpl y_skip1
-  clc
-  adc #$30
-  sta @w 1,x
-  lda #$31
-  sta @w 0,x
-  bra y_skip2
-y_skip1:
-  clc
-  adc #$26
-  sta @w 1,x
-  lda #$32
-  sta @w 0,x
-y_skip2:
-  inx
-  inx
-  dey
-  lda [Frame.p_time_addr],y         ; y10
+  bmi +
+  ldx #$32
+  sec
+  sbc #$0a
++ jsr put_x_digit
+  lda Frame.t.y10
   and #$0f
-  clc
-  adc #$30
-  sta @w 0,x
-  inx
-  dey
-  lda [Frame.p_time_addr],y         ; y1
+  jsr put_digit
+  lda Frame.t.y1
   and #$0f
-  clc
-  adc #$30
-  sta @w 0,x
-  inx
+  jsr put_digit
   lda #$2d
-  sta @w 0,x
-  inx
-  dey
-  lda [Frame.p_time_addr],y         ; mon
+  jsr put
+  lda Frame.t.mon               ; month: 0x or 1x
   and #$0f
+  ldx #$30
   cmp #$0a
-  bpl mon_skip1
-  clc
-  adc #$30
-  sta @w 1,x
-  lda #$30
-  sta @w 0,x
-  bra mon_skip2
-mon_skip1:
-  clc
-  adc #$26
-  sta @w 1,x
-  lda #$31
-  sta @w 0,x
-mon_skip2:
-  inx
-  inx
+  bmi +
+  ldx #$31
+  sec
+  sbc #$0a
++ jsr put_x_digit
   lda #$2d
-  sta @w 0,x
-  inx
-  dey
-  lda [Frame.p_time_addr],y         ; d10
-  clc
-  adc #$30
-  sta @w 0,x
-  inx
-  dey
-  lda [Frame.p_time_addr],y         ; d1
-  clc
-  adc #$30
-  sta @w 0,x
-  inx
+  jsr put
+  lda Frame.t.d10
+  jsr put_digit
+  lda Frame.t.d1
+  jsr put_digit
   lda #$20
-  sta @w 0,x
-  inx
-  dey
-  lda [Frame.p_time_addr],y         ; h10
-  clc
-  adc #$30
-  sta @w 0,x
-  inx
-  dey
-  lda [Frame.p_time_addr],y         ; h1
-  clc
-  adc #$30
-  sta @w 0,x
-  inx
+  jsr put
+  lda Frame.t.h10
+  jsr put_digit
+  lda Frame.t.h1
+  jsr put_digit
   lda #$3a
-  sta @w 0,x
-  inx
-  dey
-  lda [Frame.p_time_addr],y         ; m10
-  clc
-  adc #$30
-  sta @w 0,x
-  inx
-  dey
-  lda [Frame.p_time_addr],y         ; m1
-  clc
-  adc #$30
-  sta @w 0,x
-  inx
+  jsr put
+  lda Frame.t.m10
+  jsr put_digit
+  lda Frame.t.m1
+  jsr put_digit
   lda #$3a
-  sta @w 0,x
-  inx
-  dey
-  lda [Frame.p_time_addr],y         ; s10
-  clc
-  adc #$30
-  sta @w 0,x
-  inx
-  dey
-  lda [Frame.p_time_addr],y         ; s1
-  clc
-  adc #$30
-  sta @w 0,x
-  stz @w 1,x
+  jsr put
+  lda Frame.t.s10
+  jsr put_digit
+  lda Frame.t.s1
+  jsr put_digit
+  lda #$00
+  jsr put
   .leave
+  rts
+
+; helpers in the frame of rendertime: put X, then digit A
+put_x_digit:
   .as
+  pha
+  txa
+  jsr put
+  pla
+; put digit A
+put_digit:
+  clc
+  adc #$30
+; put character A
+put:
+  sta [Frame.p_buf],y
+  iny
   rts
 .endblock
 
@@ -771,47 +754,66 @@ settime:
   sta @l ST_RTC_VALID ; set rtc valid
   rts
 
-printtime:
-  php
+printtime .block
+; print the time of the S-RTC to the status bar
+  .virtual #0,d
+Frame .block
+  text          .fill 20        ; the time as text
+  _             .dstruct SaveJSR
+.endblock
+  .endvirtual
   phb
-    sep #$20
-    .as
-    lda #$80
-    pha
-    plb
-    jsr gettime
-    jsr render_rtc_time
-    lda listdisp
-    clc
-    adc #$0a
-    sta print_y
-    lda #$2b
-    sta print_x
-    lda #$40
-    sta print_count
-    lda #`wram(stringbuf)
-    sta print_bank
-    ldx #stringbuf
-    stx print_src
-    stz print_pal
-    jsr hiprint
+  .enter
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  lda #$80
+  pha
   plb
-  plp
-  rts
-
-render_rtc_time:
-  php
+  jsr gettime
+  lda #$00                      ; text: in the frame, bank 0
+  .param pha
+  rep #$20
+  .al
+  tdc
+  clc
+  adc #Frame.text - Frame
+  tax
+  .param phx
   sep #$20
   .as
   lda #`wram(time_s1)
   .param pha
   .param pea, time_s1
-    .call rendertime
-  pla
-  pla
-  pla
-  plp
+  .call rendertime
+  .unparam rendertime
+  lda #$00
+  .param pha
+  rep #$20
+  .al
+  tdc
+  clc
+  adc #Frame.text - Frame
+  .param pha
+  sep #$20
+  .as
+  lda #$2b
+  .param pha
+  lda listdisp
+  clc
+  adc #$0a
+  .param pha
+  lda #$00
+  .param pha
+  lda #$40
+  .param pha
+  .call print_text
+  .unparam print_text
+  .leave
+  plb
   rts
+.endblock
 
 
 rtc_init:

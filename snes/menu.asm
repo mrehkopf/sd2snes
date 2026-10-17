@@ -972,13 +972,15 @@ menu_print_opt_string_07:
       pha
       plb
       phy
+        lda #`wram(stringbuf)
+        .param pha
+        .param pea, stringbuf
         lda Frame.entry_bank
         ldx Frame.entry_addr
         .param pha
         .param phx
           .call rendertime
-        plx
-        pla
+        .unparam rendertime
       ply
       jsr right_align
     plb
