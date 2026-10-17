@@ -1,6 +1,94 @@
 .text "===HIPRINT==="
-; print a string in mode 5 using pseudo-8x8 tiles on two BG layers.
+; print a string in mode 5 using pseudo-8x8 tiles on two BG layers:
+; even columns go to BG2, odd columns to BG1.
 ; characters 0 and 1 are considered "end of string".
+; re-entrant: everything lives in the stack frame, any D and DB
+; params (push order): p_src (long: bank, then address), p_x, p_y, p_pal,
+; p_count (only these characters at most)
+; returns:
+; A: number of characters printed
+; X: the character after them, bit 0 cleared (0 = end of string reached)
+print_text .block
+  .virtual #0,d
+Frame .block
+  attr          .word ?         ; palette and priority bits of the tiles
+  count         .word ?         ; p_count
+  offset        .word ?         ; column, then offset in the tile buffers
+  _             .dstruct SaveJSR
+  p_count       .byte ?         ; maximum number of characters, pushed last
+  p_pal         .byte ?         ; palette
+  p_y           .byte ?         ; row
+  p_x           .byte ?         ; column
+  p_src         .long ?         ; string, pushed first (bank, then address)
+.endblock
+  .endvirtual
+  .enter
+  rep #$30
+  .al
+  .xl
+  lda Frame.p_pal
+  and #$00ff
+  xba
+  asl
+  asl
+  ora #$2000
+  sta Frame.attr
+  ldy #$0000
+  lda Frame.p_count
+  and #$00ff
+  sta Frame.count
+  beq out
+  lda Frame.p_x                 ; offset in the tile buffers:
+  and #$00ff                    ; 64 * row + column, word aligned
+  sta Frame.offset
+  lda Frame.p_y
+  and #$00ff
+  xba
+  lsr
+  lsr
+  clc
+  adc Frame.offset
+  and #$fffe
+  tax
+  lda Frame.p_x
+  lsr
+  bcs bg1
+bg2:
+  lda [Frame.p_src],y
+  ror
+  and #$007f
+  beq out
+  rol
+  asl
+  ora Frame.attr
+  sta @l BG2_TILE_BUF,x
+  iny
+  cpy Frame.count
+  beq out
+bg1:
+  lda [Frame.p_src],y
+  ror
+  and #$007f
+  beq out
+  rol
+  asl
+  ora Frame.attr
+  sta @l BG1_TILE_BUF,x
+  inx
+  inx
+  iny
+  cpy Frame.count
+  bne bg2
+out:
+  lda [Frame.p_src],y           ; character after the printed ones
+  and #$00fe
+  tax
+  .leave
+  tya
+  rts
+.endblock
+
+; print a string, parameters in globals (for code not converted yet)
 ; input:
 ; print_count
 ; print_x
@@ -12,97 +100,36 @@
 ; output:
 ; print_done (# of chars printed)
 ; print_over (char after print_count)
-
 hiprint:
   php
-  phd
   sep #$20
   .as
-  rep #$10
-  .xl
-  pea $0000
-  pld
-  phb
-  lda #$7e
-  pha
-  plb
-  ldx print_src
-  stx print_ptr
-  lda print_bank
-  sta print_ptr+2
-  rep #$30
+  lda @l wram(print_bank)
+  .param pha
+  rep #$20
   .al
-  .xl
-  lda print_pal
-  and #$00ff
-  xba
-  asl
-  asl
-  ora #$2000
-  sta print_temp
-  lda print_count
-  and #$00ff
-  beq hiprint_end
-  tay
-  lda print_x
-  and #$00ff
-  sta print_x
-  lda print_y
-  and #$00ff
-  xba
-  lsr
-  lsr
-  clc
-  adc print_x
-  and #$fffe
-  tax
-  lda print_x
-  lsr
-  bcs hiprint_bg1
-hiprint_bg2:
-  lda [<print_ptr,d]
-  ror
-  and #$007f
-  beq hiprint_end
-  rol
-  asl
-  inc print_ptr
-  ora print_temp
-  sta @w <>BG2_TILE_BUF,x
-  dey
-  beq hiprint_end
-hiprint_bg1:
-  lda [<print_ptr,d]
-  ror
-  and #$007f
-  beq hiprint_end
-  rol
-  asl
-  inc print_ptr
-  ora print_temp
-  sta @w <>BG1_TILE_BUF,x
-  inx
-  inx
-  dey
-  beq hiprint_end
-  bra hiprint_bg2
-hiprint_end:
+  lda @l wram(print_src)
+  .param pha
   sep #$20
   .as
-  lda [<print_ptr,d]
-  and #$fe ; mask "soft" end of string
-  sta print_over
-  tya
-  sec
-  sbc print_count
-  eor #$ff
-  inc a
-  sta print_done
-  plb
-  pld
+  lda @l wram(print_x)
+  .param pha
+  lda @l wram(print_y)
+  .param pha
+  lda @l wram(print_pal)
+  .param pha
+  lda @l wram(print_count)
+  .param pha
+  .call print_text
+  sta @l wram(print_done)
+  txa
+  sta @l wram(print_over)
+  .unparam print_text
+  lda #$00                      ; like before: high byte of print_x cleared
+  sta @l wram(print_x+1)
+  lda @l wram(print_done)
   plp
   rts
-
 
 loprint:
   rep #$30
