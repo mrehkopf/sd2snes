@@ -240,8 +240,6 @@ pad_l:          .byte 0
 pad_r:          .byte 0
 
 ;------------------------
-snes_system_config:
-  .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 window_stack_head: .word 0
 dbg_ptr:        .word 0
 fade_speed:     .byte 0

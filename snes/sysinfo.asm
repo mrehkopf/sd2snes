@@ -1,11 +1,25 @@
 ; sysinfo.a65: display sysinfo text block
 .text "===SHOW_SYSINFO==="
-show_sysinfo:
-  php
+show_sysinfo .block
+; menu function (called via RTL)
+  .virtual #0,d
+Frame .block
+  system        .fill 40        ; text_system with the values filled in
+  src           .word ?         ; current line of SYSINFO_BLK
+  y             .byte ?         ; its row
+  lines         .byte ?         ; lines left
+  _             .dstruct SaveJSL
+.endblock
+  .endvirtual
+  .enter
+  phb
   sep #$20
   .as
   rep #$10
   .xl
+  lda #$80
+  pha
+  plb
   stz bar_wl
   dec bar_wl
   stz bar_xl
@@ -18,28 +32,19 @@ show_sysinfo:
   stx window_taddr
   lda @l sysinfo_win_x
   sta window_x
-  inc a
-  inc a
-  pha
-  stz print_x+1
   lda @l sysinfo_win_y
   sta window_y
-  inc a
-  inc a
-  pha
-  stz print_y+1
   lda @l sysinfo_win_w
   sta window_w
   lda @l sysinfo_win_h
   sta window_h
   jsr push_window
   jsr draw_window
-  stz print_pal
 
   ldx #38
 copy_snes_system_text:
   lda @l text_system,x
-  sta wram(snes_system_config),x
+  sta Frame.system,x
   dex
   bpl copy_snes_system_text
 
@@ -53,54 +58,59 @@ sysinfo_printloop:
 - lda @l SNES_CMD
   cmp #CMD_SYSINFO
   bne -
-  lda #`SYSINFO_BLK
-  ldx #<>SYSINFO_BLK
-  sta print_bank
-  stx print_src
-  stz print_pal
-  pla
-  sta print_y
-  pla
-  sta print_x
-  lda #40
-  sta print_count
+  ldx #<>SYSINFO_BLK            ; 12 lines of 40 characters from the MCU
+  stx Frame.src
+  lda @l sysinfo_win_y
+  inc a
+  inc a
+  sta Frame.y
   lda #12
-- pha
-  jsr hiprint
-  inc print_y
+  sta Frame.lines
+- lda #`SYSINFO_BLK
+  .param pha
+  ldx Frame.src
+  .param phx
+  lda @l sysinfo_win_x
+  inc a
+  inc a
+  .param pha
+  lda Frame.y
+  .param pha
+  lda #$00
+  .param pha
+  lda #40
+  .param pha
+  .call print_text
+  .unparam print_text
+  inc Frame.y
   rep #$20
   .al
-  lda print_src
+  lda Frame.src
   clc
   adc #40
-  sta print_src
+  sta Frame.src
   sep #$20
   .as
-  pla
-  dec a
+  dec Frame.lines
   bne -
-
   ldx #17
   lda $213e
   and #$0f
   clc
   adc #$30
-  sta wram(snes_system_config),x
-
+  sta Frame.system,x
   ldx #19
   lda $213f
   and #$0f
   clc
   adc #$30
-  sta wram(snes_system_config),x
-
+  sta Frame.system,x
   ldx #15
   lda $4210
   and #$0f
   clc
   adc #$30
-  sta wram(snes_system_config),x
-
+  sta Frame.system,x
   ldx #35
   lda $213f
   eor #$10
@@ -108,21 +118,27 @@ sysinfo_printloop:
   adc #$f0
   lda #$35
   adc #$00
-  sta wram(snes_system_config),x
-
-  lda #`wram(snes_system_config) ; System text
-  ldx #snes_system_config
-  sta print_bank
-  stx print_src
-  stz print_pal
-  lda #39
-  sta print_count
-  lda #23
-  sta print_y
+  sta Frame.system,x
+  lda #$00                      ; System text, in the frame (bank 0)
+  .param pha
+  rep #$20
+  .al
+  tdc
+  clc
+  adc #Frame.system - Frame
+  .param pha
+  sep #$20
+  .as
   lda #12
-  sta print_x
-  jsr hiprint
-
+  .param pha
+  lda #23
+  .param pha
+  lda #$00
+  .param pha
+  lda #39
+  .param pha
+  .call print_text
+  .unparam print_text
 - lda isr_done
   lsr
   bcc -
@@ -131,19 +147,13 @@ sysinfo_printloop:
   lda pad_b
   ora pad_a
   bne +
-  lda @l sysinfo_win_x
-  inc a
-  inc a
-  pha
-  lda @l sysinfo_win_y
-  inc a
-  inc a
-  pha
   jmp sysinfo_printloop
-+ plp
-  lda #CMD_MCU_RDY
++ lda #CMD_MCU_RDY
   sta @l MCU_CMD
 - cmp @l SNES_CMD
   bne -
   jsr pop_window
+  plb
+  .leave
   rtl
+.endblock
