@@ -83,16 +83,25 @@ filesel_cleanup_loop: ; pad rest of screen with empty lines
   clc
   adc #$09            ; first line in text area
   inc a
-  sta print_y
-  stz print_x
+  rep #$20
+  .al
+  and #$00ff
+  tay
+  sep #$20
+  .as
   lda #`space64
-  ldx #<>space64
-  sta print_bank
-  stx print_src
-  stz print_pal
+  .param pha
+  .param pea, <>space64
+  lda #$00
+  .param pha
+  tya
+  .param pha
+  lda #$00
+  .param pha
   lda #64
-  sta print_count
-  jsr hiprint
+  .param pha
+  .call print_text
+  .unparam print_text
   pla
   inc a
   bra filesel_cleanup_loop
@@ -255,115 +264,115 @@ redraw_filelist_out:
   stx dirptr_idx
   brl filesel_redraw_out
 
-print_direntry:
+print_direntry .block
+; print the directory entry dirent_* in row cursor_y and advance cursor_y
+  .virtual #0,d
+Frame .block
+  y             .byte ?         ; row
+  pal           .byte ?         ; palette by file type
+  done          .byte ?         ; characters of the name printed
+  _             .dstruct SaveJSR
+.endblock
+  .endvirtual
+  .enter
+  sep #$20
+  .as
+  rep #$10
+  .xl
   lda cursor_y
-  sta print_y
+  sta Frame.y
   inc a
   sta cursor_y
-
-  lda dirent_bank
-  ldx dirent_addr
-
-  phb
-  pha
-  plb
-
-  rep #$20
-  .al
-  lda #$06      ; skip size string
-  sta wram(fd_fnoff)
-  lda wram(dirent_type)
-  and #TYPE_SUBDIR|TYPE_PARENT
-  beq dirent_is_file
-dirent_is_dir:
+  lda dirent_type
+  bit #TYPE_SUBDIR|TYPE_PARENT
+  beq +
   lda #$01      ; different color for dirs
   bra dirent_type_cont
-dirent_is_file:
-  lda wram(dirent_type)
-  and #$00ff
-  cmp #$0001    ; SMC -> palette 0 (white)
++ cmp #TYPE_SPC ; SPC -> palette 2
   bne +
-  lda #$0000
+  lda #$02
   bra dirent_type_cont
-+
-  cmp #TYPE_SPC ; SPC -> palette 2
-  bne +
-  lda #$0002
-  bra dirent_type_cont
-  cmp #TYPE_IPS ; IPS -> palette 2 (green)
-  bne +
-  lda #$0002
-  bra dirent_type_cont
-+
-  lda #$0000    ; default -> palette 0
++ lda #$00      ; default -> palette 0
 dirent_type_cont:
-  sta wram(print_pal)
+  sta Frame.pal
   rep #$20
   .al
-  txa
+  lda dirent_addr
   clc
-  adc wram(fd_fnoff)
+  adc #$06      ; skip size string
   clc
-  adc wram(direntry_xscroll)
-  sta wram(fd_fnoff)
-  plb
-
-  lda cursor_x
-  sta print_x
-
+  adc direntry_xscroll
+  sta fd_fnoff
   sep #$20
   .as
-  ldx fd_fnoff
-  lda #54
-  sta print_count
-  stx print_src
+; name
   lda dirent_bank
-  sta print_bank
-  jsr hiprint
+  .param pha
+  ldx fd_fnoff
+  .param phx
   lda cursor_x
-  clc
-  adc print_done
-  sta print_x
-
-  lda print_over
+  .param pha
+  lda Frame.y
+  .param pha
+  lda Frame.pal
+  .param pha
+  lda #54
+  .param pha
+  .call print_text
+  sta Frame.done
+  txa
   ldy direntry_fits_idx
   sta @w direntry_fits,y
+  .unparam print_text
+; rest of the name column
+  lda #`space64
+  .param pha
+  .param pea, <>space64
+  lda cursor_x
+  clc
+  adc Frame.done
+  .param pha
+  lda Frame.y
+  .param pha
+  lda Frame.pal
+  .param pha
   lda #54
   sec
-  sbc print_done
-  sta print_count
-  lda #`space64
-  ldx #<>space64
-  sta print_bank
-  stx print_src
-  jsr hiprint
-
-  sep #$20
-  .as
+  sbc Frame.done
+  .param pha
+  .call print_text
+  .unparam print_text
+; size or "<dir>"
   lda dirent_type
   and #$f0
   cmp #$80
   bne dirent_is_file_2
   lda #`text_dirmark
   ldx #<>text_dirmark
-  sta print_bank
-  stx print_src
   bra dirent_type_cont_2
 dirent_is_file_2:
   lda dirent_bank
   ldx dirent_addr
-  sta print_bank
-  stx print_src
 dirent_type_cont_2:
+  .param pha
+  .param phx
   lda #56
-  sta print_x
+  .param pha
+  lda Frame.y
+  .param pha
+  lda Frame.pal
+  .param pha
   lda #6
-  sta print_count
-  jsr hiprint
-
+  .param pha
+  .call print_text
+  .unparam print_text
+  .leave
   rts
+.endblock
 
 filesel_key_down:
+  .as
+  .xl
   jsr scroll_direntry_clean
   lda listdisp
   dec a
@@ -903,21 +912,8 @@ setup_224_adjsel:
   sta $2133
   lda #$01
   sta filesel_dirty
-  lda #`space64
-  ldx #<>space64
-  sta print_bank
-  stx print_src
-  stz print_pal
-  lda #64
-  sta print_count
-  lda #27
-  sta print_y
-  stz print_x
-  jsr hiprint
-  lda #28
-  sta print_y
-  jsr hiprint
-  jsr hiprint
+  .print_at space64, 0, 27, 0, 64
+  .print_at space64, 0, 28, 0, 64
 
   plp
   rts
@@ -931,28 +927,74 @@ filesel_statusbar:
   rep #$10
   .xl
   lda #`text_statusbar_keys
-  sta wram(print_bank)
-  rep #$20
-  .al
-  lda #<>text_statusbar_keys
-  sta wram(print_src)
-  sep #$20
-  .as
-  lda #$00
-  sta wram(print_pal)
+  .param pha
+  .param pea, <>text_statusbar_keys
   lda #$02
-  sta wram(print_x)
-  lda #$40
-  sta wram(print_count)
-  lda listdisp
+  .param pha
+  lda @l wram(listdisp)
   clc
   adc #$0a
-  sta wram(print_y)
-  jsr hiprint
+  .param pha
+  lda #$00
+  .param pha
+  lda #$40
+  .param pha
+  .call print_text
+  .unparam print_text
   plp
   plx
   pla
   rts
+
+; print a list of games (recent games or favorites: 256 bytes per entry)
+; into the list window (last_win_*), one per row
+; params (push order): p_list (long), p_n (number of entries, at least 1)
+print_game_list .block
+  .virtual #0,d
+Frame .block
+  src           .word ?         ; current entry
+  y             .byte ?         ; its row
+  n             .byte ?         ; entries left
+  _             .dstruct SaveJSR
+  p_n           .byte ?         ; pushed last
+  p_list        .long ?         ; pushed first
+.endblock
+  .endvirtual
+  .enter
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  ldx Frame.p_list
+  stx Frame.src
+  lda Frame.p_n
+  sta Frame.n
+  lda @l last_win_y
+  inc a
+  sta Frame.y
+- lda Frame.p_list+2
+  .param pha
+  ldx Frame.src
+  .param phx
+  lda @l last_win_x
+  inc a
+  inc a
+  .param pha
+  lda Frame.y
+  .param pha
+  lda #$00
+  .param pha
+  lda #56
+  .param pha
+  .call print_text
+  .unparam print_text
+  inc Frame.src+1
+  inc Frame.y
+  dec Frame.n
+  bne -
+  .leave
+  rts
+.endblock
 
 select_last_file:
   php
@@ -974,13 +1016,8 @@ select_last_redraw:
   stx window_taddr
   lda @l last_win_x
   sta window_x
-  inc a
-  inc a
-  pha
   lda @l last_win_y
   sta window_y
-  inc a
-  pha
   lda @l last_win_w
   sta window_w
   lda @l ST_NUM_RECENT_GAMES
@@ -997,23 +1034,13 @@ select_last_redraw:
 + lda listsel_backup
   sta listsel_sel
   jsr draw_window
-  stz print_pal
   lda #`LAST_GAME
-  ldx #<>LAST_GAME
-  sta print_bank
-  stx print_src
-  stz print_pal
-  pla
-  sta print_y
-  pla
-  sta print_x
-- lda #56
-  sta print_count
-  jsr hiprint
-  inc print_src+1
-  inc print_y
-  dec num_recent_games
-  bne -
+  .param pha
+  .param pea, <>LAST_GAME
+  lda num_recent_games
+  .param pha
+  .call print_game_list
+  .unparam print_game_list
   stz listsel_dirty
   jsr enable_screen_update
 select_last_choose:
@@ -1073,13 +1100,8 @@ select_favorite_redraw:
   stx window_taddr
   lda @l last_win_x
   sta window_x
-  inc a
-  inc a
-  pha
   lda @l last_win_y
   sta window_y
-  inc a
-  pha
   lda @l last_win_w
   sta window_w
   lda num_favorite_games
@@ -1096,23 +1118,13 @@ select_favorite_redraw:
 + lda listsel_backup
   sta listsel_sel
   jsr draw_window
-  stz print_pal
   lda #`FAVORITE_GAMES
-  ldx #<>FAVORITE_GAMES
-  sta print_bank
-  stx print_src
-  stz print_pal
-  pla
-  sta print_y
-  pla
-  sta print_x
-- lda #56
-  sta print_count
-  jsr hiprint
-  inc print_src+1
-  inc print_y
-  dec num_favorite_games
-  bne -
+  .param pha
+  .param pea, <>FAVORITE_GAMES
+  lda num_favorite_games
+  .param pha
+  .call print_game_list
+  .unparam print_game_list
   stz listsel_dirty
   jsr enable_screen_update
 select_favorite_choose:
