@@ -125,13 +125,24 @@ uint8_t file_getc() {
 
 void append_file_basename(char *dirbase, char *filename, char *extension, int num) {
   char *append = strrchr(filename, '/');
+  char *ext;
+  int baselen = strlen(dirbase);
+  int extlen = strlen(extension);
   if(append == NULL) {
     append = filename;
   } else {
     append++;
   }
-  strncat(dirbase, append, num-strlen(dirbase));
-  strcpy(strrchr(dirbase, (int)'.'), extension);
+  strncat(dirbase, append, num-baselen-1);
+  /* replace the file's extension, or append if it has none */
+  ext = strrchr(dirbase + baselen, (int)'.');
+  if(ext == NULL) {
+    ext = dirbase + strlen(dirbase);
+  }
+  if(ext + extlen >= dirbase + num) {
+    ext = dirbase + num - extlen - 1;
+  }
+  strcpy(ext, extension);
 }
 
 FRESULT check_or_create_folder(TCHAR *dir) {

@@ -40,6 +40,9 @@ void cheat_program() {
   int cheat_index;
 
   cheat_count = sram_readshort(SRAM_NUM_CHEATS);
+  if(cheat_count > CHEAT_MAX_CHEATS) {
+    cheat_count = CHEAT_MAX_CHEATS;
+  }
 
   printf("cheat_program: %d cheats present\n", cheat_count);
   /* get list of activated cheats from menu */
@@ -47,11 +50,12 @@ void cheat_program() {
   for(cheat_index = 0; cheat_index < cheat_count; cheat_index++) {
     sram_readblock(&cheat, cheat_record_addr, sizeof(cheat_record_t));
     if(cheat.flags & CHEAT_FLAG_ENABLE) {
-      for(int patch_index = 0; patch_index < cheat.numpatches; patch_index++) {
+      for(int patch_index = 0; patch_index < cheat.numpatches
+                               && patch_index < CHEAT_NUM_CODES_PER_CHEAT; patch_index++) {
         cheat_program_single(cheat.patches+patch_index);
       }
     }
-    cheat_record_addr += 512;
+    cheat_record_addr += CHEAT_RECORD_STRIDE;
   }
   /* put number of WRAM cheats + enable flag */
   snescmd_writebyte(wram_index, SNESCMD_NMI_WRAM_PATCH_COUNT);
@@ -75,8 +79,11 @@ void cheat_program_single(cheat_patch_record_t *cheat) {
   is_wram_cheat = cheat_is_wram_cheat(cheat->code);
   /* apply cheat to FPGA / NMI hook */
   if(is_wram_cheat) {
-    cheat_program_ram_cheat(wram_index++, cheat);
-  } else if(rom_index < 6) {
+    /* more would run into the snescmd variables after the cheat code */
+    if(wram_index < CHEAT_NUM_WRAM_PATCHES) {
+      cheat_program_ram_cheat(wram_index++, cheat);
+    }
+  } else if(rom_index < CHEAT_NUM_ROM_PATCHES) {
     enable_mask |= (1 << rom_index);
     cheat_program_rom_cheat(rom_index++, cheat);
   }
@@ -102,15 +109,13 @@ void cheat_program_ram_cheat(int index, cheat_patch_record_t *cheat) {
 }
 
 void cheat_load_to_menu(int index, cheat_record_t *cheat) {
-  uint32_t offset = SRAM_CHEAT_ADDR + 512 * index;
+  uint32_t offset = SRAM_CHEAT_ADDR + CHEAT_RECORD_STRIDE * index;
   sram_writeblock(cheat, offset, sizeof(cheat_record_t));
-  sram_writeblock(cheat->patches, offset+256, cheat->numpatches*4);
 }
 
 void cheat_save_from_menu(int index, cheat_record_t *cheat) {
-  uint32_t offset = SRAM_CHEAT_ADDR + 512 * index;
-  sram_readblock(cheat, offset, sizeof(cheat_record_t)-4);
-  sram_readblock(cheat->patches, offset+256, cheat->numpatches*4);
+  uint32_t offset = SRAM_CHEAT_ADDR + CHEAT_RECORD_STRIDE * index;
+  sram_readblock(cheat, offset, sizeof(cheat_record_t));
 }
 
 void cheat_enable(int enable) {
@@ -159,10 +164,12 @@ void cheat_wram_present(int enable) {
 }
 
 /* read cheats from YAML file to ROM for menu usage */
-void cheat_yaml_load(uint8_t* romfilename) {
+int cheat_yaml_load(uint8_t* romfilename) {
   yaml_token_t token;
   char line[256] = CHEAT_BASEDIR;
   cheat_record_t cheat;
+  int cheat_idx = 0;
+  int res;
 
   append_file_basename(line, (char*)romfilename, ".yml", sizeof(line));
   check_or_create_folder(CHEAT_BASEDIR);
@@ -170,20 +177,31 @@ void cheat_yaml_load(uint8_t* romfilename) {
   yaml_file_open(line, FA_READ);
   if(file_res) {
     printf("no cheat list YML found\n");
+    /* a missing file just means no cheats yet */
+    res = (file_res == FR_NO_FILE || file_res == FR_NO_PATH) ? FR_OK : file_res;
+    sram_writeshort(0, SRAM_NUM_CHEATS);
+    file_res = 0; /* soft fail, suppress LED blink */
+    return res;
   }
   /* read cheat entries */
-  int cheat_idx = 0;
-  while(yaml_next_item()) {
+  while(cheat_idx < CHEAT_MAX_CHEATS && yaml_next_item()) {
     int i=0;
+    /* missing keys must not leave values from the previous entry */
+    memset(&cheat, 0, sizeof(cheat));
     if(yaml_get_itemvalue("Name", &token)) {
-      strncpy(cheat.description, token.stringvalue, 254);
-      cheat.description[253] = 0;
+      strncpy(cheat.description, token.stringvalue, CHEAT_NAME_MAXLEN);
+      cheat.description[CHEAT_NAME_MAXLEN] = 0;
     }
-    printf("%s\n", token.stringvalue);
-    yaml_get_itemvalue("Enabled", &token);
-    cheat.flags = (token.boolvalue ? 0x80 : 0x00);
-    printf("  enabled: %d\n", token.boolvalue);
-    yaml_get_itemvalue("Code", &token);
+    printf("%s\n", cheat.description);
+    if(yaml_get_itemvalue("Enabled", &token)
+       && token.type == YAML_BOOL && token.boolvalue) {
+      cheat.flags = CHEAT_FLAG_ENABLE;
+    }
+    printf("  enabled: %d\n", cheat.flags & CHEAT_FLAG_ENABLE ? 1 : 0);
+    if(!yaml_get_itemvalue("Code", &token)) {
+      /* empty "Code:" at the end of the file */
+      token.type = YAML_NONE;
+    }
     if(token.type == YAML_LIST_START) {
       for(i=0; i < CHEAT_NUM_CODES_PER_CHEAT; i++) {
         if(!yaml_get_next(&token)) break;
@@ -210,21 +228,40 @@ void cheat_yaml_load(uint8_t* romfilename) {
   yaml_file_close();
   file_res = 0; /* soft fail, suppress LED blink */
   printf("Total number of cheats: %d\n", cheat_idx);
+  return FR_OK;
 }
 
 /* save cheats to YAML file from ROM/menu */
-void cheat_yaml_save(uint8_t *romfilename) {
+int cheat_yaml_save(uint8_t *romfilename) {
   cheat_record_t cheat;
   char line[256] = CHEAT_BASEDIR;
-  int numcheats = sram_readshort(SRAM_CHEAT_ADDR);
+  int numcheats = sram_readshort(SRAM_NUM_CHEATS);
+  int res;
 
+  if(numcheats > CHEAT_MAX_CHEATS) {
+    numcheats = CHEAT_MAX_CHEATS;
+  }
   append_file_basename(line, (char*)romfilename, ".yml", sizeof(line));
+  check_or_create_folder(CHEAT_BASEDIR);
   printf("Cheat YAML file: %s\n", line);
 
   file_open((uint8_t*)line, FA_WRITE | FA_CREATE_ALWAYS);
+  if(file_res) {
+    res = file_res;
+    file_res = 0;
+    return res;
+  }
   f_puts("---\n# Generated by sd2snes\n", &file_handle);
   for(int cheat_idx = 0; cheat_idx < numcheats; cheat_idx++) {
     cheat_save_from_menu(cheat_idx, &cheat);
+    cheat.description[CHEAT_NAME_MAXLEN] = 0;
+    /* the YAML parser has no escapes, so no double quotes in names */
+    for(char *c = cheat.description; *c; c++) {
+      if(*c == '"') *c = '\'';
+    }
+    if(cheat.numpatches > CHEAT_NUM_CODES_PER_CHEAT) {
+      cheat.numpatches = CHEAT_NUM_CODES_PER_CHEAT;
+    }
     f_printf(&file_handle, "- Name: \"%s\"\n", cheat.description);
     f_printf(&file_handle, "  Enabled: %s\n", cheat.flags & CHEAT_FLAG_ENABLE ? "true" : "false");
     f_printf(&file_handle, "  Code:\n");
@@ -238,7 +275,13 @@ void cheat_yaml_save(uint8_t *romfilename) {
       }
     }
   }
+  res = f_error(&file_handle) ? FR_DISK_ERR : FR_OK;
   file_close();
+  if(!res) {
+    res = file_res;
+  }
+  file_res = 0;
+  return res;
 }
 
 uint32_t cheat_str2bin(char *string) {
