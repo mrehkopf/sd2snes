@@ -53,18 +53,7 @@ spcplayer:
   sta window_h
   jsr draw_window
 
-  lda #`text_spcload  ; Loading text
-  ldx #<>text_spcload
-  sta print_bank
-  stx print_src
-  stz print_pal
-  lda #29
-  sta print_count
-  lda #16
-  sta print_y
-  lda #17
-  sta print_x
-  jsr hiprint
+  .print_at text_spcload, 17, 16, 0, 29 ; Loading text
 
   stz isr_done
 -
@@ -87,107 +76,31 @@ spcplayer:
   sta window_h
   jsr draw_window
 
-  lda #`text_spcstarta
-  ldx #<>text_spcstarta
-  sta print_bank
-  stx print_src
-  lda #$01
-  sta print_pal
-  lda #30
-  sta print_count
-  lda #15
-  sta print_y
-  lda #17
-  sta print_x
-  jsr hiprint
+  .print_at text_spcstarta, 17, 15, 1, 30
+  .print_at text_spcstartb, 12, 17, 1, 7
+  .print_at SPC_HEADER+$4e, 20, 17, 0, 32  ; game title
+  .print_at text_spcstartc, 12, 18, 1, 7
+  .print_at SPC_HEADER+$2e, 20, 18, 0, 32  ; song title
+  .print_at text_spcstartd, 12, 19, 1, 7
 
-  lda #`text_spcstartb
-  ldx #<>text_spcstartb
-  sta print_bank
-  stx print_src
-  lda #$01
-  sta print_pal
-  lda #07
-  sta print_count
-  lda #17
-  sta print_y
-  lda #12
-  sta print_x
-  jsr hiprint
-
-  lda #$fe
-  ldx #$004e
-  sta print_bank
-  stx print_src
-  stz print_pal
-  lda #32
-  sta print_count
-  lda #17
-  sta print_y
-  lda #20
-  sta print_x
-  jsr hiprint
-
-  lda #`text_spcstartc
-  ldx #<>text_spcstartc
-  sta print_bank
-  stx print_src
-  lda #$01
-  sta print_pal
-  lda #07
-  sta print_count
-  lda #18
-  sta print_y
-  lda #12
-  sta print_x
-  jsr hiprint
-
-  lda #$fe
-  ldx #$002e
-  sta print_bank
-  stx print_src
-  stz print_pal
-  lda #32
-  sta print_count
-  lda #18
-  sta print_y
-  lda #20
-  sta print_x
-  jsr hiprint
-
-  lda #`text_spcstartd
-  ldx #<>text_spcstartd
-  sta print_bank
-  stx print_src
-  lda #$01
-  sta print_pal
-  lda #07
-  sta print_count
-  lda #19
-  sta print_y
-  lda #12
-  sta print_x
-  jsr hiprint
-
-  lda #$fe
-  ldx #$00b0
-  sta longptr+2
-  sta print_bank
-  stx longptr
-  ldy #$00
-  lda [<longptr,d],y
+  ldx #<>SPC_HEADER+$b0         ; artist: $b0 (binary ID666) or $b1 (text)
+  lda @l SPC_HEADER+$b0
   cmp #$41
   bpl +
   inx
-+ stx print_src
-  stz print_pal
-  lda #32
-  sta print_count
-  lda #19
-  sta print_y
++ lda #`SPC_HEADER
+  .param pha
+  .param phx
   lda #20
-  sta print_x
-  jsr hiprint
+  .param pha
+  lda #19
+  .param pha
+  lda #$00
+  .param pha
+  lda #32
+  .param pha
+  .call print_text
+  .unparam print_text
 
 spc_playloop:
   lda isr_done        ; SPC player loop

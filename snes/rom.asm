@@ -17,6 +17,7 @@ wram    .sfunction _a, _a | $7e0000
         .include "dma.inc"
         .include "longbranch.inc"
         .include "menu.inc"
+        .include "print.inc"
 
 ; code that runs from WRAM is copied to its run address by store_wram_routines
 WRAMCODE_START  = $7ef000       ; run address of wramcode
