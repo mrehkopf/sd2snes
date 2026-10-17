@@ -439,6 +439,7 @@ address snes_addr(
 reg [7:0] CX4_DINr;
 wire [23:0] CX4_ADDR;
 wire [2:0] cx4_busy;
+wire CX4_IRQ;
 
 cx4 snes_cx4 (
   .DI(CX4_SNES_DATA_IN),
@@ -454,6 +455,7 @@ cx4 snes_cx4 (
   .BUS_RDY(CX4_RDY),
   .cx4_active(cx4_active),
   .cx4_busy_out(cx4_busy),
+  .IRQ(CX4_IRQ),
   .speed(dsp_feat[0])
 );
 
@@ -838,6 +840,6 @@ assign SNES_DATABUS_DIR = (~SNES_READ | (~SNES_PARD & (r213f_enable)))
                            : ((~SNES_PAWR & r2100_enable) ? r2100_forcewrite
                            : 1'b0);
 
-assign SNES_IRQ = 1'b0;
+assign SNES_IRQ = CX4_IRQ;
 
 endmodule

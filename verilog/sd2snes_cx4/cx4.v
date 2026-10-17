@@ -32,6 +32,7 @@ module cx4(
   input BUS_RDY,
   output cx4_active,
   output [2:0] cx4_busy_out,
+  output IRQ,
   input speed
 );
 
@@ -143,7 +144,6 @@ initial begin
 end
 
 assign MMIO_DO = MMIO_DOr;
-assign STATUS_DO = {1'b0, cx4_active, 4'b0000, ~cx4_active, 1'b0};
 always @(posedge CLK) VECTOR_DOr <= vector[ADDR[4:0]];
 always @(posedge CLK) GPR_DOr <= gpr[ADDR[5:0]];
 
@@ -151,6 +151,36 @@ wire DATRAM_WR_EN = datram_enable & reg_we_rising;
 wire MMIO_WR_EN = mmio_enable & reg_we_rising;
 wire VECTOR_WR_EN = vector_enable & reg_we_rising;
 wire GPR_WR_EN = gpr_enable & reg_we_rising;
+wire STATUS_WR_EN = status_enable & reg_we_rising;
+
+reg cx4_irq_line;
+reg cx4_irq_flag;
+initial begin
+  cx4_irq_line = 1'b0;
+  cx4_irq_flag = 1'b0;
+end
+
+assign STATUS_DO = {1'b0, cx4_active, 4'b0000, cx4_irq_flag, 1'b0};
+
+reg cx4_busy_cpu_prev;
+initial cx4_busy_cpu_prev = 1'b0;
+
+wire cpu_halted = cx4_busy_cpu_prev & ~cx4_busy[BUSY_CPU];
+
+always @(posedge CLK) begin
+  cx4_busy_cpu_prev <= cx4_busy[BUSY_CPU];
+  if(MMIO_WR_EN && ADDR[4:0] == 5'h11 && DI[0]) begin  // 1f51
+    cx4_irq_line <= 1'b0;
+    cx4_irq_flag <= 1'b0;
+  end else if(STATUS_WR_EN && ADDR[4:0] == 5'h1e) begin  // 1f5e
+    cx4_irq_flag <= 1'b0;
+  end else if(cpu_halted && !cx4_mmio_r1f51) begin
+    cx4_irq_line <= 1'b1;
+    cx4_irq_flag <= 1'b1;
+  end
+end
+
+assign IRQ = cx4_irq_line;
 
 reg [23:0] cpu_idb; // tmp register for reg file read
 
