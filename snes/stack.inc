@@ -95,7 +95,8 @@ leave .segment
 ; Pushes not marked with "param" (saving registers, calls in between) are
 ; not counted.
 ; After the call, it is currently the caller's responsibility to restore the
-; stack pointer (i.e. pull the parameters from stack again).
+; stack pointer (i.e. pull the parameters from stack again), e.g. with
+;   .unparam time_init
 
 ; size of the parameters in a Frame (everything below _ (SaveJSR))
 frame_params .sfunction _f, size(_f) - (_f._ - _f) - size(_f._)
@@ -138,4 +139,28 @@ call .macro target
   .cerror param_bytes != frame_params(\target.Frame), format("call %s: %d parameter bytes pushed, %d expected", str(.\target), param_bytes, frame_params(\target.Frame))
   jsr \target
 param_bytes ::= 0
+.endm
+
+; Remove the parameters of "call target" from the stack again; the number
+; of bytes comes from the callee's Frame like in "call".
+; DESTROYS ACCUMULATOR AND FLAGS (keeps the accumulator size)
+unparam .macro target
+  .proff
+  .virtual                      ; measure the current accumulator size
+_a: lda #0
+_e:
+  .endvirtual
+  .pron
+  .if _e - _a == 2              ; 8-bit accumulator
+  rep #$20
+  .al
+  .endif
+  tsc
+  clc
+  adc #frame_params(\target.Frame)
+  tcs
+  .if _e - _a == 2
+  sep #$20
+  .as
+  .endif
 .endm
