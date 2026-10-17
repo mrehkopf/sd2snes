@@ -33,45 +33,85 @@ strlen:
   plp
   rts
 
+; bin2dec
+; convert a number to 5 decimal digits, right-aligned with leading
+; spaces, plus a NUL (6 bytes)
+; re-entrant (no hardware divider), any D and DB
+; params (push order): p_buf (long: bank, then address), p_value (word)
+bin2dec .block
+  .virtual #0,d
+Frame .block
+  value         .word ?         ; what is left to convert
+  digit         .word ?
+  started       .word ?         ; non-zero once a digit other than 0 was written
+  _             .dstruct SaveJSR
+  p_value       .word ?         ; pushed last
+  p_buf         .long ?         ; pushed first
+.endblock
+  .endvirtual
+  .enter
+  rep #$30
+  .al
+  .xl
+  lda Frame.p_value
+  sta Frame.value
+  stz Frame.started
+  ldy #$0000                    ; position in the buffer
+  ldx #$0000                    ; power of ten
+next_digit:
+  stz Frame.digit
+- lda Frame.value
+  cmp @l powers,x
+  bcc +
+  sbc @l powers,x               ; (carry is set)
+  sta Frame.value
+  inc Frame.digit
+  bra -
++ lda Frame.digit
+  ora Frame.started
+  bne +
+  lda #' '                      ; leading zero
+  bra store
++ lda Frame.digit
+  ora #'0'
+  sta Frame.started
+store:
+  sta [Frame.p_buf],y           ; (the high byte is overwritten next)
+  iny
+  inx
+  inx
+  cpx #powers_end - powers
+  bcc next_digit
+  lda Frame.value               ; last digit, followed by the NUL
+  ora #'0'
+  sta [Frame.p_buf],y
+  .leave
+  rts
+
+powers:
+  .word 10000, 1000, 100, 10
+powers_end:
+.endblock
+
 ; bin2dec16
 ; arguments: A=value (16 bits)
-; return: 6 bytes of ASCII decoded decimal (5 digits+NUL) in string buffer
+; return: 6 bytes of ASCII decoded decimal (5 digits+NUL) in stringbuf
+; (for code not converted to bin2dec yet)
 bin2dec16:
-  phd
-  phb
-    pea $0000
-    pld
-    php
-    rep #$20
-    .al
-    sep #$10
-    .xs
-    pha
-      ldx #$80
-      phx
-      plb
-      lda #$2020
-      sta stringbuf
-      sta stringbuf+2
-      lda #$0020
-      sta stringbuf+4
-      ldx #$04
-    pla
--   sta $4204
-    lda #$000a
-    sta $4206      ; now burn 16 cycles
-    pha            ; 9
-    pla
-    xba            ; 3
-    lda @l $004216 ; 4 - load remainder
-    ora #$30
-    tay
-    sty <stringbuf,d,x
-    dex
-    lda $4214 ; load quotient
-    beq +
-    bra -
-+   plp
-  plb
-  pld
+  php
+  rep #$30
+  .al
+  .xl
+  tax
+  sep #$20
+  .as
+  lda #`wram(stringbuf)
+  .param pha
+  rep #$20
+  .al
+  .param pea, stringbuf
+  .param phx
+  .call bin2dec
+  .unparam bin2dec
+  plp
   rts
