@@ -92,26 +92,3 @@ powers:
   .word 10000, 1000, 100, 10
 powers_end:
 .endblock
-
-; bin2dec16
-; arguments: A=value (16 bits)
-; return: 6 bytes of ASCII decoded decimal (5 digits+NUL) in stringbuf
-; (for code not converted to bin2dec yet)
-bin2dec16:
-  php
-  rep #$30
-  .al
-  .xl
-  tax
-  sep #$20
-  .as
-  lda #`wram(stringbuf)
-  .param pha
-  rep #$20
-  .al
-  .param pea, stringbuf
-  .param phx
-  .call bin2dec
-  .unparam bin2dec
-  plp
-  rts

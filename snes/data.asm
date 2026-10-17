@@ -14,18 +14,6 @@ dirent_type:    .byte 0
 dirend_onscreen: .byte 0
 dirlog_idx:     .byte 0, 0, 0 ; long ptr
 direntry_fits_idx: .byte 0, 0
-longptr:        .byte 0, 0, 0 ; general purpose long ptr
-;----------parameters for text output----------
-print_x:        .word 0       ; x coordinate
-print_y:        .word 0       ; y coordinate
-print_src:      .word 0       ; source data address
-print_bank:     .byte 0       ; source data bank
-print_pal:      .word 0       ; palette number for text output
-print_temp:     .word 0       ; work variable
-print_ptr:      .byte 0, 0, 0 ; read pointer
-print_count:    .word 0       ; how many characters may be printed?
-print_done:     .word 0       ; how many characters were printed?
-print_over:     .byte 0       ; was the string printed incompletely?
 ;----------parameters for dma----------
 dma_a_bank:     .byte 0
 dma_a_addr:     .word 0
@@ -56,13 +44,8 @@ window_x:       .byte 0
 window_y:       .byte 0
 window_w:       .byte 0
 window_h:       .byte 0
-window_tmp:     .word 0
 window_tbank:   .byte 0
 window_taddr:   .word 0
-stringbuf:
-  .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .word 0
 ;----------dialog specific data
 time_s1:        .byte 0
 time_s10:       .byte 0

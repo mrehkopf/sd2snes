@@ -88,50 +88,6 @@ out:
   rts
 .endblock
 
-; print a string, parameters in globals (for code not converted yet)
-; input:
-; print_count
-; print_x
-; print_y
-; print_src
-; print_bank
-; print_pal
-;
-; output:
-; print_done (# of chars printed)
-; print_over (char after print_count)
-hiprint:
-  php
-  sep #$20
-  .as
-  lda @l wram(print_bank)
-  .param pha
-  rep #$20
-  .al
-  lda @l wram(print_src)
-  .param pha
-  sep #$20
-  .as
-  lda @l wram(print_x)
-  .param pha
-  lda @l wram(print_y)
-  .param pha
-  lda @l wram(print_pal)
-  .param pha
-  lda @l wram(print_count)
-  .param pha
-  .call print_text
-  sta @l wram(print_done)
-  txa
-  sta @l wram(print_over)
-  .unparam print_text
-  lda #$00                      ; like before: high byte of print_x cleared
-  sta @l wram(print_x+1)
-  lda @l wram(print_done)
-  plp
-  rts
-
-
 ; draw the current window (window_x/y/w/h) with its title (window_taddr/
 ; window_tbank, none if the string is empty)
 draw_window .block
