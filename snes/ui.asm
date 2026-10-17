@@ -131,49 +131,6 @@ hiprint:
   plp
   rts
 
-loprint:
-  rep #$30
-  .xl
-  .al
-  lda @w print_x
-  and #$00ff
-  asl                 ; double the offset for WRAM addressing
-  clc
-  adc #<>BG2_TILE_BUF
-  sta @w print_temp
-  lda @w print_y
-  and #$00ff
-  xba
-  lsr
-  lsr                 ; double the offset for WRAM addressing
-  clc
-  adc @w print_temp
-; we need to transfer to WRAM and from there to VRAM via DMA during VBLANK
-; because VRAM can only be accessed during VBLANK and forced blanking.
-  sta $2181
-  sep #$20
-  .as
-  lda #$7f            ; we really only need bit 0. full bank given for clarity
-  sta $2183
-  ldx @w print_src
-  lda @w print_bank
-  pha
-  plb
-loprint_loop_inner:
-  lda @w 0,x
-  beq loprint_end
-  sta @l $2180
-  lda #$00
-  adc #$00
-  ora #$20
-  sta @l $2180
-  inx
-  bra loprint_loop_inner
-loprint_end:
-  lda #$00
-  pha
-  plb
-  rts
 
 draw_window:
   phb
