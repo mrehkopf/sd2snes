@@ -122,6 +122,7 @@ menu_enttab_filesel_context_file:
 ; ENTRIES
   .menu_func_close text_filesel_context_add_to_favorites, add_selected_file_to_favorites, mdesc_filesel_context_add_to_favorites
   .menu_func_close text_filesel_set_as_autoboot, set_selected_as_autoboot_rom, mdesc_filesel_set_as_autoboot
+  .menu_func_close text_cheats, cheat_menu_file, mdesc_cheats
   .menu_end
 
 menu_enttab_recent_context:
@@ -131,6 +132,7 @@ menu_enttab_recent_context:
   .menu_func_close text_filesel_context_add_to_favorites, add_recent_file_to_favorites, mdesc_filesel_context_add_to_favorites
   .menu_func_close text_filesel_set_as_autoboot, set_recent_as_autoboot_rom, mdesc_filesel_set_as_autoboot
   .menu_func_close text_recent_context_remove_from_recent, remove_selected_recent_file, mdesc_recent_context_remove_from_recent
+  .menu_func_close text_cheats, cheat_menu_recent, mdesc_cheats
   .menu_end
 
 menu_enttab_filesel_favorites_context:
@@ -139,6 +141,38 @@ menu_enttab_filesel_favorites_context:
 ; ENTRIES
   .menu_func_close text_filesel_context_remove_from_favorites, remove_selected_favorite_file, mdesc_filesel_context_remove_from_favorites
   .menu_func_close text_filesel_set_as_autoboot, set_favorite_as_autoboot_rom, mdesc_filesel_set_as_autoboot
+  .menu_func_close text_cheats, cheat_menu_favorite, mdesc_cheats
+  .menu_end
+
+; cheat editor (cheat.asm): the functions only record the choice in
+; cheat_action, the cheat editor acts on it after the menu has closed (they
+; run in the frame of show_menu, so they can't reach the editor's frames)
+menu_enttab_cheat_options:
+; HEADER
+  .menu_header 1, text_cheat_options
+; ENTRIES
+  .menu_func_close text_cheat_edit, cheat_act_edit, mdesc_cheat_edit, mfunc_isenabled_cheat
+  .menu_func_close text_cheat_add, cheat_act_add, mdesc_cheat_add
+  .menu_func_close text_cheat_remove, cheat_act_remove, mdesc_cheat_remove, mfunc_isenabled_cheat
+  .menu_value mtext_ingame_cheats, kv_yesno, OPTTYPE_KVBYTE, CFG_ENABLE_CHEATS, mdesc_ingame_cheats
+  .menu_value mtext_ingame_enable, kv_onoff, OPTTYPE_KVBYTE, CFG_ENABLE_INGAME_HOOK, mdesc_ingame_enable
+  .menu_end
+
+menu_enttab_cheat_remove:
+; HEADER
+  .menu_header 1, text_cheat_remove_title
+; ENTRIES
+  .menu_func_close text_cheat_remove, cheat_act_remove, mdesc_cheat_remove
+  .menu_func_close text_cancel, cheat_act_none, mdesc_cancel
+  .menu_end
+
+menu_enttab_cheat_code:
+; HEADER
+  .menu_header 1, text_cheat_code_options
+; ENTRIES
+  .menu_func_close text_cheat_edit_code, cheat_act_edit, mdesc_cheat_edit_code, mfunc_isenabled_cheat
+  .menu_func_close text_cheat_add_code, cheat_act_add, mdesc_cheat_add_code
+  .menu_func_close text_cheat_remove_code, cheat_act_remove, mdesc_cheat_remove_code, mfunc_isenabled_cheat
   .menu_end
 
 ; menu hook functions are called with 8-bit accumulator by
@@ -151,6 +185,13 @@ mfunc_isenabled_always:
 
 mfunc_isenabled_never:
   clc
+  rtl
+
+; the options menu of the cheat list or the cheat editor is opened for a
+; selected cheat or code (cheat.asm sets cheat_nosel before it opens them)
+mfunc_isenabled_cheat:
+  lda @l wram(cheat_nosel)
+  lsr a
   rtl
 
 mfunc_isenabled_hooks:

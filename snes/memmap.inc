@@ -31,6 +31,7 @@ NMI_WRAM_PATCH_COUNT        = $002BFF
 NMI_EXEC                    = $002C00
 WINDOW_STACK_BASE           = $7E2000
 CHEAT_EDIT_BUF              = $7F0000   ; cheat record being edited
+CHEAT_NAME_BUF              = $7F0200   ; cheat name being edited
 
 BG2_TILE_BUF                = $7EA000
 BG1_TILE_BUF                = $7EB000

@@ -230,6 +230,9 @@ fade_count:     .byte 0
 idle_count:     .word 0
 ;----------cheat editor (cheat.asm; its windows keep their state in their frames)
 cheat_msg_timer: .byte 0      ; frames until a status bar message goes away
+; interface to the functions of its options menus (menudata.asm)
+cheat_action:   .byte 0       ; CHEAT_ACT_* chosen in an options menu
+cheat_nosel:    .byte 0       ; 1: the menu is not for a selected cheat/code
 _END:           .byte 0
 .cerror * > $2000, format("WRAM variables end at $%04x: they must fit the low WRAM mirror ($0000-$1fff)", *)
 .endvirtual

@@ -403,20 +403,64 @@ text_cheat_wram:            .text "WRAM", 0
 text_cheat_rom:             .text "ROM ", 0
 text_cheat_msg_rom:         .text "Not enough ROM patch slots (max. 6)", 0
 text_cheat_msg_wram:        .text "Not enough WRAM patch slots (max. 32)", 0
-cheat_win_x:    .byte 6
-cheat_win_y:    .byte 11
-cheat_win_w:    .byte 52
-cheat_win_h:    .byte 15
+cheat_tab_head: .text "Name                                         Codes State", 0
+cheat_detail_head: .text "Code       Type Patch", 0
 
-cheat_tab_head: .text "Name                         # of codes  Enabled", 0
-cheat_tab_line: .byte 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24
-                .byte 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24
-                .byte 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 0
-
-cheat_detail_head: .text "PAR       GG        Address Value", 0
-cheat_detail_line: .byte 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24
-                  .byte 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24
-                  .byte 24, 0
+text_cheats:                .text "Cheats", 127, 128, 0
+mdesc_cheats:               .text "Show, enable and edit the cheats of the selected file", 0
+text_cheat_options:         .text "Cheat options", 0
+text_cheat_edit:            .text "Edit cheat", 0
+mdesc_cheat_edit:           .text "Edit name and codes of the selected cheat", 0
+text_cheat_add:             .text "Add new cheat", 0
+mdesc_cheat_add:            .text "Create a new cheat", 0
+text_cheat_remove:          .text "Remove cheat", 0
+mdesc_cheat_remove:         .text "Delete the selected cheat", 0
+text_cheat_remove_title:    .text "Remove cheat?", 0
+text_cancel:                .text "Cancel", 0
+mdesc_cancel:               .text "Keep everything as it is", 0
+text_cheat_code_options:    .text "Code options", 0
+text_cheat_edit_code:       .text "Edit code", 0
+mdesc_cheat_edit_code:      .text "Change the selected code", 0
+text_cheat_remove_code:     .text "Remove code", 0
+mdesc_cheat_remove_code:    .text "Delete the selected code", 0
+text_cheat_add_code:        .text "Add code", 0
+mdesc_cheat_add_code:       .text "Enter a new code for this cheat", 0
+text_cheat_add_row:         .text "Add new cheat", 127, 128, 0
+text_cheat_add_code_row:    .text "Add code", 127, 128, 0
+text_cheat_rom_patches:     .text "ROM patches: ", 0
+text_cheat_wram_patches:    .text "WRAM patches: ", 0
+text_cheat_warn_hook:       .text "WRAM codes need the in-game hook", 0
+text_cheat_warn_start:      .text "Cheats start disabled", 0
+text_cheat_help_list:       .text "A:Toggle Y:Options B:Back START:Play", 0
+text_cheat_help_edit:       .text "A:Edit Y:Options B:Done X:Discard", 0
+text_cheat_help_entry:      .text "START:OK X:Cancel", 0
+text_cheat_msg_off:         .text "Cheat disabled: not enough patch slots", 0
+text_cheat_msg_full:        .text "Maximum number of cheats reached", 0
+text_cheat_msg_codes:       .text "Maximum number of codes reached", 0
+text_cheat_msg_digits:      .text "Please enter all 8 digits", 0
+text_cheat_msg_namefull:    .text "The name can't get any longer", 0
+text_cheat_err_load:        .text "Could not read the cheat file.", 0
+text_cheat_err_save:        .text "Could not save the cheat file.", 0
+text_cheat_new_name:        .text "New Cheat ", 0
+text_cheat_name:            .text "Name:", 0
+text_cheat_enabled:         .text "Enabled:", 0
+text_cheat_hex_title:       .text "Enter code", 0
+text_cheat_format:          .text "Format:", 0
+text_cheat_fmt_par:         .text "PAR       ", 0
+text_cheat_fmt_gg:          .text "Game Genie", 0
+text_cheat_code:            .text "Code:", 0
+text_cheat_hex_help:        .text "A:Digit B:Del L/R:Move SELECT:PAR/GG", 0
+text_cheat_kb_title:        .text "Cheat name", 0
+text_cheat_kb_help:         .text "A:Type Y:Space B:Delete L/R:Move cursor", 0
+text_cheat_as_gg:           .text "GG:  ", 0
+text_cheat_as_par:          .text "PAR: ", 0
+text_cheat_caret:           .text "^", 0
+; name keyboard, one row of keys after the other (no double quotes: the
+; YAML parser in the firmware has no escapes)
+cheat_kb_keys:              .text "ABCDEFGHIJKLM", "NOPQRSTUVWXYZ"
+                            .text "abcdefghijklm", "nopqrstuvwxyz"
+                            .text "0123456789.,-", "!?':;+*/&%#()"
+cheat_kb_keys_end:
 
 text_spcid:     .text "SNES-SPC700"
 gfxptr_info:    .text "_GFXPTR_"
