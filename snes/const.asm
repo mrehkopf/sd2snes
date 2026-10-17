@@ -398,6 +398,11 @@ loading_win_w:  .byte 34
 loading_win_h:  .byte 1
 
 text_cheat:     .text "Cheats for ", 0
+text_cheat_press_a:         .text "Press A to continue", 0
+text_cheat_wram:            .text "WRAM", 0
+text_cheat_rom:             .text "ROM ", 0
+text_cheat_msg_rom:         .text "Not enough ROM patch slots (max. 6)", 0
+text_cheat_msg_wram:        .text "Not enough WRAM patch slots (max. 32)", 0
 cheat_win_x:    .byte 6
 cheat_win_y:    .byte 11
 cheat_win_w:    .byte 52

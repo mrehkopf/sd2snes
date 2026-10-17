@@ -278,7 +278,18 @@ draw_loading_window:
   .as
   rep #$10
   .xl
-  lda @l loading_win_x
+  ldx #<>text_loading
+  bra +
+
+; like draw_loading_window with another text
+; X: text (same bank as text_loading)
+draw_busy_window:
+  php
+  sep #$20
+  .as
+  rep #$10
+  .xl
++ lda @l loading_win_x
   sta window_x
   lda listdisp
   clc
@@ -288,10 +299,12 @@ draw_loading_window:
   sta window_w
   lda @l loading_win_h
   sta window_h
+  phx
   jsr push_window
+  plx
   lda #`text_loading
   .param pha
-  .param pea, <>text_loading
+  .param phx
   lda window_x
   .param pha
   lda window_y

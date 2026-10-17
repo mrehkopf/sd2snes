@@ -30,6 +30,7 @@ NMI_WRAM_PATCH_DISABLE      = $002BFE
 NMI_WRAM_PATCH_COUNT        = $002BFF
 NMI_EXEC                    = $002C00
 WINDOW_STACK_BASE           = $7E2000
+CHEAT_EDIT_BUF              = $7F0000   ; cheat record being edited
 
 BG2_TILE_BUF                = $7EA000
 BG1_TILE_BUF                = $7EB000
@@ -102,6 +103,22 @@ CHEAT_SRC_FAVORITE          = $02       ; list index in MCU_PARAM
 ; values of CHEAT_STATUS
 CHEAT_STATUS_OK             = $00
 CHEAT_STATUS_ERR            = $01
+
+; cheat records at CHEAT_ADDR (cheat_record_t in src/cheat.h)
+CHEAT_REC_FLAGS             = 0         ; bit 7: enabled
+CHEAT_REC_NAME              = 1         ; NUL terminated
+CHEAT_REC_NUMCODES          = 255
+CHEAT_REC_CODES             = 256       ; 4 bytes each: value, address lo/hi, bank
+CHEAT_REC_CODEFMT           = 416       ; 1 byte each: CHEAT_CODEFMT_*
+CHEAT_REC_SIZE              = 456
+CHEAT_REC_STRIDE            = 512
+CHEAT_FLAG_ENABLE           = $80
+CHEAT_CODEFMT_GG            = $01       ; code was entered as a Game Genie code
+CHEAT_MAX_CHEATS            = 2048
+CHEAT_NUM_CODES             = 40        ; per cheat
+CHEAT_NUM_ROM_PATCHES       = 6
+CHEAT_NUM_WRAM_PATCHES      = 32
+CHEAT_NAME_MAXLEN           = 240
 
 CFG_VIDMODE_MENU                = CFG_ADDR+$0000
 CFG_VIDMODE_GAME                = CFG_ADDR+$0001

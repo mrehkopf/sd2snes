@@ -611,6 +611,25 @@ wram_wait_mcu:
   bne -
   rtl
 
+; send command A to the MCU and wait until it has been executed
+; Waits for the MCU to finish a previous command first (CMD_SAVE_CFG doesn't
+; wait for completion) and repeats the command until the MCU echoes it, so
+; it can't get lost while the MCU re-enters its command loop.
+wram_mcu_cmd:
+  .as
+  pha
+- lda @l SNES_CMD
+  cmp #$55
+  bne -
+  pla
+- sta @l MCU_CMD
+  cmp @l SNES_CMD
+  bne -
+- lda @l SNES_CMD
+  cmp #$55
+  bne -
+  rtl
+
 wram_load_ultra16_cfg:
   .as
   lda @l $0021c1
