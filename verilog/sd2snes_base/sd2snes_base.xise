@@ -453,8 +453,8 @@
     <property xil_pn:name="Speed Grade" xil_pn:value="-4" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Starting CBC Value (Hex)" xil_pn:value="" xil_pn:valueState="default"/>
     <property xil_pn:name="Starting Key" xil_pn:value="None" xil_pn:valueState="default"/>
-    <property xil_pn:name="Starting Placer Cost Table (1-100) Map" xil_pn:value="1" xil_pn:valueState="default"/>
-    <property xil_pn:name="Starting Placer Cost Table (1-100) Par" xil_pn:value="1" xil_pn:valueState="default"/>
+    <property xil_pn:name="Starting Placer Cost Table (1-100) Map" xil_pn:value="2" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Starting Placer Cost Table (1-100) Par" xil_pn:value="2" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Structure window" xil_pn:value="true" xil_pn:valueState="default"/>
     <property xil_pn:name="Symbolic FSM Compiler" xil_pn:value="true" xil_pn:valueState="default"/>
     <property xil_pn:name="Synthesis Tool" xil_pn:value="XST (VHDL/Verilog)" xil_pn:valueState="default"/>

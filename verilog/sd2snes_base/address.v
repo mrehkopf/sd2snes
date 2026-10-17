@@ -116,9 +116,14 @@ assign IS_SAVERAM_pre = (~map_unlock & SAVERAM_MASK[0])
                       ? ((SNES_ADDR_early[23:19] == 5'b00010)
                          & (SNES_ADDR_early[15:12] == 4'b0101)
                         )
-/*  Menu mapper: 8Mbit "SRAM" @ Bank 0xf0-0xff (entire banks!) */
+/*  Menu mapper: 8Mbit "SRAM" @ Bank 0xf0-0xff (entire banks!)
+ *  plus the cheat area for the menu's cheat editor:
+ *  0xcf (cheat count @ 0xcffffe) and 0xd0-0xdf (cheat records) */
                       :(MAPPER_DEC[3'b111])
-                      ? (&SNES_ADDR_early[23:20])
+                      ? (&SNES_ADDR_early[23:20]
+                         | (SNES_ADDR_early[23:20] == 4'hd)
+                         | (SNES_ADDR_early[23:16] == 8'hcf)
+                        )
                       : 1'b0);
 
 reg IS_SAVERAM_r; always @(posedge CLK) IS_SAVERAM_r <= IS_SAVERAM_pre;
