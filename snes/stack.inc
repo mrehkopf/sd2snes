@@ -142,8 +142,11 @@ param_bytes ::= 0
 .endm
 
 ; Remove the parameters of "call target" from the stack again; the number
-; of bytes comes from the callee's Frame like in "call".
-; DESTROYS ACCUMULATOR AND FLAGS (keeps the accumulator size)
+; of bytes comes from the callee's Frame like in "call". They are pulled
+; into A, which keeps the carry, so a routine with parameters can return a
+; flag in it like any other: it ends with ".leave" and then sec/clc before
+; rts (".leave" restores the caller's P).
+; DESTROYS ACCUMULATOR AND N/Z (keeps the accumulator size)
 unparam .macro target
   .proff
   .virtual                      ; measure the current accumulator size
@@ -151,16 +154,34 @@ _a: lda #0
 _e:
   .endvirtual
   .pron
-  .if _e - _a == 2              ; 8-bit accumulator
+_n := frame_params(\target.Frame)
+  .if _e - _a == 2              ; 8-bit accumulator: pull bytes
+  .if _n <= 8
+  .rept _n
+  pla
+  .endrept
+  .else
+  .if _n & 1
+  pla
+  .endif
+  rep #$20
+  .al
+  .rept _n / 2
+  pla
+  .endrept
+  sep #$20
+  .as
+  .endif
+  .else                         ; 16-bit accumulator: pull words
+  .rept _n / 2
+  pla
+  .endrept
+  .if _n & 1
+  sep #$20
+  .as
+  pla
   rep #$20
   .al
   .endif
-  tsc
-  clc
-  adc #frame_params(\target.Frame)
-  tcs
-  .if _e - _a == 2
-  sep #$20
-  .as
   .endif
 .endm
