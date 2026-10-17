@@ -7,7 +7,7 @@
  *  - in-game button shortcuts to en/disable cheats
  */
 
-/* cheat area in PSRAM:
+/* cheat area in PSRAM (shared with the SNES menu, see snes/memmap.inc):
  *  SRAM_NUM_CHEATS: 16-bit number of cheat records
  *  SRAM_CHEAT_ADDR: cheat records, one every CHEAT_RECORD_STRIDE bytes
  */
@@ -17,13 +17,17 @@
  *  +1 254 bytes: cheat description, NUL terminated
  * +255  1 byte : number of patches (codes) for this cheat
  * +256 40 x 4 bytes: patches: value, address low, address high, bank
+ * +416 40 bytes: format per patch as given by the user
+ *                (bit 0: Game Genie code, written back as such)
  */
 
 #include CONFIG_MCU_H
+#include <stddef.h>
 
 #define CHEAT_BASEDIR   ("/sd2snes/cheats/")
 
 #define CHEAT_FLAG_ENABLE         (0x80)
+#define CHEAT_CODEFMT_GG          (0x01)
 
 #define CHEAT_MAX_CHEATS          (2048)
 #define CHEAT_RECORD_STRIDE       (512)
@@ -47,7 +51,15 @@ typedef struct __attribute__ ((__packed__)) _cheat_record {
   char description[254];
   uint8_t numpatches;
   cheat_patch_record_t patches[CHEAT_NUM_CODES_PER_CHEAT];
+  uint8_t codefmt[CHEAT_NUM_CODES_PER_CHEAT];
 } cheat_record_t;
+
+/* the SNES menu relies on this layout */
+_Static_assert(offsetof(cheat_record_t, description) == 1, "cheat_record_t layout");
+_Static_assert(offsetof(cheat_record_t, numpatches) == 255, "cheat_record_t layout");
+_Static_assert(offsetof(cheat_record_t, patches) == 256, "cheat_record_t layout");
+_Static_assert(offsetof(cheat_record_t, codefmt) == 416, "cheat_record_t layout");
+_Static_assert(sizeof(cheat_record_t) <= CHEAT_RECORD_STRIDE, "cheat_record_t size");
 
 /* deploy all cheats to SNES code / FPGA */
 void cheat_program(void);
@@ -79,8 +91,9 @@ int cheat_yaml_load(uint8_t *romfilename);
 /* save SNES structure as YAML file. Returns 0 or an FRESULT */
 int cheat_yaml_save(uint8_t *romfilename);
 
-/* convert cheat code in string format to binary */
-uint32_t cheat_str2bin(char *string);
+/* convert cheat code in string format to binary;
+   sets *fmt to CHEAT_CODEFMT_GG for Game Genie codes, 0 otherwise */
+uint32_t cheat_str2bin(char *string, uint8_t *fmt);
 
 /* convert between raw/PAR and GG codes */
 uint32_t cheat_gg2raw(uint32_t code);

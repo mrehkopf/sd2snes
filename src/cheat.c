@@ -206,11 +206,11 @@ int cheat_yaml_load(uint8_t* romfilename) {
       for(i=0; i < CHEAT_NUM_CODES_PER_CHEAT; i++) {
         if(!yaml_get_next(&token)) break;
         if(token.type == YAML_LIST_END) break;
-        cheat.patches[i].code = cheat_str2bin(token.stringvalue);
+        cheat.patches[i].code = cheat_str2bin(token.stringvalue, &cheat.codefmt[i]);
       }
       cheat.numpatches = i;
     } else if (token.type != YAML_NONE) {
-      cheat.patches[0].code = cheat_str2bin(token.stringvalue);
+      cheat.patches[0].code = cheat_str2bin(token.stringvalue, &cheat.codefmt[0]);
       cheat.numpatches = 1;
     } else {
       /* empty list */
@@ -266,12 +266,19 @@ int cheat_yaml_save(uint8_t *romfilename) {
     f_printf(&file_handle, "  Enabled: %s\n", cheat.flags & CHEAT_FLAG_ENABLE ? "true" : "false");
     f_printf(&file_handle, "  Code:\n");
     for(int i = 0; i < cheat.numpatches; i++) {
-      uint32_t gg_code = cheat_raw2gg(cheat.patches[i].code);
-      f_printf(&file_handle, "  - \"%08lX\"    ", cheat.patches[i].code);
-      if(cheat_is_wram_cheat(cheat.patches[i].code)) {
-        f_printf(&file_handle, "# GG code: N/A (WRAM cheat)\n");
+      uint32_t code = cheat.patches[i].code;
+      uint32_t gg_code = cheat_raw2gg(code);
+      if(cheat.codefmt[i] & CHEAT_CODEFMT_GG) {
+        /* keep Game Genie codes in the form the user entered them */
+        f_printf(&file_handle, "  - \"%04lX-%04lX\"   # PAR code: %08lX\n",
+                 gg_code >> 16, gg_code & 0xffff, code);
       } else {
-        f_printf(&file_handle, "# GG code: %04lX-%04lX\n", gg_code >> 16, gg_code & 0xffff);
+        f_printf(&file_handle, "  - \"%08lX\"    ", code);
+        if(cheat_is_wram_cheat(code)) {
+          f_printf(&file_handle, "# GG code: N/A (WRAM cheat)\n");
+        } else {
+          f_printf(&file_handle, "# GG code: %04lX-%04lX\n", gg_code >> 16, gg_code & 0xffff);
+        }
       }
     }
   }
@@ -284,10 +291,12 @@ int cheat_yaml_save(uint8_t *romfilename) {
   return res;
 }
 
-uint32_t cheat_str2bin(char *string) {
+uint32_t cheat_str2bin(char *string, uint8_t *fmt) {
   char code[9];
   uint32_t patch;
+  *fmt = 0;
   if(string[4] == '-') {
+    *fmt = CHEAT_CODEFMT_GG;
     /* GG code */
     printf("GG code: %s\n", string);
     memcpy(code, string, 4);
