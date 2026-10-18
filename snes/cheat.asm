@@ -163,14 +163,8 @@ Frame .block
   .xl
   sty Frame.help
   phx
-  lda #ALERT_X
-  sta window_x
-  lda #ALERT_Y
-  sta window_y
-  lda #ALERT_W
-  sta window_w
-  lda #ALERT_H
-  sta window_h
+  ldx #<>cheat_rect_alert
+  jsr cheat_set_window
   ldx #<>space64+64             ; no title (empty string)
   stx window_taddr
   lda #`space64
@@ -328,6 +322,72 @@ cheat_line_puts:
   iny
   bra -
 + plb
+  plp
+  rts
+
+; set window_x/y/w/h from a rectangle (cheat_rect_*: x, y, w, h)
+; X: address of the rectangle
+cheat_set_window:
+  php
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  lda @l CHEAT_RECT_BANK,x
+  sta window_x
+  lda @l CHEAT_RECT_BANK+1,x
+  sta window_y
+  lda @l CHEAT_RECT_BANK+2,x
+  sta window_w
+  lda @l CHEAT_RECT_BANK+3,x
+  sta window_h
+  plp
+  rts
+
+; grey out a window to bring the one opened over it into focus;
+; pop_window brings it back
+; X: its rectangle
+cheat_greyout:
+  jsr cheat_set_window
+  jsr push_window
+  jmp window_greyout
+
+; draw a frame (a window without title) inside the current window
+; X: its rectangle
+cheat_box:
+  php
+  rep #$10
+  .xl
+  jsr cheat_set_window
+  ldx #<>space64+64             ; no title (empty string)
+  stx window_taddr
+  sep #$20
+  .as
+  lda #`space64
+  sta window_tbank
+  jsr draw_window
+  plp
+  rts
+
+; draw a separator line across the current window
+; A (8-bit): row
+cheat_separator:
+  php
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  phx
+  tax
+  lda window_x
+  .param pha
+  txa
+  .param pha
+  lda window_w
+  .param pha
+  .call draw_separator
+  .unparam draw_separator
+  plx
   plp
   rts
 
@@ -809,8 +869,10 @@ CHEAT_LIST_W     = 60
 CHEAT_LIST_H     = 18
 CHEAT_LIST_COL   = CHEAT_LIST_X + 2     ; first text column
 CHEAT_LIST_TEXTW = CHEAT_LIST_W - 4     ; text columns
-CHEAT_LIST_ROW0  = CHEAT_LIST_Y + 4     ; first list row
-CHEAT_LIST_ROWS  = CHEAT_LIST_H - 5     ; list rows shown
+CHEAT_LIST_HEAD  = CHEAT_LIST_Y + 1     ; table header, separator below
+CHEAT_LIST_ROW0  = CHEAT_LIST_Y + 3     ; first list row
+CHEAT_LIST_ROWS  = CHEAT_LIST_H - 7     ; list rows shown
+CHEAT_LIST_FOOT  = CHEAT_LIST_ROW0 + CHEAT_LIST_ROWS ; separator, patches used, warnings
 CHEAT_LIST_NAMEW = 44                   ; name column width
 CHEAT_LIST_CODES = 48                   ; number of codes (2 digits)
 CHEAT_LIST_STATE = 51                   ; "On"/"Off"
@@ -819,22 +881,23 @@ CHEAT_LIST_STATE = 51                   ; "On"/"Off"
 CEDIT_X          = 4
 CEDIT_Y          = 10
 CEDIT_W          = 56
-CEDIT_H          = 16
+CEDIT_H          = 17
 CEDIT_COL        = CEDIT_X + 2
 CEDIT_TEXTW      = CEDIT_W - 4
 CEDIT_VALUE      = CEDIT_COL + 9        ; column of name and enable state
-CEDIT_ROW0       = CEDIT_Y + 4          ; first code row
-CEDIT_ROWS       = CEDIT_H - 5          ; code rows shown
+CEDIT_HEAD       = CEDIT_Y + 3          ; table header, separator below
+CEDIT_ROW0       = CEDIT_Y + 5          ; first code row
+CEDIT_ROWS       = CEDIT_H - 6          ; code rows shown
 CEDIT_NAME       = 0                    ; editor rows: name,
 CEDIT_ENABLE     = 1                    ; enable state,
 CEDIT_FIRST_CODE = 2                    ; codes and "Add code"
 CEDIT_PATCH      = 11                   ; column of the patch in a code row
 
 ; code pad window
-HEX_X            = 12
+HEX_X            = 17
 HEX_Y            = 10
-HEX_W            = 40
-HEX_H            = 15
+HEX_W            = 30
+HEX_H            = 16
 HEX_COL          = HEX_X + 2
 HEX_VALUE        = HEX_COL + 8          ; column of format and code
 ; first column and row of the 4x4 keys
@@ -846,14 +909,28 @@ HEX_AS_CODE      = 5                    ; the code after "GG:  "/"PAR: "
 KB_X             = 4
 KB_Y             = 10
 KB_W             = 56
-KB_H             = 15
+KB_H             = 14
 KB_COL           = KB_X + 2
 KB_FIELDW        = KB_W - 4             ; visible part of the name
 KB_COLS          = 13                   ; keys per row
 KB_ROWS          = 6
+KB_KEYS_W        = KB_COLS * 3 - 2      ; width of a row of keys (3 columns apart)
 ; first column and row of the keys
-KB_KEYS_COL      = KB_X + (KB_W - 3 * KB_COLS + 2) / 2
+KB_KEYS_COL      = KB_X + (KB_W - KB_KEYS_W) / 2
 KB_KEYS_ROW      = KB_Y + 4
+
+; window rectangles for cheat_set_window: x, y, w, h
+cheat_rect_alert:   .byte ALERT_X, ALERT_Y, ALERT_W, ALERT_H
+cheat_rect_list:    .byte CHEAT_LIST_X, CHEAT_LIST_Y, CHEAT_LIST_W, CHEAT_LIST_H
+cheat_rect_edit:    .byte CEDIT_X, CEDIT_Y, CEDIT_W, CEDIT_H
+cheat_rect_hex:     .byte HEX_X, HEX_Y, HEX_W, HEX_H
+cheat_rect_hexkeys: .byte HEX_KEYS_COL - 2, HEX_KEYS_ROW - 1, 14, 6 ; around the keys
+cheat_rect_kb:      .byte KB_X, KB_Y, KB_W, KB_H
+cheat_rect_kbkeys:  .byte KB_KEYS_COL - 2, KB_KEYS_ROW - 1, KB_KEYS_W + 4, KB_ROWS + 2
+cheat_rects_end:
+CHEAT_RECT_BANK  = cheat_rect_alert & $ff0000
+
+  .cerror (`cheat_rect_alert) != (`cheat_rects_end - 1), "cheat_set_window expects all rectangles in one bank"
 
 ; cheat_action values, set by the options menus
 CHEAT_ACT_NONE   = 0
@@ -862,7 +939,7 @@ CHEAT_ACT_ADD    = 2
 CHEAT_ACT_REMOVE = 3
 
   .cerror cheat_kb_keys_end - cheat_kb_keys != KB_COLS * KB_ROWS, "cheat_kb_keys does not match the keyboard size"
-  .cerror CHEAT_LIST_TEXTW >= CHEAT_LINE_SIZE || CEDIT_TEXTW >= CHEAT_LINE_SIZE || HEX_W - 4 >= CHEAT_LINE_SIZE || KB_FIELDW >= CHEAT_LINE_SIZE || KB_COLS * 3 >= CHEAT_LINE_SIZE, "a window line doesn't fit CheatWindow.line"
+  .cerror CHEAT_LIST_TEXTW >= CHEAT_LINE_SIZE || CEDIT_TEXTW >= CHEAT_LINE_SIZE || HEX_W - 4 >= CHEAT_LINE_SIZE || KB_FIELDW >= CHEAT_LINE_SIZE || KB_KEYS_W >= CHEAT_LINE_SIZE, "a window line doesn't fit CheatWindow.line"
 
 ; entry points from the file context menus (menu functions: called via RTL
 ; with A 8-bit, X/Y 16-bit; the file is described by MCU_PARAM as for loading)
@@ -1102,6 +1179,8 @@ options:
   lda #$00
   rol a
   sta cheat_nosel
+  ldx #<>cheat_rect_list
+  jsr cheat_greyout
   lda #20
   sta window_x
   lda #12
@@ -1113,6 +1192,7 @@ options:
   ldx #<>menu_enttab_cheat_options
   jsr show_menu
   plb
+  jsr pop_window
   lda cheat_action
   cmp #CHEAT_ACT_ADD
   beq add
@@ -1163,6 +1243,8 @@ add:
 
 remove:
   stz cheat_action
+  ldx #<>cheat_rect_list
+  jsr cheat_greyout
   lda #22
   sta window_x
   lda #14
@@ -1174,6 +1256,7 @@ remove:
   ldx #<>menu_enttab_cheat_remove
   jsr show_menu
   plb
+  jsr pop_window
   lda cheat_action
   cmp #CHEAT_ACT_REMOVE
   bne +
@@ -1294,19 +1377,17 @@ cheat_list_open:
   sep #$20
   .as
   stz window_tbank              ; the stack is in bank 0
-  lda #CHEAT_LIST_X
-  sta window_x
-  lda #CHEAT_LIST_Y
-  sta window_y
-  lda #CHEAT_LIST_W
-  sta window_w
-  lda #CHEAT_LIST_H
-  sta window_h
+  ldx #<>cheat_rect_list
+  jsr cheat_set_window
   jsr push_window
   jsr draw_window
+  lda #CHEAT_LIST_HEAD+1
+  jsr cheat_separator
+  lda #CHEAT_LIST_FOOT
+  jsr cheat_separator
   lda #CHEAT_LIST_COL
   sta Frame.print_x
-  lda #CHEAT_LIST_ROW0-1
+  lda #CHEAT_LIST_HEAD
   sta Frame.print_y
   lda #CHEAT_LIST_TEXTW
   sta Frame.print_count
@@ -1330,7 +1411,7 @@ cheat_list_budget .block
   .as
   rep #$10
   .xl
-  lda #CHEAT_LIST_Y+1
+  lda #CHEAT_LIST_FOOT+1
   sta Frame.print_y
   lda #20
   sta Frame.print_count
@@ -1393,7 +1474,7 @@ cheat_list_budget .block
   sta Frame.print_pal
 + jsr cheat_print_line
 ; warnings
-  lda #CHEAT_LIST_Y+2
+  lda #CHEAT_LIST_FOOT+2
   sta Frame.print_y
   lda #CHEAT_LIST_COL
   sta Frame.print_x
@@ -1626,9 +1707,12 @@ cheat_save:
   sec
   rts
 cheat_save_error:
+  ldx #<>cheat_rect_list
+  jsr cheat_greyout
   ldx #<>text_cheat_err_save
   ldy #<>text_cheat_help_list
   jsr cheat_alert
+  jsr pop_window
   plp
   clc
   rts
@@ -1714,9 +1798,14 @@ cheat_edit .block
   jsr cheat_budget_update       ; its old patches don't count while editing
   sep #$20
   .as
-+ .param_dp Frame.fmt
++ ldx #<>cheat_rect_list
+  jsr cheat_greyout
+  .param_dp Frame.fmt
   .call cheat_editor
   .unparam cheat_editor
+  php
+  jsr pop_window
+  plp
   bcs done
   lda Frame.new                 ; discarded: back to the old patches
   bne out
@@ -2019,16 +2108,12 @@ Frame .block
   stx window_taddr
   lda #`text_cheat_edit
   sta window_tbank
-  lda #CEDIT_X
-  sta window_x
-  lda #CEDIT_Y
-  sta window_y
-  lda #CEDIT_W
-  sta window_w
-  lda #CEDIT_H
-  sta window_h
+  ldx #<>cheat_rect_edit
+  jsr cheat_set_window
   jsr push_window
   jsr draw_window
+  lda #CEDIT_HEAD+1
+  jsr cheat_separator
   lda #CEDIT_COL
   sta Frame.print_x
   lda #CEDIT_TEXTW
@@ -2080,14 +2165,15 @@ loop:
   beq +
   jsr options
   bra redraw
-+ lda pad_x
++ lda pad_b
+  ora pad_x
   beq +
   jsr pop_window                ; discard the changes
   .leave
   clc
   rts
   .as
-+ lda pad_b
++ lda pad_start
   beq loop
   jsr pop_window                ; done
   .leave
@@ -2107,7 +2193,10 @@ button_a:
   lda Frame.sel
   cmp #CEDIT_NAME
   bne +
-  jmp cheat_keyboard
+  ldx #<>cheat_rect_edit
+  jsr cheat_greyout
+  jsr cheat_keyboard
+  jmp pop_window
 + cmp #CEDIT_ENABLE
   bne +
   sep #$20
@@ -2136,6 +2225,8 @@ options:
   lda #$00
   rol a
   sta cheat_nosel
+  ldx #<>cheat_rect_edit
+  jsr cheat_greyout
   lda #22
   sta window_x
   lda #14
@@ -2147,6 +2238,7 @@ options:
   ldx #<>menu_enttab_cheat_code
   jsr show_menu
   plb
+  jsr pop_window
   lda cheat_action
   cmp #CHEAT_ACT_ADD
   beq add
@@ -2185,7 +2277,10 @@ open_hexpad:
   rep #$30
   .al
   .xl
-  tay
+  pha                           ; code
+  ldx #<>cheat_rect_edit
+  jsr cheat_greyout
+  ply
   sep #$20
   .as
   lda Frame.p_fmt+2
@@ -2194,6 +2289,7 @@ open_hexpad:
   .param phy
   .call cheat_hexpad
   .unparam cheat_hexpad
+  jsr pop_window
   plp
   rts
 
@@ -2490,14 +2586,8 @@ open:
   stx window_taddr
   lda #`text_cheat_hex_title
   sta window_tbank
-  lda #HEX_X
-  sta window_x
-  lda #HEX_Y
-  sta window_y
-  lda #HEX_W
-  sta window_w
-  lda #HEX_H
-  sta window_h
+  ldx #<>cheat_rect_hex
+  jsr cheat_set_window
   jsr push_window
   jsr draw_window
   stz Frame.print_pal
@@ -2517,7 +2607,12 @@ open:
   sta Frame.print_y
   ldx #<>text_cheat_hex_help
   jsr cheat_print_rom
-  lda #HEX_KEYS_COL             ; keys
+  inc Frame.print_y
+  ldx #<>text_cheat_hex_help2
+  jsr cheat_print_rom
+  ldx #<>cheat_rect_hexkeys     ; keys
+  jsr cheat_box
+  lda #HEX_KEYS_COL
   sta Frame.print_x
   lda #HEX_KEYS_ROW
   sta Frame.print_y
@@ -2898,31 +2993,27 @@ Frame .block
   stx window_taddr
   lda #`text_cheat_kb_title
   sta window_tbank
-  lda #KB_X
-  sta window_x
-  lda #KB_Y
-  sta window_y
-  lda #KB_W
-  sta window_w
-  lda #KB_H
-  sta window_h
+  ldx #<>cheat_rect_kb
+  jsr cheat_set_window
   jsr push_window
   jsr draw_window
   stz Frame.print_pal
   lda #KB_COL
   sta Frame.print_x
-  lda #KB_Y+11
+  lda #KB_Y+12
   sta Frame.print_y
   lda #KB_FIELDW
   sta Frame.print_count
   ldx #<>text_cheat_kb_help
   jsr cheat_print_rom
-  lda #KB_KEYS_COL              ; keys
+  ldx #<>cheat_rect_kbkeys      ; keys
+  jsr cheat_box
+  lda #KB_KEYS_COL
   sta Frame.print_x
   lda #KB_KEYS_ROW
   sta Frame.print_y
   ldx #$0000                    ; X: key
-- lda #KB_COLS*3
+- lda #KB_KEYS_W                ; (no spaces after the last key: frame)
   jsr cheat_line_clear
   ldy #$0000                    ; Y: position in the line
 - lda @l cheat_kb_keys,x
