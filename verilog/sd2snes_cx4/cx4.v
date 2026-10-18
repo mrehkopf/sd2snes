@@ -163,12 +163,18 @@ end
 assign STATUS_DO = {1'b0, cx4_active, 4'b0000, cx4_irq_flag, 1'b0};
 
 reg cx4_busy_cpu_prev;
-initial cx4_busy_cpu_prev = 1'b0;
+reg cpu_stop_prev;
+initial begin
+  cx4_busy_cpu_prev = 1'b0;
+  cpu_stop_prev = 1'b0;
+end
 
-wire cpu_halted = cx4_busy_cpu_prev & ~cx4_busy[BUSY_CPU];
+wire cpu_stop = STATUS_WR_EN && ADDR[4:0] == 5'h13;  // 1f53
+wire cpu_halted = cx4_busy_cpu_prev & ~cx4_busy[BUSY_CPU] & ~cpu_stop_prev;
 
 always @(posedge CLK) begin
   cx4_busy_cpu_prev <= cx4_busy[BUSY_CPU];
+  cpu_stop_prev <= cpu_stop;
   if(MMIO_WR_EN && ADDR[4:0] == 5'h11 && DI[0]) begin  // 1f51
     cx4_irq_line <= 1'b0;
     cx4_irq_flag <= 1'b0;
@@ -502,6 +508,7 @@ parameter OP_INCMAR = 5'b01101;
 parameter OP_CMP    = 5'b01110;
 parameter OP_SEX    = 5'b01111;
 parameter OP_HLT    = 5'b10000;
+parameter OP_CLR    = 5'b10001;
 
 parameter MUL_DELAY = 3'h2;
 
@@ -519,7 +526,7 @@ wire cpu_bus_start = (op == OP_LD || op == OP_ALU || op == OP_MUL || op == OP_CM
 
 always @(posedge CLK) begin
   if(cpu_go_en_r) cx4_busy[BUSY_CPU] <= 1'b1;
-  else if(op == OP_HLT) cx4_busy[BUSY_CPU] <= 1'b0;
+  else if(op == OP_HLT || cpu_stop) cx4_busy[BUSY_CPU] <= 1'b0;
 end
 
 always @(posedge CLK) begin
@@ -738,11 +745,18 @@ always @(posedge CLK) begin
             2'b10: cpu_alu_res <= {{8{cpu_idb[15]}}, cpu_idb[15:0]};
           endcase
         end
+        OP_CLR: begin
+          cpu_a <= 24'b0;
+          cpu_p <= 15'b0;
+          cpu_ramdata <= 24'b0;
+          cpu_ramaddr <= 24'b0;
+        end
         OP_ALU: begin
           case(cpu_op[15:11])
             5'b10000: cpu_alu_res <= cpu_sa + cpu_idb;
             5'b10001: cpu_alu_res <= cpu_idb - cpu_sa;
             5'b10010: cpu_alu_res <= cpu_sa - cpu_idb;
+            5'b10100: cpu_alu_res <= {1'b0, cpu_sa ~^ cpu_idb};
             5'b10101: cpu_alu_res <= cpu_sa ^ cpu_idb;
             5'b10110: cpu_alu_res <= cpu_sa & cpu_idb;
             5'b10111: cpu_alu_res <= cpu_sa | cpu_idb;
@@ -811,6 +825,7 @@ always @(posedge CLK) begin
         5'b10000: op <= OP_ALU;
         5'b10001: op <= OP_ALU;
         5'b10010: op <= OP_ALU;
+        5'b10100: op <= OP_ALU;
         5'b10101: op <= OP_ALU;
         5'b10110: op <= OP_ALU;
         5'b10111: op <= OP_ALU;
@@ -823,7 +838,11 @@ always @(posedge CLK) begin
         5'b00011: op <= OP_WAI;
         5'b01000: op <= OP_INCMAR;
 
-        5'b11111: op <= OP_HLT;
+        5'b11111: begin
+          if(cpu_op_w[10]) op <= OP_HLT;
+          else op <= OP_CLR;
+        end
+        default: op <= OP_NOP;
       endcase
       op_imm <= cpu_op_w[10];
       op_p <= cpu_op_w[9];
@@ -843,6 +862,7 @@ always @(posedge CLK) begin
       end
     end
   endcase
+  if(cpu_stop) CPU_STATE <= ST_CPU_IDLE;
 end
 
 wire [2:0] rom_ws = cx4_mmio_r1f50[6:4];
