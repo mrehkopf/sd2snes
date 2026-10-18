@@ -433,8 +433,8 @@ text_cheat_rom_patches:     .text "ROM patches: ", 0
 text_cheat_wram_patches:    .text "WRAM patches: ", 0
 text_cheat_warn_hook:       .text "WRAM codes need the in-game hook", 0
 text_cheat_warn_start:      .text "Cheats start disabled", 0
-text_cheat_help_list:       .text "A:Toggle Y:Options B:Back START:Play", 0
-text_cheat_help_edit:       .text "A:Edit Y:Options START:Done B:Discard", 0
+text_cheat_help_list:       .text "A:Edit X:On/Off Y:More B:Back START:Play", 0
+text_cheat_help_edit:       .text "A:Edit Y:More START:Done B:Discard", 0
 text_cheat_help_entry:      .text "START:OK X:Cancel", 0
 text_cheat_msg_off:         .text "Cheat disabled: not enough patch slots", 0
 text_cheat_msg_full:        .text "Maximum number of cheats reached", 0
@@ -454,7 +454,7 @@ text_cheat_code:            .text "Code:", 0
 text_cheat_hex_help:        .text "A:Type B:Delete L/R:Cursor", 0
 text_cheat_hex_help2:       .text "SELECT:PAR/Game Genie", 0
 text_cheat_kb_title:        .text "Cheat name", 0
-text_cheat_kb_help:         .text "A:Type Y:Space B:Delete L/R:Cursor", 0
+text_cheat_kb_help:         .text "A:Type Y:Space B:Delete L/R:Cursor SELECT:Clear", 0
 text_cheat_as_gg:           .text "GG:  ", 0
 text_cheat_as_par:          .text "PAR: ", 0
 text_cheat_caret:           .text "^", 0

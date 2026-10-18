@@ -1074,6 +1074,10 @@ loop:
   beq +
   jsr button_a
   bra done
++ lda pad_x
+  beq +
+  jsr button_x
+  bra done
 + lda pad_y
   beq +
   jsr options
@@ -1090,7 +1094,7 @@ loop:
   rts
 done:                           ; c=1: redraw everything
   .jcs redraw
-  bra loop
+  brl loop
 
 up:
   rep #$20
@@ -1164,8 +1168,18 @@ button_a:
   sep #$20
   .as
   bcs add                       ; "Add new cheat"
+  bra edit
+
+button_x:
+  rep #$20
+  .al
+  lda Frame.sel
+  cmp Frame.count
+  sep #$20
+  .as
+  bcs +                         ; "Add new cheat": nothing to toggle
   jsr cheat_toggle
-  clc
++ clc
   rts
 
 options:
@@ -3109,6 +3123,15 @@ key_moved:
 + lda pad_b
   beq +
   jsr delete
+  brl redraw
++ lda pad_select
+  beq +
+  lda #$00                      ; clear the name
+  sta @l CHEAT_NAME_BUF
+  ldx #$0000
+  stx Frame.len
+  stx Frame.cur
+  stx Frame.scroll
   brl redraw
 + lda pad_l
   beq +
