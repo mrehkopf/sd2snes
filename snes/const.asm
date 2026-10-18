@@ -167,6 +167,8 @@ window_wv:      .byte 26
 window_ev:      .byte 27
 window_tl:      .byte 28
 window_tr:      .byte 29
+window_wt:      .byte 30      ; separator: tee from the left border
+window_et:      .byte 31      ; separator: tee from the right border
 text_clkset:    .text "Please set the time", 0
 time_win_x:     .byte 20
 time_win_y:     .byte 17

@@ -272,6 +272,55 @@ print_str:
   rts
 .endblock
 
+; draw a separator line across a window: a horizontal line that joins the
+; left and right borders, in the palette of the window frame
+; params (push order): p_x (column of the left border), p_y (row), p_w
+; (width of the window)
+draw_separator .block
+  .virtual #0,d
+Frame .block
+  row           .fill 64        ; the separator line
+  _             .dstruct SaveJSR
+  p_w           .byte ?         ; pushed last
+  p_y           .byte ?
+  p_x           .byte ?         ; pushed first
+.endblock
+  .endvirtual
+  .enter
+  rep #$30
+  .al
+  .xl
+  lda Frame.p_w
+  and #$00ff
+  tax
+  sep #$20
+  .as
+  stz Frame.row,x
+  dex
+  lda @l window_et
+  sta Frame.row,x
+  lda @l window_sh
+- dex
+  beq +
+  sta Frame.row,x
+  bra -
++ lda @l window_wt
+  sta Frame.row
+  .param_dp Frame.row
+  lda Frame.p_x
+  .param pha
+  lda Frame.p_y
+  .param pha
+  lda #$03
+  .param pha
+  lda Frame.p_w
+  .param pha
+  .call print_text
+  .unparam print_text
+  .leave
+  rts
+.endblock
+
 draw_loading_window:
   php
   sep #$20
