@@ -11,9 +11,9 @@ NMI_ROUTINE:
   beq do_screen_dma
   jmp skip_screen_dma
 do_screen_dma:
-  ldx #BG1_TILE_BASE+32*9 ; BG1 rows 9-31 (rows 0-6: logo)
+  ldx #BG1_TILE_BASE+32*7 ; BG1 rows 7-31 (rows 0-6: logo)
   stx $2116
-  .DMA7 #$01, #23*64, #`BG1_TILE_BUF, #<>BG1_TILE_BUF+64*9, #$18
+  .DMA7 #$01, #25*64, #`BG1_TILE_BUF, #<>BG1_TILE_BUF+64*7, #$18
 
   ldx #BG2_TILE_BASE    ; BG2 rows 0-31
   stx $2116

@@ -1,7 +1,33 @@
-; skin assets and the HDMA tables built from them
+; skins: replacement graphics and colors for the menu
 ;
-; Assets that change per scanline come as per-line data; the menu builds
-; the HDMA tables from it:
+; A skin is a sequence of chunks; each replaces one asset of the default
+; skin (skin/default.asm, applied first), so a skin may contain only some
+; assets. Chunk header (12 bytes):
+;   "SNS", version (1), ID (4 characters), payload length (32 bits, LE)
+; Chunks with an unknown ID or version, or with the wrong payload size for
+; their asset, are skipped. A skin file must be smaller than 64 KB.
+;
+; Payloads (version 1):
+;   CGEN  palette: first color (16 bits), number of colors (16 bits),
+;         colors (BGR555); allowed more than once
+;   FONT  font: 256 characters of 16x8 pixels, 4bpp: tiles 2c and 2c+1
+;         (BG1 shows the whole character, BG2 bitplanes 0+1 of the left
+;         half). The space (32) must be blank: the menu fills empty
+;         cells with it, and BG2 shows its left half in the logo lines.
+;   LOGO  logo: 224 tiles (32x7), 8bpp, shown in mode 3 on lines 1-56
+;   GRAD  background gradient: per line CGADD, CGADD, color (BGR555)
+;   CRSR  selection bar: height (1-16), first line relative to the top
+;         line of the selected row (signed), then the lines of the normal
+;         bar and of the active bar (while a value is edited): CGADSUB,
+;         then three COLDATA writes
+;   OAMT  sprites: number of tiles (16 bits, at most 960), number of
+;         sprites (at most 96), 0, the sprite page per line (0-2: tiles
+;         256-511 at OBJ_PAGES_BASE + page * $1000), OAM entries (4 bytes
+;         each), their OAM high table bits (2 bits each), tiles from
+;         OBJ_FIRST_TILE on (32 bytes each). Sprites are 16x16 or 32x32;
+;         only OBJ palettes 4-7 take part in color math (selection bar).
+; GRAD and the sprite pages have one entry per line (GRAD_LINES); the menu
+; builds the HDMA tables from them:
 ; - background gradient: channel 1 writes CGADD twice and CGDATA twice per
 ;   line (build_grad)
 ; - sprite pages: channel 2 writes OBSEL (build_obsel)
@@ -10,6 +36,28 @@
 
 GRAD_LINES      = 224           ; lines of per-line data (gradient, sprite pages)
 BAR_MAX_LINES   = 16            ; selection bar height
+
+; skin file: chunks of a header and a payload (skin.notes)
+SKIN_HEADER_SIZE = 12           ; "SNS", version, ID (4 characters), length (32 bits)
+SKIN_VERSION    = 1
+
+; payload sizes of the assets with a fixed size
+FONT_SIZE       = 256*64        ; 16x8 characters, 4bpp
+LOGO_SIZE       = 224*64        ; 32x7 tiles, 8bpp
+GRAD_SIZE       = GRAD_LINES*4
+OAMT_HEAD_SIZE  = 4 + GRAD_LINES ; tiles, sprites, reserved, sprite pages
+OAMT_MAX_TILES  = (FONT_BASE - OBJ_TILE_BASE) / 16 - OBJ_FIRST_TILE
+OAMT_MAX_SPRITES = 96           ; the menu keeps sprites 96-127 for itself
+
+; header of a chunk of the default skin; the payload ends at "chunk_end"
+; in the block of the chunk
+skin_chunk .segment id
+  .text "SNS"
+  .byte SKIN_VERSION
+  .text \id
+  .dword chunk_end - _payload
+_payload:
+.endsegment
 
 HDMA_GRAD_SIZE  = 1 + 127*4 + 1 + (GRAD_LINES-127)*4 + 1
 HDMA_OBSEL_SIZE = GRAD_LINES*2 + 1 ; worst case: a new page on every line
@@ -229,55 +277,373 @@ Frame .block
   rts
 .endblock
 
-; ---------------------------------------------------------------------------
-; default skin
 
-; gradient lines: count lines of one background color (color 0)
-grad_lines .macro count, color
-  .rept \count
-  .byte 0, 0
-  .word \color
+; all sprites small and below the screen (for both sprite sizes)
+clear_oam:
+  php
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  ldx #$0000
+  stx $2102
+  ldx #128
+- stz $2104     ; X
+  lda #224
+  sta $2104     ; Y
+  stz $2104     ; tile
+  stz $2104     ; attributes
+  dex
+  bne -
+  ldx #32
+- stz $2104     ; X bit 8, size: small
+  dex
+  bne -
+  plp
+  rts
+
+; apply the default skin
+; NMI must be off and the screen in forced blank
+apply_skin:
+  php
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  lda #`default_skin
+  .param pha
+  .param pea, <>default_skin
+  .param pea, default_skin_end - default_skin
+  .call walk_skin
+  .unparam walk_skin
+  lda #$00                      ; normal selection bar
+  .param pha
+  .call set_bar_color
+  .unparam set_bar_color
+  plp
+  rts
+
+; apply the chunks of a skin. Chunks with an unknown ID or version, or a
+; payload of the wrong size for their asset, are skipped; the walk ends at
+; the first header without "SNS" or at a chunk that does not fit.
+; NMI must be off and the screen in forced blank.
+; params: p_src (long): first chunk, p_size: bytes from there (the chunks
+;         must not cross a bank boundary)
+walk_skin .block
+  .virtual #0,d
+Frame .block
+  ptr           .long ?         ; current chunk, then its payload
+  len           .word ?         ; payload length
+  left          .word ?         ; bytes after the current chunk
+  id            .dword ?        ; ID of the current chunk
+  version       .word ?         ; "S", version
+  src           .word ?         ; handlers: source address
+  size          .word ?         ; handlers: size
+  count         .word ?         ; handlers: number of items
+  sprites       .word ?         ; OAMT: number of sprites
+  _             .dstruct SaveJSR
+  p_size        .word ?
+  p_src         .long ?         ; pushed first (bank, then address)
+.endblock
+  .endvirtual
+  .enter
+  sep #$20
+  .as
+  phb
+  lda #$00                      ; the handlers access the PPU and DMA
+  pha                           ; registers with absolute addresses
+  plb
+  rep #$30
+  .al
+  .xl
+  lda Frame.p_src
+  sta Frame.ptr
+  lda Frame.p_src+1
+  sta Frame.ptr+1
+  lda Frame.p_size
+  sta Frame.left
+next:
+  lda Frame.left
+  sec
+  sbc #SKIN_HEADER_SIZE
+  bcc done                      ; no room for a header
+  sta Frame.left
+  lda [Frame.ptr]
+  cmp #'S' | 'N' << 8
+  bne done
+  ldy #$0002
+  lda [Frame.ptr],y
+  sta Frame.version
+  and #$00ff
+  cmp #'S'
+  bne done
+  ldy #$0004
+  lda [Frame.ptr],y
+  sta Frame.id
+  ldy #$0006
+  lda [Frame.ptr],y
+  sta Frame.id+2
+  ldy #$000a
+  lda [Frame.ptr],y             ; length, high word
+  bne done                      ; longer than any skin
+  dey
+  dey
+  lda [Frame.ptr],y             ; length, low word
+  sta Frame.len
+  lda Frame.left
+  sec
+  sbc Frame.len
+  bcc done                      ; the payload does not fit
+  sta Frame.left
+  lda Frame.ptr
+  clc
+  adc #SKIN_HEADER_SIZE
+  sta Frame.ptr                 ; the payload
+  lda Frame.version
+  and #$ff00
+  cmp #SKIN_VERSION << 8
+  bne skip
+  ldx #$0000
+find:
+  lda @l chunk_types,x
+  beq skip                      ; unknown ID
+  cmp Frame.id
+  bne +
+  lda @l chunk_types+2,x
+  cmp Frame.id+2
+  beq found
++ txa
+  clc
+  adc #6
+  tax
+  bra find
+found:
+  jsr (chunk_types+4,x)
+  rep #$30
+  .al
+  .xl
+skip:
+  lda Frame.ptr
+  clc
+  adc Frame.len
+  sta Frame.ptr
+  brl next
+done:
+  plb
+  .leave
+  rts
+
+chunk_types:
+  .text "CGEN"
+  .word <>cgen
+  .text "FONT"
+  .word <>font
+  .text "LOGO"
+  .word <>logo
+  .text "GRAD"
+  .word <>grad
+  .text "CRSR"
+  .word <>crsr
+  .text "OAMT"
+  .word <>oamt
+  .word 0
+
+; The handlers run in the frame of walk_skin with A, X and Y 16-bit; they
+; check the payload (Frame.ptr, Frame.len) and apply it.
+
+; palette: first color, number of colors, colors
+cgen:
+  .al
+  .xl
+  lda [Frame.ptr]               ; first color
+  cmp #256
+  bcs cgen_out
+  ldy #$0002
+  lda [Frame.ptr],y             ; number of colors
+  beq cgen_out
+  sta Frame.count
+  clc
+  adc [Frame.ptr]
+  cmp #257
+  bcs cgen_out                  ; beyond color 255
+  lda Frame.count
+  asl
+  sta Frame.size
+  adc #$0004
+  cmp Frame.len
+  bne cgen_out
+  lda Frame.ptr
+  clc
+  adc #$0004
+  sta Frame.src
+  sep #$20
+  .as
+  lda [Frame.ptr]
+  sta $2121
+  .DMA7 #$00, Frame.size, Frame.ptr+2, Frame.src, #$22
+cgen_out:
+  rts
+
+; font: FONT_SIZE bytes
+font:
+  .al
+  .xl
+  lda Frame.len
+  cmp #FONT_SIZE
+  bne +
+  ldx #FONT_BASE
+  stx $2116
+  .DMA7 #$01, #FONT_SIZE, Frame.ptr+2, Frame.ptr, #$18
++ rts
+
+; logo: LOGO_SIZE bytes
+logo:
+  .al
+  .xl
+  lda Frame.len
+  cmp #LOGO_SIZE
+  bne +
+  ldx #LOGO_BASE
+  stx $2116
+  .DMA7 #$01, #LOGO_SIZE, Frame.ptr+2, Frame.ptr, #$18
++ rts
+
+; background gradient: GRAD_SIZE bytes
+grad:
+  .al
+  .xl
+  lda Frame.len
+  cmp #GRAD_SIZE
+  bne +
+  sep #$20
+  .as
+  lda Frame.ptr+2
+  .param pha
+  .param pei, (Frame.ptr)
+  .call build_grad
+  .unparam build_grad
++ rts
+
+; selection bar: height, first line, 2 * height records of 4 bytes
+crsr:
+  .al
+  .xl
+  lda [Frame.ptr]
+  and #$00ff
+  beq +
+  cmp #BAR_MAX_LINES+1
+  bcs +
+  asl
+  asl
+  asl
+  adc #$0002                    ; (carry clear)
+  cmp Frame.len
+  bne +
+  lda Frame.ptr
+  sta wram(crsr_ptr)
+  lda Frame.ptr+1
+  sta wram(crsr_ptr+1)
++ rts
+
+; sprites: number of tiles (16 bits), number of sprites, 0, sprite page per
+; line, OAM entries (4 bytes each), their OAM high table bits (2 bits each),
+; tiles from OBJ_FIRST_TILE on (32 bytes each)
+oamt:
+  .al
+  .xl
+  lda [Frame.ptr]               ; tiles
+  cmp #OAMT_MAX_TILES+1
+  .jcs oamt_out
+  sta Frame.count
+  ldy #$0002
+  lda [Frame.ptr],y             ; sprites
+  and #$00ff
+  cmp #OAMT_MAX_SPRITES+1
+  .jcs oamt_out
+  sta Frame.sprites
+  asl                           ; size: OAMT_HEAD_SIZE + 4 * sprites
+  asl                           ;  + (sprites + 3) / 4 + 32 * tiles
+  sta Frame.size
+  lda Frame.sprites
+  adc #3                        ; (carry clear)
+  lsr
+  lsr
+  clc
+  adc Frame.size
+  adc #OAMT_HEAD_SIZE
+  sta Frame.size
+  lda Frame.count
+  .rept 5
+  asl
   .endrept
-.endm
+  adc Frame.size                ; (carry clear: at most 30720)
+  cmp Frame.len
+  .jne oamt_out
+; sprite pages
+  lda Frame.ptr
+  clc
+  adc #$0004
+  sta Frame.src
+  sep #$20
+  .as
+  lda Frame.ptr+2
+  .param pha
+  .param pei, (Frame.src)
+  .call build_obsel
+  .unparam build_obsel
+; OAM
+  jsr clear_oam
+  rep #$20
+  .al
+  lda Frame.ptr
+  clc
+  adc #OAMT_HEAD_SIZE
+  sta Frame.src
+  lda Frame.sprites
+  beq +
+  asl
+  asl
+  sta Frame.size
+  ldx #$0000
+  stx $2102
+  .DMA7 #$00, Frame.size, Frame.ptr+2, Frame.src, #$04
+  .al                           ; (.DMA7 restores P)
+  lda Frame.src                 ; OAM high table
+  clc
+  adc Frame.size
+  sta Frame.src
+  lda Frame.sprites
+  clc
+  adc #3
+  lsr
+  lsr
+  sta Frame.size
+  ldx #$0100
+  stx $2102
+  .DMA7 #$00, Frame.size, Frame.ptr+2, Frame.src, #$04
+  .al                           ; (.DMA7 restores P)
+  lda Frame.src
+  clc
+  adc Frame.size
+  sta Frame.src                 ; tiles
+; tiles
++ ldx #OBJ_TILE_BASE+OBJ_FIRST_TILE*16
+  stx $2116
+  .DMA7 #$09, #OAMT_MAX_TILES*32, #`zero, #<>zero, #$18
+  .al                           ; (.DMA7 restores P)
+  lda Frame.count
+  beq oamt_out
+  .rept 5
+  asl
+  .endrept
+  sta Frame.size
+  ldx #OBJ_TILE_BASE+OBJ_FIRST_TILE*16
+  stx $2116
+  .DMA7 #$01, Frame.size, Frame.ptr+2, Frame.src, #$18
+oamt_out:
+  rts
+.endblock
 
   .section databank
-default_grad:
-  .grad_lines 44, $2d60
-  .grad_lines 10, $0000
-  .grad_lines 2, $2d60
-  .grad_lines 11, $0000
-  .grad_lines 11, $0420
-  .grad_lines 11, $0840
-  .grad_lines 11, $0c60
-  .grad_lines 11, $1080
-  .grad_lines 11, $14a0
-  .grad_lines 11, $18c0
-  .grad_lines 11, $1ce0
-  .grad_lines 11, $2100
-  .grad_lines 11, $2520
-  .grad_lines 11, $2940
-  .grad_lines 27, $2d60
-  .grad_lines 2, $0420
-  .grad_lines 11, $2d60
-  .grad_lines 7, $0420
-  .cerror * - default_grad != GRAD_LINES * 4, "default_grad must have GRAD_LINES lines"
-
-default_obsel:
-  .fill GRAD_LINES, 0           ; page 0 on every line
-
-; selection bar: height, first line relative to the top line of the row,
-; then the lines of the normal and of the active bar: CGADSUB, COLDATA for
-; red, green, blue
-default_crsr:
-  .byte 9, 0
-  .byte $33, $20|10, $40|15, $80|31 ; normal: upper border
-  .rept 7
-  .byte $33, $20|10, $40|0, $80|31  ; bar
-  .endrept
-  .byte $73, $20|10, $40|0, $80|31  ; lower border: half
-  .byte $33, $20|22, $40|15, $80|10 ; active: upper border
-  .rept 7
-  .byte $33, $20|22, $40|0, $80|10  ; bar
-  .endrept
-  .byte $73, $20|22, $40|0, $80|10  ; lower border: half
+  .include "skin/default.asm"
   .send databank

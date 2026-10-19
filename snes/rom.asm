@@ -31,12 +31,8 @@ BRAMCODE_MAX    = $f0           ; snescmd block RAM from BRAM_PAYLOAD (and BRAMS
         .logical $c00000
         .include "reset.asm"
         .include "main.asm"
-        .include "font.asm"
-        .include "palette.asm"
         .include "data.asm"
         .include "const.asm"
-        .include "logo.asm"
-        .include "logospr.asm"
         .include "dma.asm"
         .include "filesel.asm"
         .include "pad.asm"

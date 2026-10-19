@@ -134,8 +134,23 @@ setup_gfx:
   sta $2183
   .DMA7 #$08, #$8000, #`zero, #<>zero, #$80
 
-; generate fonts
-  jsr genfonts
+; fill the tile buffers with the space (BG1 tile 64, BG2 tile 128), the
+; only character a skin font must leave blank; in BG2 rows 0-7 with tile 64:
+; the logo lines show rows 0-6 in mode 3, where BG2 is 4bpp
+  rep #$20
+  .al
+  ldx #$1000-2
+- lda #$0040
+  sta @l BG1_TILE_BUF,x
+  cpx #8*64
+  bcc +
+  lda #$0080
++ sta @l BG2_TILE_BUF,x
+  dex
+  dex
+  bpl -
+  sep #$20
+  .as
 
 ; clear BG1 tilemap
   ldx #BG1_TILE_BASE
@@ -147,31 +162,8 @@ setup_gfx:
   stx $2116
   .DMA7 #$09, #$800, #`zero, #<>zero, #$18
 
-; clear sprite tiles (up to the font)
-  ldx #OBJ_TILE_BASE+OBJ_FIRST_TILE*16
-  stx $2116
-  .DMA7 #$09, #(FONT_BASE-OBJ_TILE_BASE-OBJ_FIRST_TILE*16)*2, #`zero, #<>zero, #$18
-
-; all sprites small and below the screen (for both sprite sizes)
-  ldx #$0000
-  stx $2102
-  ldx #128
-- stz $2104     ; X
-  lda #224
-  sta $2104     ; Y
-  stz $2104     ; tile
-  stz $2104     ; attributes
-  dex
-  bne -
-  ldx #32
-- stz $2104     ; X bit 8, size: small
-  dex
-  bne -
-
-; copy logo tiles
-  ldx #LOGO_BASE
-  stx $2116
-  .DMA7 #$01, #224*64, #`logo, #<>logo, #$18
+; all sprites off-screen until the skin places its own
+  jsr clear_oam
 
 ; generate logo tilemap
   ldx #BG1_TILE_BASE
@@ -182,49 +174,10 @@ setup_gfx:
   cpx #$01e0
   bne -
 
-
-; copy sprites tiles
-  ldx #OBJ_TILE_BASE+OBJ_FIRST_TILE*16
-  stx $2116
-  .DMA7 #$01, #LOGOSPR_TILES*32, #`logospr, #<>logospr, #$18
-
-; set OAM tables
-  ldx #$0000
-  stx $2102
-  .DMA7 #$00, #LOGOSPR_SPRITES*4, #`logospr_oam_l, #<>logospr_oam_l, #$04
-  ldx #$0100
-  stx $2102
-  .DMA7 #$00, #(LOGOSPR_SPRITES+3)/4, #`logospr_oam_h, #<>logospr_oam_h, #$04
-
-; set palette
-  stz $2121
-  .DMA7 #$00, #$200, #`palette, #<>palette, #$22
-  stz $2121
-
-; build the HDMA tables in WRAM so we can work "without" the cartridge
-; background gradient
-  lda #`default_grad
-  .param pha
-  .param pea, <>default_grad
-  .call build_grad
-  .unparam build_grad
-
-; sprite pages
-  lda #`default_obsel
-  .param pha
-  .param pea, <>default_obsel
-  .call build_obsel
-  .unparam build_obsel
-
-; selection bar
-  ldx #<>default_crsr
-  stx crsr_ptr
-  lda #`default_crsr
-  sta crsr_ptr+2
-  lda #$00
-  .param pha
-  .call set_bar_color
-  .unparam set_bar_color
+; palette, font, logo, sprites, and the HDMA tables in WRAM (so we can work
+; "without" the cartridge) for the background gradient, the sprite pages
+; and the selection bar
+  jsr apply_skin
 
 ; screen mode
   lda #`wram(hdma_mode)
@@ -250,47 +203,6 @@ setup_gfx:
   ldx #$ffff
   stx window_stack_head
   rts
-
-genfonts:
-  php
-  rep #$10
-  .xl
-  sep #$20
-  .as
-
-; clear VRAM font area
-  ldx #FONT_BASE
-  stx $2116
-  .DMA7 #$09, #$4000, #`zero, #<>zero, #$18
-
-  sep #$10
-  .xs
-  rep #$20
-  .al
-
-; each 2bpp character becomes bitplanes 0+1 of the left half of a 16x8
-; character (4bpp: 32 words)
-  ldx #$01
-  stx $4370
-  ldx #`font
-  stx $4374
-  lda #<>font
-  sta $4372
-  ldx #$18
-  stx $4371
-  lda #FONT_BASE
-- sta $2116
-  ldx #$10
-  stx $4375
-  ldx #$80
-  stx $420b
-  clc
-  adc #$20
-  cmp #FONT_BASE+$2000
-  bne -
-  plp
-  rts
-
 
 video_init:
   sep #$20       ; 8-bit accumulator
