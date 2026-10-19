@@ -36,7 +36,7 @@ CHEAT_NAME_BUF              = $7F0200   ; cheat name being edited
 BG2_TILE_BUF                = $7EA000
 BG1_TILE_BUF                = $7EB000
 
-ROOT_DIR                    = $C10000
+ROOT_DIR                    = $C20000
 
 NUM_CHEATS                  = $CFFFFE
 CHEAT_ADDR                  = $D00000

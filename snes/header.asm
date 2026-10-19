@@ -75,7 +75,7 @@ NMI_8bit:
   .cerror * - hdr_start != $D5, "ROM title must be exactly 21 characters"
   .byte $31             ; rom map + speed (HiROM FastROM)
   .byte $55             ; rom type   SRTC
-  .byte $06             ; rom size   64 kByte
+  .byte $07             ; rom size   128 kByte
   .byte $03             ; sram size  8 kBit
   .byte $01             ; rom region 1 = USA
   .byte $33             ; company id flag

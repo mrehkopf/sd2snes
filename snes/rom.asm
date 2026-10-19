@@ -75,3 +75,11 @@ BRAMCODE_SIZE = * - BRAMCODE_RUN
         .logical $c0ff00
         .include "header.asm"
         .endlogical
+
+; data bank: data that the code reaches with long addresses only
+        * = $10000              ; file offset of $10000 => SNES $c10000
+        .logical $c10000
+        .dsection databank
+        .cerror * > $c20000, format("data bank overflows by $%x bytes", * - $c20000)
+        .fill $c20000 - *, 0    ; the image size must be a power of two
+        .endlogical

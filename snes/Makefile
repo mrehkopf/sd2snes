@@ -18,7 +18,7 @@ menu.bin: $(SRC) | $(DEPDIR)
 	@v=$$($(AS) --version | sed -n 's/.* V\([0-9.]*\).*/\1/p'); \
 	  printf '%s\n%s\n' $(AS_MIN_VERSION) "$$v" | sort -V -C || \
 	  { echo "64tass $(AS_MIN_VERSION) or newer required (found: $$v)"; exit 1; }
-	$(AS) $(ASFLAGS) -b -o $@ -L menu.lst --line-numbers --vice-labels -l menu.lbl \
+	$(AS) $(ASFLAGS) -f -o $@ -L menu.lst --line-numbers --vice-labels -l menu.lbl \
 	  --map menu.map -M $(DEPDIR)/menu.d --make-phony $(SRC)
 	$(CHKSUM) $@
 
