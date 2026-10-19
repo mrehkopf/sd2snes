@@ -1125,7 +1125,9 @@ Frame .block
   tax ; jump table offset
   phx
     lda #$01
-    jsr set_bar_color
+    .param pha
+    .call set_bar_color
+    .unparam set_bar_color
   plx
   rep #$20
   .al
@@ -1145,8 +1147,12 @@ Frame .block
   jsr menu_check_change_hook
 menu_edit_value_skip_reset_chghook:
   phx
-    lda #$0000
-    jsr set_bar_color
+    sep #$20
+    .as
+    lda #$00
+    .param pha
+    .call set_bar_color
+    .unparam set_bar_color
   plx
 menu_edit_value_out:
   .leave

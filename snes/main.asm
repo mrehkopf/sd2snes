@@ -201,20 +201,30 @@ setup_gfx:
   .DMA7 #$00, #$200, #`palette, #<>palette, #$22
   stz $2121
 
-; copy hdma tables so we can work "without" the cartridge
-; palette
-  lda #`wram(hdma_pal)
-  ldx #hdma_pal
-  stx $2181
-  sta $2183
-  .DMA7 #$00, #55, #`hdma_pal_src, #<>hdma_pal_src, #$80
+; build the HDMA tables in WRAM so we can work "without" the cartridge
+; background gradient
+  lda #`default_grad
+  .param pha
+  .param pea, <>default_grad
+  .call build_grad
+  .unparam build_grad
 
-; CG addr for palette
-  lda #`wram(hdma_cg_addr)
-  ldx #hdma_cg_addr
-  stx $2181
-  sta $2183
-  .DMA7 #$00, #227, #`hdma_cg_addr_src, #<>hdma_cg_addr_src, #$80
+; sprite pages
+  lda #`default_obsel
+  .param pha
+  .param pea, <>default_obsel
+  .call build_obsel
+  .unparam build_obsel
+
+; selection bar
+  ldx #<>default_crsr
+  stx crsr_ptr
+  lda #`default_crsr
+  sta crsr_ptr+2
+  lda #$00
+  .param pha
+  .call set_bar_color
+  .unparam set_bar_color
 
 ; screen mode
   lda #`wram(hdma_mode)
@@ -235,13 +245,6 @@ setup_gfx:
   stx $2181
   sta $2183
   .DMA7 #$00, #13, #`hdma_bg2scroll_src, #<>hdma_bg2scroll_src, #$80 ;
-
-; color math
-  lda #`wram(hdma_math)
-  ldx #hdma_math
-  stx $2181
-  sta $2183
-  .DMA7 #$00, #19, #`hdma_math_src, #<>hdma_math_src, #$80 ;
 
 ; initialize window stack
   ldx #$ffff

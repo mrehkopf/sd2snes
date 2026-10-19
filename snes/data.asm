@@ -29,6 +29,8 @@ bar_x:          .byte 0     ; pixel x position of select bar
 bar_y:          .byte 0     ; pixel y position of select bar
 bar_w:          .byte 0     ; bar width
 bar_wl:         .byte 0     ; bar width
+crsr_ptr:       .long 0     ; selection bar asset (CRSR payload)
+bar_yoffset:    .byte 0     ; first bar line relative to the top line of the row (from crsr_ptr)
 filesel_state:  .byte 0     ; menu state (0=file select)
 filesel_dirty:  .byte 0     ; menu dirty (e.g. after state change or when redraw is needed)
 filesel_sel:    .word 0     ; selected item #
@@ -89,29 +91,8 @@ listsel_backup:     .byte 0
 screen_dma_disable: .word 0
 
 ;----------hdma tables in WRAM (must be stable when cartridge is cut off)
-hdma_pal:
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0
-hdma_cg_addr:
-  .byte 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  .byte 0
+hdma_grad:      .fill HDMA_GRAD_SIZE  ; background gradient (channel 1), see build_grad
+hdma_obsel:     .fill HDMA_OBSEL_SIZE ; sprite pages (channel 2), see build_obsel
 hdma_mode:      .byte 0, 0, 0, 0, 0
 hdma_bg1scroll:
   .byte 0
@@ -133,25 +114,8 @@ hdma_bg2scroll:
   .byte 0
   .byte 0, 0
   .byte 0
-hdma_math:
-  .byte 0
-  .byte 0, 0
-  .byte 0
-  .byte 0, 0
-hdma_math_upperborder:
-  .byte 0
-  .byte 0, 0
-hdma_math_selection:
-  .byte 0
-  .byte 0, 0
-hdma_math_lowerborder:
-  .byte 0
-  .byte 0, 0
-  .byte 0
-  .byte 0, 0
-  .byte 0
-  .byte 0, 0
-  .byte 0
+hdma_bar1:      .fill HDMA_BAR_SIZE   ; selection bar (channel 5), see set_bar_color
+hdma_bar2:      .fill HDMA_BAR_SIZE   ; selection bar (channel 6)
 
 hdma_window:
   .byte 0

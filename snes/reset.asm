@@ -30,17 +30,27 @@ skip_screen_dma:
   lda #1
 +
   sta bar_y
+; lines above the bar: bar_y + 1 (the top line of the row) + bar_yoffset,
+; as A + 1 or as 112 + (A - 111)
+  clc
+  adc bar_yoffset
   cmp #113
   bcs lower_half
-  sta hdma_math
+  sta hdma_bar1
+  sta hdma_bar2
   lda #$01
-  sta hdma_math+3
+  sta hdma_bar1+3
+  sta hdma_bar2+3
   bra math_cont
 lower_half:
   sbc #111
-  sta hdma_math+3
+  bpl +         ; at most 127 lines per entry (the bar is off-screen then)
+  lda #127
++ sta hdma_bar1+3
+  sta hdma_bar2+3
   lda #112
-  sta hdma_math
+  sta hdma_bar1
+  sta hdma_bar2
 math_cont:
   lda bar_xl    ; get logical cursor X pos
   asl

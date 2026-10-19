@@ -29,21 +29,21 @@ setup_hdma:
   sty $4302
   sta $4304
 
-  lda #$00      ;A to B; direct; 1x single reg
-  sta $4310     ;ch. 1 for color address
-  lda #$21      ;2121 = CG addr
-  sta $4311     ;dest: CG Address
-  lda #`wram(hdma_cg_addr)
-  ldy #hdma_cg_addr
+  lda #$03      ;A to B; direct; 2x 2x single reg
+  sta $4310     ;ch. 1 for the background gradient
+  lda #$21      ;2121 = CG addr, 2122 = CG data
+  sta $4311
+  lda #`wram(hdma_grad)
+  ldy #hdma_grad
   sty $4312
   sta $4314
 
-  lda #$02      ;A to B; direct; 2x single reg
-  sta $4320     ;ch. 2 for color data
-  lda #$22      ;2122 = CG RAM
-  sta $4321     ;dest: CG RAM
-  lda #`wram(hdma_pal)
-  ldy #hdma_pal
+  lda #$00      ;A to B; direct; 1x single reg
+  sta $4320     ;ch. 2 for sprite pages
+  lda #$01      ;2101 = OBSEL
+  sta $4321
+  lda #`wram(hdma_obsel)
+  ldy #hdma_obsel
   sty $4322
   sta $4324
 
@@ -66,17 +66,26 @@ setup_hdma:
   sta $4344
 
   lda #$01      ;A to B; direct; 1x two reg
-  sta $4350     ;ch. 5 for color math
+  sta $4350     ;ch. 5 for the selection bar
   lda #$31      ;2131 + 2132 = math, color constant
   sta $4351
-  lda #`wram(hdma_math)
-  ldy #hdma_math
+  lda #`wram(hdma_bar1)
+  ldy #hdma_bar1
   sty $4352
   sta $4354
 
+  lda #$02      ;A to B; direct; 2x single reg
+  sta $4360     ;ch. 6 for the selection bar
+  lda #$32      ;2132 = color constant
+  sta $4361
+  lda #`wram(hdma_bar2)
+  ldy #hdma_bar2
+  sty $4362
+  sta $4364
+
   jsr waitblank
-  lda #$3f
-  sta $420c     ;enable HDMA ch. 0-5
+  lda #$7f
+  sta $420c     ;enable HDMA ch. 0-6
   lda #$81      ;VBlank NMI + Auto Joypad Read
   sta $4200     ;enable V-BLANK NMI
   rts

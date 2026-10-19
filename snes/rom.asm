@@ -52,6 +52,7 @@ BRAMCODE_MAX    = $f0           ; snescmd block RAM from BRAM_PAYLOAD (and BRAMS
         .include "savestate.asm"
         .include "near.asm"
         .include "cheat.asm"
+        .include "skin.asm"
 
 ; code that runs from RAM, at its load address
 WRAMCODE_LOAD:

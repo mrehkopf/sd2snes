@@ -732,28 +732,6 @@ right_align:
   plp
   rts
 
-; bar_color: change select bar color
-; params:
-; a: bar "palette" number
-set_bar_color:
-  php
-    sep #$30
-    .as
-    .xs
-    asl
-    asl
-    tax
-    lda @l hdma_bar_color_src,x
-    sta wram(hdma_math+2)
-    lda @l hdma_bar_color_src+1,x
-    sta wram(hdma_math+5)
-    lda @l hdma_bar_color_src+2,x
-    sta wram(hdma_math+8)
-    lda @l hdma_bar_color_src+3,x
-    sta wram(hdma_math+11)
-  plp
-  rts
-
 ; disable screen update (DMA from WRAM to VRAM)
 disable_screen_update:
   inc screen_dma_disable
