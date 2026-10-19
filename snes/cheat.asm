@@ -2180,7 +2180,6 @@ loop:
   jsr options
   bra redraw
 + lda pad_b
-  ora pad_x
   beq +
   jsr pop_window                ; discard the changes
   .leave
@@ -2686,7 +2685,7 @@ loop:
   ldx Frame.pos
   sta Frame.digits,x
   bra cursor_right
-+ lda pad_b
++ lda pad_x
   beq +
   ldx Frame.pos                 ; delete the digit at or before the cursor
   lda Frame.digits,x
@@ -2728,7 +2727,7 @@ toggle:
   eor #CHEAT_CODEFMT_GG
   sta Frame.fmt
   brl redraw
-+ lda pad_x
++ lda pad_b
   beq +
   jsr pop_window                ; cancelled
   .leave
@@ -3120,7 +3119,7 @@ key_moved:
   lda #' '
   jsr insert
   brl redraw
-+ lda pad_b
++ lda pad_x
   beq +
   jsr delete
   brl redraw
@@ -3148,7 +3147,7 @@ key_moved:
   inx
   stx Frame.cur
   brl redraw
-+ lda pad_x
++ lda pad_b
   beq +
   jsr pop_window
   .leave
