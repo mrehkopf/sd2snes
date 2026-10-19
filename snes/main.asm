@@ -140,22 +140,38 @@ setup_gfx:
 ; clear BG1 tilemap
   ldx #BG1_TILE_BASE
   stx $2116
-  .DMA7 #$09, #$1000, #`zero, #<>zero, #$18
+  .DMA7 #$09, #$800, #`zero, #<>zero, #$18
 
 ; clear BG2 tilemap
   ldx #BG2_TILE_BASE
   stx $2116
-  .DMA7 #$09, #$1000, #`zero, #<>zero, #$18
+  .DMA7 #$09, #$800, #`zero, #<>zero, #$18
 
-; clear OAM tables
+; clear sprite tiles (up to the font)
+  ldx #OBJ_TILE_BASE+OBJ_FIRST_TILE*16
+  stx $2116
+  .DMA7 #$09, #(FONT_BASE-OBJ_TILE_BASE-OBJ_FIRST_TILE*16)*2, #`zero, #<>zero, #$18
+
+; all sprites small and below the screen (for both sprite sizes)
   ldx #$0000
   stx $2102
-  .DMA7 #$08, #$220, #`zero, #<>zero, #$04
+  ldx #128
+- stz $2104     ; X
+  lda #224
+  sta $2104     ; Y
+  stz $2104     ; tile
+  stz $2104     ; attributes
+  dex
+  bne -
+  ldx #32
+- stz $2104     ; X bit 8, size: small
+  dex
+  bne -
 
 ; copy logo tiles
-  ldx #$2000
+  ldx #LOGO_BASE
   stx $2116
-  .DMA7 #$01, #$4000, #`logo, #<>logo, #$18
+  .DMA7 #$01, #224*64, #`logo, #<>logo, #$18
 
 ; generate logo tilemap
   ldx #BG1_TILE_BASE
@@ -168,17 +184,17 @@ setup_gfx:
 
 
 ; copy sprites tiles
-  ldx #OAM_TILE_BASE
+  ldx #OBJ_TILE_BASE+OBJ_FIRST_TILE*16
   stx $2116
-  .DMA7 #$01, #$500, #`logospr, #<>logospr, #$18
+  .DMA7 #$01, #LOGOSPR_TILES*32, #`logospr, #<>logospr, #$18
 
 ; set OAM tables
   ldx #$0000
   stx $2102
-  .DMA7 #$00, #$60, #`oam_data_l, #<>oam_data_l, #$04
+  .DMA7 #$00, #LOGOSPR_SPRITES*4, #`logospr_oam_l, #<>logospr_oam_l, #$04
   ldx #$0100
   stx $2102
-  .DMA7 #$00, #$09, #`oam_data_h, #<>oam_data_h, #$04
+  .DMA7 #$00, #(LOGOSPR_SPRITES+3)/4, #`logospr_oam_h, #<>logospr_oam_h, #$04
 
 ; set palette
   stz $2121
@@ -239,33 +255,27 @@ genfonts:
   sep #$20
   .as
 
-; clear VRAM font areas
-  ldx #$0000
+; clear VRAM font area
+  ldx #FONT_BASE
   stx $2116
   .DMA7 #$09, #$4000, #`zero, #<>zero, #$18
-
-  ldx #$4000
-  stx $2116
-  .DMA7 #$09, #$2000, #`zero, #<>zero, #$18
 
   sep #$10
   .xs
   rep #$20
   .al
 
-  stz $2116
-  stz $2117
+; each 2bpp character becomes bitplanes 0+1 of the left half of a 16x8
+; character (4bpp: 32 words)
   ldx #$01
   stx $4370
   ldx #`font
   stx $4374
   lda #<>font
   sta $4372
-  lda #$0010
-  sta $4375
   ldx #$18
   stx $4371
-  lda #$0000
+  lda #FONT_BASE
 - sta $2116
   ldx #$10
   stx $4375
@@ -273,21 +283,7 @@ genfonts:
   stx $420b
   clc
   adc #$20
-  cmp #$2000
-  bne -
-  ldx #`font
-  stx $4374
-  lda #<>font
-  sta $4372
-  lda #$4000
-- sta $2116
-  ldx #$10
-  stx $4375
-  ldx #$80
-  stx $420b
-  clc
-  adc #$10
-  cmp #$5000
+  cmp #FONT_BASE+$2000
   bne -
   plp
   rts
@@ -300,14 +296,12 @@ video_init:
   .xl
   lda #$03      ; mode 3, mode 5 via HDMA
   sta $2105
-  lda #$58      ; Tilemap addr 0xB000
-  ora #$02      ; SC size 32x64
+  lda #BG1_TILE_BASE>>8 ; tilemap address, SC size 32x32
   sta $2107     ; for BG1
-  lda #$50      ; Tilemap addr 0xA000
-  ora #$02      ; SC size 32x64
+  lda #BG2_TILE_BASE>>8 ; tilemap address, SC size 32x32
   sta $2108     ; for BG2
-  lda #$40      ; chr base addr:
-  sta $210b     ; BG1=0x0000, BG2=0x8000
+  lda #(FONT_BASE>>12)*$11 ; chr base addr:
+  sta $210b     ; BG1 and BG2 = FONT_BASE
   lda #$13      ; enable BG1+BG2+OBJ
   sta $212c     ; BG Main
   lda #$13      ; enable BG1+BG2+OBJ
@@ -367,7 +361,7 @@ snes_init:
   stz $420c
   lda #$8f
   sta $2100     ; INIDISP: force blank
-  lda #$03      ; 8x8+16x16; name=0; base=3
+  lda #OBSEL_PAGE0 ; 16x16+32x32; name=0; base=OBJ_TILE_BASE
   sta $2101
   stz $2102
   stz $2103

@@ -117,34 +117,6 @@ hdma_bar_color_src:
   .byte $2a, $4f, $9f, $40 ; normal color
   .byte $36, $4f, $8a, $40 ; highlight color (active editing)
 
-oam_data_l:
-  .byte 88, 56, 0, $08
-  .byte 96, 56, 1, $08
-  .byte 104, 56, 2, $08
-  .byte 112, 56, 3, $08
-  .byte 120, 56, 4, $08
-  .byte 128, 56, 5, $08
-  .byte 136, 56, 6, $08
-  .byte 88, 64, 7, $08
-  .byte 96, 64, 8, $08
-  .byte 104, 64, 9, $08
-  .byte 112, 64, 10, $08
-  .byte 88, 72, 14, $08
-  .byte 96, 72, 15, $08
-  .byte 157, 56, 21, $0a
-  .byte 172, 56, 22, $0c
-  .byte 180, 56, 23, $0c
-  .byte 172, 64, 24, $0c
-  .byte 172, 72, 26, $0c
-  .byte 172, 80, 28, $0c
-  .byte 172, 88, 30, $0c
-  .byte 172, 96, 32, $0c
-  .byte 194, 56, 34, $0e
-  .byte 194, 64, 35, $0e
-  .byte 194, 72, 36, $0e
-oam_data_h:
-  .byte 0, 0, 0, 0, 0, 0, 0, 0, 0
-
 space64:
   .byte $20, $20, $20, $20, $20, $20, $20, $20
   .byte $20, $20, $20, $20, $20, $20, $20, $20
@@ -466,13 +438,3 @@ cheat_kb_keys:              .text "ABCDEFGHIJKLM", "NOPQRSTUVWXYZ"
 cheat_kb_keys_end:
 
 text_spcid:     .text "SNES-SPC700"
-gfxptr_info:    .text "_GFXPTR_"
-                .word <>font
-                .word <>logo
-                .word <>logospr
-                .word <>hdma_math_src
-                .word <>hdma_bar_color_src
-                .word <>hdma_pal_src
-                .word <>oam_data_l
-                .word <>oam_data_h
-                .word <>palette

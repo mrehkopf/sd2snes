@@ -60,6 +60,7 @@ bg2:
   beq out
   rol
   asl
+  asl                           ; BG2 tile: 4 * char (see FONT_BASE)
   ora Frame.attr
   sta @l BG2_TILE_BUF,x
   iny

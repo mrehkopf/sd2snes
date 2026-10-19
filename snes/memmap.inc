@@ -3,10 +3,21 @@ APUIO1                      = $2141
 APUIO2                      = $2142
 APUIO3                      = $2143
 
-BG1_TILE_BASE               = $5800
-BG2_TILE_BASE               = $5000
-
-OAM_TILE_BASE               = $6000
+; VRAM layout (word addresses)
+LOGO_BASE                   = $0000     ; logo tiles (8bpp), see FONT_BASE
+BG1_TILE_BASE               = $1C00     ; BG1 tilemap, 32x32
+BG2_TILE_BASE               = $2000     ; BG2 tilemap, 32x32
+OBJ_TILE_BASE               = $2000     ; sprite tiles; 0-63 lie under the BG2 tilemap
+OBJ_FIRST_TILE              = 64        ; first usable sprite tile
+OBJ_PAGES_BASE              = $3000     ; sprite tiles 256-511, three pages of $1000
+FONT_BASE                   = $6000     ; font, 4bpp, 16x8 per character
+OBSEL_PAGE0                 = $60 | (OBJ_TILE_BASE >> 13) ; 16x16+32x32, tiles 256-511 at OBJ_PAGES_BASE
+; BG1 and BG2 read the font from FONT_BASE: BG1 (4bpp) uses tile 2 * char,
+; BG2 (2bpp) tile 4 * char (bitplanes 0+1 of the left half). In mode 3, BG1
+; (8bpp) has the same base, and the logo tiles $100-$1DF wrap around to
+; LOGO_BASE.
+        .cerror (FONT_BASE + $100 * 32) & $7fff != LOGO_BASE, "logo tiles must follow the font base (with wrap-around)"
+        .cerror OBJ_TILE_BASE + $1000 != OBJ_PAGES_BASE, "OBSEL name select 0 must point at OBJ_PAGES_BASE"
 
 MCU_CMD                     = $002A00
 SNES_CMD                    = $002A02
