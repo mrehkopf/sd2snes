@@ -31,6 +31,7 @@ bar_w:          .byte 0     ; bar width
 bar_wl:         .byte 0     ; bar width
 crsr_ptr:       .long 0     ; selection bar asset (CRSR payload)
 bar_yoffset:    .byte 0     ; first bar line relative to the top line of the row (from crsr_ptr)
+skin_skip:      .byte 0     ; skip the skin from the SD card (SELECT held at power-on)
 filesel_state:  .byte 0     ; menu state (0=file select)
 filesel_dirty:  .byte 0     ; menu dirty (e.g. after state change or when redraw is needed)
 filesel_sel:    .word 0     ; selected item #

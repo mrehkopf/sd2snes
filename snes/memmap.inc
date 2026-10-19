@@ -48,6 +48,8 @@ BG2_TILE_BUF                = $7EA000
 BG1_TILE_BUF                = $7EB000
 
 ROOT_DIR                    = $C20000
+SKIN_ADDR                   = $F00000     ; skin file, loaded by the MCU (SRAM_SKIN_ADDR)
+SKIN_MAX_SIZE               = $FFFF
 
 NUM_CHEATS                  = $CFFFFE
 CHEAT_ADDR                  = $D00000

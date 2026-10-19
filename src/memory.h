@@ -44,7 +44,9 @@ extern char current_filename[];
 #define SRAM_NUM_CHEATS              (0xCFFFFEL)
 #define SRAM_CHEAT_ADDR              (0xD00000L) /* banks D0-DF for 2048 cheats per YML file */
 
-#define SRAM_SKIN_ADDR               (0xF00000L)
+#define SRAM_SKIN_ADDR               (0xF00000L) /* skin file, see snes/skin.asm */
+#define SKIN_MAX_SIZE                (0xFFFFL)
+#define SKIN_BASEDIR                 ("/sd2snes/skins/")
 
 #define SRAM_SPC_DATA_ADDR           (0xFD0000L)
 #define SRAM_SPC_HEADER_ADDR         (0xFE0000L)
@@ -88,6 +90,7 @@ uint32_t load_spc(uint8_t* filename, uint32_t spc_data_addr, uint32_t spc_header
 uint32_t migrate_and_load_srm(uint8_t *filename, uint32_t base_addr);
 uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr, uint8_t flags);
+void load_skin(void);
 uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr);
 uint32_t load_bootrle(uint32_t base_addr);
 void load_dspx(const uint8_t* filename, uint8_t st0010);

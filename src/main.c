@@ -208,6 +208,7 @@ int main(void) {
     fpga_dspx_reset(1);
     uart_putc('(');
     load_rom((uint8_t*)MENU_FILENAME, SRAM_MENU_ADDR, 0);
+    load_skin();
     /* force memory size + mapper */
     set_rom_mask(0x3fffff);
     set_mapper(0x7);

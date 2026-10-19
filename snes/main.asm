@@ -69,6 +69,10 @@ coldboot:       ; Regular, cold-start init
   .as
   jsr killdma
   jsr clear_wram
+  jsr read_pad_serial ; SELECT held: don't apply the skin from the SD card
+  xba           ; BYsSudlr
+  and #$20
+  sta skin_skip
   jsr apu_ram_init
   jsr waitblank
   jsr snes_init
@@ -77,6 +81,8 @@ coldboot:       ; Regular, cold-start init
   jsr colortest
   jsr video_init
   jsr pad_init
+  lda skin_skip ; a SELECT held at power-on doesn't open the favorites
+  sta pad1mem+1
   jsr setup_hdma
   jsr detect_ultra16
   jsr detect_satellaview

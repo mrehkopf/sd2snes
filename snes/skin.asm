@@ -5,7 +5,8 @@
 ; assets. Chunk header (12 bytes):
 ;   "SNS", version (1), ID (4 characters), payload length (32 bits, LE)
 ; Chunks with an unknown ID or version, or with the wrong payload size for
-; their asset, are skipped. A skin file must be smaller than 64 KB.
+; their asset, are skipped. The MCU loads the skin file (smaller than
+; 64 KB) to SKIN_ADDR, followed by a zero word or the end of the bank.
 ;
 ; Payloads (version 1):
 ;   CGEN  palette: first color (16 bits), number of colors (16 bits),
@@ -302,7 +303,7 @@ clear_oam:
   plp
   rts
 
-; apply the default skin
+; apply the default skin, then the skin from the SD card (unless skin_skip)
 ; NMI must be off and the screen in forced blank
 apply_skin:
   php
@@ -316,6 +317,15 @@ apply_skin:
   .param pea, default_skin_end - default_skin
   .call walk_skin
   .unparam walk_skin
+  lda @l skin_skip
+  bne +
+  lda #`SKIN_ADDR
+  .param pha
+  .param pea, <>SKIN_ADDR
+  .param pea, SKIN_MAX_SIZE
+  .call walk_skin
+  .unparam walk_skin
++
   lda #$00                      ; normal selection bar
   .param pha
   .call set_bar_color

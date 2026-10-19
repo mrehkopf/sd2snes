@@ -671,6 +671,50 @@ uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr, uint8_t flags)
   return (uint32_t)filesize;
 }
 
+/* Load the menu skin (CFG.skin_name, a file in SKIN_BASEDIR or a full path)
+   to SRAM_SKIN_ADDR, followed by a zero word. The menu applies the chunks
+   it finds there on top of its built-in skin, so without a skin, or if it
+   can't be loaded completely, only the zero word is written (at
+   SRAM_SKIN_ADDR). */
+void load_skin(void) {
+  char path[256];
+  uint32_t size = 0, loaded = 0;
+  UINT bytes_read;
+  if(CFG.skin_name[0]) {
+    if(CFG.skin_name[0] == '/') {
+      snprintf(path, sizeof(path), "%s", CFG.skin_name);
+    } else {
+      snprintf(path, sizeof(path), "%s%s", SKIN_BASEDIR, CFG.skin_name);
+    }
+    file_open((uint8_t*)path, FA_READ);
+    if(file_res) {
+      printf("load_skin: could not open %s, res=%d\n", path, file_res);
+    } else {
+      size = file_handle.fsize;
+      if(size > SKIN_MAX_SIZE) {
+        printf("load_skin: %s is too large (%lu bytes)\n", path, size);
+      } else {
+        set_mcu_addr(SRAM_SKIN_ADDR);
+        for(;;) {
+          ff_sd_offload=1;
+          sd_offload_tgt=0;
+          bytes_read = file_read();
+          if(file_res || !bytes_read) break;
+          loaded += bytes_read;
+        }
+        if(file_res || loaded != size) {
+          printf("load_skin: read error in %s, res=%d\n", path, file_res);
+        }
+      }
+      if(file_res || loaded != size) {
+        size = 0;
+      }
+      file_close();
+    }
+  }
+  sram_writeshort(0, SRAM_SKIN_ADDR + size);
+}
+
 uint32_t migrate_and_load_srm(uint8_t* filename, uint32_t base_addr) {
   uint8_t srmfile[256] = SAVE_BASEDIR;
   append_file_basename((char*)srmfile, (char*)filename, ".srm", sizeof(srmfile));

@@ -8,6 +8,39 @@ pad_init:
   plp
   rts
 
+; read controllers 1 and 2 directly (with auto joypad read off), e.g. at
+; power-on before NMI is enabled
+; returns: A (16-bit): the buttons of both, as in $4218 (BYsSudlrAXLR0000)
+read_pad_serial:
+  php
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  lda #$01
+  sta @l $004016  ; latch the buttons
+  dec a
+  sta @l $004016
+  ldy #$0000
+  ldx #16
+- lda @l $004016  ; bit 0: next button of controller 1
+  ora @l $004017  ; (controller 2)
+  lsr
+  rep #$20
+  .al
+  tya
+  rol
+  tay
+  sep #$20
+  .as
+  dex
+  bne -
+  rep #$20
+  .al
+  tya
+  plp
+  rts
+
 read_pad:
   php
   phb
