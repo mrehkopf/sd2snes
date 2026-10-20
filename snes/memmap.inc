@@ -178,6 +178,7 @@ CFG_SGB_CLOCK_FIX               = CFG_ADDR+$00B1
 CFG_SGB_BIOS_VERSION            = CFG_ADDR+$00B2
 CFG_ENABLE_AUTOSAVE             = CFG_ADDR+$00B3
 CFG_ENABLE_AUTOSAVE_MSU1        = CFG_ADDR+$00B4
+CFG_BUTTON_STYLE                = CFG_ADDR+$00B5
 
 BCDTime .struct
   s1                             .byte ?

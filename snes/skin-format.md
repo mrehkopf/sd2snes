@@ -121,13 +121,33 @@ bitplanes 0+1, then rows of bitplanes 2+3), the left half, then the right half.
 - Text uses colors 1-3 in the left half of the cell. On the even columns (BG2, 2bpp) only bitplanes
   0+1 of the left half are visible, so a character that should look the same in every column must
   stay in colors 0-3 and in the left 8 pixels.
-- Colors 4-15 and the right half are only visible on BG1; they are meant for button graphics.
+- Characters 0-15 are the controller buttons (see "Buttons" below); they use colors 4-15 and the
+  right half, which only BG1 shows.
 - The character set is CP1252, as the firmware converts file names to it.
 - Characters 0 and 1 end a string and are never printed as text.
 - Character 32 (space) must be blank: the menu fills empty cells with it, and BG2 shows its left
   half next to the logo.
 
 Like `CGEN`, a skin may contain several `FONT` chunks, each replacing its range of characters.
+
+### Buttons
+
+The menu shows controller buttons in its help texts with characters 0-15, 16x8 pixels each, always
+on BG1 (an odd column; on an even one it prints two letters instead). Each button uses colors 1-15
+of its BG1 palette (color 0 is transparent):
+
+| Character | Button | Palette (CGRAM) |
+| --- | --- | --- |
+| 0, 2 | A, X (Japan/Europe: red, blue) | 2 (colors 4-15: 36-47) |
+| 1, 3 | B, Y (Japan/Europe: yellow, green) | 4 (colors 1-15: 65-79) |
+| 4-7 | A, B, X, Y (USA) | 3 (colors 4-15: 52-63) |
+| 8-11 | L, R, START, SELECT | 3 |
+| 12-15 | up, down, left, right | 3 |
+
+Palettes 2 and 3 keep text colors 1-3, so their buttons use colors 4-15 only. The "Buttons" setting
+in the menu (Configuration → Skin; `ButtonStyle` in config.yml) chooses between characters 0-3 and
+4-7 for A, B, X and Y. The default skin has the buttons in their own `FONT` chunk (characters
+0-15) and `CGEN` chunks, so a skin can replace the text font without them.
 
 ### `LOGO`: logo
 

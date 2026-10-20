@@ -1667,9 +1667,14 @@ menu_check_change_hook:
     ora Frame.chgfunc_bank
     clc
     beq menu_check_change_hook_exit
+  ; the function may change X and Y (the kv8 dialog keeps its entry in Y)
+    rep #$10
+    .xl
+    phx
+    phy
   ; push long return address for after function call
     phk
-    per menu_check_change_hook_exit-1
+    per menu_check_change_hook_ret-1
   ; push long address of changeHook function
     lda Frame.chgfunc_bank
     pha
@@ -1679,6 +1684,11 @@ menu_check_change_hook:
     pha
     lda Frame.work_value
     rtl ; call the changeHook function
+menu_check_change_hook_ret:
+    rep #$10
+    .xl
+    ply
+    plx
 menu_check_change_hook_exit:
   plp
   rts

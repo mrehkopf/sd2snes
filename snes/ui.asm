@@ -2,6 +2,7 @@
 ; print a string in mode 5 using pseudo-8x8 tiles on two BG layers:
 ; even columns go to BG2, odd columns to BG1.
 ; characters 0 and 1 are considered "end of string".
+; BUTTON_CODE and a code show a button over two columns (see print.inc).
 ; re-entrant: everything lives in the stack frame, any D and DB
 ; params (push order): p_src (long: bank, then address), p_x, p_y, p_pal,
 ; p_count (only these characters at most)
@@ -14,6 +15,7 @@ Frame .block
   attr          .word ?         ; palette and priority bits of the tiles
   count         .word ?         ; p_count
   offset        .word ?         ; column, then offset in the tile buffers
+  button        .word ?         ; entry of a button in button_table
   _             .dstruct SaveJSR
   p_count       .byte ?         ; maximum number of characters, pushed last
   p_pal         .byte ?         ; palette
@@ -59,6 +61,8 @@ bg2:
   and #$007f
   beq out
   rol
+  cmp #BUTTON_CODE
+  beq bg2_button
   asl
   asl                           ; BG2 tile: 4 * char (see FONT_BASE)
   ora Frame.attr
@@ -72,9 +76,12 @@ bg1:
   and #$007f
   beq out
   rol
+  cmp #BUTTON_CODE
+  beq bg1_button
   asl
   ora Frame.attr
   sta @l BG1_TILE_BUF,x
+next:
   inx
   inx
   iny
@@ -87,7 +94,109 @@ out:
   .leave
   tya
   rts
+
+; a button on an even column (BG2, 2bpp): its two characters of text
+bg2_button:
+  .al
+  .xl
+  jsr find_button
+  bcs out                       ; doesn't fit
+  phx
+  ldx Frame.button
+  lda @l button_table+ButtonEntry.text,x
+  plx
+  pha
+  and #$00ff
+  asl
+  asl
+  ora Frame.attr
+  sta @l BG2_TILE_BUF,x
+  pla
+  xba
+  and #$00ff
+  asl
+  ora Frame.attr
+  sta @l BG1_TILE_BUF,x
+  iny                           ; the code; continue on the next even column
+  bra next
+
+; a button on an odd column: the button graphics on BG1; their right half
+; covers the next column (BG2), which gets a space
+bg1_button:
+  .al
+  .xl
+  jsr find_button
+  bcs out                       ; doesn't fit
+  phx
+  ldx Frame.button
+  lda @l CFG_BUTTON_STYLE
+  and #$00ff
+  beq +
+  inx                           ; US style: the second tile
+  inx
++ lda @l button_table+ButtonEntry.tiles,x
+  plx
+  sta @l BG1_TILE_BUF,x
+  lda #4 * ' '
+  ora Frame.attr
+  sta @l BG2_TILE_BUF+2,x
+  inx                           ; continue on the next odd column
+  inx
+  iny
+  iny
+  cpy Frame.count
+  beq out
+  brl bg1
+
+; Frame.button: the entry in button_table of the button whose code follows
+; the BUTTON_CODE at Y (the last entry for an unknown code); carry set if
+; there is no code or not enough room (p_count)
+find_button:
+  iny
+  cpy Frame.count
+  bcs +
+  lda [Frame.p_src],y
+  and #$00ff
+  cmp #2                        ; 0 or 1: end of string
+  bcc +
+  sta Frame.button              ; (the code, for now)
+  phx
+  ldx #$0000
+- lda @l button_table+ButtonEntry.code,x
+  and #$00ff
+  beq found                     ; end of the table: unknown button
+  cmp Frame.button
+  beq found
+  txa
+  clc
+  adc #BUTTON_ENTRY_SIZE
+  tax
+  bra -
+found:
+  stx Frame.button
+  plx
+  dey
+  clc
+  rts
++ dey
+  sec
+  rts
 .endblock
+
+button_table:
+  .button_entry 'A', 0, 2, 4, 3, "A "
+  .button_entry 'B', 1, 4, 5, 3, "B "
+  .button_entry 'X', 2, 2, 6, 3, "X "
+  .button_entry 'Y', 3, 4, 7, 3, "Y "
+  .button_entry 'L', 8, 3, 8, 3, "L "
+  .button_entry 'R', 9, 3, 9, 3, "R "
+  .button_entry 'S', 10, 3, 10, 3, "ST"
+  .button_entry 's', 11, 3, 11, 3, "SE"
+  .button_entry 'u', 12, 3, 12, 3, "Up"
+  .button_entry 'd', 13, 3, 13, 3, "Dn"
+  .button_entry 'l', 14, 3, 14, 3, "Lt"
+  .button_entry 'r', 15, 3, 15, 3, "Rt"
+  .button_entry 0, '?', 0, '?', 0, "??" ; end: unknown buttons
 
 ; draw the current window (window_x/y/w/h) with its title (window_taddr/
 ; window_tbank, none if the string is empty)

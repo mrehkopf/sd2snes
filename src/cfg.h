@@ -25,6 +25,7 @@
 #define CFG_CX4_SPEED                    ("Cx4Speed")
 #define CFG_GSU_SPEED                    ("GSUSpeed")
 #define CFG_SKIN_NAME                    ("SkinName")
+#define CFG_BUTTON_STYLE                 ("ButtonStyle")
 #define CFG_CONTROL_TYPE                 ("ControlType")
 #define CFG_MSU_VOLUME_BOOST             ("MSUVolumeBoost")
 #define CFG_1CHIP_TRANSIENT_FIXES        ("1CHIPTransientFixes")
@@ -96,6 +97,7 @@ typedef struct __attribute__ ((__packed__)) _cfg_block {
   uint8_t  sgb_bios_version;        /* SGB bios firmware version (defined number loads: sgbX_boot.bin and sgbX_snes.bin) */
   uint8_t  enable_autosave;         /* enable automatic saving when SRAM contents change */
   uint8_t  enable_autosave_msu1;    /* enable opportunistic auto saving when SRAM contents change for MSU1 games */
+  uint8_t  button_style;            /* buttons in the menu (0: Japan/Europe, 1: USA) */
 } cfg_t;
 
 int cfg_save(void);

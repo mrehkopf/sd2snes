@@ -26,6 +26,7 @@ cfg_t CFG_DEFAULT = {
   .hide_extensions = 0,
   .cx4_speed = 0,
   .skin_name = "",
+  .button_style = 0,
   .control_type = 0,
   .msu_volume_boost = 0,
   .onechip_transient_fixes = 0,
@@ -140,6 +141,8 @@ int cfg_save() {
   f_printf(&file_handle, "%s: %d\n", CFG_LED_BRIGHTNESS, CFG.led_brightness);
   f_printf(&file_handle, "#  %s: Menu skin, a file in %s or a full path (empty: built-in skin)\n", CFG_SKIN_NAME, SKIN_BASEDIR);
   f_printf(&file_handle, "%s: \"%s\"\n", CFG_SKIN_NAME, CFG.skin_name);
+  f_printf(&file_handle, "#  %s: Buttons shown in the menu (0: Japan/Europe, 1: USA)\n", CFG_BUTTON_STYLE);
+  f_printf(&file_handle, "%s: %d\n", CFG_BUTTON_STYLE, CFG.button_style);
   f_puts("\n# Enhancement chip settings\n", &file_handle);
   f_printf(&file_handle, "#  %s: Cx4 core speed (0: original, 1: fast, all instructions are single cycle)\n", CFG_CX4_SPEED);
   f_printf(&file_handle, "%s: %d\n", CFG_CX4_SPEED, CFG.cx4_speed);
@@ -221,6 +224,9 @@ int cfg_load() {
     }
     if(yaml_get_itemvalue(CFG_ENABLE_RST_TO_MENU, &tok)) {
       CFG.reset_to_menu = tok.boolvalue ? 1 : 0;
+    }
+    if(yaml_get_itemvalue(CFG_BUTTON_STYLE, &tok)) {
+      CFG.button_style = tok.longvalue ? 1 : 0;
     }
     if(yaml_get_itemvalue(CFG_SKIN_NAME, &tok)) {
       strncpy((char*)CFG.skin_name, tok.stringvalue, sizeof(CFG.skin_name) - 1);

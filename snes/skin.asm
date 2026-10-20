@@ -697,6 +697,14 @@ skin_menu_builtin:
   jsr skin_set
   rtl
 
+; change hook of "Buttons": show the new style in the status bar
+mfunc_chg_button_style:
+  .as
+  .xl
+  sta @l CFG_BUTTON_STYLE
+  jsr filesel_statusbar
+  rtl
+
 ; select a skin (A: SKIN_SRC_SELECTED, the file in MCU_PARAM, or
 ; SKIN_SRC_BUILTIN) and apply it
 skin_set:

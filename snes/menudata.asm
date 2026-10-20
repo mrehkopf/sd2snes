@@ -47,6 +47,7 @@ menu_enttab_skin:
 ; ENTRIES
   .menu_func_close mtext_skin_choose, skin_menu_choose, mdesc_skin_choose
   .menu_func mtext_skin_builtin, skin_menu_builtin, mdesc_skin_builtin
+  .menu_value mtext_skin_buttons, kv_button_style, OPTTYPE_KVBYTE, CFG_BUTTON_STYLE, mdesc_skin_buttons, mfunc_chg_button_style
   .menu_end
 
 menu_enttab_bsx:
@@ -259,6 +260,11 @@ mfunc_chg_ledbright:
 kv_bsx_timesource:
   .kv $0000, text_rtc
   .kv $0001, text_custom
+  .kv_end
+
+kv_button_style:
+  .kv $0000, text_buttons_jp
+  .kv $0001, text_buttons_us
   .kv_end
 
 kv_onoff:
