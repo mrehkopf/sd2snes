@@ -1,5 +1,5 @@
-; the default skin, in the skin file format (see skin.asm): one chunk per
-; asset
+; the default skin, in the skin file format (see skin-format.md): one chunk
+; per asset
 
 ; gradient lines: count lines of one background color (color 0)
 grad_lines .macro count, color

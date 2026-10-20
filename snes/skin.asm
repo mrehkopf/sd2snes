@@ -1,34 +1,14 @@
 ; skins: replacement graphics and colors for the menu
 ;
-; A skin is a sequence of chunks; each replaces one asset of the default
-; skin (skin/default.asm, applied first), so a skin may contain only some
-; assets. Chunk header (12 bytes):
-;   "SNS", version (1), ID (4 characters), payload length (32 bits, LE)
-; Chunks with an unknown ID or version, or with the wrong payload size for
+; The file format is described in skin-format.md. A skin is a sequence of
+; chunks ("SNS", version, ID, length, payload), each replacing one asset of
+; the default skin (skin/default.asm, applied first). walk_skin applies them;
+; chunks with an unknown ID or version, or with the wrong payload size for
 ; their asset, are skipped. The MCU loads the skin file (smaller than
 ; 64 KB) to SKIN_ADDR, followed by a zero word or the end of the bank.
 ;
-; Payloads (version 1):
-;   CGEN  palette: first color (16 bits), number of colors (16 bits),
-;         colors (BGR555); allowed more than once
-;   FONT  font: 256 characters of 16x8 pixels, 4bpp: tiles 2c and 2c+1
-;         (BG1 shows the whole character, BG2 bitplanes 0+1 of the left
-;         half). The space (32) must be blank: the menu fills empty
-;         cells with it, and BG2 shows its left half in the logo lines.
-;   LOGO  logo: 224 tiles (32x7), 8bpp, shown in mode 3 on lines 1-56
-;   GRAD  background gradient: per line CGADD, CGADD, color (BGR555)
-;   CRSR  selection bar: height (1-16), first line relative to the top
-;         line of the selected row (signed), then the lines of the normal
-;         bar and of the active bar (while a value is edited): CGADSUB,
-;         then three COLDATA writes
-;   OAMT  sprites: number of tiles (16 bits, at most 960), number of
-;         sprites (at most 96), 0, the sprite page per line (0-2: tiles
-;         256-511 at OBJ_PAGES_BASE + page * $1000), OAM entries (4 bytes
-;         each), their OAM high table bits (2 bits each), tiles from
-;         OBJ_FIRST_TILE on (32 bytes each). Sprites are 16x16 or 32x32;
-;         only OBJ palettes 4-7 take part in color math (selection bar).
-; GRAD and the sprite pages have one entry per line (GRAD_LINES); the menu
-; builds the HDMA tables from them:
+; Assets that change per line (gradient, sprite pages, selection bar) are
+; data, not HDMA tables; the menu builds the tables from them:
 ; - background gradient: channel 1 writes CGADD twice and CGDATA twice per
 ;   line (build_grad)
 ; - sprite pages: channel 2 writes OBSEL (build_obsel)
@@ -38,7 +18,7 @@
 GRAD_LINES      = 224           ; lines of per-line data (gradient, sprite pages)
 BAR_MAX_LINES   = 16            ; selection bar height
 
-; skin file: chunks of a header and a payload (skin.notes)
+; skin file: chunks of a header and a payload (skin-format.md)
 SKIN_HEADER_SIZE = 12           ; "SNS", version, ID (4 characters), length (32 bits)
 SKIN_VERSION    = 1
 
