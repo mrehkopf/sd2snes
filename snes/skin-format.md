@@ -48,7 +48,7 @@ The menu applies the chunks in file order:
 | ID | Asset | Payload size |
 | --- | --- | --- |
 | `CGEN` | Palette (a range of colors) | 4 + 2 × number of colors |
-| `FONT` | Font | 16384 |
+| `FONT` | Font (a range of characters) | 4 + 64 × number of characters |
 | `LOGO` | Logo | 14336 |
 | `GRAD` | Background gradient (per line) | 896 |
 | `CRSR` | Selection bar | 2 + 8 × height |
@@ -109,18 +109,25 @@ palettes light up under the selection bar.
 
 ### `FONT`: font
 
-256 characters of 16x8 pixels, 64 bytes each. Character *c* consists of two 8x8 4bpp tiles in the
-SNES format (32 bytes each: rows of bitplanes 0+1, then rows of bitplanes 2+3): the left half,
-then the right half.
+| Offset | Size | Contents |
+| --- | --- | --- |
+| 0 | 2 | First character *f* (0-255) |
+| 2 | 2 | Number of characters *n* (1-256, *f* + *n* ≤ 256) |
+| 4 | 64*n* | Characters |
+
+A character is 16x8 pixels: two 8x8 4bpp tiles in the SNES format (32 bytes each: rows of
+bitplanes 0+1, then rows of bitplanes 2+3), the left half, then the right half.
 
 - Text uses colors 1-3 in the left half of the cell. On the even columns (BG2, 2bpp) only bitplanes
   0+1 of the left half are visible, so a character that should look the same in every column must
   stay in colors 0-3 and in the left 8 pixels.
 - Colors 4-15 and the right half are only visible on BG1; they are meant for button graphics.
 - The character set is CP1252, as the firmware converts file names to it.
-- Characters 0 and 1 end a string and are never printed.
+- Characters 0 and 1 end a string and are never printed as text.
 - Character 32 (space) must be blank: the menu fills empty cells with it, and BG2 shows its left
   half next to the logo.
+
+Like `CGEN`, a skin may contain several `FONT` chunks, each replacing its range of characters.
 
 ### `LOGO`: logo
 

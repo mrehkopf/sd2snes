@@ -23,7 +23,6 @@ SKIN_HEADER_SIZE = 12           ; "SNS", version, ID (4 characters), length (32 
 SKIN_VERSION    = 1
 
 ; payload sizes of the assets with a fixed size
-FONT_SIZE       = 256*64        ; 16x8 characters, 4bpp
 LOGO_SIZE       = 224*64        ; 32x7 tiles, 8bpp
 GRAD_SIZE       = GRAD_LINES*4
 OAMT_HEAD_SIZE  = 4 + GRAD_LINES ; tiles, sprites, reserved, sprite pages
@@ -474,17 +473,42 @@ cgen:
 cgen_out:
   rts
 
-; font: FONT_SIZE bytes
+; font: first character, number of characters, characters (64 bytes each)
 font:
   .al
   .xl
-  lda Frame.len
-  cmp #FONT_SIZE
-  bne +
-  ldx #FONT_BASE
-  stx $2116
-  .DMA7 #$01, #FONT_SIZE, Frame.ptr+2, Frame.ptr, #$18
-+ rts
+  lda [Frame.ptr]               ; first character
+  cmp #256
+  bcs font_out
+  ldy #$0002
+  lda [Frame.ptr],y             ; number of characters
+  beq font_out
+  sta Frame.count
+  clc
+  adc [Frame.ptr]
+  cmp #257
+  bcs font_out                  ; beyond character 255
+  lda Frame.count
+  .rept 6
+  asl
+  .endrept
+  sta Frame.size
+  adc #$0004                    ; (carry clear: at most 16384)
+  cmp Frame.len
+  bne font_out
+  lda Frame.ptr
+  clc
+  adc #$0004
+  sta Frame.src
+  lda [Frame.ptr]               ; 32 words per character
+  .rept 5
+  asl
+  .endrept
+  adc #FONT_BASE                ; (carry clear)
+  sta $2116
+  .DMA7 #$01, Frame.size, Frame.ptr+2, Frame.src, #$18
+font_out:
+  rts
 
 ; logo: LOGO_SIZE bytes
 logo:

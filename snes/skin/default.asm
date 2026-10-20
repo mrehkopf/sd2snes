@@ -85,6 +85,7 @@ chunk_end:
 ; font: 256 characters of 16x8 pixels, 4bpp
 font .block
   .skin_chunk "FONT"
+  .word 0, 256                  ; first character, number of characters
   .binary "font.chr"
 chunk_end:
 .endblock

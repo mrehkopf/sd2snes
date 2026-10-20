@@ -47,6 +47,7 @@
   // a horizontal line (character 25) to the left (26) and right (27)
   // window border. The tees are made from the font's own border characters;
   // these are the standard ones for fonts without usable border characters.
+  var FIRST_CHAR = 16;          // old characters 0-15 were never shown
   var BULLET_CHAR = 129;
   var BULLET = [0x00, 0x00, 0x00, 0x60, 0x60, 0x90, 0x60, 0x90,
                 0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
@@ -200,7 +201,11 @@
     }
     payload.set(left && right ? left : LEFT_TEE, 64 * LEFT_TEE_CHAR);
     payload.set(left && right ? right : RIGHT_TEE, 64 * RIGHT_TEE_CHAR);
-    return chunk('FONT', payload);
+    // characters 16-255: 0-15 are the new menu's button graphics
+    var range = new Uint8Array(4 + (256 - FIRST_CHAR) * 64);
+    range.set([FIRST_CHAR, 0, 256 - FIRST_CHAR, 0], 0);
+    range.set(payload.subarray(64 * FIRST_CHAR), 4);
+    return chunk('FONT', range);
   }
 
   // GRAD: hdma_pal_src wrote color 0 (HDMA channel 1 set the CGRAM address
