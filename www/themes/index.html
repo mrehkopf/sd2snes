@@ -1,4 +1,5 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="skinconv.js"></script>
 <script type="text/javascript">
 
   var menu1;
@@ -338,6 +339,8 @@
       } else {
         $("#menucheck").html(menuName + " loaded. (might be the wrong file)");
       }
+      skinSourceName = menuName;
+      showSkinStatus();
     }
   }
 
@@ -400,6 +403,82 @@
   }
 
 
+
+  ////////////////////////////////////////////////////////////////////////////skin file
+  var skinSourceName;
+  var skinChunkNames = {
+    CGEN: "palette", FONT: "font", LOGO: "logo", GRAD: "background gradient",
+    CRSR: "selection bar", OAMT: "sprites"
+  };
+
+  // convert the themed menu (first upload field) to a skin file
+  function makeSkin(notes) {
+    if (!menu1 || !v || SkinConv.hasSkinSupport(menu1)) {
+      return null;
+    }
+    return SkinConv.convert(menu1, v, notes);
+  }
+
+  function showSkinStatus() {
+    var status = document.getElementById("skincheck");
+    var list = document.getElementById("skinnotes");
+    list.innerHTML = "";
+    if (!menu1) {
+      status.textContent = "No themed menu loaded yet.";
+      return;
+    }
+    if (SkinConv.hasSkinSupport(menu1)) {
+      status.textContent = skinSourceName + " is a menu with skin support already; " +
+        "it cannot be converted.";
+      return;
+    }
+    if (!v) {
+      status.textContent = skinSourceName + ": unknown menu version, cannot convert it.";
+      return;
+    }
+    var notes = [];
+    try {
+      var skin = makeSkin(notes);
+    } catch (e) {
+      status.textContent = skinSourceName + " (version " + v.name + "): conversion failed: " +
+        e.message;
+      return;
+    }
+    var names = [];
+    SkinConv.listChunks(skin).forEach(function (c) {
+      var name = skinChunkNames[c.id] || c.id;
+      if (names.indexOf(name) < 0) {
+        names.push(name);
+      }
+    });
+    status.textContent = skinSourceName + " - version " + v.name + " detected. The skin file " +
+      "(" + skin.length + " bytes) contains: " + names.join(", ") + ".";
+    notes.forEach(function (n) {
+      var li = document.createElement("li");
+      li.textContent = n;
+      list.appendChild(li);
+    });
+  }
+
+  function downloadSkin() {
+    var skin = null;
+    try {
+      skin = makeSkin([]);
+    } catch (e) {
+    }
+    if (!skin) {
+      showSkinStatus();
+      return;
+    }
+    var name = document.getElementById("skinName").value.replace(/^.*[\/\\]/, "").trim();
+    if (!name) {
+      name = "theme.skin";
+    }
+    if (!/\.skin$/i.test(name)) {
+      name += ".skin";
+    }
+    downloadBlob(skin, name, "application/octet-stream");
+  }
 
 //////////////////////////////////////////////////////////////////////////////////
 </script>
@@ -581,6 +660,25 @@
       font-size: 12;
     }
 
+    #custom-button5,
+    #custom-button6 {
+      padding: 5px;
+      color: white;
+      background-color: #4f43ae;
+      border: 1px solid #000;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #custom-button5:hover,
+    #custom-button6:hover {
+      background-color: #b5b6e4;
+    }
+
+    input#skinName {
+      width: 200px;
+    }
+
     body {
       background-image: url(img/3.jpg);
       background-attachment: fixed;
@@ -723,8 +821,29 @@
       <button id="custom-button4" onclick="copyAssets();">Generate</button><br />
       <br />
 
+      <h2>Convert a themed menu to a skin file</h2>
+      <p>Newer menus with skin support cannot be patched like this. They read skins from
+        <code>/sd2snes/skins/</code> on the SD card instead: copy the skin file there and choose it in the
+        menu under Configuration &rarr; Skin, which stores it as <code>SkinName</code> in
+        <code>/sd2snes/config.yml</code>.</p>
+      <h4>Load your Custom menu.bin or m3nu.bin containing your theme (the same file as in the first step
+        above):</h4>
+      <button type="button" id="custom-button5">Choose File</button><br />
       <br />
-      <em>Last updated Jan 12th 2023 - v0.1.7d - v1.11.0b1+ - generic</em>
+      <div id="skincheck">No themed menu loaded yet.</div>
+      <ul id="skinnotes"></ul>
+      <h4>Save it as a skin file</h4>
+      <label for="skinName">File name:</label>
+      <input type="text" id="skinName" value="theme.skin" />
+      <button type="button" id="custom-button6" onclick="downloadSkin();">Download skin file</button><br />
+      <script type="text/javascript">
+        document.getElementById("custom-button5").addEventListener("click", function () {
+          document.getElementById("objFileM").click();
+        });
+      </script>
+
+      <br />
+      <em>Last updated Oct 20th 2026 - v0.1.7d - v1.11.0b1+ - generic - skin file conversion</em>
     </div>
 </body>
 
