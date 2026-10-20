@@ -24,6 +24,8 @@ filesel_init:
   stx filesel_sel
   stx direntry_xscroll
   stx direntry_xscroll_state
+  stx skin_dir_depth
+  stz menu_close_all
   lda #$01
   sta filesel_dirty
   rep #$20
@@ -120,14 +122,7 @@ filesel_updates:
   asl
   asl
   sta dirptr_idx
-  lda filesel_sel
-  clc
-  adc #$08
-  sta bar_yl
-  lda #$3e
-  sta bar_wl
-  lda #$01
-  sta bar_xl
+  jsr filesel_set_bar
 ; get input
   jsr read_pad
   lda pad_down
@@ -288,8 +283,11 @@ Frame .block
   beq +
   lda #$01      ; different color for dirs
   bra dirent_type_cont
-+ cmp #TYPE_SPC ; SPC -> palette 2
++ cmp #TYPE_SPC ; SPC, skin -> palette 2
+  beq dirent_type_pal2
+  cmp #TYPE_SKIN
   bne +
+dirent_type_pal2:
   lda #$02
   bra dirent_type_cont
 + lda #$00      ; default -> palette 0
@@ -516,6 +514,18 @@ filesel_key_a:
   jsr select_item
   rts
 
+; selection bar on the selected entry (A 8-bit, DB = 0)
+filesel_set_bar:
+  lda filesel_sel
+  clc
+  adc #$08
+  sta bar_yl
+  lda #$3e
+  sta bar_wl
+  lda #$01
+  sta bar_xl
+  rts
+
 filesel_key_select:
   jsl select_favorite_file
   rts
@@ -604,8 +614,13 @@ select_item:
   beq sel_is_dir
   cmp #TYPE_PARENT
   beq sel_is_parent
+  cmp #TYPE_SKIN
+  beq sel_is_skin
 select_item_cont:
   rts
+sel_is_skin:
+  jsr open_context_menu         ; preview or use
+  bra select_item_cont
 sel_is_file:
   jsr select_file
   bra select_item_cont
@@ -645,31 +660,7 @@ select_file:
 
 select_dir:
   tyx
-; save old dir position
-  rep #$20
-  .al
-  ldy #$0000
-  lda wram(dirstart_addr)
-  sta [<dirlog_idx,d],y
-  iny
-  iny
-  lda wram(dirstart_bank)
-  sta [<dirlog_idx,d],y
-  iny
-  lda wram(dirptr_addr)
-  sta [<dirlog_idx,d],y
-  iny
-  iny
-  lda wram(dirptr_bank)
-  sta [<dirlog_idx,d],y
-  iny
-  lda wram(filesel_sel)
-  sta [<dirlog_idx,d],y
-  lda wram(dirlog_idx)
-  clc
-  adc #$0008
-  sta wram(dirlog_idx)
-  sep #$20
+  jsr push_dirlog               ; save old dir position
   .as
 ;---
 ; y = direntry ptr
@@ -721,7 +712,8 @@ copy_new_path_loop:
   dex
   sta @l FILESEL_CWD,x
   plb
-; request directory listing
+; request the listing of FILESEL_CWD and show it from the top
+filesel_open_cwd:
   jsr filesel_request_filelist
   rep #$20
   .al
@@ -737,7 +729,96 @@ copy_new_path_loop:
   sta wram(filesel_dirty)
   rts
 
+; save the position in the current directory in the directory log, for
+; select_parent; keeps X
+push_dirlog:
+  php
+  rep #$20
+  .al
+  ldy #$0000
+  lda wram(dirstart_addr)
+  sta [<dirlog_idx,d],y
+  iny
+  iny
+  lda wram(dirstart_bank)
+  sta [<dirlog_idx,d],y
+  iny
+  lda wram(dirptr_addr)
+  sta [<dirlog_idx,d],y
+  iny
+  iny
+  lda wram(dirptr_bank)
+  sta [<dirlog_idx,d],y
+  iny
+  lda wram(filesel_sel)
+  sta [<dirlog_idx,d],y
+  lda wram(dirlog_idx)
+  clc
+  adc #$0008
+  sta wram(dirlog_idx)
+  plp
+  rts
+
+; open the skins folder (configuration menu, "Choose a skin..."); leaving it
+; upwards returns to the current directory (select_parent)
+skin_open_folder:
+  php
+  phd
+  rep #$30
+  .al
+  .xl
+  lda #$0000
+  tcd
+  lda wram(skin_dir_depth)
+  bne skin_open_folder_out      ; already in there
+  sep #$20
+  .as
+  ldx #$0000                    ; save the current directory
+- lda @l FILESEL_CWD,x
+  sta wram(skin_saved_cwd),x
+  beq +
+  inx
+  cpx #255
+  bne -
+  lda #$00
+  sta wram(skin_saved_cwd),x
++ jsr push_dirlog
+  rep #$20
+  .al
+  lda wram(dirlog_idx)
+  sta wram(skin_dir_depth)
+  sep #$20
+  .as
+  ldx #$0000
+- lda @l text_skins_folder,x
+  sta @l FILESEL_CWD,x
+  beq +
+  inx
+  bra -
++ jsr filesel_open_cwd
+skin_open_folder_out:
+  pld
+  plp
+  rts
+
 select_parent:
+  rep #$20
+  .al
+  lda wram(skin_dir_depth)      ; leaving the skins folder opened by
+  beq +                         ; skin_open_folder: back to where it was
+  cmp wram(dirlog_idx)          ; opened
+  bne +
+  lda #$0000
+  sta wram(skin_dir_depth)
+  sep #$20
+  .as
+  ldx #$0000
+- lda wram(skin_saved_cwd),x
+  sta @l FILESEL_CWD,x
+  beq parent_do_chdir
+  inx
+  bra -
++
 ; truncate last subdirectory
   sep #$20
   .as
@@ -828,8 +909,20 @@ wait_spc:
   rts
 
 filesel_key_x:
+  sep #$20
+  .as
+  lda #$00
+  sta wram(skin_action)
   jsr mainmenu
-  rts
+  sep #$20
+  .as
+  lda #$00
+  sta wram(menu_close_all)
+  lda wram(skin_action)
+  cmp #SKIN_ACTION_CHOOSE
+  bne +
+  jsr skin_open_folder
++ rts
 
 filesel_key_y:
   jsr open_context_menu
@@ -857,10 +950,21 @@ open_context_menu:
   beq ctx_is_dir
   cmp #TYPE_PARENT
   beq ctx_is_parent
+  cmp #TYPE_SKIN
+  beq ctx_is_skin
 open_context_menu_cont:
   rts
+ctx_is_skin:
+  jsr ctx_set_param
+  jsr filesel_contextmenu_skin
+  bra open_context_menu_cont
 ctx_is_file:
+  jsr ctx_set_param
+  jsr filesel_contextmenu_file
+  bra open_context_menu_cont
 ; "save" selected file path to MCU_PARAM in case we need to send it there later
+; Y: offset of the type of the entry in the directory
+ctx_set_param:
   dey
   rep #$20
   .al
@@ -879,8 +983,7 @@ ctx_is_file:
   sta @l MCU_PARAM+2
   lda #$00
   sta @l MCU_PARAM+3
-  jsr filesel_contextmenu_file
-  bra open_context_menu_cont
+  rts
 ctx_is_parent:
   bra open_context_menu_cont
 ctx_is_dir:
@@ -1489,8 +1592,10 @@ filesel_request_filelist:
   sta @l MCU_PARAM+10
   lda #TYPE_SPC
   sta @l MCU_PARAM+11
-  lda #$00
+  lda #TYPE_SKIN
   sta @l MCU_PARAM+12
+  lda #$00
+  sta @l MCU_PARAM+13
   sta @l SNES_CMD
   lda #CMD_READDIR
   sta @l MCU_CMD

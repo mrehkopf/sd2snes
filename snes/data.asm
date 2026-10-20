@@ -32,6 +32,9 @@ bar_wl:         .byte 0     ; bar width
 crsr_ptr:       .long 0     ; selection bar asset (CRSR payload)
 bar_yoffset:    .byte 0     ; first bar line relative to the top line of the row (from crsr_ptr)
 skin_skip:      .byte 0     ; skip the skin from the SD card (SELECT held at power-on)
+skin_action:    .byte 0     ; set by the skin menu functions (SKIN_ACTION_*)
+menu_close_all: .byte 0     ; show_menu: close all menu levels
+skin_dir_depth: .word 0     ; dirlog_idx in the skins folder opened by skin_open_folder (0: none)
 filesel_state:  .byte 0     ; menu state (0=file select)
 filesel_dirty:  .byte 0     ; menu dirty (e.g. after state change or when redraw is needed)
 filesel_sel:    .word 0     ; selected item #
@@ -160,6 +163,7 @@ direntry_xscroll:
   .word 0
 direntry_xscroll_wait:
   .word 0
+skin_saved_cwd: .fill 256   ; directory before skin_open_folder
 current_dir:
   .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
   .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0

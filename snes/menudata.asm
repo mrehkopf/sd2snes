@@ -38,6 +38,15 @@ menu_enttab_cfg:
   .menu_submenu mtext_cfg_ingame, menu_enttab_ingame, mdesc_cfg_ingame
   .menu_submenu mtext_cfg_savestates, menu_enttab_savestates, mdesc_cfg_savestates
   .menu_submenu mtext_cfg_scic, menu_enttab_scic, mdesc_cfg_scic
+  .menu_submenu mtext_cfg_skin, menu_enttab_skin, mdesc_cfg_skin
+  .menu_end
+
+menu_enttab_skin:
+; HEADER
+  .menu_header 1, mtext_cfg_skin
+; ENTRIES
+  .menu_func_close mtext_skin_choose, skin_menu_choose, mdesc_skin_choose
+  .menu_func mtext_skin_builtin, skin_menu_builtin, mdesc_skin_builtin
   .menu_end
 
 menu_enttab_bsx:
@@ -123,6 +132,14 @@ menu_enttab_filesel_context_file:
   .menu_func_close text_filesel_context_add_to_favorites, add_selected_file_to_favorites, mdesc_filesel_context_add_to_favorites
   .menu_func_close text_filesel_set_as_autoboot, set_selected_as_autoboot_rom, mdesc_filesel_set_as_autoboot
   .menu_func_close text_cheats, cheat_menu_file, mdesc_cheats
+  .menu_end
+
+menu_enttab_filesel_context_skin:
+; HEADER
+  .menu_header 1, text_filesel_selected_skin
+; ENTRIES
+  .menu_func_close text_skin_preview, skin_menu_preview, mdesc_skin_preview
+  .menu_func_close text_skin_use, skin_menu_use, mdesc_skin_use
   .menu_end
 
 menu_enttab_recent_context:

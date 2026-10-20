@@ -450,6 +450,34 @@ int main(void) {
           snescmd_writebyte(0xaa, SNESCMD_SNES_CMD);
           cmd=0;
           break;
+        case SNES_CMD_LOAD_SKIN:
+          /* load a skin for the menu to apply: the selected one (preview)
+             or the configured one */
+          if(snescmd_readbyte(SNESCMD_MCU_PARAM + 8) == SKIN_SRC_SELECTED) {
+            get_selected_name(file_lfn);
+            printf("Load skin: %s\n", file_lfn);
+            load_skin_file((char*)file_lfn);
+          } else {
+            load_skin();
+          }
+          cmd=0; /* stay in menu loop */
+          break;
+        case SNES_CMD_SET_SKIN:
+          /* select the skin (the selected file or the built-in skin), save
+             the config and load the skin for the menu to apply */
+          cfg_get_from_menu();
+          if(snescmd_readbyte(SNESCMD_MCU_PARAM + 8) == SKIN_SRC_SELECTED) {
+            get_selected_name(file_lfn);
+            cfg_set_skin_name((char*)file_lfn);
+          } else {
+            cfg_set_skin_name("");
+          }
+          printf("Set skin: %s\n", CFG.skin_name);
+          cfg_save();
+          cfg_load_to_menu();
+          load_skin();
+          cmd=0; /* stay in menu loop */
+          break;
         case SNES_CMD_LOAD_CHT:
           /* load cheats of the selected file for the cheat editor */
           cheat_menu_load(snescmd_readbyte(SNESCMD_MCU_PARAM + 8));

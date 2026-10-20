@@ -113,6 +113,7 @@ int cfg_set_autoboot_rom(const uint8_t *fn);
 int cfg_clr_autoboot_rom(void);
 
 void cfg_load_to_menu(void);
+void cfg_set_skin_name(const char *path);
 void cfg_get_from_menu(void);
 
 void cfg_set_vidmode_menu(cfg_vidmode_t vidmode);

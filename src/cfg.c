@@ -491,6 +491,20 @@ int cfg_clr_autoboot_rom() {
 }
 
 /* make binary config available to menu */
+/* Set the menu skin: a path in SKIN_BASEDIR is stored as the file name
+   only; a path that doesn't fit leaves the setting unchanged. */
+void cfg_set_skin_name(const char *path) {
+  size_t baselen = strlen(SKIN_BASEDIR);
+  if(!strncasecmp(path, SKIN_BASEDIR, baselen) && !strchr(path + baselen, '/')) {
+    path += baselen;
+  }
+  if(strlen(path) >= sizeof(CFG.skin_name)) {
+    printf("cfg_set_skin_name: %s is too long\n", path);
+    return;
+  }
+  strcpy((char*)CFG.skin_name, path);
+}
+
 void cfg_load_to_menu() {
   sram_writeblock(&CFG, SRAM_MENU_CFG_ADDR, sizeof(cfg_t));
 }

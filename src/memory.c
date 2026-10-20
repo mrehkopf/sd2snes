@@ -671,21 +671,14 @@ uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr, uint8_t flags)
   return (uint32_t)filesize;
 }
 
-/* Load the menu skin (CFG.skin_name, a file in SKIN_BASEDIR or a full path)
-   to SRAM_SKIN_ADDR, followed by a zero word. The menu applies the chunks
-   it finds there on top of its built-in skin, so without a skin, or if it
-   can't be loaded completely, only the zero word is written (at
-   SRAM_SKIN_ADDR). */
-void load_skin(void) {
-  char path[256];
+/* Load a menu skin file to SRAM_SKIN_ADDR, followed by a zero word. The
+   menu applies the chunks it finds there on top of its built-in skin, so
+   without a file (path NULL), or if it can't be loaded completely, only the
+   zero word is written (at SRAM_SKIN_ADDR). */
+void load_skin_file(const char *path) {
   uint32_t size = 0, loaded = 0;
   UINT bytes_read;
-  if(CFG.skin_name[0]) {
-    if(CFG.skin_name[0] == '/') {
-      snprintf(path, sizeof(path), "%s", CFG.skin_name);
-    } else {
-      snprintf(path, sizeof(path), "%s%s", SKIN_BASEDIR, CFG.skin_name);
-    }
+  if(path) {
     file_open((uint8_t*)path, FA_READ);
     if(file_res) {
       printf("load_skin: could not open %s, res=%d\n", path, file_res);
@@ -713,6 +706,22 @@ void load_skin(void) {
     }
   }
   sram_writeshort(0, SRAM_SKIN_ADDR + size);
+}
+
+/* Load the configured skin (CFG.skin_name: a file in SKIN_BASEDIR, a full
+   path, or empty for the built-in skin). */
+void load_skin(void) {
+  char path[256];
+  if(!CFG.skin_name[0]) {
+    load_skin_file(NULL);
+  } else {
+    if(CFG.skin_name[0] == '/') {
+      snprintf(path, sizeof(path), "%s", CFG.skin_name);
+    } else {
+      snprintf(path, sizeof(path), "%s%s", SKIN_BASEDIR, CFG.skin_name);
+    }
+    load_skin_file(path);
+  }
 }
 
 uint32_t migrate_and_load_srm(uint8_t* filename, uint32_t base_addr) {

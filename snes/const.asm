@@ -79,6 +79,9 @@ mtext_cfg_sgb:                    .text "SGB Settings", 0
 mtext_cfg_ingame:                 .text "In-game Settings", 0
 mtext_cfg_savestates:             .text "Savestates Settings", 0
 mtext_cfg_scic:                   .text "SuperCIC Settings", 0
+mtext_cfg_skin:                   .text "Skin", 0
+mtext_skin_choose:                .text "Choose a skin", 127, 128, 0
+mtext_skin_builtin:               .text "Use the built-in skin", 0
 mtext_bsx_timesource:             .text "BS-X clock", 0
 mtext_bsx_time:                   .text "Custom time", 0
 mtext_scic_enable:                .text "Enable SuperCIC", 0
@@ -126,6 +129,9 @@ mdesc_cfg_ingame:                 .text "Set in-game features", 0
 mdesc_cfg_sgb:                    .text "Set Super Game Boy features", 0
 mdesc_cfg_savestates:             .text "Set savestates features", 0
 mdesc_cfg_scic:                   .text "Enable/Disable SuperCIC and set video modes", 0
+mdesc_cfg_skin:                   .text "Change the look of the menu", 0
+mdesc_skin_choose:                .text "Pick a skin file in /sd2snes/skins", 0
+mdesc_skin_builtin:               .text "Go back to the original look", 0
 mdesc_bsx_timesource:             .text "Choose what date and time BS-X games see", 0
 mdesc_bsx_time:                   .text "Set custom time and date for BS-X games", 0
 mdesc_scic_enable:                .text "Required for SuperCIC enhanced features", 0
@@ -166,6 +172,13 @@ mdesc_gsu_speed_fast:             .text "Run as fast as possible", 0
 mdesc_gsu_speed_normal:           .text "Run at approx. original speed", 0
 
 text_filesel_selected_file: .text "Selected file", 0
+text_filesel_selected_skin: .text "Selected skin", 0
+text_skin_preview:          .text "Preview", 0
+mdesc_skin_preview:         .text "Show the menu with this skin", 0
+text_skin_use:              .text "Use this skin", 0
+mdesc_skin_use:             .text "Use this skin from now on", 0
+text_skin_preview_bar:      .text "Skin preview  A:Use this skin  B:Back", 0
+text_skins_folder:          .text "/sd2snes/skins", 0
 text_filesel_context_add_to_favorites: .text "Add to favorites", 0
 mdesc_filesel_context_add_to_favorites: .text "Add the selected file to favorites", 0
 

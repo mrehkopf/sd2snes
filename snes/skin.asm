@@ -634,6 +634,163 @@ oamt_out:
   rts
 .endblock
 
+; ---------------------------------------------------------------------------
+; skin selection: skin files in the file browser (context menu) and the
+; configuration menu
+
+SKIN_ACTION_PREVIEW = 1         ; skin_action: set by the menu functions and
+SKIN_ACTION_USE = 2             ; carried out after the menu has closed
+SKIN_ACTION_CHOOSE = 3
+
+; menu functions (entered with RTL, A 8-bit, DB = bank of the menu table)
+skin_menu_preview:
+  .as
+  .xl
+  lda #SKIN_ACTION_PREVIEW
+  sta wram(skin_action)
+  rtl
+
+skin_menu_use:
+  .as
+  .xl
+  lda #SKIN_ACTION_USE
+  sta wram(skin_action)
+  rtl
+
+skin_menu_choose:
+  .as
+  .xl
+  lda #SKIN_ACTION_CHOOSE
+  sta wram(skin_action)
+  lda #$01                      ; back to the file browser
+  sta wram(menu_close_all)
+  rtl
+
+skin_menu_builtin:
+  .as
+  .xl
+  lda #SKIN_SRC_BUILTIN
+  jsr skin_set
+  rtl
+
+; select a skin (A: SKIN_SRC_SELECTED, the file in MCU_PARAM, or
+; SKIN_SRC_BUILTIN) and apply it
+skin_set:
+  php
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  sta @l MCU_PARAM+8
+  lda #CMD_SET_SKIN
+  jsr skin_cmd
+  lda #$00                      ; a skin chosen in the menu counts even if
+  sta wram(skin_skip)           ; SELECT was held at power-on
+  jsr reapply_skin
+  plp
+  rts
+
+; show the skin selected in the file browser (MCU_PARAM) until A (use it)
+; or B (back to the skin from before)
+skin_preview .block
+  php
+  phb
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  lda #$00
+  pha
+  plb
+  lda skin_skip                 ; restored for B
+  pha
+  lda #SKIN_SRC_SELECTED
+  sta @l MCU_PARAM+8
+  lda #CMD_LOAD_SKIN
+  jsr skin_cmd
+  stz skin_skip
+  jsr filesel_set_bar           ; (the closed menu had the bar)
+  jsr reapply_skin
+  .print_at space64, 0, 28, 0, 64
+  .print_at text_skin_preview_bar, 2, 28, 0, 64
+wait:
+  lda isr_done
+  beq wait
+  stz isr_done
+  jsr printtime
+  jsr read_pad
+  lda pad_a
+  bne use
+  lda pad_b
+  beq wait
+  pla
+  sta skin_skip
+  lda #SKIN_SRC_CONFIG
+  sta @l MCU_PARAM+8
+  lda #CMD_LOAD_SKIN
+  jsr skin_cmd
+  jsr reapply_skin
+  bra done
+use:
+  pla
+  lda #SKIN_SRC_SELECTED        ; the skin is shown already
+  sta @l MCU_PARAM+8
+  lda #CMD_SET_SKIN
+  jsr skin_cmd
+done:
+  .print_at space64, 0, 28, 0, 64
+  jsr filesel_statusbar
+  plb
+  plp
+  rts
+.endblock
+
+; send the skin command in A (CMD_LOAD_SKIN, CMD_SET_SKIN) to the MCU and
+; wait for it in WRAM with NMI off: the MCU loads the skin by SD DMA, which
+; takes over the cart memory bus, so the CPU must not read from it (NMI
+; vector and handler) until the MCU is done. The HDMA tables are in WRAM.
+skin_cmd:
+  php
+  sep #$20
+  .as
+  sei
+  pha
+  lda #$00
+  sta @l $004200                ; no NMI
+  pla
+  jsl wram_mcu_cmd
+  jsr waitblank                 ; the first NMI at the start of VBlank
+  lda #$81
+  sta @l $004200                ; VBlank NMI + auto joypad read
+  plp
+  rts
+
+; apply the skins again after the MCU has loaded another one. The screen
+; goes black for a moment: NMI and HDMA are off meanwhile (HDMA would change
+; CGADD during the palette upload).
+reapply_skin:
+  php
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  jsr waitblank
+  lda #$80
+  sta @l $002100                ; forced blank
+  lda #$00
+  sta @l $004200
+  sta @l $00420c
+  jsr apply_skin
+  jsr waitblank
+  lda #$7f
+  sta @l $00420c                ; HDMA ch. 0-6, as setup_hdma
+  lda #$81
+  sta @l $004200                ; VBlank NMI + auto joypad read
+  lda wram(cur_bright)
+  sta @l $002100
+  plp
+  rts
+
   .section databank
   .include "skin/default.asm"
   .send databank

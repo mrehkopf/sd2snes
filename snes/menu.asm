@@ -58,6 +58,49 @@ filesel_contextmenu_file:
   jsr pop_window
   rts
 
+; context menu of a skin file (MCU_PARAM: the file); preview or use it
+; after the menu has closed
+filesel_contextmenu_skin:
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  lda #$00
+  sta wram(skin_action)
+  lda #$02
+  sta window_x
+  lda #$09
+  sta window_y
+  lda #60
+  sta window_w
+  lda #18
+  sta window_h
+  jsr push_window
+  jsr window_greyout
+  lda #$06
+  sta window_x
+  lda #$0b
+  sta window_y
+  phb
+    lda #`menu_enttab_filesel_context_skin
+    pha
+    plb
+    ldx #<>menu_enttab_filesel_context_skin
+    jsr show_menu
+  plb
+  jsr pop_window
+  sep #$20
+  .as
+  lda wram(skin_action)
+  cmp #SKIN_ACTION_PREVIEW
+  bne +
+  jmp skin_preview
++ cmp #SKIN_ACTION_USE
+  bne +
+  lda #SKIN_SRC_SELECTED
+  jmp skin_set
++ rts
+
 filesel_favorites_contextmenu:
   sep #$20
   .as
@@ -337,6 +380,8 @@ show_menu_loop:
 show_menu_cont:
     sep #$20
     .as
+    lda wram(menu_close_all)
+    bne show_menu_out
 ;    jsr pop_window
     jsr show_menu_entries
     jmp show_menu_loop

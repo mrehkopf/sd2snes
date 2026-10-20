@@ -47,6 +47,10 @@ extern char current_filename[];
 #define SRAM_SKIN_ADDR               (0xF00000L) /* skin file, see snes/skin.asm */
 #define SKIN_MAX_SIZE                (0xFFFFL)
 #define SKIN_BASEDIR                 ("/sd2snes/skins/")
+/* skin source for SNES_CMD_LOAD_SKIN/SNES_CMD_SET_SKIN (MCU_PARAM+8) */
+#define SKIN_SRC_CONFIG              (0) /* LOAD_SKIN: the configured skin */
+#define SKIN_SRC_SELECTED            (1) /* the file selected in the menu (MCU_PARAM: dir, file entry) */
+#define SKIN_SRC_BUILTIN             (2) /* SET_SKIN: none, the menu's built-in skin */
 
 #define SRAM_SPC_DATA_ADDR           (0xFD0000L)
 #define SRAM_SPC_HEADER_ADDR         (0xFE0000L)
@@ -91,6 +95,7 @@ uint32_t migrate_and_load_srm(uint8_t *filename, uint32_t base_addr);
 uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr, uint8_t flags);
 void load_skin(void);
+void load_skin_file(const char *path);
 uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr);
 uint32_t load_bootrle(uint32_t base_addr);
 void load_dspx(const uint8_t* filename, uint8_t st0010);

@@ -81,6 +81,7 @@ printf("start\n");
         switch(type) {
           case TYPE_ROM:
           case TYPE_SPC:
+          case TYPE_SKIN:
           case TYPE_SUBDIR:
           case TYPE_PARENT:
             /* omit entries with hidden or system attribute */
@@ -140,7 +141,9 @@ SNES_FTYPE determine_filetype(FILINFO fno) {
     }
     return TYPE_SUBDIR;
   }
-  ext = strrchr(fno.fname, '.');
+  /* the long name's extension: the short name has only three characters
+     of it (".skin") */
+  ext = strrchr(*fno.lfname ? fno.lfname : fno.fname, '.');
   if(ext == NULL)
     return TYPE_UNKNOWN;
   if(  (!strcasecmp(ext+1, "SMC"))
