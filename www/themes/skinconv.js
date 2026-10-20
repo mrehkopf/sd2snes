@@ -59,15 +59,20 @@
 
   // CGRAM: colors reserved for button graphics (skin-format.md), which a
   // skin must not write, and the free colors that logo colors from there
-  // move to, in this order: color 0 of the BG2 text palettes 1-7 and of
-  // the BG1 text palettes 2-7, sprite palettes 2-3, color 0 of sprite
-  // palettes 4-7. Color 64 is color 0 of BG1 palette 4, so a skin may set
-  // it.
+  // move to. First these, in this order (the default skin of the new menu
+  // uses them): color 0 of the BG2 text palettes 1-7 and of the BG1 text
+  // palettes 2-7, sprite palettes 2-3, color 0 of sprite palettes 4-7;
+  // then any other color that neither text, the logo nor the sprites use.
+  // Color 64 is color 0 of BG1 palette 4, so a skin may set it.
   function reserved(c) {
-    return (c >= 36 && c <= 47) || (c >= 52 && c <= 79);
+    return (c >= 36 && c <= 47) || (c >= 52 && c <= 63) || (c >= 65 && c <= 79);
   }
   function writable(c) {
-    return !reserved(c) || c === 64;
+    return !reserved(c);
+  }
+  // colors 1-3 of the text palettes (BG2: 4p + 1..3, BG1: 16p + 1..3)
+  function textColor(c) {
+    return c < 32 ? (c & 3) !== 0 : c < 128 && (c & 15) >= 1 && (c & 15) <= 3;
   }
   var LOGO_TARGETS = [4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 80, 96, 112];
   for (var c = 169; c <= 191; c++) {
@@ -296,7 +301,7 @@
 
   // OAMT: the old 8x8 / 16x16 sprites, regrouped into 16x16 sprites (like
   // menutest/skin/spr16.py, which made the default skin's sprites).
-  // Returns the chunk and the sprite palettes it uses.
+  // Returns the chunk and the CGRAM colors the sprites show.
   function convertSprites(rom, o, notes) {
     var oamL = o.oam_data_l ? bytes(rom, o.oam_data_l, 4 * OAM_ENTRIES, 'oam_data_l')
                             : STOCK_OAM_L;
@@ -373,27 +378,38 @@
     var oam = 228;
     var hi = oam + 4 * s;
     var data = hi + hiBytes;
-    var palettes = [];
+    var colors = [];                          // CGRAM colors the sprites show
     payload.set([tiles & 0xff, tiles >> 8, s, 0], 0);  // 224 x sprite page 0 follow
     groups.forEach(function (g, i) {
       var n = 64 + 32 * (i >> 3) + 2 * (i & 7);
       payload.set([g.x & 0xff, g.y, n & 0xff, g.a | (n >> 8)], oam + 4 * i);
       payload[hi + (i >> 2)] |= (g.x >> 8) << (2 * (i & 3));      // size bit 0: 16x16
-      palettes[(g.a >> 1) & 7] = true;
       g.quad.forEach(function (t, q) {
         if (t === null || t >= LOGOSPR_TILES) {
           return;                             // never loaded by the old menu: empty
         }
         var k = n - 64 + (q & 1) + 16 * (q >> 1);
-        payload.set(bytes(rom, o.logospr + 32 * t, 32, 'logospr'), data + 32 * k);
+        var tile = bytes(rom, o.logospr + 32 * t, 32, 'logospr');
+        payload.set(tile, data + 32 * k);
+        for (var y = 0; y < 8; y++) {
+          for (var x = 0; x < 8; x++) {
+            var v = 0;
+            for (var p = 0; p < 4; p++) {
+              v |= ((tile[16 * (p >> 1) + 2 * y + (p & 1)] >> (7 - x)) & 1) << p;
+            }
+            if (v) {
+              colors[128 + 16 * ((g.a >> 1) & 7) + v] = true;
+            }
+          }
+        }
       });
     });
-    return { chunk: chunk('OAMT', payload), palettes: palettes };
+    return { chunk: chunk('OAMT', payload), colors: colors };
   }
 
   // LOGO (256x56 pixels, 8bpp) and CGEN: move the logo colors out of the
   // reserved range, then write all colors except the reserved range
-  function convertLogoPalette(rom, o, spritePalettes, notes) {
+  function convertLogoPalette(rom, o, spriteColors, notes) {
     var logo = Uint8Array.from(bytes(rom, o.logo, 14336, 'logo'));
     var palette = Uint8Array.from(bytes(rom, o.palette, 512, 'palette'));
     var pixels = new Uint8Array(224 * 64);
@@ -417,9 +433,15 @@
         sources.push(v);
       }
     }
-    var targets = LOGO_TARGETS.filter(function (c) {
-      return !used[c] && !(c >= 128 && (c & 15) && spritePalettes[(c - 128) >> 4]);
-    });
+    var free = function (c) {
+      return !used[c] && !spriteColors[c];
+    };
+    var targets = LOGO_TARGETS.filter(free);
+    for (v = 1; v < 256; v++) {
+      if (free(v) && !textColor(v) && !reserved(v) && LOGO_TARGETS.indexOf(v) < 0) {
+        targets.push(v);
+      }
+    }
     // Too few targets: merge colors into the most similar other logo color,
     // the closest pair first, until the remaining ones fit
     var into = [];
@@ -461,7 +483,7 @@
         moving.splice(moving.indexOf(best), 1);
       }
       notes.push('Logo: ' + sources.length + ' of its colors are in palette entries that ' +
-                 'newer menus reserve (36-47, 52-63, 64-79), and only ' + targets.length +
+                 'newer menus reserve (36-47, 52-63, 65-79), and only ' + targets.length +
                  ' free entries are left, so ' + (sources.length - targets.length) +
                  ' colors were merged into similar logo colors (largest difference ' +
                  worst.toFixed(1) + ' of 31 steps).');
@@ -528,7 +550,7 @@
     var grad = convertGradient(rom, offsets);
     var bar = convertBar(rom, offsets, notes);
     var sprites = convertSprites(rom, offsets, notes);
-    var lp = convertLogoPalette(rom, offsets, sprites.palettes, notes);
+    var lp = convertLogoPalette(rom, offsets, sprites.colors, notes);
     var chunks = lp.cgen.concat([font, lp.logo, grad, bar, sprites.chunk])
       .filter(function (c) { return c; });
     var size = chunks.reduce(function (sum, c) { return sum + c.length; }, 0);
