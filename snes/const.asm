@@ -65,7 +65,7 @@ last_win_x:     .byte 2
 last_win_y:     .byte 12
 last_win_w:     .byte 60
 
-text_ellipse:                     .byte 127, 128, 0
+text_ellipse:                     .text "…", 0
 text_mm_file:                     .text "File Browser", 0
 text_mm_last:                     .text "Recent Games", 0
 text_mm_favorites:                .text "Favorite Games", 0
@@ -80,7 +80,7 @@ mtext_cfg_ingame:                 .text "In-game Settings", 0
 mtext_cfg_savestates:             .text "Savestates Settings", 0
 mtext_cfg_scic:                   .text "SuperCIC Settings", 0
 mtext_cfg_skin:                   .text "Skin", 0
-mtext_skin_choose:                .text "Choose a skin", 127, 128, 0
+mtext_skin_choose:                .text "Choose a skin…", 0
 mtext_skin_builtin:               .text "Use the built-in skin", 0
 mtext_skin_buttons:               .text "Buttons", 0
 text_buttons_jp:                  .text "Japan/Europe", 0
@@ -88,8 +88,8 @@ text_buttons_us:                  .text "USA", 0
 mtext_bsx_timesource:             .text "BS-X clock", 0
 mtext_bsx_time:                   .text "Custom time", 0
 mtext_scic_enable:                .text "Enable SuperCIC", 0
-mtext_scic_vmode_menu:            .text " ", 129, "Menu video mode", 0
-mtext_scic_vmode_game:            .text " ", 129, "Game video mode", 0
+mtext_scic_vmode_menu:            .text " •Menu video mode", 0
+mtext_scic_vmode_game:            .text " •Game video mode", 0
 mtext_browser_sort:               .text "Sort directories", 0
 mtext_browser_hide_ext:           .text "Hide file extensions", 0
 mtext_browser_screensaver:        .text "Screensaver", 0
@@ -98,11 +98,11 @@ mtext_browser_ledbright:          .text "LED brightness", 0
 mtext_ingame_cheats:              .text "Start with cheats enabled", 0
 mtext_ingame_shortreset:          .text "Reset to menu", 0
 mtext_ingame_enable:              .text "In-game hook", 0
-mtext_ingame_buttons:             .text " ", 129, "In-game buttons", 0
-mtext_ingame_holdoff:             .text " ", 129, "Initial holdoff", 0
+mtext_ingame_buttons:             .text " •In-game buttons", 0
+mtext_ingame_holdoff:             .text " •Initial holdoff", 0
 mtext_ingame_savestate:           .text "In-game savestates", 0
-mtext_savestate_slots:            .text " ", 129, "Savestate slots", 0
-mtext_loadstate_delay:            .text " ", 129, "Load delay (frames)", 0
+mtext_savestate_slots:            .text " •Savestate slots", 0
+mtext_loadstate_delay:            .text " •Load delay (frames)", 0
 mtext_sgb_enable_hooks:           .text "In-game hooks", 0
 mtext_sgb_enable_state:           .text "Savestates (XR, XL)", 0
 mtext_sgb_enh_override:           .text "SGB features", 0
@@ -115,7 +115,7 @@ mtext_ingame_1chiptransientfixes: .text "1CHIP transient fixes", 0
 mtext_ingame_brightlimit:         .text "Brightness limit", 0
 mtext_ingame_resetpatch:          .text "Reset patch for clock phase", 0
 mtext_ingame_autosave:            .text "Autosave", 0
-mtext_ingame_autosave_msu1:       .text " ", 129, "MSU-1 Autosave", 0
+mtext_ingame_autosave_msu1:       .text " •MSU-1 Autosave", 0
 mtext_chip_cx4_speed:             .text "Cx4 speed", 0
 mtext_chip_gsu_speed:             .text "SuperFX speed", 0
 mtext_chip_msu1_volume_boost:     .text "MSU-1 volume boost", 0
@@ -123,7 +123,7 @@ mtext_chip_msu1_volume_boost:     .text "MSU-1 volume boost", 0
 mdesc_mm_last:                    .text "Show up to 10 most recently played games", 0
 mdesc_mm_favorites:               .text "Show up to 10 favorite games", 0
 mdesc_mm_cfg:                     .text "Configure the sd2snes", 0
-mdesc_mm_sysinfo:                 .text "Info about FW version, SD Card, SNES, CIC", 127, 128, 0
+mdesc_mm_sysinfo:                 .text "Info about FW version, SD Card, SNES, CIC…", 0
 mdesc_cfg_time:                   .text "Set the date and time", 0
 mdesc_cfg_bsx:                    .text "BS-X/Satellaview specific settings", 0
 mdesc_cfg_browser:                .text "Change file browser settings", 0
@@ -149,7 +149,7 @@ mdesc_browser_ledbright:          .text "Change brightness of LEDs", 0
 mdesc_ingame_cheats:              .text "Whether to start out with cheats enabled. Can be changed using in-game buttons", 0
 mdesc_ingame_shortreset:          .text "Go back to menu on short reset if enabled", 0
 mdesc_ingame_enable:              .text "Required for in-game buttons and 7E/7F cheats", 0
-mdesc_ingame_buttons:             .text "Enable in-game buttons (reset, en/disable cheats", 127, 128, "). Requires in-game hook to be enabled.", 0
+mdesc_ingame_buttons:             .text "Enable in-game buttons (reset, en/disable cheats…). Requires in-game hook to be enabled.", 0
 mdesc_ingame_holdoff:             .text "Wait 10 seconds before enabling hook (helps some games boot with hook enabled)", 0
 mdesc_ingame_savestate:           .text "Enable in-game savestates and choose controller. Default: Save - Start+L / Load - Start+R", 0
 mdesc_savestate_slots:            .text "Enable savestate slots. Select+Dpad: Each direction is a slot to choose", 0
@@ -275,7 +275,7 @@ spcplay_win_y:  .byte 15
 spcplay_win_w:  .byte 33
 spcplay_win_h:  .byte 3
 
-text_spcload:   .text "Loading SPC data to SPC700", 127, 128, 0
+text_spcload:   .text "Loading SPC data to SPC700…", 0
 text_spcstarta: .text "**** Now playing SPC tune ****", 0
 text_spcstartb: .text "Name:  ", 0
 text_spcstartc: .text "Song:  ", 0
@@ -287,11 +287,11 @@ spcstart_win_y: .byte 13
 spcstart_win_w: .byte 44
 spcstart_win_h: .byte 9
 
-text_loading:   .text "Loading", 127, 128, "                        ", 0
-text_saving:    .text "Saving", 127, 128, "                         ", 0
+text_loading:   .text "Loading…                               ", 0
+text_saving:    .text "Saving…                                ", 0
 loading_win_x:  .byte 2
 loading_win_y:  .byte 28
-loading_win_w:  .byte 34
+loading_win_w:  .byte 40     ; covers the status bar help up to the clock
 loading_win_h:  .byte 1
 
 text_cheat:     .text "Cheats for ", 0
@@ -303,7 +303,7 @@ text_cheat_msg_wram:        .text "Not enough WRAM patch slots (max. 32)", 0
 cheat_tab_head: .text "Name                                         Codes State", 0
 cheat_detail_head: .text "Code       Type Patch", 0
 
-text_cheats:                .text "Cheats", 127, 128, 0
+text_cheats:                .text "Cheats…", 0
 mdesc_cheats:               .text "Show, enable and edit the cheats of the selected file", 0
 text_cheat_options:         .text "Cheat options", 0
 text_cheat_edit:            .text "Edit cheat", 0
@@ -322,8 +322,8 @@ text_cheat_remove_code:     .text "Remove code", 0
 mdesc_cheat_remove_code:    .text "Delete the selected code", 0
 text_cheat_add_code:        .text "Add code", 0
 mdesc_cheat_add_code:       .text "Enter a new code for this cheat", 0
-text_cheat_add_row:         .text "Add new cheat", 127, 128, 0
-text_cheat_add_code_row:    .text "Add code", 127, 128, 0
+text_cheat_add_row:         .text "Add new cheat…", 0
+text_cheat_add_code_row:    .text "Add code…", 0
 text_cheat_rom_patches:     .text "ROM patches: ", 0
 text_cheat_wram_patches:    .text "WRAM patches: ", 0
 text_cheat_warn_hook:       .text "WRAM codes need the in-game hook", 0

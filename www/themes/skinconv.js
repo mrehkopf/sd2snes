@@ -48,7 +48,12 @@
   // window border. The tees are made from the font's own border characters;
   // these are the standard ones for fonts without usable border characters.
   var FIRST_CHAR = 16;          // old characters 0-15 were never shown
-  var BULLET_CHAR = 129;
+  // old menus: the ellipsis in 127 + 128, the bullet in 129; the new menu
+  // has its ellipsis in $81 + $8D (undefined in CP1252) and the bullet in
+  // 149 (CP1252)
+  var OLD_ELLIPSIS_CHAR = 127, OLD_BULLET_CHAR = 129;
+  var ELLIPSIS_CHARS = [0x81, 0x8d];
+  var BULLET_CHAR = 149;
   var BULLET = [0x00, 0x00, 0x00, 0x60, 0x60, 0x90, 0x60, 0x90,
                 0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
   var LINE_CHAR = 25, LEFT_CHAR = 26, RIGHT_CHAR = 27;
@@ -186,10 +191,17 @@
     for (var c = 0; c < 256; c++) {
       payload.set(glyph(c), 64 * c);
     }
-    if (glyph(BULLET_CHAR).every(function (b) { return b === 0; })) {
+    var empty = function (c) {
+      return glyph(c).every(function (b) { return b === 0; });
+    };
+    payload.fill(0, 64 * OLD_ELLIPSIS_CHAR, 64 * (OLD_BULLET_CHAR + 1));
+    payload.set(glyph(OLD_ELLIPSIS_CHAR), 64 * ELLIPSIS_CHARS[0]);
+    payload.set(glyph(OLD_ELLIPSIS_CHAR + 1), 64 * ELLIPSIS_CHARS[1]);
+    if (!empty(OLD_BULLET_CHAR)) {
+      payload.set(glyph(OLD_BULLET_CHAR), 64 * BULLET_CHAR);
+    } else if (empty(BULLET_CHAR)) {
       payload.set(BULLET, 64 * BULLET_CHAR);
-      notes.push('Font: added the standard bullet point (character ' + BULLET_CHAR +
-                 '), which this menu version does not have.');
+      notes.push('Font: added the standard bullet point, which this menu version does not have.');
     }
     // characters 30 and 31 were unused before
     var line = glyphPixels(glyph(LINE_CHAR));

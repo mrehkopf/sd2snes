@@ -118,12 +118,17 @@ palettes light up under the selection bar.
 A character is 16x8 pixels: two 8x8 4bpp tiles in the SNES format (32 bytes each: rows of
 bitplanes 0+1, then rows of bitplanes 2+3), the left half, then the right half.
 
-- Text uses colors 1-3 in the left half of the cell. On the even columns (BG2, 2bpp) only bitplanes
-  0+1 of the left half are visible, so a character that should look the same in every column must
-  stay in colors 0-3 and in the left 8 pixels.
+- Text characters are 8 pixels wide: the left half of the cell, in colors 0-3 (1 fill, 2 outline,
+  3 shade). The even columns are on BG2 (2bpp), which shows only bitplanes 0+1 of the left half;
+  the right half stays empty.
 - Characters 0-15 are the controller buttons (see "Buttons" below); they use colors 4-15 and the
   right half, which only BG1 shows.
-- The character set is CP1252, as the firmware converts file names to it.
+- The character set is CP1252, as the firmware converts file names to it. The menu's own texts
+  also use the characters $81 and $8D, which are undefined in CP1252 and so never occur in file
+  names: together they are its ellipsis ("…" in the menu sources), so it can look different from
+  the 8 pixel CP1252 ellipsis (133). The bullet in menu entries is 149 (•).
+- $8F and $9D, the other characters undefined in CP1252, are reserved for further menu glyphs.
+  $90 never shows: it introduces a button in the menu's strings.
 - Characters 0 and 1 end a string and are never printed as text.
 - Character 32 (space) must be blank: the menu fills empty cells with it, and BG2 shows its left
   half next to the logo.

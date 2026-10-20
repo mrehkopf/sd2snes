@@ -83,14 +83,15 @@ chunk_end:
 .endblock
 
 ; font: 256 characters of 16x8 pixels, 4bpp
+; text font: characters 16-255, CP1252 (font.py)
 font .block
   .skin_chunk "FONT"
-  .word 0, 256                  ; first character, number of characters
+  .word 16, 240                 ; first character, number of characters
   .binary "font.chr"
 chunk_end:
 .endblock
 
-; buttons: characters 0-15 and the colors of their palettes (buttons.py)
+; buttons: characters 0-15 and the colors of their palettes (font.py)
 buttons_font .block
   .skin_chunk "FONT"
   .word 0, 16

@@ -7,6 +7,8 @@
 ; conversion, so remap to ASCII
         .enc "ascii"
         .cdef " ~", 32
+        .tdef "•™", [149, 153]  ; CP1252, as the font (skin-format.md)
+        .edef "…", [$81, $8d]   ; the menu's ellipsis: two characters undefined in CP1252
 
 ; helper function for long-addressing WRAM where needed
 wram    .sfunction _a, _a | $7e0000
