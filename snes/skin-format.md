@@ -82,7 +82,7 @@ colors out of the ranges the menu reads for text.
 | 0 | Backdrop, normally set per line by `GRAD` |
 | 4*p* + 1 … 4*p* + 3, *p* = 0-7 | Text palette *p* on BG2 (colors 1-3 of the 2bpp palette) |
 | 16*p* + 1 … 16*p* + 3, *p* = 0-7 | Text palette *p* on BG1; must equal the BG2 colors of the same palette, or text changes color from one column to the next |
-| 36-47, 52-63, 64-79 | Reserved for button graphics in a later menu version |
+| 36-47, 52-63, 65-79 | Reserved for button graphics in a later menu version (64, color 0 of BG1 palette 4, is transparent there and free) |
 | 128-255 | Sprite palettes 0-7 (128 + 16*q* …), color 0 of each transparent |
 | everything else | Free for the logo |
 
