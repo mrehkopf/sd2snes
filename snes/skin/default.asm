@@ -90,6 +90,16 @@ font .block
 chunk_end:
 .endblock
 
+; buttons: characters 0-15 and the colors of their palettes (buttons.py)
+buttons_font .block
+  .skin_chunk "FONT"
+  .word 0, 16
+  .binary "buttons.chr"
+chunk_end:
+.endblock
+
+  .include "buttons.asm"
+
 ; logo: 224 tiles (32x7), 8bpp
 logo .block
   .skin_chunk "LOGO"
