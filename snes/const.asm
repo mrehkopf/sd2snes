@@ -181,7 +181,9 @@ text_skin_preview:          .text "Preview", 0
 mdesc_skin_preview:         .text "Show the menu with this skin", 0
 text_skin_use:              .text "Use this skin", 0
 mdesc_skin_use:             .text "Use this skin from now on", 0
-text_skin_preview_bar:      .text "Skin preview   {A}Use this skin   {B}Back", 0
+text_skin_apply:            .text "Apply skin?", 0
+text_skin_revert:           .text "Revert", 0
+mdesc_skin_revert:          .text "Go back to the skin from before", 0
 text_skins_folder:          .text "/sd2snes/skins", 0
 text_filesel_context_add_to_favorites: .text "Add to favorites", 0
 mdesc_filesel_context_add_to_favorites: .text "Add the selected file to favorites", 0

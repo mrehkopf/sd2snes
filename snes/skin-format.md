@@ -6,8 +6,8 @@ bar and background sprites. This document describes version 1 of the file format
 ## Using a skin
 
 - Skin files have the extension `.skin` and normally live in `/sd2snes/skins/` on the SD card.
-- In the file browser, A or Y on a skin file offers "Preview" (shows the menu with the skin
-  until A uses it or B goes back) and "Use this skin".
+- In the file browser, A or Y on a skin file offers "Preview" (shows the menu with the skin and
+  asks "Apply skin?": "Use this skin" keeps it, "Revert" or B goes back) and "Use this skin".
 - Configuration → Skin → "Choose a skin…" opens `/sd2snes/skins/` in the file browser; going
   back up from there returns to the directory from before. "Use the built-in skin" switches back
   to the original look.

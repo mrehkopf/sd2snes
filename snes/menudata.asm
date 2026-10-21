@@ -143,6 +143,14 @@ menu_enttab_filesel_context_skin:
   .menu_func_close text_skin_use, skin_menu_use, mdesc_skin_use
   .menu_end
 
+menu_enttab_skin_preview:
+; HEADER
+  .menu_header 1, text_skin_apply
+; ENTRIES
+  .menu_func_close text_skin_use, skin_menu_use, mdesc_skin_use
+  .menu_func_close text_skin_revert, skin_menu_revert, mdesc_skin_revert
+  .menu_end
+
 menu_enttab_recent_context:
 ; HEADER
   .menu_header 1, text_filesel_selected_file

@@ -807,6 +807,13 @@ skin_menu_use:
   sta wram(skin_action)
   rtl
 
+skin_menu_revert:
+  .as
+  .xl
+  lda #$00                      ; as B
+  sta wram(skin_action)
+  rtl
+
 skin_menu_choose:
   .as
   .xl
@@ -848,8 +855,8 @@ skin_set:
   plp
   rts
 
-; show the skin selected in the file browser (MCU_PARAM) until A (use it)
-; or B (back to the skin from before)
+; show the skin selected in the file browser (MCU_PARAM) and ask whether to
+; use it; "Revert" or B go back to the skin from before
 skin_preview .block
   php
   phb
@@ -860,7 +867,7 @@ skin_preview .block
   lda #$00
   pha
   plb
-  lda skin_skip                 ; restored for B
+  lda skin_skip                 ; restored for "Revert"
   pha
   lda #SKIN_SRC_SELECTED
   sta @l MCU_PARAM+8
@@ -869,18 +876,24 @@ skin_preview .block
   stz skin_skip
   jsr filesel_set_bar           ; (the closed menu had the bar)
   jsr reapply_skin
-  .print_at space64, 0, 28, 0, 64
-  .print_at text_skin_preview_bar, 2, 28, 0, 64
-wait:
-  lda isr_done
-  beq wait
-  stz isr_done
-  jsr printtime
-  jsr read_pad
-  lda pad_a
-  bne use
-  lda pad_b
-  beq wait
+  stz skin_action               ; B: revert
+  lda #$06                      ; where the context menu was
+  sta window_x
+  lda #$0b
+  sta window_y
+  phb
+    lda #`menu_enttab_skin_preview
+    pha
+    plb
+    ldx #<>menu_enttab_skin_preview
+    jsr show_menu
+  plb
+  sep #$20
+  .as
+  jsr filesel_set_bar
+  lda skin_action
+  cmp #SKIN_ACTION_USE
+  beq use
   pla
   sta skin_skip
   lda #SKIN_SRC_CONFIG
@@ -896,8 +909,6 @@ use:
   lda #CMD_SET_SKIN
   jsl wram_mcu_cmd
 done:
-  .print_at space64, 0, 28, 0, 64
-  jsr filesel_statusbar
   plb
   plp
   rts
