@@ -1,3 +1,7 @@
+NMITIMEN        = $b1           ; VBlank NMI, H/V timer IRQ (irq_obsel), auto joypad read
+HDMA_CHANNELS   = %01111011     ; channels 0, 1, 3-6 (setup_hdma)
+OBSEL_HTIME     = 16            ; the dot where irq_obsel's timer fires
+
 killdma:
   php
   rep #$20
@@ -39,15 +43,6 @@ setup_hdma:
   sta $4314
 
   lda #$00      ;A to B; direct; 1x single reg
-  sta $4320     ;ch. 2 for sprite pages
-  lda #$01      ;2101 = OBSEL
-  sta $4321
-  lda #`wram(hdma_obsel)
-  ldy #hdma_obsel
-  sty $4322
-  sta $4324
-
-  lda #$00      ;A to B; direct; 1x single reg
   sta $4330     ;ch. 3 for mode switch
   lda #$05      ;2105 = BG mode
   sta $4331
@@ -83,9 +78,14 @@ setup_hdma:
   sty $4362
   sta $4364
 
+  ldx #OBSEL_HTIME
+  stx $4207     ;HTIME
+  ldx #$01ff    ;no timer IRQ before the NMI starts the sprite page changes
+  stx $4209     ;VTIME
   jsr waitblank
-  lda #$7f
-  sta $420c     ;enable HDMA ch. 0-6
-  lda #$81      ;VBlank NMI + Auto Joypad Read
-  sta $4200     ;enable V-BLANK NMI
+  lda #HDMA_CHANNELS
+  sta $420c     ;enable HDMA
+  lda #NMITIMEN
+  sta $4200     ;enable V-BLANK NMI, H/V timer IRQ
+  cli
   rts

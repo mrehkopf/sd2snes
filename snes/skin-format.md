@@ -237,12 +237,9 @@ Tiles: the tile data starts at sprite tile 64 (tiles 0-63 are not available). Da
 
 The page of a line selects which page sprites on that line take tiles 256-511 from. One picture
 can therefore use more than 512 different tiles, e.g. page 0 for the upper part of the screen and
-page 1 for the lower part. The menu only switches the page on lines where it changes.
-
-No sprite with tiles 256-511 may cover the first line of a new page. The PPU fetches the sprite
-tiles of a line during the horizontal blank before it, while the HDMA switches the page, so such a
-sprite shows a few tiles of the old page on that line, differently from frame to frame. Change the
-page on a line between sprites.
+page 1 for the lower part. The page can change on any line, also in the middle of a sprite: the
+menu switches it with a timer interrupt during the line before, while the PPU fetches no sprite
+tiles. Each change costs a little CPU time, so keep them to the lines where the picture needs them.
 
 Limits of the SNES: at most 32 sprites and 34 sprite tiles (8 pixels wide each) on one line.
 32x32 sprites across the whole width are 8 sprites and 32 tiles per line.

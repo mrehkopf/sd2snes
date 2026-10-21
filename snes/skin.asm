@@ -11,7 +11,8 @@
 ; data, not HDMA tables; the menu builds the tables from them:
 ; - background gradient: channel 1 writes CGADD twice and CGDATA twice per
 ;   line (build_grad)
-; - sprite pages: channel 2 writes OBSEL (build_obsel)
+; - sprite pages: an H/V timer IRQ writes OBSEL where the page changes
+;   (build_obsel, irq_obsel)
 ; - selection bar: channel 5 writes CGADSUB and COLDATA, channel 6 writes
 ;   COLDATA twice, so every bar line sets a full RGB color (set_bar_color)
 
@@ -40,7 +41,7 @@ _payload:
 .endsegment
 
 HDMA_GRAD_SIZE  = 1 + 127*4 + 1 + (GRAD_LINES-127)*4 + 1
-HDMA_OBSEL_SIZE = GRAD_LINES*2 + 1 ; worst case: a new page on every line
+OBSEL_CHANGES_SIZE = (GRAD_LINES-1) * 3 ; worst case: a new page on every line
 HDMA_BAR_SIZE   = 3 + 3 + 1 + BAR_MAX_LINES*2 + 3 + 1
 
 ; build the background gradient table for HDMA channel 1
@@ -86,19 +87,17 @@ Frame .block
   rts
 .endblock
 
-; build the sprite page table for HDMA channel 2 (OBSEL): one entry per run
-; of lines with the same page, so OBSEL is written only where the page
-; changes (and every 127 lines). The last run gets a single line: OBSEL keeps
-; its value after the end of the table, so a skin without page changes
-; writes OBSEL once per frame, at line 0.
+; build the sprite page changes for irq_obsel: OBSEL for line 0 (the NMI
+; writes it), then for each line where the page changes its OBSEL value and
+; the VTIME of the next change ($1ff: none). NMI and IRQ must be off; leaves
+; VTIME at $1ff, so no IRQ comes before the NMI has started the chain.
 ; params: p_src (long): GRAD_LINES page numbers (0-2: sprite tiles 256-511
 ;         at OBJ_PAGES_BASE + page * $1000)
 build_obsel .block
   .virtual #0,d
 Frame .block
-  count         .byte ?         ; lines in the current run
-  value         .byte ?         ; OBSEL value of the current run
-  last          .word ?         ; first line of the last run
+  value         .byte ?         ; OBSEL value of the current line
+  slot          .word ?         ; where the VTIME of the next change goes
   _             .dstruct SaveJSR
   p_src         .long ?         ; page numbers (pushed first: bank, then address)
 .endblock
@@ -108,53 +107,43 @@ Frame .block
   .as
   rep #$10
   .xl
-  ldy #GRAD_LINES-1             ; find the last run
+  ldy #$0000
   jsr obsel_value
+  sta wram(obsel_first)
   sta Frame.value
-- dey
-  bmi +
-  jsr obsel_value
-  cmp Frame.value
-  beq -
-+ iny
-  sty Frame.last
-  ldx #$0000                    ; table offset
-  ldy #$0000                    ; line
-  cpy Frame.last
-  beq last_run
-run:
-  jsr obsel_value
-  sta Frame.value
-  stz Frame.count
-same:
-  inc Frame.count
+  ldx #$0000                    ; offsets from obsel_vtime
+  stx Frame.slot
+  ldx #obsel_changes - obsel_vtime
+line:
   iny
-  cpy Frame.last
-  beq emit
-  lda Frame.count
-  cmp #127
-  beq emit
+  cpy #GRAD_LINES
+  beq done
   jsr obsel_value
   cmp Frame.value
-  beq same
-emit:
-  lda Frame.count
-  sta wram(hdma_obsel),x
+  beq line
+  sta Frame.value
+  sta wram(obsel_vtime),x       ; a change: its OBSEL value,
+  phx
+  ldx Frame.slot
+  rep #$20
+  .al
+  tya                           ; its line as the VTIME of the change before
+  sta wram(obsel_vtime),x       ; (irq_obsel writes in the line before it)
+  sep #$20
+  .as
+  plx
   inx
-  lda Frame.value
-  sta wram(hdma_obsel),x
+  stx Frame.slot
   inx
-  cpy Frame.last
-  bne run
-last_run:
-  lda #1                        ; Y = Frame.last
-  sta wram(hdma_obsel),x
   inx
-  jsr obsel_value
-  sta wram(hdma_obsel),x
-  inx
-  lda #$00                      ; end of table
-  sta wram(hdma_obsel),x
+  bra line
+done:
+  ldx Frame.slot
+  rep #$20
+  .al
+  lda #$01ff                    ; no further change
+  sta wram(obsel_vtime),x
+  sta @l $004209                ; VTIME
   .leave
   rts
 
@@ -170,6 +159,45 @@ obsel_value:
   ora #OBSEL_PAGE0
   rts
 .endblock
+
+; H/V timer IRQ (native IRQ vector): the next sprite page change. The timer
+; fires early in the line before the change, so OBSEL changes during the
+; active display, while the PPU fetches no sprite tiles (it does in HBlank).
+; Runs from low WRAM (irqcode, see rom.asm): it needs nothing from the cart
+; but the vector. Uses no direct page and neither the CPU multiplier nor the
+; divider, as it can interrupt anything.
+.section irqcode
+irq_obsel:
+  rep #$30
+  .al
+  .xl
+  pha
+  phx
+  phy
+  phb
+  phk                           ; bank 0: low WRAM and the registers
+  plb
+  lda $4211                     ; acknowledge; bit 7: H/V timer
+  bit #$0080
+  beq out
+  ldx obsel_next
+  ldy #$2101
+  lda #$0000                    ; one byte
+  mvn #$00, #$00                ; OBSEL: MVN reads the value right before it
+                                ; writes it, so the data bus holds the value
+                                ; already when the write cycle starts
+  lda $0000,x                   ; the VTIME of the next change
+  sta $4209
+  inx
+  inx
+  stx obsel_next
+out:
+  plb
+  ply
+  plx
+  pla
+  rti
+.send irqcode
 
 ; set_bar_color: build the selection bar tables (HDMA channels 5 and 6)
 ; from the cursor asset at crsr_ptr; the NMI fills in the lines above the
@@ -792,8 +820,8 @@ skin_cmd:
   pla
   jsl wram_mcu_cmd
   jsr waitblank                 ; the first NMI at the start of VBlank
-  lda #$81
-  sta @l $004200                ; VBlank NMI + auto joypad read
+  lda #NMITIMEN
+  sta @l $004200                ; VBlank NMI, H/V timer IRQ, auto joypad read
   plp
   rts
 
@@ -814,10 +842,10 @@ reapply_skin:
   sta @l $00420c
   jsr apply_skin
   jsr waitblank
-  lda #$7f
-  sta @l $00420c                ; HDMA ch. 0-6, as setup_hdma
-  lda #$81
-  sta @l $004200                ; VBlank NMI + auto joypad read
+  lda #HDMA_CHANNELS
+  sta @l $00420c                ; HDMA, as setup_hdma
+  lda #NMITIMEN
+  sta @l $004200                ; VBlank NMI, H/V timer IRQ, auto joypad read
   lda wram(cur_bright)
   sta @l $002100
   plp

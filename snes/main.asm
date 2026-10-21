@@ -472,6 +472,10 @@ store_wram_routines:
   ldx #<>BRAMCODE_LOAD
   ldy #<>BRAMSTAGE_START
   mvn #`BRAMCODE_LOAD, #`BRAMSTAGE_START
+  lda #IRQCODE_SIZE-1
+  ldx #<>IRQCODE_LOAD
+  ldy #<>IRQCODE_RUN
+  mvn #`IRQCODE_LOAD, #`wram(IRQCODE_RUN)
   plb
   plp
   rts

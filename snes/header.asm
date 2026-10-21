@@ -36,22 +36,6 @@ int_exit:
   plp
   rti
 
-IRQ_16bit:
-  php
-    rep #$30
-    .al
-    .xl
-    pha
-    phx
-    phy
-    phd
-    phb
-    jsl IRQ_ROUTINE
-    rep #$30
-    .al
-    .xl
-    bra int_exit
-
 ;error vectors
 ABT_8bit:
 ABT_16bit:
@@ -89,7 +73,7 @@ NMI_8bit:
   .word <>ABT_16bit
   .word <>NMI_16bit
   .word $0000
-  .word <>IRQ_16bit
+  .word <>irq_obsel     ; in low WRAM (irqcode)
 ; emulation mode vectors
   .fill 4, 0
   .word <>COP_8bit

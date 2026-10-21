@@ -157,7 +157,7 @@ spc700_load:
   jsr upload_high_ram ; Upload 63.5K of SPC700 ram
   jsr upload_low_ram  ; Upload rest of ram
   jsr restore_final   ; Restore SPC700 state & start execution
-  lda #$81            ; VBlank NMI + Auto Joypad Read
+  lda #NMITIMEN       ; VBlank NMI, H/V timer IRQ, Auto Joypad Read
   sta $4200           ; enable V-BLANK NMI
   cli
   plp

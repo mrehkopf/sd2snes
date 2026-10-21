@@ -7,6 +7,13 @@ NMI_ROUTINE:
   lda #$00
   pha
   plb
+; sprite pages: OBSEL for line 0, the first change for irq_obsel
+  lda obsel_first
+  sta $2101
+  ldx obsel_vtime
+  stx $4209     ; VTIME
+  ldx #obsel_changes
+  stx obsel_next
   lda screen_dma_disable
   beq do_screen_dma
   jmp skip_screen_dma
@@ -118,11 +125,4 @@ bright_down:
 + lda #$01
   sta isr_done
   inc fade_count
-  rtl
-
-; IRQ_ROUTINE - called when IRQ triggered
-IRQ_ROUTINE:
-  sep #$20
-  .as
-  lda $4211     ; Acknowledge IRQ
   rtl

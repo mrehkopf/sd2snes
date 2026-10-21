@@ -28,6 +28,8 @@ WRAMCODE_MAX    = $100
 ; some code is copied further from WRAM to BRAM (after potential FPGA reconfig)
 BRAMSTAGE_START = WRAMCODE_START + WRAMCODE_MAX
 BRAMCODE_MAX    = $f0           ; snescmd block RAM from BRAM_PAYLOAD (and BRAMSTAGE size)
+; the IRQ handler runs in low WRAM: the native IRQ vector (bank 0) points there
+IRQCODE_MAX     = $40           ; irqcode_ram in data.asm
 
         * = $0000               ; file offset of $0000 => SNES $c00000
         .logical $c00000
@@ -65,10 +67,18 @@ BRAMCODE_RUN:
         .dsection bramcode
 BRAMCODE_SIZE = * - BRAMCODE_RUN
         .endlogical
+IRQCODE_LOAD:
+        .logical irqcode_ram
+IRQCODE_RUN:
+        .dsection irqcode
+IRQCODE_SIZE = * - IRQCODE_RUN
+        .endlogical
         .cerror * > $c0ff00, "code overlaps header at $C0FF00"
         .endlogical
         .cerror WRAMCODE_SIZE > WRAMCODE_MAX, format("wramcode too big: $%x bytes (max: $%x)", WRAMCODE_SIZE, WRAMCODE_MAX)
         .cerror BRAMCODE_SIZE > BRAMCODE_MAX, format("bramcode too big: $%x bytes (max: $%x)", BRAMCODE_SIZE, BRAMCODE_MAX)
+        .cerror IRQCODE_SIZE > IRQCODE_MAX, format("irqcode too big: $%x bytes (max: $%x)", IRQCODE_SIZE, IRQCODE_MAX)
+        .cerror irq_obsel != IRQCODE_RUN, "irq_obsel must start irqcode (IRQ vector)"
 
         * = $ff00
         .logical $c0ff00
