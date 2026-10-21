@@ -41,7 +41,12 @@ _payload:
 .endsegment
 
 HDMA_GRAD_SIZE  = 1 + 127*4 + 1 + (GRAD_LINES-127)*4 + 1
-OBSEL_CHANGES_SIZE = (GRAD_LINES-1) * 3 ; worst case: a new page on every line
+ObselEntry      .struct         ; the sprite page chain (build_obsel, irq_obsel)
+  obsel         .byte ?         ; OBSEL value
+  vtime         .word ?         ; VTIME of the next entry
+  next          .word ?         ; the next entry (address in low WRAM)
+.ends
+OBSEL_CHAIN_SIZE = GRAD_LINES * size(ObselEntry) ; VBlank and a change on every other line
 HDMA_BAR_SIZE   = 3 + 3 + 1 + BAR_MAX_LINES*2 + 3 + 1
 
 ; build the background gradient table for HDMA channel 1
@@ -87,17 +92,20 @@ Frame .block
   rts
 .endblock
 
-; build the sprite page changes for irq_obsel: OBSEL for line 0 (the NMI
-; writes it), then for each line where the page changes its OBSEL value and
-; the VTIME of the next change ($1ff: none). NMI and IRQ must be off; leaves
-; VTIME at $1ff, so no IRQ comes before the NMI has started the chain.
+; build the sprite page chain for irq_obsel in obsel_chain: entry 0, at
+; VTIME OBSEL_VBLANK, has the OBSEL value of line 0, then comes an entry for
+; each line where the page changes. Each entry has the VTIME and address of the
+; next one, and the last leads back to entry 0, so the chain runs on by
+; itself, one round per frame (irq_obsel writes in the line before a change).
+; Also writes OBSEL for line 0 and sets the timer for entry 0.
+; NMI and IRQ must be off.
 ; params: p_src (long): GRAD_LINES page numbers (0-2: sprite tiles 256-511
 ;         at OBJ_PAGES_BASE + page * $1000)
 build_obsel .block
   .virtual #0,d
 Frame .block
   value         .byte ?         ; OBSEL value of the current line
-  slot          .word ?         ; where the VTIME of the next change goes
+  prev          .word ?         ; offset of the entry before in obsel_chain
   _             .dstruct SaveJSR
   p_src         .long ?         ; page numbers (pushed first: bank, then address)
 .endblock
@@ -109,11 +117,11 @@ Frame .block
   .xl
   ldy #$0000
   jsr obsel_value
-  sta wram(obsel_first)
+  sta wram(obsel_chain)+ObselEntry.obsel
+  sta @l $002101
   sta Frame.value
-  ldx #$0000                    ; offsets from obsel_vtime
-  stx Frame.slot
-  ldx #obsel_changes - obsel_vtime
+  ldx #$0000
+  stx Frame.prev
 line:
   iny
   cpy #GRAD_LINES
@@ -122,29 +130,49 @@ line:
   cmp Frame.value
   beq line
   sta Frame.value
-  sta wram(obsel_vtime),x       ; a change: its OBSEL value,
-  phx
-  ldx Frame.slot
+  rep #$20                      ; a new entry after the one before
+  .al
+  lda Frame.prev
+  clc
+  adc #size(ObselEntry)
+  tax
+  sep #$20
+  .as
+  lda Frame.value
+  sta wram(obsel_chain)+ObselEntry.obsel,x
+  jsr link                      ; the entry before leads here, at line Y
+  stx Frame.prev
+  bra line
+done:
+  ldx #$0000                    ; the last entry leads back to entry 0
+  ldy #OBSEL_VBLANK
+  jsr link
   rep #$20
   .al
-  tya                           ; its line as the VTIME of the change before
-  sta wram(obsel_vtime),x       ; (irq_obsel writes in the line before it)
+  lda #obsel_chain
+  sta wram(obsel_next)
+  lda #OBSEL_VBLANK
+  sta @l $004209                ; VTIME
+  .leave
+  rts
+
+; let entry Frame.prev lead to the entry at offset X, at VTIME Y; keeps X
+link:
+  .as
+  .xl
+  phx
+  rep #$20
+  .al
+  txa
+  clc
+  adc #obsel_chain
+  ldx Frame.prev
+  sta wram(obsel_chain)+ObselEntry.next,x
+  tya
+  sta wram(obsel_chain)+ObselEntry.vtime,x
   sep #$20
   .as
   plx
-  inx
-  stx Frame.slot
-  inx
-  inx
-  bra line
-done:
-  ldx Frame.slot
-  rep #$20
-  .al
-  lda #$01ff                    ; no further change
-  sta wram(obsel_vtime),x
-  sta @l $004209                ; VTIME
-  .leave
   rts
 
 ; OBSEL value for line Y
@@ -160,12 +188,29 @@ obsel_value:
   rts
 .endblock
 
-; H/V timer IRQ (native IRQ vector): the next sprite page change. The timer
-; fires early in the line before the change, so OBSEL changes during the
-; active display, while the PPU fetches no sprite tiles (it does in HBlank).
-; Runs from low WRAM (irqcode, see rom.asm): it needs nothing from the cart
-; but the vector. Uses no direct page and neither the CPU multiplier nor the
-; divider, as it can interrupt anything.
+; one step of the sprite page chain: write the OBSEL value of entry
+; obsel_next, set the timer for the next entry and move on to it
+; (irq_obsel, wram_mcu_cmd_pages); A, X and Y 16-bit, changes them and DB
+obsel_step .segment
+  lda @l obsel_next
+  tax
+  ldy #$2101
+  lda #$0000                    ; one byte
+  mvn #$00, #$00                ; OBSEL: MVN reads the value right before it
+                                ; writes it, so the data bus holds the value
+                                ; already when the write cycle starts
+  lda @w ObselEntry.vtime-1,x   ; (MVN has moved X on, DB = 0)
+  sta $4209                     ; VTIME
+  lda @w ObselEntry.next-1,x
+  sta obsel_next
+.endsegment
+
+; H/V timer IRQ (native IRQ vector): the next step of the sprite page chain.
+; The timer fires early in the line before a change, so OBSEL changes during
+; the active display, while the PPU fetches no sprite tiles (it does in
+; HBlank). Runs from low WRAM (irqcode, see rom.asm): it needs nothing from
+; the cart but the vector. Uses no direct page and neither the CPU multiplier
+; nor the divider, as it can interrupt anything.
 .section irqcode
 irq_obsel:
   rep #$30
@@ -178,52 +223,70 @@ irq_obsel:
   lda @l $004211                ; acknowledge; bit 7: H/V timer
   bit #$0080
   beq +
-  jsl obsel_change
+  .obsel_step
 + plb
   ply
   plx
   pla
   rti
-
-; write the next sprite page change and set the timer for the one after it
-; (irq_obsel, wram_mcu_cmd_pages); A, X and Y 16-bit, changes them and DB
-obsel_change:
-  .al
-  .xl
-  lda @l obsel_next
-  tax
-  ldy #$2101
-  lda #$0000                    ; one byte
-  mvn #$00, #$00                ; OBSEL: MVN reads the value right before it
-                                ; writes it, so the data bus holds the value
-                                ; already when the write cycle starts
-  lda $0000,x                   ; the VTIME of the next change (DB = 0)
-  sta $4209
-  lda $4211                     ; the timer flag again: a read right after the
-                                ; timer fired (polling) clears it too early,
-                                ; and it comes back
-  inx
-  inx
-  stx obsel_next
-  rtl
-
-; at the start of VBlank: OBSEL for line 0 and the timer for the first change
-; (the NMI, wram_mcu_cmd_pages); A 8-bit, X 16-bit, changes A
-obsel_start:
-  .as
-  .xl
-  lda @l obsel_first
-  sta @l $002101
-  rep #$20
-  .al
-  lda @l obsel_vtime
-  sta @l $004209                ; VTIME
-  lda #obsel_changes
-  sta @l obsel_next
-  sep #$20
-  .as
-  rtl
 .send irqcode
+
+; wram_mcu_cmd for commands during which the MCU takes over the cart memory
+; bus (skin loads: SD DMA). The interrupt vectors are in the cart, so
+; interrupts must be off (I set, $4200: H/V timer without NMI). WAI wakes up
+; on the timer even so, and this does the work of irq_obsel. Returns at the
+; start of the VBlank after the MCU is done.
+.section wramcode
+wram_mcu_cmd_pages .block
+  .as
+  .xl
+  pha
+- lda @l SNES_CMD               ; the MCU is ready
+  cmp #$55
+  beq +
+  jsr step
+  bra -
++ pla
+- sta @l MCU_CMD                ; the command, until the MCU echoes it
+  cmp @l SNES_CMD
+  beq +
+  pha
+  jsr step
+  pla
+  bra -
++
+- lda @l SNES_CMD               ; the MCU is done
+  cmp #$55
+  beq +
+  jsr step
+  bra -
++
+- jsr step                      ; on to the start of VBlank
+  lda @l $004212
+  bpl -
+  rtl
+
+; wait for the H/V timer, then the next step of the chain
+step:
+  wai
+  php
+  rep #$30
+  .al
+  .xl
+  phx
+  phy
+  phb
+  lda @l $004211                ; acknowledge
+  .obsel_step
+  lda $4211                     ; again: read within 4 master cycles of being
+                                ; set, the flag stays set
+  plb
+  ply
+  plx
+  plp
+  rts
+.endblock
+.send wramcode
 
 ; set_bar_color: build the selection bar tables (HDMA channels 5 and 6)
 ; from the cursor asset at crsr_ptr; the NMI fills in the lines above the
@@ -845,7 +908,7 @@ skin_cmd:
   sei
   pha
   lda #NMITIMEN & ~$80
-  sta @l $004200                ; no NMI; the H/V timer flag for polling
+  sta @l $004200                ; no NMI; the H/V timer for WAI
   pla
   jsl wram_mcu_cmd_pages        ; returns at the start of VBlank
   lda #NMITIMEN

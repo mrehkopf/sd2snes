@@ -7,7 +7,6 @@ NMI_ROUTINE:
   lda #$00
   pha
   plb
-  jsl obsel_start ; sprite pages: OBSEL for line 0, the first change
   lda screen_dma_disable
   beq do_screen_dma
   jmp skip_screen_dma

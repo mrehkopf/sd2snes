@@ -549,64 +549,6 @@ wram_mcu_cmd:
   bne -
   rtl
 
-; wram_mcu_cmd for commands during which the MCU takes over the cart memory
-; bus (skin loads: SD DMA). The interrupt vectors are in the cart, so
-; interrupts must be off (I set, $4200: H/V timer without IRQ); this keeps
-; the sprite pages going by polling the timer flag and RDNMI instead
-; (obsel_change, obsel_start). Returns at the start of the VBlank after
-; the MCU is done, with the sprite pages of the next frame started.
-wram_mcu_cmd_pages .block
-  .as
-  .xl
-  pha
-  lda @l $004210                ; clear an old RDNMI
-  lda @l $004212
-  bpl +                         ; in VBlank now: start the frame's pages
-  jsl obsel_start
-+
-- jsr poll
-  lda @l SNES_CMD
-  cmp #$55
-  bne -
-  pla
-- sta @l MCU_CMD
-  pha
-  jsr poll
-  pla
-  cmp @l SNES_CMD
-  bne -
-- jsr poll
-  lda @l SNES_CMD
-  cmp #$55
-  bne -
-- jsr poll                      ; on to the start of VBlank
-  bcc -
-  rtl
-
-; the timer flag: the next page change; RDNMI: start the frame's pages,
-; return carry set
-poll:
-  lda @l $004211                ; timer flag, cleared by reading
-  bpl +
-  phb
-  rep #$30
-  .al
-  phx
-  phy
-  jsl obsel_change
-  ply
-  plx
-  sep #$20
-  .as
-  plb
-+ lda @l $004210                ; RDNMI, cleared by reading
-  asl
-  bcc +
-  jsl obsel_start
-  sec
-+ rts
-.endblock
-
 wram_load_ultra16_cfg:
   .as
   lda @l $0021c1

@@ -1,6 +1,7 @@
 NMITIMEN        = $b1           ; VBlank NMI, H/V timer IRQ (irq_obsel), auto joypad read
 HDMA_CHANNELS   = %01111011     ; channels 0, 1, 3-6 (setup_hdma)
 OBSEL_HTIME     = 16            ; the dot where irq_obsel's timer fires
+OBSEL_VBLANK    = 225           ; VTIME of the chain's first entry (VBlank)
 
 killdma:
   php
@@ -79,9 +80,7 @@ setup_hdma:
   sta $4364
 
   ldx #OBSEL_HTIME
-  stx $4207     ;HTIME
-  ldx #$01ff    ;no timer IRQ before the NMI starts the sprite page changes
-  stx $4209     ;VTIME
+  stx $4207     ;HTIME (build_obsel sets VTIME)
   jsr waitblank
   lda #HDMA_CHANNELS
   sta $420c     ;enable HDMA

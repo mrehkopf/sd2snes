@@ -95,10 +95,8 @@ listsel_backup:     .byte 0
 screen_dma_disable: .word 0
 
 ;----------sprite pages (build_obsel, irq_obsel)
-obsel_first:    .byte 0       ; OBSEL for line 0, written by the NMI
-obsel_vtime:    .word 0       ; VTIME of the first change ($1ff: none), then
-obsel_changes:  .fill OBSEL_CHANGES_SIZE ; changes: OBSEL, VTIME of the next
-obsel_next:     .word 0       ; the next change for irq_obsel
+obsel_next:     .word 0       ; the entry of obsel_chain irq_obsel writes next
+obsel_chain:    .fill OBSEL_CHAIN_SIZE ; ObselEntry records, see build_obsel
 irqcode_ram:    .fill IRQCODE_MAX ; irq_obsel runs here (irqcode, rom.asm)
 
 ;----------hdma tables in WRAM (must be stable when cartridge is cut off)
