@@ -538,13 +538,15 @@ pushw_skip_current_head:
   adc #$0002
   sep #$20
   .as
-  sta $211b
-  stz $211b
+  sta $4202           ; CPU multiplier (see menu_select)
   lda @l WINDOW_STACK_BASE+WindowStackEntry.height,x
-  sta $211c
+  sta $4203
   rep #$20
   .al
-  lda $2134
+  nop                 ; the product takes 8 cycles
+  nop
+  nop
+  lda $4216
   asl
   clc
   adc #size(WindowStackEntry)

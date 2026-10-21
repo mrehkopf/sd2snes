@@ -199,13 +199,13 @@ menu_select_noinit:
   sbc #$04
   sta bar_wl
   lda listsel_sel
-  sta $211b
-  stz $211b
-  lda listsel_step
-  sta $211c
+  sta $4202                     ; CPU multiplier: the PPU's shares its latch
+  lda listsel_step              ; with BG1HOFS/BG1VOFS, which HDMA writes
+  sta $4203
   lda window_y
   clc
-  adc $2134
+  nop                           ; the product takes 8 cycles
+  adc $4216
   sta bar_yl
 
 menu_select_loop1:
@@ -299,11 +299,14 @@ Frame .block
     pha
     plb
     lda Frame.numentries
-    sta $211b
-    stz $211b
+    sta $4202             ; CPU multiplier (see menu_select)
     lda [Frame.menu_addr] ; listsel_step from menu structure
-    sta $211c
-    lda $2134
+    sta $4203
+    nop                   ; the product takes 8 cycles
+    nop
+    nop
+    nop
+    lda $4216
     sec
     sbc [Frame.menu_addr] ; listsel_step from menu structure
     inc a
@@ -352,13 +355,15 @@ show_menu_loop:
     jsr menu_select_noinit
     cmp #$ff
     beq show_menu_out
-    sta $211b
-    stz $211b
+    sta $4202             ; CPU multiplier (see menu_select)
     lda #size(MenuEntry)
-    sta $211c
+    sta $4203
     rep #$20
     .al
-    lda $2134
+    nop                   ; the product takes 8 cycles
+    nop
+    nop
+    lda $4216
     clc
     adc #size(MenuHeader)
     tay
