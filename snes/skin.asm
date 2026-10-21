@@ -233,11 +233,11 @@ irq_obsel:
 
 ; wram_mcu_cmd for commands during which the MCU takes over the cart memory
 ; bus (skin loads: SD DMA). The interrupt vectors are in the cart, so
-; interrupts must be off (I set, $4200: H/V timer without NMI). WAI wakes up
-; on the timer even so, and this does the work of irq_obsel. The MCU can echo
-; the command and be done with it before the next timer event, so the wait
-; for the echo polls the timer flag instead. Returns at the start of the
-; VBlank after the MCU is done.
+; interrupts must be off (I set, $4200: H/V timer without NMI); this polls
+; the timer flag and does the work of irq_obsel. No WAI: the FPGA starts MCU
+; memory accesses at the end of a CPU bus cycle, which WAI may hold off, and
+; the MCU can echo the command and be done with it before the next timer
+; event. Returns at the start of the VBlank after the MCU is done.
 .section wramcode
 wram_mcu_cmd_pages .block
   .as
@@ -257,9 +257,9 @@ echo:
   cmp @l SNES_CMD
   beq echoed
   xba                           ; (B: the command)
-  lda @l $004211                ; no WAI: poll the timer (bit 7; the read
-  bpl +                         ; acknowledges it), with few cycles from the
-  jsr run                       ; timer to OBSEL
+  lda @l $004211                ; between the checks, poll the timer (bit 7;
+  bpl +                         ; the read acknowledges it)
+  jsr run
 + xba
   bra echo
 echoed:
@@ -279,8 +279,8 @@ echoed:
 
 ; wait for the H/V timer, then the next step of the chain
 step:
-  wai
-  lda @l $004211                ; acknowledge
+- lda @l $004211                ; bit 7: H/V timer (the read acknowledges it)
+  bpl -
 ; the next step of the chain; keeps A
 run:
   php
@@ -917,7 +917,7 @@ skin_cmd:
   sei
   pha
   lda #NMITIMEN & ~$80
-  sta @l $004200                ; no NMI; the H/V timer for WAI
+  sta @l $004200                ; no NMI; the H/V timer sets $4211
   pla
   jsl wram_mcu_cmd_pages        ; returns at the start of VBlank
   lda #NMITIMEN
