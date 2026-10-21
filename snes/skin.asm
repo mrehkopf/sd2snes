@@ -234,12 +234,17 @@ irq_obsel:
 ; wram_mcu_cmd for commands during which the MCU takes over the cart memory
 ; bus (skin loads: SD DMA). The interrupt vectors are in the cart, so
 ; interrupts must be off (I set, $4200: H/V timer without NMI). WAI wakes up
-; on the timer even so, and this does the work of irq_obsel. Returns at the
-; start of the VBlank after the MCU is done.
+; on the timer even so, and this does the work of irq_obsel. The MCU can echo
+; the command and be done with it before the next timer event, so the wait
+; for the echo polls the timer flag instead. Returns at the start of the
+; VBlank after the MCU is done.
 .section wramcode
 wram_mcu_cmd_pages .block
   .as
   .xl
+  phb                           ; the steps change DB, X and Y
+  phx
+  phy
   pha
 - lda @l SNES_CMD               ; the MCU is ready
   cmp #$55
@@ -247,14 +252,17 @@ wram_mcu_cmd_pages .block
   jsr step
   bra -
 + pla
-- sta @l MCU_CMD                ; the command, until the MCU echoes it
+echo:
+  sta @l MCU_CMD                ; the command, until the MCU echoes it
   cmp @l SNES_CMD
-  beq +
-  pha
-  jsr step
-  pla
-  bra -
-+
+  beq echoed
+  xba                           ; (B: the command)
+  lda @l $004211                ; no WAI: poll the timer (bit 7; the read
+  bpl +                         ; acknowledges it), with few cycles from the
+  jsr run                       ; timer to OBSEL
++ xba
+  bra echo
+echoed:
 - lda @l SNES_CMD               ; the MCU is done
   cmp #$55
   beq +
@@ -264,25 +272,26 @@ wram_mcu_cmd_pages .block
 - jsr step                      ; on to the start of VBlank
   lda @l $004212
   bpl -
+  ply
+  plx
+  plb
   rtl
 
 ; wait for the H/V timer, then the next step of the chain
 step:
   wai
+  lda @l $004211                ; acknowledge
+; the next step of the chain; keeps A
+run:
   php
   rep #$30
   .al
   .xl
-  phx
-  phy
-  phb
-  lda @l $004211                ; acknowledge
+  pha
   .obsel_step
   lda $4211                     ; again: read within 4 master cycles of being
                                 ; set, the flag stays set
-  plb
-  ply
-  plx
+  pla
   plp
   rts
 .endblock
