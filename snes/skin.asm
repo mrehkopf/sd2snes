@@ -765,10 +765,10 @@ wait:
   bra done
 use:
   pla
-  lda #SKIN_SRC_SELECTED        ; the skin is shown already
-  sta @l MCU_PARAM+8
+  lda #SKIN_SRC_SHOWN           ; the skin is shown already: no reload,
+  sta @l MCU_PARAM+8            ; so the MCU leaves the cart bus alone
   lda #CMD_SET_SKIN
-  jsr skin_cmd
+  jsl wram_mcu_cmd
 done:
   .print_at space64, 0, 28, 0, 64
   jsr filesel_statusbar

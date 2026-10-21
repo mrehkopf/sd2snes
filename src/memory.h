@@ -51,6 +51,7 @@ extern char current_filename[];
 #define SKIN_SRC_CONFIG              (0) /* LOAD_SKIN: the configured skin */
 #define SKIN_SRC_SELECTED            (1) /* the file selected in the menu (MCU_PARAM: dir, file entry) */
 #define SKIN_SRC_BUILTIN             (2) /* SET_SKIN: none, the menu's built-in skin */
+#define SKIN_SRC_SHOWN               (3) /* SET_SKIN: the selected file, already loaded (preview) */
 
 #define SRAM_SPC_DATA_ADDR           (0xFD0000L)
 #define SRAM_SPC_HEADER_ADDR         (0xFE0000L)

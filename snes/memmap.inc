@@ -53,6 +53,7 @@ SKIN_MAX_SIZE               = $FFFF
 SKIN_SRC_CONFIG             = 0         ; CMD_LOAD_SKIN: the configured skin
 SKIN_SRC_SELECTED           = 1         ; the selected file (MCU_PARAM: dir, file entry)
 SKIN_SRC_BUILTIN            = 2         ; CMD_SET_SKIN: none (built-in skin)
+SKIN_SRC_SHOWN              = 3         ; CMD_SET_SKIN: the selected file, already loaded (preview)
 
 NUM_CHEATS                  = $CFFFFE
 CHEAT_ADDR                  = $D00000

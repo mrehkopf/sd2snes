@@ -275,6 +275,7 @@ int main(void) {
     uint8_t cmd = 0;
     uint64_t btime = 0;
     uint32_t filesize=0;
+    uint8_t skin_src;
     printf("test sram\n");
     while(!sram_reliable()) cli_entrycheck();
     printf("ok\n");
@@ -464,9 +465,11 @@ int main(void) {
           break;
         case SNES_CMD_SET_SKIN:
           /* select the skin (the selected file or the built-in skin), save
-             the config and load the skin for the menu to apply */
+             the config and load the skin for the menu to apply, unless the
+             menu shows it already */
+          skin_src = snescmd_readbyte(SNESCMD_MCU_PARAM + 8);
           cfg_get_from_menu();
-          if(snescmd_readbyte(SNESCMD_MCU_PARAM + 8) == SKIN_SRC_SELECTED) {
+          if(skin_src == SKIN_SRC_SELECTED || skin_src == SKIN_SRC_SHOWN) {
             get_selected_name(file_lfn);
             cfg_set_skin_name((char*)file_lfn);
           } else {
@@ -475,7 +478,9 @@ int main(void) {
           printf("Set skin: %s\n", CFG.skin_name);
           cfg_save();
           cfg_load_to_menu();
-          load_skin();
+          if(skin_src != SKIN_SRC_SHOWN) {
+            load_skin();
+          }
           cmd=0; /* stay in menu loop */
           break;
         case SNES_CMD_LOAD_CHT:
