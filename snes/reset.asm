@@ -7,13 +7,7 @@ NMI_ROUTINE:
   lda #$00
   pha
   plb
-; sprite pages: OBSEL for line 0, the first change for irq_obsel
-  lda obsel_first
-  sta $2101
-  ldx obsel_vtime
-  stx $4209     ; VTIME
-  ldx #obsel_changes
-  stx obsel_next
+  jsl obsel_start ; sprite pages: OBSEL for line 0, the first change
   lda screen_dma_disable
   beq do_screen_dma
   jmp skip_screen_dma

@@ -29,7 +29,7 @@ WRAMCODE_MAX    = $100
 BRAMSTAGE_START = WRAMCODE_START + WRAMCODE_MAX
 BRAMCODE_MAX    = $f0           ; snescmd block RAM from BRAM_PAYLOAD (and BRAMSTAGE size)
 ; the IRQ handler runs in low WRAM: the native IRQ vector (bank 0) points there
-IRQCODE_MAX     = $40           ; irqcode_ram in data.asm
+IRQCODE_MAX     = $60           ; irqcode_ram in data.asm
 
         * = $0000               ; file offset of $0000 => SNES $c00000
         .logical $c00000

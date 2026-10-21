@@ -175,28 +175,54 @@ irq_obsel:
   phx
   phy
   phb
-  phk                           ; bank 0: low WRAM and the registers
-  plb
-  lda $4211                     ; acknowledge; bit 7: H/V timer
+  lda @l $004211                ; acknowledge; bit 7: H/V timer
   bit #$0080
-  beq out
-  ldx obsel_next
+  beq +
+  jsl obsel_change
++ plb
+  ply
+  plx
+  pla
+  rti
+
+; write the next sprite page change and set the timer for the one after it
+; (irq_obsel, wram_mcu_cmd_pages); A, X and Y 16-bit, changes them and DB
+obsel_change:
+  .al
+  .xl
+  lda @l obsel_next
+  tax
   ldy #$2101
   lda #$0000                    ; one byte
   mvn #$00, #$00                ; OBSEL: MVN reads the value right before it
                                 ; writes it, so the data bus holds the value
                                 ; already when the write cycle starts
-  lda $0000,x                   ; the VTIME of the next change
+  lda $0000,x                   ; the VTIME of the next change (DB = 0)
   sta $4209
+  lda $4211                     ; the timer flag again: a read right after the
+                                ; timer fired (polling) clears it too early,
+                                ; and it comes back
   inx
   inx
   stx obsel_next
-out:
-  plb
-  ply
-  plx
-  pla
-  rti
+  rtl
+
+; at the start of VBlank: OBSEL for line 0 and the timer for the first change
+; (the NMI, wram_mcu_cmd_pages); A 8-bit, X 16-bit, changes A
+obsel_start:
+  .as
+  .xl
+  lda @l obsel_first
+  sta @l $002101
+  rep #$20
+  .al
+  lda @l obsel_vtime
+  sta @l $004209                ; VTIME
+  lda #obsel_changes
+  sta @l obsel_next
+  sep #$20
+  .as
+  rtl
 .send irqcode
 
 ; set_bar_color: build the selection bar tables (HDMA channels 5 and 6)
@@ -806,20 +832,22 @@ done:
 .endblock
 
 ; send the skin command in A (CMD_LOAD_SKIN, CMD_SET_SKIN) to the MCU and
-; wait for it in WRAM with NMI off: the MCU loads the skin by SD DMA, which
-; takes over the cart memory bus, so the CPU must not read from it (NMI
-; vector and handler) until the MCU is done. The HDMA tables are in WRAM.
+; wait for it in WRAM with interrupts off: the MCU loads the skin by SD DMA,
+; which takes over the cart memory bus, so the CPU must not read from it
+; (interrupt vectors and handlers) until the MCU is done. The HDMA tables
+; are in WRAM, and wram_mcu_cmd_pages keeps the sprite pages going.
 skin_cmd:
   php
   sep #$20
   .as
+  rep #$10
+  .xl
   sei
   pha
-  lda #$00
-  sta @l $004200                ; no NMI
+  lda #NMITIMEN & ~$80
+  sta @l $004200                ; no NMI; the H/V timer flag for polling
   pla
-  jsl wram_mcu_cmd
-  jsr waitblank                 ; the first NMI at the start of VBlank
+  jsl wram_mcu_cmd_pages        ; returns at the start of VBlank
   lda #NMITIMEN
   sta @l $004200                ; VBlank NMI, H/V timer IRQ, auto joypad read
   plp
