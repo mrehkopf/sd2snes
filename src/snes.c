@@ -147,8 +147,42 @@ void snes_reset(int state) {
   GPIO_DIR(SNES_RESET_REG, SNES_RESET_BIT, state);
 }
 
+/* offset of the branch at the start of the reset hook that skips the clock
+   phase check, from the hook image (snescmd_prepare_nmihook); the reset patch
+   sets it to 0 to run the check. Valid after snescmd_prepare_nmihook(), which
+   every game load runs (init()) before snes_reset_loop() can be called. */
+static uint8_t reset_hook_skip;
+
+/*
+ * boots the SNES once more without the clock phase check: restores the skip
+ * branch of the reset hook, resets, waits for the hook's PASS, then puts the
+ * check back for the next reset
+ */
+static void snes_reset_skip_check(void) {
+  uint8_t branch = snescmd_readbyte(SNESCMD_RESET_HOOK + 1);
+  tick_t starttime;
+  snescmd_writebyte(reset_hook_skip, SNESCMD_RESET_HOOK + 1);
+  snes_reset(1);
+  snes_set_mcu_cmd(0);        /* in reset, the SNES can't write it meanwhile */
+  delay_ms(SNES_RESET_PULSELEN_MS);
+  snes_reset(0);
+  starttime = getticks();
+  while(snes_get_mcu_cmd() != SNES_CMD_RESET_LOOP_PASS
+        && getticks() <= starttime + SNES_RESET_LOOP_TIMEOUT
+        && fpga_test() == FPGA_TEST_TOKEN);
+  snes_set_mcu_cmd(0);
+  snescmd_writebyte(branch, SNESCMD_RESET_HOOK + 1);
+}
+
 /*
  * provides a mini reset environment to speed reset for clock synchronization
+ *
+ * The reset hook reports PASS, or FAIL and waits in a loop for the next
+ * reset. After SNES_RESET_LOOP_TIMEOUT a FAIL boots the SNES once without
+ * the check, so it can't be left waiting. The hook needs a few ms after each
+ * reset to report, so the loop gives up only if the hook stays silent for
+ * SNES_RESET_LOOP_TIMEOUT after a reset (defeated somehow); MCU_CMD is left
+ * alone then, so the caller's loop still sees a FAIL that comes later.
  *
  * returns: upon loop exit returns the current non-reset related command
  */
@@ -156,32 +190,34 @@ uint8_t resetButtonState = 0;
 uint8_t snes_reset_loop(void) {
   uint8_t cmd = 0;
   tick_t starttime = getticks();
+  tick_t resettime = starttime;  /* the last reset pulse */
   while(fpga_test() == FPGA_TEST_TOKEN) {
     cmd = snes_get_mcu_cmd();
-    // 100ms timeout in case the reset hook is defeated somehow
-    if(getticks() > starttime + SNES_RESET_LOOP_TIMEOUT) {
-      cmd = SNES_CMD_RESET_LOOP_TIMEOUT;
-    }
-    if (cmd) {
+    if(cmd) {
       printf("snes_reset_loop: cmd=%hhx\n", cmd);
-      switch (cmd) {
-        case SNES_CMD_RESET_LOOP_FAIL:
-          snes_set_mcu_cmd(0);
-          cmd = 0;
-          snes_reset_pulse();
-          //delay_us(SNES_RELEASE_RESET_DELAY_US);
-          break;
-        case SNES_CMD_RESET_LOOP_PASS:
-        case SNES_CMD_RESET_LOOP_TIMEOUT:
-          snes_set_mcu_cmd(0);
-          cmd = 0;
-        default:
-          goto snes_reset_loop_out;
+    }
+    if(cmd == SNES_CMD_RESET_LOOP_FAIL) {
+      snes_set_mcu_cmd(0);
+      cmd = 0;
+      if(getticks() > starttime + SNES_RESET_LOOP_TIMEOUT) {
+        printf("snes_reset_loop: timeout, booting without the check\n");
+        snes_reset_skip_check();
+        break;
       }
+      snes_reset_pulse();
+      resettime = getticks();
+    } else if(cmd == SNES_CMD_RESET_LOOP_PASS) {
+      snes_set_mcu_cmd(0);
+      cmd = 0;
+      break;
+    } else if(cmd) {
+      break;
+    } else if(getticks() > resettime + SNES_RESET_LOOP_TIMEOUT) {
+      printf("snes_reset_loop: timeout, no word from the reset hook\n");
+      break;
     }
   }
 
-snes_reset_loop_out:
   if (romprops.has_combo) {
     printf("combo reset: resetButtonState: %hhx\n", resetButtonState);
 
@@ -590,6 +626,7 @@ void snescmd_prepare_nmihook() {
   sram_readblock(bram, SRAM_MENU_ADDR + bram_src, BRAM_SIZE);
 //  snescmd_writeblock(bram, SNESCMD_HOOKS, 40);
   snescmd_writeblock(bram, SNESCMD_INGAME_HOOK, BRAM_SIZE);
+  reset_hook_skip = bram[SNESCMD_RESET_HOOK + 1 - SNESCMD_INGAME_HOOK];
 }
 
 void status_load_to_menu() {
