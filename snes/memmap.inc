@@ -113,7 +113,6 @@ CMD_KILL_NMIHOOK            = $84
 CMD_TEMP_KILL_NMIHOOK       = $85
 CMD_RESET_LOOP_FAIL         = $88
 CMD_RESET_LOOP_PASS         = $89
-CMD_RESET_LOOP_TIMEOUT      = $8A
 CMD_COMBO_TRANSITION        = $90
 
 ; MCU_PARAM+8 of CMD_LOAD_CHT/CMD_SAVE_CHT: where the file was selected

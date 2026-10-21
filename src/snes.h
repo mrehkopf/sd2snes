@@ -65,7 +65,6 @@
 #define SNES_CMD_TEMP_KILL_NMIHOOK   (0x85)
 #define SNES_CMD_RESET_LOOP_FAIL     (0x88)
 #define SNES_CMD_RESET_LOOP_PASS     (0x89)
-#define SNES_CMD_RESET_LOOP_TIMEOUT  (0x8a)
 #define SNES_CMD_COMBO_TRANSITION    (0x90)
 
 #define SNES_CMD_GAMELOOP            (0xff)
