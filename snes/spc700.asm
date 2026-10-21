@@ -88,30 +88,41 @@ spc_loader:         ; .org $0002
 
 ;---------------------------------------
 
-spc_transfer:       ; .org $0002
-
-  .byte $cd, $fe    ; mov x,#$fe    ; transfer 254 pages
-
-; Transfer four-byte chunks
-  .byte $8d, $3f      ; page: mov y,#$3f
-  .byte $e4, $f4      ; quad: mov a,$f4
-  .byte $d6, $00, $02 ; mov0: mov !$0200+y,a
+; Burst transfer of $0200-$FFFF (spc_burst on the S-CPU): three thirds of
+; 85 pages each ($0200, $5700, $AB00; the last two overlap on page $AB, which
+; gets the same bytes twice), one byte of each per chunk. Port 3 carries the
+; chunk counter (the offset in the page, $FF down to $00), written last: the
+; SPC700 reads a chunk when the counter shows up and echoes it when done, so
+; the S-CPU may be held up (IRQ, HDMA) at any time.
+spc_transfer .block ; uploaded to and run at $0002
+  .logical $0002
+  .byte $cd, $ff      ;  mov x,#$ff    ; counter and offset in the page
+  .byte $8d, 85       ;  mov y,#85     ; pages per third
+wait:
+  .byte $3e, $f7      ;  cmp x,$f7     ; the next chunk is there?
+  .byte $d0, <(wait - (* + 2)) ; bne wait
+  .byte $e4, $f4      ;  mov a,$f4
+st0:
+  .byte $d5, $00, $02 ;  mov !$0200+x,a
   .byte $e4, $f5      ;  mov a,$f5
-  .byte $d6, $40, $02 ; mov1: mov !$0240+y,a
+st1:
+  .byte $d5, $00, $57 ;  mov !$5700+x,a
   .byte $e4, $f6      ;  mov a,$f6
-  .byte $d6, $80, $02 ; mov2: mov !$0280+y,a
-  .byte $e4, $f7      ;  mov a,$f7  ; tell S-CPU we're ready for more
-  .byte $cb, $f7      ;  mov $f7,Y
-  .byte $d6, $c0, $02 ; mov3: mov !$02c0+y,a
-  .byte $00           ;  nop ; give some time for S-CPU HDMA / WRAM refresh
+  .byte $d8, $f7      ;  mov $f7,x     ; done with the ports
+st2:
+  .byte $d5, $00, $ab ;  mov !$ab00+x,a
+  .byte $1d           ;  dec x
+  .byte $c8, $ff      ;  cmp x,#$ff
+  .byte $d0, <(wait - (* + 2)) ; bne wait
+; Next page in each third
+  .byte $ab, <(st0 + 2) ; inc st0+2
+  .byte $ab, <(st1 + 2) ; inc st1+2
+  .byte $ab, <(st2 + 2) ; inc st2+2
   .byte $dc           ;  dec y
-  .byte $10, <(-26)   ;  bpl quad
-; Increment MSBs of addresses
-  .byte $ab, $0a    ;  inc mov0+2
-  .byte $ab, $0f    ;  inc mov1+2
-  .byte $ab, $14    ;  inc mov2+2
-  .byte $ab, $1b    ;  inc mov3+2
-  .byte $1d         ;  dec x
-  .byte $d0, <(-39) ;  bne page
+  .byte $d0, <(wait - (* + 2)) ; bne wait
 ; Rerun loader
   .byte $5f, $c0, $ff ;  jmp $ffc0
+size = * - $0002
+  .endlogical
+  .cerror size > $ee, "the transfer routine must fit below $00f0"
+.endblock

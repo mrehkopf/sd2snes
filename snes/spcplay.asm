@@ -151,8 +151,10 @@ spc700_load:
   rep #$10
   .xl
 
-  sei                 ; Disable NMI & IRQ
-  stz $4200           ; The SPC player code is really timing sensitive ;)
+  lda #NMITIMEN & ~$80 ; no NMI: the SPC player code is really timing
+  sta $4200           ; sensitive ;) The H/V timer IRQ stays on for the
+  cli                 ; sprite pages: the transfer routine leaves time for
+                      ; it, and the timed parts mask it (exec_instr)
   jsr upload_dsp_regs ; Upload S-DSP registers
   jsr upload_high_ram ; Upload 63.5K of SPC700 ram
   jsr upload_low_ram  ; Upload rest of ram
@@ -258,10 +260,8 @@ upload_high_ram:
   lda @l spc_transfer,x
   jsr spc_upload_byte
   inx
-  cpy #44             ; size of transfer routine
+  cpy #spc_transfer.size
   bne -
-
-  ldx #$023f          ; prepare transfer address
 
 ; ---- Execute transfer routine
 
@@ -277,38 +277,82 @@ upload_high_ram:
   cmp APUIO0
   bne -
 
-; ---- Burst transfer of 63.5K using custom routine
+; ---- Burst transfer of $0200-$FFFF (see spc_transfer)
 
-outer_transfer_loop:
-  ldy #$003f          ; 3
-inner_transfer_loop:
-  lda @l SPC_DATA,x     ; 5 |
-  sta APUIO0            ; 4 |
-  lda @l SPC_DATA+$40,x ; 5 |
-  sta APUIO1            ; 4 |
-  lda @l SPC_DATA+$80,x ; 5 |
-  sta APUIO2            ; 4 |
-  lda @l SPC_DATA+$c0,x ; 5 |
-  sta APUIO3            ; 4 |
-  tya                   ; 2 >> 38 cycles
--
-  cmp APUIO3          ; 4 |
-  bne -               ; 3 |
-  dex                 ; 2 |
-  dey                 ; 2 |
-  bpl inner_transfer_loop ; 3 >> 14 cycles
-
-  rep #$21            ; 3 |
-  .al
-  txa                 ; 2 |
-  adc #$140           ; 3 |
-  tax                 ; 2 |
-  sep #$20            ; 3 |
-  .as
-  cpx #$003f          ; 3 |
-  bne outer_transfer_loop ; 3 >> 19 cycles
-
+  jsr spc_burst
   rts
+
+; three bytes per chunk, one from each third of $0200-$FFFF, and a counter
+; (spc_transfer); the next chunk is ready while the SPC700 stores this one
+spc_burst .block
+  .virtual #0,d
+Frame .block
+  count         .byte ?         ; counter of the chunk the SPC700 has
+  _             .dstruct SaveJSR
+.endblock
+  .endvirtual
+  .enter
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  ldx #$00ff                    ; offset in the thirds; its low byte: counter
+  jsr prep
+send:
+  rep #$20
+  .al
+  sta APUIO0                    ; ports 0 and 1: the first two thirds
+  sty APUIO2                    ; port 2: the last third, port 3: the counter
+  sep #$20
+  .as
+  txa
+  sta Frame.count
+  bne +
+  rep #$20                      ; last chunk of a page: on to the next page
+  .al
+  txa
+  clc
+  adc #$01ff
+  tax
+  sep #$20
+  .as
+  cpx #85 * $100 + $ff
+  beq last
+  bra ++
++ dex
++ jsr prep
+  pha                           ; (the byte for port 0)
+- lda APUIO3                    ; the SPC700 is done with the chunk
+  cmp Frame.count
+  bne -
+  pla
+  bra send
+last:
+- lda APUIO3
+  cmp Frame.count
+  bne -
+  .leave
+  rts
+
+; the chunk at offset X: A (16-bit) the bytes of the first two thirds, Y the
+; byte of the last third and the counter
+prep:
+  .as
+  .xl
+  lda @l SPC_DATA+$ab00,x
+  xba
+  txa
+  xba
+  rep #$20
+  .al
+  tay
+  sep #$20
+  .as
+  lda @l SPC_DATA+$5700,x
+  xba
+  lda @l SPC_DATA+$0200,x
+  rts
+.endblock
 
 ;---------------------------------------
 upload_low_ram:
@@ -446,6 +490,8 @@ restore_final:
 
 ;---- Restore PSW and PC
 
+  php                 ; no IRQ until the ports are restored
+  sei
   ldx #$7f00          ; NOP; RTI
   stx APUIO0
   lda #$fc            ; Patch loop to execute instruction just written
@@ -460,6 +506,7 @@ restore_final:
   lda @l SPC_DATA+$f6
   sta APUIO2
   stx APUIO0          ; last to avoid overwriting RETI before run
+  plp
   sep #$20
   .as
 
@@ -554,6 +601,8 @@ start_exec_io:
 exec_instr:
 ; Replace instruction
   stx APUIO0
+  php                 ; no IRQ from here to the second write to APUIO3:
+  sei                 ; the SPC700 must not run the instruction twice
   lda #$fc
   sta APUIO3          ; 30
 
@@ -589,6 +638,7 @@ exec_instr:
 ; Patch loop to skip first two bytes
   lda #$fe            ; 16
   sta APUIO3          ; 30
+  plp
 
 ; 38 minimum (assuming 66 delay above)
   phd                 ; 4
