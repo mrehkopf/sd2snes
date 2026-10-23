@@ -24,6 +24,7 @@
 # select programming interface (default: ae-ft2232)
 # setting is expanded to filename interface/$INTERFACE.cfg
 # available: ae-ft2232 usb-blaster oocdlink usbjtag
+# INTERFACE=bmp uses a Black Magic Probe via gdb instead (program only)
 export INTERFACE ?= ae-ft2232
 
 # Read configuration file
@@ -35,6 +36,7 @@ $(info )
 $(info You may specify a programming interface using INTERFACE=...)
 $(info Available INTERFACEs (default/current: $(INTERFACE)):)
 $(foreach intf,$(wildcard interface/*),$(info $(patsubst interface/%.cfg,  %,$(intf))))
+$(info $()  bmp (Black Magic Probe, program only))
 $(info )
 $(error missing CONFIG parameter)
 else
@@ -194,6 +196,16 @@ endif
 # -f openocd.cfg: load common script
 OPENOCDFLAGS = -s $(CONFIG_OPENOCD_SCRIPT_PATH) -f openocd.cfg
 
+# Black Magic Probe options (INTERFACE=bmp)
+# BMP_PORT: GDB server device of the probe (default: first probe found in
+#           /dev/serial/by-id, else /dev/ttyACM0)
+# BMP_SCAN: monitor command that finds the target (auto_scan, swd_scan,
+#           jtag_scan; older probe firmware has swdp_scan instead of swd_scan)
+# GDB:      gdb with ARM support (e.g. arm-none-eabi-gdb, gdb-multiarch)
+BMP_PORT ?= $(firstword $(wildcard /dev/serial/by-id/usb-Black_*_Black_Magic_Probe_*-if00) /dev/ttyACM0)
+BMP_SCAN ?= auto_scan
+GDB ?= gdb
+
 #============================================================================
 
 # De-dupe the list of C source files
@@ -231,6 +243,13 @@ eep: $(TARGET).eep
 lss: $(TARGET).lss
 sym: $(TARGET).sym
 
+ifeq ($(INTERFACE),bmp)
+program: build
+	$(GDB) -nx -batch -x bmp.gdb -ex 'bmp_program $(BMP_PORT) $(BMP_SCAN)' $(TARGET).elf
+
+debug reset:
+	$(error INTERFACE=bmp currently only supports the program target)
+else
 program: build
 	utils/lpcchksum $(TARGET).bin
 	openocd $(OPENOCDFLAGS) -f flash.cfg
@@ -240,6 +259,7 @@ debug: build
 
 reset:
 	openocd $(OPENOCDFLAGS) -f reset.cfg
+endif
 
 # Display size of file.
 ELFSIZE = $(SIZE) -A $(TARGET).elf
