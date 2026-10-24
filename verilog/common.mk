@@ -116,10 +116,11 @@ smartxplorer: main.ngd currentProps.stratfile hostlistfile.txt
 		echo Results and settings have been copied.; \
 		break; \
 	done) \
-	&& ../../utils/rle main.bit fpga_$(CORE).bit
+	&& cp main.bit fpga_$(CORE).bit
 
+# the core file is the bitstream as ISE / Quartus write it
 fpga_$(CORE).bit: main.bit
-	../../utils/rle $^ $@
+	cp $^ $@
 
 main.ngc: main.xst main.prj $(UCF)
 	$(call T,[mk2] fpga_$(CORE) - Synthesize)
@@ -180,7 +181,7 @@ hostlistfile.txt:
 # ######## ALTERA / INTEL ########
 
 fpga_$(CORE).bi3: output_files/main.rbf
-	../../utils/rle $^ $@
+	cp $^ $@
 
 # Intel pulls a lot more stuff from project context...
 output_files/main.rbf: $(VSRC) $(VHSRC) $(HEADER) $(INT_IP) $(INT_QIP) main.sdc

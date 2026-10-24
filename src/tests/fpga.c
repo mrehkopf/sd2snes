@@ -126,7 +126,7 @@ void fpga_pgm(uint8_t* filename) {
     uart_putc('C');
     FPGA_DIN_MASK();
     for (;;) {
-      data = rle_file_getc();
+      data = file_getc();
       i++;
       if (file_status || file_res) break;   /* error or eof */
       FPGA_SEND_BYTE_SERIAL(data);
