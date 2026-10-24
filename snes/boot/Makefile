@@ -2,6 +2,15 @@ OBJS = header.ips reset.o65 main.o65 font.o65 palette.o65 data.o65 const.o65 tex
 
 all: menu.bin
 
+# the firmware's copy of this ROM (the boot screen's), exomizer-packed for
+# its decoder (src/exomem.c, EXO_WINDOW in src/Makefile); committed with
+# the source changes
+EXO_WINDOW = 8192
+snesboot: ../../src/snesboot.h
+../../src/snesboot.h: menu.bin
+	exomizer raw -q -m $(EXO_WINDOW) -o menu.exo $<
+	../../utils/bin2c menu.exo bootrom > $@
+
 menu.bin: $(OBJS)
 	sneslink -fsmc -o $@ $^
 
@@ -14,4 +23,4 @@ menu.bin: $(OBJS)
 	snescom -I -J -Wall -o $@ $<
 
 clean:
-	rm -f *.ips *.o65 *~ menu.bin
+	rm -f *.ips *.o65 *~ menu.bin menu.exo

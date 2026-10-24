@@ -17,7 +17,7 @@ CONFIG_FW_FILE       = firmware.stm
 CONFIG_FW_START      = 0x0800c000
 CONFIG_FW_HEADERSIZE = 0x200
 CONFIG_FW_MAGIC      = STM3
-CONFIG_CFGWARE       = ../verilog/sd2snes_mini/fpga_mini.bi3
+CONFIG_CFGWARE       = ../verilog/sd2snes_mini/output_files/main.rbf
 
 DEBUG_FS         = n
 DEBUG_SD         = n

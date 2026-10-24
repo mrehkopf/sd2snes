@@ -17,7 +17,7 @@ CONFIG_FW_FILE       = firmware.img
 CONFIG_FW_START      = 0x2000
 CONFIG_FW_HEADERSIZE = 0x100
 CONFIG_FW_MAGIC      = SNSD
-CONFIG_CFGWARE       = ../verilog/sd2snes_mini/fpga_mini.bit
+CONFIG_CFGWARE       = ../verilog/sd2snes_mini/main.bit
 
 DEBUG_FS         = n
 DEBUG_SD         = n

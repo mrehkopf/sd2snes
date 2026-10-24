@@ -81,7 +81,7 @@ include version.mk
 SRC  = main.c ff.c ccsbcs.c
 SRC += printf.c fileops.c fpga.c fpga_spi.c snes.c smc.c
 SRC += memory.c filetypes.c faulthandler.c sort.c crc32.c cic.c
-SRC += cli.c ymodem.c rle.c msu1.c crc16.c sysinfo.c
+SRC += cli.c ymodem.c msu1.c crc16.c sysinfo.c exodecrunch.c exomem.c
 SRC += cfg.c cheat.c yaml.c savestate.c sgb.c hwinfo.c
 
 SRC += usbdesc.c usbcore.c usbuser.c cdcuser.c usbinterface.c
@@ -126,6 +126,13 @@ CSTANDARD = -std=gnu99
 
 # Place -D or -U options here
 CDEFS = -DF_OSC=$(CONFIG_MCU_FOSC)UL
+
+# The boot screen's FPGA core (CONFIG_CFGWARE, the bitstream as the FPGA
+# tools write it) and SNES ROM (snesboot.h, made by snes/boot) are packed
+# with exomizer raw; its decoder (exomem.c) keeps the last EXO_WINDOW bytes.
+EXOMIZER ?= exomizer
+EXO_WINDOW = 8192
+CDEFS += -DEXO_WINDOW=$(EXO_WINDOW)
 
 # Place -I options here
 CINCS = -Iinclude -Iinclude/arm
@@ -279,11 +286,15 @@ $(OBJDIR)/autoconf.h: $(CONFIG) | $(OBJDIR)
 	$(E) "  CONF2H $(CONFIG)"
 	$(Q)$(AWK) -f conf2h.awk $(CONFIG) > $(OBJDIR)/autoconf.h
 
-# Generate embedded FPGA config from finished bitfile
-.PRECIOUS : $(OBJDIR)/cfgware.h
-$(OBJDIR)/cfgware.h: $(CONFIG_CFGWARE) | $(OBJDIR) $(OBJDIR)/autoconf.h
-	$(E) "  BIN2C $(CONFIG_CFGWARE)"
-	$(Q)$(BIN2C) "$(CONFIG_CFGWARE)" cfgware > $(OBJDIR)/cfgware.h
+# Generate embedded FPGA config from finished bitfile, exomizer-packed
+.PRECIOUS : $(OBJDIR)/cfgware.h $(OBJDIR)/cfgware.exo
+$(OBJDIR)/cfgware.exo: $(CONFIG_CFGWARE) | $(OBJDIR)
+	$(E) "  EXO    $(CONFIG_CFGWARE)"
+	$(Q)$(EXOMIZER) raw -q -m $(EXO_WINDOW) -o $@ "$(CONFIG_CFGWARE)"
+
+$(OBJDIR)/cfgware.h: $(OBJDIR)/cfgware.exo | $(OBJDIR) $(OBJDIR)/autoconf.h
+	$(E) "  BIN2C $<"
+	$(Q)$(BIN2C) $< cfgware > $@
 
 # Create final output files from ELF output file.
 # --gap-fill 0xff is important to match the padding values as they end up
@@ -370,7 +381,7 @@ clean_list :
 	$(Q)$(REMOVE) $(TARGET).lss
 	$(Q)$(REMOVE) $(OBJ)
 	$(Q)$(REMOVE) $(OBJDIR)/autoconf.h
-	$(Q)$(REMOVE) $(OBJDIR)/cfgware.h
+	$(Q)$(REMOVE) $(OBJDIR)/cfgware.h $(OBJDIR)/cfgware.exo
 	$(Q)$(REMOVE) $(OBJDIR)/version.h
 	$(Q)$(REMOVE) $(OBJDIR)/${CONFIG_FW_FILE}
 	$(Q)$(REMOVE) $(OBJDIR)/fw.hdr

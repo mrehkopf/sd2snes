@@ -452,7 +452,7 @@ void vsnes_bootprint(int line, int center, void *fmt, va_list arglist) {
   if(!snes_boot_configured) {
     fpga_rompgm();
     snes_reset(1);
-    load_bootrle(SRAM_MENU_ADDR);
+    load_bootrom(SRAM_MENU_ADDR);
     sram_memset(SRAM_CMD_ADDR, SNES_BOOTPRINT_MAX_LINES*33, 0);
     set_saveram_mask(0x1fff);
     set_rom_mask(0x3fffff);

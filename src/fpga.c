@@ -38,7 +38,7 @@
 #include "spi.h"
 #include "led.h"
 #include "timer.h"
-#include "rle.h"
+#include "exomem.h"
 #include "cfgware.h"
 
 uint8_t SPI_OFFLOAD;
@@ -183,13 +183,14 @@ void fpga_rompgm() {
     }
     uart_putc('p');
 
-    /* open configware file */
-    rle_mem_init(cfgware, sizeof(cfgware));
+    /* the embedded configware, exomizer-packed (exomem.c) */
+    exomem_init(cfgware, sizeof(cfgware));
     printf("sizeof(cfgware) = %d\n", sizeof(cfgware));
     FPGA_DIN_MASK();
     for (;;) {
-      data = rle_mem_getc();
-      if(rle_state) break;
+      int c = exomem_getc();
+      if(c < 0) break;
+      data = c;
       i++;
       FPGA_SEND_BYTE_SERIAL(data);
     }

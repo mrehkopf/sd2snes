@@ -41,7 +41,7 @@ memory.c: RAM operations
 #include "memory.h"
 #include "snes.h"
 #include "timer.h"
-#include "rle.h"
+#include "exomem.h"
 #include "diskio.h"
 #include "snesboot.h"
 #include "msu1.h"
@@ -774,37 +774,18 @@ uint32_t load_sram(uint8_t* filename, uint32_t base_addr) {
   return (uint32_t)filesize;
 }
 
-uint32_t load_sram_rle(uint8_t* filename, uint32_t base_addr) {
-  uint8_t data;
-  set_mcu_addr(base_addr);
-  DWORD filesize;
-  file_open(filename, FA_READ);
-  filesize = file_handle.fsize;
-  if(file_res) return 0;
-  FPGA_SELECT();
-  FPGA_TX_BYTE(0x98);
-  for(;;) {
-    data = rle_file_getc();
-    if (file_res || file_status) break;
-    FPGA_TX_BYTE(data);
-    FPGA_WAIT_RDY();
-  }
-  FPGA_DESELECT();
-  file_close();
-  return (uint32_t)filesize;
-}
-
-uint32_t load_bootrle(uint32_t base_addr) {
-  uint8_t data;
+/* the boot screen's SNES ROM (snesboot.h, exomizer-packed: exomem.c) */
+uint32_t load_bootrom(uint32_t base_addr) {
+  int data;
   set_mcu_addr(base_addr);
   DWORD filesize = 0;
-  rle_mem_init(bootrle, sizeof(bootrle));
+  exomem_init(bootrom, sizeof(bootrom));
 
   FPGA_SELECT();
   FPGA_TX_BYTE(0x98);
   for(;;) {
-    data = rle_mem_getc();
-    if(rle_state) break;
+    data = exomem_getc();
+    if(data < 0) break;
     FPGA_TX_BYTE(data);
     FPGA_WAIT_RDY();
     filesize++;
