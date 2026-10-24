@@ -89,7 +89,18 @@ SECTIONS
     __bss_end__ = .;
   } > ram
 
-  __heap_start = ALIGN(__bss_end__, 4);
+  /* IN_AHBRAM data: the LPC parts keep it in their AHB SRAM bank, here it
+     goes into main RAM. NOLOAD as there: nothing initialises it, so it
+     needs no image in flash. */
+  .ahbram (NOLOAD) :
+  {
+    __ahbram_start__ = .;
+    *(.ahbram)
+    *(.ahbram.*)
+    __ahbram_end__ = .;
+  } > ram
+
+  __heap_start = ALIGN(__ahbram_end__, 4);
 
   /* Default stack starts at end of ram */
   PROVIDE(__stack = ORIGIN(ram) + LENGTH(ram)) ;
