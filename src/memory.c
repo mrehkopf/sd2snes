@@ -44,6 +44,7 @@ memory.c: RAM operations
 #include "exomem.h"
 #include "diskio.h"
 #include "snesboot.h"
+_Static_assert(BOOTROM_EXO_WINDOW <= EXO_WINDOW, "snesboot.h is packed for a larger window than exomem.c has");
 #include "msu1.h"
 #include "cli.h"
 #include "cheat.h"
