@@ -184,7 +184,7 @@ fpga_$(CORE).bi3: output_files/main.rbf
 	cp $^ $@
 
 # Intel pulls a lot more stuff from project context...
-output_files/main.rbf: $(VSRC) $(VHSRC) $(HEADER) $(INT_IP) $(INT_QIP) main.sdc
+output_files/main.rbf: $(VSRC) $(VHSRC) $(HEADER) $(INT_IP) $(INT_QIP) main.sdc main.qsf
 	rm -rf db incremental_db
 	$(call T,[mk3] fpga_$(CORE) - Map)
 	$(INTEL_ENV) $(INTEL_BIN)/quartus_map --read_settings_files=on --write_settings_files=off sd2snes_$(CORE) -c main
