@@ -46,8 +46,9 @@ extern char current_filename[];
 
 #define SRAM_SKIN_ADDR               (0xF00000L) /* skin file, see snes/skin.asm */
 #define SKIN_MAX_SIZE                (0xFFFFL)
-#define SRAM_SKINROM_ADDR            (0xF10000L) /* old menu ROM to convert into a skin
-                                                    (firmware only, see skinconv.c) */
+#define SRAM_SKINROM_ADDR            (0xF10000L) /* old menu ROM or theme to convert into a
+                                                    skin, then 64 KB of work area (firmware
+                                                    only, see skinconv.c) */
 #define SKIN_BASEDIR                 ("/sd2snes/skins/")
 /* skin source for SNES_CMD_LOAD_SKIN/SNES_CMD_SET_SKIN (MCU_PARAM+8) */
 #define SKIN_SRC_CONFIG              (0) /* LOAD_SKIN: the configured skin */

@@ -677,12 +677,14 @@ uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr, uint8_t flags)
    menu applies the chunks it finds there on top of its built-in skin, so
    without a file (path NULL), or if it can't be loaded completely, only the
    zero word is written (at SRAM_SKIN_ADDR). A file of 64 KB, too large for
-   a skin, is taken for an old menu ROM: it is loaded to SRAM_SKINROM_ADDR
-   and converted into a skin (skinconv.c). Returns a SKIN_STATUS_* code. */
+   a skin, is taken for an old menu ROM, a .thm file for a theme of
+   ludufre's fork: these are loaded to SRAM_SKINROM_ADDR and converted into
+   a skin (skinconv.c). Returns a SKIN_STATUS_* code. */
 uint8_t load_skin_file(const char *path) {
   uint32_t size = 0, loaded = 0;
   UINT bytes_read;
-  int rom;
+  int rom, theme;
+  const char *ext;
   tick_t ticks;
   uint8_t status = SKIN_STATUS_OK, magic[3];
   if(path) {
@@ -692,12 +694,14 @@ uint8_t load_skin_file(const char *path) {
       status = SKIN_STATUS_ERR_READ;
     } else {
       size = file_handle.fsize;
+      ext = strrchr(path, '.');
       rom = size == SKINCONV_ROM_SIZE;
+      theme = !rom && ext && !strcasecmp(ext, ".thm");
       if(size > SKIN_MAX_SIZE && !rom) {
         printf("load_skin: %s is too large (%lu bytes)\n", path, size);
         status = SKIN_STATUS_ERR_FORMAT;
       } else {
-        set_mcu_addr(rom ? SRAM_SKINROM_ADDR : SRAM_SKIN_ADDR);
+        set_mcu_addr(rom || theme ? SRAM_SKINROM_ADDR : SRAM_SKIN_ADDR);
         for(;;) {
           ff_sd_offload=1;
           sd_offload_tgt=0;
@@ -713,14 +717,17 @@ uint8_t load_skin_file(const char *path) {
       file_close();
       if(status) {
         size = 0;
-      } else if(rom) {
+      } else if(rom || theme) {
         ticks = getticks();
-        size = skinconv_menu_rom(SRAM_SKINROM_ADDR, SRAM_SKIN_ADDR);
+        size = rom ? skinconv_menu_rom(SRAM_SKINROM_ADDR, SRAM_SKIN_ADDR)
+                   : skinconv_theme(SRAM_SKINROM_ADDR, size, SRAM_SKINROM_ADDR + SKINCONV_ROM_SIZE,
+                                    SRAM_SKIN_ADDR);
         if(size) {
-          printf("load_skin: converted the menu ROM %s (%lu bytes, %lu ms)\n",
+          printf("load_skin: converted %s (%lu bytes, %lu ms)\n",
                  path, size, (getticks() - ticks) * 10UL);
         } else {
-          printf("load_skin: %s is no menu ROM of a known version\n", path);
+          printf("load_skin: %s is no %s\n", path,
+                 rom ? "menu ROM of a known version" : "theme file");
           status = SKIN_STATUS_ERR_FORMAT;
         }
       } else {

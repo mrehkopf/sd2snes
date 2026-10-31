@@ -51,7 +51,7 @@ typedef enum {
 } SNES_FTYPE;
 
 
-SNES_FTYPE determine_filetype(FILINFO fno, int skin_dir);
+SNES_FTYPE determine_filetype(FILINFO fno);
 uint16_t scan_dir(const uint8_t *path, uint32_t base_addr, const SNES_FTYPE *filetypes);
 int get_num_dirent(uint32_t addr);
 void sort_all_dir(uint32_t endaddr);

@@ -1,11 +1,13 @@
-/* skinconv.c: old menu ROMs as skins
+/* skinconv.c: old menu ROMs and themes as skins
 
    A menu ROM from before skin support (v0.1.7d - v1.12.x, stock or made
    with the theme editor) is converted into a skin the way the theme tool
    does it (www/themes/skinconv.js; keep the two in step, both must make
-   the same skin). The ROM and the skin are in cart memory; the work data
-   lives in ptrcache: the directory sort's buffer is idle whenever a skin
-   is loaded. */
+   the same skin). A theme file of the sd2snes fork by ludufre (.thm)
+   holds the same assets as an old menu ROM: it is unpacked into the
+   layout of one and converted as well. The ROM, the theme and the skin
+   are in cart memory; the work data lives in ptrcache: the directory
+   sort's buffer is idle whenever a skin is loaded. */
 
 #include <string.h>
 #include "config.h"
@@ -129,7 +131,8 @@ struct skinconv_work {
   uint16_t lines[256];          /* hdma_lines(): offset + 1 of a line's data */
   uint8_t buf[HDMA_PAL_WRAM];   /* HDMA tables, OAM, "_GFXPTR_" search */
   uint8_t map[256], into[256];
-  uint8_t logo_used[32], sprite_colors[32], into_set[32], piece_used[PIECES / 8];
+  uint8_t logo_used[32], logo_final[32], sprite_colors[32], into_set[32],
+          piece_used[PIECES / 8];
   uint8_t moving[MAX_SOURCES], targets[MAX_SOURCES];
   uint8_t bar[2][4 * MAX_BAR_HEIGHT];
   uint8_t glyph[4][16];
@@ -388,13 +391,15 @@ static int sprite_groups(void) {
 }
 
 /* LOGO and CGEN, part 1: move the logo colors out of the reserved range
-   (w->map, w->palette). Too few free colors: merge colors into the most
-   similar other logo color, the closest pair first, until the rest fit. */
-static void logo_colors(void) {
+   (w->map, w->palette; w->logo_final: the colors the logo ends up with).
+   Too few free colors: merge colors into the most similar other logo
+   color, the closest pair first, until the rest fit. No logo: only the
+   palette. */
+static void logo_colors(int logo) {
   int tile, i, j, c, k, moving = 0, targets = 0;
   rom_read(w->palette, w->o.palette, 512);
   memset(w->logo_used, 0, sizeof(w->logo_used));
-  for(tile = 0; tile < LOGO_TILES; tile++) {
+  for(tile = 0; logo && tile < LOGO_TILES; tile++) {
     rom_read(w->tile, w->o.logo + 64 * tile, 64);
     tile_pixels(w->tile, w->pixels, 8);
     for(i = 0; i < 64; i++) set_bit(w->logo_used, w->pixels[i]);
@@ -442,11 +447,13 @@ static void logo_colors(void) {
     w->map[w->moving[i]] = w->targets[i];
     w->palette[w->targets[i]] = w->palette[w->moving[i]];
   }
+  memset(w->logo_final, 0, sizeof(w->logo_final));
   for(c = 0; c < 256; c++) {
     if(bit(w->logo_used, c) && reserved(c)) {
       for(j = c; bit(w->into_set, j); j = w->into[j]);
       w->map[c] = w->map[j];
     }
+    if(bit(w->logo_used, c)) set_bit(w->logo_final, w->map[c]);
   }
 }
 
@@ -645,25 +652,38 @@ static void out_sprites(int s) {
   }
 }
 
-uint32_t skinconv_menu_rom(uint32_t rom_addr, uint32_t skin_addr) {
-  int sprites, tile, first, count, c;
-  w->rom = rom_addr;
-  if(!find_offsets()
-     || !in_rom(w->o.font, FONT_SIZE) || !in_rom(w->o.logo, 64 * LOGO_TILES)
-     || !in_rom(w->o.palette, 512) || !in_rom(w->o.hdma_pal_src, HDMA_PAL_WRAM)
-     || !in_rom(w->o.hdma_math_src, HDMA_MATH_WRAM) || !in_rom(w->o.hdma_bar_color_src, 8)
-     || (w->o.oam_data_l && !in_rom(w->o.oam_data_l, 4 * OAM_ENTRIES))
-     || (w->o.oam_data_h && !in_rom(w->o.oam_data_h, OAM_HIGH_BYTES))) {
-    return 0;
+/* the parts of a skin that convert() makes */
+#define PART_COLORS     0x01      /* CGEN: text colors, and the logo's */
+#define PART_ALL_COLORS 0x02      /* CGEN: all writable colors */
+#define PART_FONT       0x04
+#define PART_LOGO       0x08
+#define PART_GRADIENT   0x10
+#define PART_BAR        0x20
+#define PART_SPRITES    0x40
+
+static int cgen_color(int c, uint8_t parts) {
+  if(reserved(c) || !(parts & (PART_COLORS | PART_ALL_COLORS))) return 0;
+  return (parts & PART_ALL_COLORS) || text_color(c)
+         || ((parts & PART_LOGO) && c && bit(w->logo_final, c));
+}
+
+/* convert the assets at the offsets w->o of the "ROM" at w->rom */
+static uint32_t convert(uint32_t skin_addr, uint8_t parts) {
+  int sprites = 0, tile, first, count, c;
+  if(parts & PART_SPRITES) {
+    sprites = sprite_groups();
+    if(sprites < 0) return 0;
+  } else {
+    /* the menu's own sprites stay: keep the logo out of their colors */
+    memset(w->sprite_colors, 0, sizeof(w->sprite_colors) / 2);
+    memset(w->sprite_colors + sizeof(w->sprite_colors) / 2, 0xff, sizeof(w->sprite_colors) / 2);
   }
-  sprites = sprite_groups();
-  if(sprites < 0) return 0;
-  logo_colors();
+  logo_colors(parts & PART_LOGO);
   w->out_addr = skin_addr;
   w->out_n = 0;
-  /* CGEN: one chunk per run of writable colors */
+  /* CGEN: one chunk per run of colors */
   for(first = 0; first < 256; first += count) {
-    for(count = 0; first + count < 256 && !reserved(first + count); count++);
+    for(count = 0; first + count < 256 && cgen_color(first + count, parts); count++);
     if(!count) {
       count = 1;
       continue;
@@ -673,18 +693,131 @@ uint32_t skinconv_menu_rom(uint32_t rom_addr, uint32_t skin_addr) {
     out_word(count);
     for(c = first; c < first + count; c++) out_word(w->palette[c]);
   }
-  out_font();
-  out_chunk("LOGO", 64 * LOGO_TILES);
-  for(tile = 0; tile < LOGO_TILES; tile++) {
-    rom_read(w->tile, w->o.logo + 64 * tile, 64);
-    tile_pixels(w->tile, w->pixels, 8);
-    for(c = 0; c < 64; c++) w->pixels[c] = w->map[w->pixels[c]];
-    tile_bytes(w->pixels, w->tile, 8);
-    out_bytes(w->tile, 64);
+  if(parts & PART_FONT) out_font();
+  if(parts & PART_LOGO) {
+    out_chunk("LOGO", 64 * LOGO_TILES);
+    for(tile = 0; tile < LOGO_TILES; tile++) {
+      rom_read(w->tile, w->o.logo + 64 * tile, 64);
+      tile_pixels(w->tile, w->pixels, 8);
+      for(c = 0; c < 64; c++) w->pixels[c] = w->map[w->pixels[c]];
+      tile_bytes(w->pixels, w->tile, 8);
+      out_bytes(w->tile, 64);
+    }
   }
-  out_gradient();
-  out_bar();
-  out_sprites(sprites);
+  if(parts & PART_GRADIENT) out_gradient();
+  if(parts & PART_BAR) out_bar();
+  if(parts & PART_SPRITES) out_sprites(sprites);
   out_flush();
   return w->out_addr - skin_addr;
+}
+
+uint32_t skinconv_menu_rom(uint32_t rom_addr, uint32_t skin_addr) {
+  w->rom = rom_addr;
+  if(!find_offsets()
+     || !in_rom(w->o.font, FONT_SIZE) || !in_rom(w->o.logo, 64 * LOGO_TILES)
+     || !in_rom(w->o.palette, 512) || !in_rom(w->o.hdma_pal_src, HDMA_PAL_WRAM)
+     || !in_rom(w->o.hdma_math_src, HDMA_MATH_WRAM) || !in_rom(w->o.hdma_bar_color_src, 8)
+     || (w->o.oam_data_l && !in_rom(w->o.oam_data_l, 4 * OAM_ENTRIES))
+     || (w->o.oam_data_h && !in_rom(w->o.oam_data_h, OAM_HIGH_BYTES))) {
+    return 0;
+  }
+  return convert(skin_addr, PART_ALL_COLORS | PART_FONT | PART_LOGO | PART_GRADIENT
+                            | PART_BAR | PART_SPRITES);
+}
+
+/* Theme files (.thm) of ludufre's fork: "FXTHEME1", version 1, the number
+   of parts (1-9), flags (2 bytes), 4 reserved bytes; then per part its slot
+   (one of the "_GFXPTR_" assets), a reserved byte and its length (2 bytes);
+   then the parts. The fork copies a part over the asset in its menu (up to
+   the size of the asset), the logo palette to CGRAM 64-95 after the
+   palette. Its font and sprite graphics are not in the theme, nor are they
+   converted here; the flags (font outline and anti-aliasing off) are left
+   out. */
+#define THM_HEADER      16
+#define THM_PARTS       9
+#define THM_LOGO_PAL    1
+#define THM_MATH        2
+#define THM_BAR_COLOR   3
+#define THM_PAL_SRC     4
+#define THM_PALETTE     7
+#define THM_LOGO        8
+
+/* where the parts go in the old menu ROM made from them, and their size;
+   the gradient table is read as HDMA_PAL_WRAM bytes */
+static const struct {
+  uint16_t offset, size;
+} thm_slots[THM_PARTS] = {
+  { 0, 0 },                     /* font: never part of a theme */
+  { 0x0080, 64 },               /* logo palette: colors 64-95 of the palette */
+  { 0x3c00, HDMA_MATH_WRAM },
+  { 0x3c20, 8 },
+  { 0x3a00, 55 },
+  { 0, 0 },                     /* sprite positions: no sprite graphics */
+  { 0, 0 },
+  { 0x0000, 512 },
+  { 0x0200, 64 * LOGO_TILES },
+};
+#define THM_ROM_SIZE    0x3c28
+
+/* copy len bytes in cart memory */
+static void copy(uint32_t dst, uint32_t src, uint32_t len) {
+  uint16_t n;
+  while(len) {
+    n = len > sizeof(w->buf) ? sizeof(w->buf) : len;
+    sram_readblock(w->buf, src, n);
+    sram_writeblock(w->buf, dst, n);
+    src += n;
+    dst += n;
+    len -= n;
+  }
+}
+
+uint32_t skinconv_theme(uint32_t thm_addr, uint32_t thm_size, uint32_t work_addr, uint32_t skin_addr) {
+  uint8_t head[THM_HEADER], toc[4 * THM_PARTS], slot, parts = 0;
+  uint16_t have = 0;
+  uint32_t data, len, i, row, n, logo_pal = 0, logo_pal_len = 0;
+  sram_readblock(head, thm_addr, THM_HEADER);
+  n = head[9];
+  if(memcmp(head, "FXTHEME1", 8) || head[8] != 1 || !n || n > THM_PARTS
+     || thm_size < THM_HEADER + 4 * n) {
+    return 0;
+  }
+  sram_readblock(toc, thm_addr + THM_HEADER, 4 * n);
+  data = THM_HEADER + 4 * n;
+  for(i = 0; i < n; i++) data += toc[4 * i + 2] | (toc[4 * i + 3] << 8);
+  if(data > thm_size) return 0;                 /* the parts don't fit */
+  sram_memset(work_addr, THM_ROM_SIZE, 0);
+  data = thm_addr + THM_HEADER + 4 * n;
+  for(i = 0; i < n; i++, data += len) {
+    slot = toc[4 * i];
+    len = toc[4 * i + 2] | (toc[4 * i + 3] << 8);
+    if(slot >= THM_PARTS || !thm_slots[slot].size || !len) continue;
+    have |= 1 << slot;
+    if(slot == THM_LOGO_PAL) {
+      logo_pal = data;                          /* after the palette */
+      logo_pal_len = len < 64 ? len : 64;
+    } else if(slot == THM_LOGO && 2 * len == 64 * LOGO_TILES) {
+      /* half width: the left half of each row, the right half empty */
+      for(row = 0; row < 7; row++) {
+        copy(work_addr + thm_slots[slot].offset + 2 * 16 * 64 * row, data + 16 * 64 * row, 16 * 64);
+      }
+    } else {
+      copy(work_addr + thm_slots[slot].offset, data,
+           len < thm_slots[slot].size ? len : thm_slots[slot].size);
+    }
+  }
+  if(logo_pal) copy(work_addr + thm_slots[THM_LOGO_PAL].offset, logo_pal, logo_pal_len);
+  w->rom = work_addr;
+  w->o.palette = thm_slots[THM_PALETTE].offset;
+  w->o.logo = thm_slots[THM_LOGO].offset;
+  w->o.hdma_pal_src = thm_slots[THM_PAL_SRC].offset;
+  w->o.hdma_math_src = thm_slots[THM_MATH].offset;
+  w->o.hdma_bar_color_src = thm_slots[THM_BAR_COLOR].offset;
+  if(have & (1 << THM_PALETTE)) {
+    parts |= PART_COLORS;
+    if(have & (1 << THM_LOGO)) parts |= PART_LOGO;
+  }
+  if(have & (1 << THM_PAL_SRC)) parts |= PART_GRADIENT;
+  if((have & (1 << THM_MATH)) && (have & (1 << THM_BAR_COLOR))) parts |= PART_BAR;
+  return convert(skin_addr, parts);
 }

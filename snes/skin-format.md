@@ -13,13 +13,18 @@ bar and background sprites. This document describes version 1 of the file format
   to the original look.
 - The choice is stored as `SkinName` in `/sd2snes/config.yml`: a file name in `/sd2snes/skins/`,
   or a full path starting with `/`. Empty (`SkinName: ""`, the default) means the built-in look.
-- Old menu ROMs (`menu.bin` / `m3nu.bin` of v0.1.7d to v1.12.x, stock or themed) work as skins
-  too: in `/sd2snes/skins/` and the folders in it, `.bin` files are listed like skin files, so a
-  theme's folder can be copied there as it is. The firmware converts such a file (exactly 64 KB)
-  into a skin when it loads it, the same way the theme tool's converter does
-  (`www/themes/skinconv.js`, `src/skinconv.c`).
-- A file that can't be used as a skin (a menu ROM of an unknown version, no skin file, a read
-  error) gives a message when it is previewed or chosen, and the skin from before stays.
+- Two other kinds of files work as skins too; the file browser lists them like skin files
+  (`.bin` and `.thm`, anywhere on the card), and the firmware converts them into a skin
+  (`src/skinconv.c`) every time it loads them:
+  - Old menu ROMs (`menu.bin` / `m3nu.bin` of v0.1.7d to v1.12.x, stock or themed, exactly 64 KB),
+    so a theme's folder can be copied to the card as it is. The conversion is the one of the theme
+    tool's converter (`www/themes/skinconv.js`).
+  - Theme files (`.thm`) of the sd2snes fork by ludufre. Their palette (text colors), logo,
+    background gradient and selection bar are used; parts a theme leaves out stay as in the
+    built-in look, as do the font (the theme's flags that change the font are left out) and the
+    sprites (a theme has only their positions).
+- A file that can't be used as a skin (a menu ROM of an unknown version, no skin or theme file, a
+  read error) gives a message when it is previewed or chosen, and the skin from before stays.
 - The firmware loads the file every time it loads the menu. Other files of 64 KB or more are
   ignored, as is a file that cannot be read completely.
 - Holding SELECT on either controller while the console is switched on starts the menu without
