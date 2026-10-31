@@ -299,7 +299,8 @@ loading_win_w:  .byte 40     ; covers the status bar help up to the clock
 loading_win_h:  .byte 1
 
 text_cheat:     .text "Cheats for ", 0
-text_cheat_press_a:         .text "Press A to continue", 0
+text_cheat_error:           .text "Error", 0
+text_cheat_ok:              .text "OK", 0
 text_cheat_wram:            .text "WRAM", 0
 text_cheat_rom:             .text "ROM ", 0
 text_cheat_msg_rom:         .text "Not enough ROM patch slots (max. 6)", 0

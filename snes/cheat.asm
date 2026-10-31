@@ -18,11 +18,12 @@
 ;
 ; All routines expect DB=$80, as set up by cheat_menu.
 
-; message box
+; message box: title "Error", the message, "OK" with the selection bar
 ALERT_X          = 12
 ALERT_Y          = 15
 ALERT_W          = 40
-ALERT_H          = 6
+ALERT_H          = 5
+ALERT_OK_W       = 8                    ; width of the bar on "OK"
 
 CHEAT_MSG_FRAMES = 150                  ; frames a status bar message stays
 
@@ -146,13 +147,17 @@ cheat_status_text:
   .unparam print_text
   rts
 
-; show a message box and wait for A or B
+; show an error message over the greyed-out browser area and wait for A
+; or B (the selection bar is on "OK")
 ; X: message (bank of text_cheat)
 ; Y: help text of the current window (see cheat_frame)
 cheat_alert .block
   .virtual #0,d
 Frame .block
   help          .word ?
+  bar_x         .byte ?         ; the selection bar of the window behind
+  bar_y         .byte ?
+  bar_w         .byte ?
   _             .dstruct SaveJSR
 .endblock
   .endvirtual
@@ -163,15 +168,28 @@ Frame .block
   .xl
   sty Frame.help
   phx
+  ldx #<>cheat_rect_list        ; the browser area
+  jsr cheat_greyout
   ldx #<>cheat_rect_alert
   jsr cheat_set_window
-  ldx #<>space64+64             ; no title (empty string)
+  ldx #<>text_cheat_error
   stx window_taddr
-  lda #`space64
+  lda #`text_cheat_error
   sta window_tbank
   jsr push_window
   jsr draw_window
-  jsr hide_cursor
+  lda bar_xl
+  sta Frame.bar_x
+  lda bar_yl
+  sta Frame.bar_y
+  lda bar_wl
+  sta Frame.bar_w
+  lda #ALERT_X+(ALERT_W-ALERT_OK_W)/2
+  sta bar_xl
+  lda #ALERT_Y+2                 ; (the bar's line numbers are one less than the text's)
+  sta bar_yl
+  lda #ALERT_OK_W
+  sta bar_wl
   plx
   lda #`text_cheat
   .param pha
@@ -186,13 +204,20 @@ Frame .block
   .param pha
   .call print_text
   .unparam print_text
-  .print_at text_cheat_press_a, ALERT_X+2, ALERT_Y+3, 0, ALERT_W-4
+  .print_at text_cheat_ok, ALERT_X+ALERT_W/2-1, ALERT_Y+3, 0, 2
 - ldx Frame.help
   jsr cheat_frame
   lda pad_a
   ora pad_b
   beq -
-  jsr pop_window
+  lda Frame.bar_x
+  sta bar_xl
+  lda Frame.bar_y
+  sta bar_yl
+  lda Frame.bar_w
+  sta bar_wl
+  jsr pop_window                ; the message box
+  jsr pop_window                ; the greyed-out browser area
   .leave
   rts
 .endblock
@@ -1721,12 +1746,9 @@ cheat_save:
   sec
   rts
 cheat_save_error:
-  ldx #<>cheat_rect_list
-  jsr cheat_greyout
   ldx #<>text_cheat_err_save
   ldy #<>text_cheat_help_list
   jsr cheat_alert
-  jsr pop_window
   plp
   clc
   rts
