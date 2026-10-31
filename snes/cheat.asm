@@ -919,9 +919,9 @@ CEDIT_FIRST_CODE = 2                    ; codes and "Add code"
 CEDIT_PATCH      = 11                   ; column of the patch in a code row
 
 ; code pad window
-HEX_X            = 17
+HEX_X            = 16
 HEX_Y            = 10
-HEX_W            = 30
+HEX_W            = 32
 HEX_H            = 16
 HEX_COL          = HEX_X + 2
 HEX_VALUE        = HEX_COL + 8          ; column of format and code
@@ -965,6 +965,7 @@ CHEAT_ACT_REMOVE = 3
 
   .cerror cheat_kb_keys_end - cheat_kb_keys != KB_COLS * KB_ROWS, "cheat_kb_keys does not match the keyboard size"
   .cerror CHEAT_LIST_TEXTW >= CHEAT_LINE_SIZE || CEDIT_TEXTW >= CHEAT_LINE_SIZE || HEX_W - 4 >= CHEAT_LINE_SIZE || KB_FIELDW >= CHEAT_LINE_SIZE || KB_KEYS_W >= CHEAT_LINE_SIZE, "a window line doesn't fit CheatWindow.line"
+  .cerror (HEX_COL | KB_COL) & 1, "the help lines with buttons must start on an even column (print_text)"
 
 ; entry points from the file context menus (menu functions: called via RTL
 ; with A 8-bit, X/Y 16-bit; the file is described by MCU_PARAM as for loading)

@@ -76,7 +76,7 @@ The screen has 224 lines, numbered 0-223 from the top. Per-line data (`GRAD`, th
 
 - **Lines 0-55: logo.** BG mode 3, 256 pixels wide: the logo is BG1 (8bpp).
 - **Lines 56-223: text.** BG mode 5, 512 pixels wide (hi-res), 64 columns of 8 pixels. The even
-  columns are on BG2 (2bpp), the odd columns on BG1 (4bpp). Text row *r* covers lines 8*r* − 15
+  columns are on BG1 (4bpp), the odd columns on BG2 (2bpp). Text row *r* covers lines 8*r* − 15
   to 8*r* − 8; the file list starts at row 9 (lines 57-64), and the status bar is row 28 (lines
   209-216).
 - **Sprites** can appear anywhere, behind or in front of the text (see `OAMT`). They are low-res
@@ -132,7 +132,7 @@ A character is 16x8 pixels: two 8x8 4bpp tiles in the SNES format (32 bytes each
 bitplanes 0+1, then rows of bitplanes 2+3), the left half, then the right half.
 
 - Text characters are 8 pixels wide: the left half of the cell, in colors 0-3 (1 fill, 2 outline,
-  3 shade). The even columns are on BG2 (2bpp), which shows only bitplanes 0+1 of the left half;
+  3 shade). The odd columns are on BG2 (2bpp), which shows only bitplanes 0+1 of the left half;
   the right half stays empty.
 - Characters 0-15 are the controller buttons (see "Buttons" below); they use colors 4-15 and the
   right half, which only BG1 shows.
@@ -151,7 +151,7 @@ Like `CGEN`, a skin may contain several `FONT` chunks, each replacing its range 
 ### Buttons
 
 The menu shows controller buttons in its help texts with characters 0-15, 16x8 pixels each, always
-on BG1 (an odd column; on an even one it prints two letters instead). Each button uses colors 1-15
+on BG1 (an even column; on an odd one it prints two letters instead). Each button uses colors 1-15
 of its BG1 palette (color 0 is transparent):
 
 | Character | Button | Palette (CGRAM) |

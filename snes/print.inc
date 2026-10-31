@@ -19,8 +19,8 @@ print_at .macro text, x, y, pal, count
 
 ; buttons in strings: BUTTON_CODE, then the code of the button (never 0 or
 ; 1, which end a string). print_text shows the button graphics (BG1, 16
-; pixels wide) on an odd column, and two characters of text instead on an
-; even one; either way a button takes two columns, like its two bytes.
+; pixels wide) on an even column, and two characters of text instead on an
+; odd one; either way a button takes two columns, like its two bytes.
 BUTTON_CODE = $90               ; no character in CP1252
         .edef "{A}", [BUTTON_CODE, 'A']
         .edef "{B}", [BUTTON_CODE, 'B']
@@ -37,7 +37,7 @@ BUTTON_CODE = $90               ; no character in CP1252
 
 ; button_table entry: the code, the BG1 tiles of the button (character 0-15
 ; and palette, see skin/buttons.asm) in the Japan/Europe and in the US style
-; (CFG_BUTTON_STYLE), and the text for even columns
+; (CFG_BUTTON_STYLE), and the text for odd columns
 ButtonEntry .struct code, jp_char, jp_pal, us_char, us_pal, text
   code          .byte \code
   tiles         .word (\jp_char * 2) | (\jp_pal << 10) | $2000, (\us_char * 2) | (\us_pal << 10) | $2000

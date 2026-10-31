@@ -6,11 +6,11 @@ hdma_bg1scroll_src:
   .byte 56
   .byte $00, $00, $ff, $03
   .byte 127
-  .byte $fc, $00, $0d, $00
+  .byte $00, $00, $0d, $00
   .byte 24
-  .byte $fc, $00, $0d, $00
+  .byte $00, $00, $0d, $00
   .byte 1
-  .byte $fc, $00, $0f, $00
+  .byte $00, $00, $0f, $00
   .byte $00
 hdma_bg2scroll_src:
   .byte 56
@@ -200,7 +200,7 @@ text_filesel_set_as_autoboot: .text "Set as autoboot", 0
 mdesc_filesel_set_as_autoboot: .text "Boot this ROM automatically on next power-on (hold START during powerup/reset to cancel)", 0
 
 text_statusbar_play: .text "A:Play B:Back X:Menu", 0
-text_statusbar_keys: .text " {A}Select  {B}Back  {X}Menu  {Y}Context", 0
+text_statusbar_keys: .text "{A}Select  {B}Back  {X}Menu  {Y}Context", 0
 text_statusbar_spc: .text "B:Back", 0
 text_statusbar_menu: .text "A:Select B:Back", 0
 text_last:          .text "Recent games", 0
@@ -333,9 +333,9 @@ text_cheat_rom_patches:     .text "ROM patches: ", 0
 text_cheat_wram_patches:    .text "WRAM patches: ", 0
 text_cheat_warn_hook:       .text "WRAM codes need the in-game hook", 0
 text_cheat_warn_start:      .text "Cheats start disabled", 0
-text_cheat_help_list:       .text " {A}Edit  {X}On/Off  {Y}More  {B}Back  {START}Play", 0
-text_cheat_help_edit:       .text " {A}Edit  {Y}More  {START}Done  {B}Discard", 0
-text_cheat_help_entry:      .text " {START}OK  {B}Cancel", 0
+text_cheat_help_list:       .text "{A}Edit  {X}On/Off  {Y}More  {B}Back  {START}Play", 0
+text_cheat_help_edit:       .text "{A}Edit  {Y}More  {START}Done  {B}Discard", 0
+text_cheat_help_entry:      .text "{START}OK  {B}Cancel", 0
 text_cheat_msg_off:         .text "Cheat disabled: not enough patch slots", 0
 text_cheat_msg_full:        .text "Maximum number of cheats reached", 0
 text_cheat_msg_codes:       .text "Maximum number of codes reached", 0
@@ -354,7 +354,7 @@ text_cheat_code:            .text "Code:", 0
 text_cheat_hex_help:        .text "{A}Type  {X}Delete  {L}{R}Move", 0
 text_cheat_hex_help2:       .text "{SELECT}PAR/Game Genie", 0
 text_cheat_kb_title:        .text "Cheat name", 0
-text_cheat_kb_help:         .text " {A}Type  {Y}Space {X}Delete  {L}{R}Move  {SELECT}Clear", 0
+text_cheat_kb_help:         .text "{A}Type  {Y}Space {X}Delete  {L}{R}Move  {SELECT}Clear", 0
 text_cheat_as_gg:           .text "GG:  ", 0
 text_cheat_as_par:          .text "PAR: ", 0
 text_cheat_caret:           .text "^", 0

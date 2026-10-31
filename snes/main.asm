@@ -223,6 +223,9 @@ video_init:
   sta $2108     ; for BG2
   lda #(FONT_BASE>>12)*$11 ; chr base addr:
   sta $210b     ; BG1 and BG2 = FONT_BASE
+  lda #$fc      ; BG2 8 hi-res pixels to the right
+  sta $210f     ; of BG1 (print_text: odd columns)
+  stz $210f
   lda #$13      ; enable BG1+BG2+OBJ
   sta $212c     ; BG Main
   lda #$13      ; enable BG1+BG2+OBJ

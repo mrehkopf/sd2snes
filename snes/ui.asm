@@ -1,6 +1,6 @@
 .text "===HIPRINT==="
 ; print a string in mode 5 using pseudo-8x8 tiles on two BG layers:
-; even columns go to BG2, odd columns to BG1.
+; even columns go to BG1, odd columns to BG2.
 ; characters 0 and 1 are considered "end of string".
 ; BUTTON_CODE and a code show a button over two columns (see print.inc).
 ; re-entrant: everything lives in the stack frame, any D and DB
@@ -54,7 +54,21 @@ Frame .block
   tax
   lda Frame.p_x
   lsr
-  bcs bg1
+  bcs bg2
+bg1:
+  lda [Frame.p_src],y
+  ror
+  and #$007f
+  beq out
+  rol
+  cmp #BUTTON_CODE
+  beq bg1_button
+  asl
+  ora Frame.attr
+  sta @l BG1_TILE_BUF,x
+  iny
+  cpy Frame.count
+  beq out
 bg2:
   lda [Frame.p_src],y
   ror
@@ -67,26 +81,12 @@ bg2:
   asl                           ; BG2 tile: 4 * char (see FONT_BASE)
   ora Frame.attr
   sta @l BG2_TILE_BUF,x
-  iny
-  cpy Frame.count
-  beq out
-bg1:
-  lda [Frame.p_src],y
-  ror
-  and #$007f
-  beq out
-  rol
-  cmp #BUTTON_CODE
-  beq bg1_button
-  asl
-  ora Frame.attr
-  sta @l BG1_TILE_BUF,x
 next:
   inx
   inx
   iny
   cpy Frame.count
-  bne bg2
+  bne bg1
 out:
   lda [Frame.p_src],y           ; character after the printed ones
   and #$00fe
@@ -95,7 +95,30 @@ out:
   tya
   rts
 
-; a button on an even column (BG2, 2bpp): its two characters of text
+; a button on an even column: the button graphics on BG1; their right half
+; covers the next column (BG2), which gets a space
+bg1_button:
+  .al
+  .xl
+  jsr find_button
+  bcs out                       ; doesn't fit
+  phx
+  ldx Frame.button
+  lda @l CFG_BUTTON_STYLE
+  and #$00ff
+  beq +
+  inx                           ; US style: the second tile
+  inx
++ lda @l button_table+ButtonEntry.tiles,x
+  plx
+  sta @l BG1_TILE_BUF,x
+  lda #4 * ' '
+  ora Frame.attr
+  sta @l BG2_TILE_BUF,x
+  iny                           ; the code; continue on the next even column
+  bra next
+
+; a button on an odd column (BG2, 2bpp): its two characters of text
 bg2_button:
   .al
   .xl
@@ -116,37 +139,14 @@ bg2_button:
   and #$00ff
   asl
   ora Frame.attr
-  sta @l BG1_TILE_BUF,x
-  iny                           ; the code; continue on the next even column
-  bra next
-
-; a button on an odd column: the button graphics on BG1; their right half
-; covers the next column (BG2), which gets a space
-bg1_button:
-  .al
-  .xl
-  jsr find_button
-  bcs out                       ; doesn't fit
-  phx
-  ldx Frame.button
-  lda @l CFG_BUTTON_STYLE
-  and #$00ff
-  beq +
-  inx                           ; US style: the second tile
-  inx
-+ lda @l button_table+ButtonEntry.tiles,x
-  plx
-  sta @l BG1_TILE_BUF,x
-  lda #4 * ' '
-  ora Frame.attr
-  sta @l BG2_TILE_BUF+2,x
+  sta @l BG1_TILE_BUF+2,x
   inx                           ; continue on the next odd column
   inx
   iny
   iny
   cpy Frame.count
   beq out
-  brl bg1
+  brl bg2
 
 ; Frame.button: the entry in button_table of the button whose code follows
 ; the BUTTON_CODE at Y (the last entry for an unknown code); carry set if
@@ -788,23 +788,23 @@ greyout_start:
     tay
     lda @w window_x
     lsr
-    bcs greyout_bg1
-greyout_bg2:
-    lda @w <>BG2_TILE_BUF,x
-    and #$03ff
-    ora #$3800
-    sta @w <>BG2_TILE_BUF,x
-    dey
-    beq greyout_next
+    bcs greyout_bg2
 greyout_bg1:
     lda @w <>BG1_TILE_BUF,x
     and #$03ff
     ora #$3800
     sta @w <>BG1_TILE_BUF,x
+    dey
+    beq greyout_next
+greyout_bg2:
+    lda @w <>BG2_TILE_BUF,x
+    and #$03ff
+    ora #$3800
+    sta @w <>BG2_TILE_BUF,x
     inx
     inx
     dey
-    bne greyout_bg2
+    bne greyout_bg1
 greyout_next:
     dec Frame.vcount
     beq greyout_out
