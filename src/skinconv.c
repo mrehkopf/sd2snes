@@ -660,6 +660,7 @@ static void out_sprites(int s) {
 #define PART_GRADIENT   0x10
 #define PART_BAR        0x20
 #define PART_SPRITES    0x40
+#define PART_NO_SPRITES 0x80      /* OAMT without sprites */
 
 static int cgen_color(int c, uint8_t parts) {
   if(reserved(c) || !(parts & (PART_COLORS | PART_ALL_COLORS))) return 0;
@@ -706,7 +707,7 @@ static uint32_t convert(uint32_t skin_addr, uint8_t parts) {
   }
   if(parts & PART_GRADIENT) out_gradient();
   if(parts & PART_BAR) out_bar();
-  if(parts & PART_SPRITES) out_sprites(sprites);
+  if(parts & (PART_SPRITES | PART_NO_SPRITES)) out_sprites(sprites);
   out_flush();
   return w->out_addr - skin_addr;
 }
@@ -732,7 +733,9 @@ uint32_t skinconv_menu_rom(uint32_t rom_addr, uint32_t skin_addr) {
    the size of the asset), the logo palette to CGRAM 64-95 after the
    palette. Its font and sprite graphics are not in the theme, nor are they
    converted here; the flags (font outline and anti-aliasing off) are left
-   out. */
+   out. The menu's own sprites go with its logo: a theme with a logo gets
+   none (the sprite positions it may have are of no use without the
+   graphics). */
 #define THM_HEADER      16
 #define THM_PARTS       9
 #define THM_LOGO_PAL    1
@@ -815,7 +818,7 @@ uint32_t skinconv_theme(uint32_t thm_addr, uint32_t thm_size, uint32_t work_addr
   w->o.hdma_bar_color_src = thm_slots[THM_BAR_COLOR].offset;
   if(have & (1 << THM_PALETTE)) {
     parts |= PART_COLORS;
-    if(have & (1 << THM_LOGO)) parts |= PART_LOGO;
+    if(have & (1 << THM_LOGO)) parts |= PART_LOGO | PART_NO_SPRITES;
   }
   if(have & (1 << THM_PAL_SRC)) parts |= PART_GRADIENT;
   if((have & (1 << THM_MATH)) && (have & (1 << THM_BAR_COLOR))) parts |= PART_BAR;

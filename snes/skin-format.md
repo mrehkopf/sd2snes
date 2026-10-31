@@ -21,8 +21,9 @@ bar and background sprites. This document describes version 1 of the file format
     tool's converter (`www/themes/skinconv.js`).
   - Theme files (`.thm`) of the sd2snes fork by ludufre. Their palette (text colors), logo,
     background gradient and selection bar are used; parts a theme leaves out stay as in the
-    built-in look, as do the font (the theme's flags that change the font are left out) and the
-    sprites (a theme has only their positions).
+    built-in look, as does the font (the theme's flags that change the font are left out). A
+    theme has no sprite graphics, only positions: with a logo of its own it shows no sprites,
+    without one the built-in sprites stay with the built-in logo.
 - A file that can't be used as a skin (a menu ROM of an unknown version, no skin or theme file, a
   read error) gives a message when it is previewed or chosen, and the skin from before stays.
 - The firmware loads the file every time it loads the menu. Other files of 64 KB or more are
