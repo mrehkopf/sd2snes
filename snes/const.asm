@@ -184,6 +184,8 @@ mdesc_skin_use:             .text "Use this skin from now on", 0
 text_skin_apply:            .text "Apply skin?", 0
 text_skin_revert:           .text "Revert", 0
 mdesc_skin_revert:          .text "Go back to the skin from before", 0
+text_skin_err_read:         .text "Could not read the skin file.", 0
+text_skin_err_format:       .text "This file can't be used as a skin.", 0
 text_skins_folder:          .text "/sd2snes/skins", 0
 text_filesel_context_add_to_favorites: .text "Add to favorites", 0
 mdesc_filesel_context_add_to_favorites: .text "Add the selected file to favorites", 0

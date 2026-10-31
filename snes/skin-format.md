@@ -17,8 +17,9 @@ bar and background sprites. This document describes version 1 of the file format
   too: in `/sd2snes/skins/` and the folders in it, `.bin` files are listed like skin files, so a
   theme's folder can be copied there as it is. The firmware converts such a file (exactly 64 KB)
   into a skin when it loads it, the same way the theme tool's converter does
-  (`www/themes/skinconv.js`, `src/skinconv.c`); a ROM of an unknown version leaves the built-in
-  look.
+  (`www/themes/skinconv.js`, `src/skinconv.c`).
+- A file that can't be used as a skin (a menu ROM of an unknown version, no skin file, a read
+  error) gives a message when it is previewed or chosen, and the skin from before stays.
 - The firmware loads the file every time it loads the menu. Other files of 64 KB or more are
   ignored, as is a file that cannot be read completely.
 - Holding SELECT on either controller while the console is switched on starts the menu without

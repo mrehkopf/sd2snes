@@ -64,6 +64,7 @@ SPC_DSP_REGS                = $FE0100
 
 FILESEL_CWD                 = $FF0000
 CFG_ADDR                    = $FF0100
+SKIN_STATUS                 = $FF0E00   ; result of CMD_LOAD_SKIN/CMD_SET_SKIN
 CHEAT_STATUS                = $FF0F00   ; result of CMD_LOAD_CHT/CMD_SAVE_CHT
 CHEAT_ROMNAME               = $FF0F01   ; file name for the cheat window title
 ST_MCU_ADDR                 = $FF1100
@@ -122,6 +123,10 @@ CHEAT_SRC_FAVORITE          = $02       ; list index in MCU_PARAM
 ; values of CHEAT_STATUS
 CHEAT_STATUS_OK             = $00
 CHEAT_STATUS_ERR            = $01
+; values of SKIN_STATUS
+SKIN_STATUS_OK              = $00
+SKIN_STATUS_ERR_READ        = $01       ; the file could not be read
+SKIN_STATUS_ERR_FORMAT      = $02       ; no skin, or a menu ROM of an unknown version
 
 ; cheat records at CHEAT_ADDR (cheat_record_t in src/cheat.h)
 CHEAT_REC_FLAGS             = 0         ; bit 7: enabled

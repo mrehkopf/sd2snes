@@ -839,7 +839,8 @@ mfunc_chg_button_style:
   rtl
 
 ; select a skin (A: SKIN_SRC_SELECTED, the file in MCU_PARAM, or
-; SKIN_SRC_BUILTIN) and apply it
+; SKIN_SRC_BUILTIN) and apply it; a file that can't be used as a skin gives
+; a message, and the skin stays
 skin_set:
   php
   sep #$20
@@ -849,14 +850,54 @@ skin_set:
   sta @l MCU_PARAM+8
   lda #CMD_SET_SKIN
   jsr skin_cmd
+  jsr skin_check
+  bcs +
   lda #$00                      ; a skin chosen in the menu counts even if
   sta wram(skin_skip)           ; SELECT was held at power-on
   jsr reapply_skin
-  plp
++ plp
   rts
 
+; after CMD_LOAD_SKIN or CMD_SET_SKIN with a selected file: if the file
+; can't be used as a skin, say so (the MCU has loaded the configured skin
+; again) and return with carry set
+skin_check .block
+  php
+  sep #$20
+  .as
+  rep #$10
+  .xl
+  lda @l SKIN_STATUS
+  beq ok
+  phb
+  pha
+  lda #$00
+  pha
+  plb
+  pla
+  ldx #<>text_skin_err_format
+  cmp #SKIN_STATUS_ERR_READ
+  bne +
+  ldx #<>text_skin_err_read
++ ldy #<>space64+64             ; no help text (empty string)
+  stz cheat_msg_timer           ; (no message of the cheat editor pending)
+  jsr cheat_alert
+  jsr filesel_statusbar
+  plb
+  plp
+  sec
+  rts
+ok:
+  plp
+  clc
+  rts
+.endblock
+
+.cerror ((`text_skin_err_read) != (`text_cheat)) || ((`text_skin_err_format) != (`text_cheat)), "cheat_alert prints from the bank of text_cheat"
+
 ; show the skin selected in the file browser (MCU_PARAM) and ask whether to
-; use it; "Revert" or B go back to the skin from before
+; use it; "Revert" or B go back to the skin from before. A file that can't
+; be used as a skin gives a message, and the skin stays.
 skin_preview .block
   php
   phb
@@ -873,7 +914,11 @@ skin_preview .block
   sta @l MCU_PARAM+8
   lda #CMD_LOAD_SKIN
   jsr skin_cmd
-  stz skin_skip
+  jsr skin_check
+  bcc +
+  pla
+  bra done
++ stz skin_skip
   jsr filesel_set_bar           ; (the closed menu had the bar)
   jsr reapply_skin
   stz skin_action               ; B: revert

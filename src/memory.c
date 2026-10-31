@@ -678,21 +678,24 @@ uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr, uint8_t flags)
    without a file (path NULL), or if it can't be loaded completely, only the
    zero word is written (at SRAM_SKIN_ADDR). A file of 64 KB, too large for
    a skin, is taken for an old menu ROM: it is loaded to SRAM_SKINROM_ADDR
-   and converted into a skin (skinconv.c). */
-void load_skin_file(const char *path) {
+   and converted into a skin (skinconv.c). Returns a SKIN_STATUS_* code. */
+uint8_t load_skin_file(const char *path) {
   uint32_t size = 0, loaded = 0;
   UINT bytes_read;
   int rom;
   tick_t ticks;
+  uint8_t status = SKIN_STATUS_OK, magic[3];
   if(path) {
     file_open((uint8_t*)path, FA_READ);
     if(file_res) {
       printf("load_skin: could not open %s, res=%d\n", path, file_res);
+      status = SKIN_STATUS_ERR_READ;
     } else {
       size = file_handle.fsize;
       rom = size == SKINCONV_ROM_SIZE;
       if(size > SKIN_MAX_SIZE && !rom) {
         printf("load_skin: %s is too large (%lu bytes)\n", path, size);
+        status = SKIN_STATUS_ERR_FORMAT;
       } else {
         set_mcu_addr(rom ? SRAM_SKINROM_ADDR : SRAM_SKIN_ADDR);
         for(;;) {
@@ -704,13 +707,13 @@ void load_skin_file(const char *path) {
         }
         if(file_res || loaded != size) {
           printf("load_skin: read error in %s, res=%d\n", path, file_res);
+          status = SKIN_STATUS_ERR_READ;
         }
       }
-      if(file_res || loaded != size) {
-        size = 0;
-      }
       file_close();
-      if(size && rom) {
+      if(status) {
+        size = 0;
+      } else if(rom) {
         ticks = getticks();
         size = skinconv_menu_rom(SRAM_SKINROM_ADDR, SRAM_SKIN_ADDR);
         if(size) {
@@ -718,27 +721,36 @@ void load_skin_file(const char *path) {
                  path, size, (getticks() - ticks) * 10UL);
         } else {
           printf("load_skin: %s is no menu ROM of a known version\n", path);
+          status = SKIN_STATUS_ERR_FORMAT;
+        }
+      } else {
+        /* a skin starts with a chunk */
+        sram_readblock(magic, SRAM_SKIN_ADDR, sizeof(magic));
+        if(size < sizeof(magic) || memcmp(magic, "SNS", sizeof(magic))) {
+          printf("load_skin: %s is no skin file\n", path);
+          size = 0;
+          status = SKIN_STATUS_ERR_FORMAT;
         }
       }
     }
   }
   sram_writeshort(0, SRAM_SKIN_ADDR + size);
+  return status;
 }
 
 /* Load the configured skin (CFG.skin_name: a file in SKIN_BASEDIR, a full
-   path, or empty for the built-in skin). */
-void load_skin(void) {
+   path, or empty for the built-in skin). Returns a SKIN_STATUS_* code. */
+uint8_t load_skin(void) {
   char path[256];
   if(!CFG.skin_name[0]) {
-    load_skin_file(NULL);
-  } else {
-    if(CFG.skin_name[0] == '/') {
-      snprintf(path, sizeof(path), "%s", CFG.skin_name);
-    } else {
-      snprintf(path, sizeof(path), "%s%s", SKIN_BASEDIR, CFG.skin_name);
-    }
-    load_skin_file(path);
+    return load_skin_file(NULL);
   }
+  if(CFG.skin_name[0] == '/') {
+    snprintf(path, sizeof(path), "%s", CFG.skin_name);
+  } else {
+    snprintf(path, sizeof(path), "%s%s", SKIN_BASEDIR, CFG.skin_name);
+  }
+  return load_skin_file(path);
 }
 
 uint32_t migrate_and_load_srm(uint8_t* filename, uint32_t base_addr) {

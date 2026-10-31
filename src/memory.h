@@ -54,6 +54,10 @@ extern char current_filename[];
 #define SKIN_SRC_SELECTED            (1) /* the file selected in the menu (MCU_PARAM: dir, file entry) */
 #define SKIN_SRC_BUILTIN             (2) /* SET_SKIN: none, the menu's built-in skin */
 #define SKIN_SRC_SHOWN               (3) /* SET_SKIN: the selected file, already loaded (preview) */
+#define SRAM_SKIN_STATUS             (0xFF0E00L) /* result of SNES_CMD_LOAD_SKIN/SNES_CMD_SET_SKIN */
+#define SKIN_STATUS_OK               (0)
+#define SKIN_STATUS_ERR_READ         (1) /* the file could not be read */
+#define SKIN_STATUS_ERR_FORMAT       (2) /* no skin, or a menu ROM of an unknown version */
 
 #define SRAM_SPC_DATA_ADDR           (0xFD0000L)
 #define SRAM_SPC_HEADER_ADDR         (0xFE0000L)
@@ -97,8 +101,8 @@ uint32_t load_spc(uint8_t* filename, uint32_t spc_data_addr, uint32_t spc_header
 uint32_t migrate_and_load_srm(uint8_t *filename, uint32_t base_addr);
 uint32_t load_sram(uint8_t* filename, uint32_t base_addr);
 uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr, uint8_t flags);
-void load_skin(void);
-void load_skin_file(const char *path);
+uint8_t load_skin(void);
+uint8_t load_skin_file(const char *path);
 uint32_t load_bootrom(uint32_t base_addr);
 void load_dspx(const uint8_t* filename, uint8_t st0010);
 void sram_hexdump(uint32_t addr, uint32_t len);
