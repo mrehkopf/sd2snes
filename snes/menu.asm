@@ -331,7 +331,13 @@ Frame .block
     inc a
     inc a
 +   sta window_w
-    jsr push_window
+    lda Frame.title_len   ; the title needs a tee, a border piece and a
+    clc                   ; corner on each side: draw_window
+    adc #$06
+    cmp window_w
+    bcc +
+    sta window_w
++   jsr push_window
     lda [Frame.menu_addr]
     sta listsel_step
     stz listsel_sel
