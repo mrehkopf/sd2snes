@@ -51,6 +51,7 @@ _Static_assert(BOOTROM_EXO_WINDOW <= EXO_WINDOW, "snesboot.h is packed for a lar
 #include "rtc.h"
 #include "savestate.h"
 #include "sgb.h"
+#include "skinconv.h"
 
 #include <string.h>
 char* hex = "0123456789ABCDEF";
@@ -675,20 +676,25 @@ uint32_t load_sram_offload(uint8_t* filename, uint32_t base_addr, uint8_t flags)
 /* Load a menu skin file to SRAM_SKIN_ADDR, followed by a zero word. The
    menu applies the chunks it finds there on top of its built-in skin, so
    without a file (path NULL), or if it can't be loaded completely, only the
-   zero word is written (at SRAM_SKIN_ADDR). */
+   zero word is written (at SRAM_SKIN_ADDR). A file of 64 KB, too large for
+   a skin, is taken for an old menu ROM: it is loaded to SRAM_SKINROM_ADDR
+   and converted into a skin (skinconv.c). */
 void load_skin_file(const char *path) {
   uint32_t size = 0, loaded = 0;
   UINT bytes_read;
+  int rom;
+  tick_t ticks;
   if(path) {
     file_open((uint8_t*)path, FA_READ);
     if(file_res) {
       printf("load_skin: could not open %s, res=%d\n", path, file_res);
     } else {
       size = file_handle.fsize;
-      if(size > SKIN_MAX_SIZE) {
+      rom = size == SKINCONV_ROM_SIZE;
+      if(size > SKIN_MAX_SIZE && !rom) {
         printf("load_skin: %s is too large (%lu bytes)\n", path, size);
       } else {
-        set_mcu_addr(SRAM_SKIN_ADDR);
+        set_mcu_addr(rom ? SRAM_SKINROM_ADDR : SRAM_SKIN_ADDR);
         for(;;) {
           ff_sd_offload=1;
           sd_offload_tgt=0;
@@ -704,6 +710,16 @@ void load_skin_file(const char *path) {
         size = 0;
       }
       file_close();
+      if(size && rom) {
+        ticks = getticks();
+        size = skinconv_menu_rom(SRAM_SKINROM_ADDR, SRAM_SKIN_ADDR);
+        if(size) {
+          printf("load_skin: converted the menu ROM %s (%lu bytes, %lu ms)\n",
+                 path, size, (getticks() - ticks) * 10UL);
+        } else {
+          printf("load_skin: %s is no menu ROM of a known version\n", path);
+        }
+      }
     }
   }
   sram_writeshort(0, SRAM_SKIN_ADDR + size);

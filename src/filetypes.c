@@ -70,13 +70,17 @@ printf("opendir res=%d\n", res);
   uint16_t numentries = 0;
   int ticks=getticks();
   SNES_FTYPE type;
+  /* the skin folder, or a folder in it */
+  size_t skinlen = strlen(SKIN_BASEDIR) - 1;
+  int skin_dir = !strncasecmp((const char*)path, SKIN_BASEDIR, skinlen)
+                 && (path[skinlen] == '/' || !path[skinlen]);
 printf("start\n");
   if (res == FR_OK) {
     for (;;) {
       res = f_readdir(&dir, &fno);
       if(res != FR_OK || fno.fname[0] == 0 || numentries >= 16000)break;
       fn = *fno.lfname ? fno.lfname : fno.fname;
-      type = determine_filetype(fno);
+      type = determine_filetype(fno, skin_dir);
       if(is_requested_filetype(type, filetypes)) {
         switch(type) {
           case TYPE_ROM:
@@ -133,7 +137,9 @@ printf("%d entries, time: %d\n", numentries, getticks()-ticks);
   return numentries;
 }
 
-SNES_FTYPE determine_filetype(FILINFO fno) {
+/* skin_dir: fno is in the skin folder, where .bin files are taken for old
+   menu ROMs to use as skins (see load_skin_file()) */
+SNES_FTYPE determine_filetype(FILINFO fno, int skin_dir) {
   char* ext;
   if(fno.fattrib & AM_DIR) {
     if(!strcmp(fno.fname, "..")) {
@@ -168,7 +174,7 @@ SNES_FTYPE determine_filetype(FILINFO fno) {
   if(!strcasecmp(ext+1, "CHT")) {
     return TYPE_CHT;
   }
-  if(!strcasecmp(ext+1, "SKIN")) {
+  if(!strcasecmp(ext+1, "SKIN") || (skin_dir && !strcasecmp(ext+1, "BIN"))) {
     return TYPE_SKIN;
   }
   return TYPE_UNKNOWN;

@@ -14,6 +14,8 @@
  *          chunk it leaves out or adjusts
  *
  * Works in the browser (global SkinConv) and in node (module.exports).
+ * The firmware converts menu ROMs used as skins the same way (src/skinconv.c,
+ * with a copy of the version table in index.html); keep the two in step.
  */
 (function (global) {
   'use strict';
