@@ -76,6 +76,10 @@ module sa1(
 
   input         SPEED,
 
+  // BS Memory Pack slot present (FEAT_BSSLOT): redirect SA-1-side ROM reads of
+  // MMC block >= 4 to the pack (same as the S-CPU path in address.v).
+  input         bs_slot_en,
+
   // State debug read interface
   input  [11:0] PGM_ADDR, // [11:0]
   output [7:0]  PGM_DATA, // [7:0]
@@ -219,7 +223,14 @@ wire [3:0] xxb_en;
 `define IS_MMIO(a) (~a[22] & ~a[15] & ~a[14] & a[13] & ~a[12] & ~a[11] & ~a[10] & a[9])          // 00-3F/80-BF:2200-23FF
 `define IS_SA1_PRAM(a) ((sw46 & ~a[22] & ~a[15] & &a[14:13]) | (~a[23] & a[22] & a[21] & ~a[20])) // 00-3F/80-BF:6000-7FFF, 60-6F:0000-FFFF
 
-`define MAP_ROM(a)  ((a[22] ? {1'b0, xxb[a[21:20]], a[19:0]} : {1'b0, xxb_en[{a[23],a[21]}] ? xxb[{a[23],a[21]}] : {1'b0,a[23],a[21]}, a[20:16], a[14:0]}) & ROM_MASK_r)
+// Raw SA-1 ROM map (SuperMMC): block in bits [22:20], offset [19:0], then ROM_MASK.
+`define MAP_ROM_RAW(a)  ((a[22] ? {1'b0, xxb[a[21:20]], a[19:0]} : {1'b0, xxb_en[{a[23],a[21]}] ? xxb[{a[23],a[21]}] : {1'b0,a[23],a[21]}, a[20:16], a[14:0]}) & ROM_MASK_r)
+// BS Memory Pack redirect (parity with address.v): when a pack is present and the
+// resolved MMC block is >= 4, read the pack at PSRAM 0x900000 instead of the cart.
+// ">= 4" (not [2]) avoids a bit-select on an array element (Verilog-2001).
+`define MAP_BLKHI(a)    (a[22] ? (xxb[a[21:20]] >= 3'd4) : (xxb_en[{a[23],a[21]}] & (xxb[{a[23],a[21]}] >= 3'd4)))
+`define MAP_OFF(a)      (a[22] ? a[19:0] : {a[20:16], a[14:0]})
+`define MAP_ROM(a)      ((bs_slot_en & `MAP_BLKHI(a)) ? (24'h900000 + {4'h0, `MAP_OFF(a)}) : `MAP_ROM_RAW(a))
 `define MAP_IRAM(a) (a[10:0])
 `define MAP_MMIO(a) (a[8:0])
 //`define MAP_BRAM(a) (iram_battery_r ? `MAP_IRAM(a) : ((a[22] ? a[19:0] : {cbm[4:0],a[12:0]}) & SAVERAM_MASK_r))
