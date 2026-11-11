@@ -901,8 +901,8 @@ printf("SETUP\n");
     }
 
     if(pktsts == STS_SETUP_COMP || pktsts == STS_XFER_COMP) {
-        USB_OTG_FS_EP->OUT_Endpoint[epnum].DOEPCTL |= USB_OTG_DOEPCTL_CNAK | USB_OTG_DOEPCTL_EPENA;
         USB_OTG_FS_EP->OUT_Endpoint[epnum].DOEPTSIZ = doeptsiz[epnum];
+        USB_OTG_FS_EP->OUT_Endpoint[epnum].DOEPCTL |= USB_OTG_DOEPCTL_CNAK | USB_OTG_DOEPCTL_EPENA;
         return;
     }
 
